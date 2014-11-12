@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965288AbaKLDjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:39:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59216 "EHLO
+	id S932797AbaKLBaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:30:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59203 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070AbaKLBaP (ORCPT
+	with ESMTP id S932760AbaKLBaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:15 -0500
+	Tue, 11 Nov 2014 20:30:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.17 179/319] intel_pstate: Fix BYT frequency reporting
-Date: Wed, 12 Nov 2014 10:15:17 +0900
-Message-Id: <20141112011022.320050385@linuxfoundation.org>
+        Nix <nix@esperi.org.uk>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.17 203/319] USB: cdc-acm: add quirk for control-line state requests
+Date: Wed, 12 Nov 2014 10:15:41 +0900
+Message-Id: <20141112011026.413437085@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,146 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit b27580b05e6f5253228debc60b8ff4a786ff573a upstream.
+commit 2a8cdfde9237c4e1bd7c2e68c415b006491d23cc upstream.
 
-BYT has a different conversion from P state to frequency than the core
-processors.  This causes the min/max and current frequency to be
-misreported on some BYT SKUs. Tested on BYT N2820, Ivybridge and
-Haswell processors.
+Add new quirk for devices that cannot handle control-line state
+requests.
 
-Link: https://bugzilla.yoctoproject.org/show_bug.cgi?id=6663
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Note that we currently send these requests to all devices, regardless of
+whether they claim to support it, but that errors are only logged if
+support is claimed.
+
+Since commit 0943d8ead30e ("USB: cdc-acm: use tty-port dtr_rts"), which
+only changed the timings for these requests slightly, this has been
+reported to cause occasional firmware crashes on Simtec Electronics
+Entropy Key devices after re-enumeration. Enable the quirk for this
+device.
+
+Reported-by: Nix <nix@esperi.org.uk>
+Tested-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   42 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 36 insertions(+), 6 deletions(-)
+ drivers/usb/class/cdc-acm.c |   14 ++++++++++++--
+ drivers/usb/class/cdc-acm.h |    2 ++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -64,6 +64,7 @@ struct pstate_data {
- 	int	current_pstate;
- 	int	min_pstate;
- 	int	max_pstate;
-+	int	scaling;
- 	int	turbo_pstate;
- };
- 
-@@ -113,6 +114,7 @@ struct pstate_funcs {
- 	int (*get_max)(void);
- 	int (*get_min)(void);
- 	int (*get_turbo)(void);
-+	int (*get_scaling)(void);
- 	void (*set)(struct cpudata*, int pstate);
- 	void (*get_vid)(struct cpudata *);
- };
-@@ -433,6 +435,22 @@ static void byt_set_pstate(struct cpudat
- 	wrmsrl(MSR_IA32_PERF_CTL, val);
- }
- 
-+#define BYT_BCLK_FREQS 5
-+static int byt_freq_table[BYT_BCLK_FREQS] = { 833, 1000, 1333, 1167, 800};
-+
-+static int byt_get_scaling(void)
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -145,8 +145,15 @@ static int acm_ctrl_msg(struct acm *acm,
+ /* devices aren't required to support these requests.
+  * the cdc acm descriptor tells whether they do...
+  */
+-#define acm_set_control(acm, control) \
+-	acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE, control, NULL, 0)
++static inline int acm_set_control(struct acm *acm, int control)
 +{
-+	u64 value;
-+	int i;
++	if (acm->quirks & QUIRK_CONTROL_LINE_STATE)
++		return -EOPNOTSUPP;
 +
-+	rdmsrl(MSR_FSB_FREQ, value);
-+	i = value & 0x3;
-+
-+	BUG_ON(i > BYT_BCLK_FREQS);
-+
-+	return byt_freq_table[i] * 100;
++	return acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE,
++			control, NULL, 0);
 +}
 +
- static void byt_get_vid(struct cpudata *cpudata)
- {
- 	u64 value;
-@@ -478,6 +496,11 @@ static int core_get_turbo_pstate(void)
- 	return ret;
- }
+ #define acm_set_line(acm, line) \
+ 	acm_ctrl_msg(acm, USB_CDC_REQ_SET_LINE_CODING, 0, line, sizeof *(line))
+ #define acm_send_break(acm, ms) \
+@@ -1315,6 +1322,7 @@ made_compressed_probe:
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
+ 	init_usb_anchor(&acm->delayed);
++	acm->quirks = quirks;
  
-+static inline int core_get_scaling(void)
-+{
-+	return 100000;
-+}
-+
- static void core_set_pstate(struct cpudata *cpudata, int pstate)
- {
- 	u64 val;
-@@ -502,6 +525,7 @@ static struct cpu_defaults core_params =
- 		.get_max = core_get_max_pstate,
- 		.get_min = core_get_min_pstate,
- 		.get_turbo = core_get_turbo_pstate,
-+		.get_scaling = core_get_scaling,
- 		.set = core_set_pstate,
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1682,6 +1690,8 @@ static const struct usb_device_id acm_id
+ 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
+ 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
  	},
- };
-@@ -520,6 +544,7 @@ static struct cpu_defaults byt_params =
- 		.get_min = byt_get_min_pstate,
- 		.get_turbo = byt_get_turbo_pstate,
- 		.set = byt_set_pstate,
-+		.get_scaling = byt_get_scaling,
- 		.get_vid = byt_get_vid,
++	{ USB_DEVICE(0x20df, 0x0001), /* Simtec Electronics Entropy Key */
++	.driver_info = QUIRK_CONTROL_LINE_STATE, },
+ 	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
+ 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
  	},
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -121,6 +121,7 @@ struct acm {
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+ 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
++	unsigned long quirks;
  };
-@@ -554,7 +579,7 @@ static void intel_pstate_set_pstate(stru
- 	if (pstate == cpu->pstate.current_pstate)
- 		return;
  
--	trace_cpu_frequency(pstate * 100000, cpu->cpu);
-+	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
- 
- 	cpu->pstate.current_pstate = pstate;
- 
-@@ -566,6 +591,7 @@ static void intel_pstate_get_cpu_pstates
- 	cpu->pstate.min_pstate = pstate_funcs.get_min();
- 	cpu->pstate.max_pstate = pstate_funcs.get_max();
- 	cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
-+	cpu->pstate.scaling = pstate_funcs.get_scaling();
- 
- 	if (pstate_funcs.get_vid)
- 		pstate_funcs.get_vid(cpu);
-@@ -581,7 +607,9 @@ static inline void intel_pstate_calc_bus
- 	core_pct = div64_u64(core_pct, int_tofp(sample->mperf));
- 
- 	sample->freq = fp_toint(
--		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
-+		mul_fp(int_tofp(
-+			cpu->pstate.max_pstate * cpu->pstate.scaling / 100),
-+			core_pct));
- 
- 	sample->core_pct_busy = (int32_t)core_pct;
- }
-@@ -803,12 +831,13 @@ static int intel_pstate_cpu_init(struct
- 	else
- 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
- 
--	policy->min = cpu->pstate.min_pstate * 100000;
--	policy->max = cpu->pstate.turbo_pstate * 100000;
-+	policy->min = cpu->pstate.min_pstate * cpu->pstate.scaling;
-+	policy->max = cpu->pstate.turbo_pstate * cpu->pstate.scaling;
- 
- 	/* cpuinfo and default policy values */
--	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * 100000;
--	policy->cpuinfo.max_freq = cpu->pstate.turbo_pstate * 100000;
-+	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * cpu->pstate.scaling;
-+	policy->cpuinfo.max_freq =
-+		cpu->pstate.turbo_pstate * cpu->pstate.scaling;
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
- 	cpumask_set_cpu(policy->cpu, policy->cpus);
- 
-@@ -866,6 +895,7 @@ static void copy_cpu_funcs(struct pstate
- 	pstate_funcs.get_max   = funcs->get_max;
- 	pstate_funcs.get_min   = funcs->get_min;
- 	pstate_funcs.get_turbo = funcs->get_turbo;
-+	pstate_funcs.get_scaling = funcs->get_scaling;
- 	pstate_funcs.set       = funcs->set;
- 	pstate_funcs.get_vid   = funcs->get_vid;
- }
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
+@@ -132,3 +133,4 @@ struct acm {
+ #define NOT_A_MODEM			BIT(3)
+ #define NO_DATA_INTERFACE		BIT(4)
+ #define IGNORE_DEVICE			BIT(5)
++#define QUIRK_CONTROL_LINE_STATE	BIT(6)
 
 
