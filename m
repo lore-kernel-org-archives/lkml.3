@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935107AbaKLBsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:48:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60790 "EHLO
+	id S965517AbaKLBsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:48:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60823 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935056AbaKLBsI (ORCPT
+	with ESMTP id S965471AbaKLBs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:08 -0500
+	Tue, 11 Nov 2014 20:48:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 192/203] drm/radeon/dpm: disable ulv support on SI
-Date: Wed, 12 Nov 2014 10:17:42 +0900
-Message-Id: <20141112011551.503244434@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 167/203] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
+Date: Wed, 12 Nov 2014 10:17:17 +0900
+Message-Id: <20141112011550.344059112@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,32 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 6fa455935ab956248b165f150ec6ae9106210077 upstream.
+commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
 
-Causes problems on some boards.
+If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
+a multiple of BITS_PER_LONG, they will try to shift a long value by
+BITS_PER_LONG bits which is undefined.  Change the functions to avoid
+the undefined shift.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=82889
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Coverity id: 1192175
+Coverity id: 1192174
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si_dpm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/bitmap.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -6200,7 +6200,7 @@ static void si_parse_pplib_clock_info(st
- 	if ((rps->class2 & ATOM_PPLIB_CLASSIFICATION2_ULV) &&
- 	    index == 0) {
- 		/* XXX disable for A0 tahiti */
--		si_pi->ulv.supported = true;
-+		si_pi->ulv.supported = false;
- 		si_pi->ulv.pl = *pl;
- 		si_pi->ulv.one_pcie_lane_in_ulv = false;
- 		si_pi->ulv.volt_change_delay = SISLANDS_ULVVOLTAGECHANGEDELAY_DFLT;
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long
+ 		lower = src[off + k];
+ 		if (left && off + k == lim - 1)
+ 			lower &= mask;
+-		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
++		dst[k] = lower >> rem;
++		if (rem)
++			dst[k] |= upper << (BITS_PER_LONG - rem);
+ 		if (left && k == lim - 1)
+ 			dst[k] &= mask;
+ 	}
+@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *
+ 		upper = src[k];
+ 		if (left && k == lim - 1)
+ 			upper &= (1UL << left) - 1;
+-		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
++		dst[k + off] = upper << rem;
++		if (rem)
++			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
+ 		if (left && k + off == lim - 1)
+ 			dst[k + off] &= (1UL << left) - 1;
+ 	}
 
 
