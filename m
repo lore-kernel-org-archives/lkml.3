@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaKLKPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:15:52 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43072 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954AbaKLKPt (ORCPT
+	id S1752521AbaKLKTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:19:07 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57187 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564AbaKLKTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 05:15:49 -0500
-Date: Wed, 12 Nov 2014 11:15:32 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Duyck <alexander.h.duyck@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Tony Luck <tony.luck@intel.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] arch: Introduce read_acquire()
-Message-ID: <20141112101532.GJ29390@twins.programming.kicks-ass.net>
-References: <20141111185510.2181.75347.stgit@ahduyck-workstation.home>
- <20141111194734.GL16265@arm.com>
- <54627BC0.4020705@redhat.com>
+	Wed, 12 Nov 2014 05:19:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54627BC0.4020705@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAMuHMdXkFo--38rRKSpGTb8U58KavPzmm7vwwdN6_SP01Zxt8w@mail.gmail.com>
+References: <1415785566-12758-1-git-send-email-geert@linux-m68k.org>
+	<CAMuHMdXkFo--38rRKSpGTb8U58KavPzmm7vwwdN6_SP01Zxt8w@mail.gmail.com>
+Date: Wed, 12 Nov 2014 11:19:02 +0100
+Message-ID: <CAFLxGvzof00w3ah4kenjfK=6_ydP6NN6PRsaUjMnwDLH8hzEOw@mail.gmail.com>
+Subject: Re: [uml-devel] Build regressions/improvements in v3.18-rc4
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 01:12:32PM -0800, Alexander Duyck wrote:
-> >Minor nit on naming, but load_acquire would match what we do with barriers,
-> >where you simply drop the smp_ prefix if you want the thing to work on UP
-> >systems too.
-> 
-> The problem is this is slightly different, load_acquire in my mind would use
-> a mb() call, I only use a rmb().  That is why I chose read_acquire as the
-> name.
+Geert,
 
-acquire is not about rmb vs mb, do read up on
-Documentation/memory-barriers.txt. Its a distinctly different semantic.
-Some archs simply lack the means of implementing this semantics and have
-to revert to mb (stronger is always allowed).
+On Wed, Nov 12, 2014 at 10:48 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Wed, Nov 12, 2014 at 10:46 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> JFYI, when comparing v3.18-rc4[1]  to v3.18-rc3[3], the summaries are:
+>>   - build errors: +5/-6
+>
+>   + /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: 'AT_FDCWD'
+> undeclared (first use in this function):  => 378
+>   + /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: (Each
+> undeclared identifier is reported only once:  => 378
+>   + /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: for each
+> function it appears in.):  => 378
 
-Using the read vs load to wreck the acquire semantics is just insane.
+I've never seen this failure.
+Both 3.18-rc3/4 x86_64/i386 build fine here.
+
+What toolchain are you using?
+It looks like AT_FDCWD is missing on your host side.
+
+-- 
+Thanks,
+//richard
