@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934308AbaKLDBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:01:53 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:8589 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932340AbaKLDBv (ORCPT
+	id S964947AbaKLBkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:40:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60081 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848AbaKLBkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 22:01:51 -0500
-From: <chenjie6@huawei.com>
-To: <linux-mtd@lists.infradead.org>
-CC: <dwmw2@infradead.org>, <lizefan@huawei.com>, <kexing@huawei.com>,
-        <gaozhihui@huawei.com>, <zengweilin@huawei.com>,
-        <linux-kernel@vger.kernel.org>, chenjie <chenjie6@huawei.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] jffs2: fix soft lockup when read flash error
-Date: Wed, 12 Nov 2014 19:01:48 +0800
-Message-ID: <1415790108-17340-1-git-send-email-chenjie6@huawei.com>
-X-Mailer: git-send-email 1.8.0
+	Tue, 11 Nov 2014 20:40:14 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sebastian Reichel <sre@kernel.org>
+Subject: [PATCH 3.14 053/203] power: charger-manager: Fix NULL pointer exception with missing cm-fuel-gauge
+Date: Wed, 12 Nov 2014 10:15:23 +0900
+Message-Id: <20141112011545.129565606@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
+References: <20141112011542.686743533@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.67.54.28]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenjie <chenjie6@huawei.com>
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-we find soft lockup when read flash error
-------------------CPU#1-----------------------------------
-BUG: soft lockup - CPU#1 stuck for 60009ms! [link.test:17707]
-INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=247997 jiffies, g=127234, c=127233, q=373616)
-Task dump for CPU 1:
-link.test       R running      0 17707  17611 0x00000003
-locked:
-e844ea78   &inode->i_mutex  1  [<c010a518>] do_unlinkat+0x74/0x170
-e873f9f8   &inode->i_mutex  1  [<c010a3e8>] vfs_unlink+0x38/0xf4
-e8bc4444   &c->alloc_sem    1  [<bf051120>] jffs2_reserve_space+0x2c/0x3b4 [jffs2]
-e8bc4568   &c->erase_free_sem 1  [<bf058d6c>] jffs2_erase_pending_blocks+0x20/0x860 [jffs2]
-c0479d30   console_sem      1  [<c00245cc>] console_trylock+0xc/0x50
-[<c02dee00>] (__schedule+0x478/0x644) from [<00000000>] (  (null))
-Modules linked in: rtos_kbox_panic(O) flash(O) eth(O) mdio(O) gpio(O) watchdog(O) nfsv4 nfsv3 nfs lockd nfs_acl sunrpc xt_tcpudp ipt_REJECT iptable_filter ip_tables x_tables jffs2 cfi_cmdset_0002 cfi_probe cfi_util gen_probe cmdlinepart chipreg mtdblock mtd_blkdevs mtd uio [last unloaded: kernel_mem_manage]
+------------------
 
-CPU: 1 PID: 17707 Comm: link.test Tainted: G           O 3.10.53 #1
-task: e80b6e80 ti: c8e9e000 task.ti: c8e9e000
-PC is at jffs2_erase_pending_blocks+0x808/0x860 [jffs2]
-LR is at jffs2_erase_pending_blocks+0x2c/0x860 [jffs2]
-pc : [<bf059554>]    lr : [<bf058d78>]    psr: 60000113
-sp : c8e9fdc8  ip : e80b6eb0  fp : e8bc44f8
-r10: 00000000  r9 : c8e9fecc  r8 : 00000034
-r7 : e8bc4520  r6 : e8bc4568  r5 : e8bc44f8  r4 : e8bc4400
-r3 : 00000120  r2 : 00006a20  r1 : 00000000  r0 : e8bc4520
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 18c53c7d  Table: 9b79004a  DAC: 00000015
-CPU: 1 PID: 17707 Comm: link.test Tainted: G           O 3.10.53 #1
-[<c0017198>] (unwind_backtrace+0x0/0x120) from [<c0012a14>] (show_stack+0x10/0x14)
-[<c0012a14>] (show_stack+0x10/0x14) from [<c008bbd4>] (watchdog_timer_fn+0x16c/0x208)
-[<c008bbd4>] (watchdog_timer_fn+0x16c/0x208) from [<c0047bf4>] (__run_hrtimer+0xd4/0x1c4)
-[<c0047bf4>] (__run_hrtimer+0xd4/0x1c4) from [<c00484dc>] (hrtimer_interrupt+0x128/0x2b0)
-[<c00484dc>] (hrtimer_interrupt+0x128/0x2b0) from [<c0016584>] (twd_handler+0x38/0x44)
-[<c0016584>] (twd_handler+0x38/0x44) from [<c008f5fc>] (handle_percpu_devid_irq+0x9c/0x124)
-[<c008f5fc>] (handle_percpu_devid_irq+0x9c/0x124) from [<c008bec8>] (generic_handle_irq+0x20/0x30)
-[<c008bec8>] (generic_handle_irq+0x20/0x30) from [<c000fa44>] (handle_IRQ+0xa0/0xf4)
-[<c000fa44>] (handle_IRQ+0xa0/0xf4) from [<c000855c>] (gic_handle_irq+0x3c/0x60)
-[<c000855c>] (gic_handle_irq+0x3c/0x60) from [<c02e0424>] (__irq_svc+0x44/0x58)
-Exception stack(0xc8e9fd80 to 0xc8e9fdc8)
-fd80: e8bc4520 00000000 00006a20 00000120 e8bc4400 e8bc44f8 e8bc4568 e8bc4520
-fda0: 00000034 c8e9fecc 00000000 e8bc44f8 e80b6eb0 c8e9fdc8 bf058d78 bf059554
-fdc0: 60000113 ffffffff
-[<c02e0424>] (__irq_svc+0x44/0x58) from [<bf059554>] (jffs2_erase_pending_blocks+0x808/0x860 [jffs2])
-[<bf059554>] (jffs2_erase_pending_blocks+0x808/0x860 [jffs2]) from [<bf050f04>] (jffs2_do_reserve_space+0x31c/0x47c [jffs2])
-[<bf050f04>] (jffs2_do_reserve_space+0x31c/0x47c [jffs2]) from [<bf051424>] (jffs2_reserve_space+0x330/0x3b4 [jffs2])
-[<bf051424>] (jffs2_reserve_space+0x330/0x3b4 [jffs2]) from [<bf054460>] (jffs2_do_unlink+0x48/0x228 [jffs2])
-[<bf054460>] (jffs2_do_unlink+0x48/0x228 [jffs2]) from [<bf04e26c>] (jffs2_unlink+0x3c/0x80 [jffs2])
-[<bf04e26c>] (jffs2_unlink+0x3c/0x80 [jffs2]) from [<c010a40c>] (vfs_unlink+0x5c/0xf4)
-[<c010a40c>] (vfs_unlink+0x5c/0xf4) from [<c010a568>] (do_unlinkat+0xc4/0x170)
-[<c010a568>] (do_unlinkat+0xc4/0x170) from [<c000f0c0>] (ret_fast_syscall+0x0/0x58)
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-jffs2_find_nextblock
-        --->jffs2_erase_pending_blocks
-        --->jffs2_mark_erased_block
-                but jffs2_block_check_erase failed or jffs2_write_nand_cleanmarker failed
-The jffs2_find_nextblock return -EAGAIN ,so soft lockup had occurred
+commit 661a88860274e059fdb744dfaa98c045db7b5d1d upstream.
 
-Cc: <stable@vger.kernel.org> 
-Signed-off-by: chenjie <chenjie6@huawei.com>
+NULL pointer exception happens during charger-manager probe if
+'cm-fuel-gauge' property is not present.
+
+[    2.448536] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[    2.456572] pgd = c0004000
+[    2.459217] [00000000] *pgd=00000000
+[    2.462759] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+[    2.468047] Modules linked in:
+[    2.471089] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc6-00251-ge44cf96cd525-dirty #969
+[    2.479765] task: ea890000 ti: ea87a000 task.ti: ea87a000
+[    2.485161] PC is at strcmp+0x4/0x30
+[    2.488719] LR is at power_supply_match_device_by_name+0x10/0x1c
+[    2.494695] pc : [<c01f4220>]    lr : [<c030fe38>]    psr: a0000113
+[    2.494695] sp : ea87bde0  ip : 00000000  fp : eaa97010
+[    2.506150] r10: 00000004  r9 : ea97269c  r8 : ea3bbfd0
+[    2.511360] r7 : eaa97000  r6 : c030fe28  r5 : 00000000  r4 : ea3b0000
+[    2.517869] r3 : 0000006d  r2 : 00000000  r1 : 00000000  r0 : c057c195
+[    2.524381] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[    2.531671] Control: 10c5387d  Table: 4000404a  DAC: 00000015
+[    2.537399] Process swapper/0 (pid: 1, stack limit = 0xea87a240)
+[    2.543388] Stack: (0xea87bde0 to 0xea87c000)
+[    2.547733] bde0: ea3b0210 c026b1c8 eaa97010 eaa97000 eaa97010 eabb60a8 ea3b0210 00000000
+[    2.555891] be00: 00000008 ea2db210 ea1a3410 c030fee0 ea3bbf90 c03138fc c068969c c013526c
+[    2.564050] be20: eaa040c0 00000000 c068969c 00000000 eaa040c0 ea2da300 00000002 00000000
+[    2.572208] be40: 00000001 ea2da3c0 00000000 00000001 00000000 eaa97010 c068969c 00000000
+[    2.580367] be60: 00000000 c068969c 00000000 00000002 00000000 c026b71c c026b6f0 eaa97010
+[    2.588527] be80: c0e82530 c026a330 00000000 eaa97010 c068969c eaa97044 00000000 c061df50
+[    2.596686] bea0: ea87a000 c026a4dc 00000000 c068969c c026a448 c0268b5c ea8054a8 eaa8fd50
+[    2.604845] bec0: c068969c ea2db180 c06801f8 c0269b18 c0590f68 c068969c c0656c98 c068969c
+[    2.613004] bee0: c0656c98 ea3bbe40 c06988c0 c026aaf0 00000000 c0656c98 c0656c98 c00088a4
+[    2.621163] bf00: 00000000 c0055f48 00000000 00000004 00000000 ea890000 c05dbc54 c062c178
+[    2.629323] bf20: c0603518 c005f674 00000001 ea87a000 eb7ff83b c0476440 00000091 c003d41c
+[    2.637482] bf40: c05db344 00000007 eb7ff858 00000007 c065a76c c0647d24 00000007 c062c170
+[    2.645642] bf60: c06988c0 00000091 c062c178 c0603518 00000000 c0603cc4 00000007 00000007
+[    2.653801] bf80: c0603518 c0c0c0c0 00000000 c0453948 00000000 00000000 00000000 00000000
+[    2.661959] bfa0: 00000000 c0453950 00000000 c000e728 00000000 00000000 00000000 00000000
+[    2.670118] bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[    2.678277] bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
+[    2.686454] [<c01f4220>] (strcmp) from [<c030fe38>] (power_supply_match_device_by_name+0x10/0x1c)
+[    2.695303] [<c030fe38>] (power_supply_match_device_by_name) from [<c026b1c8>] (class_find_device+0x54/0xac)
+[    2.705106] [<c026b1c8>] (class_find_device) from [<c030fee0>] (power_supply_get_by_name+0x1c/0x30)
+[    2.714137] [<c030fee0>] (power_supply_get_by_name) from [<c03138fc>] (charger_manager_probe+0x3d8/0xe58)
+[    2.723683] [<c03138fc>] (charger_manager_probe) from [<c026b71c>] (platform_drv_probe+0x2c/0x5c)
+[    2.732532] [<c026b71c>] (platform_drv_probe) from [<c026a330>] (driver_probe_device+0x10c/0x224)
+[    2.741384] [<c026a330>] (driver_probe_device) from [<c026a4dc>] (__driver_attach+0x94/0x98)
+[    2.749813] [<c026a4dc>] (__driver_attach) from [<c0268b5c>] (bus_for_each_dev+0x54/0x88)
+[    2.757969] [<c0268b5c>] (bus_for_each_dev) from [<c0269b18>] (bus_add_driver+0xd4/0x1d0)
+[    2.766123] [<c0269b18>] (bus_add_driver) from [<c026aaf0>] (driver_register+0x78/0xf4)
+[    2.774110] [<c026aaf0>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1bc)
+[    2.782276] [<c00088a4>] (do_one_initcall) from [<c0603cc4>] (kernel_init_freeable+0x100/0x1cc)
+[    2.790952] [<c0603cc4>] (kernel_init_freeable) from [<c0453950>] (kernel_init+0x8/0xec)
+[    2.799029] [<c0453950>] (kernel_init) from [<c000e728>] (ret_from_fork+0x14/0x2c)
+[    2.806572] Code: e12fff1e e1a03000 eafffff7 e4d03001 (e4d12001)
+[    2.812832] ---[ end trace 7f12556111b9e7ef ]---
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 856ee6115e2d ("charger-manager: Support deivce tree in charger manager driver")
+Signed-off-by: Sebastian Reichel <sre@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/nodemgmt.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/power/charger-manager.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
-index b6bd4af..f689bb1 100644
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -322,6 +322,7 @@ static int jffs2_find_nextblock(struct jffs2_sb_info *c)
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -1720,6 +1720,11 @@ static int charger_manager_probe(struct
+ 		return -EINVAL;
+ 	}
  
- 		spin_unlock(&c->erase_completion_lock);
- 		/* Don't wait for it; just erase one right now */
-+		cond_resched();
- 		jffs2_erase_pending_blocks(c, 1);
- 		spin_lock(&c->erase_completion_lock);
- 
--- 
-1.8.0
++	if (!desc->psy_fuel_gauge) {
++		dev_err(&pdev->dev, "No fuel gauge power supply defined\n");
++		return -EINVAL;
++	}
++
+ 	/* Counting index only */
+ 	while (desc->psy_charger_stat[i])
+ 		i++;
+
 
