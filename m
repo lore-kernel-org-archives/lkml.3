@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965686AbaKLBtY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:49:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60893 "EHLO
+	id S965732AbaKLBtk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:49:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965670AbaKLBtT (ORCPT
+	with ESMTP id S965219AbaKLBth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:19 -0500
+	Tue, 11 Nov 2014 20:49:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Tseng <rogerable@realtek.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.10 010/123] mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
-Date: Wed, 12 Nov 2014 10:16:16 +0900
-Message-Id: <20141112011719.450999925@linuxfoundation.org>
+        Vasily Averin <vvs@parallels.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 004/123] ipv4: dst_entry leak in ip_send_unicast_reply()
+Date: Wed, 12 Nov 2014 10:16:10 +0900
+Message-Id: <20141112011719.185370599@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,42 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Tseng <rogerable@realtek.com>
+From: Vasily Averin <vvs@parallels.com>
 
-commit d1419d50c1bf711e9fd27b516a739c86b23f7cf9 upstream.
+[ Upstream commit 4062090e3e5caaf55bed4523a69f26c3265cc1d2 ]
 
-Current code erroneously fill the last byte of R2 response with an undefined
-value. In addition, the controller actually 'offloads' the last byte
-(CRC7, end bit) while receiving R2 response and thus it's impossible to get the
-actual value. This could cause mmc stack to obtain inconsistent CID from the
-same card after resume and misidentify it as a different card.
+ip_setup_cork() called inside ip_append_data() steals dst entry from rt to cork
+and in case errors in __ip_append_data() nobody frees stolen dst entry
 
-Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
-
-Fixes: ff984e57d36e ("mmc: Add realtek pcie sdmmc host driver")
-Signed-off-by: Roger Tseng <rogerable@realtek.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Fixes: 2e77d89b2fa8 ("net: avoid a pair of dst_hold()/dst_release() in ip_append_data()")
+Signed-off-by: Vasily Averin <vvs@parallels.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/ipv4/ip_output.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -341,6 +341,13 @@ static void sd_send_cmd_get_rsp(struct r
- 	}
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -1481,6 +1481,7 @@ void ip_send_unicast_reply(struct net *n
+ 	struct sk_buff *nskb;
+ 	struct sock *sk;
+ 	struct inet_sock *inet;
++	int err;
  
- 	if (rsp_type == SD_RSP_TYPE_R2) {
-+		/*
-+		 * The controller offloads the last byte {CRC-7, end bit 1'b1}
-+		 * of response type R2. Assign dummy CRC, 0, and end bit to the
-+		 * byte(ptr[16], goes into the LSB of resp[3] later).
-+		 */
-+		ptr[16] = 1;
+ 	if (ip_options_echo(&replyopts.opt.opt, skb))
+ 		return;
+@@ -1517,8 +1518,13 @@ void ip_send_unicast_reply(struct net *n
+ 	sock_net_set(sk, net);
+ 	__skb_queue_head_init(&sk->sk_write_queue);
+ 	sk->sk_sndbuf = sysctl_wmem_default;
+-	ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base, len, 0,
+-		       &ipc, &rt, MSG_DONTWAIT);
++	err = ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base,
++			     len, 0, &ipc, &rt, MSG_DONTWAIT);
++	if (unlikely(err)) {
++		ip_flush_pending_frames(sk);
++		goto out;
++	}
 +
- 		for (i = 0; i < 4; i++) {
- 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
- 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
+ 	nskb = skb_peek(&sk->sk_write_queue);
+ 	if (nskb) {
+ 		if (arg->csumoffset >= 0)
+@@ -1530,7 +1536,7 @@ void ip_send_unicast_reply(struct net *n
+ 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
+ 		ip_push_pending_frames(sk, &fl4);
+ 	}
+-
++out:
+ 	put_cpu_var(unicast_sock);
+ 
+ 	ip_rt_put(rt);
 
 
