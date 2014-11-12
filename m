@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaKLAVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 19:21:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57591 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaKLAVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 19:21:48 -0500
-Date: Tue, 11 Nov 2014 16:21:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Doug Ledford <dledford@redhat.com>, linux-newbie@vger.kernel.org
-Subject: Re: [PATCH 1/1] ipc/mqueue.c: Drag unneeded code out of locks
-Message-Id: <20141111162146.6e72c3fb0858df4945096c47@linux-foundation.org>
-In-Reply-To: <fae396b9bc15.545c5b55@langara.bc.ca>
-References: <fae396b9bc15.545c5b55@langara.bc.ca>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752617AbaKLAWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 19:22:08 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29490 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752563AbaKLAWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 19:22:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
+   d="scan'208";a="635376676"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>
+CC: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Oleg Nesterov" <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBag
+Date: Wed, 12 Nov 2014 00:22:04 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141111213628.GP31490@pd.tnic>
+ <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
+ <20141111223316.GQ31490@pd.tnic>
+ <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+ <20141111230926.GR31490@pd.tnic>
+ <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+In-Reply-To: <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC0MEq3008784
 
-On Fri, 07 Nov 2014 05:40:37 +0000 (GMT) Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca> wrote:
+Andy said:
+> Yeah.  But if you haven't cleared MCIP, you go boom, which is the same
+> with pretty much any approach.
 
-> This shouldn't be too controversial. I simply looked for where there
-> was a tiny bit of waste in the message queue code.
-> 
+The current code has an ugly hole at the moment.  End of do_machine_check()
+clears MCG_STATUS.  At that point we are still running on the magic stack for
+machine check exceptions ... if we take a machine check in the small window
+from there until we get off this stack (iret) ... then we will enter the handler
+back on the same stack that we haven't finished using yet. Bad things ensue.
 
-It's probably better to do this as three or four separate patches.
+Andy's RFC patch removes this window.  We are already off on the normal stack
+when we clear MCG_STATUS.MCIP ... so we enter the new machine check on the
+magic stack, but then (I hope) transition to the kernel stack (pushing a new frame
+below the other one).
 
-> --- a/ipc/mqueue.c
-> +++ b/ipc/mqueue.c
-> @@ -278,16 +278,29 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
->  		mq_bytes = mq_treesize + (info->attr.mq_maxmsg *
->  					  info->attr.mq_msgsize);
->  
-> -		spin_lock(&mq_lock);
-> -		if (u->mq_bytes + mq_bytes < u->mq_bytes ||
-> -		    u->mq_bytes + mq_bytes > rlimit(RLIMIT_MSGQUEUE)) {
-> +		{
-> +			bool too_many_open_files;
+Boris said:
+> This is the key: if I enable irqs and the process gets scheduled on
+> another CPU, I lose. So I have to be able to say: before you run this
+> task on any CPU, kill it.
 
-Well yes, that's what EMFILE means but "too_many_open_files" doesn't
-make sense in this context!
+I don't think it matters if sleep and schedule this task on another cpu. When
+we run there we'll keep running the memory_failure() code that we were
+in the middle of when we slept.  The task can move around - we just need to
+make sure it doesn't *return to the user-mode instruction* that hit the machine
+check before we find the pte and zero it and mark the page as POISON.
 
+-Tony
 
-> +			long msgqueue_lim;
-> +			unsigned long u_bytes;
-> +
-> +			msgqueue_lim = rlimit(RLIMIT_MSGQUEUE);
-> +
-> +			spin_lock(&mq_lock);
-> +
-> +			u_bytes = u->mq_bytes;
-> +			too_many_open_files = u_bytes + mq_bytes < u_bytes ||
-> +				u_bytes + mq_bytes > msgqueue_lim;
-> +			if (!too_many_open_files)
-
-This test isn't really needed.
-
-> +				u->mq_bytes += mq_bytes;
-> +
->  			spin_unlock(&mq_lock);
-> +
->  			/* mqueue_evict_inode() releases info->messages */
-> -			ret = -EMFILE;
-> -			goto out_inode;
-> +			if (too_many_open_files) {
-> +				ret = -EMFILE;
-> +				goto out_inode;
-> +			}
->  		}
-> -		u->mq_bytes += mq_bytes;
-> -		spin_unlock(&mq_lock);
->  
->  		/* all is ok */
->  		info->user = get_uid(u);
-> @@ -423,44 +436,60 @@ static int mqueue_create(struct inode *dir, struct dentry
-> *dentry,
->  				umode_t mode, bool excl)
->  {
->  	struct inode *inode;
-> -	struct mq_attr *attr = dentry->d_fsdata;
-> -	int error;
-> +	struct mq_attr *attr;
->  	struct ipc_namespace *ipc_ns;
-> +	int error = 0;
-> +
-> +	if (!capable(CAP_SYS_RESOURCE)) {
-> +		error = -ENOSPC;
-> +		goto finish;
-> +	}
-
-Thatsabug.  It only requires CAP_SYS_RESOURCE if we're trying with
-queues_count >= queues_max.
-
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
