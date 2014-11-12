@@ -1,101 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaKLFHv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 00:07:51 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:49782 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaKLFHt convert rfc822-to-8bit (ORCPT
+	id S1752532AbaKLFNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 00:13:22 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37737 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956AbaKLFNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 00:07:49 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAC57fWx020973, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
-Thread-Topic: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
-Thread-Index: AQHP+nD06ZRj/kse50uRMFsgi72OwJxU1qgAgARRxyCAAqOJAIAAqX9g
-Date: Wed, 12 Nov 2014 05:07:40 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2ECE429@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-90-Taiwan-albertk@realtek.com>
-	<20141107.113522.837502028522211960.davem@davemloft.net>
-	<0835B3720019904CB8F7AA43166CEEB2ECE0A3@RTITMBSV03.realtek.com.tw>
- <20141111.215056.2165761189796303933.davem@davemloft.net>
-In-Reply-To: <20141111.215056.2165761189796303933.davem@davemloft.net>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 12 Nov 2014 00:13:21 -0500
+Date: Wed, 12 Nov 2014 00:13:18 -0500 (EST)
+Message-Id: <20141112.001318.1905417679166281362.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2ECE429@RTITMBSV03.realtek.com.tw>
+References: <0835B3720019904CB8F7AA43166CEEB2ECE0A3@RTITMBSV03.realtek.com.tw>
+	<20141111.215056.2165761189796303933.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2ECE429@RTITMBSV03.realtek.com.tw>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 21:13:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller [mailto:davem@davemloft.net] 
-> Sent: Wednesday, November 12, 2014 10:51 AM
-[...]
-> Ok, but if we are looping here in rtl_start_rx() and r8152_submit_rx()
-> fails due to a memory allocation failure, there is nothing which is
-> going to make such a memory allocation succeed in the next iteration
-> of the loop.
-> 
-> Unless you can prove that often it can succeed after an initial
-> failure, this is just wasted work and in fact making it take longer
-> for the system to reclaim memory when under pressure because these
-> extra iterations are completely wasted cpu work.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Wed, 12 Nov 2014 05:07:40 +0000
 
-How about that when a error occurs, add the remaining rx
-to the list without submission? Then, the remianing rx
-could be re-submitted later, and the rtl_start_rx() could
-be completed as soon as possible.
+> How about that when a error occurs, add the remaining rx
+> to the list without submission? Then, the remianing rx
+> could be re-submitted later, and the rtl_start_rx() could
+> be completed as soon as possible.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 0a30fd3..3273e3d 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1991,14 +1991,35 @@ static void rxdy_gated_en(struct r8152 *tp, bool enable)
- 
- static int rtl_start_rx(struct r8152 *tp)
- {
-+	struct list_head rx_queue;
- 	int i, ret = 0;
- 
- 	INIT_LIST_HEAD(&tp->rx_done);
- 	for (i = 0; i < RTL8152_MAX_RX; i++) {
- 		INIT_LIST_HEAD(&tp->rx_info[i].list);
- 		ret = r8152_submit_rx(tp, &tp->rx_info[i], GFP_KERNEL);
--		if (ret)
-+		if (ret) {
-+			i++;
- 			break;
-+		}
-+	}
-+
-+	INIT_LIST_HEAD(&rx_queue);
-+	for (; i < RTL8152_MAX_RX; i++) {
-+		struct rx_agg *agg = &tp->rx_info[i];
-+		struct urb *urb = agg->urb;
-+
-+		INIT_LIST_HEAD(&agg->list);
-+		urb->actual_length = 0;
-+		list_add_tail(&agg->list, &rx_queue);
-+	}
-+
-+	if (!list_empty(&rx_queue)) {
-+		unsigned long flags;
-+
-+		spin_lock_irqsave(&tp->rx_lock, flags);
-+		list_splice_tail(&rx_queue, &tp->rx_done);
-+		spin_unlock_irqrestore(&tp->rx_lock, flags);
- 	}
- 
- 	return ret;
- 
-Best Regards,
-Hayes
+I really want to know why you are spending so much effort on this.
+
+Is there a real situation that happened very often, which you
+diagnosed in detail, and therefore you want to address?
