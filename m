@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaKLRCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 12:02:12 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:44972 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbaKLRCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 12:02:10 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:5c0e:7567:d831:6fad]
-In-Reply-To: <CABxcv=mMqh5UD0_Wz3rNaFbZD3BH_2Z+7srzccd=-5_ndo_a1Q@mail.gmail.com>
-References: <1413839151-10875-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1413839151-10875-3-git-send-email-javier.martinez@collabora.co.uk>
-	<CABxcv==YZjO9p3aNyuRpe3DYS+=BcY_N2esuTg0hGASb_b_OdA@mail.gmail.com>
-	<CABxcv=mMqh5UD0_Wz3rNaFbZD3BH_2Z+7srzccd=-5_ndo_a1Q@mail.gmail.com>
-Date: Wed, 12 Nov 2014 09:02:08 -0800
-Message-ID: <CAOesGMjKP6Yg-M_7Zy5bbEJ7QD7fQ27Bopd6yD3M=r=4SArR6w@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] ARM: EXYNOS: Call regulator core suspend prepare
- and finish functions
-From: Olof Johansson <olof@lixom.net>
-To: Javier Martinez Canillas <javier@dowhile0.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Doug Anderson <dianders@chromium.org>, Mark Brown <broonie@kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753162AbaKLRFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:05:00 -0500
+Received: from mga03.intel.com ([134.134.136.65]:39959 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752899AbaKLRE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:04:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,370,1413270000"; 
+   d="scan'208";a="606712238"
+Subject: [PATCH 04/11] ia64: sync struct siginfo with general version
+To: hpa@zytor.com
+Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, qiaowei.ren@intel.com,
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Wed, 12 Nov 2014 09:04:56 -0800
+References: <20141112170443.B4BD0899@viggo.jf.intel.com>
+In-Reply-To: <20141112170443.B4BD0899@viggo.jf.intel.com>
+Message-Id: <20141112170456.AD302D1B@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 2:23 AM, Javier Martinez Canillas
-<javier@dowhile0.org> wrote:
-> Hello Kukjin,
->
-> On Thu, Oct 30, 2014 at 11:06 AM, Javier Martinez Canillas
-> <javier@dowhile0.org> wrote:
->> Hello Kukjin,
->>
->> On Mon, Oct 20, 2014 at 11:05 PM, Javier Martinez Canillas
->> <javier.martinez@collabora.co.uk> wrote:
->>> The regulator framework has a set of helpers functions to be used when
->>> the system is entering and leaving from suspend but these are not called
->>> on Exynos platforms. This means that the .set_suspend_* function handlers
->>> defined by regulator drivers are not called when the system is suspended.
->>>
->>> Suggested-by: Doug Anderson <dianders@chromium.org>
->>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->>> Reviewed-by: Doug Anderson <dianders@chromium.org>
->>> ---
->>>  arch/arm/mach-exynos/suspend.c | 23 +++++++++++++++++++++++
->>>  1 file changed, 23 insertions(+)
->>>
->>
->> Any comments on this patch?
->>
->
-> Just a gentle reminder about this patch.
 
-Kukjin, should I just apply this directly since you seem to be busy?
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
 
-Thanks,
+New fields about bound violation are added into general struct
+siginfo. This will impact MIPS and IA64, which extend general
+struct siginfo. This patch syncs this struct for IA64 with
+general version.
 
--Olof
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ b/arch/ia64/include/uapi/asm/siginfo.h |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff -puN arch/ia64/include/uapi/asm/siginfo.h~2014-10-14-08_12-ia64-sync-struct-siginfo-with-general-version arch/ia64/include/uapi/asm/siginfo.h
+--- a/arch/ia64/include/uapi/asm/siginfo.h~2014-10-14-08_12-ia64-sync-struct-siginfo-with-general-version	2014-11-12 08:49:24.584830328 -0800
++++ b/arch/ia64/include/uapi/asm/siginfo.h	2014-11-12 08:49:24.587830463 -0800
+@@ -63,6 +63,10 @@ typedef struct siginfo {
+ 			unsigned int _flags;	/* see below */
+ 			unsigned long _isr;	/* isr */
+ 			short _addr_lsb;	/* lsb of faulting address */
++			struct {
++				void __user *_lower;
++				void __user *_upper;
++			} _addr_bnd;
+ 		} _sigfault;
+ 
+ 		/* SIGPOLL */
+@@ -110,9 +114,9 @@ typedef struct siginfo {
+ /*
+  * SIGSEGV si_codes
+  */
+-#define __SEGV_PSTKOVF	(__SI_FAULT|3)	/* paragraph stack overflow */
++#define __SEGV_PSTKOVF	(__SI_FAULT|4)	/* paragraph stack overflow */
+ #undef NSIGSEGV
+-#define NSIGSEGV	3
++#define NSIGSEGV	4
+ 
+ #undef NSIGTRAP
+ #define NSIGTRAP	4
+_
