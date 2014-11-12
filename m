@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950AbaKLEct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:32:49 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54430 "EHLO mail.eperm.de"
+	id S933916AbaKLEc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:32:56 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54441 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754785AbaKLEcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 23:32:46 -0500
+	id S1754907AbaKLEcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 23:32:52 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -16,9 +16,9 @@ Cc: Marek Vasut <marex@denx.de>, "David S. Miller" <davem@davemloft.net>,
         "Joy M. Latten" <jmlatten@linux.vnet.ibm.com>,
         Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org
-Subject: [PATCH v3 04/13] crypto: Documentation - RNG API documentation
-Date: Wed, 12 Nov 2014 05:25:31 +0100
-Message-ID: <5853683.pep8YO37gF@tachyon.chronox.de>
+Subject: [PATCH v3 03/13] crypto: Documentation - userspace interface spec
+Date: Wed, 12 Nov 2014 05:24:53 +0100
+Message-ID: <6158914.vP5naIKnV8@tachyon.chronox.de>
 User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
 In-Reply-To: <1800066.efQ8hkST4U@tachyon.chronox.de>
 References: <1800066.efQ8hkST4U@tachyon.chronox.de>
@@ -29,141 +29,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API function calls exported by the kernel crypto API for RNGs to
-be used by consumers are documented.
+The userspace interface of the kernel crypto API is documented with
+ * a general explanation
+ * a discussion of the memory in-place operation
+ * the description of the message digest API
+ * the description of the symmetric cipher API
+
+The documentation refers to libkcapi as a working example on how to use
+the kernel crypto API from user space.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- include/crypto/rng.h | 80 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 80 insertions(+)
+ Documentation/crypto/crypto-API-userspace.txt | 205 ++++++++++++++++++++++++++
+ 1 file changed, 205 insertions(+)
+ create mode 100644 Documentation/crypto/crypto-API-userspace.txt
 
-diff --git a/include/crypto/rng.h b/include/crypto/rng.h
-index c93f9b9..a16fb10 100644
---- a/include/crypto/rng.h
-+++ b/include/crypto/rng.h
-@@ -20,11 +20,38 @@ extern struct crypto_rng *crypto_default_rng;
- int crypto_get_default_rng(void);
- void crypto_put_default_rng(void);
- 
-+/**
-+ * DOC: Random number generator API
-+ *
-+ * The random number generator API is used with the ciphers of type
-+ * CRYPTO_ALG_TYPE_RNG (listed as type "rng" in /proc/crypto)
-+ */
+diff --git a/Documentation/crypto/crypto-API-userspace.txt b/Documentation/crypto/crypto-API-userspace.txt
+new file mode 100644
+index 0000000..ac619cd
+--- /dev/null
++++ b/Documentation/crypto/crypto-API-userspace.txt
+@@ -0,0 +1,205 @@
++Introduction
++============
 +
- static inline struct crypto_rng *__crypto_rng_cast(struct crypto_tfm *tfm)
- {
- 	return (struct crypto_rng *)tfm;
- }
- 
-+/**
-+ * crypto_alloc_rng() -- allocate RNG handle
-+ * @alg_name: is the cra_name / name or cra_driver_name / driver name of the
-+ *	      message digest cipher
-+ * @type: specifies the type of the cipher
-+ * @mask: specifies the mask for the cipher
-+ *
-+ * Allocate a cipher handle for a random number generator. The returned struct
-+ * crypto_rng is the cipher handle that is required for any subsequent
-+ * API invocation for that random number generator.
-+ *
-+ * For all random number generators, this call creates a new private copy of
-+ * the random number generator that does not share a state with other
-+ * instances. The only exception is the "krng" random number generator which
-+ * is a kernel crypto API use case for the get_random_bytes() function of the
-+ * /dev/random driver.
-+ *
-+ * Return: allocated cipher handle in case of success; IS_ERR() is true in case
-+ *	   of an error, PTR_ERR() returns the error code.
-+ */
- static inline struct crypto_rng *crypto_alloc_rng(const char *alg_name,
- 						  u32 type, u32 mask)
- {
-@@ -40,6 +67,14 @@ static inline struct crypto_tfm *crypto_rng_tfm(struct crypto_rng *tfm)
- 	return &tfm->base;
- }
- 
-+/**
-+ * crypto_rng_alg - obtain name of RNG
-+ * @tfm: cipher handle
-+ *
-+ * Return the generic name (cra_name) of the initialized random number generator
-+ *
-+ * Return: generic name string
-+ */
- static inline struct rng_alg *crypto_rng_alg(struct crypto_rng *tfm)
- {
- 	return &crypto_rng_tfm(tfm)->__crt_alg->cra_rng;
-@@ -50,23 +85,68 @@ static inline struct rng_tfm *crypto_rng_crt(struct crypto_rng *tfm)
- 	return &crypto_rng_tfm(tfm)->crt_rng;
- }
- 
-+/**
-+ * crypto_free_rng() - zeroize and free RNG handle
-+ * @tfm: cipher handle to be freed
-+ */
- static inline void crypto_free_rng(struct crypto_rng *tfm)
- {
- 	crypto_free_tfm(crypto_rng_tfm(tfm));
- }
- 
-+/**
-+ * crypto_rng_get_bytes() - get random number
-+ * @tfm: cipher handle
-+ * @rdata: output buffer holding the random numbers
-+ * @dlen: length of the output buffer
-+ *
-+ * This function fills the caller-allocated buffer with random numbers using the
-+ * random number generator referenced by the cipher handle.
-+ *
-+ * Return: > 0 function was successful and returns the number of generated
-+ *	   bytes; < 0 if an error occurred
-+ */
- static inline int crypto_rng_get_bytes(struct crypto_rng *tfm,
- 				       u8 *rdata, unsigned int dlen)
- {
- 	return crypto_rng_crt(tfm)->rng_gen_random(tfm, rdata, dlen);
- }
- 
-+/**
-+ * crypto_rng_reset() - re-initialize the RNG
-+ * @tfm: cipher handle
-+ * @seed: seed input data
-+ * @slen: length of the seed input data
-+ *
-+ * The reset function completely re-initializes the random number generator
-+ * referenced by the cipher handle by clearing the current state. The new state
-+ * is initialized with the caller provided seed or automatically, depending
-+ * on the random number generator type (the ANSI X9.31 RNG requires
-+ * caller-provided seed, the SP800-90A DRBGs perform an automatic seeding).
-+ * The seed is provided as a parameter to this function call. The provided seed
-+ * should have the length of the seed size defined for the random number
-+ * generator as defined by crypto_rng_seedsize.
-+ *
-+ * Return: 0 if the setting of the key was successful; < 0 if an error occurred
-+ */
- static inline int crypto_rng_reset(struct crypto_rng *tfm,
- 				   u8 *seed, unsigned int slen)
- {
- 	return crypto_rng_crt(tfm)->rng_reset(tfm, seed, slen);
- }
- 
-+/**
-+ * crypto_rng_seedsize() - obtain seed size of RNG
-+ * @tfm: cipher handle
-+ *
-+ * The function returns the seed size for the random number generator
-+ * referenced by the cipher handle. This value may be zero if the random
-+ * number generator does not implement or require a reseeding. For example,
-+ * the SP800-90A DRBGs implement an automated reseeding after reaching a
-+ * pre-defined threshold.
-+ *
-+ * Return: seed size for the random number generator
-+ */
- static inline int crypto_rng_seedsize(struct crypto_rng *tfm)
- {
- 	return crypto_rng_alg(tfm)->seedsize;
++The concepts of the kernel crypto API visible to kernel space is fully
++applicable to the user space interface as well. Therefore, the kernel crypto API
++high level discussion for the in-kernel use cases applies here as well.
++
++The major difference, however, is that user space can only act as a consumer
++and never as a provider of a transformation or cipher algorithm.
++
++The following covers the user space interface exported by the kernel crypto
++API. A working example of this description is libkcapi that can be obtained from
++[1]. That library can be used by user space applications that require
++cryptographic services from the kernel.
++
++Some details of the in-kernel kernel crypto API aspects do not
++apply to user space, however. This includes the difference between synchronous
++and asynchronous invocations. The user space API call is fully synchronous.
++In addition, only a subset of all cipher types are available as documented
++below.
++
++
++User space API general remarks
++==============================
++
++The kernel crypto API is accessible from user space. Currently, the following
++ciphers are accessible:
++
++	* Message digest including keyed message digest (HMAC, CMAC)
++
++	* Symmetric ciphers
++
++Note, AEAD ciphers are currently not supported via the symmetric cipher
++interface.
++
++The interface is provided via Netlink using the type AF_ALG. In addition, the
++setsockopt option type is SOL_ALG. In case the user space header files do not
++export these flags yet, use the following macros:
++
++#ifndef AF_ALG
++#define AF_ALG 38
++#endif
++#ifndef SOL_ALG
++#define SOL_ALG 279
++#endif
++
++A cipher is accessed with the same name as done for the in-kernel API calls.
++This includes the generic vs. unique naming schema for ciphers as well as the
++enforcement of priorities for generic names.
++
++To interact with the kernel crypto API, a Netlink socket must be created by
++the user space application. User space invokes the cipher operation with the
++send/write system call family. The result of the cipher operation is obtained
++with the read/recv system call family.
++
++The following API calls assume that the Netlink socket descriptor is already
++opened by the user space application and discusses only the kernel crypto API
++specific invocations.
++
++To initialize a Netlink interface, the following sequence has to be performed
++by the consumer:
++
++	1. Create a socket of type AF_ALG with the struct sockaddr_alg parameter
++	   specified below for the different cipher types.
++
++	2. Invoke bind with the socket descriptor
++
++	3. Invoke accept with the socket descriptor. The accept system call
++	   returns a new file descriptor that is to be used to interact with
++	   the particular cipher instance. When invoking send/write or recv/read
++	   system calls to send data to the kernel or obtain data from the
++	   kernel, the file descriptor returned by accept must be used.
++
++In-place cipher operation
++=========================
++
++Just like the in-kernel operation of the kernel crypto API, the user space
++interface allows the cipher operation in-place. That means that the input buffer
++used for the send/write system call and the output buffer used by the read/recv
++system call may be one and the same. This is of particular interest for
++symmetric cipher operations where a copying of the output data to its final
++destination can be avoided.
++
++If a consumer on the other hand wants to maintain the plaintext and the
++ciphertext in different memory locations, all a consumer needs to do is to
++provide different memory pointers for the encryption and decryption operation.
++
++Message digest API
++==================
++
++The message digest type to be used for the cipher operation is selected when
++invoking the bind syscall. bind requires the caller to provide a filled
++struct sockaddr data structure. This data structure must be filled as follows:
++
++struct sockaddr_alg sa = {
++	.salg_family = AF_ALG,
++	.salg_type = "hash", /* this selects the hash logic in the kernel */
++	.salg_name = "sha1" /* this is the cipher name */
++};
++
++The salg_type value "hash" applies to message digests and keyed message digests.
++Though, a keyed message digest is referenced by the appropriate salg_name.
++Please see below for the setsockopt interface that explains how the key can be
++set for a keyed message digest.
++
++Using the send() system call, the application provides the data that should be
++processed with the message digest. The send system call allows the following
++flags to be specified:
++
++	* MSG_MORE: If this flag is set, the send system call acts like a
++		    message digest update function where the final hash is not
++		    yet calculated. If the flag is not set, the send system call
++		    calculates the final message digest immediately.
++
++With the recv() system call, the application can read the message digest from
++the kernel crypto API. If the buffer is too small for the message digest, the
++flag MSG_TRUNC is set by the kernel.
++
++In order to set a message digest key, the calling application must use the
++setsockopt() option of ALG_SET_KEY. If the key is not set the HMAC operation is
++performed without the initial HMAC state change caused by the key.
++
++
++Symmetric cipher API
++====================
++
++The operation is very similar to the message digest discussion. During
++initialization, the struct sockaddr data structure must be filled as follows:
++
++struct sockaddr_alg sa = {
++	.salg_family = AF_ALG,
++	.salg_type = "skcipher", /* this selects the symmetric cipher */
++	.salg_name = "cbc(aes)" /* this is the cipher name */
++};
++
++Before data can be sent to the kernel using the write/send system call family,
++the consumer must set the key. The key setting is described with the setsockopt
++invocation below.
++
++Using the sendmsg() system call, the application provides the data that should
++be processed for encryption or decryption. In addition, the IV is specified
++with the data structure provided by the sendmsg() system call.
++
++The sendmsg system call parameter of struct msghdr is embedded into the
++struct cmsghdr data structure. See recv(2) and cmsg(3) for more information
++on how the cmsghdr data structure is used together with the send/recv system
++call family. That cmsghdr data structure holds the following information
++specified with a separate header instances:
++
++	* specification of the cipher operation type with one of these flags:
++		ALG_OP_ENCRYPT - encryption of data
++		ALG_OP_DECRYPT - decryption of data
++
++	* specification of the IV information marked with the flag ALG_SET_IV
++
++The send system call family allows the following flag to be specified:
++
++	* MSG_MORE: If this flag is set, the send system call acts like a
++		    cipher update function where more input data is expected
++		    with a subsequent invocation of the send system call.
++
++Note: The kernel reports -EINVAL for any unexpected data. The caller must
++make sure that all data matches the constraints given in /proc/crypto for the
++selected cipher.
++
++With the recv() system call, the application can read the result of the
++cipher operation from the kernel crypto API. The output buffer must be at least
++as large as to hold all blocks of the encrypted or decrypted data. If the output
++data size is smaller, only as many blocks are returned that fit into that
++output buffer size.
++
++Setsockopt interface
++====================
++
++In addition to the read/recv and send/write system call handling to send and
++retrieve data subject to the cipher operation, a consumer also needs to set
++the additional information for the cipher operation. This additional information
++is set using the setsockopt system call that must be invoked with the file
++descriptor of the open cipher (i.e. the file descriptor returned by the
++accept system call).
++
++Each setsockopt invocation must use the level SOL_ALG.
++
++The setsockopt interface allows setting the following data using the mentioned
++optname:
++
++	* ALG_SET_KEY -- Setting the key. Key setting is applicable to:
++
++		- the skcipher cipher type (symmetric ciphers)
++
++		- the hash cipher type (keyed message digests)
++
++User space API example
++======================
++
++Please see [1] for libkcapi which provides an easy-to-use wrapper around the
++aforementioned Netlink kernel interface. [1] also contains a test application
++that invokes all libkcapi API calls.
++
++[1] http://www.chronox.de/libkcapi.html
++
++Author
++======
++
++Stephan Mueller <smueller@chronox.de>
 -- 
 2.1.0
 
