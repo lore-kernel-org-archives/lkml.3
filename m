@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636AbaKLBdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:33:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59450 "EHLO
+	id S933234AbaKLD2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:28:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59455 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915AbaKLBdB (ORCPT
+	with ESMTP id S1754628AbaKLBdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:01 -0500
+	Tue, 11 Nov 2014 20:33:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bogdan Mihalcea <bogdan.mihalcea@infim.ro>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.17 248/319] xhci: Disable streams on Asmedia 1042 xhci controllers
-Date: Wed, 12 Nov 2014 10:16:26 +0900
-Message-Id: <20141112011033.838780946@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.17 257/319] nfsd4: fix crash on unknown operation number
+Date: Wed, 12 Nov 2014 10:16:35 +0900
+Message-Id: <20141112011035.297536390@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,44 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 2391eacbd00b706ff4902db7dbee21e33b6f1850 upstream.
+commit 51904b08072a8bf2b9ed74d1bd7a5300a614471d upstream.
 
-Streams seem to be broken on the Asmedia 1042. An uas capable Seagate disk
-which is known to work fine with other controllers causes the system to freeze
-when connected over usb-3 with this controller, where as it works fine with
-uas in usb-2 ports, indicating a problem with streams.
+Unknown operation numbers are caught in nfsd4_decode_compound() which
+sets op->opnum to OP_ILLEGAL and op->status to nfserr_op_illegal.  The
+error causes the main loop in nfsd4_proc_compound() to skip most
+processing.  But nfsd4_proc_compound also peeks ahead at the next
+operation in one case and doesn't take similar precautions there.
 
-This is a bit bigger hammer then I would like to use for this, but for now it
-will have to make do. I've ordered a pci-e usb controller card with an Asmedia
-1042, once that arrives I'll try to get streams to work (with a quirk flag if
-necessary) and then we can re-enable them. For now this at least makes uas
-capable disk enclosures work again by forcing fallback to the usb-storage
-driver.
-
-Reported-by: Bogdan Mihalcea <bogdan.mihalcea@infim.ro>
-Cc: Bogdan Mihalcea <bogdan.mihalcea@infim.ro>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfsd/nfs4proc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -146,6 +146,10 @@ static void xhci_pci_quirks(struct devic
- 			pdev->device == 0x3432)
- 		xhci->quirks |= XHCI_BROKEN_STREAMS;
- 
-+	if (pdev->vendor == PCI_VENDOR_ID_ASMEDIA &&
-+			pdev->device == 0x1042)
-+		xhci->quirks |= XHCI_BROKEN_STREAMS;
-+
- 	if (xhci->quirks & XHCI_RESET_ON_RESUME)
- 		xhci_dbg_trace(xhci, trace_xhci_dbg_quirks,
- 				"QUIRK: Resetting on resume");
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -1229,7 +1229,8 @@ static bool need_wrongsec_check(struct s
+ 	 */
+ 	if (argp->opcnt == resp->opcnt)
+ 		return false;
+-
++	if (next->opnum == OP_ILLEGAL)
++		return false;
+ 	nextd = OPDESC(next);
+ 	/*
+ 	 * Rest of 2.6.3.1.1: certain operations will return WRONGSEC
 
 
