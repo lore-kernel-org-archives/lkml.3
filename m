@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaKLVUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 16:20:54 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39804 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362AbaKLVUt (ORCPT
+	id S1753574AbaKLVVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 16:21:21 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:11701 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753307AbaKLVVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 16:20:49 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of/base: Fix PowerPC address parsing hack
-To: Rob Herring <robherring2@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Wed, 12 Nov 2014 16:21:19 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/vIG7/iqfmfjAsGkUyfApf
+Date: Wed, 12 Nov 2014 13:20:27 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Cc: Grazvydas Ignotas <notasas@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>
-In-Reply-To: <CAL_JsqKfBGdpFV_XuE4DEhFrkhN33kOMkiZE_TOnAZDm2qjwMw@mail.gmail.com>
-References: <1415771461.5124.33.camel@kernel.crashing.org>
-	<CAL_JsqKfBGdpFV_XuE4DEhFrkhN33kOMkiZE_TOnAZDm2qjwMw@mail.gmail.com>
-Date: Wed, 12 Nov 2014 17:02:51 +0000
-Message-Id: <20141112170251.DA1B7C41C04@trevor.secretlab.ca>
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        List for communicating with real GTA04 owners 
+	<gta04-owner@goldelico.com>
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
+ enabled
+Message-ID: <20141112212027.GK26481@atomide.com>
+References: <20141102180756.GH31454@atomide.com>
+ <5458D29E.50908@compulab.co.il>
+ <20141104154231.GP31454@atomide.com>
+ <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
+ <515E660B-B65D-41EF-97F5-74E4DE8FDD13@goldelico.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515E660B-B65D-41EF-97F5-74E4DE8FDD13@goldelico.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014 08:39:32 -0600
-, Rob Herring <robherring2@gmail.com>
- wrote:
-> On Tue, Nov 11, 2014 at 11:51 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> > We have a historical hack that treats missing ranges properties as the
-> > equivalent of an empty one. This is needed for ancient PowerMac "bad"
-> > device-trees, and shouldn't be enabled for any other PowerPC platform,
-> > otherwise we get some nasty layout of devices in sysfs or even
-> > duplication when a set of otherwise identically named devices is
-> > created multiple times under a different parent node with no ranges
-> > property.
-> >
-> > This fix is needed for the PowerNV i2c busses to be exposed properly
-> > and will fix a number of other embedded cases.
-> >
-> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > CC: <stable@vger.kernel.org>
-> > ---
-> >
-> > diff --git a/drivers/of/address.c b/drivers/of/address.c
-> > index e371825..e37f017 100644
-> > --- a/drivers/of/address.c
-> > +++ b/drivers/of/address.c
-> > @@ -7,6 +7,10 @@
-> >  #include <linux/pci_regs.h>
-> >  #include <linux/string.h>
-> >
-> > +#ifdef CONFIG_PPC
-> > +#include <asm/machdep.h>
-> > +#endif
-> > +
-> >  /* Max address size we deal with */
-> >  #define OF_MAX_ADDR_CELLS      4
-> >  #define OF_CHECK_ADDR_COUNT(na)        ((na) > 0 && (na) <= OF_MAX_ADDR_CELLS)
-> > @@ -428,12 +432,13 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
-> >          * This code is only enabled on powerpc. --gcl
-> >          */
-> >         ranges = of_get_property(parent, rprop, &rlen);
-> > -#if !defined(CONFIG_PPC)
-> > +#if defined(CONFIG_PPC)
-> > +       if (!machine_is(powermac))
+* Dr. H. Nikolaus Schaller <hns@goldelico.com> [141112 12:28]:
+> Am 12.11.2014 um 16:45 schrieb Grazvydas Ignotas <notasas@gmail.com>:
+> > On Tue, Nov 4, 2014 at 5:42 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > 
+> > Pandora does, as well as GTA04 AFAIK,
 > 
-> Can we use a machine compatible here or something not PPC specific?
-> Then we can use IS_ENABLED(CONFIG_PPC) instead of ifdefs.
+> Yes. The trick is that the power level that turns on the device is a little higher
+> and the battery provides enough energy for approx. 30 seconds until it drained
+> to a level where it turns off. Depending on general setup (WIFI must remain
+> powered off after boot) this is enough to boot into Linux and start full charging.
+> Another trick is to modify MLO and U-Boot to raise the charging current.
 
-Yeah, that's kind of nasty!
+Depending on the device and the boot-up speed this seems to work only when
+connected to a Linux PC though. AFAIK Windows PCs enforce the 100mA USB power
+limit until the device is enumerated which can keep the device in an eternal
+reboot loop not being able to ever get the charging going :)
+ 
+> > guess.. At least pandora was booting up on charger connect up until
+> > now.
+> 
+> Same for GTA04.
 
-g.
+See the comments I posted earlier today. Have you guys tried the $subject
+patch with v3.18-rc series?
 
+It sounds like these comments are based on just reading the patch. Or
+else I'm missing something related to some other regression that's
+probably unrelated to the $subject patch?
+
+> >> We could consider exporting a function for the charger driver to
+> >> configure the poweron mask. And we could also consider passing a
+> >> mask in ti,use_poweroff = 0xff.
+> 
+> Yes, exporting these masks would be fine - if a board needs a non-default
+> setup.
+ 
+It seems we've been missing all kind of things. We probably should
+first power off any the board specific GPIO regulators. Then configure
+the power-up sequence for the board. And then finally call the
+twl4030_power_off().
+
+Regards,
+
+Tony
