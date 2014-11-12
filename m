@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432AbaKLTlc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:41:32 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:62695 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161AbaKLTlb (ORCPT
+	id S1753460AbaKLTnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:43:33 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:53117 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaKLTnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:41:31 -0500
-Date: Wed, 12 Nov 2014 20:41:44 +0100
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: marc.zyngier@arm.com, gleb@kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] virt: kvm: arm: vgic: Return failure code '-EBUSY' when
- mutex_trylock() fails
-Message-ID: <20141112194144.GK19598@cbox>
-References: <546376F7.90502@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546376F7.90502@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Nov 2014 14:43:32 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.18-rc5
+Date: Wed, 12 Nov 2014 11:43:26 -0800
+Message-Id: <1415821406-18384-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.5463B863.02DC,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 11:04:23PM +0800, Chen Gang wrote:
-> When mutex_trylock() fails, kvm_vgic_create() will not create 'vgic', so
-> it need return failure code '-EBUSY' instead of '0' to let outside know
-> about it.
+Hi Linus,
 
-I already sent a patch for the -EBUSY:
-https://lists.cs.columbia.edu/pipermail/kvmarm/2014-November/011936.html
+Please pull hwmon fixes for Linux 3.18-rc5 from signed tag:
 
-> 
-> Also simplify the code within kvm_vgic_create():
-> 
->  - kvm_for_each_vcpu() scanning once is enough for current case.
-> 
->  - Remove redundant variable 'vcpu_lock_idx'.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus-v3.18-rc5
 
-I don't like using the iterator variable for this kind of thing because
-it can really break in languages where i is out-of-scope after the loop
-and it is too easy to reuse the iterator variable in later versions of
-the code.
+Thanks,
+Guenter
+------
 
-That being said, the scanning once is slightly prettier I guess,
-but I'd rather not introduce the churn unless others (Marc) think this
-is a big win.
+The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
 
--Christoffer
+  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
 
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  virt/kvm/arm/vgic.c | 15 +++++++--------
->  1 file changed, 7 insertions(+), 8 deletions(-)
-> 
-> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-> index 3aaca49..5846725 100644
-> --- a/virt/kvm/arm/vgic.c
-> +++ b/virt/kvm/arm/vgic.c
-> @@ -1933,7 +1933,7 @@ out:
->  
->  int kvm_vgic_create(struct kvm *kvm)
->  {
-> -	int i, vcpu_lock_idx = -1, ret = 0;
-> +	int i, ret = 0;
->  	struct kvm_vcpu *vcpu;
->  
->  	mutex_lock(&kvm->lock);
-> @@ -1949,13 +1949,12 @@ int kvm_vgic_create(struct kvm *kvm)
->  	 * that no other VCPUs are run while we create the vgic.
->  	 */
->  	kvm_for_each_vcpu(i, vcpu, kvm) {
-> -		if (!mutex_trylock(&vcpu->mutex))
-> +		if (!mutex_trylock(&vcpu->mutex)) {
-> +			ret = -EBUSY;
->  			goto out_unlock;
-> -		vcpu_lock_idx = i;
-> -	}
-> -
-> -	kvm_for_each_vcpu(i, vcpu, kvm) {
-> +		}
->  		if (vcpu->arch.has_run_once) {
-> +			mutex_unlock(&vcpu->mutex);
->  			ret = -EBUSY;
->  			goto out_unlock;
->  		}
-> @@ -1968,8 +1967,8 @@ int kvm_vgic_create(struct kvm *kvm)
->  	kvm->arch.vgic.vgic_cpu_base = VGIC_ADDR_UNDEF;
->  
->  out_unlock:
-> -	for (; vcpu_lock_idx >= 0; vcpu_lock_idx--) {
-> -		vcpu = kvm_get_vcpu(kvm, vcpu_lock_idx);
-> +	while (i-- > 0) {
-> +		vcpu = kvm_get_vcpu(kvm, i);
->  		mutex_unlock(&vcpu->mutex);
->  	}
->  
-> -- 
-> 1.9.3
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus-v3.18-rc5
+
+for you to fetch changes up to 0bd52941586b3b59ab9b6e89e55b2dc9e2680de9:
+
+  hwmon: (fam15h_power) Fix NB device ID for F16h M30h (2014-11-11 10:39:45 -0800)
+
+----------------------------------------------------------------
+Fix PCI device ID in fam15h_power driver
+Fix suspend/resume behavior in pwm-fan driver
+Reduce logging noise created by ibmpowernv driver
+
+----------------------------------------------------------------
+Aravind Gopalakrishnan (1):
+      hwmon: (fam15h_power) Fix NB device ID for F16h M30h
+
+Kamil Debski (1):
+      hwmon: (pwm-fan) Fix suspend/resume behavior
+
+Michael Ellerman (1):
+      hwmon: (ibmpowernv) Quieten when probing finds no device
+
+ drivers/hwmon/fam15h_power.c |  2 +-
+ drivers/hwmon/ibmpowernv.c   |  6 ++++--
+ drivers/hwmon/pwm-fan.c      | 13 ++++++++++---
+ 3 files changed, 15 insertions(+), 6 deletions(-)
