@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaKLJnt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:43:49 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57594 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752554AbaKLJnq (ORCPT
+	id S1752709AbaKLJo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:44:28 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:43345 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956AbaKLJoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:43:46 -0500
-Date: Wed, 12 Nov 2014 10:43:42 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Kevin Cernekee <cernekee@gmail.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-sh@vger.kernel.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
-        linux-mips@linux-mips.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] irqchip: atmel-aic: fix irqdomain initialization
-Message-ID: <20141112104342.3d28ad46@bbrezillon>
-In-Reply-To: <20141111225800.GE3698@titan.lakedaemon.net>
-References: <20141110230301.GV4068@piout.net>
-	<1415712816-9202-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20141111225800.GE3698@titan.lakedaemon.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 12 Nov 2014 04:44:25 -0500
+Date: Wed, 12 Nov 2014 09:44:19 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Aaron Lu <aaron.lu@intel.com>, linux-acpi@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and
+ XPower
+Message-ID: <20141112094419.GC24004@x1>
+References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com>
+ <54616E55.80204@intel.com>
+ <20141111111152.GX24004@x1>
+ <3052882.EdcZmghHR3@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3052882.EdcZmghHR3@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Wed, 12 Nov 2014, Rafael J. Wysocki wrote:
 
-On Tue, 11 Nov 2014 17:58:00 -0500
-Jason Cooper <jason@lakedaemon.net> wrote:
-
-> On Tue, Nov 11, 2014 at 02:33:36PM +0100, Boris Brezillon wrote:
-> > First of all IRQCHIP_SKIP_SET_WAKE is not a valid irq_gc_flags and thus
-> > should not be passed as the last argument of
-> > irq_alloc_domain_generic_chips.
+> On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
+> > On Tue, 11 Nov 2014, Aaron Lu wrote:
 > > 
-> > Then pass the correct handler (handle_fasteoi_irq) to
-> > irq_alloc_domain_generic_chips instead of manually re-setting it in the
-> > initialization loop.
+> > > On 10/31/2014 02:08 PM, Aaron Lu wrote:
+> > > > On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
+> > > > ACPI operation regions defined for the Power Management Integrated Circuit
+> > > > device, one is for power resource handling and one is for thermal: sensor
+> > > > temperature reporting, trip point setting, etc. There are different PMIC
+> > > > chips used on those platforms and though each has the same two operation
+> > > > regions and functionality, their implementation is different so every PMIC
+> > > > will need a driver. But since their functionality is similar, some common
+> > > > code is abstracted into the intel_soc_pmic_opregion.c.
+> > > > 
+> > > > The last version is posted here:
+> > > > https://lkml.org/lkml/2014/9/8/801
+> > > > 
+> > > > Changes since then:
+> > > > 1 Move to drivers/acpi as discussed on the above thread;
+> > > > 2 Added support for XPower AXP288 PMIC operation region support;
+> > > > 3 Since operation region handler can not be removed(at the moment at least),
+> > > >   use bool for the two operation region driver configs instead of tristate;
+> > > >   Another reason to do this is that, with Mika's MFD ACPI support patch, all
+> > > >   those MFD cell devices created will have the same modalias as their parent's
+> > > >   so it doesn't make much sense to compile these drivers into modules.
+> > > > 
+> > > > Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
+> > > > patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
+> > > > driver XPower AXP288 and iio driver axp288_adc is located.
+> > > 
+> > > Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
+> > > would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
+> > > 
+> > > Rafael,
+> > > Can I get your ACK for the three patches?
+> > > 
+> > > Lee,
+> > > Can you please take the series if Rafael gives it ack?
 > > 
-> > And eventually initialize default irq flags to the pseudo standard:
-> > IRQ_REQUEST | IRQ_PROBE | IRQ_AUTOEN.
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > ---
-> > Hello Kevin,
-> > 
-> > This patch has not been tested yet but it should solve the issue you've
-> > experienced with the IRQ_GC_BE_IO flag and the atmel-aic driver.
-> > 
-> > I'll test it tomorrow and let you know if it actually works.
-
-Tested it, and it seems to work.
-
-> > 
-> > Regards,
-> > 
-> > Boris
-> > 
-> >  drivers/irqchip/irq-atmel-aic-common.c | 6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > Yes, no problem.
 > 
-> Applied to irqchip/urgent with Kevin's Tested-by.  Also, flagged for
-> stable, v3.17 and up.
+> Well, since the code is going to reside mostly in drivers/acpi, I think I should
+> be applying the patches and from your response it looks like you are fine with
+> them.  Is that correct?
 
-Thanks!
-
-> 
-> Boris, once this is in mainline, you may want to generate a patch
-> against older versions (in the arch dir) for the stable team.
-
-Actually, the old irq driver does not use the generic irqchip
-infrastructure and thus is not impacted by this bug.
-
-Regards,
-
-Boris
+I read that this set has dependencies on patches which are already in
+the MFD tree.  If that's not the case please go ahead and apply them
+with my Ack for the MFD components.
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
