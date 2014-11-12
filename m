@@ -1,72 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934605AbaKLDmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:42:42 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:44002 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932588AbaKLDml (ORCPT
+	id S1754459AbaKLB3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:29:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59158 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916AbaKLB3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 22:42:41 -0500
-Message-ID: <5462D71C.4070600@huawei.com>
-Date: Wed, 12 Nov 2014 11:42:20 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 11 Nov 2014 20:29:31 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.17 193/319] staging:iio:ade7758: Fix NULL pointer deref when enabling buffer
+Date: Wed, 12 Nov 2014 10:15:31 +0900
+Message-Id: <20141112011024.712482172@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Linux MM <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <wangnan0@huawei.com>
-Subject: Re: [PATCH] memory-hotplug: remove redundant call of page_to_pfn
-References: <1415697184-26409-1-git-send-email-zhenzhang.zhang@huawei.com> <5461D343.60803@huawei.com> <5462D0F5.1050008@jp.fujitsu.com>
-In-Reply-To: <5462D0F5.1050008@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/12 11:16, Yasuaki Ishimatsu wrote:
-> (2014/11/11 18:13), Zhang Zhen wrote:
->> The start_pfn can be obtained directly by
->> phys_index << PFN_SECTION_SHIFT.
->>
->> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
->> ---
-> 
-> The patch looks good to me but I want you to write a purpose of the patch
-> to the description for other reviewer.
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Ok, thanks for your review.
+------------------
 
->>   drivers/base/memory.c | 4 ++--
->>   1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
->> index 7c5d871..85be040 100644
->> --- a/drivers/base/memory.c
->> +++ b/drivers/base/memory.c
->> @@ -228,8 +228,8 @@ memory_block_action(unsigned long phys_index, unsigned long action, int online_t
->>       struct page *first_page;
->>       int ret;
->>
->> -    first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
->> -    start_pfn = page_to_pfn(first_page);
->> +    start_pfn = phys_index << PFN_SECTION_SHIFT;
->> +    first_page = pfn_to_page(start_pfn);
->>
->>       switch (action) {
->>           case MEM_ONLINE:
->>
-> 
-> 
-> 
-> 
+From: Lars-Peter Clausen <lars@metafoo.de>
+
+commit e10554738cab4224e097c2f9d975ea781a4fcde4 upstream.
+
+In older versions of the IIO framework it was possible to pass a completely
+different set of channels to iio_buffer_register() as the one that is
+assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
+iio_sw_buffer_preenable much more general.") introduced a restriction that
+requires that the set of channels that is passed to iio_buffer_register() is
+a subset of the channels assigned to the IIO device as the IIO core will use
+the list of channels that is assigned to the device to lookup a channel by
+scan index in iio_compute_scan_bytes(). If it can not find the channel the
+function will crash. This patch fixes the issue by making sure that the same
+set of channels is assigned to the IIO device and passed to
+iio_buffer_register().
+
+Note that we need to remove the IIO_CHAN_INFO_RAW and IIO_CHAN_INFO_SCALE
+info attributes from the channels since we don't actually want those to be
+registered.
+
+Fixes the following crash:
+	Unable to handle kernel NULL pointer dereference at virtual address 00000016
+	pgd = d2094000
+	[00000016] *pgd=16e39831, *pte=00000000, *ppte=00000000
+	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+	Modules linked in:
+	CPU: 1 PID: 1695 Comm: bash Not tainted 3.17.0-06329-g29461ee #9686
+	task: d7768040 ti: d5bd4000 task.ti: d5bd4000
+	PC is at iio_compute_scan_bytes+0x38/0xc0
+	LR is at iio_compute_scan_bytes+0x34/0xc0
+	pc : [<c0316de8>]    lr : [<c0316de4>]    psr: 60070013
+	sp : d5bd5ec0  ip : 00000000  fp : 00000000
+	r10: d769f934  r9 : 00000000  r8 : 00000001
+	r7 : 00000000  r6 : c8fc6240  r5 : d769f800  r4 : 00000000
+	r3 : d769f800  r2 : 00000000  r1 : ffffffff  r0 : 00000000
+	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+	Control: 18c5387d  Table: 1209404a  DAC: 00000015
+	Process bash (pid: 1695, stack limit = 0xd5bd4240)
+	Stack: (0xd5bd5ec0 to 0xd5bd6000)
+	5ec0: d769f800 d7435640 c8fc6240 d769f984 00000000 c03175a4 d7435690 d7435640
+	5ee0: d769f990 00000002 00000000 d769f800 d5bd4000 00000000 000b43a8 c03177f4
+	5f00: d769f810 0162b8c8 00000002 c8fc7e00 d77f1d08 d77f1da8 c8fc7e00 c01faf1c
+	5f20: 00000002 c010694c c010690c d5bd5f88 00000002 c8fc6840 c8fc684c c0105e08
+	5f40: 00000000 00000000 d20d1580 00000002 000af408 d5bd5f88 c000de84 c00b76d4
+	5f60: d20d1580 000af408 00000002 d20d1580 d20d1580 00000002 000af408 c000de84
+	5f80: 00000000 c00b7a44 00000000 00000000 00000002 b6ebea78 00000002 000af408
+	5fa0: 00000004 c000dd00 b6ebea78 00000002 00000001 000af408 00000002 00000000
+	5fc0: b6ebea78 00000002 000af408 00000004 bee96a4c 000a6094 00000000 000b43a8
+	5fe0: 00000000 bee969cc b6e2eb77 b6e6525c 40070010 00000001 00000000 00000000
+	[<c0316de8>] (iio_compute_scan_bytes) from [<c03175a4>] (__iio_update_buffers+0x248/0x438)
+	[<c03175a4>] (__iio_update_buffers) from [<c03177f4>] (iio_buffer_store_enable+0x60/0x7c)
+	[<c03177f4>] (iio_buffer_store_enable) from [<c01faf1c>] (dev_attr_store+0x18/0x24)
+	[<c01faf1c>] (dev_attr_store) from [<c010694c>] (sysfs_kf_write+0x40/0x4c)
+	[<c010694c>] (sysfs_kf_write) from [<c0105e08>] (kernfs_fop_write+0x110/0x154)
+	[<c0105e08>] (kernfs_fop_write) from [<c00b76d4>] (vfs_write+0xbc/0x170)
+	[<c00b76d4>] (vfs_write) from [<c00b7a44>] (SyS_write+0x40/0x78)
+	[<c00b7a44>] (SyS_write) from [<c000dd00>] (ret_fast_syscall+0x0/0x30)
+
+Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/iio/meter/ade7758.h      |    1 
+ drivers/staging/iio/meter/ade7758_core.c |   33 +------------------------------
+ drivers/staging/iio/meter/ade7758_ring.c |    3 --
+ 3 files changed, 3 insertions(+), 34 deletions(-)
+
+--- a/drivers/staging/iio/meter/ade7758.h
++++ b/drivers/staging/iio/meter/ade7758.h
+@@ -119,7 +119,6 @@ struct ade7758_state {
+ 	u8			*tx;
+ 	u8			*rx;
+ 	struct mutex		buf_lock;
+-	const struct iio_chan_spec *ade7758_ring_channels;
+ 	struct spi_transfer	ring_xfer[4];
+ 	struct spi_message	ring_msg;
+ 	/*
+--- a/drivers/staging/iio/meter/ade7758_core.c
++++ b/drivers/staging/iio/meter/ade7758_core.c
+@@ -631,8 +631,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -645,8 +643,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
+ 		.scan_index = 1,
+ 		.scan_type = {
+@@ -659,8 +655,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "apparent_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
+ 		.scan_index = 2,
+ 		.scan_type = {
+@@ -673,8 +667,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "active_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
+ 		.scan_index = 3,
+ 		.scan_type = {
+@@ -687,8 +679,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "reactive_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
+ 		.scan_index = 4,
+ 		.scan_type = {
+@@ -701,8 +691,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 1,
+ 		.extend_name = "raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
+ 		.scan_index = 5,
+ 		.scan_type = {
+@@ -715,8 +703,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 1,
+ 		.extend_name = "raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
+ 		.scan_index = 6,
+ 		.scan_type = {
+@@ -729,8 +715,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 1,
+ 		.extend_name = "apparent_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
+ 		.scan_index = 7,
+ 		.scan_type = {
+@@ -743,8 +727,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 1,
+ 		.extend_name = "active_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
+ 		.scan_index = 8,
+ 		.scan_type = {
+@@ -757,8 +739,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 1,
+ 		.extend_name = "reactive_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
+ 		.scan_index = 9,
+ 		.scan_type = {
+@@ -771,8 +751,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 2,
+ 		.extend_name = "raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
+ 		.scan_index = 10,
+ 		.scan_type = {
+@@ -785,8 +763,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 2,
+ 		.extend_name = "raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
+ 		.scan_index = 11,
+ 		.scan_type = {
+@@ -799,8 +775,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 2,
+ 		.extend_name = "apparent_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
+ 		.scan_index = 12,
+ 		.scan_type = {
+@@ -813,8 +787,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 2,
+ 		.extend_name = "active_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
+ 		.scan_index = 13,
+ 		.scan_type = {
+@@ -827,8 +799,6 @@ static const struct iio_chan_spec ade775
+ 		.indexed = 1,
+ 		.channel = 2,
+ 		.extend_name = "reactive_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+-		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
+ 		.scan_index = 14,
+ 		.scan_type = {
+@@ -869,13 +839,14 @@ static int ade7758_probe(struct spi_devi
+ 		goto error_free_rx;
+ 	}
+ 	st->us = spi;
+-	st->ade7758_ring_channels = &ade7758_channels[0];
+ 	mutex_init(&st->buf_lock);
+ 
+ 	indio_dev->name = spi->dev.driver->name;
+ 	indio_dev->dev.parent = &spi->dev;
+ 	indio_dev->info = &ade7758_info;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->channels = ade7758_channels;
++	indio_dev->num_channels = ARRAY_SIZE(ade7758_channels);
+ 
+ 	ret = ade7758_configure_ring(indio_dev);
+ 	if (ret)
+--- a/drivers/staging/iio/meter/ade7758_ring.c
++++ b/drivers/staging/iio/meter/ade7758_ring.c
+@@ -85,7 +85,6 @@ static irqreturn_t ade7758_trigger_handl
+  **/
+ static int ade7758_ring_preenable(struct iio_dev *indio_dev)
+ {
+-	struct ade7758_state *st = iio_priv(indio_dev);
+ 	unsigned channel;
+ 
+ 	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
+@@ -95,7 +94,7 @@ static int ade7758_ring_preenable(struct
+ 				 indio_dev->masklength);
+ 
+ 	ade7758_write_waveform_type(&indio_dev->dev,
+-		st->ade7758_ring_channels[channel].address);
++		indio_dev->channels[channel].address);
+ 
+ 	return 0;
+ }
 
 
