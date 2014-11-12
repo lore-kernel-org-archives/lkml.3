@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaKLBWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58535 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbaKLBWC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753384AbaKLBWC (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:22:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58529 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205AbaKLBV7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:21:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Suresh Siddha <sbsiddha@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.17 052/319] x86, fpu: __restore_xstate_sig()->math_state_restore() needs preempt_disable()
-Date: Wed, 12 Nov 2014 10:13:10 +0900
-Message-Id: <20141112011001.250148655@linuxfoundation.org>
+        Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 034/319] ASoC: soc-dapm: fix use after free
+Date: Wed, 12 Nov 2014 10:12:52 +0900
+Message-Id: <20141112010958.333491468@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,38 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Daniel Mack <daniel@zonque.org>
 
-commit df24fb859a4e200d9324e2974229fbb7adf00aef upstream.
+commit e5092c96c9c28f4d12811edcd02ca8eec16e748e upstream.
 
-Add preempt_disable() + preempt_enable() around math_state_restore() in
-__restore_xstate_sig(). Otherwise __switch_to() after __thread_fpu_begin()
-can overwrite fpu->state we are going to restore.
+Coverity spotted the following possible use-after-free condition in
+dapm_create_or_share_mixmux_kcontrol():
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175717.GA21649@redhat.com
-Reviewed-by: Suresh Siddha <sbsiddha@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+If kcontrol is NULL, and (wname_in_long_name && kcname_in_long_name)
+validates to true, 'name' will be set to an allocated string, and be
+freed a few lines later via the 'long_name' alias. 'name', however,
+is used by dev_err() in case snd_ctl_add() fails.
+
+Fix this by adding a jump label that frees 'long_name' at the end of
+the function.
+
+Signed-off-by: Daniel Mack <daniel@zonque.org>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/xsave.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ sound/soc/soc-dapm.c |   25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -402,8 +402,11 @@ int __restore_xstate_sig(void __user *bu
- 			set_used_math();
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -591,9 +591,9 @@ static int dapm_create_or_share_mixmux_k
+ 	int shared;
+ 	struct snd_kcontrol *kcontrol;
+ 	bool wname_in_long_name, kcname_in_long_name;
+-	char *long_name;
++	char *long_name = NULL;
+ 	const char *name;
+-	int ret;
++	int ret = 0;
+ 
+ 	prefix = soc_dapm_prefix(dapm);
+ 	if (prefix)
+@@ -652,15 +652,17 @@ static int dapm_create_or_share_mixmux_k
+ 
+ 		kcontrol = snd_soc_cnew(&w->kcontrol_news[kci], NULL, name,
+ 					prefix);
+-		kfree(long_name);
+-		if (!kcontrol)
+-			return -ENOMEM;
++		if (!kcontrol) {
++			ret = -ENOMEM;
++			goto exit_free;
++		}
++
+ 		kcontrol->private_free = dapm_kcontrol_free;
+ 
+ 		ret = dapm_kcontrol_data_alloc(w, kcontrol);
+ 		if (ret) {
+ 			snd_ctl_free_one(kcontrol);
+-			return ret;
++			goto exit_free;
  		}
  
--		if (use_eager_fpu())
-+		if (use_eager_fpu()) {
-+			preempt_disable();
- 			math_state_restore();
-+			preempt_enable();
-+		}
+ 		ret = snd_ctl_add(card, kcontrol);
+@@ -668,17 +670,18 @@ static int dapm_create_or_share_mixmux_k
+ 			dev_err(dapm->dev,
+ 				"ASoC: failed to add widget %s dapm kcontrol %s: %d\n",
+ 				w->name, name, ret);
+-			return ret;
++			goto exit_free;
+ 		}
+ 	}
  
- 		return err;
- 	} else {
+ 	ret = dapm_kcontrol_add_widget(kcontrol, w);
+-	if (ret)
+-		return ret;
++	if (ret == 0)
++		w->kcontrols[kci] = kcontrol;
+ 
+-	w->kcontrols[kci] = kcontrol;
++exit_free:
++	kfree(long_name);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ /* create new dapm mixer control */
 
 
