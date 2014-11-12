@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335AbaKLBdp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:33:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59493 "EHLO
+	id S1754726AbaKLBdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:33:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933264AbaKLBdm (ORCPT
+	with ESMTP id S933264AbaKLBdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:42 -0500
+	Tue, 11 Nov 2014 20:33:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.17 267/319] tty: Fix high cpu load if tty is unreleaseable
-Date: Wed, 12 Nov 2014 10:16:45 +0900
-Message-Id: <20141112011036.940242773@linuxfoundation.org>
+        Bernd Porr <mail@berndporr.me.uk>, Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Subject: [PATCH 3.17 270/319] staging: comedi: (regression) channel list must be set for COMEDI_CMD ioctl
+Date: Wed, 12 Nov 2014 10:16:48 +0900
+Message-Id: <20141112011037.440177632@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,49 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 37b164578826406a173ca7c20d9ba7430134d23e upstream.
+commit 6cab7a37f5c048bb2a768f24b0ec748b052fda09 upstream.
 
-Kernel oops can cause the tty to be unreleaseable (for example, if
-n_tty_read() crashes while on the read_wait queue). This will cause
-tty_release() to endlessly loop without sleeping.
+`do_cmd_ioctl()`, the handler for the `COMEDI_CMD` ioctl can incorrectly
+call the Comedi subdevice's `do_cmd()` handler with a NULL channel list
+pointer.  This is a regression as the `do_cmd()` handler has never been
+expected to deal with that, leading to a kernel OOPS when it tries to
+dereference it.
 
-Use a killable sleep timeout which grows by 2n+1 jiffies over the interval
-[0, 120 secs.) and then jumps to forever (but still killable).
+A NULL channel list pointer is allowed for the `COMEDI_CMDTEST` ioctl,
+handled by `do_cmdtest_ioctl()` and the subdevice's `do_cmdtest()`
+handler, but not for the `COMEDI_CMD` ioctl and its handlers.
 
-NB: killable just allows for the task to be rewoken manually, not
-to be terminated.
+Both `do_cmd_ioctl()` and `do_cmdtest_ioctl()` call
+`__comedi_get_user_chanlist()` to copy the channel list from user memory
+into dynamically allocated kernel memory and check it for consistency.
+That function currently returns 0 if the `user_chanlist` parameter
+(pointing to the channel list in user memory) is NULL.  That's fine for
+`do_cmdtest_ioctl()`, but `do_cmd_ioctl()` incorrectly assumes the
+kernel copy of the channel list has been set-up correctly.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Fix it by not allowing the `user_chanlist` parameter to be NULL in
+`__comedi_get_user_chanlist()`, and only calling it from
+`do_cmdtest_ioctl()` if the parameter is non-NULL.
+
+Thanks to Bernd Porr for reporting the bug via an initial patch sent
+privately.
+
+Fixes: c6cd0eefb27b ("staging: comedi: comedi_fops: introduce __comedi_get_user_chanlist()")
+Reported-by: Bernd Porr <mail@berndporr.me.uk>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Bernd Porr <mail@berndporr.me.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/comedi_fops.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1686,6 +1686,7 @@ int tty_release(struct inode *inode, str
- 	int	pty_master, tty_closing, o_tty_closing, do_sleep;
- 	int	idx;
- 	char	buf[64];
-+	long	timeout = 0;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1462,10 +1462,6 @@ static int __comedi_get_user_chanlist(st
+ 	unsigned int *chanlist;
+ 	int ret;
  
- 	if (tty_paranoia_check(tty, inode, __func__))
- 		return 0;
-@@ -1770,7 +1771,11 @@ int tty_release(struct inode *inode, str
- 				__func__, tty_name(tty, buf));
- 		tty_unlock_pair(tty, o_tty);
- 		mutex_unlock(&tty_mutex);
--		schedule();
-+		schedule_timeout_killable(timeout);
-+		if (timeout < 120 * HZ)
-+			timeout = 2 * timeout + 1;
-+		else
-+			timeout = MAX_SCHEDULE_TIMEOUT;
- 	}
+-	/* user_chanlist could be NULL for do_cmdtest ioctls */
+-	if (!user_chanlist)
+-		return 0;
+-
+ 	chanlist = memdup_user(user_chanlist,
+ 			       cmd->chanlist_len * sizeof(unsigned int));
+ 	if (IS_ERR(chanlist))
+@@ -1609,10 +1605,13 @@ static int do_cmdtest_ioctl(struct comed
  
- 	/*
+ 	s = &dev->subdevices[cmd.subdev];
+ 
+-	/* load channel/gain list */
+-	ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
+-	if (ret)
+-		return ret;
++	/* user_chanlist can be NULL for COMEDI_CMDTEST ioctl */
++	if (user_chanlist) {
++		/* load channel/gain list */
++		ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
++		if (ret)
++			return ret;
++	}
+ 
+ 	ret = s->do_cmdtest(dev, s, &cmd);
+ 
 
 
