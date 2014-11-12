@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaKLJ2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:28:47 -0500
-Received: from mail-bn1on0139.outbound.protection.outlook.com ([157.56.110.139]:61248
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752648AbaKLJ2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:28:43 -0500
-From: Robin Gong <b38343@freescale.com>
-To: <shawn.guo@linaro.org>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <sre@kernel.org>, <dbaryshkov@gmail.com>,
-        <dwmw2@infradead.org>, <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <smoch@web.de>
-Subject: [PATCH 3/3] ARM: configs: imx_v6_v7_defconfig: add power off driver
-Date: Wed, 12 Nov 2014 16:20:39 +0800
-Message-ID: <1415780439-29728-4-git-send-email-b38343@freescale.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415780439-29728-1-git-send-email-b38343@freescale.com>
-References: <1415780439-29728-1-git-send-email-b38343@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(95666004)(6806004)(105606002)(47776003)(20776003)(64706001)(102836001)(104166001)(62966003)(77156002)(50986999)(19580405001)(19580395003)(4396001)(68736004)(106466001)(48376002)(36756003)(33646002)(104016003)(229853001)(50226001)(44976005)(120916001)(99396003)(87936001)(87286001)(50466002)(89996001)(93916002)(107046002)(88136002)(76176999)(31966008)(92726001)(2201001)(92566001)(46102003)(21056001)(84676001)(97736003)(921003)(1121002)(42262002)(2101003)(83996005);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0633;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:;
+	id S1752785AbaKLJ35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:29:57 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:53522 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580AbaKLJ2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 04:28:31 -0500
+Date: Wed, 12 Nov 2014 10:28:24 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: compiler bug gcc4.6/4.7 with ACCESS_ONCE and workarounds
+Message-ID: <20141112102824.55a4c178@mschwide>
+In-Reply-To: <CA+55aFw+cLJ6xW0Wk6nMbK+e1yr2KGCWN+-v2a7xK1u8zTtDtA@mail.gmail.com>
+References: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
+	<54611D86.4040306@de.ibm.com>
+	<CA+55aFyEigSL64RJH8AO86gFBBB84+dgk7eEUPx=CaLwJMcO_w@mail.gmail.com>
+	<54627CBF.2000704@de.ibm.com>
+	<CA+55aFz1oxCgZiY4oWu41fFUbKft9g5_gQXXzAKuW8+pnR72Vw@mail.gmail.com>
+	<CA+55aFw+cLJ6xW0Wk6nMbK+e1yr2KGCWN+-v2a7xK1u8zTtDtA@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
-X-Forefront-PRVS: 03932714EB
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111209-0005-0000-0000-0000020C3617
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add power off driver in config file.
+On Tue, 11 Nov 2014 16:36:06 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Robin Gong <b38343@freescale.com>
----
- arch/arm/configs/imx_v6_v7_defconfig |    3 +++
- 1 file changed, 3 insertions(+)
+> On Tue, Nov 11, 2014 at 4:33 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > I guess as a workaround it is fine, as long as we don't lose sight of
+> > trying to eventually do a better job.
+> 
+> Oh, and when it comes to the actual gcc bug - do you have any reason
+> to believe that it's somehow triggered more easily by something
+> particular in the arch/s390/kvm/gaccess.c code?
+> 
+> IOW, why does this problem not hit the x86 spinlocks that also use
+> volatile pointers to aggregate types? Or does it?
 
-diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index 16cfec4..a310e61 100644
---- a/arch/arm/configs/imx_v6_v7_defconfig
-+++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -165,6 +165,9 @@ CONFIG_SPI_IMX=y
- CONFIG_GPIO_SYSFS=y
- CONFIG_GPIO_MC9S08DZ60=y
- CONFIG_GPIO_STMPE=y
-+CONFIG_POWER_SUPPLY=y
-+CONFIG_POWER_RESET=y
-+CONFIG_POWER_RESET_IMX=y
- # CONFIG_HWMON is not set
- CONFIG_WATCHDOG=y
- CONFIG_IMX2_WDT=y
+This looks similiar to what we had on s390:
+
+	old.tickets = ACCESS_ONCE(lock->tickets)
+
+In theory x86 should be affected as well. On s390 we have lots of
+instruction that operate on memory and the cost model of gcc makes
+the compiler more inclined to access memory multiple times. My
+guess would be that once the value is cached in a register the
+cost model for x86 will usually make sure that the value is not
+read a second time. But this is no guarantee.
+
 -- 
-1.7.9.5
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
