@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935022AbaKLBro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:47:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60763 "EHLO
+	id S935040AbaKLBru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:47:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934921AbaKLBrl (ORCPT
+	with ESMTP id S934921AbaKLBrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:47:41 -0500
+	Tue, 11 Nov 2014 20:47:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 186/203] usb: dwc3: gadget: fix set_halt() bug with pending transfers
-Date: Wed, 12 Nov 2014 10:17:36 +0900
-Message-Id: <20141112011551.213320161@linuxfoundation.org>
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 187/203] usb: gadget: function: acm: make f_acm pass USB20CV Chapter9
+Date: Wed, 12 Nov 2014 10:17:37 +0900
+Message-Id: <20141112011551.256954696@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -30,110 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felipe Balbi <balbi@ti.com>
 
-[ Upstream commit 7a60855972f0d3c014093046cb6f013a1ee5bb19 ]
+[ Upstream commit 52ec49a5e56a27c5b6f8217708783eff39f24c16 ]
 
-According to our Gadget Framework API documentation,
-->set_halt() *must* return -EAGAIN if we have pending
-transfers (on either direction) or FIFO isn't empty (on
-TX endpoints).
+During Halt Endpoint Test, our interrupt endpoint
+will be disabled, which will clear out ep->desc
+to NULL. Unless we call config_ep_by_speed() again,
+we will not be able to enable this endpoint which
+will make us fail that test.
 
-Fix this bug so that the mass storage gadget can be used
-without stall=0 parameter.
-
-This patch should be backported to all kernels since v3.2.
-
-Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Fixes: f9c56cd (usb: gadget: Clear usb_endpoint_descriptor
+	inside the struct usb_ep on disable)
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/usb/dwc3/ep0.c    |    4 ++--
- drivers/usb/dwc3/gadget.c |   16 ++++++++++++----
- drivers/usb/dwc3/gadget.h |    2 +-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+ drivers/usb/gadget/f_acm.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/dwc3/ep0.c
-+++ b/drivers/usb/dwc3/ep0.c
-@@ -251,7 +251,7 @@ static void dwc3_ep0_stall_and_restart(s
- 
- 	/* stall is always issued on EP0 */
- 	dep = dwc->eps[0];
--	__dwc3_gadget_ep_set_halt(dep, 1);
-+	__dwc3_gadget_ep_set_halt(dep, 1, false);
- 	dep->flags = DWC3_EP_ENABLED;
- 	dwc->delayed_status = false;
- 
-@@ -461,7 +461,7 @@ static int dwc3_ep0_handle_feature(struc
- 				return -EINVAL;
- 			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
- 				break;
--			ret = __dwc3_gadget_ep_set_halt(dep, set);
-+			ret = __dwc3_gadget_ep_set_halt(dep, set, true);
- 			if (ret)
- 				return -EINVAL;
- 			break;
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -587,7 +587,7 @@ static int __dwc3_gadget_ep_disable(stru
- 
- 	/* make sure HW endpoint isn't stalled */
- 	if (dep->flags & DWC3_EP_STALL)
--		__dwc3_gadget_ep_set_halt(dep, 0);
-+		__dwc3_gadget_ep_set_halt(dep, 0, false);
- 
- 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
- 	reg &= ~DWC3_DALEPENA_EP(dep->number);
-@@ -1185,7 +1185,7 @@ out0:
- 	return ret;
- }
- 
--int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
-+int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol)
- {
- 	struct dwc3_gadget_ep_cmd_params	params;
- 	struct dwc3				*dwc = dep->dwc;
-@@ -1194,6 +1194,14 @@ int __dwc3_gadget_ep_set_halt(struct dwc
- 	memset(&params, 0x00, sizeof(params));
- 
- 	if (value) {
-+		if (!protocol && ((dep->direction && dep->flags & DWC3_EP_BUSY) ||
-+				(!list_empty(&dep->req_queued) ||
-+				 !list_empty(&dep->request_list)))) {
-+			dev_dbg(dwc->dev, "%s: pending request, cannot halt\n",
-+					dep->name);
-+			return -EAGAIN;
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -430,11 +430,12 @@ static int acm_set_alt(struct usb_functi
+ 		if (acm->notify->driver_data) {
+ 			VDBG(cdev, "reset acm control interface %d\n", intf);
+ 			usb_ep_disable(acm->notify);
+-		} else {
+-			VDBG(cdev, "init acm ctrl interface %d\n", intf);
 +		}
 +
- 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
- 			DWC3_DEPCMD_SETSTALL, &params);
- 		if (ret)
-@@ -1233,7 +1241,7 @@ static int dwc3_gadget_ep_set_halt(struc
- 		goto out;
- 	}
++		if (!acm->notify->desc)
+ 			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
+ 				return -EINVAL;
+-		}
++
+ 		usb_ep_enable(acm->notify);
+ 		acm->notify->driver_data = acm;
  
--	ret = __dwc3_gadget_ep_set_halt(dep, value);
-+	ret = __dwc3_gadget_ep_set_halt(dep, value, false);
- out:
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-@@ -1253,7 +1261,7 @@ static int dwc3_gadget_ep_set_wedge(stru
- 	if (dep->number == 0 || dep->number == 1)
- 		return dwc3_gadget_ep0_set_halt(ep, 1);
- 	else
--		return dwc3_gadget_ep_set_halt(ep, 1);
-+		return __dwc3_gadget_ep_set_halt(dep, 1, false);
- }
- 
- /* -------------------------------------------------------------------------- */
---- a/drivers/usb/dwc3/gadget.h
-+++ b/drivers/usb/dwc3/gadget.h
-@@ -85,7 +85,7 @@ void dwc3_ep0_out_start(struct dwc3 *dwc
- int dwc3_gadget_ep0_set_halt(struct usb_ep *ep, int value);
- int dwc3_gadget_ep0_queue(struct usb_ep *ep, struct usb_request *request,
- 		gfp_t gfp_flags);
--int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value);
-+int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol);
- 
- /**
-  * dwc3_gadget_ep_get_transfer_index - Gets transfer index from HW
 
 
