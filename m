@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaKLBcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:32:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59385 "EHLO
+	id S933168AbaKLBc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:32:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59401 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933120AbaKLBcO (ORCPT
+	with ESMTP id S1754595AbaKLBcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:32:14 -0500
+	Tue, 11 Nov 2014 20:32:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yu Zhao <yuzhao@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        David Rientjes <rientjes@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 241/319] mm: free compound page with correct order
-Date: Wed, 12 Nov 2014 10:16:19 +0900
-Message-Id: <20141112011032.726704426@linuxfoundation.org>
+Subject: [PATCH 3.17 243/319] mm: page-writeback: inline account_page_dirtied() into single caller
+Date: Wed, 12 Nov 2014 10:16:21 +0900
+Message-Id: <20141112011033.016942931@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -33,61 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yu Zhao <yuzhao@google.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 5ddacbe92b806cd5b4f8f154e8e46ac267fff55c upstream.
+commit 3a3c02ecf7f2852f122d6d16fb9b3d9cb0c6f201 upstream.
 
-Compound page should be freed by put_page() or free_pages() with correct
-order.  Not doing so will cause tail pages leaked.
+A follow-up patch would have changed the call signature.  To save the
+trouble, just fold it instead.
 
-The compound order can be obtained by compound_order() or use
-HPAGE_PMD_ORDER in our case.  Some people would argue the latter is
-faster but I prefer the former which is more general.
-
-This bug was observed not just on our servers (the worst case we saw is
-11G leaked on a 48G machine) but also on our workstations running Ubuntu
-based distro.
-
-  $ cat /proc/vmstat  | grep thp_zero_page_alloc
-  thp_zero_page_alloc 55
-  thp_zero_page_alloc_failed 0
-
-This means there is (thp_zero_page_alloc - 1) * (2M - 4K) memory leaked.
-
-Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
-Signed-off-by: Yu Zhao <yuzhao@google.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Bob Liu <lliubbo@gmail.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Vladimir Davydov <vdavydov@parallels.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/mm.h  |    1 -
+ mm/page-writeback.c |   23 ++++-------------------
+ 2 files changed, 4 insertions(+), 20 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -200,7 +200,7 @@ retry:
- 	preempt_disable();
- 	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
- 		preempt_enable();
--		__free_page(zero_page);
-+		__free_pages(zero_page, compound_order(zero_page));
- 		goto retry;
- 	}
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1233,7 +1233,6 @@ int __set_page_dirty_no_writeback(struct
+ int redirty_page_for_writepage(struct writeback_control *wbc,
+ 				struct page *page);
+ void account_page_dirtied(struct page *page, struct address_space *mapping);
+-void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2116,23 +2116,6 @@ void account_page_dirtied(struct page *p
+ EXPORT_SYMBOL(account_page_dirtied);
  
-@@ -232,7 +232,7 @@ static unsigned long shrink_huge_zero_pa
- 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
- 		struct page *zero_page = xchg(&huge_zero_page, NULL);
- 		BUG_ON(zero_page == NULL);
--		__free_page(zero_page);
-+		__free_pages(zero_page, compound_order(zero_page));
- 		return HPAGE_PMD_NR;
+ /*
+- * Helper function for set_page_writeback family.
+- *
+- * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
+- * while calling this function.
+- * See test_set_page_writeback for example.
+- *
+- * NOTE: Unlike account_page_dirtied this does not rely on being atomic
+- * wrt interrupts.
+- */
+-void account_page_writeback(struct page *page)
+-{
+-	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+-	inc_zone_page_state(page, NR_WRITEBACK);
+-}
+-EXPORT_SYMBOL(account_page_writeback);
+-
+-/*
+  * For address_spaces which do not use buffers.  Just tag the page as dirty in
+  * its radix tree.
+  *
+@@ -2410,8 +2393,10 @@ int __test_set_page_writeback(struct pag
+ 	} else {
+ 		ret = TestSetPageWriteback(page);
  	}
+-	if (!ret)
+-		account_page_writeback(page);
++	if (!ret) {
++		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
++		inc_zone_page_state(page, NR_WRITEBACK);
++	}
+ 	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
+ 	return ret;
  
 
 
