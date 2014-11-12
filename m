@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaKLGZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:25:52 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:43697 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120AbaKLGZu (ORCPT
+	id S1753289AbaKLG0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:26:04 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:1262 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752968AbaKLGZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:25:50 -0500
-Message-ID: <5462FD63.5090904@roeck-us.net>
-Date: Tue, 11 Nov 2014 22:25:39 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 12 Nov 2014 01:25:55 -0500
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <tglx@linutronix.de>, <jason@lakedaemon.net>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH v2 0/3] irqchip: dw-apb-ictl: IRQ_GC_MASK_CACHE_PER_TYPE and PM support
+Date: Wed, 12 Nov 2014 14:22:51 +0800
+Message-ID: <1415773374-4629-1-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.1.3
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.17 000/319] 3.17.3-stable review
-References: <20141112010952.553519040@linuxfoundation.org>
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.5462FD6E.0044,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
+ definitions=2014-11-12_04:2014-11-11,2014-11-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1411120057
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 05:12 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.17.3 release.
-> There are 319 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Fri Nov 14 01:07:52 UTC 2014.
-> Anything received after that time might be too late.
->
+These patches try to improve dw-apb-ictl irqchip driver a bit.
 
-Build results:
-	total: 133 pass: 132 fail: 1
-Failed builds:
-	avr32:atngw100mkii_evklcd101_defconfig
+The first patch improves the performance a bit -- use the relaxed version
 
-Qemu tests:
-	total: 30 pass: 30 fail: 0
+The two dw-apb-ictl's irq_chip_type instances have separate mask registers, so the second patch enables IRQ_GC_MASK_CACHE_PER_TYPE.
 
-The failing build is due to a link error:
+The last patch adds suspend/resume support to the driver.
 
-lib/lib.a(vsprintf.o): In function `vsnprintf':
-vsprintf.c:(.text+0x16dc): relocation truncated to fit:
-	R_AVR32_16N_PCREL against symbol `_ctype' defined in .text section in lib/lib.a(ctype.o)
+Tested on Marvell BG2Q-DMP board.
 
-which has been observed on and off for the last few releases.
+Changes in v2:
+  - Add Sebastian's Acks
+  - Update the first commit as Sebastian and Thomas suggested
+  - Add into commit log summary of the discussion why relaxed variants can be used
 
-Details are available at http://server.roeck-us.net:8010/builder.
+Jisheng Zhang (3):
+  irqchip: dw-apb-ictl: always use use {readl|writel}_relaxed
+  irqchip: dw-apb-ictl: enable IRQ_GC_MASK_CACHE_PER_TYPE
+  irqchip: dw-apb-ictl: add PM support
 
-Guenter
+ drivers/irqchip/irq-dw-apb-ictl.c | 32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
+
+-- 
+2.1.3
 
