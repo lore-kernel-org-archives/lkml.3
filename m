@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaKLCD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:03:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33118 "EHLO
+	id S1754954AbaKLCEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:04:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161112AbaKLB4H (ORCPT
+	with ESMTP id S1161076AbaKLBzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:56:07 -0500
+	Tue, 11 Nov 2014 20:55:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Karl Beldan <karl.beldan@rivierawaves.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 108/123] mac80211: fix typo in starting baserate for rts_cts_rate_idx
-Date: Wed, 12 Nov 2014 10:17:54 +0900
-Message-Id: <20141112011723.899728139@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 105/123] quota: Properly return errors from dquot_writeback_dquots()
+Date: Wed, 12 Nov 2014 10:17:51 +0900
+Message-Id: <20141112011723.772858819@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,45 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karl Beldan <karl.beldan@rivierawaves.com>
+From: Jan Kara <jack@suse.cz>
 
-commit c7abf25af0f41be4b50d44c5b185d52eea360cb8 upstream.
+commit 474d2605d119479e5aa050f738632e63589d4bb5 upstream.
 
-It affects non-(V)HT rates and can lead to selecting an rts_cts rate
-that is not a basic rate or way superior to the reference rate (ATM
-rates[0] used for the 1st attempt of the protected frame data).
+Due to a switched left and right side of an assignment,
+dquot_writeback_dquots() never returned error. This could result in
+errors during quota writeback to not be reported to userspace properly.
+Fix it.
 
-E.g, assuming drivers register growing (bitrate) sorted tables of
-ieee80211_rate-s, having :
-- rates[0].idx == d'2 and basic_rates == b'10100
-will select rts_cts idx b'10011 & ~d'(BIT(2)-1), i.e. 1, likewise
-- rates[0].idx == d'2 and basic_rates == b'10001
-will select rts_cts idx b'10000
-The first is not a basic rate and the second is > rates[0].
-
-Also, wrt severity of the addressed misbehavior, ATM we only have one
-rts_cts_rate_idx rather than one per rate table entry, so this idx might
-still point to bitrates > rates[1..MAX_RATES].
-
-Fixes: 5253ffb8c9e1 ("mac80211: always pick a basic rate to tx RTS/CTS for pre-HT rates")
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Coverity-id: 1226884
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rate.c |    2 +-
+ fs/quota/dquot.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/rate.c
-+++ b/net/mac80211/rate.c
-@@ -448,7 +448,7 @@ static void rate_fixup_ratelist(struct i
- 	 */
- 	if (!(rates[0].flags & IEEE80211_TX_RC_MCS)) {
- 		u32 basic_rates = vif->bss_conf.basic_rates;
--		s8 baserate = basic_rates ? ffs(basic_rates - 1) : 0;
-+		s8 baserate = basic_rates ? ffs(basic_rates) - 1 : 0;
- 
- 		rate = &sband->bitrates[rates[0].idx];
- 
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -637,7 +637,7 @@ int dquot_writeback_dquots(struct super_
+ 			dqstats_inc(DQST_LOOKUPS);
+ 			err = sb->dq_op->write_dquot(dquot);
+ 			if (!ret && err)
+-				err = ret;
++				ret = err;
+ 			dqput(dquot);
+ 			spin_lock(&dq_list_lock);
+ 		}
 
 
