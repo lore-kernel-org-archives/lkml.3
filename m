@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344AbaKLBlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:41:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60184 "EHLO
+	id S934401AbaKLBl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:41:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60202 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934293AbaKLBld (ORCPT
+	with ESMTP id S933739AbaKLBlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:41:33 -0500
+	Tue, 11 Nov 2014 20:41:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 082/203] kvm: x86: dont kill guest on unknown exit reason
-Date: Wed, 12 Nov 2014 10:15:52 +0900
-Message-Id: <20141112011546.460405230@linuxfoundation.org>
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.14 087/203] ARC: Update order of registers in KGDB to match GDB 7.5
+Date: Wed, 12 Nov 2014 10:15:57 +0900
+Message-Id: <20141112011546.683879157@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,53 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Anton Kolesov <Anton.Kolesov@synopsys.com>
 
-commit 2bc19dc3754fc066c43799659f0d848631c44cfe upstream.
+commit ebc0c74e76cec9c4dd860eb0ca1c0b39dc63c482 upstream.
 
-KVM_EXIT_UNKNOWN is a kvm bug, we don't really know whether it was
-triggered by a priveledged application.  Let's not kill the guest: WARN
-and inject #UD instead.
+Order of registers has changed in GDB moving from 6.8 to 7.5. This patch
+updates KGDB to work properly with GDB 7.5, though makes it incompatible
+with 6.8.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/svm.c |    6 +++---
- arch/x86/kvm/vmx.c |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/arc/include/asm/kgdb.h |   32 ++++++++++++++++++--------------
+ 1 file changed, 18 insertions(+), 14 deletions(-)
 
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3495,9 +3495,9 @@ static int handle_exit(struct kvm_vcpu *
+--- a/arch/arc/include/asm/kgdb.h
++++ b/arch/arc/include/asm/kgdb.h
+@@ -19,7 +19,7 @@
+  * register API yet */
+ #undef DBG_MAX_REG_NUM
  
- 	if (exit_code >= ARRAY_SIZE(svm_exit_handlers)
- 	    || !svm_exit_handlers[exit_code]) {
--		kvm_run->exit_reason = KVM_EXIT_UNKNOWN;
--		kvm_run->hw.hardware_exit_reason = exit_code;
--		return 0;
-+		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_code);
-+		kvm_queue_exception(vcpu, UD_VECTOR);
-+		return 1;
- 	}
+-#define GDB_MAX_REGS		39
++#define GDB_MAX_REGS		87
  
- 	return svm_exit_handlers[exit_code](svm);
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6887,10 +6887,10 @@ static int vmx_handle_exit(struct kvm_vc
- 	    && kvm_vmx_exit_handlers[exit_reason])
- 		return kvm_vmx_exit_handlers[exit_reason](vcpu);
- 	else {
--		vcpu->run->exit_reason = KVM_EXIT_UNKNOWN;
--		vcpu->run->hw.hardware_exit_reason = exit_reason;
-+		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_reason);
-+		kvm_queue_exception(vcpu, UD_VECTOR);
-+		return 1;
- 	}
--	return 0;
- }
+ #define BREAK_INSTR_SIZE	2
+ #define CACHE_FLUSH_IS_SAFE	1
+@@ -33,23 +33,27 @@ static inline void arch_kgdb_breakpoint(
  
- static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+ extern void kgdb_trap(struct pt_regs *regs);
+ 
+-enum arc700_linux_regnums {
++/* This is the numbering of registers according to the GDB. See GDB's
++ * arc-tdep.h for details.
++ *
++ * Registers are ordered for GDB 7.5. It is incompatible with GDB 6.8. */
++enum arc_linux_regnums {
+ 	_R0		= 0,
+ 	_R1, _R2, _R3, _R4, _R5, _R6, _R7, _R8, _R9, _R10, _R11, _R12, _R13,
+ 	_R14, _R15, _R16, _R17, _R18, _R19, _R20, _R21, _R22, _R23, _R24,
+ 	_R25, _R26,
+-	_BTA		= 27,
+-	_LP_START	= 28,
+-	_LP_END		= 29,
+-	_LP_COUNT	= 30,
+-	_STATUS32	= 31,
+-	_BLINK		= 32,
+-	_FP		= 33,
+-	__SP		= 34,
+-	_EFA		= 35,
+-	_RET		= 36,
+-	_ORIG_R8	= 37,
+-	_STOP_PC	= 38
++	_FP		= 27,
++	__SP		= 28,
++	_R30		= 30,
++	_BLINK		= 31,
++	_LP_COUNT	= 60,
++	_STOP_PC	= 64,
++	_RET		= 64,
++	_LP_START	= 65,
++	_LP_END		= 66,
++	_STATUS32	= 67,
++	_ECR		= 76,
++	_BTA		= 82,
+ };
+ 
+ #else
 
 
