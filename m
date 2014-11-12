@@ -1,78 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaKLXmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 18:42:33 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:15034 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753775AbaKLXmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 18:42:32 -0500
-Date: Wed, 12 Nov 2014 18:42:30 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Cc: linux-kernel@vger.kernel.org, Clark Williams <clark.williams@gmail.com>
-Subject: Re: [PATCH] ftrace: fix traceoff_on_warning handling on boot
- command line
-Message-ID: <20141112184230.1d59fd28@gandalf.local.home>
-In-Reply-To: <20141112231400.GL12281@uudg.org>
-References: <20141112231400.GL12281@uudg.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1753809AbaKLXnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 18:43:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42988 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753475AbaKLXnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 18:43:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
+   d="scan'208";a="621501669"
+Date: Thu, 13 Nov 2014 07:22:32 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
+ hotplug
+Message-ID: <20141112232232.GC23249@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
+ <546377FC.4090408@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546377FC.4090408@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014 21:14:00 -0200
-"Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
+Hi Juri,
+On Wed, Nov 12, 2014 at 03:08:44PM +0000, Juri Lelli wrote:
 
-> Steven,
-> 
-> While backporting traceoff_on_warning to 3.10.33-rt we noticed a slightly
-> difference between what was stated on Documentation/kernel-parameters.txt
-> and the actual code.
-> 
-> Please consider the following patch for inclusion.
-> 
-> Best regards,
-> Luis
-> 
+Btw, could you review other three deadline patches of mine?
 
-Thanks Luis, I'll add it to my queue.
+https://lkml.org/lkml/2014/11/6/51
+https://lkml.org/lkml/2014/11/10/817
+https://lkml.org/lkml/2014/11/10/818
 
--- Steve
+Great thanks for your time. ;-)
 
-> ------
-> 
-> ftrace: fix traceoff_on_warning handling on boot command line
-> 
-> According to the documentation, adding "traceoff_on_warning" to the boot
-> command line should be enough to enable the feature. But right now it is
-> necessary to specify "traceoff_on_warning=". Along with fixing that, also
-> verify if the value passed, if any, is either "0" or "off".
-> 
-> Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index f68981f..a956a60 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -155,10 +155,11 @@ __setup("ftrace_dump_on_oops", set_ftrace_dump_on_oops);
->  
->  static int __init stop_trace_on_warning(char *str)
->  {
-> -	__disable_trace_on_warning = 1;
-> +	if ((strcmp(str, "=0") != 0 && strcmp(str, "=off") != 0))
-> +		__disable_trace_on_warning = 1;
->  	return 1;
->  }
-> -__setup("traceoff_on_warning=", stop_trace_on_warning);
-> +__setup("traceoff_on_warning", stop_trace_on_warning);
->  
->  static int __init boot_alloc_snapshot(char *str)
->  {
-> 
+Regards,
+Wanpeng Li 
 
+>Hi,
+>
+>On 12/11/14 01:06, Wanpeng Li wrote:
+>> I observe that dl task can't be migrated to other cpus during cpu hotplug, 
+>> in addition, task may/may not be running again if cpu is added back. The 
+>> root cause which I found is that dl task will be throtted and removed from 
+>> dl rq after comsuming all budget, which leads to stop task can't pick it up 
+>> from dl rq and migrate to other cpus during hotplug.
+>> 
+>> The method to reproduce:
+>> schedtool -E -t 50000:100000 -e ./test
+>> Actually test is just a simple for loop. Then observe which cpu the test
+>> task is on.
+>> echo 0 > /sys/devices/system/cpu/cpuN/online
+>> 
+>> This patch adds the dl task migration during cpu hotplug by finding a most 
+>> suitable later deadline rq after dl timer fire if current rq is offline, 
+>> if fail to find a suitable later deadline rq then fallback to any eligible 
+>> online cpu in order that the deadline task will come back to us, and the 
+>> push/pull mechanism should then move it around properly.
+>> 
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>> v4 -> v5:
+>>  * remove raw_spin_unlock(&rq->lock)
+>>  * cleanup codes, spotted by Peterz
+>>  * cleanup patch description
+>> v3 -> v4:
+>>  * use tsk_cpus_allowed wrapper
+>>  * fix compile error
+>> v2 -> v3:
+>>  * don't get_task_struct
+>>  * if cannot preempt any rq, fallback to pick any online cpus
+>>  * use cpu_active_mask as original later_mask if cpu is offline
+>> v1 -> v2:
+>>  * push the task to another cpu in dl_task_timer() if rq is offline.
+>> 
+>>  kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 41 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>> index f3d7776..7c31906 100644
+>> --- a/kernel/sched/deadline.c
+>> +++ b/kernel/sched/deadline.c
+>> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+>>  	return hrtimer_active(&dl_se->dl_timer);
+>>  }
+>>  
+>> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+>>  /*
+>>   * This is the bandwidth enforcement timer callback. If here, we know
+>>   * a task is not on its dl_rq, since the fact that the timer was running
+>> @@ -538,6 +539,43 @@ again:
+>>  	update_rq_clock(rq);
+>>  	dl_se->dl_throttled = 0;
+>>  	dl_se->dl_yielded = 0;
+>> +
+>> +	/*
+>> +	 * So if we find that the rq the task was on is no longer
+>> +	 * available, we need to select a new rq.
+>> +	 */
+>> +	if (unlikely(!rq->online)) {
+>> +		struct rq *later_rq = NULL;
+>> +
+>> +		later_rq = find_lock_later_rq(p, rq);
+>> +
+>> +		if (!later_rq) {
+>> +			int cpu;
+>> +
+>> +			/*
+>> +			 * If cannot preempt any rq, fallback to pick any
+>> +			 * online cpu.
+>> +			 */
+>> +			cpu = cpumask_any_and(cpu_active_mask,
+>> +					tsk_cpus_allowed(p));
+>> +			if (cpu >= nr_cpu_ids) {
+>> +				pr_warn("fail to find any online cpu and task will never come back\n");
+>> +				goto unlock;
+>> +			}
+>> +			later_rq = cpu_rq(cpu);
+>> +		}
+>> +
+>> +		deactivate_task(rq, p, 0);
+>> +		set_task_cpu(p, later_rq->cpu);
+>> +		activate_task(later_rq, p, 0);
+>> +
+>> +		resched_curr(later_rq);
+>> +
+>> +		double_unlock_balance(rq, later_rq);
+>> +
+>> +		goto unlock;
+>> +	}
+>> +
+>>  	if (task_on_rq_queued(p)) {
+>>  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>>  		if (dl_task(rq->curr))
+>> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
+>>  	 * We have to consider system topology and task affinity
+>>  	 * first, then we can look for a suitable cpu.
+>>  	 */
+>> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+>> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+>> +	cpumask_copy(later_mask, cpu_active_mask);
+>> +	if (likely(task_rq(task)->online))
+>> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
+>
+>So, here you consider the span only when the task_rq is online,
+>but there might be others cpus still online belonging to the same
+>rd->span. And you have to consider them when migrating. Actually,
+>migration must still be restricted to the online cpus of task's
+>original rd->span, or I fear you can break clustered scheduling.
+>
+>Thanks,
+>
+>- Juri
+>
+>>  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>>  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>>  			task, later_mask);
+>> 
