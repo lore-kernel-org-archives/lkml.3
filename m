@@ -1,174 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaKLCrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:47:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60496 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965205AbaKLBny (ORCPT
+	id S1755320AbaKLCr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:47:57 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:36653 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300AbaKLCrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:43:54 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 122/203] intel_pstate: Fix BYT frequency reporting
-Date: Wed, 12 Nov 2014 10:16:32 +0900
-Message-Id: <20141112011548.268734626@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
-References: <20141112011542.686743533@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+	Tue, 11 Nov 2014 21:47:55 -0500
+Date: Tue, 11 Nov 2014 21:47:52 -0500 (EST)
+Message-Id: <20141111.214752.266800170368088905.davem@davemloft.net>
+To: mkubecek@suse.cz
+Cc: vfalico@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        j.vosburgh@gmail.com, andy@greyhouse.net, jiri@resnulli.us
+Subject: Re: [PATCH net-next 0/3] dev_disable_lro() improvements for
+ stacked devices
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141111093457.GA30178@unicorn.suse.cz>
+References: <cover.1415692212.git.mkubecek@suse.cz>
+	<20141111090522.GB20586@raspberrypi>
+	<20141111093457.GA30178@unicorn.suse.cz>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 18:47:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+From: Michal Kubecek <mkubecek@suse.cz>
+Date: Tue, 11 Nov 2014 10:34:57 +0100
 
-------------------
+> On Tue, Nov 11, 2014 at 10:05:22AM +0100, Veaceslav Falico wrote:
+>> On Tue, Nov 11, 2014 at 09:21:30AM +0100, Michal Kubecek wrote:
+>> >Large receive offloading is known to cause problems if received packets
+>> >are passed to other host. Therefore the kernel disables it by calling
+>> >dev_disable_lro() whenever a network device is enslaved in a bridge or
+>> >forwarding is enabled for it (or globally). For virtual devices we need
+>> >to disable LRO on the underlying physical device (which is actually
+>> >receiving the packets).
+>> >
+>> >Current dev_disable_lro() code handles this propagation for a vlan
+>> >(including 802.1ad nested vlan), macvlan or a vlan on top of a macvlan.
+>> >This patch adds LRO disabling propagation for
+>> >
+>> > - macvlan on top of a vlan or any stacked combination of those
+>> > - bonding
+>> > - teaming
+>> 
+>> All of these drivers use the netdev_upper and friends, so why not make it
+>> generic with netdev_for_each_all_lower() in dev_disable_lro()?
+> 
+> I wanted to preserve current approach where for vlan and macvlan, LRO is
+> disabled on the real device instead of the original one (rather than in
+> addition to it) as LRO is always disabled on them.
+> 
+> Handling all four uniformly would make the code nicer but would bring
+> unnecessary overhead of traversing the list and dev_disable_lro()
+> recursion. On the other hand, this operation is not time critical so it
+> might be acceptable after all.
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Please do it generically.
 
-commit b27580b05e6f5253228debc60b8ff4a786ff573a upstream.
+Having a special stanza for each layered device type in
+dev_disable_lro() is beyond stupid.  Especially when it
+can in fact be done cleanly.
 
-BYT has a different conversion from P state to frequency than the core
-processors.  This causes the min/max and current frequency to be
-misreported on some BYT SKUs. Tested on BYT N2820, Ivybridge and
-Haswell processors.
-
-Link: https://bugzilla.yoctoproject.org/show_bug.cgi?id=6663
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/cpufreq/intel_pstate.c |   42 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 36 insertions(+), 6 deletions(-)
-
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -67,6 +67,7 @@ struct pstate_data {
- 	int	current_pstate;
- 	int	min_pstate;
- 	int	max_pstate;
-+	int	scaling;
- 	int	turbo_pstate;
- };
- 
-@@ -118,6 +119,7 @@ struct pstate_funcs {
- 	int (*get_max)(void);
- 	int (*get_min)(void);
- 	int (*get_turbo)(void);
-+	int (*get_scaling)(void);
- 	void (*set)(struct cpudata*, int pstate);
- 	void (*get_vid)(struct cpudata *);
- };
-@@ -407,6 +409,22 @@ static void byt_set_pstate(struct cpudat
- 	wrmsrl(MSR_IA32_PERF_CTL, val);
- }
- 
-+#define BYT_BCLK_FREQS 5
-+static int byt_freq_table[BYT_BCLK_FREQS] = { 833, 1000, 1333, 1167, 800};
-+
-+static int byt_get_scaling(void)
-+{
-+	u64 value;
-+	int i;
-+
-+	rdmsrl(MSR_FSB_FREQ, value);
-+	i = value & 0x3;
-+
-+	BUG_ON(i > BYT_BCLK_FREQS);
-+
-+	return byt_freq_table[i] * 100;
-+}
-+
- static void byt_get_vid(struct cpudata *cpudata)
- {
- 	u64 value;
-@@ -451,6 +469,11 @@ static int core_get_turbo_pstate(void)
- 	return ret;
- }
- 
-+static inline int core_get_scaling(void)
-+{
-+	return 100000;
-+}
-+
- static void core_set_pstate(struct cpudata *cpudata, int pstate)
- {
- 	u64 val;
-@@ -475,6 +498,7 @@ static struct cpu_defaults core_params =
- 		.get_max = core_get_max_pstate,
- 		.get_min = core_get_min_pstate,
- 		.get_turbo = core_get_turbo_pstate,
-+		.get_scaling = core_get_scaling,
- 		.set = core_set_pstate,
- 	},
- };
-@@ -493,6 +517,7 @@ static struct cpu_defaults byt_params =
- 		.get_min = byt_get_min_pstate,
- 		.get_turbo = byt_get_turbo_pstate,
- 		.set = byt_set_pstate,
-+		.get_scaling = byt_get_scaling,
- 		.get_vid = byt_get_vid,
- 	},
- };
-@@ -526,7 +551,7 @@ static void intel_pstate_set_pstate(stru
- 	if (pstate == cpu->pstate.current_pstate)
- 		return;
- 
--	trace_cpu_frequency(pstate * 100000, cpu->cpu);
-+	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
- 
- 	cpu->pstate.current_pstate = pstate;
- 
-@@ -555,6 +580,7 @@ static void intel_pstate_get_cpu_pstates
- 	cpu->pstate.min_pstate = pstate_funcs.get_min();
- 	cpu->pstate.max_pstate = pstate_funcs.get_max();
- 	cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
-+	cpu->pstate.scaling = pstate_funcs.get_scaling();
- 
- 	if (pstate_funcs.get_vid)
- 		pstate_funcs.get_vid(cpu);
-@@ -574,7 +600,9 @@ static inline void intel_pstate_calc_bus
- 		core_pct += 1;
- 
- 	sample->freq = fp_toint(
--		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
-+		mul_fp(int_tofp(
-+			cpu->pstate.max_pstate * cpu->pstate.scaling / 100),
-+			core_pct));
- 
- 	sample->core_pct_busy = (int32_t)core_pct;
- }
-@@ -817,12 +845,13 @@ static int intel_pstate_cpu_init(struct
- 	else
- 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
- 
--	policy->min = cpu->pstate.min_pstate * 100000;
--	policy->max = cpu->pstate.turbo_pstate * 100000;
-+	policy->min = cpu->pstate.min_pstate * cpu->pstate.scaling;
-+	policy->max = cpu->pstate.turbo_pstate * cpu->pstate.scaling;
- 
- 	/* cpuinfo and default policy values */
--	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * 100000;
--	policy->cpuinfo.max_freq = cpu->pstate.turbo_pstate * 100000;
-+	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * cpu->pstate.scaling;
-+	policy->cpuinfo.max_freq =
-+		cpu->pstate.turbo_pstate * cpu->pstate.scaling;
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
- 	cpumask_set_cpu(policy->cpu, policy->cpus);
- 
-@@ -880,6 +909,7 @@ static void copy_cpu_funcs(struct pstate
- 	pstate_funcs.get_max   = funcs->get_max;
- 	pstate_funcs.get_min   = funcs->get_min;
- 	pstate_funcs.get_turbo = funcs->get_turbo;
-+	pstate_funcs.get_scaling = funcs->get_scaling;
- 	pstate_funcs.set       = funcs->set;
- 	pstate_funcs.get_vid   = funcs->get_vid;
- }
-
-
+THanks.
