@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934141AbaKLBjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:39:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59992 "EHLO
+	id S964866AbaKLBjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:39:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964812AbaKLBjB (ORCPT
+	with ESMTP id S964843AbaKLBjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:39:01 -0500
+	Tue, 11 Nov 2014 20:39:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Harris <jefftharris@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.14 040/203] [jffs2] kill wbuf_queued/wbuf_dwork_lock
-Date: Wed, 12 Nov 2014 10:15:10 +0900
-Message-Id: <20141112011544.544123290@linuxfoundation.org>
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 043/203] sched: Use dl_bw_of() under RCU read lock
+Date: Wed, 12 Nov 2014 10:15:13 +0900
+Message-Id: <20141112011544.688355045@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,98 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Kirill Tkhai <ktkhai@parallels.com>
 
-commit 99358a1ca53e8e6ce09423500191396f0e6584d2 upstream.
+commit 66339c31bc3978d5fff9c4b4cb590a861def4db2 upstream.
 
-schedule_delayed_work() happening when the work is already pending is
-a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
-broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
-and pointless.  It's cheaper to let schedule_delayed_work() handle that
-case.
+dl_bw_of() dereferences rq->rd which has to have RCU read lock held.
+Probability of use-after-free isn't zero here.
 
-Reported-by: Jeff Harris <jefftharris@gmail.com>
-Tested-by: Jeff Harris <jefftharris@gmail.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Also add lockdep assert into dl_bw_cpus().
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140922183624.11015.71558.stgit@localhost
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/jffs2_fs_sb.h |    2 --
- fs/jffs2/wbuf.c        |   17 ++---------------
- 2 files changed, 2 insertions(+), 17 deletions(-)
+ kernel/sched/core.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/fs/jffs2/jffs2_fs_sb.h
-+++ b/fs/jffs2/jffs2_fs_sb.h
-@@ -134,8 +134,6 @@ struct jffs2_sb_info {
- 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
- 
- 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
--	int wbuf_queued;                /* non-zero delayed work is queued */
--	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
- 
- 	unsigned char *oobbuf;
- 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
---- a/fs/jffs2/wbuf.c
-+++ b/fs/jffs2/wbuf.c
-@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct wor
- 	struct jffs2_sb_info *c = work_to_sb(work);
- 	struct super_block *sb = OFNI_BS_2SFFJ(c);
- 
--	spin_lock(&c->wbuf_dwork_lock);
--	c->wbuf_queued = 0;
--	spin_unlock(&c->wbuf_dwork_lock);
--
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		jffs2_dbg(1, "%s()\n", __func__);
- 		jffs2_flush_wbuf_gc(c, 0);
-@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb
- 	if (sb->s_flags & MS_RDONLY)
- 		return;
- 
--	spin_lock(&c->wbuf_dwork_lock);
--	if (!c->wbuf_queued) {
-+	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
-+	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
- 		jffs2_dbg(1, "%s()\n", __func__);
--		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
--		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
--		c->wbuf_queued = 1;
--	}
--	spin_unlock(&c->wbuf_dwork_lock);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1895,6 +1895,8 @@ unsigned long to_ratio(u64 period, u64 r
+ #ifdef CONFIG_SMP
+ inline struct dl_bw *dl_bw_of(int i)
+ {
++	rcu_lockdep_assert(rcu_read_lock_sched_held(),
++			   "sched RCU must be held");
+ 	return &cpu_rq(i)->rd->dl_bw;
  }
  
- int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
-@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_
+@@ -1903,6 +1905,8 @@ static inline int dl_bw_cpus(int i)
+ 	struct root_domain *rd = cpu_rq(i)->rd;
+ 	int cpus = 0;
  
- 	/* Initialise write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 	c->wbuf_pagesize = c->mtd->writesize;
- 	c->wbuf_ofs = 0xFFFFFFFF;
-@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_s
++	rcu_lockdep_assert(rcu_read_lock_sched_held(),
++			   "sched RCU must be held");
+ 	for_each_cpu_and(i, rd->span, cpu_active_mask)
+ 		cpus++;
  
- 	/* Initialize write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 	c->wbuf_pagesize =  c->mtd->erasesize;
+@@ -7458,6 +7462,8 @@ static int sched_dl_global_constraints(v
+ 	int cpu, ret = 0;
+ 	unsigned long flags;
  
-@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jf
++	rcu_read_lock();
++
+ 	/*
+ 	 * Here we want to check the bandwidth not being set to some
+ 	 * value smaller than the currently allocated bandwidth in
+@@ -7479,6 +7485,8 @@ static int sched_dl_global_constraints(v
+ 			break;
+ 	}
  
- 	/* Initialize write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
++	rcu_read_unlock();
++
+ 	return ret;
+ }
  
- 	c->wbuf_pagesize = c->mtd->writesize;
-@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_i
- 		return 0;
+@@ -7494,6 +7502,7 @@ static void sched_dl_do_global(void)
+ 	if (global_rt_runtime() != RUNTIME_INF)
+ 		new_bw = to_ratio(global_rt_period(), global_rt_runtime());
  
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
++	rcu_read_lock();
+ 	/*
+ 	 * FIXME: As above...
+ 	 */
+@@ -7504,6 +7513,7 @@ static void sched_dl_do_global(void)
+ 		dl_b->bw = new_bw;
+ 		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+ 	}
++	rcu_read_unlock();
+ }
  
- 	c->wbuf_pagesize =  c->mtd->writesize;
+ static int sched_rt_global_validate(void)
 
 
