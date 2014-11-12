@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaKLLiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:38:20 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:51575 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492AbaKLLiR (ORCPT
+	id S1752630AbaKLLil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:38:41 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46258 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaKLLik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:38:17 -0500
-Message-ID: <546346A4.3020409@redhat.com>
-Date: Wed, 12 Nov 2014 12:38:12 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.comp.emulators.kvm.devel
-To: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH] x86, kvm, vmx: Always use LOAD_IA32_EFER if available
-References: <32d96cddbe65b897151b95a0e0f8326e404646f8.1415413387.git.luto@amacapital.net>
-In-Reply-To: <32d96cddbe65b897151b95a0e0f8326e404646f8.1415413387.git.luto@amacapital.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Nov 2014 06:38:40 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [PATCH v2 v3.18-rc4 0/4] drm: prime: Allow exported dma-bufs to be mapped
+Date: Wed, 12 Nov 2014 11:38:11 +0000
+Message-Id: <1415792295-2466-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415639805-17477-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415639805-17477-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch set started out as a single patch with a trivial bit of
+boilerplate to add dmabuf mmap support to the msm driver. Each of the
+change remains fairly trivial but I've split it out by topic.
+
+Patches 1, 2 and 3 in this series should be good to go but please don't
+take patch 4 (which has a small effect on userspace) without an explicit
+ack from Benjamin Gaignard.
+
+I've tested this both with a rather hacked about Android userspace
+and with a fairly small test case run from debian. Both bits of code
+currently use dumb buffers.
+
+Thanks to Benjamin for his help in finding this bit of code.
+
+v2:
+
+* Modified DRM_PRIME_HANDLE_TO_FD to honour the O_RDRW from the user
+  and removed code to workaround this from the sti driver (Rob Clark).
+
+* Added a patch to (rather spartanly) document gem_prime_mmap. Only
+  tacked into this series 'cos I spotted it was missing when I was
+  checking whether I needed to describe DRM_RDRWR anywhere.
 
 
-On 08/11/2014 03:25, Andy Lutomirski wrote:
-> At least on Sandy Bridge, letting the CPU switch IA32_EFER is much
-> faster than switching it manually.
-> 
-> I benchmarked this using the vmexit kvm-unit-test (single run, but
-> GOAL multiplied by 5 to do more iterations):
-> 
-> Test                                  Before      After    Change
-> cpuid                                   2000       1932    -3.40%
-> vmcall                                  1914       1817    -5.07%
-> mov_from_cr8                              13         13     0.00%
-> mov_to_cr8                                19         19     0.00%
-> inl_from_pmtimer                       19164      10619   -44.59%
-> inl_from_qemu                          15662      10302   -34.22%
-> inl_from_kernel                         3916       3802    -2.91%
-> outl_to_kernel                          2230       2194    -1.61%
-> mov_dr                                   172        176     2.33%
-> ipi                                (skipped)  (skipped)
-> ipi+halt                           (skipped)  (skipped)
-> ple-round-robin                           13         13     0.00%
-> wr_tsc_adjust_msr                       1920       1845    -3.91%
-> rd_tsc_adjust_msr                       1892       1814    -4.12%
-> mmio-no-eventfd:pci-mem                16394      11165   -31.90%
-> mmio-wildcard-eventfd:pci-mem           4607       4645     0.82%
-> mmio-datamatch-eventfd:pci-mem          4601       4610     0.20%
-> portio-no-eventfd:pci-io               11507       7942   -30.98%
-> portio-wildcard-eventfd:pci-io          2239       2225    -0.63%
-> portio-datamatch-eventfd:pci-io         2250       2234    -0.71%
-> 
-> I haven't explicitly computed the significance of these numbers,
-> but this isn't subtle.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/kvm/vmx.c | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 3e556c68351b..e72b9660e51c 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -1659,8 +1659,14 @@ static bool update_transition_efer(struct vcpu_vmx *vmx, int efer_offset)
->  	vmx->guest_msrs[efer_offset].mask = ~ignore_bits;
->  
->  	clear_atomic_switch_msr(vmx, MSR_EFER);
-> -	/* On ept, can't emulate nx, and must switch nx atomically */
-> -	if (enable_ept && ((vmx->vcpu.arch.efer ^ host_efer) & EFER_NX)) {
-> +
-> +	/*
-> +	 * On EPT, we can't emulate NX, so we must switch EFER atomically.
-> +	 * On CPUs that support "load IA32_EFER", always switch EFER
-> +	 * atomically, since it's faster than switching it manually.
-> +	 */
-> +	if (cpu_has_load_ia32_efer ||
-> +	    (enable_ept && ((vmx->vcpu.arch.efer ^ host_efer) & EFER_NX))) {
->  		guest_efer = vmx->vcpu.arch.efer;
->  		if (!(guest_efer & EFER_LMA))
->  			guest_efer &= ~EFER_LME;
-> 
+Daniel Thompson (4):
+  drm: prime: Honour O_RDWR during prime-handle-to-fd
+  drm: prime: Document gem_prime_mmap
+  drm: msm: Allow exported dma-bufs to be mapped
+  drm: sti: Honour O_RDWR during prime-handle-to-fd
 
-I am committing this patch, with an additional remark in the commit message:
+ drivers/gpu/drm/drm_prime.c         | 13 ++++++-------
+ drivers/gpu/drm/msm/msm_drv.c       |  1 +
+ drivers/gpu/drm/msm/msm_drv.h       |  3 +++
+ drivers/gpu/drm/msm/msm_gem_prime.c | 13 +++++++++++++
+ drivers/gpu/drm/sti/sti_drm_drv.c   | 11 +----------
+ include/uapi/drm/drm.h              |  1 +
+ 6 files changed, 25 insertions(+), 17 deletions(-)
 
- The results were reproducible on all of Nehalem, Sandy Bridge and
- Ivy Bridge.  The slowness of manual switching is because writing
- to EFER with WRMSR triggers a TLB flush, even if the only bit you're
- touching is SCE (so the page table format is not affected).  Doing
- the write as part of vmentry/vmexit, instead, does not flush the TLB,
- probably because all processors that have EPT also have VPID.
+--
+1.9.3
 
-Paolo
