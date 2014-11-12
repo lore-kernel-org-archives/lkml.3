@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934599AbaKLCVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:21:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60998 "EHLO
+	id S934734AbaKLCWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:22:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965924AbaKLBum (ORCPT
+	with ESMTP id S965907AbaKLBug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:42 -0500
+	Tue, 11 Nov 2014 20:50:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        hujianyang <hujianyang@huawei.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.10 014/123] UBIFS: fix a race condition
-Date: Wed, 12 Nov 2014 10:16:20 +0900
-Message-Id: <20141112011719.637387629@linuxfoundation.org>
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH 3.10 030/123] UBI: add missing kmem_cache_free() in process_pool_aeb error path
+Date: Wed, 12 Nov 2014 10:16:36 +0900
+Message-Id: <20141112011720.395268754@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,124 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-commit 052c28073ff26f771d44ef33952a41d18dadd255 upstream.
+commit 1bf1890e86869032099b539bc83b098be12fc5a7 upstream.
 
-Hu (hujianyang@huawei.com) discovered a race condition which may lead to a
-situation when UBIFS is unable to mount the file-system after an unclean
-reboot. The problem is theoretical, though.
+I ran into this error after a ubiupdatevol, because I forgot to backport
+e9110361a9a4 UBI: fix the volumes tree sorting criteria.
 
-In UBIFS, we have the log, which basically a set of LEBs in a certain area. The
-log has the tail and the head.
+UBI error: process_pool_aeb: orphaned volume in fastmap pool
+UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
+kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
+[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
+[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
+[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
+[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
+[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
+[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
+[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
+[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
+[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
+UBI: scanning is finished
 
-Every time user writes data to the file-system, the UBIFS journal grows, and
-the log grows as well, because we append new reference nodes to the head of the
-log. So the head moves forward all the time, while the log tail stays at the
-same position.
+Freeing the cache in the error path fixes the Slab error.
 
-At any time, the UBIFS master node points to the tail of the log. When we mount
-the file-system, we scan the log, and we always start from its tail, because
-this is where the master node points to. The only occasion when the tail of the
-log changes is the commit operation.
+Tested on at91sam9g35 (3.14.18+fastmap backports)
 
-The commit operation has 2 phases - "commit start" and "commit end". The former
-is relatively short, and does not involve much I/O. During this phase we mostly
-just build various in-memory lists of the things which have to be written to
-the flash media during "commit end" phase.
-
-During the commit start phase, what we do is we "clean" the log. Indeed, the
-commit operation will index all the data in the journal, so the entire journal
-"disappears", and therefore the data in the log become unneeded. So we just
-move the head of the log to the next LEB, and write the CS node there. This LEB
-will be the tail of the new log when the commit operation finishes.
-
-When the "commit start" phase finishes, users may write more data to the
-file-system, in parallel with the ongoing "commit end" operation. At this point
-the log tail was not changed yet, it is the same as it had been before we
-started the commit. The log head keeps moving forward, though.
-
-The commit operation now needs to write the new master node, and the new master
-node should point to the new log tail. After this the LEBs between the old log
-tail and the new log tail can be unmapped and re-used again.
-
-And here is the possible problem. We do 2 operations: (a) We first update the
-log tail position in memory (see 'ubifs_log_end_commit()'). (b) And then we
-write the master node (see the big lock of code in 'do_commit()').
-
-But nothing prevents the log head from moving forward between (a) and (b), and
-the log head may "wrap" now to the old log tail. And when the "wrap" happens,
-the contends of the log tail gets erased. Now a power cut happens and we are in
-trouble. We end up with the old master node pointing to the old tail, which was
-erased. And replay fails because it expects the master node to point to the
-correct log tail at all times.
-
-This patch merges the abovementioned (a) and (b) operations by moving the master
-node change code to the 'ubifs_log_end_commit()' function, so that it runs with
-the log mutex locked, which will prevent the log from being changed benween
-operations (a) and (b).
-
-Reported-by: hujianyang <hujianyang@huawei.com>
-Tested-by: hujianyang <hujianyang@huawei.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/commit.c |    8 +++-----
- fs/ubifs/log.c    |   11 ++++++++---
- 2 files changed, 11 insertions(+), 8 deletions(-)
+ drivers/mtd/ubi/fastmap.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ubifs/commit.c
-+++ b/fs/ubifs/commit.c
-@@ -166,10 +166,6 @@ static int do_commit(struct ubifs_info *
- 	err = ubifs_orphan_end_commit(c);
- 	if (err)
- 		goto out;
--	old_ltail_lnum = c->ltail_lnum;
--	err = ubifs_log_end_commit(c, new_ltail_lnum);
--	if (err)
--		goto out;
- 	err = dbg_check_old_index(c, &zroot);
- 	if (err)
- 		goto out;
-@@ -202,7 +198,9 @@ static int do_commit(struct ubifs_info *
- 		c->mst_node->flags |= cpu_to_le32(UBIFS_MST_NO_ORPHS);
- 	else
- 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
--	err = ubifs_write_master(c);
-+
-+	old_ltail_lnum = c->ltail_lnum;
-+	err = ubifs_log_end_commit(c, new_ltail_lnum);
- 	if (err)
- 		goto out;
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_d
+ 		av = tmp_av;
+ 	else {
+ 		ubi_err("orphaned volume in fastmap pool!");
++		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
+ 		return UBI_BAD_FASTMAP;
+ 	}
  
---- a/fs/ubifs/log.c
-+++ b/fs/ubifs/log.c
-@@ -447,9 +447,9 @@ out:
-  * @ltail_lnum: new log tail LEB number
-  *
-  * This function is called on when the commit operation was finished. It
-- * moves log tail to new position and unmaps LEBs which contain obsolete data.
-- * Returns zero in case of success and a negative error code in case of
-- * failure.
-+ * moves log tail to new position and updates the master node so that it stores
-+ * the new log tail LEB number. Returns zero in case of success and a negative
-+ * error code in case of failure.
-  */
- int ubifs_log_end_commit(struct ubifs_info *c, int ltail_lnum)
- {
-@@ -477,7 +477,12 @@ int ubifs_log_end_commit(struct ubifs_in
- 	spin_unlock(&c->buds_lock);
- 
- 	err = dbg_check_bud_bytes(c);
-+	if (err)
-+		goto out;
- 
-+	err = ubifs_write_master(c);
-+
-+out:
- 	mutex_unlock(&c->log_mutex);
- 	return err;
- }
 
 
