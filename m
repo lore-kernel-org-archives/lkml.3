@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935037AbaKLCDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:03:05 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43415 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933182AbaKLCDC (ORCPT
+	id S1754712AbaKLCD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:03:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33118 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161112AbaKLB4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:03:02 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5462BFBA.4010207@jp.fujitsu.com>
-Date: Wed, 12 Nov 2014 11:02:34 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 11 Nov 2014 20:56:07 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Karl Beldan <karl.beldan@rivierawaves.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 108/123] mac80211: fix typo in starting baserate for rts_cts_rate_idx
+Date: Wed, 12 Nov 2014 10:17:54 +0900
+Message-Id: <20141112011723.899728139@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
+References: <20141112011718.985171261@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Weijie Yang <weijie.yang@samsung.com>
-CC: <kamezawa.hiroyu@jp.fujitsu.com>, "'Minchan Kim'" <minchan@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>, <mgorman@suse.de>,
-        <mina86@mina86.com>, "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>
-Subject: Re: [PATCH 1/2] mm: page_isolation: check pfn validity before access
-References: <000001cff998$ee0b31d0$ca219570$%yang@samsung.com>
-In-Reply-To: <000001cff998$ee0b31d0$ca219570$%yang@samsung.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/06 17:08), Weijie Yang wrote:
-> In the undo path of start_isolate_page_range(), we need to check
-> the pfn validity before access its page, or it will trigger an
-> addressing exception if there is hole in the zone.
->
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> ---
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Looks good to me.
+------------------
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Karl Beldan <karl.beldan@rivierawaves.com>
 
-Thanks,
-Yasuaki Ishimatsu
+commit c7abf25af0f41be4b50d44c5b185d52eea360cb8 upstream.
 
->   mm/page_isolation.c |    7 +++++--
->   1 files changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index d1473b2..3ddc8b3 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -137,8 +137,11 @@ int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
->   undo:
->   	for (pfn = start_pfn;
->   	     pfn < undo_pfn;
-> -	     pfn += pageblock_nr_pages)
-> -		unset_migratetype_isolate(pfn_to_page(pfn), migratetype);
-> +	     pfn += pageblock_nr_pages) {
-> +		page = __first_valid_page(pfn, pageblock_nr_pages);
-> +		if (page)
-> +			unset_migratetype_isolate(page, migratetype);
-> +	}
->
->   	return -EBUSY;
->   }
->
+It affects non-(V)HT rates and can lead to selecting an rts_cts rate
+that is not a basic rate or way superior to the reference rate (ATM
+rates[0] used for the 1st attempt of the protected frame data).
+
+E.g, assuming drivers register growing (bitrate) sorted tables of
+ieee80211_rate-s, having :
+- rates[0].idx == d'2 and basic_rates == b'10100
+will select rts_cts idx b'10011 & ~d'(BIT(2)-1), i.e. 1, likewise
+- rates[0].idx == d'2 and basic_rates == b'10001
+will select rts_cts idx b'10000
+The first is not a basic rate and the second is > rates[0].
+
+Also, wrt severity of the addressed misbehavior, ATM we only have one
+rts_cts_rate_idx rather than one per rate table entry, so this idx might
+still point to bitrates > rates[1..MAX_RATES].
+
+Fixes: 5253ffb8c9e1 ("mac80211: always pick a basic rate to tx RTS/CTS for pre-HT rates")
+Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/mac80211/rate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/mac80211/rate.c
++++ b/net/mac80211/rate.c
+@@ -448,7 +448,7 @@ static void rate_fixup_ratelist(struct i
+ 	 */
+ 	if (!(rates[0].flags & IEEE80211_TX_RC_MCS)) {
+ 		u32 basic_rates = vif->bss_conf.basic_rates;
+-		s8 baserate = basic_rates ? ffs(basic_rates - 1) : 0;
++		s8 baserate = basic_rates ? ffs(basic_rates) - 1 : 0;
+ 
+ 		rate = &sband->bitrates[rates[0].idx];
+ 
 
 
