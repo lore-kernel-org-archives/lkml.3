@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaKLBVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:21:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58468 "EHLO
+	id S1753202AbaKLBVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:21:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58478 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571AbaKLBVL (ORCPT
+	with ESMTP id S1752568AbaKLBVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:21:11 -0500
+	Tue, 11 Nov 2014 20:21:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 009/319] ipv4: fix a potential use after free in ip_tunnel_core.c
-Date: Wed, 12 Nov 2014 10:12:27 +0900
-Message-Id: <20141112010954.206722530@linuxfoundation.org>
+        Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 033/319] ASoC: core: fix use after free in snd_soc_remove_platform()
+Date: Wed, 12 Nov 2014 10:12:51 +0900
+Message-Id: <20141112010958.160221725@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,38 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Daniel Mack <daniel@zonque.org>
 
-[ Upstream commit 1245dfc8cadb258386fcd27df38215a0eccb1f17 ]
+commit decc27b01d584c985c231e73d3b493de6ec07af8 upstream.
 
-pskb_may_pull() maybe change skb->data and make eth pointer oboslete,
-so set eth after pskb_may_pull()
+Coverity spotted an use-after-free condition in snd_soc_remove_platform().
+Fix this by moving snd_soc_component_cleanup() after the debug print
+statement which uses the component's string.
 
-Fixes:3d7b46cd("ip_tunnel: push generic protocol handling to ip_tunnel module")
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Daniel Mack <daniel@zonque.org>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ip_tunnel_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/ip_tunnel_core.c
-+++ b/net/ipv4/ip_tunnel_core.c
-@@ -91,11 +91,12 @@ int iptunnel_pull_header(struct sk_buff
- 	skb_pull_rcsum(skb, hdr_len);
+---
+ sound/soc/soc-core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4315,10 +4315,10 @@ void snd_soc_remove_platform(struct snd_
+ 	snd_soc_component_del_unlocked(&platform->component);
+ 	mutex_unlock(&client_mutex);
  
- 	if (inner_proto == htons(ETH_P_TEB)) {
--		struct ethhdr *eh = (struct ethhdr *)skb->data;
-+		struct ethhdr *eh;
+-	snd_soc_component_cleanup(&platform->component);
+-
+ 	dev_dbg(platform->dev, "ASoC: Unregistered platform '%s'\n",
+ 		platform->component.name);
++
++	snd_soc_component_cleanup(&platform->component);
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_remove_platform);
  
- 		if (unlikely(!pskb_may_pull(skb, ETH_HLEN)))
- 			return -ENOMEM;
- 
-+		eh = (struct ethhdr *)skb->data;
- 		if (likely(ntohs(eh->h_proto) >= ETH_P_802_3_MIN))
- 			skb->protocol = eh->h_proto;
- 		else
 
 
