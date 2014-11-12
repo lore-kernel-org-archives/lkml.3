@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965160AbaKLDr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:47:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59060 "EHLO
+	id S965077AbaKLDsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:48:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754428AbaKLB2T (ORCPT
+	with ESMTP id S932492AbaKLB2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:28:19 -0500
+	Tue, 11 Nov 2014 20:28:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.17 143/319] target: Fix APTPL metadata handling for dynamic MappedLUNs
-Date: Wed, 12 Nov 2014 10:14:41 +0900
-Message-Id: <20141112011016.153536696@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.17 166/319] drm/nouveau: fix regression on agp boards
+Date: Wed, 12 Nov 2014 10:15:04 +0900
+Message-Id: <20141112011020.153443051@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,93 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit e24805637d2d270d7975502e9024d473de86afdb upstream.
+commit 67e26e41ff8aa514826dae79f0b10169b5ba93b4 upstream.
 
-This patch fixes a bug in handling of SPC-3 PR Activate Persistence
-across Target Power Loss (APTPL) logic where re-creation of state for
-MappedLUNs from dynamically generated NodeACLs did not occur during
-I_T Nexus establishment.
+Extends the fix in f2f9a2cbaf019481feefe231f996d3602612fa99 to also
+workaround permission issues noticed by people using AGP systems.
 
-It adds the missing core_scsi3_check_aptpl_registration() call during
-core_tpg_check_initiator_node_acl() -> core_tpg_add_node_to_devs() in
-order to replay any pre-loaded APTPL metadata state associated with
-the newly connected SCSI Initiator Port.
-
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    3 ++-
- drivers/target/target_core_pr.c     |    6 +++---
- drivers/target/target_core_pr.h     |    2 +-
- drivers/target/target_core_tpg.c    |    8 ++++++++
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_chan.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1409,7 +1409,8 @@ int core_dev_add_initiator_node_lun_acl(
- 	 * Check to see if there are any existing persistent reservation APTPL
- 	 * pre-registrations that need to be enabled for this LUN ACL..
- 	 */
--	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, lacl);
-+	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, nacl,
-+					    lacl->mapped_lun);
- 	return 0;
- }
- 
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -944,10 +944,10 @@ int core_scsi3_check_aptpl_registration(
- 	struct se_device *dev,
- 	struct se_portal_group *tpg,
- 	struct se_lun *lun,
--	struct se_lun_acl *lun_acl)
-+	struct se_node_acl *nacl,
-+	u32 mapped_lun)
+--- a/drivers/gpu/drm/nouveau/nouveau_chan.c
++++ b/drivers/gpu/drm/nouveau/nouveau_chan.c
+@@ -400,15 +400,20 @@ nouveau_channel_new(struct nouveau_drm *
+ 		    struct nouveau_channel **pchan)
  {
--	struct se_node_acl *nacl = lun_acl->se_lun_nacl;
--	struct se_dev_entry *deve = nacl->device_list[lun_acl->mapped_lun];
-+	struct se_dev_entry *deve = nacl->device_list[mapped_lun];
+ 	struct nouveau_cli *cli = (void *)nvif_client(&device->base);
++	bool super;
+ 	int ret;
  
- 	if (dev->dev_reservation_flags & DRF_SPC2_RESERVATIONS)
- 		return 0;
---- a/drivers/target/target_core_pr.h
-+++ b/drivers/target/target_core_pr.h
-@@ -60,7 +60,7 @@ extern int core_scsi3_alloc_aptpl_regist
- 			unsigned char *, u16, u32, int, int, u8);
- extern int core_scsi3_check_aptpl_registration(struct se_device *,
- 			struct se_portal_group *, struct se_lun *,
--			struct se_lun_acl *);
-+			struct se_node_acl *, u32);
- extern void core_scsi3_free_pr_reg_from_nacl(struct se_device *,
- 					     struct se_node_acl *);
- extern void core_scsi3_free_all_registrations(struct se_device *);
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -40,6 +40,7 @@
- #include <target/target_core_fabric.h>
- 
- #include "target_core_internal.h"
-+#include "target_core_pr.h"
- 
- extern struct se_device *g_lun0_dev;
- 
-@@ -166,6 +167,13 @@ void core_tpg_add_node_to_devs(
- 
- 		core_enable_device_list_for_node(lun, NULL, lun->unpacked_lun,
- 				lun_access, acl, tpg);
-+		/*
-+		 * Check to see if there are any existing persistent reservation
-+		 * APTPL pre-registrations that need to be enabled for this dynamic
-+		 * LUN ACL now..
-+		 */
-+		core_scsi3_check_aptpl_registration(dev, tpg, lun, acl,
-+						    lun->unpacked_lun);
- 		spin_lock(&tpg->tpg_lun_lock);
++	/* hack until fencenv50 is fixed, and agp access relaxed */
++	super = cli->base.super;
++	cli->base.super = true;
++
+ 	ret = nouveau_channel_ind(drm, device, handle, arg0, pchan);
+ 	if (ret) {
+ 		NV_PRINTK(debug, cli, "ib channel create, %d\n", ret);
+ 		ret = nouveau_channel_dma(drm, device, handle, pchan);
+ 		if (ret) {
+ 			NV_PRINTK(debug, cli, "dma channel create, %d\n", ret);
+-			return ret;
++			goto done;
+ 		}
  	}
- 	spin_unlock(&tpg->tpg_lun_lock);
+ 
+@@ -416,8 +421,9 @@ nouveau_channel_new(struct nouveau_drm *
+ 	if (ret) {
+ 		NV_PRINTK(error, cli, "channel failed to initialise, %d\n", ret);
+ 		nouveau_channel_del(pchan);
+-		return ret;
+ 	}
+ 
+-	return 0;
++done:
++	cli->base.super = super;
++	return ret;
+ }
 
 
