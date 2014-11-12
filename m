@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934401AbaKLBl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:41:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60202 "EHLO
+	id S934380AbaKLBlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:41:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933739AbaKLBlu (ORCPT
+	with ESMTP id S933148AbaKLBln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:41:50 -0500
+	Tue, 11 Nov 2014 20:41:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 3.14 087/203] ARC: Update order of registers in KGDB to match GDB 7.5
-Date: Wed, 12 Nov 2014 10:15:57 +0900
-Message-Id: <20141112011546.683879157@linuxfoundation.org>
+        Petr Matousek <pmatouse@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 085/203] kvm: vmx: handle invvpid vm exit gracefully
+Date: Wed, 12 Nov 2014 10:15:55 +0900
+Message-Id: <20141112011546.587060483@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,73 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Kolesov <Anton.Kolesov@synopsys.com>
+From: Petr Matousek <pmatouse@redhat.com>
 
-commit ebc0c74e76cec9c4dd860eb0ca1c0b39dc63c482 upstream.
+commit a642fc305053cc1c6e47e4f4df327895747ab485 upstream.
 
-Order of registers has changed in GDB moving from 6.8 to 7.5. This patch
-updates KGDB to work properly with GDB 7.5, though makes it incompatible
-with 6.8.
+On systems with invvpid instruction support (corresponding bit in
+IA32_VMX_EPT_VPID_CAP MSR is set) guest invocation of invvpid
+causes vm exit, which is currently not handled and results in
+propagation of unknown exit to userspace.
 
-Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Fix this by installing an invvpid vm exit handler.
+
+This is CVE-2014-3646.
+
+Signed-off-by: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/include/asm/kgdb.h |   32 ++++++++++++++++++--------------
- 1 file changed, 18 insertions(+), 14 deletions(-)
+ arch/x86/include/uapi/asm/vmx.h |    2 ++
+ arch/x86/kvm/vmx.c              |    9 ++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
---- a/arch/arc/include/asm/kgdb.h
-+++ b/arch/arc/include/asm/kgdb.h
-@@ -19,7 +19,7 @@
-  * register API yet */
- #undef DBG_MAX_REG_NUM
+--- a/arch/x86/include/uapi/asm/vmx.h
++++ b/arch/x86/include/uapi/asm/vmx.h
+@@ -67,6 +67,7 @@
+ #define EXIT_REASON_EPT_MISCONFIG       49
+ #define EXIT_REASON_INVEPT              50
+ #define EXIT_REASON_PREEMPTION_TIMER    52
++#define EXIT_REASON_INVVPID             53
+ #define EXIT_REASON_WBINVD              54
+ #define EXIT_REASON_XSETBV              55
+ #define EXIT_REASON_APIC_WRITE          56
+@@ -114,6 +115,7 @@
+ 	{ EXIT_REASON_EOI_INDUCED,           "EOI_INDUCED" }, \
+ 	{ EXIT_REASON_INVALID_STATE,         "INVALID_STATE" }, \
+ 	{ EXIT_REASON_INVD,                  "INVD" }, \
++	{ EXIT_REASON_INVVPID,               "INVVPID" }, \
+ 	{ EXIT_REASON_INVPCID,               "INVPCID" }
  
--#define GDB_MAX_REGS		39
-+#define GDB_MAX_REGS		87
+ #endif /* _UAPIVMX_H */
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6444,6 +6444,12 @@ static int handle_invept(struct kvm_vcpu
+ 	return 1;
+ }
  
- #define BREAK_INSTR_SIZE	2
- #define CACHE_FLUSH_IS_SAFE	1
-@@ -33,23 +33,27 @@ static inline void arch_kgdb_breakpoint(
- 
- extern void kgdb_trap(struct pt_regs *regs);
- 
--enum arc700_linux_regnums {
-+/* This is the numbering of registers according to the GDB. See GDB's
-+ * arc-tdep.h for details.
-+ *
-+ * Registers are ordered for GDB 7.5. It is incompatible with GDB 6.8. */
-+enum arc_linux_regnums {
- 	_R0		= 0,
- 	_R1, _R2, _R3, _R4, _R5, _R6, _R7, _R8, _R9, _R10, _R11, _R12, _R13,
- 	_R14, _R15, _R16, _R17, _R18, _R19, _R20, _R21, _R22, _R23, _R24,
- 	_R25, _R26,
--	_BTA		= 27,
--	_LP_START	= 28,
--	_LP_END		= 29,
--	_LP_COUNT	= 30,
--	_STATUS32	= 31,
--	_BLINK		= 32,
--	_FP		= 33,
--	__SP		= 34,
--	_EFA		= 35,
--	_RET		= 36,
--	_ORIG_R8	= 37,
--	_STOP_PC	= 38
-+	_FP		= 27,
-+	__SP		= 28,
-+	_R30		= 30,
-+	_BLINK		= 31,
-+	_LP_COUNT	= 60,
-+	_STOP_PC	= 64,
-+	_RET		= 64,
-+	_LP_START	= 65,
-+	_LP_END		= 66,
-+	_STATUS32	= 67,
-+	_ECR		= 76,
-+	_BTA		= 82,
++static int handle_invvpid(struct kvm_vcpu *vcpu)
++{
++	kvm_queue_exception(vcpu, UD_VECTOR);
++	return 1;
++}
++
+ /*
+  * The exit handlers return 1 if the exit was handled fully and guest execution
+  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
+@@ -6489,6 +6495,7 @@ static int (*const kvm_vmx_exit_handlers
+ 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
+ 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
+ 	[EXIT_REASON_INVEPT]                  = handle_invept,
++	[EXIT_REASON_INVVPID]                 = handle_invvpid,
  };
  
- #else
+ static const int kvm_vmx_max_exit_handlers =
+@@ -6722,7 +6729,7 @@ static bool nested_vmx_exit_handled(stru
+ 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
+ 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
+ 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
+-	case EXIT_REASON_INVEPT:
++	case EXIT_REASON_INVEPT: case EXIT_REASON_INVVPID:
+ 		/*
+ 		 * VMX instructions trap unconditionally. This allows L1 to
+ 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
 
 
