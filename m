@@ -1,207 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaKLRFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 12:05:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36336 "EHLO mga09.intel.com"
+	id S1753435AbaKLRFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:05:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:57737 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752974AbaKLRFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 12:05:37 -0500
+	id S1752957AbaKLRFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:05:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,370,1413270000"; 
-   d="scan'208";a="606712165"
-Subject: [PATCH 00/11] [v10] Intel MPX support
+   d="scan'208";a="606712440"
+Subject: [PATCH 08/11] x86, mpx: [new code] decode MPX instruction to get bound violation information
 To: hpa@zytor.com
 Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
         linux-mips@linux-mips.org, qiaowei.ren@intel.com,
-        Dave Hansen <dave@sr71.net>
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
 From: Dave Hansen <dave@sr71.net>
-Date: Wed, 12 Nov 2014 09:04:43 -0800
-Message-Id: <20141112170443.B4BD0899@viggo.jf.intel.com>
+Date: Wed, 12 Nov 2014 09:05:09 -0800
+References: <20141112170443.B4BD0899@viggo.jf.intel.com>
+In-Reply-To: <20141112170443.B4BD0899@viggo.jf.intel.com>
+Message-Id: <20141112170509.AED2778F@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
+Note: This is substantially different code from the v9 set.
+
+This patch sets bound violation fields of siginfo struct in #BR
+exception handler by decoding the user instruction and constructing
+the faulting pointer.
+
+We have to be very careful when decoding these instructions.  They
+are completely controlled by userspace and may be changed at any
+time up to and including the point where we try to copy them in to
+the kernel.  They may or may not be MPX instructions and could be
+completely invalid for all we know.
+
+Note: This code is based on Qiaowei Ren's specialized MPX
+decoder, but uses the generic decoder whenever possible.  It was
+tested for robustness by generating a completely random data
+stream and trying to decode that stream.  I also unmapped random
+pages inside the stream to test the "partial instruction" short
+read code.
+
+We kzalloc() the siginfo instead of stack allocating it because
+we need to memset() it anyway, and doing this makes it much more
+clear when it got initialized by the MPX instruction decoder.
+
+Changes from the old decoder:
+ * Use the generic decoder instead of custom functions.  Saved
+   ~70 lines of code overall.
+ * Remove insn->addr_bytes code (never used??)
+ * Make sure never to possibly overflow the regoff[] array, plus
+   check the register range correctly in 32 and 64-bit modes.
+ * Allow get_reg() to return an error and have mpx_get_addr_ref()
+   handle when it sees errors.
+ * Only call insn_get_*() near where we actually use the values
+   instead if trying to call them all at once.
+ * Handle short reads from copy_from_user() and check the actual
+   number of read bytes against what we expect from
+   insn_get_length().  If a read stops in the middle of an
+   instruction, we error out.
+ * Actually check the opcodes intead of ignoring them.
+ * Dynamically kzalloc() siginfo_t so we don't leak any stack
+   data.
+ * Detect and handle decoder failures instead of ignoring them.
+
+
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
-Why am I cc'ing you on this?
+ b/arch/x86/include/asm/mpx.h |   12 ++
+ b/arch/x86/mm/mpx.c          |  237 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 249 insertions(+)
 
-mips/ia64 folks: the only patch that applies to you is the'
-	 	 'struct siginfo' one.
-mm folks: the most interesting patches are the last 2 (excluding
-	  the Documentation/ one).
-
----
-
-Changes since v9:
- * New instruction decoder.  Uses generic infrastructure instead
-   of "private" MPX decoder. (details in that patch)
- * Switched over to using get_user_pages() to handle faults when
-   we touch userspace.
- * Lots of clarified comments and grammar fixups.
- * Merged arch/x86/kernel/mpx.c and arch/x86/mm/mpx.c
- * #ifdef'd the smaps display of the MPX flag (compile error on
-   non-x86)
- * Added code to use new functions to access the "xsaves" compact
-   buffers.  The old direct access method was broken since 3.17
-
-We (Intel) are also trying to get some code merged in to GCC for
-MPX.  It will be calling the new prctl()s introduced in this set.
-We need to get those numbers locked down an reserved in the
-kernel before we push the GCC code, though.
-
-This currently requires booting with 'noxsaves' to work around
-what I presume is an issue in the x86 'xsaves' code.  I'll work
-with the folks responsible to get it fixed up properlye
-
----
-
-This patch set adds support for the Memory Protection eXtensions
-(MPX) feature found in future Intel processors. MPX is used in
-conjunction with compiler changes to check memory references, and
-can be used to catch buffer overflow or underflow.
-
-For MPX to work, changes are required in the kernel, binutils and
-compiler. No source changes are required for applications, just a
-recompile.
-
-There are a lot of moving parts of this to all work right:
-
-===== Example Compiler / Application / Kernel Interaction =====
-
-1. Application developer compiles with -fmpx.  The compiler will add the
-   instrumentation as well as some setup code called early after the app
-   starts. New instruction prefixes are noops for old CPUs.
-2. That setup code allocates (virtual) space for the "bounds directory",
-   points the "bndcfgu" register to the directory and notifies the
-   kernel (via the new prctl(PR_MPX_ENABLE_MANAGEMENT)) that the app will
-   be using MPX.
-3. The kernel detects that the CPU has MPX, allows the new prctl() to
-   succeed, and notes the location of the bounds directory. Userspace is
-   expected to keep the bounds directory at that location. We note it
-   instead of reading it each time because the 'xsave' operation needed
-   to access the bounds directory register is an expensive operation.
-4. If the application needs to spill bounds out of the 4 registers, it
-   issues a bndstx instruction.  Since the bounds directory is empty at
-   this point, a bounds fault (#BR) is raised, the kernel allocates a
-   bounds table (in the user address space) and makes the relevant
-   entry in the bounds directory point to the new table. [1]
-5. If the application violates the bounds specified in the bounds
-   registers, a separate kind of #BR is raised which will deliver a
-   signal with information about the violation in the 'struct siginfo'.
-6. Whenever memory is freed, we know that it can no longer contain
-   valid pointers, and we attempt to free the associated space in the
-   bounds tables. If an entire table becomes unused, we will attempt
-   to free the table and remove the entry in the directory.
-
-To summarize, there are essentially three things interacting here:
-
-GCC with -fmpx:
- * enables annotation of code with MPX instructions and prefixes
- * inserts code early in the application to call in to the "gcc runtime"
-GCC MPX Runtime:
- * Checks for hardware MPX support in cpuid leaf
- * allocates virtual space for the bounds directory (malloc()
-   essentially)
- * points the hardware BNDCFGU register at the directory
- * calls a new prctl() to notify the kernel to start managing the
-   bounds directories
-Kernel MPX Code:
- * Checks for hardware MPX support in cpuid leaf
- * Handles #BR exceptions and sends SIGSEGV to the app when it violates
-   bounds, like during a buffer overflow.
- * When bounds are spilled in to an unallocated bounds table, the kernel
-   notices in the #BR exception, allocates the virtual space, then
-   updates the bounds directory to point to the new table. It keeps
-   special track of the memory with a specific ->vm_ops for MPX.
- * Frees unused bounds tables at the time that the memory they described
-   is unmapped. (See "cleanup unused bound tables")
-
-===== Testing =====
-
-This patchset has been tested on real internal hardware platform at Intel.
-We have some simple unit tests in user space, which directly call MPX
-instructions to produce #BR to let kernel allocate bounds tables and cause
-bounds violations. We also compiled several benchmarks with an MPX-enabled
-compiler and ran them with this patch set. We found a number of bugs in this
-code in these tests.
-
-1. For more info on why the kernel does these allocations, see the patch
-"on-demand kernel allocation of bounds tables"
-
-Future TODO items:
-1) support 32-bit binaries on 64-bit kernels.
-2) Remove dependence on mmap_sem for ->bd_addr serialization
-3) Lots of performance work
-4) Manpage (not a kernel patch, but worth mentioning)  I have a
-   patch to do it and will submit once this is merged.
-5) prctl() so we can write wrappers to disable MPX in children
-6) Tracepoints to help diagnose what's going on
-
-Changes since v1:
-  * check to see if #BR occurred in userspace or kernel space.
-  * use generic structure and macro as much as possible when
-    decode mpx instructions.
-
-Changes since v2:
-  * fix some compile warnings.
-  * update documentation.
-
-Changes since v3:
-  * correct some syntax errors at documentation, and document
-    extended struct siginfo.
-  * for kill the process when the error code of BNDSTATUS is 3.
-  * add some comments.
-  * remove new prctl() commands.
-  * fix some compile warnings for 32-bit.
-
-Changes since v4:
-  * raise SIGBUS if the allocations of the bound tables fail.
-
-Changes since v5:
-  * hook unmap() path to cleanup unused bounds tables, and use
-    new prctl() command to register bounds directory address to
-    struct mm_struct to check whether one process is MPX enabled
-    during unmap().
-  * in order track precisely MPX memory usage, add MPX specific
-    mmap interface and one VM_MPX flag to check whether a VMA
-    is MPX bounds table.
-  * add macro cpu_has_mpx to do performance optimization.
-  * sync struct figinfo for mips with general version to avoid
-    build issue.
-
-Changes since v6:
-  * because arch_vma_name is removed, this patchset have toset MPX
-    specific ->vm_ops to do the same thing.
-  * fix warnings for 32 bit arch.
-  * add more description into these patches.
-
-Changes since v7:
-  * introduce VM_ARCH_2 flag. 
-  * remove all of the pr_debug()s.
-  * fix prctl numbers in documentation.
-  * fix some bugs on bounds tables freeing.
-
-Changes since v8:
-  * add new patch to rename cfg_reg_u and status_reg.
-  * add new patch to use disabled features from Dave's patches.
-  * add new patch to sync struct siginfo for IA64.
-  * rename two new prctl() commands to PR_MPX_ENABLE_MANAGEMENT and
-    PR_MPX_DISABLE_MANAGEMENT, check whether the management of bounds
-    tables in kernel is enabled at #BR fault time, and add locking to
-    protect the access to 'bd_addr'.
-  * update the documentation file to add more content about on-demand
-    allocation of bounds tables, etc..
-
-Changes since v9:
- * New instruction decoder.  Uses generic infrastructure instead
-   of "private" MPX decoder. (details in that patch)
- * Switched over to using get_user_pages() to handle faults when
-   we touch userspace.
- * Lots of clarified comments and grammar fixups.
- * Merged arch/x86/kernel/mpx.c and arch/x86/mm/mpx.c
- * #ifdef'd the smaps display of the MPX flag (compile error on
-   non-x86)
- * Added code to use new functions to access the "xsaves" compact
+diff -puN arch/x86/include/asm/mpx.h~mpx-new-decoder arch/x86/include/asm/mpx.h
+--- a/arch/x86/include/asm/mpx.h~mpx-new-decoder	2014-11-12 08:49:26.095898480 -0800
++++ b/arch/x86/include/asm/mpx.h	2014-11-12 08:49:26.099898661 -0800
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/types.h>
+ #include <asm/ptrace.h>
++#include <asm/insn.h>
+ 
+ #ifdef CONFIG_X86_64
+ 
+@@ -33,4 +34,15 @@
+ 
+ #define MPX_BNDSTA_ERROR_CODE	0x3
+ 
++#ifdef CONFIG_X86_INTEL_MPX
++siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
++				struct xsave_struct *xsave_buf);
++#else
++static inline siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
++					      struct xsave_struct *xsave_buf)
++{
++	return NULL;
++}
++#endif /* CONFIG_X86_INTEL_MPX */
++
+ #endif /* _ASM_X86_MPX_H */
+diff -puN arch/x86/mm/mpx.c~mpx-new-decoder arch/x86/mm/mpx.c
+--- a/arch/x86/mm/mpx.c~mpx-new-decoder	2014-11-12 08:49:26.096898525 -0800
++++ b/arch/x86/mm/mpx.c	2014-11-12 08:49:26.100898706 -0800
+@@ -6,6 +6,7 @@
+  * Dave Hansen <dave.hansen@intel.com>
+  */
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/syscalls.h>
+ #include <linux/sched/sysctl.h>
+ 
+@@ -84,3 +85,239 @@ out:
+ 	up_write(&mm->mmap_sem);
+ 	return ret;
+ }
++
++enum reg_type {
++	REG_TYPE_RM = 0,
++	REG_TYPE_INDEX,
++	REG_TYPE_BASE,
++};
++
++static unsigned long get_reg_offset(struct insn *insn, struct pt_regs *regs,
++				    enum reg_type type)
++{
++	int regno = 0;
++
++	static const int regoff[] = {
++		offsetof(struct pt_regs, ax),
++		offsetof(struct pt_regs, cx),
++		offsetof(struct pt_regs, dx),
++		offsetof(struct pt_regs, bx),
++		offsetof(struct pt_regs, sp),
++		offsetof(struct pt_regs, bp),
++		offsetof(struct pt_regs, si),
++		offsetof(struct pt_regs, di),
++#ifdef CONFIG_X86_64
++		offsetof(struct pt_regs, r8),
++		offsetof(struct pt_regs, r9),
++		offsetof(struct pt_regs, r10),
++		offsetof(struct pt_regs, r11),
++		offsetof(struct pt_regs, r12),
++		offsetof(struct pt_regs, r13),
++		offsetof(struct pt_regs, r14),
++		offsetof(struct pt_regs, r15),
++#endif
++	};
++	int nr_registers = ARRAY_SIZE(regoff);
++	/*
++	 * Don't possibly decode a 32-bit instructions as
++	 * reading a 64-bit-only register.
++	 */
++	if (IS_ENABLED(CONFIG_X86_64) && !insn->x86_64)
++		nr_registers -= 8;
++
++	switch (type) {
++	case REG_TYPE_RM:
++		regno = X86_MODRM_RM(insn->modrm.value);
++		if (X86_REX_B(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
++
++	case REG_TYPE_INDEX:
++		regno = X86_SIB_INDEX(insn->sib.value);
++		if (X86_REX_X(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
++
++	case REG_TYPE_BASE:
++		regno = X86_SIB_BASE(insn->sib.value);
++		if (X86_REX_B(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
++
++	default:
++		pr_err("invalid register type");
++		BUG();
++		break;
++	}
++
++	if (regno > nr_registers) {
++		WARN_ONCE(1, "decoded an instruction with an invalid register");
++		return -EINVAL;
++	}
++	return regoff[regno];
++}
++
++/*
++ * return the address being referenced be instruction
++ * for rm=3 returning the content of the rm reg
++ * for rm!=3 calculates the address using SIB and Disp
++ */
++static void __user *mpx_get_addr_ref(struct insn *insn, struct pt_regs *regs)
++{
++	unsigned long addr, addr_offset;
++	unsigned long base, base_offset;
++	unsigned long indx, indx_offset;
++	insn_byte_t sib;
++
++	insn_get_modrm(insn);
++	insn_get_sib(insn);
++	sib = insn->sib.value;
++
++	if (X86_MODRM_MOD(insn->modrm.value) == 3) {
++		addr_offset = get_reg_offset(insn, regs, REG_TYPE_RM);
++		if (addr_offset < 0)
++			goto out_err;
++		addr = regs_get_register(regs, addr_offset);
++	} else {
++		if (insn->sib.nbytes) {
++			base_offset = get_reg_offset(insn, regs, REG_TYPE_BASE);
++			if (base_offset < 0)
++				goto out_err;
++
++			indx_offset = get_reg_offset(insn, regs, REG_TYPE_INDEX);
++			if (indx_offset < 0)
++				goto out_err;
++
++			base = regs_get_register(regs, base_offset);
++			indx = regs_get_register(regs, indx_offset);
++			addr = base + indx * (1 << X86_SIB_SCALE(sib));
++		} else {
++			addr_offset = get_reg_offset(insn, regs, REG_TYPE_RM);
++			if (addr_offset < 0)
++				goto out_err;
++			addr = regs_get_register(regs, addr_offset);
++		}
++		addr += insn->displacement.value;
++	}
++	return (void __user *)addr;
++out_err:
++	return (void __user *)-1;
++}
++
++static int mpx_insn_decode(struct insn *insn,
++			   struct pt_regs *regs)
++{
++	unsigned char buf[MAX_INSN_SIZE];
++	int x86_64 = !test_thread_flag(TIF_IA32);
++	int not_copied;
++	int nr_copied;
++
++	not_copied = copy_from_user(buf, (void __user *)regs->ip, sizeof(buf));
++	nr_copied = sizeof(buf) - not_copied;
++	/*
++	 * The decoder _should_ fail nicely if we pass it a short buffer.
++	 * But, let's not depend on that implementation detail.  If we
++	 * did not get anything, just error out now.
++	 */
++	if (!nr_copied)
++		return -EFAULT;
++	insn_init(insn, buf, nr_copied, x86_64);
++	insn_get_length(insn);
++	/*
++	 * copy_from_user() tries to get as many bytes as we could see in
++	 * the largest possible instruction.  If the instruction we are
++	 * after is shorter than that _and_ we attempt to copy from
++	 * something unreadable, we might get a short read.  This is OK
++	 * as long as the read did not stop in the middle of the
++	 * instruction.  Check to see if we got a partial instruction.
++	 */
++	if (nr_copied < insn->length)
++		return -EFAULT;
++
++	insn_get_opcode(insn);
++	/*
++	 * We only _really_ need to decode bndcl/bndcn/bndcu
++	 * Error out on anything else.
++	 */
++	if (insn->opcode.bytes[0] != 0x0f)
++		goto bad_opcode;
++	if ((insn->opcode.bytes[1] != 0x1a) &&
++	    (insn->opcode.bytes[1] != 0x1b))
++		goto bad_opcode;
++
++	return 0;
++bad_opcode:
++	return -EINVAL;
++}
++
++/*
++ * If a bounds overflow occurs then a #BR is generated. This
++ * function decodes MPX instructions to get violation address
++ * and set this address into extended struct siginfo.
++ *
++ * Note that this is not a super precise way of doing this.
++ * Userspace could have, by the time we get here, written
++ * anything it wants in to the instructions.  We can not
++ * trust anything about it.  They might not be valid
++ * instructions or might encode invalid registers, etc...
++ *
++ * The caller is expected to kfree() the returned siginfo_t.
++ */
++siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
++				struct xsave_struct *xsave_buf)
++{
++	struct insn insn;
++	uint8_t bndregno;
++	int err;
++	siginfo_t *info;
++
++	err = mpx_insn_decode(&insn, regs);
++	if (err)
++		goto err_out;
++
++	/*
++	 * We know at this point that we are only dealing with
++	 * MPX instructions.
++	 */
++	insn_get_modrm(&insn);
++	bndregno = X86_MODRM_REG(insn.modrm.value);
++	if (bndregno > 3) {
++		err = -EINVAL;
++		goto err_out;
++	}
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		err = -ENOMEM;
++		goto err_out;
++	}
++	/*
++	 * The registers are always 64-bit, but the upper 32
++	 * bits are ignored in 32-bit mode.  Also, note that the
++	 * upper bounds are architecturally represented in 1's
++	 * complement form.
++	 *
++	 * The 'unsigned long' cast is because the compiler
++	 * complains when casting from integers to different-size
++	 * pointers.
++	 */
++	info->si_lower = (void __user *)(unsigned long)
++		(xsave_buf->bndreg[bndregno].lower_bound);
++	info->si_upper = (void __user *)(unsigned long)
++		(~xsave_buf->bndreg[bndregno].upper_bound);
++	info->si_addr_lsb = 0;
++	info->si_signo = SIGSEGV;
++	info->si_errno = 0;
++	info->si_code = SEGV_BNDERR;
++	info->si_addr = mpx_get_addr_ref(&insn, regs);
++	/*
++	 * We were not able to extract an address from the instruction,
++	 * probably because there was something invalid in it.
++	 */
++	if (info->si_addr == (void *)-1) {
++		err = -EINVAL;
++		goto err_out;
++	}
++	return info;
++err_out:
++	return ERR_PTR(err);
++}
+_
