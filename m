@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaKLTur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:50:47 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57938 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248AbaKLTup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:50:45 -0500
-Message-ID: <5463B9F7.8040105@ti.com>
-Date: Wed, 12 Nov 2014 13:50:15 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753321AbaKLTwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:52:05 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:44707 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753151AbaKLTwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 14:52:04 -0500
+Date: Wed, 12 Nov 2014 14:52:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Sean O. Stalley" <sean.stalley@intel.com>
+cc: Oliver Neukum <oneukum@suse.de>,
+        Stephanie Wallick <stephanie.s.wallick@intel.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <devel@driverdev.osuosl.org>
+Subject: Re: [V2 PATCH 02/10] added media agnostic (MA) USB HCD roothubs
+In-Reply-To: <20141112192819.GB2651@sean.stalley.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1411121444300.1676-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv6 5/5] hwspinlock/omap: add support for dt nodes
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com> <1410553499-55951-6-git-send-email-s-anna@ti.com> <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
-In-Reply-To: <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+On Wed, 12 Nov 2014, Sean O. Stalley wrote:
 
-On 11/12/2014 01:14 PM, Ohad Ben-Cohen wrote:
-> Hi Suman,
+> > > --- /dev/null
+> > > +++ b/drivers/staging/mausb/drivers/mausb_hub.c
+> > 
+> > > +/**
+> > > + * Returns true if the given is the superspeed HCD. Note: The primary HCD is
+> > > + * High Speed and the shared HCD is SuperSpeed.
+> > > + */
+> > 
+> > Why in that order?
+> > 
 > 
-> On Fri, Sep 12, 2014 at 11:24 PM, Suman Anna <s-anna@ti.com> wrote:
->>  static int omap_hwspinlock_probe(struct platform_device *pdev)
->>  {
->> -       struct hwspinlock_pdata *pdata = pdev->dev.platform_data;
->> +       struct device_node *node = pdev->dev.of_node;
->>         struct hwspinlock_device *bank;
->>         struct hwspinlock *hwlock;
->>         struct resource *res;
->>         void __iomem *io_base;
->> -       int num_locks, i, ret;
->> +       int num_locks, i, ret, base_id;
->>
->> -       if (!pdata)
->> +       if (!node)
->>                 return -ENODEV;
->>
->> +       ret = of_hwspin_lock_get_base_id(node);
->> +       if (ret < 0 && ret != -EINVAL)
->> +               return -ENODEV;
->> +       base_id = (ret > 0 ? ret : 0);
+> We should probably switch this & make the superspeed hub primary.
+> That way we match the xhci driver.
+
+xhci-hcd makes the high-speed hcd the primary one.  This is because it 
+registers the high-speed hcd before the SuperSpeed hcd.  There was a 
+good reason for doing it this way, but I can't remember what it was 
+(it's buried somewhere in the email archives).
+
+That's why when you look at the output from lsusb or something similar,
+a SuperSpeed root hub has a bus number that is one higher than its peer
+high-speed root hub.
+
+> > > +int mausb_hub_status_data(struct usb_hcd *hcd, char *buf)
+> > > +{
+> > > +	int                      i;
+> > > +	u16                      port_change = 0;
+> > > +	u32                      status = 0;
+> > > +	int                      ret = 1;
+> > > +	struct mausb_hcd	 *mhcd = usb_hcd_to_mausb_hcd(hcd);
+> > > +	struct mausb_root_hub	 *roothub = usb_hcd_to_roothub(hcd);
+> > > +
+> > > +	/*
+> > > +	 * Buf should never be more that 2 bytes. USB 3.0 hubs cannot have
+> > > +	 * more than 15 downstream ports.
+> > > +	 */
+> > > +	buf[0] = 0;
+> > > +	if (MAUSB_ROOTHUB_NUM_PORTS > 7) {
+> > > +		buf[1] = 0;
+> > > +		ret++;
+> > > +	}
+> > 
+> > Endianness bug.
+> > 
 > 
-> Does this mean you allow nodes not to have the base_id property? How
-> do we protect against multiple nodes not having a base_id property
-> then?
-> 
-> Implicitly assuming a base_id value (zero in this case) may not be always safe.
+> Could you elaborate?
+> It was my understanding that this buffer was host-endian.
+> Is this an unacceptable way to clear the buffer?
 
-None of the OMAPs have multiple IP instances, and as such the base-id is
-an optional property. I have made this change to make sure we atleast
-attempt to use the value if mentioned in DT and not hard-coding the
-value to begin with (going by the optional property semantics). If and
-when multiple instances get added and a secondary node doesn't add the
-property, the node will not be registered with the core due to an
-overlap failure. Here is the previous version [1] for reference.
+I don't understand Oliver's objection here.  The buffer is 
+little-endian, just as it is for real hubs.  The code seems correct.
 
-regards
-Suman
+Alan Stern
 
-[1] https://patchwork.kernel.org/patch/4096881/
