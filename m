@@ -1,173 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaKLRVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 12:21:08 -0500
-Received: from mga14.intel.com ([192.55.52.115]:58278 "EHLO mga14.intel.com"
+	id S1753495AbaKLRVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:21:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40589 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752878AbaKLRVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 12:21:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="415513533"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "H . Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
-        Aubrey Li <aubrey.li@linux.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v4 3/3] x86: pmc_atom: expose contents of PSS
-Date: Wed, 12 Nov 2014 19:18:09 +0200
-Message-Id: <1415812689-17326-4-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1415812689-17326-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1415812689-17326-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753329AbaKLRVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:21:34 -0500
+Date: Wed, 12 Nov 2014 18:20:58 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, "Chen, Gong" <gong.chen@linux.intel.com>,
+        tony.luck@intel.com, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling
+	recoverable memory errors
+Message-ID: <20141112172057.GA8303@redhat.com>
+References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com> <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com> <20141111114248.GD31490@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141111114248.GD31490@pd.tnic>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PSS register reflects the power state of each island on SoC. It would be
-useful to know which of the islands is on or off at the momemnt.
+Sorry, I am a bit confused...
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Aubrey Li <aubrey.li@linux.intel.com>
----
- arch/x86/include/asm/pmc_atom.h | 22 +++++++++++++++
- arch/x86/kernel/pmc_atom.c      | 61 +++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 80 insertions(+), 3 deletions(-)
+On 11/11, Borislav Petkov wrote:
+>
+> Roughly speaking, we want to be able to mark a task with the sign of
+> death and to kill it, if needed.
 
-diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
-index fc7a17c..bc0fc08 100644
---- a/arch/x86/include/asm/pmc_atom.h
-+++ b/arch/x86/include/asm/pmc_atom.h
-@@ -53,6 +53,28 @@
- /* Sleep state counter is in units of of 32us */
- #define	PMC_TMR_SHIFT		5
- 
-+/* Power status of power islands */
-+#define	PMC_PSS			0x98
-+
-+#define PMC_PSS_BIT_GBE			BIT(0)
-+#define PMC_PSS_BIT_SATA		BIT(1)
-+#define PMC_PSS_BIT_HDA			BIT(2)
-+#define PMC_PSS_BIT_SEC			BIT(3)
-+#define PMC_PSS_BIT_PCIE		BIT(4)
-+#define PMC_PSS_BIT_LPSS		BIT(5)
-+#define PMC_PSS_BIT_LPE			BIT(6)
-+#define PMC_PSS_BIT_DFX			BIT(7)
-+#define PMC_PSS_BIT_USH_CTRL		BIT(8)
-+#define PMC_PSS_BIT_USH_SUS		BIT(9)
-+#define PMC_PSS_BIT_USH_VCCS		BIT(10)
-+#define PMC_PSS_BIT_USH_VCCA		BIT(11)
-+#define PMC_PSS_BIT_OTG_CTRL		BIT(12)
-+#define PMC_PSS_BIT_OTG_VCCS		BIT(13)
-+#define PMC_PSS_BIT_OTG_VCCA_CLK	BIT(14)
-+#define PMC_PSS_BIT_OTG_VCCA		BIT(15)
-+#define PMC_PSS_BIT_USB			BIT(16)
-+#define PMC_PSS_BIT_USB_SUS		BIT(17)
-+
- /* These registers reflect D3 status of functions */
- #define	PMC_D3_STS_0		0xA0
- 
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index bcc91ea..0eb469b 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -38,12 +38,12 @@ struct pmc_dev {
- static struct pmc_dev pmc_device;
- static u32 acpi_base_addr;
- 
--struct pmc_dev_map {
-+struct pmc_bit_map {
- 	const char *name;
- 	u32 bit_mask;
- };
- 
--static const struct pmc_dev_map dev_map[] = {
-+static const struct pmc_bit_map dev_map[] = {
- 	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
- 	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
- 	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
-@@ -82,6 +82,27 @@ static const struct pmc_dev_map dev_map[] = {
- 	{"35 - DFX",			BIT_DFX},
- };
- 
-+static const struct pmc_bit_map pss_map[] = {
-+	{"0  - GBE",			PMC_PSS_BIT_GBE},
-+	{"1  - SATA",			PMC_PSS_BIT_SATA},
-+	{"2  - HDA",			PMC_PSS_BIT_HDA},
-+	{"3  - SEC",			PMC_PSS_BIT_SEC},
-+	{"4  - PCIE",			PMC_PSS_BIT_PCIE},
-+	{"5  - LPSS",			PMC_PSS_BIT_LPSS},
-+	{"6  - LPE",			PMC_PSS_BIT_LPE},
-+	{"7  - DFX",			PMC_PSS_BIT_DFX},
-+	{"8  - USH_CTRL",		PMC_PSS_BIT_USH_CTRL},
-+	{"9  - USH_SUS",		PMC_PSS_BIT_USH_SUS},
-+	{"10 - USH_VCCS",		PMC_PSS_BIT_USH_VCCS},
-+	{"11 - USH_VCCA",		PMC_PSS_BIT_USH_VCCA},
-+	{"12 - OTG_CTRL",		PMC_PSS_BIT_OTG_CTRL},
-+	{"13 - OTG_VCCS",		PMC_PSS_BIT_OTG_VCCS},
-+	{"14 - OTG_VCCA_CLK",		PMC_PSS_BIT_OTG_VCCA_CLK},
-+	{"15 - OTG_VCCA",		PMC_PSS_BIT_OTG_VCCA},
-+	{"16 - USB",			PMC_PSS_BIT_USB},
-+	{"17 - USB_SUS",		PMC_PSS_BIT_USB_SUS},
-+};
-+
- static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
- {
- 	return readl(pmc->regmap + reg_offset);
-@@ -169,6 +190,32 @@ static const struct file_operations pmc_dev_state_ops = {
- 	.release	= single_release,
- };
- 
-+static int pmc_pss_state_show(struct seq_file *s, void *unused)
-+{
-+	struct pmc_dev *pmc = s->private;
-+	u32 pss = pmc_reg_read(pmc, PMC_PSS);
-+	int pss_index;
-+
-+	for (pss_index = 0; pss_index < ARRAY_SIZE(pss_map); pss_index++) {
-+		seq_printf(s, "Island: %-32s\tState: %s\n",
-+			pss_map[pss_index].name,
-+			pss_map[pss_index].bit_mask & pss ? "Off" : "On");
-+	}
-+	return 0;
-+}
-+
-+static int pmc_pss_state_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pmc_pss_state_show, inode->i_private);
-+}
-+
-+static const struct file_operations pmc_pss_state_ops = {
-+	.open		= pmc_pss_state_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
- static int pmc_sleep_tmr_show(struct seq_file *s, void *unused)
- {
- 	struct pmc_dev *pmc = s->private;
-@@ -216,9 +263,17 @@ static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
- 	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
- 				dir, pmc, &pmc_dev_state_ops);
- 	if (!f) {
--		dev_err(&pdev->dev, "dev_states register failed\n");
-+		dev_err(&pdev->dev, "dev_state register failed\n");
- 		goto err;
- 	}
-+
-+	f = debugfs_create_file("pss_state", S_IFREG | S_IRUGO,
-+				dir, pmc, &pmc_pss_state_ops);
-+	if (!f) {
-+		dev_err(&pdev->dev, "pss_state register failed\n");
-+		goto err;
-+	}
-+
- 	f = debugfs_create_file("sleep_state", S_IFREG | S_IRUGO,
- 				dir, pmc, &pmc_sleep_tmr_ops);
- 	if (!f) {
--- 
-2.1.3
+"it" is current, yes?
+
+So I agree with Andy, task_work_add() can work and you can also pass
+paddr/restartable to the handler.
+
+But,
+
+> The important part is *before* it
+> gets to run again.
+
+But it is already running? Perhaps you meant "before it returns to
+user-mode" ?
+
+Oleg.
 
