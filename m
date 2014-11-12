@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaKLB1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:27:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58970 "EHLO
+	id S932406AbaKLB10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:27:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58981 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361AbaKLB1P (ORCPT
+	with ESMTP id S932361AbaKLB1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:15 -0500
+	Tue, 11 Nov 2014 20:27:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Jan Kara <jack@suse.cz>, Dmitry Monakhov <dmonakhov@openvz.org>,
         Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.17 151/319] ext4: check EA value offset when loading
-Date: Wed, 12 Nov 2014 10:14:49 +0900
-Message-Id: <20141112011017.598551092@linuxfoundation.org>
+Subject: [PATCH 3.17 154/319] ext4: grab missed write_count for EXT4_IOC_SWAP_BOOT
+Date: Wed, 12 Nov 2014 10:14:52 +0900
+Message-Id: <20141112011018.115872127@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,100 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit a0626e75954078cfacddb00a4545dde821170bc5 upstream.
+commit 3e67cfad22230ebed85c56cbe413876f33fea82b upstream.
 
-When loading extended attributes, check each entry's value offset to
-make sure it doesn't collide with the entries.
+Otherwise this provokes complain like follows:
+WARNING: CPU: 12 PID: 5795 at fs/ext4/ext4_jbd2.c:48 ext4_journal_check_start+0x4e/0xa0()
+Modules linked in: brd iTCO_wdt lpc_ich mfd_core igb ptp dm_mirror dm_region_hash dm_log dm_mod
+CPU: 12 PID: 5795 Comm: python Not tainted 3.17.0-rc2-00175-gae5344f #158
+Hardware name: Intel Corporation W2600CR/W2600CR, BIOS SE5C600.86B.99.99.x028.061320111235 06/13/2011
+ 0000000000000030 ffff8808116cfd28 ffffffff815c7dfc 0000000000000030
+ 0000000000000000 ffff8808116cfd68 ffffffff8106ce8c ffff8808116cfdc8
+ ffff880813b16000 ffff880806ad6ae8 ffffffff81202008 0000000000000000
+Call Trace:
+ [<ffffffff815c7dfc>] dump_stack+0x51/0x6d
+ [<ffffffff8106ce8c>] warn_slowpath_common+0x8c/0xc0
+ [<ffffffff81202008>] ? ext4_ioctl+0x9e8/0xeb0
+ [<ffffffff8106ceda>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8122867e>] ext4_journal_check_start+0x4e/0xa0
+ [<ffffffff81228c10>] __ext4_journal_start_sb+0x90/0x110
+ [<ffffffff81202008>] ext4_ioctl+0x9e8/0xeb0
+ [<ffffffff8107b0bd>] ? ptrace_stop+0x24d/0x2f0
+ [<ffffffff81088530>] ? alloc_pid+0x480/0x480
+ [<ffffffff8107b1f2>] ? ptrace_do_notify+0x92/0xb0
+ [<ffffffff81186545>] do_vfs_ioctl+0x4e5/0x550
+ [<ffffffff815cdbcb>] ? _raw_spin_unlock_irq+0x2b/0x40
+ [<ffffffff81186603>] SyS_ioctl+0x53/0x80
+ [<ffffffff815ce2ce>] tracesys+0xd0/0xd5
 
-Without this check it is easy to crash the kernel by mounting a
-malicious FS containing a file with an EA wherein e_value_offs = 0 and
-e_value_size > 0 and then deleting the EA, which corrupts the name
-list.
-
-(See the f_ea_value_crash test's FS image in e2fsprogs for an example.)
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/xattr.c |   32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ fs/ext4/ioctl.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -190,14 +190,28 @@ ext4_listxattr(struct dentry *dentry, ch
- }
- 
- static int
--ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
-+ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end,
-+		       void *value_start)
- {
--	while (!IS_LAST_ENTRY(entry)) {
--		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(entry);
-+	struct ext4_xattr_entry *e = entry;
-+
-+	while (!IS_LAST_ENTRY(e)) {
-+		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(e);
- 		if ((void *)next >= end)
- 			return -EIO;
--		entry = next;
-+		e = next;
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -532,9 +532,17 @@ group_add_out:
  	}
-+
-+	while (!IS_LAST_ENTRY(entry)) {
-+		if (entry->e_value_size != 0 &&
-+		    (value_start + le16_to_cpu(entry->e_value_offs) <
-+		     (void *)e + sizeof(__u32) ||
-+		     value_start + le16_to_cpu(entry->e_value_offs) +
-+		    le32_to_cpu(entry->e_value_size) > end))
-+			return -EIO;
-+		entry = EXT4_XATTR_NEXT(entry);
-+	}
-+
- 	return 0;
- }
  
-@@ -214,7 +228,8 @@ ext4_xattr_check_block(struct inode *ino
- 		return -EIO;
- 	if (!ext4_xattr_block_csum_verify(inode, bh->b_blocknr, BHDR(bh)))
- 		return -EIO;
--	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
-+	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size,
-+				       bh->b_data);
- 	if (!error)
- 		set_buffer_verified(bh);
- 	return error;
-@@ -331,7 +346,7 @@ ext4_xattr_ibody_get(struct inode *inode
- 	header = IHDR(inode, raw_inode);
- 	entry = IFIRST(header);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(entry, end);
-+	error = ext4_xattr_check_names(entry, end, entry);
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_find_entry(&entry, name_index, name,
-@@ -463,7 +478,7 @@ ext4_xattr_ibody_list(struct dentry *den
- 	raw_inode = ext4_raw_inode(&iloc);
- 	header = IHDR(inode, raw_inode);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(IFIRST(header), end);
-+	error = ext4_xattr_check_names(IFIRST(header), end, IFIRST(header));
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_list_entries(dentry, IFIRST(header),
-@@ -986,7 +1001,8 @@ int ext4_xattr_ibody_find(struct inode *
- 	is->s.here = is->s.first;
- 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
- 	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
--		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
-+		error = ext4_xattr_check_names(IFIRST(header), is->s.end,
-+					       IFIRST(header));
- 		if (error)
- 			return error;
- 		/* Find the named attribute. */
+ 	case EXT4_IOC_SWAP_BOOT:
++	{
++		int err;
+ 		if (!(filp->f_mode & FMODE_WRITE))
+ 			return -EBADF;
+-		return swap_inode_boot_loader(sb, inode);
++		err = mnt_want_write_file(filp);
++		if (err)
++			return err;
++		err = swap_inode_boot_loader(sb, inode);
++		mnt_drop_write_file(filp);
++		return err;
++	}
+ 
+ 	case EXT4_IOC_RESIZE_FS: {
+ 		ext4_fsblk_t n_blocks_count;
 
 
