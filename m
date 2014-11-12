@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188AbaKLBnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:43:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60436 "EHLO
+	id S965199AbaKLBnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:43:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933589AbaKLBnQ (ORCPT
+	with ESMTP id S934101AbaKLBnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:43:16 -0500
+	Tue, 11 Nov 2014 20:43:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David E. Box" <david.e.box@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Libin Yang <libin.yang@intel.com>, Takashi Iwai <tiwai@suse.de>,
         Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.14 113/203] x86, iosf: Make IOSF driver modular and usable by more drivers
-Date: Wed, 12 Nov 2014 10:16:23 +0900
-Message-Id: <20141112011547.864061620@linuxfoundation.org>
+Subject: [PATCH 3.14 120/203] ALSA: hda - add PCI IDs for Intel Braswell
+Date: Wed, 12 Nov 2014 10:16:30 +0900
+Message-Id: <20141112011548.173297559@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -30,108 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David E. Box" <david.e.box@linux.intel.com>
+From: Libin Yang <libin.yang@intel.com>
 
-commit 6b8f0c8780c71d78624f736d7849645b64cc88b7 upstream.
+commit f31b2ffcad2b8c57cee5ffc634928bcbc8c6a558 upstream.
 
-Currently drivers that run on non-IOSF systems (Core/Xeon) can't use the IOSF
-driver on SOC's without selecting it which forces an unnecessary and limiting
-dependency. Provides dummy functions to allow these modules to conditionally
-use the driver on IOSF equipped platforms without impacting their ability to
-compile and load on non-IOSF platforms. Build default m to ensure availability
-on x86 SOC's.
+Add HD Audio Device PCI ID for the Intel Braswell platform.
+It is an HDA Intel PCH controller.
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Link: http://lkml.kernel.org/r/1399668248-24199-2-git-send-email-david.e.box@linux.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+AZX_DCAPS_ALIGN_BUFSIZE is not necessary for this controller.
+
+Signed-off-by: Libin Yang <libin.yang@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig                |    7 ++-----
- arch/x86/include/asm/iosf_mbi.h |   33 +++++++++++++++++++++++++++++++++
- arch/x86/kernel/iosf_mbi.c      |    7 +++++++
- 3 files changed, 42 insertions(+), 5 deletions(-)
+ sound/pci/hda/hda_intel.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2436,12 +2436,9 @@ config X86_DMA_REMAP
- 	depends on STA2X11
- 
- config IOSF_MBI
--	bool
-+	tristate
-+	default m
- 	depends on PCI
--	---help---
--	  To be selected by modules requiring access to the Intel OnChip System
--	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
--	  enumerable by PCI.
- 
- source "net/Kconfig"
- 
---- a/arch/x86/include/asm/iosf_mbi.h
-+++ b/arch/x86/include/asm/iosf_mbi.h
-@@ -50,6 +50,10 @@
- #define BT_MBI_PCIE_READ	0x00
- #define BT_MBI_PCIE_WRITE	0x01
- 
-+#if IS_ENABLED(CONFIG_IOSF_MBI)
-+
-+bool iosf_mbi_available(void);
-+
- /**
-  * iosf_mbi_read() - MailBox Interface read command
-  * @port:	port indicating subunit being accessed
-@@ -87,4 +91,33 @@ int iosf_mbi_write(u8 port, u8 opcode, u
-  */
- int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
- 
-+#else /* CONFIG_IOSF_MBI is not enabled */
-+static inline
-+bool iosf_mbi_available(void)
-+{
-+	return false;
-+}
-+
-+static inline
-+int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
-+{
-+	WARN(1, "IOSF_MBI driver not available");
-+	return -EPERM;
-+}
-+
-+static inline
-+int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
-+{
-+	WARN(1, "IOSF_MBI driver not available");
-+	return -EPERM;
-+}
-+
-+static inline
-+int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
-+{
-+	WARN(1, "IOSF_MBI driver not available");
-+	return -EPERM;
-+}
-+#endif /* CONFIG_IOSF_MBI */
-+
- #endif /* IOSF_MBI_SYMS_H */
---- a/arch/x86/kernel/iosf_mbi.c
-+++ b/arch/x86/kernel/iosf_mbi.c
-@@ -177,6 +177,13 @@ int iosf_mbi_modify(u8 port, u8 opcode,
- }
- EXPORT_SYMBOL(iosf_mbi_modify);
- 
-+bool iosf_mbi_available(void)
-+{
-+	/* Mbi isn't hot-pluggable. No remove routine is provided */
-+	return mbi_pdev;
-+}
-+EXPORT_SYMBOL(iosf_mbi_available);
-+
- static int iosf_mbi_probe(struct pci_dev *pdev,
- 			  const struct pci_device_id *unused)
- {
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -4027,6 +4027,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
+ 	/* BayTrail */
+ 	{ PCI_DEVICE(0x8086, 0x0f04),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
++	/* Braswell */
++	{ PCI_DEVICE(0x8086, 0x2284),
++	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+ 	/* ICH */
+ 	{ PCI_DEVICE(0x8086, 0x2668),
+ 	  .driver_data = AZX_DRIVER_ICH | AZX_DCAPS_OLD_SSYNC |
 
 
