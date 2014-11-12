@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaKLBWx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58614 "EHLO
+	id S1753566AbaKLBWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613AbaKLBWt (ORCPT
+	with ESMTP id S1753492AbaKLBWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:49 -0500
+	Tue, 11 Nov 2014 20:22:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <idryomov@redhat.com>, Micha Krause <micha@krausam.de>,
-        Sage Weil <sage@redhat.com>
-Subject: [PATCH 3.17 067/319] libceph: ceph-msgr workqueue needs a resque worker
-Date: Wed, 12 Nov 2014 10:13:25 +0900
-Message-Id: <20141112011003.697355645@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.17 063/319] missing data dependency barrier in prepend_name()
+Date: Wed, 12 Nov 2014 10:13:21 +0900
+Message-Id: <20141112011003.020530437@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,37 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <idryomov@redhat.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit f9865f06f7f18c6661c88d0511f05c48612319cc upstream.
+commit 6d13f69444bd3d4888e43f7756449748f5a98bad upstream.
 
-Commit f363e45fd118 ("net/ceph: make ceph_msgr_wq non-reentrant")
-effectively removed WQ_MEM_RECLAIM flag from ceph_msgr_wq.  This is
-wrong - libceph is very much a memory reclaim path, so restore it.
+AFAICS, prepend_name() is broken on SMP alpha.  Disclaimer: I don't have
+SMP alpha boxen to reproduce it on.  However, it really looks like the race
+is real.
 
-Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
-Tested-by: Micha Krause <micha@krausam.de>
-Reviewed-by: Sage Weil <sage@redhat.com>
+CPU1: d_path() on /mnt/ramfs/<255-character>/foo
+CPU2: mv /mnt/ramfs/<255-character> /mnt/ramfs/<63-character>
+
+CPU2 does d_alloc(), which allocates an external name, stores the name there
+including terminating NUL, does smp_wmb() and stores its address in
+dentry->d_name.name.  It proceeds to d_add(dentry, NULL) and d_move()
+old dentry over to that.  ->d_name.name value ends up in that dentry.
+
+In the meanwhile, CPU1 gets to prepend_name() for that dentry.  It fetches
+->d_name.name and ->d_name.len; the former ends up pointing to new name
+(64-byte kmalloc'ed array), the latter - 255 (length of the old name).
+Nothing to force the ordering there, and normally that would be OK, since we'd
+run into the terminating NUL and stop.  Except that it's alpha, and we'd need
+a data dependency barrier to guarantee that we see that store of NUL
+__d_alloc() has done.  In a similar situation dentry_cmp() would survive; it
+does explicit smp_read_barrier_depends() after fetching ->d_name.name.
+prepend_name() doesn't and it risks walking past the end of kmalloc'ed object
+and possibly oops due to taking a page fault in kernel mode.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/messenger.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/dcache.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -292,7 +292,11 @@ int ceph_msgr_init(void)
- 	if (ceph_msgr_slab_init())
- 		return -ENOMEM;
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2810,6 +2810,9 @@ static int prepend(char **buffer, int *b
+  * the beginning of the name. The sequence number check at the caller will
+  * retry it again when a d_move() does happen. So any garbage in the buffer
+  * due to mismatched pointer and length will be discarded.
++ *
++ * Data dependency barrier is needed to make sure that we see that terminating
++ * NUL.  Alpha strikes again, film at 11...
+  */
+ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+ {
+@@ -2817,6 +2820,8 @@ static int prepend_name(char **buffer, i
+ 	u32 dlen = ACCESS_ONCE(name->len);
+ 	char *p;
  
--	ceph_msgr_wq = alloc_workqueue("ceph-msgr", 0, 0);
-+	/*
-+	 * The number of active work items is limited by the number of
-+	 * connections, so leave @max_active at default.
-+	 */
-+	ceph_msgr_wq = alloc_workqueue("ceph-msgr", WQ_MEM_RECLAIM, 0);
- 	if (ceph_msgr_wq)
- 		return 0;
- 
++	smp_read_barrier_depends();
++
+ 	*buflen -= dlen + 1;
+ 	if (*buflen < 0)
+ 		return -ENAMETOOLONG;
 
 
