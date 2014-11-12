@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934970AbaKLBr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:47:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60744 "EHLO
+	id S934988AbaKLBrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:47:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934921AbaKLBrY (ORCPT
+	with ESMTP id S934921AbaKLBra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:47:24 -0500
+	Tue, 11 Nov 2014 20:47:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 182/203] posix-timers: Fix stack info leak in timer_create()
-Date: Wed, 12 Nov 2014 10:17:32 +0900
-Message-Id: <20141112011551.031497304@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>, Bandan Das <bsd@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 183/203] x86, apic: Handle a bad TSC more gracefully
+Date: Wed, 12 Nov 2014 10:17:33 +0900
+Message-Id: <20141112011551.080233872@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -31,45 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
+commit b47dcbdc5161d3d5756f430191e2840d9b855492 upstream.
 
-If userland creates a timer without specifying a sigevent info, we'll
-create one ourself, using a stack local variable. Particularly will we
-use the timer ID as sival_int. But as sigev_value is a union containing
-a pointer and an int, that assignment will only partially initialize
-sigev_value on systems where the size of a pointer is bigger than the
-size of an int. On such systems we'll copy the uninitialized stack bytes
-from the timer_create() call to userland when the timer actually fires
-and we're going to deliver the signal.
+If the TSC is unusable or disabled, then this patch fixes:
 
-Initialize sigev_value with 0 to plug the stack info leak.
+ - Confusion while trying to clear old APIC interrupts.
+ - Division by zero and incorrect programming of the TSC deadline
+   timer.
 
-Found in the PaX patch, written by the PaX Team.
+This fixes boot if the CPU has a TSC deadline timer but a missing or
+broken TSC.  The failure to boot can be observed with qemu using
+-cpu qemu64,-tsc,+tsc-deadline
 
-Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
+This also happens to me in nested KVM for unknown reasons.
+With this patch, I can boot cleanly (although without a TSC).
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Bandan Das <bsd@redhat.com>
+Link: http://lkml.kernel.org/r/e2fa274e498c33988efac0ba8b7e3120f7f92d78.1413393027.git.luto@amacapital.net
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/posix-timers.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/apic/apic.c |    4 ++--
+ arch/x86/kernel/tsc.c       |    5 ++++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -634,6 +634,7 @@ SYSCALL_DEFINE3(timer_create, const cloc
- 			goto out;
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1290,7 +1290,7 @@ void setup_local_APIC(void)
+ 	unsigned int value, queued;
+ 	int i, j, acked = 0;
+ 	unsigned long long tsc = 0, ntsc;
+-	long long max_loops = cpu_khz;
++	long long max_loops = cpu_khz ? cpu_khz : 1000000;
+ 
+ 	if (cpu_has_tsc)
+ 		rdtscll(tsc);
+@@ -1387,7 +1387,7 @@ void setup_local_APIC(void)
+ 			break;
  		}
- 	} else {
-+		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
- 		event.sigev_notify = SIGEV_SIGNAL;
- 		event.sigev_signo = SIGALRM;
- 		event.sigev_value.sival_int = new_timer->it_id;
+ 		if (queued) {
+-			if (cpu_has_tsc) {
++			if (cpu_has_tsc && cpu_khz) {
+ 				rdtscll(ntsc);
+ 				max_loops = (cpu_khz << 10) - (ntsc - tsc);
+ 			} else
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -1173,14 +1173,17 @@ void __init tsc_init(void)
+ 
+ 	x86_init.timers.tsc_pre_init();
+ 
+-	if (!cpu_has_tsc)
++	if (!cpu_has_tsc) {
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
+ 		return;
++	}
+ 
+ 	tsc_khz = x86_platform.calibrate_tsc();
+ 	cpu_khz = tsc_khz;
+ 
+ 	if (!tsc_khz) {
+ 		mark_tsc_unstable("could not calculate TSC khz");
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
+ 		return;
+ 	}
+ 
 
 
