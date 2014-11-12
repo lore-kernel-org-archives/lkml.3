@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944AbaKLEYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:24:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58365 "EHLO
+	id S1752818AbaKLBT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:19:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbaKLBUF (ORCPT
+	with ESMTP id S1752708AbaKLBT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:05 -0500
+	Tue, 11 Nov 2014 20:19:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Crestez Dan Leonard <cdleonard@gmail.com>,
+        Karl Beldan <karl.beldan@rivierawaves.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 016/319] tcp: md5: do not use alloc_percpu()
-Date: Wed, 12 Nov 2014 10:12:34 +0900
-Message-Id: <20141112010955.353510532@linuxfoundation.org>
+Subject: [PATCH 3.17 013/319] net: tso: fix unaligned access to crafted TCP header in helper API
+Date: Wed, 12 Nov 2014 10:12:31 +0900
+Message-Id: <20141112010954.866824591@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,130 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Karl Beldan <karl.beldan@rivierawaves.com>
 
-[ Upstream commit 349ce993ac706869d553a1816426d3a4bfda02b1 ]
+[ Upstream commit a63ba13eec092b70d4e5522d692eaeb2f9747387 ]
 
-percpu tcp_md5sig_pool contains memory blobs that ultimately
-go through sg_set_buf().
+The crafted header start address is from a driver supplied buffer, which
+one can reasonably expect to be aligned on a 4-bytes boundary.
+However ATM the TSO helper API is only used by ethernet drivers and
+the tcp header will then be aligned to a 2-bytes only boundary from the
+header start address.
 
--> sg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));
-
-This requires that whole area is in a physically contiguous portion
-of memory. And that @buf is not backed by vmalloc().
-
-Given that alloc_percpu() can use vmalloc() areas, this does not
-fit the requirements.
-
-Replace alloc_percpu() by a static DEFINE_PER_CPU() as tcp_md5sig_pool
-is small anyway, there is no gain to dynamically allocate it.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: 765cf9976e93 ("tcp: md5: remove one indirection level in tcp_md5sig_pool")
-Reported-by: Crestez Dan Leonard <cdleonard@gmail.com>
+Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp.c |   59 +++++++++++++++++++--------------------------------------
- 1 file changed, 20 insertions(+), 39 deletions(-)
+ net/core/tso.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2985,61 +2985,42 @@ EXPORT_SYMBOL(compat_tcp_getsockopt);
- #endif
+--- a/net/core/tso.c
++++ b/net/core/tso.c
+@@ -1,6 +1,7 @@
+ #include <linux/export.h>
+ #include <net/ip.h>
+ #include <net/tso.h>
++#include <asm/unaligned.h>
  
- #ifdef CONFIG_TCP_MD5SIG
--static struct tcp_md5sig_pool __percpu *tcp_md5sig_pool __read_mostly;
-+static DEFINE_PER_CPU(struct tcp_md5sig_pool, tcp_md5sig_pool);
- static DEFINE_MUTEX(tcp_md5sig_mutex);
--
--static void __tcp_free_md5sig_pool(struct tcp_md5sig_pool __percpu *pool)
--{
--	int cpu;
--
--	for_each_possible_cpu(cpu) {
--		struct tcp_md5sig_pool *p = per_cpu_ptr(pool, cpu);
--
--		if (p->md5_desc.tfm)
--			crypto_free_hash(p->md5_desc.tfm);
--	}
--	free_percpu(pool);
--}
-+static bool tcp_md5sig_pool_populated = false;
+ /* Calculate expected number of TX descriptors */
+ int tso_count_descs(struct sk_buff *skb)
+@@ -23,7 +24,7 @@ void tso_build_hdr(struct sk_buff *skb,
+ 	iph->id = htons(tso->ip_id);
+ 	iph->tot_len = htons(size + hdr_len - mac_hdr_len);
+ 	tcph = (struct tcphdr *)(hdr + skb_transport_offset(skb));
+-	tcph->seq = htonl(tso->tcp_seq);
++	put_unaligned_be32(tso->tcp_seq, &tcph->seq);
+ 	tso->ip_id++;
  
- static void __tcp_alloc_md5sig_pool(void)
- {
- 	int cpu;
--	struct tcp_md5sig_pool __percpu *pool;
--
--	pool = alloc_percpu(struct tcp_md5sig_pool);
--	if (!pool)
--		return;
- 
- 	for_each_possible_cpu(cpu) {
--		struct crypto_hash *hash;
-+		if (!per_cpu(tcp_md5sig_pool, cpu).md5_desc.tfm) {
-+			struct crypto_hash *hash;
- 
--		hash = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
--		if (IS_ERR_OR_NULL(hash))
--			goto out_free;
--
--		per_cpu_ptr(pool, cpu)->md5_desc.tfm = hash;
-+			hash = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
-+			if (IS_ERR_OR_NULL(hash))
-+				return;
-+			per_cpu(tcp_md5sig_pool, cpu).md5_desc.tfm = hash;
-+		}
- 	}
--	/* before setting tcp_md5sig_pool, we must commit all writes
--	 * to memory. See ACCESS_ONCE() in tcp_get_md5sig_pool()
-+	/* before setting tcp_md5sig_pool_populated, we must commit all writes
-+	 * to memory. See smp_rmb() in tcp_get_md5sig_pool()
- 	 */
- 	smp_wmb();
--	tcp_md5sig_pool = pool;
--	return;
--out_free:
--	__tcp_free_md5sig_pool(pool);
-+	tcp_md5sig_pool_populated = true;
- }
- 
- bool tcp_alloc_md5sig_pool(void)
- {
--	if (unlikely(!tcp_md5sig_pool)) {
-+	if (unlikely(!tcp_md5sig_pool_populated)) {
- 		mutex_lock(&tcp_md5sig_mutex);
- 
--		if (!tcp_md5sig_pool)
-+		if (!tcp_md5sig_pool_populated)
- 			__tcp_alloc_md5sig_pool();
- 
- 		mutex_unlock(&tcp_md5sig_mutex);
- 	}
--	return tcp_md5sig_pool != NULL;
-+	return tcp_md5sig_pool_populated;
- }
- EXPORT_SYMBOL(tcp_alloc_md5sig_pool);
- 
-@@ -3053,13 +3034,13 @@ EXPORT_SYMBOL(tcp_alloc_md5sig_pool);
-  */
- struct tcp_md5sig_pool *tcp_get_md5sig_pool(void)
- {
--	struct tcp_md5sig_pool __percpu *p;
--
- 	local_bh_disable();
--	p = ACCESS_ONCE(tcp_md5sig_pool);
--	if (p)
--		return __this_cpu_ptr(p);
- 
-+	if (tcp_md5sig_pool_populated) {
-+		/* coupled with smp_wmb() in __tcp_alloc_md5sig_pool() */
-+		smp_rmb();
-+		return this_cpu_ptr(&tcp_md5sig_pool);
-+	}
- 	local_bh_enable();
- 	return NULL;
- }
+ 	if (!is_last) {
 
 
