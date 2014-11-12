@@ -1,113 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaKLPxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:53:39 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:26850 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726AbaKLPxh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:53:37 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f956d000005ed7-65-5463827ec5b7
-Content-transfer-encoding: 8BIT
-Message-id: <1415807612.20177.6.camel@AMDC1943>
-Subject: Re: [PATCH v11 5/6] dmaengine: pl330: Add PM sleep support
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Wed, 12 Nov 2014 16:53:32 +0100
-In-reply-to: <CAPDyKFoBdq0Vdh-RELGMX_oud2PaDofqBHgc-ViReYwP9-=y2w@mail.gmail.com>
-References: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
- <1415802748-30530-6-git-send-email-k.kozlowski@samsung.com>
- <CAPDyKFoBdq0Vdh-RELGMX_oud2PaDofqBHgc-ViReYwP9-=y2w@mail.gmail.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Vd26puQQg8br/BYbZ6xntZg+9QKj
-	xeqpf1ktnm5+zGRxtukNu0XnxCXsFrOm7GWyuLxrDpvF594jjBa3L/NarD1yl93i7qmjbBZn
-	Tl9itZjw+wKbxfG14RYv+/azOAh4tDT3sHnM7pjJ6rF4z0smj02rOtk87lzbw+ax5Wo7i8fs
-	uz8YPfq2rGL0WLH6O7vH501yAVxRXDYpqTmZZalF+nYJXBl9LRtYCh4KVSw8d5ypgbGZv4uR
-	k0NCwERie99kdghbTOLCvfVsXYxcHEICSxklevYcBEvwCghK/Jh8j6WLkYODWUBe4silbJAw
-	s4C6xKR5i5hBbCGBz4wS936lQJTrS6yYeYMJxBYWcJb4d2sSmM0mYCyxefkSNhBbREBDYs/D
-	86wgu5gFJrBKnNv/gxUkwSKgKvH61AWwoZwCwRKPvk5hhTjoDKPE5wfTmEGOkBBQlmjsd5vA
-	KDALyXmzEM6bheS8BYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCYu3rDsalx6wOMQpw
-	MCrx8H7QSg4RYk0sK67MPcQowcGsJMLrXw8U4k1JrKxKLcqPLyrNSS0+xMjEwSnVwNgj3B+1
-	WqhqQeIau605r/6qf+uIObBEn9P8VAL/jf7jov7FjC8u3Tcy1T7qs4jRXCXb+5rojxPmH6y/
-	/54hvfzHW8EJSwIXNsqn1yxydWheIF37/VMr06Pbct9OszyxDQtJP5+QGN/0IGf3g/LCXA8r
-	mys2JaELZu2Otv7987LzkmbZQMvZv5RYijMSDbWYi4oTAc7qT0eTAgAA
+	id S1753100AbaKLPyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:54:17 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48381 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687AbaKLPyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 10:54:15 -0500
+Date: Wed, 12 Nov 2014 09:54:41 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: gadget: Fix broken gadget on system
+ suspend/resume
+Message-ID: <20141112155441.GI641@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415804296-28980-1-git-send-email-rogerq@ti.com>
+ <20141112150809.GE641@saruman>
+ <54637D70.7060208@ti.com>
+ <20141112153640.GH641@saruman>
+ <54637F8B.8040508@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVh9lyqKgK19OcEf"
+Content-Disposition: inline
+In-Reply-To: <54637F8B.8040508@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-11-12 at 16:28 +0100, Ulf Hansson wrote:
-> On 12 November 2014 15:32, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> > Add system suspend/resume capabilities to the pl330 driver so the amba
-> > bus clock could be also unprepared to conserve energy.
-> >
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/dma/pl330.c | 37 +++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 37 insertions(+)
-> >
-> > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> > index c3bd3584f261..fd71777fc565 100644
-> > --- a/drivers/dma/pl330.c
-> > +++ b/drivers/dma/pl330.c
-> > @@ -2627,6 +2627,42 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
-> >         return 0;
-> >  }
-> >
-> > +/*
-> > + * Runtime PM callbacks are provided by amba/bus.c driver.
-> > + *
-> > + * It is assumed here that IRQ safe runtime PM is chosen in probe and amba
-> > + * bus driver will only disable/enable the clock in runtime PM callbacks.
-> > + */
-> > +static int __maybe_unused pl330_suspend(struct device *dev)
-> > +{
-> > +       struct amba_device *pcdev = to_amba_device(dev);
-> > +
-> > +       if (!pm_runtime_status_suspended(dev)) {
-> 
-> No, this wont work. Consider this scenario:
-> 
-> pm_runtime_status_suspended() returns "true", which means you consider
-> the device to be runtime PM suspended, thus you will unprepare the
-> clock below.
-> 
-> Later, a call to pm_runtime_get_sync() is invoked from "somewhere" and
-> before this driver's system PM resume callback has been invoked. That
-> will trigger the runtime PM resume callback to be invoked, causing
-> clock unbalance issues.
+--EVh9lyqKgK19OcEf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If during system resume the device runtime resume is called BEFORE
-normal resume of device, then you're right: clock will be unbalanced. 
+On Wed, Nov 12, 2014 at 05:40:59PM +0200, Roger Quadros wrote:
+> On 11/12/2014 05:36 PM, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Wed, Nov 12, 2014 at 05:32:00PM +0200, Roger Quadros wrote:
+> >> On 11/12/2014 05:08 PM, Felipe Balbi wrote:
+> >>> On Wed, Nov 12, 2014 at 04:58:16PM +0200, Roger Quadros wrote:
+> >>>> On TI SoCs (e.g. DRA7) we don't support the DWC3 hibernation feature.
+> >>>> We need to stop the gadget controller while system suspend
+> >>>> else it results in L3 Bus errors on resume with broken
+> >>>> USB gadget on J6-evm.
+> >>>>
+> >>>> [   55.718226] WARNING: CPU: 0 PID: 0 at drivers/bus/omap_l3_noc.c:1=
+47 l3_interrupt_handler+0x224/0x31c()
+> >>>> [   55.718232] 44000000.ocp:L3 Custom Error: MASTER USB3 TARGET GPMC=
+ (Idle): Data Access in User mode during Functional access
+> >>>> [   55.718263] Modules linked in: usb_f_ss_lb g_zero libcomposite co=
+nfigfs xhci_hcd btwilink bluetooth dwc3 6lowpan_iphc m25p80 dwc3_omap omap_=
+remoteproc
+> >>>> [   55.718271] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.19-020=
+11-g3ece3ca-dirty #658
+> >>>> [   55.718290] [<c0016090>] (unwind_backtrace) from [<c0012060>] (sh=
+ow_stack+0x10/0x14)
+> >>>> [   55.718302] [<c0012060>] (show_stack) from [<c062a2e4>] (dump_sta=
+ck+0x78/0x94)
+> >>>> [   55.718315] [<c062a2e4>] (dump_stack) from [<c0043bc4>] (warn_slo=
+wpath_common+0x6c/0x90)
+> >>>> [   55.718325] [<c0043bc4>] (warn_slowpath_common) from [<c0043c7c>]=
+ (warn_slowpath_fmt+0x30/0x40)
+> >>>> [   55.718336] [<c0043c7c>] (warn_slowpath_fmt) from [<c030fb24>] (l=
+3_interrupt_handler+0x224/0x31c)
+> >>>> [   55.718348] [<c030fb24>] (l3_interrupt_handler) from [<c0093010>]=
+ (handle_irq_event_percpu+0x5c/0x23c)
+> >>>> [   55.718358] [<c0093010>] (handle_irq_event_percpu) from [<c009322=
+c>] (handle_irq_event+0x3c/0x5c)
+> >>>> [   55.718367] [<c009322c>] (handle_irq_event) from [<c0096160>] (ha=
+ndle_fasteoi_irq+0x98/0x158)
+> >>>> [   55.718377] [<c0096160>] (handle_fasteoi_irq) from [<c00929dc>] (=
+generic_handle_irq+0x20/0x30)
+> >>>> [   55.718385] [<c00929dc>] (generic_handle_irq) from [<c000eea8>] (=
+handle_IRQ+0x4c/0xb0)
+> >>>> [   55.718393] [<c000eea8>] (handle_IRQ) from [<c0008638>] (gic_hand=
+le_irq+0x28/0x5c)
+> >>>> [   55.718402] [<c0008638>] (gic_handle_irq) from [<c0630964>] (__ir=
+q_svc+0x44/0x5c)
+> >>>> [   55.718406] Exception stack(0xc09c1f68 to 0xc09c1fb0)
+> >>>> [   55.718412] 1f60:                   00000001 00000001 00000000 00=
+000000 c09c0000 00000000
+> >>>> [   55.718418] 1f80: c09c0000 c09c0000 c0a7a1e4 c09c8938 c09c89b4 00=
+000000 60000093 c09c1fb0
+> >>>> [   55.718423] 1fa0: c008a2e4 c00926cc 60000013 ffffffff
+> >>>> [   55.718433] [<c0630964>] (__irq_svc) from [<c00926cc>] (cpu_start=
+up_entry+0x100/0x1f4)
+> >>>> [   55.718444] [<c00926cc>] (cpu_startup_entry) from [<c0901ac4>] (s=
+tart_kernel+0x324/0x388)
+> >>>>
+> >>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >>>> ---
+> >>>>  drivers/usb/dwc3/gadget.c | 8 +++++++-
+> >>>>  1 file changed, 7 insertions(+), 1 deletion(-)
+> >>>>
+> >>>> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+> >>>> index 3818b26..bc15b54 100644
+> >>>> --- a/drivers/usb/dwc3/gadget.c
+> >>>> +++ b/drivers/usb/dwc3/gadget.c
+> >>>> @@ -2741,7 +2741,13 @@ int dwc3_gadget_prepare(struct dwc3 *dwc)
+> >>>
+> >>> there is no more dwc3_gadget_prepare(), please rebase on 'next'.
+> >>
+> >> right.
+> >>
+> >>>
+> >>>>  {
+> >>>>  	if (dwc->pullups_connected) {
+> >>>>  		dwc3_gadget_disable_irq(dwc);
+> >>>> -		dwc3_gadget_run_stop(dwc, true, true);
+> >>>> +		if (dwc->has_hibernation) {
+> >>>> +			dwc3_gadget_run_stop(dwc, true, true);
+> >>>> +		} else {
+> >>>> +			dwc3_gadget_run_stop(dwc, false, true);
+> >>>> +			/* remember to connect back on resume */
+> >>>> +			dwc->pullups_connected =3D true;
+> >>>> +		}
+> >>>
+> >>> Another thing you probably want to do is make sure there is nothing
+> >>> pending on our request list because if there is, then we need to wait
+> >>> for any in-flight transfers to complete before disconnecting.
+> >>
+> >> shouldn't that check be done in dwc3_gadget_run_stop()?
+> >=20
+> > no, gadget drivers only disconnect pullups when they know there's
+> > nothing pending. And sometimes, we actually want to break such transfers
+> > to see how the thing would behave. Only suspend/resume needs to make
+> > transfers complete before hand.
+> >=20
+> >>> I also wonder if current code isn't really fragile... I mean, when you
+> >>> clear run_stop bit, you should notify the gadget by means of
+> >>> ->disconnect() and so on... But since we can't test this with mainlin=
+e,
+> >>> then it's difficult to tell.
+> >>>
+> >> that is true.
+> >=20
+> > Not sure what to do with this patch :-p
+> >=20
+> :). Maybe we can wait till we have suspend/resume working in mainline.
 
-But such case does not make sense. pm_runtime_get_sync() is called when
-someone wants to use the dmaengine/pl330... but the pl330 driver is
-still suspended in that time!
+Perhaps... hopefully we won't forget about this :-)
 
-If runtime resume is called AFTER normal resume of device - then it is
-fine with my code.
+--=20
+balbi
 
-> You need a pm_runtime_disable() prior checking the runtime PM status
-> using pm_runtime_status_suspended(). That will prevent this from
-> happen.
-> 
-> I guess you may see where this is leading. I think
-> pm_runtime_force_suspend|resume() is well suited for this situation.
+--EVh9lyqKgK19OcEf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I've been there... :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUY4LBAAoJEIaOsuA1yqREiM8QALKFTk/swBHciqE+CzUsXOyr
+eRjHynVdQD4VlLzqWXI5DK0UyyAzB3QLEOO4iDsytVG+w/pUMPn4Qa+YL0MNJJ2g
+1FhIbyrgiY4ja2yvwYGFOkJg6Jd/DQiPwSnYJzVuc/cODv5JA0/T8ZFrJwZVg31S
+nIczW+wy2G2Kup85isXWb2+z675mCb/yyTYnHivLdbelNcUrtwradrLKLM89+g10
+yl9+zOI2apwPvmYPoYyqqujCu279m+nDPLBGKqglQPuzuZKvevPeVIqhT7mBERcP
+qym3iwhXo5qj/BExhAMmAwdRq6qhWwMDWYezYYo0aPlrzdcIqvT/2SfbJyLrFSQy
+A+xe38480OoRKVPMYdHXTbKZ2g1NSCaX6nckblxO9siC99MBWZ1fCJcyvb2QZBqf
+TZCqo/XysZkvhPPEC7ZdPfc/Xg2iIxpVW88D2G44LjT1jmP6+AcZEu10KDBh+7p9
+yKi0iWBEwuyztRY+4aEbA+HZsCZVbvBLDWL1xiCneyP5jZsWOvEFRGitNSsCXhWS
+RpibQjjMcKhiYNwE39N5heAmI+YjT3vqUV4dpZVdn6BlIZeTenoC0VIMynIQr9hu
+G0a3qdBY5nYqu+53luQl6D5Eb5wGCvQcy6thS+wI4hAksJeIA2Xx02DYKrX2nir4
+eXbyx2d6PDcekNcJIbj8
+=p/G7
+-----END PGP SIGNATURE-----
 
-
+--EVh9lyqKgK19OcEf--
