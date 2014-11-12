@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933573AbaKLBe6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59671 "EHLO
+	id S933541AbaKLBew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:34:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59654 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933542AbaKLBez (ORCPT
+	with ESMTP id S933525AbaKLBeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:55 -0500
+	Tue, 11 Nov 2014 20:34:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.17 283/319] x86, intel-mid: Create IRQs for APB timers and RTC timers
-Date: Wed, 12 Nov 2014 10:17:01 +0900
-Message-Id: <20141112011039.642150809@linuxfoundation.org>
+        Chuck Lever <chucklever@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.17 256/319] nfsd4: fix response size estimation for OP_SEQUENCE
+Date: Wed, 12 Nov 2014 10:16:34 +0900
+Message-Id: <20141112011035.133428687@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -39,70 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <jiang.liu@linux.intel.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit f18298595aefa2c836a128ec6e0f75f39965dd81 upstream.
+commit d1d84c9626bb3a519863b3ffc40d347166f9fb83 upstream.
 
-Intel MID platforms has no legacy interrupts, so no IRQ descriptors
-preallocated. We need to call mp_map_gsi_to_irq() to create IRQ
-descriptors for APB timers and RTC timers, otherwise it may cause
-invalid memory access as:
-[    0.116839] BUG: unable to handle kernel NULL pointer dereference at
-0000003a
-[    0.123803] IP: [<c1071c0e>] setup_irq+0xf/0x4d
+We added this new estimator function but forgot to hook it up.  The
+effect is that NFSv4.1 (and greater) won't do zero-copy reads.
 
-Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: David Cohen <david.a.cohen@linux.intel.com>
-Link: http://lkml.kernel.org/r/1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+The estimate was also wrong by 8 bytes.
+
+Fixes: ccae70a9ee41 "nfsd4: estimate sequence response size"
+Reported-by: Chuck Lever <chucklever@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apb_timer.c       |    2 --
- arch/x86/platform/intel-mid/sfi.c |    2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4proc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -185,8 +185,6 @@ static void apbt_setup_irq(struct apbt_d
- 
- 	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
- 	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
--	/* APB timer irqs are set up as mp_irqs, timer is edge type */
--	__irq_set_handler(adev->irq, handle_edge_irq, 0, "edge");
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -1546,7 +1546,8 @@ static inline u32 nfsd4_rename_rsize(str
+ static inline u32 nfsd4_sequence_rsize(struct svc_rqst *rqstp,
+ 				       struct nfsd4_op *op)
+ {
+-	return NFS4_MAX_SESSIONID_LEN + 20;
++	return (op_encode_hdr_size
++		+ XDR_QUADLEN(NFS4_MAX_SESSIONID_LEN) + 5) * sizeof(__be32);
  }
  
- /* Should be called with per cpu */
---- a/arch/x86/platform/intel-mid/sfi.c
-+++ b/arch/x86/platform/intel-mid/sfi.c
-@@ -106,6 +106,7 @@ int __init sfi_parse_mtmr(struct sfi_tab
- 			mp_irq.dstapic = MP_APIC_ALL;
- 			mp_irq.dstirq = pentry->irq;
- 			mp_save_irq(&mp_irq);
-+			mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
- 	}
- 
- 	return 0;
-@@ -176,6 +177,7 @@ int __init sfi_parse_mrtc(struct sfi_tab
- 		mp_irq.dstapic = MP_APIC_ALL;
- 		mp_irq.dstirq = pentry->irq;
- 		mp_save_irq(&mp_irq);
-+		mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
- 	}
- 	return 0;
- }
+ static inline u32 nfsd4_setattr_rsize(struct svc_rqst *rqstp, struct nfsd4_op *op)
+@@ -1850,6 +1851,7 @@ static struct nfsd4_operation nfsd4_ops[
+ 		.op_func = (nfsd4op_func)nfsd4_sequence,
+ 		.op_flags = ALLOWED_WITHOUT_FH | ALLOWED_AS_FIRST_OP,
+ 		.op_name = "OP_SEQUENCE",
++		.op_rsize_bop = (nfsd4op_rsize)nfsd4_sequence_rsize,
+ 	},
+ 	[OP_DESTROY_CLIENTID] = {
+ 		.op_func = (nfsd4op_func)nfsd4_destroy_clientid,
 
 
