@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaKLKAq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:00:46 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57702 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752410AbaKLJ5f (ORCPT
+	id S1752654AbaKLKDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:03:06 -0500
+Received: from michael.mail.tiscali.it ([213.205.33.246]:43206 "EHLO
+	michael.mail.tiscali.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954AbaKLKDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:57:35 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: "Kishon Vijay Abraham I" <kishon@ti.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/6] Phy: DT binding documentation for Marvell MVEBU SATA phy.
-Date: Wed, 12 Nov 2014 10:57:13 +0100
-Message-Id: <1415786237-21985-3-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415786237-21985-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1415786237-21985-1-git-send-email-gregory.clement@free-electrons.com>
+	Wed, 12 Nov 2014 05:03:02 -0500
+X-Greylist: delayed 501 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 05:03:02 EST
+Message-ID: <54632E58.60709@assyoma.it>
+Date: Wed, 12 Nov 2014 10:54:32 +0100
+From: Gionatan Danti <g.danti@assyoma.it>
+Organization: Assyoma s.r.l.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: g.danti@assyoma.it
+Subject: Re: AHCI maximum transfer size
+References: <a39687c7cc1c7137f0187aea4ee38676@assyoma.it> <5417FB30.8030908@assyoma.it>
+In-Reply-To: <5417FB30.8030908@assyoma.it>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Lunn <andrew@lunn.ch>
+On 16/09/2014 10:56, Gionatan Danti wrote:
+>> Hi all,
+>> I searched the list and the internet for this question, but I did not
+>> find a definitive answer.
+>>
+>> I wonder what is the maximum AHCI transfer size for kernel 2.6.32.x
+>> Let me explain: using a command as "dd if=/dev/zero of=/dev/sda bs=2M" I
+>> can see, via iostat, that request-size is at 2M (as expected). However
+>> it seems to me that the effective transfer size is way lower: disabling
+>> writeback cache on the target disk, I see very low performance even for
+>> big-chunk transfers.
+>>
+>> Googling, I found this post on stackoverflow stating that maximum
+>> observerd AHCI transfer size (with a SATA protocol analyzer) is 128KB:
+>> http://stackoverflow.com/questions/24053662/how-to-enlarge-sata-transfer-size-in-linux-ahci-driver.
+>>
+>>
+>> The stackoverflow post seems to agree with this old LWN.net article:
+>> http://lwn.net/Articles/77981/
+>>
+>> Anyone has any idea of how to find (and eventually change) the used AHCI
+>> transfer size without touching the code?
+>>
+>> NOTE: please CC me directly.
+>> Regards.
+>>
+>
+> Hi all,
+> any idea on the subject?
+>
+> Regards.
 
-Describe the binding for the Marvell MVEBU SATA phy. This driver
-can be used at least with Kirkwood, Dove and maybe others.
-Additionally, update the SATA binding with the properties to link
-to the phy nodes.
+Hi guys,
+anyone with a suggestion?
 
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
----
- Documentation/devicetree/bindings/ata/marvell.txt  |  6 ++++++
- .../devicetree/bindings/phy/phy-mvebu.txt          | 22 ++++++++++++++++++++++
- 2 files changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-mvebu.txt
+Thank you.
 
-diff --git a/Documentation/devicetree/bindings/ata/marvell.txt b/Documentation/devicetree/bindings/ata/marvell.txt
-index 1c8351604d38..b460edd12766 100644
---- a/Documentation/devicetree/bindings/ata/marvell.txt
-+++ b/Documentation/devicetree/bindings/ata/marvell.txt
-@@ -6,11 +6,17 @@ Required Properties:
- - interrupts    : Interrupt controller is using
- - nr-ports      : Number of SATA ports in use.
- 
-+Optional Properties:
-+- phys		: List of phandles to sata phys
-+- phy-names	: Should be "0", "1", etc, one number per phandle
-+
- Example:
- 
- 	sata@80000 {
- 		compatible = "marvell,orion-sata";
- 		reg = <0x80000 0x5000>;
- 		interrupts = <21>;
-+		phys = <&sata_phy0>, <&sata_phy1>;
-+		phy-names = "0", "1";
- 		nr-ports = <2>;
- 	}
-diff --git a/Documentation/devicetree/bindings/phy/phy-mvebu.txt b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
-new file mode 100644
-index 000000000000..6cb3364aeafb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
-@@ -0,0 +1,22 @@
-+* Marvell MVEBU SATA PHY
-+
-+Power control for the SATA phy found on Marvell MVEBU SoCs.
-+
-+This document extends the binding described in phy-bindings.txt
-+
-+Required properties :
-+
-+ - reg		   : Offset and length of the register set for the SATA device
-+ - compatible	   : Should be "marvell,mvebu-sata-phy"
-+ - clocks	   : phandle of clock and specifier that supplies the device
-+ - clock-names	   : Should be "sata"
-+
-+Example:
-+		sata-phy@84000 {
-+			compatible = "marvell,mvebu-sata-phy";
-+			reg = <0x84000 0x0334>;
-+			clocks = <&gate_clk 15>;
-+			clock-names = "sata";
-+			#phy-cells = <0>;
-+			status = "ok";
-+		};
 -- 
-1.9.1
-
+Danti Gionatan
+Supporto Tecnico
+Assyoma S.r.l. - www.assyoma.it
+email: g.danti@assyoma.it - info@assyoma.it
+GPG public key ID: FF5F32A8
