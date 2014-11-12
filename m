@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965006AbaKLBks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:40:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60120 "EHLO
+	id S965025AbaKLBky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:40:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60129 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934256AbaKLBkn (ORCPT
+	with ESMTP id S965008AbaKLBku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:40:43 -0500
+	Tue, 11 Nov 2014 20:40:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.14 070/203] drm/nouveau/bios: memset dcb struct to zero before parsing
-Date: Wed, 12 Nov 2014 10:15:40 +0900
-Message-Id: <20141112011545.916141041@linuxfoundation.org>
+        Amit Shah <amit.shah@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.14 054/203] virtio_pci: fix virtio spec compliance on restore
+Date: Wed, 12 Nov 2014 10:15:24 +0900
+Message-Id: <20141112011545.177463402@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,29 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 595d373f1e9c9ce0fc946457fdb488e8a58972cd upstream.
+commit 6fbc198cf623944ab60a1db6d306a4d55cdd820d upstream.
 
-Fixes type/mask calculation being based on uninitialised data for VGA
-outputs.
+On restore, virtio pci does the following:
++ set features
++ init vqs etc - device can be used at this point!
++ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+This is in violation of the virtio spec, which
+requires the following order:
+- ACKNOWLEDGE
+- DRIVER
+- init vqs
+- DRIVER_OK
+
+This behaviour will break with hypervisors that assume spec compliant
+behaviour.  It seems like a good idea to have this patch applied to
+stable branches to reduce the support butden for the hypervisors.
+
+Cc: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/subdev/bios/dcb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/virtio/virtio_pci.c |   33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/bios/dcb.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bios/dcb.c
-@@ -124,6 +124,7 @@ dcb_outp_parse(struct nouveau_bios *bios
- 	       struct dcb_output *outp)
- {
- 	u16 dcb = dcb_outp(bios, idx, ver, len);
-+	memset(outp, 0x00, sizeof(*outp));
- 	if (dcb) {
- 		if (*ver >= 0x20) {
- 			u32 conn = nv_ro32(bios, dcb + 0x00);
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -791,6 +791,7 @@ static int virtio_pci_restore(struct dev
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+ 	struct virtio_driver *drv;
++	unsigned status = 0;
+ 	int ret;
+ 
+ 	drv = container_of(vp_dev->vdev.dev.driver,
+@@ -801,14 +802,40 @@ static int virtio_pci_restore(struct dev
+ 		return ret;
+ 
+ 	pci_set_master(pci_dev);
++	/* We always start by resetting the device, in case a previous
++	 * driver messed it up. */
++	vp_reset(&vp_dev->vdev);
++
++	/* Acknowledge that we've seen the device. */
++	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
++	vp_set_status(&vp_dev->vdev, status);
++
++	/* Maybe driver failed before freeze.
++	 * Restore the failed status, for debugging. */
++	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
++	vp_set_status(&vp_dev->vdev, status);
++
++	if (!drv)
++		return 0;
++
++	/* We have a driver! */
++	status |= VIRTIO_CONFIG_S_DRIVER;
++	vp_set_status(&vp_dev->vdev, status);
++
+ 	vp_finalize_features(&vp_dev->vdev);
+ 
+-	if (drv && drv->restore)
++	if (drv->restore) {
+ 		ret = drv->restore(&vp_dev->vdev);
++		if (ret) {
++			status |= VIRTIO_CONFIG_S_FAILED;
++			vp_set_status(&vp_dev->vdev, status);
++			return ret;
++		}
++	}
+ 
+ 	/* Finally, tell the device we're all set */
+-	if (!ret)
+-		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
++	status |= VIRTIO_CONFIG_S_DRIVER_OK;
++	vp_set_status(&vp_dev->vdev, status);
+ 
+ 	return ret;
+ }
 
 
