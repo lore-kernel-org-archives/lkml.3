@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaKLBUJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58360 "EHLO
+	id S1752929AbaKLBUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaKLBUC (ORCPT
+	with ESMTP id S1752624AbaKLBUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:02 -0500
+	Tue, 11 Nov 2014 20:20:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 015/319] hyperv: Fix the total_data_buflen in send path
-Date: Wed, 12 Nov 2014 10:12:33 +0900
-Message-Id: <20141112010955.213162606@linuxfoundation.org>
+        Nicolas Cavallari <nicolas.cavallari@green-communications.fr>,
+        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 019/319] ipv4: Do not cache routing failures due to disabled forwarding.
+Date: Wed, 12 Nov 2014 10:12:37 +0900
+Message-Id: <20141112010955.866756342@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,34 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
+From: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
 
-[ Upstream commit 942396b01989d54977120f3625e5ba31afe7a75c ]
+[ Upstream commit fa19c2b050ab5254326f5fc07096dd3c6a8d5d58 ]
 
-total_data_buflen is used by netvsc_send() to decide if a packet can be put
-into send buffer. It should also include the size of RNDIS message before the
-Ethernet frame. Otherwise, a messge with total size bigger than send_section_size
-may be copied into the send buffer, and cause data corruption.
+If we cache them, the kernel will reuse them, independently of
+whether forwarding is enabled or not.  Which means that if forwarding is
+disabled on the input interface where the first routing request comes
+from, then that unreachable result will be cached and reused for
+other interfaces, even if forwarding is enabled on them.  The opposite
+is also true.
 
-[Request to include this patch to the Stable branches]
+This can be verified with two interfaces A and B and an output interface
+C, where B has forwarding enabled, but not A and trying
+ip route get $dst iif A from $src && ip route get $dst iif B from $src
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
+Reviewed-by: Julian Anastasov <ja@ssi.bg>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/hyperv/netvsc_drv.c |    1 +
+ net/ipv4/route.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -556,6 +556,7 @@ do_lso:
- do_send:
- 	/* Start filling in the page buffers with the rndis hdr */
- 	rndis_msg->msg_len += rndis_msg_size;
-+	packet->total_data_buflen = rndis_msg->msg_len;
- 	packet->page_buf_cnt = init_page_array(rndis_msg, rndis_msg_size,
- 					skb, &packet->page_buf[0]);
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1798,6 +1798,7 @@ local_input:
+ no_route:
+ 	RT_CACHE_STAT_INC(in_no_route);
+ 	res.type = RTN_UNREACHABLE;
++	res.fi = NULL;
+ 	goto local_input;
  
+ 	/*
 
 
