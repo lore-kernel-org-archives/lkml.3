@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722AbaKLB3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:29:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59140 "EHLO
+	id S932741AbaKLB32 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:29:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59151 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaKLB3R (ORCPT
+	with ESMTP id S932688AbaKLB3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:29:17 -0500
+	Tue, 11 Nov 2014 20:29:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Marek Vasut <marex@denx.de>, Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.17 189/319] iio: adc: mxs-lradc: Disable the clock on probe failure
-Date: Wed, 12 Nov 2014 10:15:27 +0900
-Message-Id: <20141112011024.026769549@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.17 191/319] staging:iio:ad5933: Drop "raw" from channel names
+Date: Wed, 12 Nov 2014 10:15:29 +0900
+Message-Id: <20141112011024.327089103@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,60 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 75d7ed3b9e7cb79a3b0e1f417fb674d54b4fc668 upstream.
+commit 6822ee34ad57b29a3b44df2c2829910f03c34fa4 upstream.
 
-We should disable lradc->clk in the case of errors in the probe function.
+"raw" is the name of a channel property, but should not be part of the
+channel name itself.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Reviewed-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/adc/mxs-lradc.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/staging/iio/impedance-analyzer/ad5933.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -1565,14 +1565,16 @@ static int mxs_lradc_probe(struct platfo
- 	/* Grab all IRQ sources */
- 	for (i = 0; i < of_cfg->irq_count; i++) {
- 		lradc->irq[i] = platform_get_irq(pdev, i);
--		if (lradc->irq[i] < 0)
--			return lradc->irq[i];
-+		if (lradc->irq[i] < 0) {
-+			ret = lradc->irq[i];
-+			goto err_clk;
-+		}
- 
- 		ret = devm_request_irq(dev, lradc->irq[i],
- 					mxs_lradc_handle_irq, 0,
- 					of_cfg->irq_name[i], iio);
- 		if (ret)
--			return ret;
-+			goto err_clk;
- 	}
- 
- 	lradc->vref_mv = of_cfg->vref_mv;
-@@ -1594,7 +1596,7 @@ static int mxs_lradc_probe(struct platfo
- 				&mxs_lradc_trigger_handler,
- 				&mxs_lradc_buffer_ops);
- 	if (ret)
--		return ret;
-+		goto err_clk;
- 
- 	ret = mxs_lradc_trigger_init(iio);
- 	if (ret)
-@@ -1649,6 +1651,8 @@ err_dev:
- 	mxs_lradc_trigger_remove(iio);
- err_trig:
- 	iio_triggered_buffer_cleanup(iio);
-+err_clk:
-+	clk_disable_unprepare(lradc->clk);
- 	return ret;
- }
- 
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -125,7 +125,7 @@ static const struct iio_chan_spec ad5933
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "real_raw",
++		.extend_name = "real",
+ 		.address = AD5933_REG_REAL_DATA,
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -137,7 +137,7 @@ static const struct iio_chan_spec ad5933
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "imag_raw",
++		.extend_name = "imag",
+ 		.address = AD5933_REG_IMAG_DATA,
+ 		.scan_index = 1,
+ 		.scan_type = {
 
 
