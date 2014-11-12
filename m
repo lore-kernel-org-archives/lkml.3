@@ -1,102 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaKLSDk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 13:03:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47346 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078AbaKLSDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 13:03:37 -0500
-Message-ID: <5463A0F4.6060300@suse.de>
-Date: Wed, 12 Nov 2014 19:03:32 +0100
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753362AbaKLSEg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 13:04:36 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:44729 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100AbaKLSEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 13:04:32 -0500
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+In-Reply-To: <CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
+References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
+	<1415678573-6093-1-git-send-email-addy.ke@rock-chips.com>
+	<CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
+Date: Wed, 12 Nov 2014 10:04:31 -0800
+X-Google-Sender-Auth: v5XigoLlAd-ZniS69gQYB8DOM8g
+Message-ID: <CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc for vqmmc
+From: Doug Anderson <dianders@chromium.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikanth Thokala <sthokal@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH RESEND] Documentation: devicetree: Fix Xilinx VDMA specification
-References: <1415800277-6817-1-git-send-email-afaerber@suse.de> <6067bede14b9421fa87db96bdc66dc66@BN1AFFO11FD040.protection.gbl>
-In-Reply-To: <6067bede14b9421fa87db96bdc66dc66@BN1AFFO11FD040.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="RV2nqRrBwfXN2aQKKTmifqoqvfstFLKwx"
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---RV2nqRrBwfXN2aQKKTmifqoqvfstFLKwx
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Ulf,
 
-Am 12.11.2014 um 16:57 schrieb S=C3=B6ren Brinkmann:
-> On Wed, 2014-11-12 at 02:51PM +0100, Andreas F=C3=A4rber wrote:
->> The specification requires xlnx,data-width, but example and driver use=
+On Tue, Nov 11, 2014 at 12:52 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 11 November 2014 05:02, Addy Ke <addy.ke@rock-chips.com> wrote:
+>> SD2.0 cards need vqmmc and vmmc to be the same.
+>
+> No, that's not correct.
+>
+> If I remember the spec correctly, the bus signal threshold is 0.75 * VDD.
 
->> xlnx,datawidth. Change the specification to match the implementation.
->=20
-> Isn't this the wrong way around? The bindings are considered API, so
-> shouldn't the driver be fixed to match the spec?
+As usual, I will first state my utter lack of knowledge of all things mmc.
 
-In theory, patch review should've never let the two differ... ;)
+Now that's out of the way, on two separate board with two separate
+SoCs I've heard stories of cards that don't work when there's a big
+gap between vmmc and vqmmc.
 
-It's not my driver, so I fixed the perceived inconsistency the least
-invasive way; Michal and Srikanth seemed to concur at the time.
+If my memory serves, previously I heard of problems with vmmc=3.3V and
+vqmmc=2.8V.  That means there were problems with .85 * VDD.  Certainly
+Addy seems to have a card that has problems with vmmc=3.3V and
+vqmmc=2.7V (but worked with vmmc=3.3V and vqmmc=2.8V).  That is .82 *
+VDD.
 
-https://patchwork.kernel.org/patch/4620261/
+I have no idea if these old cards are "to spec", but they exist and it
+would be nice to support them.
 
-> Are there already dts files out there using either of these options?
-
-In upstream, no. microblaze and virtex440 use a
-xlnx,include-datawidth-matching-0 property as precedence for the
-spelling, whereas there is an fsl,data-width and an unused msix-data-widt=
-h.
-
-Downstream, yes: Beyond my own patch derived from the Parallella tree,
-there's some in the ADI tree. None in the Xilinx tree on quick check.
-
-I haven't encountered any using the documented xlnx,data-width - but
-this patch was authored pre 3.17, haven't ran a full Web search again.
-
-Regards,
-Andreas
-
---=20
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=C3=BCrnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imend=C3=B6rffer; HRB 21284 AG N=C3=BC=
-rnberg
+It seems like the absolute safest thing would be to try to keep vmmc
+and vqmmc matching if possible, especially during card probe.  Once
+voltage negotiation happened then the vqmmc could go down.
 
 
---RV2nqRrBwfXN2aQKKTmifqoqvfstFLKwx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>> But vqmmc call regulator_set_voltage to set min_uv(2.7v) as far as possible.
+>
+> I guess you want to do that to save as much power as possible.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+I don't think it's Addy wanting it, I think it's the regulator framework.
 
-iQIcBAEBAgAGBQJUY6D0AAoJEPou0S0+fgE/GIcP/A4aBSqMjpJYvawAVHdS4dp3
-fGqSxhVoLj8tVXkraU6ayrT8NH8vPIP1zPPRuk9Cab5/XLNNqflnvpFIk5EhGU7j
-tcdLM3qB4jc/vCwLeNVyp/BVJEqA+t0nMqaiZVHmLP8QEG5Wnaflo+LNx6bASjZj
-kSoxOKJWchuGD60YnHwbMTMe69tJn2ahdls7JWHVwInUUfFuAO4m0RMKuDYkiJbo
-yBxsiR5eF7D5uOQ28bNmYFgt1iCnMcUGdoqVlpV86Gzq/e/ctnwM/LlnXd9N5DY9
-93asvp9HT+5Tpq4+dznNcuHpQpVTDmqDSlth5jvt+RKYZvRrW0P5fLTdRsfp1y0Q
-MS9M0Y7ZTSnEUAGmED4QyjyiW2Y/88foGq07HdpdKwzuoA3Ouik41HFbCau8gTFL
-+eb+gaRTbS7MReG+JbFyts+jebE5TFmswgNQQl74VvoBzxj6YV3olHqKr7jcui09
-3AavU704pDK1btucqZ98qGiOHcEvGVHh/YbnqUxBNcc7SU/KqJBW/xw1//5pd8Zm
-ZJttGg+6xrMN9KvMf8xvSqIH4rSohjo3GtuySCMHRoaaLHkxW6OkK5GGBRFhLA5P
-2PAyI2MB1q+fEfmIit6Z28N4gvSjFzn+U9s/sX+0keAYx9KEQnrSx3mcL1EsaM0K
-oPvXPHsQIt4/qVB6HcwB
-=aJgM
------END PGP SIGNATURE-----
+If a regulator is current 1.8V and you request 2.7 - 3.3V, the
+framework needs to pick one of those voltages.  I believe it will pick
+2.7V.
 
---RV2nqRrBwfXN2aQKKTmifqoqvfstFLKwx--
+...so I think we get into trouble only when the 2.0 card is plugged in
+after a UHS card has negotiated down the voltage, but I could be
+wrong.  Maybe Addy can clarify.
+
+
+>> @@ -1163,8 +1163,14 @@ static int dw_mci_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
+>>          */
+>>         uhs = mci_readl(host, UHS_REG);
+>>         if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
+>> -               min_uv = 2700000;
+>> -               max_uv = 3600000;
+>> +               /* try pick the exact same voltage as vmmc for vqmmc */
+>
+> This seems like a generic SD protocol issue.
+>
+> Should we maybe provide some helper function from the mmc core, which
+> in principle take the negotiated card->ocr into account while
+> calculating the signal voltage level. Typically min_uv should be 0.75
+> x (card->ocr), for these cases.
+
+Yes, if there are ways to make the solution more generic I would
+certainly support that.
+
+-Doug
