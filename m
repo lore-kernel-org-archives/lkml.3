@@ -1,137 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaKLLmu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:42:50 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:60341 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaKLLlS (ORCPT
+	id S1753089AbaKLLnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:43:20 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:35101 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505AbaKLLnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:41:18 -0500
-X-IronPort-AV: E=Sophos;i="5.07,368,1413244800"; 
-   d="scan'208";a="191920931"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v9 07/13] xen: add a dma_addr_t dev_addr argument to xen_dma_map_page
-Date: Wed, 12 Nov 2014 11:40:48 +0000
-Message-ID: <1415792454-23161-7-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
+	Wed, 12 Nov 2014 06:43:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <1415678111-29914-3-git-send-email-ibanezchen@gmail.com>
+References: <1415678111-29914-1-git-send-email-ibanezchen@gmail.com>
+	<1415678111-29914-3-git-send-email-ibanezchen@gmail.com>
+Date: Wed, 12 Nov 2014 12:43:13 +0100
+Message-ID: <CABuKBeJRW9aKdbmK5Yum6dM99m3AihA9t-1U3+3H9XjtfUHvmw@mail.gmail.com>
+Subject: Re: [PATCH v5 3/3] dt-bindings: add documentation for Mediatek SoC
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Howard Chen <ibanezchen@gmail.com>
+Cc: arm@kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_addr is the machine address of the page.
+2014-11-11 4:55 GMT+01:00 Howard Chen <ibanezchen@gmail.com>:
+> This adds a DT binding documentation for the MT6592 SoC from Mediatek.
+>
+> Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+> ---
+>  Documentation/devicetree/bindings/arm/mediatek.txt    | 7 +++++--
+>  Documentation/devicetree/bindings/serial/mtk-uart.txt | 3 ++-
+>  2 files changed, 7 insertions(+), 3 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/mediatek.txt b/Documentation/devicetree/bindings/arm/mediatek.txt
+> index fa25226..1d2d151 100644
+> --- a/Documentation/devicetree/bindings/arm/mediatek.txt
+> +++ b/Documentation/devicetree/bindings/arm/mediatek.txt
+> @@ -1,10 +1,10 @@
+>  Mediatek MT6589 Platforms Device Tree Bindings
+>
+> -Boards with a SoC of the Mediatek MT6589 shall have the following property:
+> +Boards with a SoC from Mediatek shall have the following property:
+>
+>  Required root node property:
+>
+> -compatible: must contain "mediatek,mt6589"
+> +compatible: must contain one of "mediatek,mt6589", "mediatek,mt6592"
+>
+>
+>  Supported boards:
+> @@ -12,3 +12,6 @@ Supported boards:
+>  - bq Aquaris5 smart phone:
+>      Required root node properties:
+>        - compatible = "mundoreader,bq-aquaris5", "mediatek,mt6589";
+> +
+> +- Evaluation board for MT6592:
+> +      - compatible = "mediatek,mt6592-evb", "mediatek,mt6592";
+> diff --git a/Documentation/devicetree/bindings/serial/mtk-uart.txt b/Documentation/devicetree/bindings/serial/mtk-uart.txt
+> index 48358a3..e2864b7 100644
+> --- a/Documentation/devicetree/bindings/serial/mtk-uart.txt
+> +++ b/Documentation/devicetree/bindings/serial/mtk-uart.txt
+> @@ -2,9 +2,10 @@
+>
+>  Required properties:
+>  - compatible should contain:
+> +  * "mediatek,mt6592-uart" for MT6592 compatible UARTS
+>    * "mediatek,mt6589-uart" for MT6589 compatible UARTS
+>    * "mediatek,mt6582-uart" for MT6582 compatible UARTS
+> -  * "mediatek,mt6577-uart" for all compatible UARTS (MT6589, MT6582, MT6577)
+> +  * "mediatek,mt6577-uart" for all compatible UARTS on MT65xx
 
-The new parameter can be used by the ARM and ARM64 implementations of
-xen_dma_map_page to find out if the page is a local page (pfn == mfn) or
-a foreign page (pfn != mfn).
+This should be two seperate patches, one for the SoC documentation and
+one for the UART documentation.
 
-dev_addr could be retrieved again from the physical address, using
-pfn_to_mfn, but it requires accessing an rbtree. Since we already have
-the dev_addr in our hands at the call site there is no need to get the
-mfn twice.
+>
+>  - reg: The base address of the UART register bank.
+>
+> --
+> 1.9.1
+>
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/include/asm/xen/page-coherent.h   |    4 ++--
- arch/arm64/include/asm/xen/page-coherent.h |    4 ++--
- arch/x86/include/asm/xen/page-coherent.h   |    4 ++--
- drivers/xen/swiotlb-xen.c                  |    6 ++++--
- 4 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/include/asm/xen/page-coherent.h b/arch/arm/include/asm/xen/page-coherent.h
-index 9cfd895..a309f42 100644
---- a/arch/arm/include/asm/xen/page-coherent.h
-+++ b/arch/arm/include/asm/xen/page-coherent.h
-@@ -29,8 +29,8 @@ static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
- }
- 
- static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
--	     unsigned long offset, size_t size, enum dma_data_direction dir,
--	     struct dma_attrs *attrs)
-+	     dma_addr_t dev_addr, unsigned long offset, size_t size,
-+	     enum dma_data_direction dir, struct dma_attrs *attrs)
- {
- 	__generic_dma_ops(hwdev)->map_page(hwdev, page, offset, size, dir, attrs);
- }
-diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
-index dde3fc9..d7cd4c2 100644
---- a/arch/arm64/include/asm/xen/page-coherent.h
-+++ b/arch/arm64/include/asm/xen/page-coherent.h
-@@ -20,8 +20,8 @@ static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
- }
- 
- static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
--	     unsigned long offset, size_t size, enum dma_data_direction dir,
--	     struct dma_attrs *attrs)
-+	     dma_addr_t dev_addr, unsigned long offset, size_t size,
-+	     enum dma_data_direction dir, struct dma_attrs *attrs)
- {
- }
- 
-diff --git a/arch/x86/include/asm/xen/page-coherent.h b/arch/x86/include/asm/xen/page-coherent.h
-index 7f02fe4..acd844c 100644
---- a/arch/x86/include/asm/xen/page-coherent.h
-+++ b/arch/x86/include/asm/xen/page-coherent.h
-@@ -22,8 +22,8 @@ static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
- }
- 
- static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
--	     unsigned long offset, size_t size, enum dma_data_direction dir,
--	     struct dma_attrs *attrs) { }
-+	     dma_addr_t dev_addr, unsigned long offset, size_t size,
-+	     enum dma_data_direction dir, struct dma_attrs *attrs) { }
- 
- static inline void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
- 		size_t size, enum dma_data_direction dir,
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index ebd8f21..ad2c5eb 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -403,7 +403,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 		/* we are not interested in the dma_addr returned by
- 		 * xen_dma_map_page, only in the potential cache flushes executed
- 		 * by the function. */
--		xen_dma_map_page(dev, page, offset, size, dir, attrs);
-+		xen_dma_map_page(dev, page, dev_addr, offset, size, dir, attrs);
- 		return dev_addr;
- 	}
- 
-@@ -417,7 +417,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 		return DMA_ERROR_CODE;
- 
- 	xen_dma_map_page(dev, pfn_to_page(map >> PAGE_SHIFT),
--					map & ~PAGE_MASK, size, dir, attrs);
-+					dev_addr, map & ~PAGE_MASK, size, dir, attrs);
- 	dev_addr = xen_phys_to_bus(map);
- 
- 	/*
-@@ -574,6 +574,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 				return 0;
- 			}
- 			xen_dma_map_page(hwdev, pfn_to_page(map >> PAGE_SHIFT),
-+						dev_addr,
- 						map & ~PAGE_MASK,
- 						sg->length,
- 						dir,
-@@ -584,6 +585,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 			 * xen_dma_map_page, only in the potential cache flushes executed
- 			 * by the function. */
- 			xen_dma_map_page(hwdev, pfn_to_page(paddr >> PAGE_SHIFT),
-+						dev_addr,
- 						paddr & ~PAGE_MASK,
- 						sg->length,
- 						dir,
+
 -- 
-1.7.10.4
-
+motzblog.wordpress.com
