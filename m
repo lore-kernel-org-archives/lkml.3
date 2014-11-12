@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaKLNsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 08:48:10 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:46980 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406AbaKLNsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 08:48:07 -0500
-Date: Wed, 12 Nov 2014 13:48:01 +0000
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, devicetree@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH 12/13] ARM: STi: DT: STiH410: Add STiH410 SoC clock
- support.
-Message-ID: <20141112134801.GB20187@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
- <1415361475-6218-13-git-send-email-peter.griffin@linaro.org>
- <88469624.TsXJ3Gpfe2@wuerfel>
+	id S1752952AbaKLNva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 08:51:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40218 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752718AbaKLNv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 08:51:28 -0500
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH RESEND] Documentation: devicetree: Fix Xilinx VDMA specification
+Date: Wed, 12 Nov 2014 14:51:16 +0100
+Message-Id: <1415800277-6817-1-git-send-email-afaerber@suse.de>
+X-Mailer: git-send-email 2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <88469624.TsXJ3Gpfe2@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+The specification requires xlnx,data-width, but example and driver use
+xlnx,datawidth. Change the specification to match the implementation.
 
-Thanks for reviewing.
+Reviewed-by: Michal Simek <michal.simek@xilinx.com>
+Fixes: eebeac03db93 ("dma: Add Xilinx Video DMA DT Binding Documentation")
+Signed-off-by: Andreas Färber <afaerber@suse.de>
+---
+ This appears to have fallen through the cracks... resending to dmaengine.
 
-> On Friday 07 November 2014 11:57:54 Peter Griffin wrote:
-> > +
-> > +       soc {
-> > +
-> > +               ohci0: usb@9a03c00 {
-> > +                       status = "okay";
-> > +               };
-> > +
-> > +               ehci0: usb@9a03e00 {
-> > +                       status = "okay";
-> > +               };
-> > +
-> > +               ohci1: usb@9a83c00 {
-> > +                       status = "okay";
-> > +               };
-> > +
-> > +               ehci1: usb@9a83e00 {
-> > +                       status = "okay";
-> > +               };
-> > +       };
-> > +};
-> > 
-> 
-> These seem to refer to an existing device in the base dtsi file. Just put the label
-> in the shared file and remove the exact names here. Alternatively, drop the labels
-> you don't use.
+ Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Based on Maximes feedback in V2 I've created a seperate stih410.dtsi file
-which has the extra ehci / ohci device nodes in it. This means they don't need to be
-enabled in the board file any more.
+diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+index 1405ed071bb4..e4c4d47f8137 100644
+--- a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
++++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+@@ -25,7 +25,7 @@ Required child node properties:
+ - compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
+ 	"xlnx,axi-vdma-s2mm-channel".
+ - interrupts: Should contain per channel VDMA interrupts.
+-- xlnx,data-width: Should contain the stream data width, take values
++- xlnx,datawidth: Should contain the stream data width, take values
+ 	{32,64...1024}.
+ 
+ Optional child node properties:
+-- 
+2.1.2
 
-regards,
-
-Peter.
