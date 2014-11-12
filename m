@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaKLBUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:08 -0500
-Received: from mailout.micron.com ([137.201.242.129]:12692 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645AbaKLBUD (ORCPT
+	id S933908AbaKLEYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:24:08 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:43290 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933847AbaKLEYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:03 -0500
-From: bpqw <bpqw@micron.com>
-To: Jagan Teki <jagannadh.teki@gmail.com>,
-        Graham Moore <grmoore@opensource.altera.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: bpqw <bpqw@micron.com>, Marek Vasut <marex@denx.de>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-Subject: RE: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Topic: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Index: AQHP+W8IEF9rxWxnKkG/zeWVIWCG6Zxb9qNUgACAWAD//729kA==
-Date: Wed, 12 Nov 2014 01:19:18 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315EB0E1@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
-	<201409251211.57183.marex@denx.de>
-	<A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
-	<201409261046.07132.marex@denx.de>
-	<A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
-	<54613259.4070903@opensource.altera.com>
-	<alpine.DEB.2.02.1411111336010.1356@lava-test-server>
- <CAD6G_RQFV9LfBzVbureBiCneW+PpLzSdUCyz9L6D+EhE4gT+WA@mail.gmail.com>
-In-Reply-To: <CAD6G_RQFV9LfBzVbureBiCneW+PpLzSdUCyz9L6D+EhE4gT+WA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21094.003
-X-TM-AS-Result: No-1.154700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Nov 2014 23:24:05 -0500
+Date: Tue, 11 Nov 2014 21:23:59 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>, g@google.com
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 00/10] Save MSI chip in pci_sys_data
+Message-ID: <20141112042359.GK28161@google.com>
+References: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC4Nv2q014660
 
->I have almost verified all the micros parts for operating quad mode and the quad enable bit is 
->volatile by default and no need to set it on software.
+On Mon, Oct 27, 2014 at 03:48:37PM +0800, Yijing Wang wrote:
+> Now PCI host bridge drivers in arm associate MSI chip and
+> PCI bus by adding .add_bus(), and assign MSI chip pointer
+> to every PCI bus. Associating MSI chip and every PCI bus
+> is not necessary. All PCI busses under same PCI host brdige
+> share the same MSI chip. So saving MSI chip in pci_sys_data
+> is a better solution, it make PCI host bridge drivers clean.
+> Because we still need to provide arch spec pcibios_msi_controller()
+> to extract MSI controller pointer, a better solution is to
+> refactor PCI host bridge, make a generic pci_host_bridge, and
+> save common info like PCI domain number, MSI chip, resources
+> in it. We will do that work in another series as soon.
+> 
+> To Bjorn: Because struct msi_chip defined in struct hw_pci and pci_sys_data
+> is under the #ifdef CONFIG_PCI_MSI, if we use if(IS_ENABLED(CONFIG_PCI_MSI))
+> in PCI host bridge drivers, it will cause build errors when the CONFIG_PCI_MSI
+> is off. So I keep #ifdef CONFIG_PCI_MSI in this series.
+> 
+> Yijing Wang (10):
+>   MSI: Rename msi_chip to msi_controller for better readability
+>   PCI/MSI: Introduce weak pcibios_msi_controller()
+>   arm/MSI: Save MSI controller in pci_sys_data
+>   PCI: tegra: Save MSI controller in pci_sys_data
+>   PCI: designware: Save MSI controller in pci_sys_data
+>   PCI: rcar: Save MSI controller in pci_sys_data
+>   PCI: mvebu: Save MSI controller in pci_sys_data
+>   PCI: xilinx: Save MSI controller in pci_sys_data
+>   arm/PCI: Clean unused pcibios_add_bus() and pcibios_remove_bus()
+>   PCI/MSI: Remove useless bus->msi assignment
+> 
+>  arch/arm/include/asm/mach/pci.h     |   10 +++++---
+>  arch/arm/kernel/bios32.c            |   28 ++++++++++--------------
+>  drivers/irqchip/irq-armada-370-xp.c |   22 +++++++++---------
+>  drivers/of/of_pci.c                 |   40 +++++++++++++++++-----------------
+>  drivers/pci/host/pci-keystone-dw.c  |    4 +-
+>  drivers/pci/host/pci-keystone.h     |    2 +-
+>  drivers/pci/host/pci-mvebu.c        |   14 ++++-------
+>  drivers/pci/host/pci-tegra.c        |   37 +++++++++++++-------------------
+>  drivers/pci/host/pcie-designware.c  |   25 +++++++--------------
+>  drivers/pci/host/pcie-designware.h  |    2 +-
+>  drivers/pci/host/pcie-rcar.c        |   37 +++++++++++++-------------------
+>  drivers/pci/host/pcie-xilinx.c      |   27 +++++++----------------
+>  drivers/pci/msi.c                   |   22 ++++++++++++++-----
+>  drivers/pci/probe.c                 |    1 -
+>  include/linux/msi.h                 |    6 ++--
+>  include/linux/of_pci.h              |   14 ++++++------
+>  include/linux/pci.h                 |    2 +-
+>  17 files changed, 132 insertions(+), 161 deletions(-)
+> 
 
->Why this code is meant for - does micron has changed this bit operation on newly added parts?
-
->thanks!
->--
->Jagan.
-
-For Micron Spi norflash,if you want to make it work Quad I/O mode,you can do it by set
-Two registers,Nonvolatile Configuration resister(NVCR) and Enhanced volatile confuration register(EVCR),
-but according to spi-nor.c,and micron spi nor,we recommend that if want to enable Micron spi nor Quad I/O
-mode,the best way is to set EVCR.
-Of course,you can use Quad/Dual operation command to read/write Micron spi nor in the spi nor Extended I/O mode.
-But their command-address-data is different.
-
-The purpose of this patch is only to enable Micron spi nor Quad I/O mode,if want to make Micron spi nor work 
-Under Quad I/O mode.
-
-Hi,Brian
-
-How about this patch?Please give me some tips,thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Applied to pci/msi for v3.19, thanks.
