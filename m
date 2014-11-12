@@ -1,115 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaKLAXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 19:23:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36391 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751712AbaKLAXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 19:23:40 -0500
-Message-ID: <1415751802.3398.107.camel@decadent.org.uk>
-Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
- arndale platform
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: "Stam, Michel [FINT]" <M.Stam@fugro.nl>, Riku Voipio <riku.voipio@iki.fi>,
-        davem@davemloft.net, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Date: Wed, 12 Nov 2014 00:23:22 +0000
-In-Reply-To: <20141104200914.GN23178@opensource.wolfsonmicro.com>
-References: <20141104072236.GA559@afflict.kos.to>
-	 <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local>
-	 <20141104094336.GA3145@afflict.kos.to>
-	 <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local>
-	 <20141104200914.GN23178@opensource.wolfsonmicro.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-AIfNf5xTiBlgC4y0RSEY"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1752404AbaKLAcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 19:32:51 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30389 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751637AbaKLAcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 19:32:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,364,1413270000"; 
+   d="scan'208";a="620864884"
+Date: Wed, 12 Nov 2014 08:12:15 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v4] sched/deadline: support dl task migration during cpu
+ hotplug
+Message-ID: <20141112001215.GB3946@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1415673043-62281-1-git-send-email-wanpeng.li@linux.intel.com>
+ <1415704209.15631.14.camel@tkhai>
+ <546209FD.8060102@gmail.com>
+ <1415711354.15631.15.camel@tkhai>
+ <20141111235320.GA3946@kernel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141111235320.GA3946@kernel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 12, 2014 at 07:53:20AM +0800, Wanpeng Li wrote:
+>Hi Kirill,
+>On Tue, Nov 11, 2014 at 04:09:14PM +0300, Kirill Tkhai wrote:
+>>В Вт, 11/11/2014 в 21:07 +0800, Wanpeng Li пишет:
+>>> Hi Kirill,
+>>> On 11/11/14, 7:10 PM, Kirill Tkhai wrote:
+>>> > В Вт, 11/11/2014 в 10:30 +0800, Wanpeng Li пишет:
+>>> >> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
+>>> >> addition, task may/may not be running again if cpu is added back. The root cause
+>>> >> which I found is that dl task will be throtted and removed from dl rq after
+>>> >> comsuming all budget, which leads to stop task can't pick it up from dl rq and
+>>> >> migrate to other cpus during hotplug.
+>>> >>
+>>> >> The method to reproduce:
+>>> >> schedtool -E -t 50000:100000 -e ./test
+>>> >> Actually test is just a simple for loop. Then observe which cpu the test
+>>> >> task is on.
+>>> >> echo 0 > /sys/devices/system/cpu/cpuN/online
+>>> >>
+>>> >> This patch fix it by push the task to another cpu in dl_task_timer() if
+>>> >> rq is offline.
+>>> >>
+>>> >> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>> > I'm still thinking we don't have to guarantee any "deadlines" during cpu hotplug...
+>>> > But, if speaking about this way:
+>>> >
+>>> >> ---
+>>> >> v3 -> v4:
+>>> >>   * use tsk_cpus_allowed wrapper
+>>> >>   * fix compile error
+>>> >> v2 -> v3:
+>>> >>   * don't get_task_struct
+>>> >>   * if cannot preempt any rq, fallback to pick any online cpus
+>>> >>   * use cpu_active_mask as original later_mask if cpu is offline
+>>> >> v1 -> v2:
+>>> >>   * push the task to another cpu in dl_task_timer() if rq is offline.
+>>> >>
+>>> >>
+>>> >>   kernel/sched/deadline.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++---
+>>> >>   1 file changed, 48 insertions(+), 3 deletions(-)
+>>> >>
+>>> >> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>>> >> index 00324af..e0fbba4 100644
+>>> >> --- a/kernel/sched/deadline.c
+>>> >> +++ b/kernel/sched/deadline.c
+>>> >> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+>>> >>   	return hrtimer_active(&dl_se->dl_timer);
+>>> >>   }
+>>> >>   
+>>> >> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+>>> >>   /*
+>>> >>    * This is the bandwidth enforcement timer callback. If here, we know
+>>> >>    * a task is not on its dl_rq, since the fact that the timer was running
+>>> >> @@ -538,6 +539,46 @@ again:
+>>> >>   	update_rq_clock(rq);
+>>> >>   	dl_se->dl_throttled = 0;
+>>> >>   	dl_se->dl_yielded = 0;
+>>> >> +
+>>> >> +	/*
+>>> >> +	 * So if we find that the rq the task was on is no longer
+>>> >> +	 * available, we need to select a new rq.
+>>> >> +	 */
+>>> >> +	if (!rq->online) {
+>>> >> +		struct rq *later_rq = NULL;
+>>> >> +
+>>> >> +		raw_spin_unlock(&rq->lock);
+>>> >> +
+>>> >> +		later_rq = find_lock_later_rq(p, rq);
+>>> > find_lock_later_rq() expects that rq is locked.
+>>> >
+>>> > The comment near its head confuses a reader. It locks newly found rq.
+>>> 
+>>> Sorry for my bad, what's you think should be changed?
+>>
+>>raw_spin_unlock(&rq->lock) is wrong here. It's not need.
+>>
+>
+>The machine down after remove this.
 
---=-AIfNf5xTiBlgC4y0RSEY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Just solve it, sorry for the noise. 
 
-On Tue, 2014-11-04 at 20:09 +0000, Charles Keepax wrote:
-> On Tue, Nov 04, 2014 at 11:23:06AM +0100, Stam, Michel [FINT] wrote:
-> > Hello Riku,
-> >=20
-> > >Fixing a bug (ethtool support) must not cause breakage elsewhere (in
-> > this case on arndale). This is now a regression of functionality from
-> > 3.17.
-> > >
-> > >I think it would better to revert the change now and with less hurry
-> > introduce a ethtool fix that doesn't break arndale.
-> >=20
-> > I don't fully agree here;=20
-> > I would like to point out that this commit is a revert itself. Fixing
-> > the armdale will then cause breakage in other implementations, such as
-> > ours. Blankly reverting breaks other peoples' implementations.
-> >=20
-> > The PHY reset is the thing that breaks ethtool support, so any fix that
-> > appeases all would have to take existing PHY state into account.=20
-[...]
-> --- a/drivers/net/usb/asix_devices.c
-> +++ b/drivers/net/usb/asix_devices.c
-> @@ -299,6 +299,7 @@ static int ax88772_reset(struct usbnet *dev)
->  {
->         struct asix_data *data =3D (struct asix_data *)&dev->data;
->         int ret, embd_phy;
-> +       int reg;
->         u16 rx_ctl;
->=20
->         ret =3D asix_write_gpio(dev,
-> @@ -359,8 +360,10 @@ static int ax88772_reset(struct usbnet *dev)
->         msleep(150);
->=20
->         asix_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
-> -       asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE,
-> -                       ADVERTISE_ALL | ADVERTISE_CSMA);
-> +       reg =3D asix_mdio_read(dev->net, dev->mii.phy_id, MII_ADVERTISE);
-> +       if (!reg)
-> +               reg =3D ADVERTISE_ALL | ADVERTISE_CSMA;
-> +       asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE, reg);
-[...]
+Regards,
+Wanpeng Li
 
-Why is there no sleep after setting the RESET bit?  Doesn't that make
-the following register writes unreliable?
-
-Ben.
-
---=20
-Ben Hutchings
-Experience is directly proportional to the value of equipment destroyed.
-                                                         - Carolyn Scheppne=
-r
-
---=-AIfNf5xTiBlgC4y0RSEY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVGKof+e/yOyVhhEJAQpNmA//YzP85bqno+y9Phv7nG3/6nobdFZ14xRa
-2QqMNOfITadD1HEwmcRMgoyF4h8M3Wg4RVDKgFyyZcYGvSEXXvFw857X3yWG/WYv
-LkHOdPWAtiFQBsJAzruRRwGaGhaG/IRKQFlSiIJZLRT4rVtrbpAdG3dPGmZvUjZV
-WZx9ca2u5hy9gDWh6gc/AvoUDOcDZchMi4caYZrTH1q3RDui9Lp5PVkTZ8oqqa/p
-Fa3awiqqIhhRDhTZltNrUxOh9llmlWC/q4sq+0PYu1uBozrkvzpLgsVqckECsTIl
-cDfUiEKKaUVV6Y0AUbatJjx7oQcG2YFTyPhr1M76DT6TKdrL2WzemBNieouuqHbu
-YT7pUWkCvt9avwDw3sJ/djkjottW2zhj8WWj1O6+O6evJP4rn5FkqXKdWQzyQyJv
-UOYcQFQI04NJyrHKmc/uCcjt3zhX5/kOjZNdEAYXbWxmnFJMQEQWX4FiBViEY5Z4
-AdqGhiAgm088aIEqg4fkJLUYxNnt9tkFXYfOUrK/fTIMc5pnfNuyabwMhEXbrvSz
-w/5XF0p9eoYNwIWsX52I+sXfmwx/mt0FcxhGEn5uH2hOTEE28pSwexSv0V5tN8rw
-msaCkSQD/X4+7UG6M6PzV+fFb1VtKz0Y/wtA4f1Tl/58VG5heAZttoeccjBW1zg2
-EPmFxUZ98t4=
-=Atva
------END PGP SIGNATURE-----
-
---=-AIfNf5xTiBlgC4y0RSEY--
+>
+>Regards,
+>Wanpeng Li 
+>
+>>> 
+>>> >
+>>> >> +
+>>> >> +		if (!later_rq) {
+>>> >> +			int cpu;
+>>> >> +
+>>> >> +			/*
+>>> >> +			 * If cannot preempt any rq, fallback to pick any
+>>> >> +			 * online cpu.
+>>> >> +			 */
+>>> >> +			for_each_cpu(cpu, tsk_cpus_allowed(p))
+>>> >> +				if (cpu_online(cpu))
+>>> >> +					later_rq = cpu_rq(cpu);
+>>> >> +			if (!later_rq) {
+>>> >> +				pr_warn("fail to find any online and task "
+>>> >> +				    "will never come back to us\n");
+>>> >> +				goto out;
+>>> >> +			}
+>>> >> +		}
+>>> >> +
+>>> >> +		deactivate_task(rq, p, 0);
+>>> >> +		set_task_cpu(p, later_rq->cpu);
+>>> >> +		activate_task(later_rq, p, 0);
+>>> >> +
+>>> >> +		resched_curr(later_rq);
+>>> >> +
+>>> >> +		double_unlock_balance(rq, later_rq);
+>>> > double_unlock_balance() unlocks later_rq only.
+>>> >
+>>> >> +
+>>> >> +		goto out;
+>>> >> +	}
+>>> >> +
+>>> >>   	if (task_on_rq_queued(p)) {
+>>> >>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>>> >>   		if (dl_task(rq->curr))
+>>> >> @@ -555,7 +596,7 @@ again:
+>>> >>   	}
+>>> >>   unlock:
+>>> >>   	raw_spin_unlock(&rq->lock);
+>>> >> -
+>>> >> +out:
+>>> >>   	return HRTIMER_NORESTART;
+>>> >>   }
+>>> >>   
+>>> >> @@ -1185,8 +1226,12 @@ static int find_later_rq(struct task_struct *task)
+>>> >>   	 * We have to consider system topology and task affinity
+>>> >>   	 * first, then we can look for a suitable cpu.
+>>> >>   	 */
+>>> >> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+>>> >> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+>>> >> +	if (likely(task_rq(task)->online)) {
+>>> >> +		cpumask_copy(later_mask, task_rq(task)->rd->span);
+>>> >> +		cpumask_and(later_mask, later_mask, cpu_active_mask);
+>>> >> +	} else
+>>> >> +		/* for offline cpus we have a singleton rd */
+>>> >> +		cpumask_copy(later_mask, cpu_active_mask);
+>>> >>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>>> >>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>>> >>   			task, later_mask);
+>>> >
+>>> > --
+>>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> > the body of a message to majordomo@vger.kernel.org
+>>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> > Please read the FAQ at  http://www.tux.org/lkml/
+>>> 
+>>
