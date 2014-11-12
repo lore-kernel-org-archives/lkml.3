@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195AbaKLB0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:26:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58872 "EHLO
+	id S1754274AbaKLBZz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:25:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264AbaKLB0A (ORCPT
+	with ESMTP id S1754251AbaKLBZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:26:00 -0500
+	Tue, 11 Nov 2014 20:25:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
+        Andy Lutomirski <luto@amacapital.net>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.17 127/319] KVM: x86: Emulator does not decode clflush well
-Date: Wed, 12 Nov 2014 10:14:25 +0900
-Message-Id: <20141112011013.643474103@linuxfoundation.org>
+Subject: [PATCH 3.17 124/319] KVM: emulate: avoid accessing NULL ctxt->memopp
+Date: Wed, 12 Nov 2014 10:14:22 +0900
+Message-Id: <20141112011013.120174052@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,78 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 13e457e0eebf0a0c82c38ceb890d93eb826d62a6 upstream.
+commit a430c9166312e1aa3d80bce32374233bdbfeba32 upstream.
 
-Currently, all group15 instructions are decoded as clflush (e.g., mfence,
-xsave).  In addition, the clflush instruction requires no prefix (66/f2/f3)
-would exist. If prefix exists it may encode a different instruction (e.g.,
-clflushopt).
+A failure to decode the instruction can cause a NULL pointer access.
+This is fixed simply by moving the "done" label as close as possible
+to the return.
 
-Creating a group for clflush, and different group for each prefix.
+This fixes CVE-2014-8481.
 
-This has been the case forever, but the next patch needs the cflush group
-in order to fix a bug introduced in 3.17.
-
+Reported-by: Andy Lutomirski <luto@amacapital.net>
 Fixes: 41061cdb98a0bec464278b4db8e894a3121671f5
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ arch/x86/kvm/emulate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -3376,6 +3376,12 @@ static int em_bswap(struct x86_emulate_c
- 	return X86EMUL_CONTINUE;
+@@ -4481,10 +4481,10 @@ done_prefixes:
+ 	/* Decode and fetch the destination operand: register or memory. */
+ 	rc = decode_operand(ctxt, &ctxt->dst, (ctxt->d >> DstShift) & OpMask);
+ 
+-done:
+ 	if (ctxt->rip_relative)
+ 		ctxt->memopp->addr.mem.ea += ctxt->_eip;
+ 
++done:
+ 	return (rc != X86EMUL_CONTINUE) ? EMULATION_FAILED : EMULATION_OK;
  }
  
-+static int em_clflush(struct x86_emulate_ctxt *ctxt)
-+{
-+	/* emulating clflush regardless of cpuid */
-+	return X86EMUL_CONTINUE;
-+}
-+
- static bool valid_cr(int nr)
- {
- 	switch (nr) {
-@@ -3708,6 +3714,16 @@ static const struct opcode group11[] = {
- 	X7(D(Undefined)),
- };
- 
-+static const struct gprefix pfx_0f_ae_7 = {
-+	I(0, em_clflush), N, N, N,
-+};
-+
-+static const struct group_dual group15 = { {
-+	N, N, N, N, N, N, N, GP(0, &pfx_0f_ae_7),
-+}, {
-+	N, N, N, N, N, N, N, N,
-+} };
-+
- static const struct gprefix pfx_0f_6f_0f_7f = {
- 	I(Mmx, em_mov), I(Sse | Aligned, em_mov), N, I(Sse | Unaligned, em_mov),
- };
-@@ -3967,7 +3983,7 @@ static const struct opcode twobyte_table
- 	F(DstMem | SrcReg | ModRM | BitOp | Lock | PageTable, em_bts),
- 	F(DstMem | SrcReg | Src2ImmByte | ModRM, em_shrd),
- 	F(DstMem | SrcReg | Src2CL | ModRM, em_shrd),
--	D(ModRM), F(DstReg | SrcMem | ModRM, em_imul),
-+	GD(0, &group15), F(DstReg | SrcMem | ModRM, em_imul),
- 	/* 0xB0 - 0xB7 */
- 	I2bv(DstMem | SrcReg | ModRM | Lock | PageTable, em_cmpxchg),
- 	I(DstReg | SrcMemFAddr | ModRM | Src2SS, em_lseg),
-@@ -4894,8 +4910,6 @@ twobyte_insn:
- 	case 0x90 ... 0x9f:     /* setcc r/m8 */
- 		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
- 		break;
--	case 0xae:              /* clflush */
--		break;
- 	case 0xb6 ... 0xb7:	/* movzx */
- 		ctxt->dst.bytes = ctxt->op_bytes;
- 		ctxt->dst.val = (ctxt->src.bytes == 1) ? (u8) ctxt->src.val
 
 
