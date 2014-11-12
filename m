@@ -1,102 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaKLRFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 12:05:10 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56949 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194AbaKLRFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 12:05:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,370,1413270000"; 
-   d="scan'208";a="606712344"
-Subject: [PATCH 06/11] x86, mpx: introduce VM_MPX to indicate that a VMA is MPX specific
-To: hpa@zytor.com
-Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org, qiaowei.ren@intel.com,
-        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Wed, 12 Nov 2014 09:05:03 -0800
-References: <20141112170443.B4BD0899@viggo.jf.intel.com>
-In-Reply-To: <20141112170443.B4BD0899@viggo.jf.intel.com>
-Message-Id: <20141112170503.AB389ADC@viggo.jf.intel.com>
+	id S1753454AbaKLRHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:07:24 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:36408 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230AbaKLRHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:07:22 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:5c0e:7567:d831:6fad]
+In-Reply-To: <20141112122017.GC30821@ulmo.nvidia.com>
+References: <1415738970-7963-1-git-send-email-olof@lixom.net>
+	<20141112122017.GC30821@ulmo.nvidia.com>
+Date: Wed, 12 Nov 2014 09:07:20 -0800
+Message-ID: <CAOesGMjmVJuaiFZf6msFtsGiQn6TOPatZ7V3p-KfaPqpXnrYmA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
+From: Olof Johansson <olof@lixom.net>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        gregkh@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thierry,
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
 
-MPX-enabled applications using large swaths of memory can
-potentially have large numbers of bounds tables in process
-address space to save bounds information. These tables can take
-up huge swaths of memory (as much as 80% of the memory on the
-system) even if we clean them up aggressively. In the worst-case
-scenario, the tables can be 4x the size of the data structure
-being tracked. IOW, a 1-page structure can require 4 bounds-table
-pages.
 
-Being this huge, our expectation is that folks using MPX are
-going to be keen on figuring out how much memory is being
-dedicated to it. So we need a way to track memory use for MPX.
+On Wed, Nov 12, 2014 at 4:20 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Tue, Nov 11, 2014 at 12:49:30PM -0800, Olof Johansson wrote:
+>> There are general changes pending to make the /aliases/serial* entries
+>> number the serial ports on the system. On tegra, so far the ports have been
+>> just numbered dynamically as they are configured so that makes them change.
+>>
+>> To avoid this, add specific aliases per board to keep the old numbers. This
+>> allows us to change the numbering by default on future SoCs while keeping the
+>> numbering on existing boards.
+>>
+>> Signed-off-by: Olof Johansson <olof@lixom.net>
+>> ---
+>>
+>> Stephen/Thierry/Alex, as noticed this week we really should try to get
+>> this in before the 3.19 merge window so that the global aliases change
+>> can happen there without regression.
+>>
+>> If you have more fixes queued up, feel free to add this to the next pull
+>> request. If not, a review and ack would be appreciated.
+>>
+>>  arch/arm/boot/dts/tegra114-dalmore.dts        |    1 +
+>>  arch/arm/boot/dts/tegra114-roth.dts           |    4 ++++
+>>  arch/arm/boot/dts/tegra114-tn7.dts            |    4 ++++
+>>  arch/arm/boot/dts/tegra114.dtsi               |    7 -------
+>>  arch/arm/boot/dts/tegra124-jetson-tk1.dts     |    1 +
+>>  arch/arm/boot/dts/tegra124-nyan-big.dts       |    1 +
+>>  arch/arm/boot/dts/tegra124-venice2.dts        |    1 +
+>>  arch/arm/boot/dts/tegra124.dtsi               |    7 -------
+>>  arch/arm/boot/dts/tegra20-harmony.dts         |    1 +
+>>  arch/arm/boot/dts/tegra20-iris-512.dts        |    5 +++++
+>>  arch/arm/boot/dts/tegra20-medcom-wide.dts     |    4 ++++
+>>  arch/arm/boot/dts/tegra20-paz00.dts           |    2 ++
+>>  arch/arm/boot/dts/tegra20-seaboard.dts        |    1 +
+>>  arch/arm/boot/dts/tegra20-tamonten.dtsi       |    1 +
+>>  arch/arm/boot/dts/tegra20-trimslice.dts       |    1 +
+>>  arch/arm/boot/dts/tegra20-ventana.dts         |    1 +
+>>  arch/arm/boot/dts/tegra20-whistler.dts        |    1 +
+>>  arch/arm/boot/dts/tegra20.dtsi                |    8 --------
+>>  arch/arm/boot/dts/tegra30-apalis-eval.dts     |    4 ++++
+>>  arch/arm/boot/dts/tegra30-beaver.dts          |    1 +
+>>  arch/arm/boot/dts/tegra30-cardhu.dtsi         |    2 ++
+>>  arch/arm/boot/dts/tegra30-colibri-eval-v3.dts |    3 +++
+>>  arch/arm/boot/dts/tegra30.dtsi                |    8 --------
+>>  23 files changed, 39 insertions(+), 30 deletions(-)
+>
+> I have applied this to the for-3.19/dt branch.
 
-If we want to specifically track MPX VMAs we need to be able to
-distinguish them from normal VMAs, and keep them from getting
-merged with normal VMAs. A new VM_ flag set only on MPX VMAs does
-both of those things. With this flag, MPX bounds-table VMAs can
-be distinguished from other VMAs, and userspace can also walk
-/proc/$pid/smaps to get memory usage for MPX.
+Maybe I wasn't entirely clear -- I was proposing to include this in
+the next batch of fixes for 3.18 so that the aliases processing code
+can go in for 3.19. If we hold this until the merge window we run the
+risk of having largeish parts of the merge window unbisectable (more
+than if we merge this as part of the next/dt contents).
 
-In addition to this flag, we also introduce a special ->vm_ops
-specific to MPX VMAs (see the patch "add MPX specific mmap
-interface"), but currently different ->vm_ops do not by
-themselves prevent VMA merging, so we still need this flag.
+> So for anything that is
+> post Tegra124 the new rule shall be to add aliases to the SoC .dtsi and
+> then use consistent numbering of UART ports across boards?
+>
+> The alternative is to remain consistent with what this patch does, which
+> would be to make the serial port numbering a property of the board. That
+> doesn't sound too bad to me either since it'll hide all the unused ports
+> on a given board.
 
-We understand that VM_ flags are scarce and are open to other
-options.
+I was envisioning the former, but the latter would work OK too.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
 
- b/fs/proc/task_mmu.c |    3 +++
- b/include/linux/mm.h |    6 ++++++
- 2 files changed, 9 insertions(+)
-
-diff -puN fs/proc/task_mmu.c~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific fs/proc/task_mmu.c
---- a/fs/proc/task_mmu.c~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific	2014-11-12 08:49:25.303862758 -0800
-+++ b/fs/proc/task_mmu.c	2014-11-12 08:49:25.308862983 -0800
-@@ -552,6 +552,9 @@ static void show_smap_vma_flags(struct s
- 		[ilog2(VM_GROWSDOWN)]	= "gd",
- 		[ilog2(VM_PFNMAP)]	= "pf",
- 		[ilog2(VM_DENYWRITE)]	= "dw",
-+#ifdef CONFIG_X86_INTEL_MPX
-+		[ilog2(VM_MPX)]		= "mp",
-+#endif
- 		[ilog2(VM_LOCKED)]	= "lo",
- 		[ilog2(VM_IO)]		= "io",
- 		[ilog2(VM_SEQ_READ)]	= "sr",
-diff -puN include/linux/mm.h~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific include/linux/mm.h
---- a/include/linux/mm.h~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific	2014-11-12 08:49:25.305862848 -0800
-+++ b/include/linux/mm.h	2014-11-12 08:49:25.309863029 -0800
-@@ -128,6 +128,7 @@ extern unsigned int kobjsize(const void
- #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
- #define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
- #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
-+#define VM_ARCH_2	0x02000000
- #define VM_DONTDUMP	0x04000000	/* Do not include in the core dump */
- 
- #ifdef CONFIG_MEM_SOFT_DIRTY
-@@ -155,6 +156,11 @@ extern unsigned int kobjsize(const void
- # define VM_MAPPED_COPY	VM_ARCH_1	/* T if mapped copy of data (nommu mmap) */
- #endif
- 
-+#if defined(CONFIG_X86)
-+/* MPX specific bounds table or bounds directory */
-+# define VM_MPX		VM_ARCH_2
-+#endif
-+
- #ifndef VM_GROWSUP
- # define VM_GROWSUP	VM_NONE
- #endif
-_
+-Olof
