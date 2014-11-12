@@ -1,86 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215AbaKLEZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:25:05 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:35963 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615AbaKLEZB (ORCPT
+	id S1752793AbaKLBT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:19:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58347 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaKLBTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 23:25:01 -0500
-Date: Tue, 11 Nov 2014 21:24:54 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 10/10] PCI/MSI: Remove useless bus->msi assignment
-Message-ID: <20141112042454.GL28161@google.com>
-References: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
- <1414396127-30023-11-git-send-email-wangyijing@huawei.com>
+	Tue, 11 Nov 2014 20:19:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
+        Thomas Graf <tgraf@suug.ch>
+Subject: [PATCH 3.17 012/319] netlink: Re-add locking to netlink_lookup() and seq walker
+Date: Wed, 12 Nov 2014 10:12:30 +0900
+Message-Id: <20141112010954.703530885@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414396127-30023-11-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 03:48:47PM +0800, Yijing Wang wrote:
-> Thierry introduced MSI chip(now renamed to MSI controller)
-> framework to associate MSI chip and PCI bus in arm.
-> Other platforms still use its own arch MSI functions to
-> support MSI capability. Thierry introduced the bus->msi
-> assignment to make child bus can inherit bus->msi from the parent.
-> But in fact, drivers which used MSI chip always associate
-> MSI chip and PCI bus by add .add_bus() in arm PCI host bridge
-> drivers. Now we have saved MSI chip in pci_sys_data.
-> We can remove this bus->msi assignment safely.
-> 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> CC: Thierry Reding <thierry.reding@gmail.com>
-> CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> ---
->  drivers/pci/msi.c   |    5 -----
->  drivers/pci/probe.c |    1 -
->  2 files changed, 0 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index f085f7f..27b6a54 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -37,11 +37,6 @@ struct msi_controller * __weak pcibios_msi_controller(struct pci_bus *bus)
->  
->  struct msi_controller *pci_msi_controller(struct pci_bus *bus)
->  {
-> -	struct msi_controller *ctrl = bus->msi;
-> -
-> -	if (ctrl)
-> -		return ctrl;
-> -
->  	return pcibios_msi_controller(bus);
->  }
->  
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 5ed9930..4b18bf2 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -682,7 +682,6 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  
->  	child->parent = parent;
->  	child->ops = parent->ops;
-> -	child->msi = parent->msi;
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Does this mean that struct pci_bus.msi is now unused?  If not, where is it
-still used?
+------------------
 
->  	child->sysdata = parent->sysdata;
->  	child->bus_flags = parent->bus_flags;
->  
-> -- 
-> 1.7.1
-> 
+From: Thomas Graf <tgraf@suug.ch>
+
+[ Upstream commit 78fd1d0ab072d4d9b5f0b7c14a1516665170b565 ]
+
+The synchronize_rcu() in netlink_release() introduces unacceptable
+latency. Reintroduce minimal lookup so we can drop the
+synchronize_rcu() until socket destruction has been RCUfied.
+
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
+Reported-and-tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/netlink/af_netlink.c |   37 +++++++++++++++++++++++++------------
+ 1 file changed, 25 insertions(+), 12 deletions(-)
+
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -96,6 +96,14 @@ static DECLARE_WAIT_QUEUE_HEAD(nl_table_
+ static int netlink_dump(struct sock *sk);
+ static void netlink_skb_destructor(struct sk_buff *skb);
+ 
++/* nl_table locking explained:
++ * Lookup and traversal are protected with nl_sk_hash_lock or nl_table_lock
++ * combined with an RCU read-side lock. Insertion and removal are protected
++ * with nl_sk_hash_lock while using RCU list modification primitives and may
++ * run in parallel to nl_table_lock protected lookups. Destruction of the
++ * Netlink socket may only occur *after* nl_table_lock has been acquired
++ * either during or after the socket has been removed from the list.
++ */
+ DEFINE_RWLOCK(nl_table_lock);
+ EXPORT_SYMBOL_GPL(nl_table_lock);
+ static atomic_t nl_table_users = ATOMIC_INIT(0);
+@@ -109,10 +117,10 @@ EXPORT_SYMBOL_GPL(nl_sk_hash_lock);
+ static int lockdep_nl_sk_hash_is_held(void)
+ {
+ #ifdef CONFIG_LOCKDEP
+-	return (debug_locks) ? lockdep_is_held(&nl_sk_hash_lock) : 1;
+-#else
+-	return 1;
++	if (debug_locks)
++		return lockdep_is_held(&nl_sk_hash_lock) || lockdep_is_held(&nl_table_lock);
+ #endif
++	return 1;
+ }
+ 
+ static ATOMIC_NOTIFIER_HEAD(netlink_chain);
+@@ -1028,11 +1036,13 @@ static struct sock *netlink_lookup(struc
+ 	struct netlink_table *table = &nl_table[protocol];
+ 	struct sock *sk;
+ 
++	read_lock(&nl_table_lock);
+ 	rcu_read_lock();
+ 	sk = __netlink_lookup(table, portid, net);
+ 	if (sk)
+ 		sock_hold(sk);
+ 	rcu_read_unlock();
++	read_unlock(&nl_table_lock);
+ 
+ 	return sk;
+ }
+@@ -1257,9 +1267,6 @@ static int netlink_release(struct socket
+ 	}
+ 	netlink_table_ungrab();
+ 
+-	/* Wait for readers to complete */
+-	synchronize_net();
+-
+ 	kfree(nlk->groups);
+ 	nlk->groups = NULL;
+ 
+@@ -1281,6 +1288,7 @@ static int netlink_autobind(struct socke
+ 
+ retry:
+ 	cond_resched();
++	netlink_table_grab();
+ 	rcu_read_lock();
+ 	if (__netlink_lookup(table, portid, net)) {
+ 		/* Bind collision, search negative portid values. */
+@@ -1288,9 +1296,11 @@ retry:
+ 		if (rover > -4097)
+ 			rover = -4097;
+ 		rcu_read_unlock();
++		netlink_table_ungrab();
+ 		goto retry;
+ 	}
+ 	rcu_read_unlock();
++	netlink_table_ungrab();
+ 
+ 	err = netlink_insert(sk, net, portid);
+ 	if (err == -EADDRINUSE)
+@@ -2921,14 +2931,16 @@ static struct sock *netlink_seq_socket_i
+ }
+ 
+ static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
+-	__acquires(RCU)
++	__acquires(nl_table_lock) __acquires(RCU)
+ {
++	read_lock(&nl_table_lock);
+ 	rcu_read_lock();
+ 	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
+ }
+ 
+ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ {
++	struct rhashtable *ht;
+ 	struct netlink_sock *nlk;
+ 	struct nl_seq_iter *iter;
+ 	struct net *net;
+@@ -2943,19 +2955,19 @@ static void *netlink_seq_next(struct seq
+ 	iter = seq->private;
+ 	nlk = v;
+ 
+-	rht_for_each_entry_rcu(nlk, nlk->node.next, node)
++	i = iter->link;
++	ht = &nl_table[i].hash;
++	rht_for_each_entry(nlk, nlk->node.next, ht, node)
+ 		if (net_eq(sock_net((struct sock *)nlk), net))
+ 			return nlk;
+ 
+-	i = iter->link;
+ 	j = iter->hash_idx + 1;
+ 
+ 	do {
+-		struct rhashtable *ht = &nl_table[i].hash;
+ 		const struct bucket_table *tbl = rht_dereference_rcu(ht->tbl, ht);
+ 
+ 		for (; j < tbl->size; j++) {
+-			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
++			rht_for_each_entry(nlk, tbl->buckets[j], ht, node) {
+ 				if (net_eq(sock_net((struct sock *)nlk), net)) {
+ 					iter->link = i;
+ 					iter->hash_idx = j;
+@@ -2971,9 +2983,10 @@ static void *netlink_seq_next(struct seq
+ }
+ 
+ static void netlink_seq_stop(struct seq_file *seq, void *v)
+-	__releases(RCU)
++	__releases(RCU) __releases(nl_table_lock)
+ {
+ 	rcu_read_unlock();
++	read_unlock(&nl_table_lock);
+ }
+ 
+ 
+
+
