@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaKLTPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:15:08 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:62544 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbaKLTPG (ORCPT
+	id S1753383AbaKLTXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:23:01 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:35949 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295AbaKLTW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:15:06 -0500
+	Wed, 12 Nov 2014 14:22:58 -0500
 MIME-Version: 1.0
-X-Originating-IP: [46.116.100.67]
-In-Reply-To: <1410553499-55951-6-git-send-email-s-anna@ti.com>
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com> <1410553499-55951-6-git-send-email-s-anna@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 12 Nov 2014 21:14:44 +0200
-Message-ID: <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
-Subject: Re: [PATCHv6 5/5] hwspinlock/omap: add support for dt nodes
-To: Suman Anna <s-anna@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <1415690392-9278-3-git-send-email-caesar.wang@rock-chips.com>
+References: <1415690392-9278-1-git-send-email-caesar.wang@rock-chips.com>
+	<1415690392-9278-3-git-send-email-caesar.wang@rock-chips.com>
+Date: Wed, 12 Nov 2014 11:22:57 -0800
+X-Google-Sender-Auth: mkU2WtUE32aQul1n39bmgKx53EA
+Message-ID: <CAD=FV=V-qhi5rPxe_WGcS1JAZba_euFY3YuUyO_4mbqvJPUtzQ@mail.gmail.com>
+Subject: Re: [PATCH v10 2/3] power-domain: rockchip: add power doamin driver
+From: Doug Anderson <dianders@chromium.org>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        ZhenFu Fang <fzf@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jack Dai <jack.dai@rock-chips.com>,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman,
+Caesar,
 
-On Fri, Sep 12, 2014 at 11:24 PM, Suman Anna <s-anna@ti.com> wrote:
->  static int omap_hwspinlock_probe(struct platform_device *pdev)
->  {
-> -       struct hwspinlock_pdata *pdata = pdev->dev.platform_data;
-> +       struct device_node *node = pdev->dev.of_node;
->         struct hwspinlock_device *bank;
->         struct hwspinlock *hwlock;
->         struct resource *res;
->         void __iomem *io_base;
-> -       int num_locks, i, ret;
-> +       int num_locks, i, ret, base_id;
->
-> -       if (!pdata)
-> +       if (!node)
->                 return -ENODEV;
->
-> +       ret = of_hwspin_lock_get_base_id(node);
-> +       if (ret < 0 && ret != -EINVAL)
-> +               return -ENODEV;
-> +       base_id = (ret > 0 ? ret : 0);
+On Mon, Nov 10, 2014 at 11:19 PM, Caesar Wang
+<caesar.wang@rock-chips.com> wrote:
+> +       pm_genpd_init(&pd->genpd, NULL, false);
 
-Does this mean you allow nodes not to have the base_id property? How
-do we protect against multiple nodes not having a base_id property
-then?
-
-Implicitly assuming a base_id value (zero in this case) may not be always safe.
-
-Thanks,
-Ohad.
+As Dmitry pointed out in another context, maybe this should be
+"pm_genpd_init(&pd->genpd, NULL, !is_on);"
