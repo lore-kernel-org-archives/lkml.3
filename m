@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaKLBXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:23:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58653 "EHLO
+	id S1753863AbaKLBXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:23:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58665 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417AbaKLBXW (ORCPT
+	with ESMTP id S1752360AbaKLBXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:22 -0500
+	Tue, 11 Nov 2014 20:23:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "D. Jared Dominguez" <Jared_Dominguez@Dell.com>,
-        Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.17 079/319] mfd: rtsx_pcr: Fix MSI enable error handling
-Date: Wed, 12 Nov 2014 10:13:37 +0900
-Message-Id: <20141112011005.680144752@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.17 081/319] iommu/amd: Split init_iommu_group() from iommu_init_device()
+Date: Wed, 12 Nov 2014 10:13:39 +0900
+Message-Id: <20141112011006.005762260@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,37 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <chris@printf.net>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 5152970538a5e16c03bbcb9f1c780489a795ed40 upstream.
+commit 25b11ce2a3607d7c39a2ca121eea0c67c722b34e upstream.
 
-pci_enable_msi() can return failure with both positive and negative
-integers -- it returns 0 for success -- but is only tested here for
-"if (ret < 0)".  This causes us to try to use MSI on the RTS5249 SD
-reader in the Dell XPS 11 when enabling MSI failed, causing:
+For a PCI device, aliases from the IVRS table won't be populated
+into dma_alias_devfn until after iommu_init_device() is called on
+each device.  We therefore want to split init_iommu_group() to
+be called from a separate loop immediately following.
 
-[    1.737110] rtsx_pci: probe of 0000:05:00.0 failed with error -110
-
-Reported-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
-Tested-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
-Signed-off-by: Chris Ball <chris@printf.net>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/rtsx_pcr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1197,7 +1197,7 @@ static int rtsx_pci_probe(struct pci_dev
- 	pcr->msi_en = msi_en;
- 	if (pcr->msi_en) {
- 		ret = pci_enable_msi(pcidev);
--		if (ret < 0)
-+		if (ret)
- 			pcr->msi_en = false;
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -260,17 +260,13 @@ static bool check_device(struct device *
+ 	return true;
+ }
+ 
+-static int init_iommu_group(struct device *dev)
++static void init_iommu_group(struct device *dev)
+ {
+ 	struct iommu_group *group;
+ 
+ 	group = iommu_group_get_for_dev(dev);
+-
+-	if (IS_ERR(group))
+-		return PTR_ERR(group);
+-
+-	iommu_group_put(group);
+-	return 0;
++	if (!IS_ERR(group))
++		iommu_group_put(group);
+ }
+ 
+ static int __last_alias(struct pci_dev *pdev, u16 alias, void *data)
+@@ -340,7 +336,6 @@ static int iommu_init_device(struct devi
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct iommu_dev_data *dev_data;
+ 	u16 alias;
+-	int ret;
+ 
+ 	if (dev->archdata.iommu)
+ 		return 0;
+@@ -364,12 +359,6 @@ static int iommu_init_device(struct devi
+ 		dev_data->alias_data = alias_data;
  	}
  
+-	ret = init_iommu_group(dev);
+-	if (ret) {
+-		free_dev_data(dev_data);
+-		return ret;
+-	}
+-
+ 	if (pci_iommuv2_capable(pdev)) {
+ 		struct amd_iommu *iommu;
+ 
+@@ -455,6 +444,15 @@ int __init amd_iommu_init_devices(void)
+ 			goto out_free;
+ 	}
+ 
++	/*
++	 * Initialize IOMMU groups only after iommu_init_device() has
++	 * had a chance to populate any IVRS defined aliases.
++	 */
++	for_each_pci_dev(pdev) {
++		if (check_device(&pdev->dev))
++			init_iommu_group(&pdev->dev);
++	}
++
+ 	return 0;
+ 
+ out_free:
+@@ -2415,6 +2413,7 @@ static int device_change_notifier(struct
+ 	case BUS_NOTIFY_ADD_DEVICE:
+ 
+ 		iommu_init_device(dev);
++		init_iommu_group(dev);
+ 
+ 		/*
+ 		 * dev_data is still NULL and
 
 
