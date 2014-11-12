@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259AbaKLCqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:46:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60528 "EHLO
+	id S1755279AbaKLCrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:47:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934642AbaKLBoT (ORCPT
+	with ESMTP id S933862AbaKLBoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:44:19 -0500
+	Tue, 11 Nov 2014 20:44:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
-Subject: [PATCH 3.14 088/203] ARC: [SMP] General Fixes
-Date: Wed, 12 Nov 2014 10:15:58 +0900
-Message-Id: <20141112011546.726274404@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Daney <david.daney@cavium.com>, Huacai Chen <chenhc@lemote.com>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.14 095/203] MIPS: tlbex: Properly fix HUGE TLB Refill exception handler
+Date: Wed, 12 Nov 2014 10:16:05 +0900
+Message-Id: <20141112011547.057644131@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -27,64 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: David Daney <david.daney@cavium.com>
 
-commit c3441edd2dea83923421fd6050d2ffdc57696323 upstream.
+commit 9e0f162a36914937a937358fcb45e0609ef2bfc4 upstream.
 
--Pass the expected arg to non-boot park'ing routine
- (It worked so far because existing SMP backends don't use the arg)
+In commit 8393c524a25609 (MIPS: tlbex: Fix a missing statement for
+HUGETLB), the TLB Refill handler was fixed so that non-OCTEON targets
+would work properly with huge pages.  The change was incorrect in that
+it broke the OCTEON case.
 
--CONFIG_DEBUG_PREEMPT warning
+The problem is shown here:
 
+    xxx0:	df7a0000 	ld	k0,0(k1)
+    .
+    .
+    .
+    xxxc0:	df610000 	ld	at,0(k1)
+    xxxc4:	335a0ff0 	andi	k0,k0,0xff0
+    xxxc8:	e825ffcd 	bbit1	at,0x5,0x0
+    xxxcc:	003ad82d 	daddu	k1,at,k0
+    .
+    .
+    .
+
+In the non-octeon case there is a destructive test for the huge PTE
+bit, and then at 0, $k0 is reloaded (that is what the 8393c524a25609
+patch added).
+
+In the octeon case, we modify k1 in the branch delay slot, but we
+never need k0 again, so the new load is not needed, but since k1 is
+modified, if we do the load, we load from a garbage location and then
+get a nested TLB Refill, which is seen in userspace as either SIGBUS
+or SIGSEGV (depending on the garbage).
+
+The real fix is to only do this reloading if it is needed, and never
+where it is harmful.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/8151/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/arc/kernel/head.S     |    7 ++++---
- arch/arc/mm/cache_arc700.c |    3 +--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ arch/mips/mm/tlbex.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/arc/kernel/head.S
-+++ b/arch/arc/kernel/head.S
-@@ -24,13 +24,13 @@
- 	.globl stext
- stext:
- 	;-------------------------------------------------------------------
--	; Don't clobber r0-r4 yet. It might have bootloader provided info
-+	; Don't clobber r0-r2 yet. It might have bootloader provided info
- 	;-------------------------------------------------------------------
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -1057,6 +1057,7 @@ static void build_update_entries(u32 **p
+ struct mips_huge_tlb_info {
+ 	int huge_pte;
+ 	int restore_scratch;
++	bool need_reload_pte;
+ };
  
- 	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
+ static struct mips_huge_tlb_info
+@@ -1071,6 +1072,7 @@ build_fast_tlb_refill_handler (u32 **p,
  
- #ifdef CONFIG_SMP
--	; Only Boot (Master) proceeds. Others wait in platform dependent way
-+	; Ensure Boot (Master) proceeds. Others wait in platform dependent way
- 	;	IDENTITY Reg [ 3  2  1  0 ]
- 	;	(cpu-id)             ^^^	=> Zero for UP ARC700
- 	;					=> #Core-ID if SMP (Master 0)
-@@ -39,7 +39,8 @@ stext:
- 	; need to make sure only boot cpu takes this path.
- 	GET_CPU_ID  r5
- 	cmp	r5, 0
--	jnz	arc_platform_smp_wait_to_boot
-+	mov.ne	r0, r5
-+	jne	arc_platform_smp_wait_to_boot
- #endif
- 	; Clear BSS before updating any globals
- 	; XXX: use ZOL here
---- a/arch/arc/mm/cache_arc700.c
-+++ b/arch/arc/mm/cache_arc700.c
-@@ -100,10 +100,9 @@
- #define DC_CTRL_INV_MODE_FLUSH  0x40
- #define DC_CTRL_FLUSH_STATUS    0x100
+ 	rv.huge_pte = scratch;
+ 	rv.restore_scratch = 0;
++	rv.need_reload_pte = false;
  
--char *arc_cache_mumbojumbo(int cpu_id, char *buf, int len)
-+char *arc_cache_mumbojumbo(int c, char *buf, int len)
- {
- 	int n = 0;
--	unsigned int c = smp_processor_id();
- 
- #define PR_CACHE(p, enb, str)						\
- {									\
+ 	if (check_for_high_segbits) {
+ 		UASM_i_MFC0(p, tmp, C0_BADVADDR);
+@@ -1259,6 +1261,7 @@ static void build_r4000_tlb_refill_handl
+ 	} else {
+ 		htlb_info.huge_pte = K0;
+ 		htlb_info.restore_scratch = 0;
++		htlb_info.need_reload_pte = true;
+ 		vmalloc_mode = refill_noscratch;
+ 		/*
+ 		 * create the plain linear handler
+@@ -1295,7 +1298,8 @@ static void build_r4000_tlb_refill_handl
+ 	}
+ #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
+ 	uasm_l_tlb_huge_update(&l, p);
+-	UASM_i_LW(&p, K0, 0, K1);
++	if (htlb_info.need_reload_pte)
++		UASM_i_LW(&p, htlb_info.huge_pte, 0, K1);
+ 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
+ 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
+ 				   htlb_info.restore_scratch);
 
 
