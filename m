@@ -1,185 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764AbaKLXlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 18:41:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2579 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753727AbaKLXlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 18:41:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
-   d="scan'208";a="606931994"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>
-CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Index: AQHP/s7+MsolZCiViEiCPzqCVeTRAJxdoOwA
-Date: Wed, 12 Nov 2014 23:41:14 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141112220058.GA5295@redhat.com>
- <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
-In-Reply-To: <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: multipart/mixed;
-	boundary="_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_"
+	id S1753800AbaKLXmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 18:42:33 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:15034 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753775AbaKLXmc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 18:42:32 -0500
+Date: Wed, 12 Nov 2014 18:42:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Cc: linux-kernel@vger.kernel.org, Clark Williams <clark.williams@gmail.com>
+Subject: Re: [PATCH] ftrace: fix traceoff_on_warning handling on boot
+ command line
+Message-ID: <20141112184230.1d59fd28@gandalf.local.home>
+In-Reply-To: <20141112231400.GL12281@uudg.org>
+References: <20141112231400.GL12281@uudg.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+On Wed, 12 Nov 2014 21:14:00 -0200
+"Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
 
-PiB2MiBjb21pbmcgc29vbiB3aXRoIHRoZXNlIGNoYW5nZXMgYW5kIHNvbWUgYWRkaXRpb25hbCBj
-b21tZW50IGNsZWFudXBzLg0KDQpTbyB2MSArIGRvX21hY2hpbmVfY2hlY2sgY2hhbmdlIGlzIG5v
-dCBzdXJ2aXZpbmcgc29tZSByZWFsIHRlc3RpbmcuICBJJ20gaW5qZWN0aW5nIGFuZA0KY29uc3Vt
-aW5nIGVycm9ycyBzZXF1ZW50aWFsbHkgd2l0aCBhIHNtYWxsIGRlbGF5IGluIGJldHdlZW4gLSBz
-byBubyBmYW5jeSBjb3JuZXIgY2FzZXMgd2l0aA0KbXVsdGlwbGUgZXJyb3JzIGJlaW5nIHByb2Nl
-c3NlZCAuLi4gd2UgZ2V0IGFsbCB0aGUgd2F5IGRvbmUgd2l0aCBvbmUgZXJyb3IgYmVmb3JlIHdl
-IHN0YXJ0DQp0aGUgbmV4dC4gIFRlc3Qgb25seSBzdXJ2aXZlcyBhYm91dCA0MDBpc2ggcmVjb3Zl
-cmllcyBiZWZvcmUgTGludXggZGllcyBjb21wbGFpbmluZzoNCiAgICAiVGltZW91dCBzeW5jaHJv
-bml6aW5nIG1hY2hpbmUgY2hlY2sgb3ZlciBDUFVzIi4gDQpUaGlzIHByb2JhYmx5IG1lYW5zIHRo
-YXQgc29tZSBjcHUgd2FuZGVyZWQgaW50byB0aGUgd2VlZHMgYW5kIG5ldmVyIHNob3dlZCB1cCBp
-biB0aGUNCmhhbmRsZXIuDQoNCnBhdGNoIGp1c3QgbW92ZXMgdGhlIHJlY292ZXJ5IHRvIHRoZSBl
-bmQgb2YgZG9fbWFjaGluZV9jaGVjaygpIGluc3RlYWQgb2YNCmRvaW5nIHRoZSB3aG9sZSBUSUZf
-TUNFX05PVElGWSB0aGluZyAtIGFuZCBkZWxldGVzIGFsbCB0aGUgVElGX01DRV9OT1RJRlkNCmJp
-dHMgdGhhdCBhcmUgbm8gbG9uZ2VyIG5lZWRlZC4NCg0KLVRvbnkNCg0KDQo=
+> Steven,
+> 
+> While backporting traceoff_on_warning to 3.10.33-rt we noticed a slightly
+> difference between what was stated on Documentation/kernel-parameters.txt
+> and the actual code.
+> 
+> Please consider the following patch for inclusion.
+> 
+> Best regards,
+> Luis
+> 
 
---_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_
-Content-Type: application/octet-stream; name="mce-stack.patch"
-Content-Description: mce-stack.patch
-Content-Disposition: attachment; filename="mce-stack.patch"; size=6556;
-	creation-date="Wed, 12 Nov 2014 23:25:20 GMT";
-	modification-date="Wed, 12 Nov 2014 23:25:04 GMT"
-Content-Transfer-Encoding: base64
+Thanks Luis, I'll add it to my queue.
 
-ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL21jZS5oIGIvYXJjaC94ODYvaW5jbHVk
-ZS9hc20vbWNlLmgKaW5kZXggOTU4YjkwZjc2MWU1Li5iZTVhNTFhNGEyMTkgMTAwNjQ0Ci0tLSBh
-L2FyY2gveDg2L2luY2x1ZGUvYXNtL21jZS5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL21j
-ZS5oCkBAIC0xODcsNyArMTg3LDYgQEAgZW51bSBtY3BfZmxhZ3Mgewogdm9pZCBtYWNoaW5lX2No
-ZWNrX3BvbGwoZW51bSBtY3BfZmxhZ3MgZmxhZ3MsIG1jZV9iYW5rc190ICpiKTsKIAogaW50IG1j
-ZV9ub3RpZnlfaXJxKHZvaWQpOwotdm9pZCBtY2Vfbm90aWZ5X3Byb2Nlc3Modm9pZCk7CiAKIERF
-Q0xBUkVfUEVSX0NQVShzdHJ1Y3QgbWNlLCBpbmplY3RtKTsKIApkaWZmIC0tZ2l0IGEvYXJjaC94
-ODYvaW5jbHVkZS9hc20vdGhyZWFkX2luZm8uaCBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3RocmVh
-ZF9pbmZvLmgKaW5kZXggODU0MDUzODg5ZDRkLi4xMTY5NzNmZTg4MTkgMTAwNjQ0Ci0tLSBhL2Fy
-Y2gveDg2L2luY2x1ZGUvYXNtL3RocmVhZF9pbmZvLmgKKysrIGIvYXJjaC94ODYvaW5jbHVkZS9h
-c20vdGhyZWFkX2luZm8uaApAQCAtNzUsNyArNzUsNiBAQCBzdHJ1Y3QgdGhyZWFkX2luZm8gewog
-I2RlZmluZSBUSUZfU1lTQ0FMTF9FTVUJCTYJLyogc3lzY2FsbCBlbXVsYXRpb24gYWN0aXZlICov
-CiAjZGVmaW5lIFRJRl9TWVNDQUxMX0FVRElUCTcJLyogc3lzY2FsbCBhdWRpdGluZyBhY3RpdmUg
-Ki8KICNkZWZpbmUgVElGX1NFQ0NPTVAJCTgJLyogc2VjdXJlIGNvbXB1dGluZyAqLwotI2RlZmlu
-ZSBUSUZfTUNFX05PVElGWQkJMTAJLyogbm90aWZ5IHVzZXJzcGFjZSBvZiBhbiBNQ0UgKi8KICNk
-ZWZpbmUgVElGX1VTRVJfUkVUVVJOX05PVElGWQkxMQkvKiBub3RpZnkga2VybmVsIG9mIHVzZXJz
-cGFjZSByZXR1cm4gKi8KICNkZWZpbmUgVElGX1VQUk9CRQkJMTIJLyogYnJlYWtwb2ludGVkIG9y
-IHNpbmdsZXN0ZXBwaW5nICovCiAjZGVmaW5lIFRJRl9OT1RTQwkJMTYJLyogVFNDIGlzIG5vdCBh
-Y2Nlc3NpYmxlIGluIHVzZXJsYW5kICovCkBAIC0xMDAsNyArOTksNiBAQCBzdHJ1Y3QgdGhyZWFk
-X2luZm8gewogI2RlZmluZSBfVElGX1NZU0NBTExfRU1VCSgxIDw8IFRJRl9TWVNDQUxMX0VNVSkK
-ICNkZWZpbmUgX1RJRl9TWVNDQUxMX0FVRElUCSgxIDw8IFRJRl9TWVNDQUxMX0FVRElUKQogI2Rl
-ZmluZSBfVElGX1NFQ0NPTVAJCSgxIDw8IFRJRl9TRUNDT01QKQotI2RlZmluZSBfVElGX01DRV9O
-T1RJRlkJCSgxIDw8IFRJRl9NQ0VfTk9USUZZKQogI2RlZmluZSBfVElGX1VTRVJfUkVUVVJOX05P
-VElGWQkoMSA8PCBUSUZfVVNFUl9SRVRVUk5fTk9USUZZKQogI2RlZmluZSBfVElGX1VQUk9CRQkJ
-KDEgPDwgVElGX1VQUk9CRSkKICNkZWZpbmUgX1RJRl9OT1RTQwkJKDEgPDwgVElGX05PVFNDKQpA
-QCAtMTQwLDggKzEzOCw3IEBAIHN0cnVjdCB0aHJlYWRfaW5mbyB7CiAKIC8qIE9ubHkgdXNlZCBm
-b3IgNjQgYml0ICovCiAjZGVmaW5lIF9USUZfRE9fTk9USUZZX01BU0sJCQkJCQlcCi0JKF9USUZf
-U0lHUEVORElORyB8IF9USUZfTUNFX05PVElGWSB8IF9USUZfTk9USUZZX1JFU1VNRSB8CVwKLQkg
-X1RJRl9VU0VSX1JFVFVSTl9OT1RJRlkpCisJKF9USUZfU0lHUEVORElORyB8IF9USUZfTk9USUZZ
-X1JFU1VNRSB8CV9USUZfVVNFUl9SRVRVUk5fTk9USUZZKQogCiAvKiBmbGFncyB0byBjaGVjayBp
-biBfX3N3aXRjaF90bygpICovCiAjZGVmaW5lIF9USUZfV09SS19DVFhTVwkJCQkJCQlcCmRpZmYg
-LS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvY3B1L21jaGVjay9tY2UuYyBiL2FyY2gveDg2L2tlcm5l
-bC9jcHUvbWNoZWNrL21jZS5jCmluZGV4IDYxYTk2NjhjZWJmZC4uZjczNzhhYWRhYTVkIDEwMDY0
-NAotLS0gYS9hcmNoL3g4Ni9rZXJuZWwvY3B1L21jaGVjay9tY2UuYworKysgYi9hcmNoL3g4Ni9r
-ZXJuZWwvY3B1L21jaGVjay9tY2UuYwpAQCAtOTU2LDUxICs5NTYsNiBAQCBzdGF0aWMgdm9pZCBt
-Y2VfY2xlYXJfc3RhdGUodW5zaWduZWQgbG9uZyAqdG9jbGVhcikKIH0KIAogLyoKLSAqIE5lZWQg
-dG8gc2F2ZSBmYXVsdGluZyBwaHlzaWNhbCBhZGRyZXNzIGFzc29jaWF0ZWQgd2l0aCBhIHByb2Nl
-c3MKLSAqIGluIHRoZSBtYWNoaW5lIGNoZWNrIGhhbmRsZXIgc29tZSBwbGFjZSB3aGVyZSB3ZSBj
-YW4gZ3JhYiBpdCBiYWNrCi0gKiBsYXRlciBpbiBtY2Vfbm90aWZ5X3Byb2Nlc3MoKQotICovCi0j
-ZGVmaW5lCU1DRV9JTkZPX01BWAkxNgotCi1zdHJ1Y3QgbWNlX2luZm8gewotCWF0b21pY190CQlp
-bnVzZTsKLQlzdHJ1Y3QgdGFza19zdHJ1Y3QJKnQ7Ci0JX191NjQJCQlwYWRkcjsKLQlpbnQJCQly
-ZXN0YXJ0YWJsZTsKLX0gbWNlX2luZm9bTUNFX0lORk9fTUFYXTsKLQotc3RhdGljIHZvaWQgbWNl
-X3NhdmVfaW5mbyhfX3U2NCBhZGRyLCBpbnQgYykKLXsKLQlzdHJ1Y3QgbWNlX2luZm8gKm1pOwot
-Ci0JZm9yIChtaSA9IG1jZV9pbmZvOyBtaSA8ICZtY2VfaW5mb1tNQ0VfSU5GT19NQVhdOyBtaSsr
-KSB7Ci0JCWlmIChhdG9taWNfY21weGNoZygmbWktPmludXNlLCAwLCAxKSA9PSAwKSB7Ci0JCQlt
-aS0+dCA9IGN1cnJlbnQ7Ci0JCQltaS0+cGFkZHIgPSBhZGRyOwotCQkJbWktPnJlc3RhcnRhYmxl
-ID0gYzsKLQkJCXJldHVybjsKLQkJfQotCX0KLQotCW1jZV9wYW5pYygiVG9vIG1hbnkgY29uY3Vy
-cmVudCByZWNvdmVyYWJsZSBlcnJvcnMiLCBOVUxMLCBOVUxMKTsKLX0KLQotc3RhdGljIHN0cnVj
-dCBtY2VfaW5mbyAqbWNlX2ZpbmRfaW5mbyh2b2lkKQotewotCXN0cnVjdCBtY2VfaW5mbyAqbWk7
-Ci0KLQlmb3IgKG1pID0gbWNlX2luZm87IG1pIDwgJm1jZV9pbmZvW01DRV9JTkZPX01BWF07IG1p
-KyspCi0JCWlmIChhdG9taWNfcmVhZCgmbWktPmludXNlKSAmJiBtaS0+dCA9PSBjdXJyZW50KQot
-CQkJcmV0dXJuIG1pOwotCXJldHVybiBOVUxMOwotfQotCi1zdGF0aWMgdm9pZCBtY2VfY2xlYXJf
-aW5mbyhzdHJ1Y3QgbWNlX2luZm8gKm1pKQotewotCWF0b21pY19zZXQoJm1pLT5pbnVzZSwgMCk7
-Ci19Ci0KLS8qCiAgKiBUaGUgYWN0dWFsIG1hY2hpbmUgY2hlY2sgaGFuZGxlci4gVGhpcyBvbmx5
-IGhhbmRsZXMgcmVhbAogICogZXhjZXB0aW9ucyB3aGVuIHNvbWV0aGluZyBnb3QgY29ycnVwdGVk
-IGNvbWluZyBpbiB0aHJvdWdoIGludCAxOC4KICAqCkBAIC0xMDM3LDYgKzk5Miw4IEBAIHZvaWQg
-ZG9fbWFjaGluZV9jaGVjayhzdHJ1Y3QgcHRfcmVncyAqcmVncywgbG9uZyBlcnJvcl9jb2RlKQog
-CURFQ0xBUkVfQklUTUFQKHRvY2xlYXIsIE1BWF9OUl9CQU5LUyk7CiAJREVDTEFSRV9CSVRNQVAo
-dmFsaWRfYmFua3MsIE1BWF9OUl9CQU5LUyk7CiAJY2hhciAqbXNnID0gIlVua25vd24iOworCXU2
-NCByZWNvdmVyX3BhZGRyID0gfjB1bGw7CisJaW50IGZsYWdzID0gTUZfQUNUSU9OX1JFUVVJUkVE
-OwogCiAJdGhpc19jcHVfaW5jKG1jZV9leGNlcHRpb25fY291bnQpOwogCkBAIC0xMTU1LDkgKzEx
-MTIsOSBAQCB2b2lkIGRvX21hY2hpbmVfY2hlY2soc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIGxvbmcg
-ZXJyb3JfY29kZSkKIAkJaWYgKG5vX3dheV9vdXQpCiAJCQltY2VfcGFuaWMoIkZhdGFsIG1hY2hp
-bmUgY2hlY2sgb24gY3VycmVudCBDUFUiLCAmbSwgbXNnKTsKIAkJaWYgKHdvcnN0ID09IE1DRV9B
-Ul9TRVZFUklUWSkgewotCQkJLyogc2NoZWR1bGUgYWN0aW9uIGJlZm9yZSByZXR1cm4gdG8gdXNl
-cmxhbmQgKi8KLQkJCW1jZV9zYXZlX2luZm8obS5hZGRyLCBtLm1jZ3N0YXR1cyAmIE1DR19TVEFU
-VVNfUklQVik7Ci0JCQlzZXRfdGhyZWFkX2ZsYWcoVElGX01DRV9OT1RJRlkpOworCQkJcmVjb3Zl
-cl9wYWRkciA9IG0uYWRkcjsKKwkJCWlmICghKG0ubWNnc3RhdHVzICYgTUNHX1NUQVRVU19SSVBW
-KSkKKwkJCQlmbGFncyB8PSBNRl9NVVNUX0tJTEw7CiAJCX0gZWxzZSBpZiAoa2lsbF9pdCkgewog
-CQkJZm9yY2Vfc2lnKFNJR0JVUywgY3VycmVudCk7CiAJCX0KQEAgLTExNjgsNiArMTEyNSwyMSBA
-QCB2b2lkIGRvX21hY2hpbmVfY2hlY2soc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIGxvbmcgZXJyb3Jf
-Y29kZSkKIAltY2Vfd3Jtc3JsKE1TUl9JQTMyX01DR19TVEFUVVMsIDApOwogb3V0OgogCXN5bmNf
-Y29yZSgpOworCisJaWYgKHJlY292ZXJfcGFkZHIgPT0gfjB1bGwpCisJCXJldHVybjsKKworCXBy
-X2VycigiVW5jb3JyZWN0ZWQgaGFyZHdhcmUgbWVtb3J5IGVycm9yIGluIHVzZXItYWNjZXNzIGF0
-ICVsbHgiLAorCQkgcmVjb3Zlcl9wYWRkcik7CisJLyoKKwkgKiBXZSBtdXN0IGNhbGwgbWVtb3J5
-X2ZhaWx1cmUoKSBoZXJlIGV2ZW4gaWYgdGhlIGN1cnJlbnQgcHJvY2VzcyBpcworCSAqIGRvb21l
-ZC4gV2Ugc3RpbGwgbmVlZCB0byBtYXJrIHRoZSBwYWdlIGFzIHBvaXNvbmVkIGFuZCBhbGVydCBh
-bnkKKwkgKiBvdGhlciB1c2VycyBvZiB0aGUgcGFnZS4KKwkgKi8KKwlpZiAobWVtb3J5X2ZhaWx1
-cmUocmVjb3Zlcl9wYWRkciA+PiBQQUdFX1NISUZULCBNQ0VfVkVDVE9SLCBmbGFncykgPCAwKSB7
-CisJCXByX2VycigiTWVtb3J5IGVycm9yIG5vdCByZWNvdmVyZWQiKTsKKwkJZm9yY2Vfc2lnKFNJ
-R0JVUywgY3VycmVudCk7CisJfQogfQogRVhQT1JUX1NZTUJPTF9HUEwoZG9fbWFjaGluZV9jaGVj
-ayk7CiAKQEAgLTExODUsNDIgKzExNTcsNiBAQCBpbnQgbWVtb3J5X2ZhaWx1cmUodW5zaWduZWQg
-bG9uZyBwZm4sIGludCB2ZWN0b3IsIGludCBmbGFncykKICNlbmRpZgogCiAvKgotICogQ2FsbGVk
-IGluIHByb2Nlc3MgY29udGV4dCB0aGF0IGludGVycnVwdGVkIGJ5IE1DRSBhbmQgbWFya2VkIHdp
-dGgKLSAqIFRJRl9NQ0VfTk9USUZZLCBqdXN0IGJlZm9yZSByZXR1cm5pbmcgdG8gZXJyb25lb3Vz
-IHVzZXJsYW5kLgotICogVGhpcyBjb2RlIGlzIGFsbG93ZWQgdG8gc2xlZXAuCi0gKiBBdHRlbXB0
-IHBvc3NpYmxlIHJlY292ZXJ5IHN1Y2ggYXMgY2FsbGluZyB0aGUgaGlnaCBsZXZlbCBWTSBoYW5k
-bGVyIHRvCi0gKiBwcm9jZXNzIGFueSBjb3JydXB0ZWQgcGFnZXMsIGFuZCBraWxsL3NpZ25hbCBj
-dXJyZW50IHByb2Nlc3MgaWYgcmVxdWlyZWQuCi0gKiBBY3Rpb24gcmVxdWlyZWQgZXJyb3JzIGFy
-ZSBoYW5kbGVkIGhlcmUuCi0gKi8KLXZvaWQgbWNlX25vdGlmeV9wcm9jZXNzKHZvaWQpCi17Ci0J
-dW5zaWduZWQgbG9uZyBwZm47Ci0Jc3RydWN0IG1jZV9pbmZvICptaSA9IG1jZV9maW5kX2luZm8o
-KTsKLQlpbnQgZmxhZ3MgPSBNRl9BQ1RJT05fUkVRVUlSRUQ7Ci0KLQlpZiAoIW1pKQotCQltY2Vf
-cGFuaWMoIkxvc3QgcGh5c2ljYWwgYWRkcmVzcyBmb3IgdW5jb25zdW1lZCB1bmNvcnJlY3RhYmxl
-IGVycm9yIiwgTlVMTCwgTlVMTCk7Ci0JcGZuID0gbWktPnBhZGRyID4+IFBBR0VfU0hJRlQ7Ci0K
-LQljbGVhcl90aHJlYWRfZmxhZyhUSUZfTUNFX05PVElGWSk7Ci0KLQlwcl9lcnIoIlVuY29ycmVj
-dGVkIGhhcmR3YXJlIG1lbW9yeSBlcnJvciBpbiB1c2VyLWFjY2VzcyBhdCAlbGx4IiwKLQkJIG1p
-LT5wYWRkcik7Ci0JLyoKLQkgKiBXZSBtdXN0IGNhbGwgbWVtb3J5X2ZhaWx1cmUoKSBoZXJlIGV2
-ZW4gaWYgdGhlIGN1cnJlbnQgcHJvY2VzcyBpcwotCSAqIGRvb21lZC4gV2Ugc3RpbGwgbmVlZCB0
-byBtYXJrIHRoZSBwYWdlIGFzIHBvaXNvbmVkIGFuZCBhbGVydCBhbnkKLQkgKiBvdGhlciB1c2Vy
-cyBvZiB0aGUgcGFnZS4KLQkgKi8KLQlpZiAoIW1pLT5yZXN0YXJ0YWJsZSkKLQkJZmxhZ3MgfD0g
-TUZfTVVTVF9LSUxMOwotCWlmIChtZW1vcnlfZmFpbHVyZShwZm4sIE1DRV9WRUNUT1IsIGZsYWdz
-KSA8IDApIHsKLQkJcHJfZXJyKCJNZW1vcnkgZXJyb3Igbm90IHJlY292ZXJlZCIpOwotCQlmb3Jj
-ZV9zaWcoU0lHQlVTLCBjdXJyZW50KTsKLQl9Ci0JbWNlX2NsZWFyX2luZm8obWkpOwotfQotCi0v
-KgogICogQWN0aW9uIG9wdGlvbmFsIHByb2Nlc3NpbmcgaGFwcGVucyBoZXJlIChwaWNraW5nIHVw
-CiAgKiBmcm9tIHRoZSBsaXN0IG9mIGZhdWx0aW5nIHBhZ2VzIHRoYXQgZG9fbWFjaGluZV9jaGVj
-aygpCiAgKiBwbGFjZWQgaW50byB0aGUgInJpbmciKS4KZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tl
-cm5lbC9zaWduYWwuYyBiL2FyY2gveDg2L2tlcm5lbC9zaWduYWwuYwppbmRleCBlZDM3YTc2OGQw
-ZmMuLjJhMzNjOGY2ODMxOSAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL3NpZ25hbC5jCisr
-KyBiL2FyY2gveDg2L2tlcm5lbC9zaWduYWwuYwpAQCAtNzQwLDEyICs3NDAsNiBAQCBkb19ub3Rp
-ZnlfcmVzdW1lKHN0cnVjdCBwdF9yZWdzICpyZWdzLCB2b2lkICp1bnVzZWQsIF9fdTMyIHRocmVh
-ZF9pbmZvX2ZsYWdzKQogewogCXVzZXJfZXhpdCgpOwogCi0jaWZkZWYgQ09ORklHX1g4Nl9NQ0UK
-LQkvKiBub3RpZnkgdXNlcnNwYWNlIG9mIHBlbmRpbmcgTUNFcyAqLwotCWlmICh0aHJlYWRfaW5m
-b19mbGFncyAmIF9USUZfTUNFX05PVElGWSkKLQkJbWNlX25vdGlmeV9wcm9jZXNzKCk7Ci0jZW5k
-aWYgLyogQ09ORklHX1g4Nl82NCAmJiBDT05GSUdfWDg2X01DRSAqLwotCiAJaWYgKHRocmVhZF9p
-bmZvX2ZsYWdzICYgX1RJRl9VUFJPQkUpCiAJCXVwcm9iZV9ub3RpZnlfcmVzdW1lKHJlZ3MpOwog
-Cg==
+-- Steve
 
---_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_--
+> ------
+> 
+> ftrace: fix traceoff_on_warning handling on boot command line
+> 
+> According to the documentation, adding "traceoff_on_warning" to the boot
+> command line should be enough to enable the feature. But right now it is
+> necessary to specify "traceoff_on_warning=". Along with fixing that, also
+> verify if the value passed, if any, is either "0" or "off".
+> 
+> Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index f68981f..a956a60 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -155,10 +155,11 @@ __setup("ftrace_dump_on_oops", set_ftrace_dump_on_oops);
+>  
+>  static int __init stop_trace_on_warning(char *str)
+>  {
+> -	__disable_trace_on_warning = 1;
+> +	if ((strcmp(str, "=0") != 0 && strcmp(str, "=off") != 0))
+> +		__disable_trace_on_warning = 1;
+>  	return 1;
+>  }
+> -__setup("traceoff_on_warning=", stop_trace_on_warning);
+> +__setup("traceoff_on_warning", stop_trace_on_warning);
+>  
+>  static int __init boot_alloc_snapshot(char *str)
+>  {
+> 
+
