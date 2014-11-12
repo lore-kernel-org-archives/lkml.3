@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905AbaKLBUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58375 "EHLO
+	id S1752884AbaKLBUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58360 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaKLBUL (ORCPT
+	with ESMTP id S1752624AbaKLBUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:11 -0500
+	Tue, 11 Nov 2014 20:20:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anish Bhatt <anish@chelsio.com>, Casey Leedom <leedom@chelsio.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 018/319] cxgb4 : Fix missing initialization of win0_lock
-Date: Wed, 12 Nov 2014 10:12:36 +0900
-Message-Id: <20141112010955.679102933@linuxfoundation.org>
+Subject: [PATCH 3.17 015/319] hyperv: Fix the total_data_buflen in send path
+Date: Wed, 12 Nov 2014 10:12:33 +0900
+Message-Id: <20141112010955.213162606@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,33 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anish Bhatt <anish@chelsio.com>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-[ Upstream commit e327c225c911529898ec300cb96d2088893de3df ]
+[ Upstream commit 942396b01989d54977120f3625e5ba31afe7a75c ]
 
-win0_lock was being used un-initialized, resulting in warning traces
-being seen when lock debugging is enabled (and just wrong)
+total_data_buflen is used by netvsc_send() to decide if a packet can be put
+into send buffer. It should also include the size of RNDIS message before the
+Ethernet frame. Otherwise, a messge with total size bigger than send_section_size
+may be copied into the send buffer, and cause data corruption.
 
-Fixes : fc5ab0209650 ('cxgb4: Replaced the backdoor mechanism to access the HW
- memory with PCIe Window method')
+[Request to include this patch to the Stable branches]
 
-Signed-off-by: Anish Bhatt <anish@chelsio.com>
-Signed-off-by: Casey Leedom <leedom@chelsio.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |    1 +
+ drivers/net/hyperv/netvsc_drv.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -6557,6 +6557,7 @@ static int init_one(struct pci_dev *pdev
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -556,6 +556,7 @@ do_lso:
+ do_send:
+ 	/* Start filling in the page buffers with the rndis hdr */
+ 	rndis_msg->msg_len += rndis_msg_size;
++	packet->total_data_buflen = rndis_msg->msg_len;
+ 	packet->page_buf_cnt = init_page_array(rndis_msg, rndis_msg_size,
+ 					skb, &packet->page_buf[0]);
  
- 	spin_lock_init(&adapter->stats_lock);
- 	spin_lock_init(&adapter->tid_release_lock);
-+	spin_lock_init(&adapter->win0_lock);
- 
- 	INIT_WORK(&adapter->tid_release_task, process_tid_release_list);
- 	INIT_WORK(&adapter->db_full_task, process_db_full);
 
 
