@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbaKLK13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:27:29 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56673 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679AbaKLK11 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 05:27:27 -0500
-Date: Wed, 12 Nov 2014 10:27:26 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
+	id S1752707AbaKLKaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:30:24 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39714 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752194AbaKLKaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 05:30:20 -0500
+Date: Wed, 12 Nov 2014 11:30:11 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@intel.com>, Andy Lutomirski <luto@amacapital.net>
+Cc: X86 ML <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: Re: [PATCH RFC v2 1/2] drivers: pci: fix pci_mmap_fits()
- implementation for procfs mmap
-Message-ID: <20141112102726.GD6759@red-moon>
-References: <1414168089-8130-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1414168089-8130-2-git-send-email-lorenzo.pieralisi@arm.com>
- <20141110230454.GA21470@google.com>
- <1415777029.5124.42.camel@kernel.crashing.org>
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Message-ID: <20141112103011.GA16807@pd.tnic>
+References: <20141111213628.GP31490@pd.tnic>
+ <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
+ <20141111223316.GQ31490@pd.tnic>
+ <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+ <20141111230926.GR31490@pd.tnic>
+ <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1415777029.5124.42.camel@kernel.crashing.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 07:23:49AM +0000, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-11-10 at 16:04 -0700, Bjorn Helgaas wrote:
-> > But I'm not sure I have this right.  If the procfs offset is either
-> > the
-> > CPU physical address or the BAR value, then pci_resource_to_user()
-> > should be (depending on the arch) either a no-op or use
-> > pci_resource_to_bus().
-> > 
-> > But that's not how it's implemented.  Maybe it *could* be?  If
-> > pci_resource_to_user() gives you something that's not a CPU physical
-> > address and not a bus address, what *does* it give you, and why would
-> > we
-> > need this third kind of thing?
-> > 
-> > FWIW, I think the discussion leading up to pci_resource_to_user() is
-> > here:
-> > http://lkml.iu.edu/hypermail/linux/kernel/0504.3/0467.html
+On Tue, Nov 11, 2014 at 06:06:48PM -0800, Tony Luck wrote:
+> > Innocent bystanders have RIPV=1, EIPV=0 in MCG_STATUS ... so they
+> > are quite easy to spot.
 > 
-> Oh, man... I remember that was all a giant trainwreck and some stuff
-> just couldn't be made completely right due to broken assumptions by
-> the proc code and users of it... but I don't remember all the details.
-> 
-> I think /proc users don't necessarily pass a BAR value but something
-> they try to somewhat translates themselves via the "resources" file,
-> which ends up working ... or not, depending on various factors such
-> as 32 vs 64 bit etc...
-> 
-> I wonder who still uses this interface....
+> Bother ... except for the SRAO cases where *everyone* is an innocent
+> bystander - but someone should go look for the error and queue up
+> a page offline event.  Perhaps for this we'd do the self-ipi trick and
+> then scan the banks to look for SRAO signatures to process as well
+> as clearing MCIP
 
-+1, even though I do not think that leaving it as it is is a good idea,
-hence I posted this series.
+First of all, good morning :-)
 
-I tried to fix it while fixing the way ARM pcibios code handles
-pci_mmap_page_range() (for both procfs and sysfs mappings).
+So I'm reading all those notes again and I can't say I'm convinced about
+the change. And all those "but but, what might happen if" cases are what
+bother me.
 
-I will do what Bjorn suggested, more comments from arches maintainers
-are welcome.
+First, the stack: switching to a possibly almost full kernel stack
+where we have other stuff already allocated is a bad idea IMO. There's
+a good reason to have a known-good, solely-for-our-purpose stack which
+we get to use. It is always there and it gives us the optimal conditions
+possible for recovery. Switching back to the possibly crowded kernel
+stack and causing stack overflows while handling an MCE is not an
+improvement in my book.
 
-Lorenzo
+Tony:
+> The current code has an ugly hole at the moment. End of
+> do_machine_check() clears MCG_STATUS. At that point we are still
+> running on the magic stack for machine check exceptions ... if we take
+> a machine check in the small window from there until we get off this
+> stack (iret) ... then we will enter the handler back on the same stack
+> that we haven't finished using yet. Bad things ensue.
+
+I'm not crazy about it either but how often does this actually happen in
+practice? And if it does happen, then, well, we die, so be it. It can
+happen with other MCEs coming in back-to-back like poisoned data (1st
+MCE) being consumed on another core (2nd MCE). I know, Intel does the
+broadcasting but that is going to change, I hear and AMD raises an MCE
+on the core which detects it only.
+
+Another big issue I see with this is verifying the locking works and
+generally testing this serious change. MCA is core kernel infrastructure
+and we cannot break this left and right. And changing stacks we're
+running on and the whole dynamics of the code might open a whole other
+can of worms.
+
+Oh, and we shouldn't forget why we're doing this: just to save two
+members to task_struct and getting rid of paranoid_userspace. Yep, still
+not convinced the effort is worth it.
+
+Now, I think Andy had a much better/simpler/cleaner suggestion
+yesterday: task_work_add(). It is basically what _TIF_MCE_NOTIFY does
+and it is called in the same path - do_notify_resume() - but generic and
+we can drop _TIF_MCE_NOTIFY then and use the generic thing.
+
+Much less intrusive change.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
