@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287AbaKLDkC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:40:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59209 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788AbaKLBaI (ORCPT
+	id S934557AbaKLDkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:40:37 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:25696 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932788AbaKLDkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:08 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oussama Ghorbel <ghorbel@pivasoftware.com>,
-        Rabin Vincent <rabin@rab.in>, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH 3.17 204/319] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
-Date: Wed, 12 Nov 2014 10:15:42 +0900
-Message-Id: <20141112011026.577117151@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-References: <20141112010952.553519040@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+	Tue, 11 Nov 2014 22:40:32 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-e5-5462d6aca7af
+From: Weijie Yang <weijie.yang@samsung.com>
+To: "'Johannes Weiner'" <hannes@cmpxchg.org>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
+        "'Rik van Riel'" <riel@redhat.com>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        "'Linux-MM'" <linux-mm@kvack.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: mincore: add hwpoison page handle
+Date: Wed, 12 Nov 2014 11:39:29 +0800
+Message-id: <000001cffe2a$66a95a50$33fc0ef0$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac/+KkOAZZDPQdctThiXDX46vtKXRg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jQd0115JCDNr2iljMWb+GzWL1Jl+L
+	y7vmsFncW/Of1WLyu2eMFn+vrGexeHLiP4sDu8fhN++ZPXbOusvusenTJHaPEzN+s3i833eV
+	zWPz6WqPz5vkAtijuGxSUnMyy1KL9O0SuDI2/zzJUrCAvWLLrT+sDYx3WLsYOTkkBEwkZj59
+	wgRhi0lcuLeeDcQWEpjOKHHnokoXIxeQ/YdRYsPDU+wgCTYBbYm7/RvBmkUEtCTW3z3GCFLE
+	LPCAUeL8x99gCWEBM4lF266DTWIRUJVYc/MzWJxXwE5iz/QjULagxI/J91hAbGYBdYlJ8xYx
+	Q9jyEpvXvAWyOYAuUpd49FcXYpeexNv139ggSsQlNh65xTKBUWAWkkmzkEyahWTSLCQtCxhZ
+	VjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER8MzqR2MKxssDjEKcDAq8fAmrkkKEWJNLCuu
+	zD3EKMHBrCTC+2ApUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgs
+	EwenVAOjeMrvY6vPPVx8+61Ek8syA6GIr557WrkrbZQiVx88v/PNgn01lbX176Y+Pr311jct
+	QabgF8sl9hRI7OoN+NAncFOy+JNLtVK1v8ZufW7JWwt/Lrz4PvTEDj/P7Yy7KhRvXT+9et4N
+	m5U8qU4sAtv5+q64Rv682eYQ8afou5XFqX6HFGux517aSizFGYmGWsxFxYkABSwur4ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+When encounter pte is a swap entry, the current code handles two cases:
+migration and normal swapentry, but we have a third case: hwpoison page.
 
-------------------
+This patch adds hwpoison page handle, consider hwpoison page incore as
+same as migration.
 
-From: Oussama Ghorbel <ghorbel@pivasoftware.com>
-
-commit f20531a9aae0c7378d9fa75b4b5d99b7eecab066 upstream.
-
-The USB OTG port does not work since v3.16 on omap platform.
-This is a regression introduced by the commit
-eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
- and remove).
-This because the call to pm_runtime_enable() function is moved after the
-call to devm_phy_create() function, which has side effect since later in
-the subsequent calls of devm_phy_create() there is a check with
-pm_runtime_enabled() to configure few things.
-
-Fixes: eb82a3d846fa
-Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
-Tested-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
- drivers/phy/phy-omap-usb2.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ mm/mincore.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platfo
- 	otg->phy		= &phy->phy;
+diff --git a/mm/mincore.c b/mm/mincore.c
+index 725c809..3545f13 100644
+--- a/mm/mincore.c
++++ b/mm/mincore.c
+@@ -137,8 +137,8 @@ static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		} else { /* pte is a swap entry */
+ 			swp_entry_t entry = pte_to_swp_entry(pte);
  
- 	platform_set_drvdata(pdev, phy);
-+	pm_runtime_enable(phy->dev);
- 
- 	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
--	if (IS_ERR(generic_phy))
-+	if (IS_ERR(generic_phy)) {
-+		pm_runtime_disable(phy->dev);
- 		return PTR_ERR(generic_phy);
-+	}
- 
- 	phy_set_drvdata(generic_phy, phy);
- 
--	pm_runtime_enable(phy->dev);
- 	phy_provider = devm_of_phy_provider_register(phy->dev,
- 			of_phy_simple_xlate);
- 	if (IS_ERR(phy_provider)) {
+-			if (is_migration_entry(entry)) {
+-				/* migration entries are always uptodate */
++			if (non_swap_entry(entry)) {
++			/* migration or hwpoison entries are always uptodate */
+ 				*vec = 1;
+ 			} else {
+ #ifdef CONFIG_SWAP
+-- 
+1.7.0.4
 
 
