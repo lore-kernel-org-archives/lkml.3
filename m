@@ -1,133 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923AbaKLLle (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:41:34 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:15000 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897AbaKLLlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:41:32 -0500
-X-IronPort-AV: E=Sophos;i="5.07,368,1413244800"; 
-   d="scan'208";a="190474976"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v9 10/13] xen/arm/arm64: introduce xen_arch_need_swiotlb
-Date: Wed, 12 Nov 2014 11:40:51 +0000
-Message-ID: <1415792454-23161-10-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
+	id S1752229AbaKLLlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:41:52 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:56195 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964AbaKLLlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 06:41:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+In-Reply-To: <1415678111-29914-2-git-send-email-ibanezchen@gmail.com>
+References: <1415678111-29914-1-git-send-email-ibanezchen@gmail.com>
+	<1415678111-29914-2-git-send-email-ibanezchen@gmail.com>
+Date: Wed, 12 Nov 2014 12:41:47 +0100
+Message-ID: <CABuKBeKTA1Ugf50ZhLOanXFs_cFbsUrgraEtb4UwovKECMwCPQ@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] ARM: mediatek: add dts for mt6592-evb
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Howard Chen <ibanezchen@gmail.com>
+Cc: arm@kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce an arch specific function to find out whether a particular dma
-mapping operation needs to bounce on the swiotlb buffer.
+2014-11-11 4:55 GMT+01:00 Howard Chen <ibanezchen@gmail.com>:
+> The mt6592-evb is an evaluation board based on the MT6592 SoC.
+>
+> Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+> ---
+>  arch/arm/boot/dts/Makefile       |  3 ++-
+>  arch/arm/boot/dts/mt6592-evb.dts | 29 +++++++++++++++++++++++++++++
+>  2 files changed, 31 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/boot/dts/mt6592-evb.dts
+>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index ab63751..0ce0d9e 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -532,7 +532,8 @@ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
+>         dove-d2plug.dtb \
+>         dove-d3plug.dtb \
+>         dove-dove-db.dtb
+> -dtb-$(CONFIG_ARCH_MEDIATEK) += mt6589-aquaris5.dtb
+> +dtb-$(CONFIG_ARCH_MEDIATEK) += mt6589-aquaris5.dtb \
+> +       mt6592-evb.dtb
+>
+>  endif
+>
+> diff --git a/arch/arm/boot/dts/mt6592-evb.dts b/arch/arm/boot/dts/mt6592-evb.dts
+> new file mode 100644
+> index 0000000..d7294d9
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/mt6592-evb.dts
+> @@ -0,0 +1,29 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Howard Chen <ibanezchen@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +/dts-v1/;
+> +#include "mt6592.dtsi"
+> +
+> +/ {
+> +       model = "mt6592 evb";
+> +       compatible = "mediatek,mt6592-evb", "mediatek,mt6592";
+> +
+> +       chosen {
+> +               bootargs = "console=ttyS0,921600n8";
+> +       };
 
-On ARM and ARM64, if the page involved is a foreign page and the device
-is not coherent, we need to bounce because at unmap time we cannot
-execute any required cache maintenance operations (we don't know how to
-find the pfn from the mfn).
+Please delte this, we don't have a serial console at the moment.
 
-No change of behaviour for x86.
+> +
+> +       memory {
+> +               reg = <0x80000000 0x08000000>;
+> +       };
+> +};
+> --
+> 1.9.1
+>
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
----
 
-Changes in v6:
-- fix ts.
-
-Changes in v5:
-- fix indentation.
----
- arch/arm/include/asm/xen/page.h |    4 ++++
- arch/arm/xen/mm.c               |    7 +++++++
- arch/x86/include/asm/xen/page.h |    7 +++++++
- drivers/xen/swiotlb-xen.c       |    5 ++++-
- 4 files changed, 22 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-index 135c24a..68c739b 100644
---- a/arch/arm/include/asm/xen/page.h
-+++ b/arch/arm/include/asm/xen/page.h
-@@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
- #define xen_unmap(cookie) iounmap((cookie))
- 
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn);
-+
- #endif /* _ASM_ARM_XEN_PAGE_H */
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index ab700e1..28ebf3e 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -100,6 +100,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
- 	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
- }
- 
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn)
-+{
-+	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-+}
-+
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index c949923..f58ef6c 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
- #define xen_remap(cookie, size) ioremap((cookie), (size));
- #define xen_unmap(cookie) iounmap((cookie))
- 
-+static inline bool xen_arch_need_swiotlb(struct device *dev,
-+					 unsigned long pfn,
-+					 unsigned long mfn)
-+{
-+	return false;
-+}
-+
- #endif /* _ASM_X86_XEN_PAGE_H */
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index ad2c5eb..3725ee4 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	 * buffering it.
- 	 */
- 	if (dma_capable(dev, dev_addr, size) &&
--	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-+	    !range_straddles_page_boundary(phys, size) &&
-+		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-+		!swiotlb_force) {
- 		/* we are not interested in the dma_addr returned by
- 		 * xen_dma_map_page, only in the potential cache flushes executed
- 		 * by the function. */
-@@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
- 
- 		if (swiotlb_force ||
-+		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
- 		    !dma_capable(hwdev, dev_addr, sg->length) ||
- 		    range_straddles_page_boundary(paddr, sg->length)) {
- 			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
 -- 
-1.7.10.4
-
+motzblog.wordpress.com
