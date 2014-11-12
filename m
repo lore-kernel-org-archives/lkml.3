@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153AbaKLP3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:29:24 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:38048 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbaKLP3X convert rfc822-to-8bit (ORCPT
+	id S1753438AbaKLP3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:29:50 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:44515 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413AbaKLP3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:29:23 -0500
-Message-ID: <54637CCF.6020501@arm.com>
-Date: Wed, 12 Nov 2014 15:29:19 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 12 Nov 2014 10:29:48 -0500
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 16/16] PCI/MSI: Enhance core to support hierarchy irqdomain
-References: <20141112133941.647950773@linutronix.de> <20141112134121.196562300@linutronix.de>
-In-Reply-To: <20141112134121.196562300@linutronix.de>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 12 Nov 2014 15:29:19.0911 (UTC) FILETIME=[6D913370:01CFFE8D]
-X-MC-Unique: 114111215292007701
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1415802748-30530-4-git-send-email-k.kozlowski@samsung.com>
+References: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
+	<1415802748-30530-4-git-send-email-k.kozlowski@samsung.com>
+Date: Wed, 12 Nov 2014 16:29:47 +0100
+Message-ID: <CAPDyKFoJFGhyNSqrie9TddBOTvZ2-RVqvET9Y6JCvJqh+FMgww@mail.gmail.com>
+Subject: Re: [PATCH v11 3/6] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On 12 November 2014 15:32, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> The AMBA bus driver defines runtime Power Management functions which
+> disable and unprepare AMBA bus clock. This is problematic for runtime PM
+> because unpreparing a clock might sleep so it is not interrupt safe.
+>
+> However some drivers may want to implement runtime PM functions in
+> interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
+> bus driver should only disable/enable the clock in runtime suspend and
+> resume callbacks.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-On 12/11/14 13:43, Thomas Gleixner wrote:
-> From: Jiang Liu <jiang.liu@linux.intel.com>
-> 
-> Enhance PCI MSI core to support hierarchy irqdomain, so the common
-> code can be shared across architectures.
-> 
-> [ tglx: Extracted and combined from several patches ]
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-> Cc: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+
 > ---
->  drivers/pci/Kconfig |    5 ++++
->  drivers/pci/msi.c   |   62 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/msi.h |    8 ++++++
->  3 files changed, 75 insertions(+)
-> 
-> Index: tip/drivers/pci/Kconfig
-> ===================================================================
-> --- tip.orig/drivers/pci/Kconfig
-> +++ tip/drivers/pci/Kconfig
-> @@ -17,6 +17,11 @@ config PCI_MSI
->  
->  	   If you don't know what to do here, say Y.
->  
-> +config PCI_MSI_IRQ_DOMAIN
-> +	bool
-> +	depends on PCI_MSI
-> +	select GENERIC_MSI_IRQ_DOMAIN
-> +
->  config PCI_DEBUG
->  	bool "PCI Debugging"
->  	depends on PCI && DEBUG_KERNEL
-> Index: tip/drivers/pci/msi.c
-> ===================================================================
-> --- tip.orig/drivers/pci/msi.c
-> +++ tip/drivers/pci/msi.c
-> @@ -19,6 +19,7 @@
->  #include <linux/errno.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> +#include <linux/irqdomain.h>
->  
->  #include "pci.h"
->  
-> @@ -1072,3 +1073,64 @@ int pci_enable_msix_range(struct pci_dev
->  	return nvec;
+>  drivers/amba/bus.c | 15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+> index a4ac490dd784..c2153a1d1981 100644
+> --- a/drivers/amba/bus.c
+> +++ b/drivers/amba/bus.c
+> @@ -95,8 +95,12 @@ static int amba_pm_runtime_suspend(struct device *dev)
+>         struct amba_device *pcdev = to_amba_device(dev);
+>         int ret = pm_generic_runtime_suspend(dev);
+>
+> -       if (ret == 0 && dev->driver)
+> -               clk_disable_unprepare(pcdev->pclk);
+> +       if (ret == 0 && dev->driver) {
+> +               if (pm_runtime_is_irq_safe(dev))
+> +                       clk_disable(pcdev->pclk);
+> +               else
+> +                       clk_disable_unprepare(pcdev->pclk);
+> +       }
+>
+>         return ret;
 >  }
->  EXPORT_SYMBOL(pci_enable_msix_range);
-> +
-> +#ifdef CONFIG_PCI_MSI_IRQ_DOMAIN
-> +void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *msg)
-> +{
-> +	struct msi_desc *desc = irq_data->msi_desc;
-> +
-> +	/*
-> +	 * MSI-X message is written per-IRQ.
-> +	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
-> +	 */
-> +	if (desc->irq == irq_data->irq)
-> +		pci_write_msi_msg(desc, msg);
-
-My compiler barks at this. Shouldn't that be either:
-		pci_write_msi_msg(desc->irq, msg);
-or
-		__pci_write_msi_msg(desc, msg);
-?
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+> @@ -107,7 +111,10 @@ static int amba_pm_runtime_resume(struct device *dev)
+>         int ret;
+>
+>         if (dev->driver) {
+> -               ret = clk_prepare_enable(pcdev->pclk);
+> +               if (pm_runtime_is_irq_safe(dev))
+> +                       ret = clk_enable(pcdev->pclk);
+> +               else
+> +                       ret = clk_prepare_enable(pcdev->pclk);
+>                 /* Failure is probably fatal to the system, but... */
+>                 if (ret)
+>                         return ret;
+> @@ -115,7 +122,7 @@ static int amba_pm_runtime_resume(struct device *dev)
+>
+>         return pm_generic_runtime_resume(dev);
+>  }
+> -#endif
+> +#endif /* CONFIG_PM */
+>
+>  static const struct dev_pm_ops amba_pm = {
+>         .suspend        = pm_generic_suspend,
+> --
+> 1.9.1
+>
