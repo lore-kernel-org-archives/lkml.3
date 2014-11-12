@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372AbaKLB1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:27:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58965 "EHLO
+	id S932328AbaKLB1C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:27:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58944 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349AbaKLB1M (ORCPT
+	with ESMTP id S932309AbaKLB04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:12 -0500
+	Tue, 11 Nov 2014 20:26:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Theodore Tso <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>
-Subject: [PATCH 3.17 150/319] jbd2: free bh when descriptor block checksum fails
-Date: Wed, 12 Nov 2014 10:14:48 +0900
-Message-Id: <20141112011017.353482151@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.17 111/319] drm/gt214-/kms: fix hda eld regression
+Date: Wed, 12 Nov 2014 10:14:09 +0900
+Message-Id: <20141112011010.919974314@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,34 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 064d83892e9ba547f7d4eae22cbca066d95210ce upstream.
+commit d889c52427d48c05f163f2f39b2cfc12e17e5266 upstream.
 
-Free the buffer head if the journal descriptor block fails checksum
-verification.
-
-This is the jbd2 port of the e2fsprogs patch "e2fsck: free bh on csum
-verify error in do_one_pass".
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/recovery.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/nouveau/nv50_display.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -525,6 +525,7 @@ static int do_one_pass(journal_t *journa
- 			    !jbd2_descr_block_csum_verify(journal,
- 							  bh->b_data)) {
- 				err = -EIO;
-+				brelse(bh);
- 				goto failed;
- 			}
+--- a/drivers/gpu/drm/nouveau/nv50_display.c
++++ b/drivers/gpu/drm/nouveau/nv50_display.c
+@@ -1653,15 +1653,17 @@ nv50_audio_mode_set(struct drm_encoder *
+ 	struct nouveau_encoder *nv_encoder = nouveau_encoder(encoder);
+ 	struct nouveau_connector *nv_connector;
+ 	struct nv50_disp *disp = nv50_disp(encoder->dev);
+-	struct {
+-		struct nv50_disp_mthd_v1 base;
+-		struct nv50_disp_sor_hda_eld_v0 eld;
++	struct __packed {
++		struct {
++			struct nv50_disp_mthd_v1 mthd;
++			struct nv50_disp_sor_hda_eld_v0 eld;
++		} base;
+ 		u8 data[sizeof(nv_connector->base.eld)];
+ 	} args = {
+-		.base.version = 1,
+-		.base.method  = NV50_DISP_MTHD_V1_SOR_HDA_ELD,
+-		.base.hasht   = nv_encoder->dcb->hasht,
+-		.base.hashm   = nv_encoder->dcb->hashm,
++		.base.mthd.version = 1,
++		.base.mthd.method  = NV50_DISP_MTHD_V1_SOR_HDA_ELD,
++		.base.mthd.hasht   = nv_encoder->dcb->hasht,
++		.base.mthd.hashm   = nv_encoder->dcb->hashm,
+ 	};
  
+ 	nv_connector = nouveau_encoder_connector_get(nv_encoder);
+@@ -1671,7 +1673,7 @@ nv50_audio_mode_set(struct drm_encoder *
+ 	drm_edid_to_eld(&nv_connector->base, nv_connector->edid);
+ 	memcpy(args.data, nv_connector->base.eld, sizeof(args.data));
+ 
+-	nvif_mthd(disp->disp, 0, &args, sizeof(args));
++	nvif_mthd(disp->disp, 0, &args, sizeof(args.base) + args.data[2] * 4);
+ }
+ 
+ static void
 
 
