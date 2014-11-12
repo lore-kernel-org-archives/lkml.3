@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181AbaKLBcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:32:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59412 "EHLO
+	id S933199AbaKLBch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:32:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595AbaKLBc2 (ORCPT
+	with ESMTP id S933183AbaKLBce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:32:28 -0500
+	Tue, 11 Nov 2014 20:32:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 245/319] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
-Date: Wed, 12 Nov 2014 10:16:23 +0900
-Message-Id: <20141112011033.376535769@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.17 215/319] uas: Add US_FL_NO_ATA_1X quirk for 2 more Seagate models
+Date: Wed, 12 Nov 2014 10:15:53 +0900
+Message-Id: <20141112011028.412862450@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,50 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
+commit d1d9548256fbdf2e049d6413a5266c41e73658ee upstream.
 
-If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
-a multiple of BITS_PER_LONG, they will try to shift a long value by
-BITS_PER_LONG bits which is undefined.  Change the functions to avoid
-the undefined shift.
+These drives hang when receiving ATA12 commands, so set the US_FL_NO_ATA_1X
+quirk to filter these out.
 
-Coverity id: 1192175
-Coverity id: 1192174
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/bitmap.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/storage/unusual_uas.h |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long
- 		lower = src[off + k];
- 		if (left && off + k == lim - 1)
- 			lower &= mask;
--		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
-+		dst[k] = lower >> rem;
-+		if (rem)
-+			dst[k] |= upper << (BITS_PER_LONG - rem);
- 		if (left && k == lim - 1)
- 			dst[k] &= mask;
- 	}
-@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *
- 		upper = src[k];
- 		if (left && k == lim - 1)
- 			upper &= (1UL << left) - 1;
--		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
-+		dst[k + off] = upper << rem;
-+		if (rem)
-+			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
- 		if (left && k + off == lim - 1)
- 			dst[k + off] &= (1UL << left) - 1;
- 	}
+--- a/drivers/usb/storage/unusual_uas.h
++++ b/drivers/usb/storage/unusual_uas.h
+@@ -54,6 +54,20 @@ UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x99
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NO_ATA_1X),
+ 
++/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
++UNUSUAL_DEV(0x0bc2, 0x3320, 0x0000, 0x9999,
++		"Seagate",
++		"Expansion Desk",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_ATA_1X),
++
++/* Reported-by: Bogdan Mihalcea <bogdan.mihalcea@infim.ro> */
++UNUSUAL_DEV(0x0bc2, 0xa003, 0x0000, 0x9999,
++		"Seagate",
++		"Backup Plus",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_ATA_1X),
++
+ /* https://bbs.archlinux.org/viewtopic.php?id=183190 */
+ UNUSUAL_DEV(0x0bc2, 0xab20, 0x0000, 0x9999,
+ 		"Seagate",
 
 
