@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933140AbaKLBcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:32:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59377 "EHLO
+	id S1753870AbaKLBcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:32:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933120AbaKLBcI (ORCPT
+	with ESMTP id S933120AbaKLBcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:32:08 -0500
+	Tue, 11 Nov 2014 20:32:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andriy Skulysh <askulysh@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Yu Zhao <yuzhao@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        David Rientjes <rientjes@google.com>, Bob Liu <lliubbo@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 240/319] sh: fix sh770x SCIF memory regions
-Date: Wed, 12 Nov 2014 10:16:18 +0900
-Message-Id: <20141112011032.513436246@linuxfoundation.org>
+Subject: [PATCH 3.17 241/319] mm: free compound page with correct order
+Date: Wed, 12 Nov 2014 10:16:19 +0900
+Message-Id: <20141112011032.726704426@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -32,55 +33,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andriy Skulysh <askulysh@gmail.com>
+From: Yu Zhao <yuzhao@google.com>
 
-commit 5417421b270229bfce0795ccc99a4b481e4954ca upstream.
+commit 5ddacbe92b806cd5b4f8f154e8e46ac267fff55c upstream.
 
-Resources scif1_resources & scif2_resources overlap.  Actual SCIF region
-size is 0x10.
+Compound page should be freed by put_page() or free_pages() with correct
+order.  Not doing so will cause tail pages leaked.
 
-This is regression from commit d850acf975be ("sh: Declare SCIF register
-base and IRQ as resources")
+The compound order can be obtained by compound_order() or use
+HPAGE_PMD_ORDER in our case.  Some people would argue the latter is
+faster but I prefer the former which is more general.
 
-Signed-off-by: Andriy Skulysh <askulysh@gmail.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+This bug was observed not just on our servers (the worst case we saw is
+11G leaked on a 48G machine) but also on our workstations running Ubuntu
+based distro.
+
+  $ cat /proc/vmstat  | grep thp_zero_page_alloc
+  thp_zero_page_alloc 55
+  thp_zero_page_alloc_failed 0
+
+This means there is (thp_zero_page_alloc - 1) * (2M - 4K) memory leaked.
+
+Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
+Signed-off-by: Yu Zhao <yuzhao@google.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Bob Liu <lliubbo@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/kernel/cpu/sh3/setup-sh770x.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/huge_memory.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sh/kernel/cpu/sh3/setup-sh770x.c
-+++ b/arch/sh/kernel/cpu/sh3/setup-sh770x.c
-@@ -118,7 +118,7 @@ static struct plat_sci_port scif0_platfo
- };
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -200,7 +200,7 @@ retry:
+ 	preempt_disable();
+ 	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
+ 		preempt_enable();
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		goto retry;
+ 	}
  
- static struct resource scif0_resources[] = {
--	DEFINE_RES_MEM(0xfffffe80, 0x100),
-+	DEFINE_RES_MEM(0xfffffe80, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x4e0)),
- };
- 
-@@ -143,7 +143,7 @@ static struct plat_sci_port scif1_platfo
- };
- 
- static struct resource scif1_resources[] = {
--	DEFINE_RES_MEM(0xa4000150, 0x100),
-+	DEFINE_RES_MEM(0xa4000150, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x900)),
- };
- 
-@@ -169,7 +169,7 @@ static struct plat_sci_port scif2_platfo
- };
- 
- static struct resource scif2_resources[] = {
--	DEFINE_RES_MEM(0xa4000140, 0x100),
-+	DEFINE_RES_MEM(0xa4000140, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x880)),
- };
+@@ -232,7 +232,7 @@ static unsigned long shrink_huge_zero_pa
+ 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
+ 		struct page *zero_page = xchg(&huge_zero_page, NULL);
+ 		BUG_ON(zero_page == NULL);
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		return HPAGE_PMD_NR;
+ 	}
  
 
 
