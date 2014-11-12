@@ -1,104 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934985AbaKLCWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:22:22 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:47351 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934782AbaKLCWT (ORCPT
+	id S965881AbaKLBua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:50:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60976 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965390AbaKLBu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:22:19 -0500
-Date: Wed, 12 Nov 2014 11:22:16 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Calvin Owens <calvinowens@fb.com>, Wensong Zhang <wensong@linux-vs.org>,
-        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, agartrell@fb.com, kernel-team@fb.com
-Subject: Re: [PATCH] ipvs: Keep skb->sk when allocating headroom on tunnel
- xmit
-Message-ID: <20141112022214.GE11597@verge.net.au>
-References: <1415147860-11389-1-git-send-email-calvinowens@fb.com>
- <alpine.LFD.2.11.1411051048540.1631@ja.home.ssi.bg>
- <545D43BD.8030203@fb.com>
- <alpine.LFD.2.11.1411080814300.2081@ja.home.ssi.bg>
+	Tue, 11 Nov 2014 20:50:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.10 027/123] fix misuses of f_count() in ppp and netlink
+Date: Wed, 12 Nov 2014 10:16:33 +0900
+Message-Id: <20141112011720.269445923@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
+References: <20141112011718.985171261@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1411080814300.2081@ja.home.ssi.bg>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 08, 2014 at 08:16:58AM +0200, Julian Anastasov wrote:
-> 
-> 	Hello,
-> 
-> On Fri, 7 Nov 2014, Calvin Owens wrote:
-> 
-> > On 11/05/2014 01:21 AM, Julian Anastasov wrote:
-> > >
-> > >  Hello,
-> > >
-> > > On Tue, 4 Nov 2014, Calvin Owens wrote:
-> > >
-> > > > ip_vs_prepare_tunneled_skb() ignores ->sk when allocating a new
-> > > > skb, either unconditionally setting ->sk to NULL or allowing
-> > > > the uninitialized ->sk from a newly allocated skb to leak through
-> > > > to the caller.
-> > > >
-> > > > This patch properly copies ->sk and increments its reference count.
-> > > >
-> > > > Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> > >
-> > > 	Good catch. Please, extend your patch to
-> > > fix also the second place that has such error,
-> > > ip_vs_tunnel_xmit_v6. This call is missing from long time,
-> > > it was not needed. But commits that allow skb->sk (local
-> > > clients) already need it, eg.
-> > 
-> > I'm not sure where exactly you mean: ip_vs_tunnel_xmit_v6() calls
-> > ip_vs_prepare_tunneled_skb() to do the allocation, so this patch covers that
-> > case.
-> > 
-> > In older versions of the kernel, ip_vs_tunnel_xmit_v6() does it directly,
-> > could that be what you're looking at?
-> 
-> 	Sorry, it seems I was checking old branch.
-> 
-> 	Simon, please apply.
-> 
-> Acked-by: Julian Anastasov <ja@ssi.bg>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks, done.
+------------------
 
-> > > - f2428ed5e7bc89c7 ("ipvs: load balance ipv6 connections from a local
-> > > process"), 2.6.28
-> > > - 4856c84c1358b798 ("ipvs: load balance IPv4 connections from a local
-> > > process"), 2.6.28
-> > >
-> > > > ---
-> > > >   net/netfilter/ipvs/ip_vs_xmit.c | 2 ++
-> > > >   1 file changed, 2 insertions(+)
-> > > >
-> > > > diff --git a/net/netfilter/ipvs/ip_vs_xmit.c
-> > > > b/net/netfilter/ipvs/ip_vs_xmit.c
-> > > > index 437a366..bd90bf8 100644
-> > > > --- a/net/netfilter/ipvs/ip_vs_xmit.c
-> > > > +++ b/net/netfilter/ipvs/ip_vs_xmit.c
-> > > > @@ -846,6 +846,8 @@ ip_vs_prepare_tunneled_skb(struct sk_buff *skb, int
-> > > > skb_af,
-> > > >     new_skb = skb_realloc_headroom(skb, max_headroom);
-> > > >     if (!new_skb)
-> > > >   			goto error;
-> > > > +		if (skb->sk)
-> > > > +			skb_set_owner_w(new_skb, skb->sk);
-> > > >     consume_skb(skb);
-> > > >     skb = new_skb;
-> > > >    }
-> 
-> Regards
-> 
-> --
-> Julian Anastasov <ja@ssi.bg>
-> 
+From: Al Viro <viro@zeniv.linux.org.uk>
+
+commit 24dff96a37a2ca319e75a74d3929b2de22447ca6 upstream.
+
+we used to check for "nobody else could start doing anything with
+that opened file" by checking that refcount was 2 or less - one
+for descriptor table and one we'd acquired in fget() on the way to
+wherever we are.  That was race-prone (somebody else might have
+had a reference to descriptor table and do fget() just as we'd
+been checking) and it had become flat-out incorrect back when
+we switched to fget_light() on those codepaths - unlike fget(),
+it doesn't grab an extra reference unless the descriptor table
+is shared.  The same change allowed a race-free check, though -
+we are safe exactly when refcount is less than 2.
+
+It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
+to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
+netlink hadn't grown that check until 3.9 and ppp used to live
+in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
+well before that, though, and the same fix used to apply in old
+location of file.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/ppp/ppp_generic.c |    2 +-
+ net/netlink/af_netlink.c      |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -601,7 +601,7 @@ static long ppp_ioctl(struct file *file,
+ 			if (file == ppp->owner)
+ 				ppp_shutdown_interface(ppp);
+ 		}
+-		if (atomic_long_read(&file->f_count) <= 2) {
++		if (atomic_long_read(&file->f_count) < 2) {
+ 			ppp_release(NULL, file);
+ 			err = 0;
+ 		} else
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -571,7 +571,7 @@ static int netlink_mmap_sendmsg(struct s
+ 	 * after validation, the socket and the ring may only be used by a
+ 	 * single process, otherwise we fall back to copying.
+ 	 */
+-	if (atomic_long_read(&sk->sk_socket->file->f_count) > 2 ||
++	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
+ 	    atomic_read(&nlk->mapped) > 1)
+ 		excl = false;
+ 
+
+
