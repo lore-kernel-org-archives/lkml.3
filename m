@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934823AbaKLDXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:23:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59620 "EHLO
+	id S933418AbaKLBeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:34:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59613 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447AbaKLBe0 (ORCPT
+	with ESMTP id S932447AbaKLBeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:26 -0500
+	Tue, 11 Nov 2014 20:34:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.17 279/319] [PATCH] mtd: m25p80: Fix module aliases for m25p80
-Date: Wed, 12 Nov 2014 10:16:57 +0900
-Message-Id: <20141112011039.017162468@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.17 277/319] media: Remove references to non-existent PLAT_S5P symbol
+Date: Wed, 12 Nov 2014 10:16:55 +0900
+Message-Id: <20141112011038.700144853@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,93 +30,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-From: Ben Hutchings <ben@decadent.org.uk>
+commit 098bcd2335f0824e76dd835e4e2b7ae8e38fc281 upstream.
 
-Based on a5b7616c55e188fe3d6ef686bef402d4703ecb62, but backported so
-that a bunch of dependencies are not needed.
+The PLAT_S5P Kconfig symbol was removed in commit d78c16ccde96
+("ARM: SAMSUNG: Remove remaining legacy code"). However, there
+are still some references to that symbol left, fix that by
+substituting them with ARCH_S5PV210.
 
-m25p80's device ID table is now spi_nor_ids, defined in spi-nor.  The
-MODULE_DEVICE_TABLE() macro doesn't work with extern definitions, but
-its use was also removed at the same time.  Now if m25p80 is built as
-a module it doesn't get the necessary aliases to be loaded
-automatically.
+Fixes: d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
 
-A clean solution to this will involve defining the list of device
-IDs in spi-nor.h and removing struct spi_device_id from the spi-nor
-API, but this is quite a large change.
-
-As a quick fix suitable for stable, copy the device IDs back into
-m25p80.
-
-Fixes: 03e296f613af ("mtd: m25p80: use the SPI nor framework")
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[Brian: backport without the dependencies]
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/devices/m25p80.c |   50 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+ drivers/media/platform/Kconfig            |    6 +++---
+ drivers/media/platform/exynos4-is/Kconfig |    2 +-
+ drivers/media/platform/s5p-tv/Kconfig     |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -245,6 +245,56 @@ static int m25p_remove(struct spi_device
- }
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -158,7 +158,7 @@ config VIDEO_MEM2MEM_DEINTERLACE
  
+ config VIDEO_SAMSUNG_S5P_G2D
+ 	tristate "Samsung S5P and EXYNOS4 G2D 2d graphics accelerator driver"
+-	depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
++	depends on VIDEO_DEV && VIDEO_V4L2 && (ARCH_S5PV210 || ARCH_EXYNOS)
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select V4L2_MEM2MEM_DEV
+ 	default n
+@@ -168,7 +168,7 @@ config VIDEO_SAMSUNG_S5P_G2D
  
-+/*
-+ * XXX This needs to be kept in sync with spi_nor_ids.  We can't share
-+ * it with spi-nor, because if this is built as a module then modpost
-+ * won't be able to read it and add appropriate aliases.
-+ */
-+static const struct spi_device_id m25p_ids[] = {
-+	{"at25fs010"},	{"at25fs040"},	{"at25df041a"},	{"at25df321a"},
-+	{"at25df641"},	{"at26f004"},	{"at26df081a"},	{"at26df161a"},
-+	{"at26df321"},	{"at45db081d"},
-+	{"en25f32"},	{"en25p32"},	{"en25q32b"},	{"en25p64"},
-+	{"en25q64"},	{"en25qh128"},	{"en25qh256"},
-+	{"f25l32pa"},
-+	{"mr25h256"},	{"mr25h10"},
-+	{"gd25q32"},	{"gd25q64"},
-+	{"160s33b"},	{"320s33b"},	{"640s33b"},
-+	{"mx25l2005a"},	{"mx25l4005a"},	{"mx25l8005"},	{"mx25l1606e"},
-+	{"mx25l3205d"},	{"mx25l3255e"},	{"mx25l6405d"},	{"mx25l12805d"},
-+	{"mx25l12855e"},{"mx25l25635e"},{"mx25l25655e"},{"mx66l51235l"},
-+	{"mx66l1g55g"},
-+	{"n25q064"},	{"n25q128a11"},	{"n25q128a13"},	{"n25q256a"},
-+	{"n25q512a"},	{"n25q512ax3"},	{"n25q00"},
-+	{"pm25lv512"},	{"pm25lv010"},	{"pm25lq032"},
-+	{"s25sl032p"},	{"s25sl064p"},	{"s25fl256s0"},	{"s25fl256s1"},
-+	{"s25fl512s"},	{"s70fl01gs"},	{"s25sl12800"},	{"s25sl12801"},
-+	{"s25fl129p0"},	{"s25fl129p1"},	{"s25sl004a"},	{"s25sl008a"},
-+	{"s25sl016a"},	{"s25sl032a"},	{"s25sl064a"},	{"s25fl008k"},
-+	{"s25fl016k"},	{"s25fl064k"},
-+	{"sst25vf040b"},{"sst25vf080b"},{"sst25vf016b"},{"sst25vf032b"},
-+	{"sst25vf064c"},{"sst25wf512"},	{"sst25wf010"},	{"sst25wf020"},
-+	{"sst25wf040"},
-+	{"m25p05"},	{"m25p10"},	{"m25p20"},	{"m25p40"},
-+	{"m25p80"},	{"m25p16"},	{"m25p32"},	{"m25p64"},
-+	{"m25p128"},	{"n25q032"},
-+	{"m25p05-nonjedec"},	{"m25p10-nonjedec"},	{"m25p20-nonjedec"},
-+	{"m25p40-nonjedec"},	{"m25p80-nonjedec"},	{"m25p16-nonjedec"},
-+	{"m25p32-nonjedec"},	{"m25p64-nonjedec"},	{"m25p128-nonjedec"},
-+	{"m45pe10"},	{"m45pe80"},	{"m45pe16"},
-+	{"m25pe20"},	{"m25pe80"},	{"m25pe16"},
-+	{"m25px16"},	{"m25px32"},	{"m25px32-s0"},	{"m25px32-s1"},
-+	{"m25px64"},
-+	{"w25x10"},	{"w25x20"},	{"w25x40"},	{"w25x80"},
-+	{"w25x16"},	{"w25x32"},	{"w25q32"},	{"w25q32dw"},
-+	{"w25x64"},	{"w25q64"},	{"w25q128"},	{"w25q80"},
-+	{"w25q80bl"},	{"w25q128"},	{"w25q256"},	{"cat25c11"},
-+	{"cat25c03"},	{"cat25c09"},	{"cat25c17"},	{"cat25128"},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(spi, m25p_ids);
-+
-+
- static struct spi_driver m25p80_driver = {
- 	.driver = {
- 		.name	= "m25p80",
+ config VIDEO_SAMSUNG_S5P_JPEG
+ 	tristate "Samsung S5P/Exynos3250/Exynos4 JPEG codec driver"
+-	depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
++	depends on VIDEO_DEV && VIDEO_V4L2 && (ARCH_S5PV210 || ARCH_EXYNOS)
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select V4L2_MEM2MEM_DEV
+ 	---help---
+@@ -177,7 +177,7 @@ config VIDEO_SAMSUNG_S5P_JPEG
+ 
+ config VIDEO_SAMSUNG_S5P_MFC
+ 	tristate "Samsung S5P MFC Video Codec"
+-	depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
++	depends on VIDEO_DEV && VIDEO_V4L2 && (ARCH_S5PV210 || ARCH_EXYNOS)
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	default n
+ 	help
+--- a/drivers/media/platform/exynos4-is/Kconfig
++++ b/drivers/media/platform/exynos4-is/Kconfig
+@@ -2,7 +2,7 @@
+ config VIDEO_SAMSUNG_EXYNOS4_IS
+ 	bool "Samsung S5P/EXYNOS4 SoC series Camera Subsystem driver"
+ 	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+-	depends on (PLAT_S5P || ARCH_EXYNOS)
++	depends on ARCH_S5PV210 || ARCH_EXYNOS
+ 	depends on OF && COMMON_CLK
+ 	help
+ 	  Say Y here to enable camera host interface devices for
+--- a/drivers/media/platform/s5p-tv/Kconfig
++++ b/drivers/media/platform/s5p-tv/Kconfig
+@@ -8,7 +8,7 @@
+ 
+ config VIDEO_SAMSUNG_S5P_TV
+ 	bool "Samsung TV driver for S5P platform"
+-	depends on (PLAT_S5P || ARCH_EXYNOS) && PM_RUNTIME
++	depends on (ARCH_S5PV210 || ARCH_EXYNOS) && PM_RUNTIME
+ 	default n
+ 	---help---
+ 	  Say Y here to enable selecting the TV output devices for
 
 
