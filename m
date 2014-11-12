@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbaKLBWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58559 "EHLO
+	id S1753481AbaKLBWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58572 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424AbaKLBWO (ORCPT
+	with ESMTP id S1753424AbaKLBWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:14 -0500
+	Tue, 11 Nov 2014 20:22:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dexuan Cui <decui@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-mm@kvack.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        dave.hansen@intel.com, riel@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.17 056/319] x86, pageattr: Prevent overflow in slow_virt_to_phys() for X86_PAE
-Date: Wed, 12 Nov 2014 10:13:14 +0900
-Message-Id: <20141112011001.867432364@linuxfoundation.org>
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.17 058/319] evm: properly handle INTEGRITY_NOXATTRS EVM status
+Date: Wed, 12 Nov 2014 10:13:16 +0900
+Message-Id: <20141112011002.187504956@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -33,50 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dexuan Cui <decui@microsoft.com>
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-commit d1cd1210834649ce1ca6bafe5ac25d2f40331343 upstream.
+commit 3dcbad52cf18c3c379e96b992d22815439ebbe53 upstream.
 
-pte_pfn() returns a PFN of long (32 bits in 32-PAE), so "long <<
-PAGE_SHIFT" will overflow for PFNs above 4GB.
+Unless an LSM labels a file during d_instantiate(), newly created
+files are not labeled with an initial security.evm xattr, until
+the file closes.  EVM, before allowing a protected, security xattr
+to be written, verifies the existing 'security.evm' value is good.
+For newly created files without a security.evm label, this
+verification prevents writing any protected, security xattrs,
+until the file closes.
 
-Due to this issue, some Linux 32-PAE distros, running as guests on Hyper-V,
-with 5GB memory assigned, can't load the netvsc driver successfully and
-hence the synthetic network device can't work (we can use the kernel parameter
-mem=3000M to work around the issue).
+Following is the example when this happens:
+fd = open("foo", O_CREAT | O_WRONLY, 0644);
+setxattr("foo", "security.SMACK64", value, sizeof(value), 0);
+close(fd);
 
-Cast pte_pfn() to phys_addr_t before shifting.
+While INTEGRITY_NOXATTRS status is handled in other places, such
+as evm_inode_setattr(), it does not handle it in all cases in
+evm_protect_xattr().  By limiting the use of INTEGRITY_NOXATTRS to
+newly created files, we can now allow setting "protected" xattrs.
 
-Fixes: "commit d76565344512: x86, mm: Create slow_virt_to_phys()"
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: gregkh@linuxfoundation.org
-Cc: linux-mm@kvack.org
-Cc: olaf@aepfle.de
-Cc: apw@canonical.com
-Cc: jasowang@redhat.com
-Cc: dave.hansen@intel.com
-Cc: riel@redhat.com
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1414580017-27444-1-git-send-email-decui@microsoft.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Changelog:
+- limit the use of INTEGRITY_NOXATTRS to IMA identified new files
+
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/pageattr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/integrity/evm/evm_main.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -409,7 +409,7 @@ phys_addr_t slow_virt_to_phys(void *__vi
- 	psize = page_level_size(level);
- 	pmask = page_level_mask(level);
- 	offset = virt_addr & ~pmask;
--	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
-+	phys_addr = (phys_addr_t)pte_pfn(*pte) << PAGE_SHIFT;
- 	return (phys_addr | offset);
- }
- EXPORT_SYMBOL_GPL(slow_virt_to_phys);
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -284,6 +284,13 @@ static int evm_protect_xattr(struct dent
+ 		goto out;
+ 	}
+ 	evm_status = evm_verify_current_integrity(dentry);
++	if (evm_status == INTEGRITY_NOXATTRS) {
++		struct integrity_iint_cache *iint;
++
++		iint = integrity_iint_find(dentry->d_inode);
++		if (iint && (iint->flags & IMA_NEW_FILE))
++			return 0;
++	}
+ out:
+ 	if (evm_status != INTEGRITY_PASS)
+ 		integrity_audit_msg(AUDIT_INTEGRITY_METADATA, dentry->d_inode,
 
 
