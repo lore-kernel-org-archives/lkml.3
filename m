@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424AbaKLTjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:39:08 -0500
-Received: from mail-by2on0058.outbound.protection.outlook.com ([207.46.100.58]:11936
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753151AbaKLTjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:39:06 -0500
-X-Greylist: delayed 2720 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 14:39:06 EST
-Date: Wed, 12 Nov 2014 11:38:58 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1753432AbaKLTlc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:41:32 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:62695 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaKLTlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 14:41:31 -0500
+Date: Wed, 12 Nov 2014 20:41:44 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: marc.zyngier@arm.com, gleb@kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-rockchip@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH 2/7] pinctrl: pinconf-generic: Infer map type from DT
- property
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
- <1415041531-15520-3-git-send-email-soren.brinkmann@xilinx.com>
- <CACRpkdbOLMT1vfFg=CAU_VHdjxPWn_Ybso=+8Asp=mXhmNBRSA@mail.gmail.com>
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] virt: kvm: arm: vgic: Return failure code '-EBUSY' when
+ mutex_trylock() fails
+Message-ID: <20141112194144.GK19598@cbox>
+References: <546376F7.90502@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbOLMT1vfFg=CAU_VHdjxPWn_Ybso=+8Asp=mXhmNBRSA@mail.gmail.com>
+In-Reply-To: <546376F7.90502@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21096.002
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <02ceb46374884cbeaf0335ac44b9ba45@BY2FFO11FD043.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(199003)(377424004)(377454003)(189002)(51704005)(44976005)(64706001)(23676002)(107046002)(31966008)(21056001)(4396001)(83506001)(20776003)(53416004)(47776003)(86362001)(106466001)(85182001)(19580405001)(110136001)(85202003)(102836001)(50986999)(76176999)(54356999)(108616004)(77156002)(120916001)(92566001)(50466002)(6806004)(62966003)(46102003)(87936001)(95666004)(104016003)(74316001)(99396003)(19580395003)(77096003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB042;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB042;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB042;
-X-Forefront-PRVS: 03932714EB
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB042;
-X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 01:47PM +0100, Linus Walleij wrote:
-> On Mon, Nov 3, 2014 at 8:05 PM, Soren Brinkmann
-> <soren.brinkmann@xilinx.com> wrote:
-> 
-> > With the new 'groups' property, the DT parser can infer the map type
-> > from the fact whether 'pins' or 'groups' is used to specify the pin
-> > group to work on.
-> > To maintain backwards compatibitliy with current usage of the DT
-> > binding, this is only done when an invalid map type is passed to the
-> > parsing function.
-> 
-> So that is this:
-> 
-> > +               if (type == PIN_MAP_TYPE_INVALID)
-> > +                       type = PIN_MAP_TYPE_CONFIGS_GROUP;
-> > +               dt_pin_specifier = "groups";
-> 
-> This is just kludgy. There are only two kernel-internal users of this function,
-> refactor the function signature and change the other callers over instead,
-> patch the drivers.
+On Wed, Nov 12, 2014 at 11:04:23PM +0800, Chen Gang wrote:
+> When mutex_trylock() fails, kvm_vgic_create() will not create 'vgic', so
+> it need return failure code '-EBUSY' instead of '0' to let outside know
+> about it.
 
-Just looking into this, one user besides those two drivers is
-pinconf-generic: pinconf_generic_dt_node_to_map() which is called from
- pinconf_generic_dt_node_to_map_pin() and
- pinconf_generic_dt_node_to_map_group()
+I already sent a patch for the -EBUSY:
+https://lists.cs.columbia.edu/pipermail/kvmarm/2014-November/011936.html
 
-And those would be a couple of more users. That's why I chose to not
-change the behavior since this adds another 4 drivers to the list of
-users that might depend on certain behavior.
+> 
+> Also simplify the code within kvm_vgic_create():
+> 
+>  - kvm_for_each_vcpu() scanning once is enough for current case.
+> 
+>  - Remove redundant variable 'vcpu_lock_idx'.
 
-	Sören
+I don't like using the iterator variable for this kind of thing because
+it can really break in languages where i is out-of-scope after the loop
+and it is too easy to reuse the iterator variable in later versions of
+the code.
+
+That being said, the scanning once is slightly prettier I guess,
+but I'd rather not introduce the churn unless others (Marc) think this
+is a big win.
+
+-Christoffer
+
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  virt/kvm/arm/vgic.c | 15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
+> 
+> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+> index 3aaca49..5846725 100644
+> --- a/virt/kvm/arm/vgic.c
+> +++ b/virt/kvm/arm/vgic.c
+> @@ -1933,7 +1933,7 @@ out:
+>  
+>  int kvm_vgic_create(struct kvm *kvm)
+>  {
+> -	int i, vcpu_lock_idx = -1, ret = 0;
+> +	int i, ret = 0;
+>  	struct kvm_vcpu *vcpu;
+>  
+>  	mutex_lock(&kvm->lock);
+> @@ -1949,13 +1949,12 @@ int kvm_vgic_create(struct kvm *kvm)
+>  	 * that no other VCPUs are run while we create the vgic.
+>  	 */
+>  	kvm_for_each_vcpu(i, vcpu, kvm) {
+> -		if (!mutex_trylock(&vcpu->mutex))
+> +		if (!mutex_trylock(&vcpu->mutex)) {
+> +			ret = -EBUSY;
+>  			goto out_unlock;
+> -		vcpu_lock_idx = i;
+> -	}
+> -
+> -	kvm_for_each_vcpu(i, vcpu, kvm) {
+> +		}
+>  		if (vcpu->arch.has_run_once) {
+> +			mutex_unlock(&vcpu->mutex);
+>  			ret = -EBUSY;
+>  			goto out_unlock;
+>  		}
+> @@ -1968,8 +1967,8 @@ int kvm_vgic_create(struct kvm *kvm)
+>  	kvm->arch.vgic.vgic_cpu_base = VGIC_ADDR_UNDEF;
+>  
+>  out_unlock:
+> -	for (; vcpu_lock_idx >= 0; vcpu_lock_idx--) {
+> -		vcpu = kvm_get_vcpu(kvm, vcpu_lock_idx);
+> +	while (i-- > 0) {
+> +		vcpu = kvm_get_vcpu(kvm, i);
+>  		mutex_unlock(&vcpu->mutex);
+>  	}
+>  
+> -- 
+> 1.9.3
