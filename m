@@ -1,158 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaKLGli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:41:38 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:50277 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaKLGlg (ORCPT
+	id S1751543AbaKLGoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:44:34 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57345 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaKLGoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:41:36 -0500
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Todd Poynor <toddpoynor@google.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC v6 3/3] usb: phy: hold wakeupsource when USB is enumerated in peripheral mode
-Date: Wed, 12 Nov 2014 12:11:19 +0530
-Message-Id: <1415774479-21794-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 12 Nov 2014 01:44:32 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <546301A4.3090209@jp.fujitsu.com>
+Date: Wed, 12 Nov 2014 15:43:48 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: <tony.luck@intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Philipp Hachtmann <phacht@linux.vnet.ibm.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Emil Medve <Emilian.Medve@freescale.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: memblock: Refactor functions to set/clear MEMBLOCK_HOTPLUG
+References: <54610c79308447c79c@agluck-desk.sc.intel.com>
+In-Reply-To: <54610c79308447c79c@agluck-desk.sc.intel.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Todd Poynor <toddpoynor@google.com>
+(2014/11/11 4:05), tony.luck@intel.com wrote:
+> There is a lot of duplication in the rubric around actually setting or
+> clearing a mem region flag. Create a new helper function to do this and
+> reduce each of memblock_mark_hotplug() and memblock_clear_hotplug() to
+> a single line.
+> 
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> 
+> ---
 
-usb: phy: hold wakeupsource when USB is enumerated in peripheral mode
+The refactoring looks good.
 
-Some systems require a mechanism to prevent system to enter into suspend
-state when USB is connected and enumerated in peripheral mode.
+Thanks,
+Yasuaki Ishimatsu
 
-This patch provides an interface to hold a wakeupsource to prevent suspend.
-PHY drivers can use this interface when USB is connected and enumerated in
-peripheral mode.
+> 
+> This will be useful if someone were to add a new mem region flag - which
+> I hope to be doing some day soon. But it looks like a plausible cleanup
+> even without that - so I'd like to get it out of the way now.
+> 
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 6ecb0d937fb5..252b77bdf65e 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -715,16 +715,13 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+>   }
+>   
+>   /**
+> - * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
+> - * @base: the base phys addr of the region
+> - * @size: the size of the region
+>    *
+> - * This function isolates region [@base, @base + @size), and mark it with flag
+> - * MEMBLOCK_HOTPLUG.
+> + * This function isolates region [@base, @base + @size), and sets/clears flag
+>    *
+>    * Return 0 on succees, -errno on failure.
+>    */
+> -int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
+> +static int __init_memblock memblock_setclr_flag(phys_addr_t base,
+> +				phys_addr_t size, int set, int flag)
+>   {
+>   	struct memblock_type *type = &memblock.memory;
+>   	int i, ret, start_rgn, end_rgn;
+> @@ -734,37 +731,37 @@ int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
+>   		return ret;
+>   
+>   	for (i = start_rgn; i < end_rgn; i++)
+> -		memblock_set_region_flags(&type->regions[i], MEMBLOCK_HOTPLUG);
+> +		if (set)
+> +			memblock_set_region_flags(&type->regions[i], flag);
+> +		else
+> +			memblock_clear_region_flags(&type->regions[i], flag);
+>   
+>   	memblock_merge_regions(type);
+>   	return 0;
+>   }
+>   
+>   /**
+> - * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
+> + * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
+>    * @base: the base phys addr of the region
+>    * @size: the size of the region
+>    *
+> - * This function isolates region [@base, @base + @size), and clear flag
+> - * MEMBLOCK_HOTPLUG for the isolated regions.
+> + * Return 0 on succees, -errno on failure.
+> + */
+> +int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
+> +{
+> +	return memblock_setclr_flag(base, size, 1, MEMBLOCK_HOTPLUG);
+> +}
+> +
+> +/**
+> + * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
+> + * @base: the base phys addr of the region
+> + * @size: the size of the region
+>    *
+>    * Return 0 on succees, -errno on failure.
+>    */
+>   int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
+>   {
+> -	struct memblock_type *type = &memblock.memory;
+> -	int i, ret, start_rgn, end_rgn;
+> -
+> -	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
+> -	if (ret)
+> -		return ret;
+> -
+> -	for (i = start_rgn; i < end_rgn; i++)
+> -		memblock_clear_region_flags(&type->regions[i],
+> -					    MEMBLOCK_HOTPLUG);
+> -
+> -	memblock_merge_regions(type);
+> -	return 0;
+> +	return memblock_setclr_flag(base, size, 0, MEMBLOCK_HOTPLUG);
+>   }
+>   
+>   /**
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-A timed wakeupsource is temporarily held on USB disconnect events, to allow
-the rest of the system to react to the USB disconnection (dropping host
-sessions, updating charger status, etc.) prior to re-allowing suspend.
-
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: Benoit Goby <benoit@android.com>
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-[kiran: Added context to commit message, squished build fixes
-from Benoit Goby and Arve HjÃ¸nnevÃ¥g, changed wakelocks usage
-to wakeupsource, merged Todd's refactoring logic and simplified
-the structures and code and addressed community feedback]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
- drivers/usb/phy/phy.c   | 29 +++++++++++++++++++++++++++--
- include/linux/usb/phy.h |  5 +++++
- 2 files changed, 32 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-index 2b1039e..b5c5fd3 100644
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -329,6 +329,7 @@ int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
- 	int		ret = 0;
- 	unsigned long	flags;
- 	struct usb_phy	*phy;
-+	char wsource_name[40];
- 
- 	if (x->type != USB_PHY_TYPE_UNDEFINED) {
- 		dev_err(x->dev, "not accepting initialized PHY %s\n", x->label);
-@@ -351,6 +352,10 @@ int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
- 	x->type = type;
- 	list_add_tail(&x->head, &phy_list);
- 
-+	snprintf(wsource_name, sizeof(wsource_name), "vbus-%s",
-+		dev_name(x->dev));
-+	wakeup_source_init(&x->wsource, wsource_name);
-+
- out:
- 	spin_unlock_irqrestore(&phy_lock, flags);
- 	return ret;
-@@ -402,6 +407,7 @@ void usb_remove_phy(struct usb_phy *x)
- 
- 	spin_lock_irqsave(&phy_lock, flags);
- 	if (x) {
-+		wakeup_source_trash(&x->wsource);
- 		list_for_each_entry(phy_bind, &phy_bind_list, list)
- 			if (phy_bind->phy == x)
- 				phy_bind->phy = NULL;
-@@ -446,13 +452,32 @@ int usb_bind_phy(const char *dev_name, u8 index,
- EXPORT_SYMBOL_GPL(usb_bind_phy);
- 
- /**
-- * usb_phy_set_event - set event to phy event
-+ * usb_phy_set_event - set event to phy event and
-+ * hold/temporarily hold wakeupsource
-  * @x: the phy returned by usb_get_phy();
-  *
-- * This sets event to phy event
-+ * This holds per-PHY wakeupsource/timed wakeupsource
-  */
- void usb_phy_set_event(struct usb_phy *x, unsigned long event)
- {
-+
- 	x->last_event = event;
-+
-+	switch (event) {
-+	case USB_EVENT_ENUMERATED:
-+		__pm_stay_awake(&x->wsource);
-+		break;
-+
-+	case USB_EVENT_NONE:
-+	case USB_EVENT_ID:
-+	case USB_EVENT_VBUS:
-+	case USB_EVENT_CHARGER:
-+		__pm_wakeup_event(&x->wsource,
-+				msecs_to_jiffies(TEMPORARY_HOLD_TIME));
-+		break;
-+
-+	default:
-+		break;
-+	}
- }
- EXPORT_SYMBOL_GPL(usb_phy_set_event);
-diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index 3c713ff..bc58fb8 100644
---- a/include/linux/usb/phy.h
-+++ b/include/linux/usb/phy.h
-@@ -12,6 +12,8 @@
- #include <linux/notifier.h>
- #include <linux/usb.h>
- 
-+#define TEMPORARY_HOLD_TIME    2000
-+
- enum usb_phy_interface {
- 	USBPHY_INTERFACE_MODE_UNKNOWN,
- 	USBPHY_INTERFACE_MODE_UTMI,
-@@ -89,6 +91,9 @@ struct usb_phy {
- 	/* for notification of usb_phy_events */
- 	struct atomic_notifier_head	notifier;
- 
-+	/* wakeup source */
-+	struct wakeup_source    wsource;
-+
- 	/* to pass extra port status to the root hub */
- 	u16			port_status;
- 	u16			port_change;
--- 
-1.8.2.1
 
