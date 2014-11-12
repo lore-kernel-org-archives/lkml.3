@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965579AbaKLByW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:54:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33005 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966493AbaKLByT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S966582AbaKLByT (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:54:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33001 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966493AbaKLByP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:54:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 053/123] KVM: x86: Improve thread safety in pit
-Date: Wed, 12 Nov 2014 10:16:59 +0900
-Message-Id: <20141112011721.434486934@linuxfoundation.org>
+Subject: [PATCH 3.10 052/123] KVM: x86: Prevent host from panicking on shared MSR writes.
+Date: Wed, 12 Nov 2014 10:16:58 +0900
+Message-Id: <20141112011721.393368461@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -30,35 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andy Honig <ahonig@google.com>
 
-commit 2febc839133280d5a5e8e1179c94ea674489dae2 upstream.
+commit 8b3c3104c3f4f706e99365c3e0d2aa61b95f969f upstream.
 
-There's a race condition in the PIT emulation code in KVM.  In
-__kvm_migrate_pit_timer the pit_timer object is accessed without
-synchronization.  If the race condition occurs at the wrong time this
-can crash the host kernel.
-
-This fixes CVE-2014-3611.
+The previous patch blocked invalid writes directly when the MSR
+is written.  As a precaution, prevent future similar mistakes by
+gracefulling handle GPs caused by writes to shared MSRs.
 
 Signed-off-by: Andrew Honig <ahonig@google.com>
+[Remove parts obsoleted by Nadav's patch. - Paolo]
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/i8254.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ arch/x86/kvm/vmx.c              |    7 +++++--
+ arch/x86/kvm/x86.c              |   11 ++++++++---
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -262,8 +262,10 @@ void __kvm_migrate_pit_timer(struct kvm_
- 		return;
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -1011,7 +1011,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcp
+ void kvm_vcpu_reset(struct kvm_vcpu *vcpu);
  
- 	timer = &pit->pit_state.timer;
-+	mutex_lock(&pit->pit_state.lock);
- 	if (hrtimer_cancel(timer))
- 		hrtimer_start_expires(timer, HRTIMER_MODE_ABS);
-+	mutex_unlock(&pit->pit_state.lock);
+ void kvm_define_shared_msr(unsigned index, u32 msr);
+-void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
++int kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
+ 
+ bool kvm_is_linear_rip(struct kvm_vcpu *vcpu, unsigned long linear_rip);
+ 
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2493,12 +2493,15 @@ static int vmx_set_msr(struct kvm_vcpu *
+ 			break;
+ 		msr = find_msr_entry(vmx, msr_index);
+ 		if (msr) {
++			u64 old_msr_data = msr->data;
+ 			msr->data = data;
+ 			if (msr - vmx->guest_msrs < vmx->save_nmsrs) {
+ 				preempt_disable();
+-				kvm_set_shared_msr(msr->index, msr->data,
+-						   msr->mask);
++				ret = kvm_set_shared_msr(msr->index, msr->data,
++							 msr->mask);
+ 				preempt_enable();
++				if (ret)
++					msr->data = old_msr_data;
+ 			}
+ 			break;
+ 		}
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -225,20 +225,25 @@ static void kvm_shared_msr_cpu_online(vo
+ 		shared_msr_update(i, shared_msrs_global.msrs[i]);
  }
  
- static void destroy_pit_timer(struct kvm_pit *pit)
+-void kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
++int kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
+ {
+ 	unsigned int cpu = smp_processor_id();
+ 	struct kvm_shared_msrs *smsr = per_cpu_ptr(shared_msrs, cpu);
++	int err;
+ 
+ 	if (((value ^ smsr->values[slot].curr) & mask) == 0)
+-		return;
++		return 0;
+ 	smsr->values[slot].curr = value;
+-	wrmsrl(shared_msrs_global.msrs[slot], value);
++	err = wrmsrl_safe(shared_msrs_global.msrs[slot], value);
++	if (err)
++		return 1;
++
+ 	if (!smsr->registered) {
+ 		smsr->urn.on_user_return = kvm_on_user_return;
+ 		user_return_notifier_register(&smsr->urn);
+ 		smsr->registered = true;
+ 	}
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(kvm_set_shared_msr);
+ 
 
 
