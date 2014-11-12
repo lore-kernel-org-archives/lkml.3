@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965216AbaKLCvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:51:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60430 "EHLO
+	id S1755452AbaKLCw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:52:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60414 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965167AbaKLBnM (ORCPT
+	with ESMTP id S934495AbaKLBm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:43:12 -0500
+	Tue, 11 Nov 2014 20:42:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.14 112/203] cpufreq: intel_pstate: Add CPU ID for Braswell processor
-Date: Wed, 12 Nov 2014 10:16:22 +0900
-Message-Id: <20141112011547.822772049@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 108/203] ext4: fix oops when loading block bitmap failed
+Date: Wed, 12 Nov 2014 10:16:18 +0900
+Message-Id: <20141112011547.642516529@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -32,33 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 16405f98bca8eb39a23b3ce03e241ca19e7af370 upstream.
+commit 599a9b77ab289d85c2d5c8607624efbe1f552b0f upstream.
 
-This is pretty much the same as Intel Baytrail, only the CPU ID is
-different. Add the new ID to the supported CPU list.
+When we fail to load block bitmap in __ext4_new_inode() we will
+dereference NULL pointer in ext4_journal_get_write_access(). So check
+for error from ext4_read_block_bitmap().
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Coverity-id: 989065
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/ialloc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -690,6 +690,7 @@ static const struct x86_cpu_id intel_pst
- 	ICPU(0x3f, core_params),
- 	ICPU(0x45, core_params),
- 	ICPU(0x46, core_params),
-+	ICPU(0x4c, byt_params),
- 	ICPU(0x4f, core_params),
- 	ICPU(0x56, core_params),
- 	{}
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -864,6 +864,10 @@ got:
+ 		struct buffer_head *block_bitmap_bh;
+ 
+ 		block_bitmap_bh = ext4_read_block_bitmap(sb, group);
++		if (!block_bitmap_bh) {
++			err = -EIO;
++			goto out;
++		}
+ 		BUFFER_TRACE(block_bitmap_bh, "get block bitmap access");
+ 		err = ext4_journal_get_write_access(handle, block_bitmap_bh);
+ 		if (err) {
 
 
