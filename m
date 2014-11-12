@@ -1,145 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaKLGoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:44:34 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57345 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaKLGoc (ORCPT
+	id S1751905AbaKLGvp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:51:45 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:50905 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaKLGvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:44:32 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <546301A4.3090209@jp.fujitsu.com>
-Date: Wed, 12 Nov 2014 15:43:48 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 12 Nov 2014 01:51:43 -0500
+Message-ID: <54630362.7050007@linux.vnet.ibm.com>
+Date: Wed, 12 Nov 2014 12:21:14 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: <tony.luck@intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Philipp Hachtmann <phacht@linux.vnet.ibm.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Emil Medve <Emilian.Medve@freescale.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: memblock: Refactor functions to set/clear MEMBLOCK_HOTPLUG
-References: <54610c79308447c79c@agluck-desk.sc.intel.com>
-In-Reply-To: <54610c79308447c79c@agluck-desk.sc.intel.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+CC: linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 3/4] powernv: cpuidle: Redesign idle states management
+References: <1415030910-5799-1-git-send-email-shreyas@linux.vnet.ibm.com> <1415030910-5799-4-git-send-email-shreyas@linux.vnet.ibm.com>
+In-Reply-To: <1415030910-5799-4-git-send-email-shreyas@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111206-8236-0000-0000-000006DB5574
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/11 4:05), tony.luck@intel.com wrote:
-> There is a lot of duplication in the rubric around actually setting or
-> clearing a mem region flag. Create a new helper function to do this and
-> reduce each of memblock_mark_hotplug() and memblock_clear_hotplug() to
-> a single line.
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> 
-> ---
+Hi Shreyas,
 
-The refactoring looks good.
+On 11/03/2014 09:38 PM, Shreyas B. Prabhu wrote:
+> diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
+> index 283c603..df11acb 100644
+> --- a/arch/powerpc/kernel/idle_power7.S
+> +++ b/arch/powerpc/kernel/idle_power7.S
+>  _GLOBAL(power7_idle)
+>  	/* Now check if user or arch enabled NAP mode */
+> @@ -141,49 +192,16 @@ _GLOBAL(power7_idle)
+>  
+>  _GLOBAL(power7_nap)
+>  	mr	r4,r3
+> -	li	r3,0
+> +	li	r3,1
 
-Thanks,
-Yasuaki Ishimatsu
+The comment at the top of this file states 0 for nap and 1 for sleep.
+You will need to change that. As an alternative I would suggest using
+the macros that you have already defined:PNV_THREAD_NAP and
+PNV_THREAD_SLEEP to write to r3 above and remove the lines that say 0
+for nap and 1 for sleep in the comments.
 
-> 
-> This will be useful if someone were to add a new mem region flag - which
-> I hope to be doing some day soon. But it looks like a plausible cleanup
-> even without that - so I'd like to get it out of the way now.
-> 
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 6ecb0d937fb5..252b77bdf65e 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -715,16 +715,13 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
->   }
->   
->   /**
-> - * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
-> - * @base: the base phys addr of the region
-> - * @size: the size of the region
->    *
-> - * This function isolates region [@base, @base + @size), and mark it with flag
-> - * MEMBLOCK_HOTPLUG.
-> + * This function isolates region [@base, @base + @size), and sets/clears flag
->    *
->    * Return 0 on succees, -errno on failure.
->    */
-> -int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
-> +static int __init_memblock memblock_setclr_flag(phys_addr_t base,
-> +				phys_addr_t size, int set, int flag)
->   {
->   	struct memblock_type *type = &memblock.memory;
->   	int i, ret, start_rgn, end_rgn;
-> @@ -734,37 +731,37 @@ int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
->   		return ret;
->   
->   	for (i = start_rgn; i < end_rgn; i++)
-> -		memblock_set_region_flags(&type->regions[i], MEMBLOCK_HOTPLUG);
-> +		if (set)
-> +			memblock_set_region_flags(&type->regions[i], flag);
-> +		else
-> +			memblock_clear_region_flags(&type->regions[i], flag);
->   
->   	memblock_merge_regions(type);
->   	return 0;
->   }
->   
->   /**
-> - * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
-> + * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
->    * @base: the base phys addr of the region
->    * @size: the size of the region
->    *
-> - * This function isolates region [@base, @base + @size), and clear flag
-> - * MEMBLOCK_HOTPLUG for the isolated regions.
-> + * Return 0 on succees, -errno on failure.
-> + */
-> +int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
-> +{
-> +	return memblock_setclr_flag(base, size, 1, MEMBLOCK_HOTPLUG);
-> +}
+>  	b	power7_powersave_common
+>  	/* No return */
+>  
+
+<snip>
+
+> @@ -210,12 +226,91 @@ _GLOBAL(power7_wakeup_tb_loss)
+>  BEGIN_FTR_SECTION
+>  	CHECK_HMI_INTERRUPT
+>  END_FTR_SECTION_IFSET(CPU_FTR_HVMODE)
 > +
-> +/**
-> + * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
-> + * @base: the base phys addr of the region
-> + * @size: the size of the region
->    *
->    * Return 0 on succees, -errno on failure.
->    */
->   int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
->   {
-> -	struct memblock_type *type = &memblock.memory;
-> -	int i, ret, start_rgn, end_rgn;
-> -
-> -	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
-> -	if (ret)
-> -		return ret;
-> -
-> -	for (i = start_rgn; i < end_rgn; i++)
-> -		memblock_clear_region_flags(&type->regions[i],
-> -					    MEMBLOCK_HOTPLUG);
-> -
-> -	memblock_merge_regions(type);
-> -	return 0;
-> +	return memblock_setclr_flag(base, size, 0, MEMBLOCK_HOTPLUG);
->   }
->   
->   /**
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+> +	li	r7,1
+> +	mfspr	r8,SPRN_PIR
+> +	/*
+> +	 * The last 3 bits of PIR represents the thread id of a cpu
+> +	 * in power8. This will need adjusting for power7.
+> +	 */
+> +	andi.	r8,r8,0x07		/* Get thread id into r8 */
+> +	rotld	r7,r7,r8
+> +	/* r7 now has 'thread_id'th bit set */
+> +
+> +	ld	r14,PACA_CORE_IDLE_STATE_PTR(r13)
+> +lwarx_loop2:
+> +	lwarx	r15,0,r14
+> +	andi.	r9,r15,PNV_CORE_IDLE_LOCK_BIT
+> +	/*
+> +	 * Lock bit is set in one of the 2 cases-
+> +	 * a. In the sleep/winkle enter path, the last thread is executing
+> +	 * fastsleep workaround code.
+> +	 * b. In the wake up path, another thread is executing fastsleep
+> +	 * workaround undo code or resyncing timebase or restoring context
+> +	 * In either case loop until the lock bit is cleared.
+> +	 */
+> +	bne	lwarx_loop2
+> +
+> +	cmpwi	cr2,r15,0
+> +	or	r15,r15,r7		/* Set thread bit */
+> +
+> +	beq	cr2,first_thread
+> +
+> +	/* Not first thread in core to wake up */
+> +	stwcx.	r15,0,r14
+> +	bne-	lwarx_loop2
+> +	b	common_exit
+> +
+> +first_thread:
+> +	/* First thread in core to wakeup */
+> +	ori	r15,r15,PNV_CORE_IDLE_LOCK_BIT
+> +	stwcx.	r15,0,r14
+> +	bne-	lwarx_loop2
+> +
+> +	LOAD_REG_ADDR(r3, pnv_need_fastsleep_workaround)
+> +	lbz	r3,0(r3)
+> +	cmpwi	r3,1
+> +	/*  skip fastsleep workaround if its not needed */
+> +	bne	timebase_resync
+> +
+> +	/* Undo fast sleep workaround */
+> +	mfcr	r16	/* Backup CR into a non-volatile register */
 
+Don't you want to do this ^^ before calling opal_call_realmode for
+timebase resync below also?
+
+> +	li	r3,1
+> +	li	r4,0
+> +	li	r0,OPAL_CONFIG_CPU_IDLE_STATE
+> +	bl	opal_call_realmode
+> +	mtcr	r16	/* Restore CR */
+> +
+> +	/* Do timebase resync if we are waking up from sleep. Use cr1 value
+> +	 * set in exceptions-64s.S */
+> +	ble	cr1,clear_lock
+> +
+> +timebase_resync:
+>  	/* Time base re-sync */
+> -	li	r3,OPAL_RESYNC_TIMEBASE
+> +	li	r0,OPAL_RESYNC_TIMEBASE
+>  	bl	opal_call_realmode;
+> -
+> diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+> index 34c6665..980c964 100644
+> --- a/arch/powerpc/platforms/powernv/setup.c
+> +++ b/arch/powerpc/platforms/powernv/setup.c
+> @@ -36,6 +36,8 @@
+>  #include <asm/opal.h>
+>  #include <asm/kexec.h>
+>  #include <asm/smp.h>
+> +#include <asm/cputhreads.h>
+> +#include <asm/cpuidle.h>
+>  
+>  #include "powernv.h"
+>  
+> @@ -292,11 +294,55 @@ static void __init pnv_setup_machdep_rtas(void)
+>  
+>  static u32 supported_cpuidle_states;
+>  
+> +static void pnv_alloc_idle_core_states(void)
+> +{
+> +	int i, j;
+> +	int nr_cores = cpu_nr_cores();
+> +	u32 *core_idle_state;
+> +
+> +	/*
+> +	 * Deep idle states like sleep and winkle are per core idle states.
+> +	 * A core enters these states only when all the threads enter either
+> +	 * the particular idle state or a deeper one. There are tasks like
+> +	 * fastsleep hardware bug workaround and hypervisor core state save
+> +	 * which have to be done only by the last thread of the core entering
+> +	 * deep idle state and similarly tasks like timebase resync, hypervisor
+> +	 * core register restore that have to be done only by the first thread
+> +	 * waking up from these states. Introducing core_idle_state, a per core
+> +	 * structure which will keep track threads entering idle states deeper
+> +	 * than sleep.
+
+Since you already have explained ^^ in the changelog, you do not need to
+elaborate it here.
+
+> +	 * core_idle_state - First 8 bits track the idle state of each thread
+> +	 * of the core. The 8th bit is the lock bit. Initially all thread bits
+> +	 * are set. They are cleared when the thread enters deep idle state
+> +	 * like sleep and winkle. Initially the lock bit is cleared.
+
+you can simply have the comment about the bits of core_idle_state
+without having to mention about when they are cleared etc..
+
+> +	 * The lock bit has 2 purposes
+> +	 * a. While the first thread is restoring core state, it prevents
+> +	 * from other threads in the core from switching to prcoess context.
+> +	 * b. While the last thread in the core is saving the core state, it
+> +	 * prevent a different thread from waking up.
+
+The above two points are useful. As far as I see besides explaining the
+bits of core_idle_state structure and the purpose of lock bit the rest
+of the comments is redundant. A git-blame will let people know why all
+this is needed. The comment section should not be used up for this
+purpose IMO.
+
+Regards
+Preeti U Murthy
 
