@@ -1,149 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaKLP0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:26:41 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:26364 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753222AbaKLPZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:25:42 -0500
-X-IronPort-AV: E=Sophos;i="5.07,369,1413244800"; 
-   d="scan'208";a="190548029"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        <linux-ia64@vger.kernel.org>
-Subject: [PATCH 1/3] dma,ia64: add dma_get_required_mask_from_max_pfn()
-Date: Wed, 12 Nov 2014 15:25:04 +0000
-Message-ID: <1415805906-27316-2-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415805906-27316-1-git-send-email-david.vrabel@citrix.com>
-References: <1415805906-27316-1-git-send-email-david.vrabel@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+	id S1753197AbaKLP2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:28:12 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25534 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726AbaKLP2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 10:28:10 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-e2-54637c87a7a2
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] mfd: max14577: Fix obvious typo in company name in copyright
+Date: Wed, 12 Nov 2014 16:28:02 +0100
+Message-id: <1415806082-19607-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGJMWRmVeSWpSXmKPExsVy+t/xK7rtNckhBiuf8Fi8fmFocf/rUUaL
+	y7vmsFmc7mZ1YPG4c20Pm8e8k4EefVtWMXp83iQXwBLFZZOSmpNZllqkb5fAlfH/eQ9LQR9r
+	xcbdH9kaGGewdDFyckgImEjcXrmMDcIWk7hwbz2YLSSwlFFi/2HWLkYuILuPSWL9/91gCTYB
+	Y4nNy5eA2SICWRI/pq0GG8QsYCjx890fdhBbWMBX4umSP6wgNouAqsS0/gWMIDavgLvEk2ln
+	GCGWyUmcPDaZdQIj9wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIX7/uoNx6TGrQ4wC
+	HIxKPLwftJJDhFgTy4orcw8xSnAwK4nwTisBCvGmJFZWpRblxxeV5qQWH2Jk4uCUamC0ufLi
+	1PPFX6SKvBy/WTu48a+4cWYr2+SfkcqCyWHRITc/xf5UsD5w6N3ftd+U1645GfDo4budD4ws
+	ReV2aUgZVTwxjXz8nVu2qkMvY9PtiwsTNzE6hy29KMBqxHP20TcZg5mTDlTvc7yi0tHU8zs+
+	Z8NnJu97p/9yNc7xnP1yrvf06kKdXz4CSizFGYmGWsxFxYkA4onWbdkBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ia64 provides a duplicate of the generic dma_get_required_mask()
-because it has ARCH_HAS_GET_REQUIRED_MASK.  Provide a common
-dma_get_require_mask_max_pfn() instead.
+Fix a typo in name of company in copyright comment.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/ia64/include/asm/machvec.h      |    2 +-
- arch/ia64/include/asm/machvec_init.h |    1 -
- arch/ia64/pci/pci.c                  |   20 --------------------
- drivers/base/platform.c              |   10 ++++++++--
- include/linux/dma-mapping.h          |    1 +
- 5 files changed, 10 insertions(+), 24 deletions(-)
+ drivers/mfd/max14577.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/ia64/include/asm/machvec.h b/arch/ia64/include/asm/machvec.h
-index 9c39bdf..beaa47d 100644
---- a/arch/ia64/include/asm/machvec.h
-+++ b/arch/ia64/include/asm/machvec.h
-@@ -287,7 +287,7 @@ extern struct dma_map_ops *dma_get_ops(struct device *);
- # define platform_dma_get_ops		dma_get_ops
- #endif
- #ifndef platform_dma_get_required_mask
--# define  platform_dma_get_required_mask	ia64_dma_get_required_mask
-+# define  platform_dma_get_required_mask	dma_get_required_mask_from_max_pfn
- #endif
- #ifndef platform_irq_to_vector
- # define platform_irq_to_vector		__ia64_irq_to_vector
-diff --git a/arch/ia64/include/asm/machvec_init.h b/arch/ia64/include/asm/machvec_init.h
-index 37a4698..ef964b2 100644
---- a/arch/ia64/include/asm/machvec_init.h
-+++ b/arch/ia64/include/asm/machvec_init.h
-@@ -3,7 +3,6 @@
- 
- extern ia64_mv_send_ipi_t ia64_send_ipi;
- extern ia64_mv_global_tlb_purge_t ia64_global_tlb_purge;
--extern ia64_mv_dma_get_required_mask ia64_dma_get_required_mask;
- extern ia64_mv_irq_to_vector __ia64_irq_to_vector;
- extern ia64_mv_local_vector_to_irq __ia64_local_vector_to_irq;
- extern ia64_mv_pci_get_legacy_mem_t ia64_pci_get_legacy_mem;
-diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-index 291a582..79da21b 100644
---- a/arch/ia64/pci/pci.c
-+++ b/arch/ia64/pci/pci.c
-@@ -791,26 +791,6 @@ static void __init set_pci_dfl_cacheline_size(void)
- 	pci_dfl_cache_line_size = (1 << cci.pcci_line_size) / 4;
- }
- 
--u64 ia64_dma_get_required_mask(struct device *dev)
--{
--	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
--	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
--	u64 mask;
--
--	if (!high_totalram) {
--		/* convert to mask just covering totalram */
--		low_totalram = (1 << (fls(low_totalram) - 1));
--		low_totalram += low_totalram - 1;
--		mask = low_totalram;
--	} else {
--		high_totalram = (1 << (fls(high_totalram) - 1));
--		high_totalram += high_totalram - 1;
--		mask = (((u64)high_totalram) << 32) + 0xffffffff;
--	}
--	return mask;
--}
--EXPORT_SYMBOL_GPL(ia64_dma_get_required_mask);
--
- u64 dma_get_required_mask(struct device *dev)
- {
- 	return platform_dma_get_required_mask(dev);
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index b2afc29..f9f3930 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -1009,8 +1009,7 @@ int __init platform_bus_init(void)
- 	return error;
- }
- 
--#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
--u64 dma_get_required_mask(struct device *dev)
-+u64 dma_get_required_mask_from_max_pfn(struct device *dev)
- {
- 	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
- 	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
-@@ -1028,6 +1027,13 @@ u64 dma_get_required_mask(struct device *dev)
- 	}
- 	return mask;
- }
-+EXPORT_SYMBOL_GPL(dma_get_required_mask_from_max_pfn);
-+
-+#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
-+u64 dma_get_required_mask(struct device *dev)
-+{
-+	return dma_get_required_mask_from_max_pfn(dev);
-+}
- EXPORT_SYMBOL_GPL(dma_get_required_mask);
- #endif
- 
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index d5d3881..6e2fdfc 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -127,6 +127,7 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
- 	return dma_set_mask_and_coherent(dev, mask);
- }
- 
-+extern u64 dma_get_required_mask_from_max_pfn(struct device *dev);
- extern u64 dma_get_required_mask(struct device *dev);
- 
- #ifndef set_arch_dma_coherent_ops
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index de96b7fb1f6d..3bf8def82f1e 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -1,7 +1,7 @@
+ /*
+  * max14577.c - mfd core driver for the Maxim 14577/77836
+  *
+- * Copyright (C) 2014 Samsung Electrnoics
++ * Copyright (C) 2014 Samsung Electronics
+  * Chanwoo Choi <cw00.choi@samsung.com>
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
 -- 
-1.7.10.4
+1.9.1
 
