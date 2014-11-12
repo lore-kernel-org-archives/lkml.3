@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaKLDPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:15:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59783 "EHLO
+	id S1755655AbaKLDQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:16:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932496AbaKLBgR (ORCPT
+	with ESMTP id S933752AbaKLBgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:36:17 -0500
+	Tue, 11 Nov 2014 20:36:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.17 314/319] xfs: bulkstat chunk formatting cursor is broken
-Date: Wed, 12 Nov 2014 10:17:32 +0900
-Message-Id: <20141112011044.815980591@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.17 285/319] drm/radeon/dpm: disable ulv support on SI
+Date: Wed, 12 Nov 2014 10:17:03 +0900
+Message-Id: <20141112011039.981000040@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,223 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit bf4a5af20d25ecc8876978ad34b8db83b4235f3c upstream.
+commit 6fa455935ab956248b165f150ec6ae9106210077 upstream.
 
-The xfs_bulkstat_agichunk formatting cursor takes buffer values from
-the main loop and passes them via the structure to the chunk
-formatter, and the writes the changed values back into the main loop
-local variables. Unfortunately, this complex dance is full of corner
-cases that aren't handled correctly.
+Causes problems on some boards.
 
-The biggest problem is that it is double handling the information in
-both the main loop and the chunk formatting function, leading to
-inconsistent updates and endless loops where progress is not made.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=82889
 
-To fix this, push the struct xfs_bulkstat_agichunk outwards to be
-the primary holder of user buffer information. this removes the
-double handling in the main loop.
-
-Also, pass the last inode processed by the chunk formatter as a
-separate parameter as it purely an output variable and is not
-related to the user buffer consumption cursor.
-
-Finally, the chunk formatting code is not shared by anyone, so make
-it local to xfs_itable.c.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_itable.c |   59 ++++++++++++++++++++++++----------------------------
- fs/xfs/xfs_itable.h |   16 --------------
- 2 files changed, 28 insertions(+), 47 deletions(-)
+ drivers/gpu/drm/radeon/si_dpm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/xfs/xfs_itable.c
-+++ b/fs/xfs/xfs_itable.c
-@@ -262,20 +262,26 @@ xfs_bulkstat_grab_ichunk(
- 
- #define XFS_BULKSTAT_UBLEFT(ubleft)	((ubleft) >= statstruct_size)
- 
-+struct xfs_bulkstat_agichunk {
-+	char		__user **ac_ubuffer;/* pointer into user's buffer */
-+	int		ac_ubleft;	/* bytes left in user's buffer */
-+	int		ac_ubelem;	/* spaces used in user's buffer */
-+};
-+
- /*
-  * Process inodes in chunk with a pointer to a formatter function
-  * that will iget the inode and fill in the appropriate structure.
-  */
--int
-+static int
- xfs_bulkstat_ag_ichunk(
- 	struct xfs_mount		*mp,
- 	xfs_agnumber_t			agno,
- 	struct xfs_inobt_rec_incore	*irbp,
- 	bulkstat_one_pf			formatter,
- 	size_t				statstruct_size,
--	struct xfs_bulkstat_agichunk	*acp)
-+	struct xfs_bulkstat_agichunk	*acp,
-+	xfs_ino_t			*lastino)
- {
--	xfs_ino_t			lastino = acp->ac_lastino;
- 	char				__user **ubufp = acp->ac_ubuffer;
- 	int				ubleft = acp->ac_ubleft;
- 	int				ubelem = acp->ac_ubelem;
-@@ -295,7 +301,7 @@ xfs_bulkstat_ag_ichunk(
- 
- 		/* Skip if this inode is free */
- 		if (XFS_INOBT_MASK(chunkidx) & irbp->ir_free) {
--			lastino = ino;
-+			*lastino = ino;
- 			continue;
- 		}
- 
-@@ -313,7 +319,7 @@ xfs_bulkstat_ag_ichunk(
- 				ubleft = 0;
- 				break;
- 			}
--			lastino = ino;
-+			*lastino = ino;
- 			continue;
- 		}
- 		if (fmterror == BULKSTAT_RV_GIVEUP) {
-@@ -325,10 +331,9 @@ xfs_bulkstat_ag_ichunk(
- 			*ubufp += ubused;
- 		ubleft -= ubused;
- 		ubelem++;
--		lastino = ino;
-+		*lastino = ino;
- 	}
- 
--	acp->ac_lastino = lastino;
- 	acp->ac_ubleft = ubleft;
- 	acp->ac_ubelem = ubelem;
- 
-@@ -355,7 +360,6 @@ xfs_bulkstat(
- 	xfs_btree_cur_t		*cur;	/* btree cursor for ialloc btree */
- 	int			end_of_ag; /* set if we've seen the ag end */
- 	int			error;	/* error code */
--	int                     fmterror;/* bulkstat formatter result */
- 	int			icount;	/* count of inodes good in irbuf */
- 	size_t			irbsize; /* size of irec buffer in bytes */
- 	xfs_ino_t		ino;	/* inode number (filesystem) */
-@@ -366,10 +370,8 @@ xfs_bulkstat(
- 	int			nirbuf;	/* size of irbuf */
- 	int			rval;	/* return value error code */
- 	int			ubcount; /* size of user's buffer */
--	int			ubleft;	/* bytes left in user's buffer */
--	char			__user *ubufp;	/* pointer into user's buffer */
--	int			ubelem;	/* spaces used in user's buffer */
- 	int			stat;
-+	struct xfs_bulkstat_agichunk ac;
- 
- 	/*
- 	 * Get the last inode value, see if there's nothing to do.
-@@ -386,11 +388,13 @@ xfs_bulkstat(
- 	}
- 
- 	ubcount = *ubcountp; /* statstruct's */
--	ubleft = ubcount * statstruct_size; /* bytes */
--	*ubcountp = ubelem = 0;
-+	ac.ac_ubuffer = &ubuffer;
-+	ac.ac_ubleft = ubcount * statstruct_size; /* bytes */;
-+	ac.ac_ubelem = 0;
-+
-+	*ubcountp = 0;
- 	*done = 0;
--	fmterror = 0;
--	ubufp = ubuffer;
-+
- 	irbuf = kmem_zalloc_greedy(&irbsize, PAGE_SIZE, PAGE_SIZE * 4);
- 	if (!irbuf)
- 		return -ENOMEM;
-@@ -402,7 +406,7 @@ xfs_bulkstat(
- 	 * inode returned; 0 means start of the allocation group.
- 	 */
- 	rval = 0;
--	while (XFS_BULKSTAT_UBLEFT(ubleft) && agno < mp->m_sb.sb_agcount) {
-+	while (XFS_BULKSTAT_UBLEFT(ac.ac_ubleft) && agno < mp->m_sb.sb_agcount) {
- 		cond_resched();
- 		error = xfs_ialloc_read_agi(mp, NULL, agno, &agbp);
- 		if (error)
-@@ -497,28 +501,21 @@ del_cursor:
- 		 */
- 		irbufend = irbp;
- 		for (irbp = irbuf;
--		     irbp < irbufend && XFS_BULKSTAT_UBLEFT(ubleft); irbp++) {
--			struct xfs_bulkstat_agichunk ac;
--
--			ac.ac_lastino = lastino;
--			ac.ac_ubuffer = &ubuffer;
--			ac.ac_ubleft = ubleft;
--			ac.ac_ubelem = ubelem;
-+		     irbp < irbufend && XFS_BULKSTAT_UBLEFT(ac.ac_ubleft);
-+		     irbp++) {
- 			error = xfs_bulkstat_ag_ichunk(mp, agno, irbp,
--					formatter, statstruct_size, &ac);
-+					formatter, statstruct_size, &ac,
-+					&lastino);
- 			if (error)
- 				rval = error;
- 
--			lastino = ac.ac_lastino;
--			ubleft = ac.ac_ubleft;
--			ubelem = ac.ac_ubelem;
--
- 			cond_resched();
- 		}
-+
- 		/*
- 		 * Set up for the next loop iteration.
- 		 */
--		if (XFS_BULKSTAT_UBLEFT(ubleft)) {
-+		if (XFS_BULKSTAT_UBLEFT(ac.ac_ubleft)) {
- 			if (end_of_ag) {
- 				agno++;
- 				agino = 0;
-@@ -531,11 +528,11 @@ del_cursor:
- 	 * Done, we're either out of filesystem or space to put the data.
- 	 */
- 	kmem_free(irbuf);
--	*ubcountp = ubelem;
-+	*ubcountp = ac.ac_ubelem;
- 	/*
- 	 * Found some inodes, return them now and return the error next time.
- 	 */
--	if (ubelem)
-+	if (ac.ac_ubelem)
- 		rval = 0;
- 	if (agno >= mp->m_sb.sb_agcount) {
- 		/*
---- a/fs/xfs/xfs_itable.h
-+++ b/fs/xfs/xfs_itable.h
-@@ -30,22 +30,6 @@ typedef int (*bulkstat_one_pf)(struct xf
- 			       int		*ubused,
- 			       int		*stat);
- 
--struct xfs_bulkstat_agichunk {
--	xfs_ino_t	ac_lastino;	/* last inode returned */
--	char		__user **ac_ubuffer;/* pointer into user's buffer */
--	int		ac_ubleft;	/* bytes left in user's buffer */
--	int		ac_ubelem;	/* spaces used in user's buffer */
--};
--
--int
--xfs_bulkstat_ag_ichunk(
--	struct xfs_mount		*mp,
--	xfs_agnumber_t			agno,
--	struct xfs_inobt_rec_incore	*irbp,
--	bulkstat_one_pf			formatter,
--	size_t				statstruct_size,
--	struct xfs_bulkstat_agichunk	*acp);
--
- /*
-  * Values for stat return value.
-  */
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -6255,7 +6255,7 @@ static void si_parse_pplib_clock_info(st
+ 	if ((rps->class2 & ATOM_PPLIB_CLASSIFICATION2_ULV) &&
+ 	    index == 0) {
+ 		/* XXX disable for A0 tahiti */
+-		si_pi->ulv.supported = true;
++		si_pi->ulv.supported = false;
+ 		si_pi->ulv.pl = *pl;
+ 		si_pi->ulv.one_pcie_lane_in_ulv = false;
+ 		si_pi->ulv.volt_change_delay = SISLANDS_ULVVOLTAGECHANGEDELAY_DFLT;
 
 
