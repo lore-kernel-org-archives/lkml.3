@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaKLQ7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 11:59:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38907 "EHLO mail.kernel.org"
+	id S1753164AbaKLRBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:01:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39114 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280AbaKLQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 11:59:31 -0500
-Date: Wed, 12 Nov 2014 17:59:25 +0100
+	id S1752707AbaKLRBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:01:49 -0500
+Date: Wed, 12 Nov 2014 18:01:44 +0100
 From: Sebastian Reichel <sre@kernel.org>
-To: Robin Gong <b38343@freescale.com>
-Cc: shawn.guo@linaro.org, kernel@pengutronix.de, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, smoch@web.de
-Subject: Re: [PATCH 2/3] power: reset: imx-snvs-poweroff: add power off
- driver for i.mx6
-Message-ID: <20141112165925.GA27681@earth.universe>
-References: <1415780439-29728-1-git-send-email-b38343@freescale.com>
- <1415780439-29728-3-git-send-email-b38343@freescale.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, dmitry.torokhov@gmail.com, cooloney@gmail.com,
+        rpurdie@rpsys.net, dbaryshkov@gmail.com, dwmw2@infradead.org,
+        lgirdwood@gmail.com, broonie@kernel.org, a.zummo@towertech.it,
+        paul.gortmaker@windriver.com, sachin.kamat@linaro.org,
+        k.kozlowski@samsung.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
+        linux-pm@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCH v5 1/3] mfd: max8997: use regmap to access registers
+Message-ID: <20141112170144.GB27681@earth.universe>
+References: <1415776996-11569-1-git-send-email-r.baldyga@samsung.com>
+ <1415776996-11569-2-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
+	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
 Content-Disposition: inline
-In-Reply-To: <1415780439-29728-3-git-send-email-b38343@freescale.com>
+In-Reply-To: <1415776996-11569-2-git-send-email-r.baldyga@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---VbJkn9YxBvnuCH5J
+--qcHopEYAB45HaUaB
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Wed, Nov 12, 2014 at 04:20:38PM +0800, Robin Gong wrote:
-> This driver register pm_power_off with snvs power off function. If
-> your boards NOT use PMIC_ON_REQ to turn on/off external pmic, or use
-> other pin to do, please disable the driver in dts, otherwise, your
-> pm_power_off maybe overwrote by this driver.
+On Wed, Nov 12, 2014 at 08:23:14AM +0100, Robert Baldyga wrote:
+> This patch modifies max8997 driver and each associated function driver,
+> to use regmap instead of operating directly on i2c bus. It will allow to
+> simplify IRQ handling using regmap-irq.
 >=20
-> Signed-off-by: Robin Gong <b38343@freescale.com>
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>=20
+> [For extcon part]
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+>=20
+> [For leds part]
+> Acked-by: Bryan Wu <cooloney@gmail.com>
+>=20
+> [For the mfd part]
+> Acked-by: Lee Jones <lee.jones@linaro.org>
 
+[For the power supply part]
 Acked-By: Sebastian Reichel <sre@kernel.org>
 
 -- Sebastian
 
---VbJkn9YxBvnuCH5J
+--qcHopEYAB45HaUaB
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBCgAGBQJUY5HtAAoJENju1/PIO/qaYdkP/AgVUwvCivqytBuQLaByw3lg
-hfpEc+62UTzBHWwhqI5QJ9Ni7Z5ap/116EKGRUPGESvwzwEgvfTedKtvAC6HHE+v
-AdVnlciWj5SeqsY8n0madYp07vZrYSCvic/HGAv16ubJmzQCejYXx8L3Vc0/eKsY
-8fZNEa2EyX9roH8USYJ7Klozko7a7mGeN28cWVA5EMscxbSJOR2FT88MuEduYg3B
-M+MCjU+YpVY7u1VtWIHzXbJRLDtziLjUEudLIjcfzQpsc7W21HBA2Cw88R2iZ2Yo
-A4NOU7rt9JQb5rX0gdcz1nIK/5LEAQMpHhwIiLfueDRTpS/fQKlOEgbxZgLKn2pw
-rkJpzBAhMrGa8zzby2sBhPGhWQ0J61anVxm15m/cC9RoePpwgTfR/nhV3kQPJTYe
-njrNNRh8JFsWXP/97kc+icr7twucW38kApJUVtPAskP7MwP745JGfse/XS/1C0MZ
-aGNe75x5i83BO+bElkoAKYLSQKQ+vdvPsgYKCh4S9BgsBMy9EqpmID1l6xvJKQce
-u18l/W2QeuzyZQN0VnUg6NZ9IhS1rUm/FuLEuDIXyHIJf+HyC2KFDZLd1COv/oxX
-GQNT4mpTs8wQWT3fzU4GKM+x9G4Lqyue+a4E0GWZPBp4KteQvKKWWqxLhEx8uNDC
-t+lJau0RoLV8NRW3NxWp
-=dB4J
+iQIcBAEBCgAGBQJUY5J4AAoJENju1/PIO/qa1/UQAJcZ1SQq0B1MUjO/YKl3l+qz
+NjW8NVf6aZZP1jcHILJZCdb7vafFKVbin4LJgx4B60vVejyy7VEqFtxtl2TgRmlG
+YpnIGVjIDteIVQGO2sOPNJZQCkmwXcojnLUpmDusQ1mf1BOf8RonCy5IHfGnp3EE
+2vZ+8EOJ47mGqK0cuD08W7kvGqwQtcBq/M4pvTmzmPcBSUnaZjv2Wp7e6+MUmp6k
++LBjgiOerlkAnKWZmuDRl+a7D6MhPW8lI5u/Kk9Qzw+WFtiO0HllkXy26+VSB5uI
+3TpeOUQuk5mRilqtiQdNIqrVJLUH2BVEDil6JxGGa3TU7eOQrkg8hZCEW+/FDWW9
+hOCZG3VxsWHNPfOhpdlhGZ7SXTh9Z2oxjftxZYer7CwC9XS7PHUeLCczqIyFchY/
+j86cBXreb6uUOE4icedZDBePNkSvT3oY63Q13VmauXfL5X5LVpp3jANFPszI4QSl
+LxrllmqpSCqCJegctxq+v95g/4YC/+ZpM/m4eWbNrzyvKgJZQ/iVNH3xNUKdoaWr
+cQTfjdZ+7ma298uIS0IIdo/12QVYaQ9hFqKU/Oy+VNfQxmEHVjcWYIZcO6eIcUFf
+1L91G7lLpXz2H9L8u/zAY0LL+RKY8f3aH20VKI3jbXDG/tW7sai5p0C2WnWIlWDA
+gx/ysKjHSMuUhi2tHf40
+=r5Wi
 -----END PGP SIGNATURE-----
 
---VbJkn9YxBvnuCH5J--
+--qcHopEYAB45HaUaB--
