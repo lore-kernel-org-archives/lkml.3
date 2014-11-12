@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934684AbaKLDGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:06:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59996 "EHLO
+	id S934827AbaKLDHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:07:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59988 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932661AbaKLBjE (ORCPT
+	with ESMTP id S964825AbaKLBi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:39:04 -0500
+	Tue, 11 Nov 2014 20:38:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.14 041/203] fix misuses of f_count() in ppp and netlink
-Date: Wed, 12 Nov 2014 10:15:11 +0900
-Message-Id: <20141112011544.589890745@linuxfoundation.org>
+Subject: [PATCH 3.14 039/203] missing data dependency barrier in prepend_name()
+Date: Wed, 12 Nov 2014 10:15:09 +0900
+Message-Id: <20141112011544.497518363@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -30,55 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 24dff96a37a2ca319e75a74d3929b2de22447ca6 upstream.
+commit 6d13f69444bd3d4888e43f7756449748f5a98bad upstream.
 
-we used to check for "nobody else could start doing anything with
-that opened file" by checking that refcount was 2 or less - one
-for descriptor table and one we'd acquired in fget() on the way to
-wherever we are.  That was race-prone (somebody else might have
-had a reference to descriptor table and do fget() just as we'd
-been checking) and it had become flat-out incorrect back when
-we switched to fget_light() on those codepaths - unlike fget(),
-it doesn't grab an extra reference unless the descriptor table
-is shared.  The same change allowed a race-free check, though -
-we are safe exactly when refcount is less than 2.
+AFAICS, prepend_name() is broken on SMP alpha.  Disclaimer: I don't have
+SMP alpha boxen to reproduce it on.  However, it really looks like the race
+is real.
 
-It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
-to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
-netlink hadn't grown that check until 3.9 and ppp used to live
-in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
-well before that, though, and the same fix used to apply in old
-location of file.
+CPU1: d_path() on /mnt/ramfs/<255-character>/foo
+CPU2: mv /mnt/ramfs/<255-character> /mnt/ramfs/<63-character>
+
+CPU2 does d_alloc(), which allocates an external name, stores the name there
+including terminating NUL, does smp_wmb() and stores its address in
+dentry->d_name.name.  It proceeds to d_add(dentry, NULL) and d_move()
+old dentry over to that.  ->d_name.name value ends up in that dentry.
+
+In the meanwhile, CPU1 gets to prepend_name() for that dentry.  It fetches
+->d_name.name and ->d_name.len; the former ends up pointing to new name
+(64-byte kmalloc'ed array), the latter - 255 (length of the old name).
+Nothing to force the ordering there, and normally that would be OK, since we'd
+run into the terminating NUL and stop.  Except that it's alpha, and we'd need
+a data dependency barrier to guarantee that we see that store of NUL
+__d_alloc() has done.  In a similar situation dentry_cmp() would survive; it
+does explicit smp_read_barrier_depends() after fetching ->d_name.name.
+prepend_name() doesn't and it risks walking past the end of kmalloc'ed object
+and possibly oops due to taking a page fault in kernel mode.
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ppp/ppp_generic.c |    2 +-
- net/netlink/af_netlink.c      |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/dcache.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/net/ppp/ppp_generic.c
-+++ b/drivers/net/ppp/ppp_generic.c
-@@ -601,7 +601,7 @@ static long ppp_ioctl(struct file *file,
- 			if (file == ppp->owner)
- 				ppp_shutdown_interface(ppp);
- 		}
--		if (atomic_long_read(&file->f_count) <= 2) {
-+		if (atomic_long_read(&file->f_count) < 2) {
- 			ppp_release(NULL, file);
- 			err = 0;
- 		} else
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -707,7 +707,7 @@ static int netlink_mmap_sendmsg(struct s
- 	 * after validation, the socket and the ring may only be used by a
- 	 * single process, otherwise we fall back to copying.
- 	 */
--	if (atomic_long_read(&sk->sk_socket->file->f_count) > 2 ||
-+	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
- 	    atomic_read(&nlk->mapped) > 1)
- 		excl = false;
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2824,6 +2824,9 @@ static int prepend(char **buffer, int *b
+  * the beginning of the name. The sequence number check at the caller will
+  * retry it again when a d_move() does happen. So any garbage in the buffer
+  * due to mismatched pointer and length will be discarded.
++ *
++ * Data dependency barrier is needed to make sure that we see that terminating
++ * NUL.  Alpha strikes again, film at 11...
+  */
+ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+ {
+@@ -2831,6 +2834,8 @@ static int prepend_name(char **buffer, i
+ 	u32 dlen = ACCESS_ONCE(name->len);
+ 	char *p;
  
++	smp_read_barrier_depends();
++
+ 	*buflen -= dlen + 1;
+ 	if (*buflen < 0)
+ 		return -ENAMETOOLONG;
 
 
