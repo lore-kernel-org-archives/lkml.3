@@ -1,95 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaKLOWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:22:10 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49439 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532AbaKLOWH (ORCPT
+	id S1753062AbaKLOW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:22:26 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:49884 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748AbaKLOWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:22:07 -0500
-Date: Wed, 12 Nov 2014 15:22:03 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: linux-tegra@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        mikko.perttunen@kapsi.fi, acourbot@nvidia.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 05/13] of: Document timings subnode of nvidia,tegra-mc
-Message-ID: <20141112142202.GB26488@ulmo>
-References: <1415779051-26410-1-git-send-email-tomeu.vizoso@collabora.com>
- <1415779051-26410-6-git-send-email-tomeu.vizoso@collabora.com>
+	Wed, 12 Nov 2014 09:22:24 -0500
+Message-ID: <54636D17.9080008@linaro.org>
+Date: Wed, 12 Nov 2014 14:22:15 +0000
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.8.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LpQ9ahxlCli8rRTG"
-Content-Disposition: inline
-In-Reply-To: <1415779051-26410-6-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com
+CC: Ian Campbell <Ian.Campbell@citrix.com>, catalin.marinas@arm.com,
+        linux-kernel@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Xen-devel] [PATCH v9 0/13] introduce GNTTABOP_cache_flush
+References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---LpQ9ahxlCli8rRTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 11/12/2014 11:39 AM, Stefano Stabellini wrote:
+> Hi all,
+> this patch series introduces support for GNTTABOP_cache_flush to perform
+> cache maintenance operation on foreign pages and reverts the current
+> code based on XENFEAT_grant_map_identity.
+> 
+> It also provides a very slow fallback by bouncing on the swiotlb buffer,
+> in case the hypercall is not available.
+> 
+> v7 introduces a flag named dma_coherent in dev_archdata and an accessor
+> function named is_device_dma_coherent in asm/dma-mapping.h under arm and
+> arm64.
 
-On Wed, Nov 12, 2014 at 08:56:28AM +0100, Tomeu Vizoso wrote:
-[...]
-> diff --git a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
-[...]
-> +Example board file:
-> +
-> +/ {
-> +	memory-controller@0,70019000 {
-> +		emc-timings-3 {
-> +			nvidia,ram-code = <3>;
+I've been tested this series on non-LPAE kernel and don't see crash anymore:
 
-I guess the alternative would be to keep the old names and simply use
-the reg property instead of nvidia,ram-code to be compliant with best
-practices in DT:
+Tested-by: Julien Grall <julien.grall@linaro.org>
 
-		emc-timings@3 {
-			reg = <3>;
+Regards,
 
-> +
-> +			timing-12750000 {
-> +				clock-frequency = <12750000>;
+> Changes in v9:
+> - remove BUG_ON from the loop in dma_cache_maint;
+> - add static inline for xen_dma_unmap_page, xen_dma_sync_single_for_cpu,
+>   xen_dma_sync_single_for_device;
+> - map_page is always present, don't check whether it's implemented;
+> - use bool local for clarity;
+> - add an in-code comment.
+> 
+> Changes in v8:
+> - remove code duplication in mm32.c by moving the pfn_valid check in
+> page-coherent.h;
+> - add a dma_addr_t dev_addr argument to xen_dma_map_page;
+> - use hypercall to flush caches in map_page;
+> - pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu;
+> - remove BUG_ON in xen_bus_to_phys.
+> 
+> Changes in v7:
+> - rebased on 3.18-rc1;
+> - rename is_dma_coherent to is_device_dma_coherent and move it to
+> asm/dma-mapping.h on arm and arm64;
+> - introduce a dma_coherent flag on arm and arm64;
+> - set the flags from set_arch_dma_coherent_ops.
+> 
+> Changes in v6:
+> - rename xen_is_dma_coherent to is_dma_coherent;
+> - use of_dma_is_coherent to detect the dma coherency of a device;
+> - remove arch/arm64/include/asm/xen/page-coherent.h, include
+> ../../arm/include/asm/xen/page-coherent.h instead;
+> - fix indentation.
+> 
+> Changes in v5:
+> - introduce xen_is_dma_coherent as a xen specific function;
+> - call xen_is_dma_coherent instead of is_dma_coherent;
+> - introduce xen_is_dma_coherent to
+> arch/arm64/include/asm/xen/page-coherent.h;
+> - do not remove arch/arm64/include/asm/xen/page-coherent.h, add
+> the missing dma_ops calls from it;
+> - fix indentation;
+> - rename hypercall_flush to hypercall_cflush;
+> - remove spurious change.
+> 
+> Changes in v4:
+> - remove outer_*_range call;
+> - introduce is_dma_coherent;
+> - use is_dma_coherent in arch/arm/xen/mm32.c;
+> - merge xen/mm32.c into xen/mm.c;
+> - xen/arm/arm64: introduce xen_arch_need_swiotlb;
+> - avoid bouncing dma map operations that involve foreign grants and
+> non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
+> 
+> Changes in v3:
+> - fix the cache maintenance op call to match what Linux does natively;
+> - update the hypercall interface to match Xen.
+> 
+> Changes in v2:
+> - remove the definition of XENFEAT_grant_map_identity;
+> - update the hypercall interface to match Xen;
+> - call the interface on a single page at a time.
+> 
+> 
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git cache_flush_v9
+> 
+> Stefano Stabellini (13):
+>       xen/arm: remove handling of XENFEAT_grant_map_identity
+>       xen/arm: remove outer_*_range call
+>       xen/arm: if(pfn_valid(pfn)) call native dma_ops
+>       arm64: introduce is_device_dma_coherent
+>       arm: introduce is_device_dma_coherent
+>       xen/arm: use is_device_dma_coherent
+>       xen: add a dma_addr_t dev_addr argument to xen_dma_map_page
+>       xen/arm: use hypercall to flush caches in map_page
+>       xen/arm/arm64: merge xen/mm32.c into xen/mm.c
+>       xen/arm/arm64: introduce xen_arch_need_swiotlb
+>       xen/arm: introduce GNTTABOP_cache_flush
+>       swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
+>       swiotlb-xen: remove BUG_ON in xen_bus_to_phys
+> 
+>  arch/arm/include/asm/device.h              |    1 +
+>  arch/arm/include/asm/dma-mapping.h         |    6 +
+>  arch/arm/include/asm/xen/page-coherent.h   |   66 +++++++--
+>  arch/arm/include/asm/xen/page.h            |    4 +
+>  arch/arm/xen/Makefile                      |    2 +-
+>  arch/arm/xen/enlighten.c                   |    5 -
+>  arch/arm/xen/mm.c                          |  121 +++++++++++++++++
+>  arch/arm/xen/mm32.c                        |  202 ----------------------------
+>  arch/arm64/include/asm/device.h            |    1 +
+>  arch/arm64/include/asm/dma-mapping.h       |    6 +
+>  arch/arm64/include/asm/xen/page-coherent.h |   44 +-----
+>  arch/x86/include/asm/xen/page-coherent.h   |    4 +-
+>  arch/x86/include/asm/xen/page.h            |    7 +
+>  drivers/xen/swiotlb-xen.c                  |   19 +--
+>  include/xen/interface/features.h           |    3 -
+>  include/xen/interface/grant_table.h        |   19 +++
+>  16 files changed, 237 insertions(+), 273 deletions(-)
+>  delete mode 100644 arch/arm/xen/mm32.c
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
 
-And:
 
-			timing@12750000 {
-				reg = <12750000>;
-
-But I haven't been following this series too closely so far, so maybe
-that had already been rejected.
-
-Thierry
-
---LpQ9ahxlCli8rRTG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUY20KAAoJEN0jrNd/PrOh3X8P/3Y5fCBqtDLQ126JvvXUvpHF
-XdRGiVpx36Qeze/ZL/9/p2N4ofl0Y3t19QVBFAe3jmexfy1DlEEakQIawRMu50i3
-vmZRgNPJ5uzPc3E5tCtWYacOiQk7Ol3Ousd86REKHaIR7hc1uSyiaViqalldpPmK
-1w3kkSA0iNFxrEWqlKF+bvaiUb+R/4p+sNwLJeyKHT6gXLTRwV3mnz3w7ztuzkcG
-G6WTy/qMbjFHkfiN7JF0pZ/XpS/cVX8JDgIwwSFj9opy30ZoeqOpK2hhD7MTkV7g
-Qp4uJm0tt2isqmHZdYHah7on/FD3XLS/5X/LEfZ6MrpOXx4pHv7lZ+8gshKn4Pnc
-pHPnY8bioyZi80hd2kso4XKsoN3k8bSPES8JPplMGhGHCawquTX8a56KrCBg1+IV
-iSPtDRlGDzh3/PYIzHcrdVau3Rg8j6zRRGTDC3oK9QdWuUfA1fn9mnLG/LIO/R3C
-GM5bJ9yXECAdnc4pgXToPess8zmYYqBJpoESM3bdLIcvkANuNJ/c6jqupHw46B3O
-P3kCXkYHi4FxPVP+8Xtm3+H1zWGe5jh3LZNpHmHGo9q5IyXMpxwW9SV8Mq+pjQ1Z
-O+cnNu+kj6wQJbO6EJ1K6u0MSIf6SQBM5Hx44KM4NRd1qqKQcntIaQVPWecjD7OT
-e5+5sGsPduHayJXEYJkS
-=d8aL
------END PGP SIGNATURE-----
-
---LpQ9ahxlCli8rRTG--
+-- 
+Julien Grall
