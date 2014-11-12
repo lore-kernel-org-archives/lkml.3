@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaKLCL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:11:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32976 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965507AbaKLBx5 (ORCPT
+	id S1755182AbaKLCMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:12:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33523 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885AbaKLCMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:53:57 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Quentin Casasnovas <quentin.casasnovas@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        Jamie Iles <jamie.iles@oracle.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 051/123] kvm: fix excessive pages un-pinning in kvm_iommu_map error path.
-Date: Wed, 12 Nov 2014 10:16:57 +0900
-Message-Id: <20141112011721.353500841@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
-References: <20141112011718.985171261@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 21:12:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+In-Reply-To: <20141111182418.GA5507@red-moon>
+References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
+	<20141111122901.GA4419@red-moon>
+	<CACVXFVNAc9axtESmo1zGZ3GMquTzjzWR3jx-b3tbhhLfQDDRcg@mail.gmail.com>
+	<20141111182418.GA5507@red-moon>
+Date: Wed, 12 Nov 2014 10:12:12 +0800
+Message-ID: <CACVXFVPzo2qNGa5DWESS3TXor=u82_SxHb+xzrBCRXtcQxq4Cg@mail.gmail.com>
+Subject: Re: [PATCH] pci: generic host: make it more generic
+From: Ming Lei <ming.lei@canonical.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        alvise rigo <a.rigo@virtualopensystems.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 12, 2014 at 2:24 AM, Lorenzo Pieralisi
+<lorenzo.pieralisi@arm.com> wrote:
+> On Tue, Nov 11, 2014 at 02:02:20PM +0000, Ming Lei wrote:
+>
+> [...]
+>
+>> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296535.html
+>> >
+>> > Patch above is already queued and applies most of the changes you have posted
+>> > above.
+>>
+>> I should have looked at list first before writing the patch, :-(
+>>
+>> Could you make it more generic so that other ARCHs(at least ARM64)
+>> can benefit from it too?
+>
+> That's our current goal, we are carrying out clean-ups to remove arch
+> dependency and move code to the generic layer PCI layer.
 
-------------------
+OK, I am glad to test them after you post them out.
 
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+At least, the 'struct gen_pci' pointer can be put in driver data
+of the platform_device now, which may remove dependency on
+pci_sysdata in this driver.  But ARCH's pcibios code still may
+access 'pci_sysdata', do you have patches or solution to handle
+this issue?
 
-commit 3d32e4dbe71374a6780eaf51d719d76f9a9bf22f upstream.
+Do you think it is doable to introduce a option(from module
+parameter, or device tree, ...) to let the driver and PCI core
+ignore/bypass all pcibios handling for the generic bus?  If that
+is OK, it can provide an approach to reach the goal a bit easy.
+In reality, generic host controller should be only used by VM,
+and VM's firmware shouldn't be very complicated and I think
+the option can meet most of demands.
 
-The third parameter of kvm_unpin_pages() when called from
-kvm_iommu_map_pages() is wrong, it should be the number of pages to un-pin
-and not the page size.
-
-This error was facilitated with an inconsistent API: kvm_pin_pages() takes
-a size, but kvn_unpin_pages() takes a number of pages, so fix the problem
-by matching the two.
-
-This was introduced by commit 350b8bd ("kvm: iommu: fix the third parameter
-of kvm_iommu_put_pages (CVE-2014-3601)"), which fixes the lack of
-un-pinning for pages intended to be un-pinned (i.e. memory leak) but
-unfortunately potentially aggravated the number of pages we un-pin that
-should have stayed pinned. As far as I understand though, the same
-practical mitigations apply.
-
-This issue was found during review of Red Hat 6.6 patches to prepare
-Ksplice rebootless updates.
-
-Thanks to Vegard for his time on a late Friday evening to help me in
-understanding this code.
-
-Fixes: 350b8bd ("kvm: iommu: fix the third parameter of... (CVE-2014-3601)")
-Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
-Reviewed-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- virt/kvm/iommu.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -43,13 +43,13 @@ static void kvm_iommu_put_pages(struct k
- 				gfn_t base_gfn, unsigned long npages);
- 
- static pfn_t kvm_pin_pages(struct kvm_memory_slot *slot, gfn_t gfn,
--			   unsigned long size)
-+			   unsigned long npages)
- {
- 	gfn_t end_gfn;
- 	pfn_t pfn;
- 
- 	pfn     = gfn_to_pfn_memslot(slot, gfn);
--	end_gfn = gfn + (size >> PAGE_SHIFT);
-+	end_gfn = gfn + npages;
- 	gfn    += 1;
- 
- 	if (is_error_noslot_pfn(pfn))
-@@ -119,7 +119,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
- 		 * Pin all pages we are about to map in memory. This is
- 		 * important because we unmap and unpin in 4kb steps later.
- 		 */
--		pfn = kvm_pin_pages(slot, gfn, page_size);
-+		pfn = kvm_pin_pages(slot, gfn, page_size >> PAGE_SHIFT);
- 		if (is_error_noslot_pfn(pfn)) {
- 			gfn += 1;
- 			continue;
-@@ -131,7 +131,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
- 		if (r) {
- 			printk(KERN_ERR "kvm_iommu_map_address:"
- 			       "iommu failed to map pfn=%llx\n", pfn);
--			kvm_unpin_pages(kvm, pfn, page_size);
-+			kvm_unpin_pages(kvm, pfn, page_size >> PAGE_SHIFT);
- 			goto unmap_pages;
- 		}
- 
-
-
+Thanks,
+Ming Lei
