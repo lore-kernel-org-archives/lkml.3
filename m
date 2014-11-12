@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966167AbaKLBwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:52:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32841 "EHLO
+	id S966181AbaKLBwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:52:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966135AbaKLBv5 (ORCPT
+	with ESMTP id S966135AbaKLBwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:51:57 -0500
+	Tue, 11 Nov 2014 20:52:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maciej Matraszek <m.matraszek@samsung.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.10 047/123] media: v4l2-common: fix overflow in v4l_bound_align_image()
-Date: Wed, 12 Nov 2014 10:16:53 +0900
-Message-Id: <20141112011721.173996271@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 017/123] x86: Reject x32 executables if x32 ABI not supported
+Date: Wed, 12 Nov 2014 10:16:23 +0900
+Message-Id: <20141112011719.801908267@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -30,67 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maciej Matraszek <m.matraszek@samsung.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 3bacc10cd4a85bc70bc0b6c001d3bf995c7fe04c upstream.
+commit 0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1 upstream.
 
-Fix clamp_align() used in v4l_bound_align_image() to prevent overflow
-when passed large value like UINT32_MAX.
+It is currently possible to execve() an x32 executable on an x86_64
+kernel that has only ia32 compat enabled.  However all its syscalls
+will fail, even _exit().  This usually causes it to segfault.
 
- In the current implementation:
-    clamp_align(UINT32_MAX, 8, 8192, 3)
+Change the ELF compat architecture check so that x32 executables are
+rejected if we don't support the x32 ABI.
 
-returns 8, because in line:
-
-    x = (x + (1 << (align - 1))) & mask;
-
-x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
-
-v4l_bound_align_image() is heavily used in VIDIOC_S_FMT and
-VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
-explicitly states that:
-
-"The modified format should be as close as possible to the original
-request."
-  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
-
-Thus one would expect, that passing UINT32_MAX as format width and
-height will result in setting maximum possible resolution for the
-device. Particularly, when the driver doesn't support
-VIDIOC_ENUM_FRAMESIZES ioctl, which is common in the codebase.
-
-Fixes changeset: b0d3159be9a3
-
-Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Link: http://lkml.kernel.org/r/1410120305.6822.9.camel@decadent.org.uk
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-common.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/elf.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/media/v4l2-core/v4l2-common.c
-+++ b/drivers/media/v4l2-core/v4l2-common.c
-@@ -485,16 +485,13 @@ static unsigned int clamp_align(unsigned
- 	/* Bits that must be zero to be aligned */
- 	unsigned int mask = ~((1 << align) - 1);
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -155,8 +155,9 @@ do {						\
+ #define elf_check_arch(x)			\
+ 	((x)->e_machine == EM_X86_64)
  
-+	/* Clamp to aligned min and max */
-+	x = clamp(x, (min + ~mask) & mask, max & mask);
-+
- 	/* Round to nearest aligned value */
- 	if (align)
- 		x = (x + (1 << (align - 1))) & mask;
+-#define compat_elf_check_arch(x)		\
+-	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
++#define compat_elf_check_arch(x)					\
++	(elf_check_arch_ia32(x) ||					\
++	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine == EM_X86_64))
  
--	/* Clamp to aligned value of min and max */
--	if (x < min)
--		x = (min + ~mask) & mask;
--	else if (x > max)
--		x = max & mask;
--
- 	return x;
- }
- 
+ #if __USER32_DS != __USER_DS
+ # error "The following code assumes __USER32_DS == __USER_DS"
 
 
