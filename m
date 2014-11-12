@@ -1,303 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbaKLLPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:15:22 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412AbaKLLPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:15:16 -0500
-Message-ID: <5463413E.6000800@nod.at>
-Date: Wed, 12 Nov 2014 12:15:10 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1752623AbaKLLQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:16:09 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:46122 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaKLLQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 06:16:06 -0500
+Date: Wed, 12 Nov 2014 12:15:53 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] sched/cputime: fix clock_nanosleep/clock_gettime
+ inconsistency
+Message-ID: <20141112111553.GA21343@twins.programming.kicks-ass.net>
+References: <1415788168-3165-1-git-send-email-sgruszka@redhat.com>
 MIME-Version: 1.0
-To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
-Subject: Re: [PATCH v7 1/2] procfs: show hierarchy of pid namespace
-References: <1415786899-13392-1-git-send-email-chenhanxiao@cn.fujitsu.com> <1415786899-13392-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-In-Reply-To: <1415786899-13392-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415788168-3165-1-git-send-email-sgruszka@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.11.2014 um 11:08 schrieb Chen Hanxiao:
-> We lack of pid hierarchy information, and this will lead to:
-> a) we don't know pids' relationship, who is whose child:
->    /proc/PID/ns/pid only tell us whether two pids live in different ns
-> b) bring trouble to nested lxc container check/restore/migration
-> c) bring trouble to pid translation between containers;
-> 
-> This patch will show the hierarchy of pid namespace
-> by pidns_hierarchy like:
-> 
-> <init_PID> <parent_of_init_PID> <relative PID level>
-> 
-> Ex:
-> [root@localhost ~]#cat /proc/pidns_hierarchy
-> 18060 1 1
-> 18102 18060 2
-> 1534  18102 3
-> 1600  18102 3
-> 1550  1 1
-> *Note: numbers represent the pid 1 in different ns
-> 
-> It shows the pid hierarchy below:
-> 
->       init_pid_ns 1
->               │
-> ┌────────────┐
-> ns1                      ns2
-> │                        │
-> 1550                    18060
->                           │
->                           │
->                          ns3
->                           │
->                         18102
->                           │
->                  ┌──────────┐
->                  ns4                   ns5
->                  │                    │
->                 1534                  1600
-> 
-> Every pid printed in pidns_hierarchy
-> is the init pid of that pid ns level.
-> 
-> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-> ---
-> v7: change stype to be consistent with current interface like
->     <init_PID> <parent_of_init_PID> <relative PID level>
->     remove EXPERT dependent in Kconfig
-> v6: fix a get_pid leak and do some cleanups;
-> v5: collect pid by find_ge_pid;
->     use local list inside nslist_proc_show;
->     use get_pid, remove mutex lock.
-> v4: simplify pid collection and some performance optimizamtion
->     fix another race issue.
-> v3: fix a race issue and memory leak issue
-> v2: use a procfs text file instead of dirs under /proc
-> 
->  fs/proc/Kconfig           |   6 +
->  fs/proc/Makefile          |   1 +
->  fs/proc/pidns_hierarchy.c | 280 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 287 insertions(+)
->  create mode 100644 fs/proc/pidns_hierarchy.c
-> 
-> diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-> index 2183fcf..82dda55 100644
-> --- a/fs/proc/Kconfig
-> +++ b/fs/proc/Kconfig
-> @@ -71,3 +71,9 @@ config PROC_PAGE_MONITOR
->  	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
->  	  /proc/kpagecount, and /proc/kpageflags. Disabling these
->            interfaces will reduce the size of the kernel by approximately 4kb.
-> +
-> +config PROC_PID_HIERARCHY
-> +	bool "Enable /proc/pidns_hierarchy support"
-> +	depends on PROC_FS
-> +	help
-> +	  Show pid namespace hierarchy information
-> diff --git a/fs/proc/Makefile b/fs/proc/Makefile
-> index 7151ea4..33e384b 100644
-> --- a/fs/proc/Makefile
-> +++ b/fs/proc/Makefile
-> @@ -30,3 +30,4 @@ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
->  proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
->  proc-$(CONFIG_PRINTK)	+= kmsg.o
->  proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
-> +proc-$(CONFIG_PROC_PID_HIERARCHY)	+= pidns_hierarchy.o
-> diff --git a/fs/proc/pidns_hierarchy.c b/fs/proc/pidns_hierarchy.c
-> new file mode 100644
-> index 0000000..4629bfd
-> --- /dev/null
-> +++ b/fs/proc/pidns_hierarchy.c
-> @@ -0,0 +1,280 @@
-> +#include <linux/init.h>
-> +#include <linux/errno.h>
-> +#include <linux/proc_fs.h>
-> +#include <linux/module.h>
-> +#include <linux/list.h>
-> +#include <linux/slab.h>
-> +#include <linux/pid_namespace.h>
-> +#include <linux/seq_file.h>
-> +
-> +/*
-> + *  /proc/pidns_hierarchy
-> + *
-> + *  show the hierarchy of pid namespace in:
-> + *  <init_PID>  <parent_of_init_PID> <relative PID level>
-> + *
-> + *  init_PID: child reaper in ns
-> + *  parent_of_init_PID: init_PID's parent, also child reaper
-> + *  relative PID level: pid level relative to caller's ns
-> + */
-> +
-> +#define NS_HIERARCHY	"pidns_hierarchy"
-> +#define MAX(a, b) ((a) > (b) ? (a) : (b))
+On Wed, Nov 12, 2014 at 11:29:28AM +0100, Stanislaw Gruszka wrote:
+> Commit d670ec13178d "posix-cpu-timers: Cure SMP wobbles" fixes one glibc
+> test case in cost of breaking another one. After that commit, calling
+> clock_nanosleep(TIMER_ABSTIME, X) and then clock_gettime(&Y) can result
+> of Y time being smaller than X time.
 
-Please use max() from kernel.h, there is no need to reinvent the wheel.
+<snip>
 
-> +
-> +/* list for host pid collection */
-> +struct pidns_list {
-> +	struct list_head list;
-> +	struct pid *pid;
-> +	int show_level;
+> Issue happens because on start in thread_group_cputimer() we initialize
+> sum_exec_runtime of cputimer with threads runtime not yet accounted and
+> then add the threads runtime again on scheduler tick. When cputimer
+> finish, it's sum_exec_runtime value is bigger than current sum counted
+> by iterating over the threads in thread_group_cputime().
+> 
+> KOSAKI Motohiro posted fix for this problem, but that patch was never
+> applied: https://lkml.org/lkml/2013/5/26/191.
+> 
+> This patch takes different approach. It revert change from d670ec13178d,
+> but to assure process times are in sync with thread times, before
+> accounting the times it calls update_curr() to update current thread
+> sum_exec_runtime. This fixes the test case from commit d670ec13178d and
+> also make things like they were before i.e. process cpu times can be
+> (nr_threads - 1) * TICK_NSEC behind the clock (this is a drawback
+> unfortunately). 
 
-s/show_level/level, to keep it easy. :-)
+> Good news is that patch improve performance of
+> thread_group_cputime(), i.e. we do not need optimizations from commit
+> 911b289 "sched: Optimize task_sched_runtime()"
 
-> +};
-> +
-> +static void free_pidns_list(struct list_head *head)
-> +{
-> +	struct pidns_list *tmp, *pos;
-> +
-> +	list_for_each_entry_safe(pos, tmp, head, list) {
-> +		list_del(&pos->list);
-> +		put_pid(pos->pid);
-> +		kfree(pos);
+You're inconsistent with your SHA1 lengths, use 12 chars.
+
+So I'm not seeing how you've not reintroduced the issue from
+d670ec13178d, afaict you simply do not take the delta of all the other
+threads into account, which is why you're not taking as many locks.
+
+Which also re-introduces the 32bit data race mentioned in that
+changelog.
+
+> Note I'm not familiar with scheduler subsystem, hence I'm not sure if
+> calling update_curr() will not affect scheduler functionality somehow.
+
+Well, it will, it has to. But we call it at any odd point anyhow so
+there's really nothing too weird about that.
+
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 240157c..117c852 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2475,75 +2475,20 @@ EXPORT_PER_CPU_SYMBOL(kstat);
+>  EXPORT_PER_CPU_SYMBOL(kernel_cpustat);
+>  
+>  /*
+> + * If the task is currently running, update the statistics. Main purpose
+> + * of this function is assure that the accounted runtime is updated.
+>   */
+> +void scheduler_update_curr(struct task_struct *p)
+>  {
+>  	unsigned long flags;
+>  	struct rq *rq;
+>  
+>  	rq = task_rq_lock(p, &flags);
+> +	if (task_current(rq, p) && task_on_rq_queued(p)) {
+> +		update_rq_clock(rq);
+> +		p->sched_class->update_curr(rq);
 > +	}
-> +}
-> +
-> +static int
-> +pidns_list_add(struct pid *pid, struct list_head *list_head,
-> +		int show_level)
+>  	task_rq_unlock(rq, p, &flags);
+>  }
+
+Right so that name stinks, it updates 'p' not curr, and it really should
+have that optimization in, there is no point in taking that lock if p
+isn't actually on a cpu atm.
+
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index 8394b1e..afcf114 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -305,7 +305,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+>  			task_cputime(t, &utime, &stime);
+>  			times->utime += utime;
+>  			times->stime += stime;
+> +			times->sum_exec_runtime += t->se.sum_exec_runtime;
+>  		}
+>  		/* If lockless access failed, take the lock. */
+>  		nextseq = 1;
+
+This re-introduces the 32bit fail.
+
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 34baa60..99995e0 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -726,6 +726,11 @@ static void update_curr(struct cfs_rq *cfs_rq)
+>  	account_cfs_rq_runtime(cfs_rq, delta_exec);
+>  }
+>  
+> +static void update_curr_rq(struct rq *rq)
 > +{
-> +	struct pidns_list *ent;
-> +
-> +	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
-> +	if (!ent)
-> +		return -ENOMEM;
-> +
-> +	ent->pid = pid;
-> +	ent->show_level = show_level;
-> +	list_add_tail(&ent->list, list_head);
-> +
-> +	return 0;
+> +	update_curr(&rq->cfs);
 > +}
 > +
-> +static int
-> +pidns_list_filter(struct list_head *pidns_pid_list,
-> +		struct list_head *pidns_pid_tree)
-> +{
-> +	struct pidns_list *pos, *pos_t;
-> +	struct pid_namespace *ns0, *ns1;
-> +	struct pid *pid0, *pid1;
-> +	int rc, flag = 0;
+>  static inline void
+>  update_stats_wait_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+>  {
+> @@ -7949,6 +7954,8 @@ const struct sched_class fair_sched_class = {
+>  
+>  	.get_rr_interval	= get_rr_interval_fair,
+>  
+> +	.update_curr		= update_curr_rq,
 > +
-> +	/*
-> +	 * screen pids with relationship
-> +	 * in pidns_pid_list, we may add pids like:
-> +	 * ns0   ns1   ns2
-> +	 * pid1->pid2->pid3
-> +	 * we should screen pid1, pid2 and keep pid3
-> +	 */
-> +	list_for_each_entry(pos, pidns_pid_list, list) {
-> +		list_for_each_entry(pos_t, pidns_pid_list, list) {
-> +			flag = 0;
-> +			pid0 = pos->pid;
-> +			pid1 = pos_t->pid;
-> +			ns0 = pid0->numbers[pid0->level].ns;
-> +			ns1 = pid1->numbers[pid1->level].ns;
-> +			if (pos->pid->level < pos_t->pid->level)
-> +				for (; ns1 != NULL; ns1 = ns1->parent)
-> +					if (ns0 == ns1) {
-> +						flag = 1;
-> +						break;
-> +					}
-> +			/* a redundant pid found */
-> +			if (flag == 1)
-> +				break;
-> +		}
-> +
-> +		if (flag == 0) {
-> +			get_pid(pos->pid);
-> +			rc = pidns_list_add(pos->pid, pidns_pid_tree, 0);
-> +			if (rc) {
-> +				put_pid(pos->pid);
-> +				goto cleanup;
-> +			}
-> +		}
-> +	}
-> +
-> +	/*
-> +	 *  Now all useful stuffs are in pidns_pid_tree,
-> +	 *  free pidns_pid_list
-> +	 */
-> +	free_pidns_list(pidns_pid_list);
-> +
-> +	return 0;
-> +
-> +cleanup:
-> +	free_pidns_list(pidns_pid_tree);
-> +	return rc;
-> +}
-> +
-> +static void
-> +pidns_list_set_show_level(struct list_head *pidns_list_in,
-> +		struct pid_namespace *curr_ns)
-> +{
-> +	struct pidns_list *pos, *pos_t;
-> +	struct pid *pid0, *pid1;
-> +	int i;
-> +
-> +	/*
-> +	 * From the pid hierarchy point of view,
-> +	 * we already had a list of pids who are not
-> +	 * the subset of each other.
-> +	 * But part of them may be same.
-> +	 * We need to set the show_level of each pids:
-> +	 * pid0:         A->B->C   pid1:       A->B->D
-> +	 * show_level       2                  0
-> +	 * We use show_level to identify
-> +	 * the public part of each pids.
-> +	 */
-> +	list_for_each_entry(pos, pidns_list_in, list) {
-> +		list_for_each_entry(pos_t, pidns_list_in, list) {
-> +			pid0 = pos->pid;
-> +			pid1 = pos_t->pid;
-> +			if (pid0 == pid1)
-> +				continue;
-> +			if (pos_t->show_level > 0)
-> +				continue;
-> +			for (i = curr_ns->level + 1; i <= pid0->level; i++) {
-> +				/* skip the public parts */
-> +				if (pid0->numbers[i].ns ==
-> +						pid1->numbers[i].ns)
-> +					continue;
-> +				else
-> +					break;
-> +			}
-> +			pos->show_level = i - 1;
-> +		}
-> +	}
-> +}
-> +
-> +/*
-> + * collect pids and stored in pidns_pid_list,
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  	.task_move_group	= task_move_group_fair,
+>  #endif
 
-s/stored/store
+For consistency sake:
 
-> + * then remove duplicated ones,
-> + * add the rest to pidns_pid_tree
-> + */
+  s/update_curr_rq/update_curr_fair/g
 
-This comment is a bit confusing.
 
-What about "proc_pidns_list_refresh - Finds all init pids, places them into pidns_pid_list
-and then stores the hirarchy into pidns_pid_tree."?
+> diff --git a/kernel/time/posix-cpu-timers.c b/kernel/time/posix-cpu-timers.c
+> index 492b986..c2a5401 100644
+> --- a/kernel/time/posix-cpu-timers.c
+> +++ b/kernel/time/posix-cpu-timers.c
+> @@ -190,7 +190,8 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+>  		*sample = virt_ticks(p);
+>  		break;
+>  	case CPUCLOCK_SCHED:
+> -		*sample = task_sched_runtime(p);
+> +		scheduler_update_curr(p);
+> +		*sample = p->se.sum_exec_runtime;
+>  		break;
+>  	}
+>  	return 0;
 
-Beside of my minor comments I like the patch. :-)
-Thanks a lot for doing this work!
+Same 32bit fail
 
-Thanks,
-//richard
+> @@ -221,6 +222,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+>  		 * to synchronize the timer to the clock every time we start
+>  		 * it.
+>  		 */
+> +		scheduler_update_curr(tsk);
+>  		thread_group_cputime(tsk, &sum);
+>  		raw_spin_lock_irqsave(&cputimer->lock, flags);
+>  		cputimer->running = 1;
+
+So here you only update the current thread, not the entire thread group.
+But you've failed to explain how that does not re-introduce problems.
+
+> @@ -254,6 +256,7 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+>  		*sample = cputime_to_expires(cputime.utime);
+>  		break;
+>  	case CPUCLOCK_SCHED:
+> +		scheduler_update_curr(p);
+>  		thread_group_cputime(p, &cputime);
+>  		*sample = cputime.sum_exec_runtime;
+>  		break;
+
+Why only these two thread_group_cputime() calls and not all others?
