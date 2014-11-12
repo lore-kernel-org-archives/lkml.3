@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaKLBZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:25:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58797 "EHLO
+	id S1754249AbaKLBZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:25:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58817 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075AbaKLBZC (ORCPT
+	with ESMTP id S1753461AbaKLBZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:25:02 -0500
+	Tue, 11 Nov 2014 20:25:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <ktkhai@parallels.com>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.17 068/319] sched: Use dl_bw_of() under RCU read lock
-Date: Wed, 12 Nov 2014 10:13:26 +0900
-Message-Id: <20141112011003.870141157@linuxfoundation.org>
+        Nibble Max <nibble.max@gmail.com>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.17 116/319] media: m88ts2022: fix 32bit overflow on filter calc
+Date: Wed, 12 Nov 2014 10:14:14 +0900
+Message-Id: <20141112011011.770233890@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -32,80 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <ktkhai@parallels.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 66339c31bc3978d5fff9c4b4cb590a861def4db2 upstream.
+commit f538e085138e519e25ae0828bd6c6e7492ce8ca4 upstream.
 
-dl_bw_of() dereferences rq->rd which has to have RCU read lock held.
-Probability of use-after-free isn't zero here.
+Maximum satellite symbol rate used is 45000000Sps which overflows
+when multiplied by 135. As final calculation result is fraction,
+we could use mult_frac macro in order to keep calculation inside
+32 bit number limits and prevent overflow.
 
-Also add lockdep assert into dl_bw_cpus().
+Original bug and fix was provided by Nibble Max. I decided to
+implement it differently as it is now.
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140922183624.11015.71558.stgit@localhost
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Nibble Max <nibble.max@gmail.com>
+Tested-by: Nibble Max <nibble.max@gmail.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/media/tuners/m88ts2022.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1977,6 +1977,8 @@ unsigned long to_ratio(u64 period, u64 r
- #ifdef CONFIG_SMP
- inline struct dl_bw *dl_bw_of(int i)
- {
-+	rcu_lockdep_assert(rcu_read_lock_sched_held(),
-+			   "sched RCU must be held");
- 	return &cpu_rq(i)->rd->dl_bw;
- }
+--- a/drivers/media/tuners/m88ts2022.c
++++ b/drivers/media/tuners/m88ts2022.c
+@@ -314,7 +314,7 @@ static int m88ts2022_set_params(struct d
+ 	div_min = gdiv28 * 78 / 100;
+ 	div_max = clamp_val(div_max, 0U, 63U);
  
-@@ -1985,6 +1987,8 @@ static inline int dl_bw_cpus(int i)
- 	struct root_domain *rd = cpu_rq(i)->rd;
- 	int cpus = 0;
+-	f_3db_hz = c->symbol_rate * 135UL / 200UL;
++	f_3db_hz = mult_frac(c->symbol_rate, 135, 200);
+ 	f_3db_hz +=  2000000U + (frequency_offset_khz * 1000U);
+ 	f_3db_hz = clamp(f_3db_hz, 7000000U, 40000000U);
  
-+	rcu_lockdep_assert(rcu_read_lock_sched_held(),
-+			   "sched RCU must be held");
- 	for_each_cpu_and(i, rd->span, cpu_active_mask)
- 		cpus++;
- 
-@@ -7580,6 +7584,8 @@ static int sched_dl_global_constraints(v
- 	int cpu, ret = 0;
- 	unsigned long flags;
- 
-+	rcu_read_lock();
-+
- 	/*
- 	 * Here we want to check the bandwidth not being set to some
- 	 * value smaller than the currently allocated bandwidth in
-@@ -7601,6 +7607,8 @@ static int sched_dl_global_constraints(v
- 			break;
- 	}
- 
-+	rcu_read_unlock();
-+
- 	return ret;
- }
- 
-@@ -7616,6 +7624,7 @@ static void sched_dl_do_global(void)
- 	if (global_rt_runtime() != RUNTIME_INF)
- 		new_bw = to_ratio(global_rt_period(), global_rt_runtime());
- 
-+	rcu_read_lock();
- 	/*
- 	 * FIXME: As above...
- 	 */
-@@ -7626,6 +7635,7 @@ static void sched_dl_do_global(void)
- 		dl_b->bw = new_bw;
- 		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
- 	}
-+	rcu_read_unlock();
- }
- 
- static int sched_rt_global_validate(void)
 
 
