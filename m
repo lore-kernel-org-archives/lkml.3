@@ -1,156 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993AbaKLDfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:35:38 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:53152 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334AbaKLDfg (ORCPT
+	id S933125AbaKLDfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:35:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59305 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932131AbaKLBbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 22:35:36 -0500
-Message-ID: <5462D584.2080800@gmail.com>
-Date: Wed, 12 Nov 2014 11:35:32 +0800
-From: Charles Chiou <ch1102chiou@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 11 Nov 2014 20:31:12 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kevin Fenzi <kevin@scrye.com>, Adel Gadllah <adel.gadllah@gmail.com>
+Subject: [PATCH 3.17 225/319] USB: quirks: enable device-qualifier quirk for yet another Elan touchscreen
+Date: Wed, 12 Nov 2014 10:16:03 +0900
+Message-Id: <20141112011030.007275899@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: JBottomley@parallels.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 2/4] scsi:stex.c Add hotplug support
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
- From 070dfd671f4cefb2d54563b77b9c80a8c82f260a Mon Sep 17 00:00:00 2001
-From: Charles Chiou <charles.chiou@tw.promise.com>
-Date: Wed, 5 Nov 2014 17:18:37 +0800
-Subject: [PATCH 2/4] scsi:stex.c Add hotplut support
+------------------
 
-1. Add hotplug support. Pegasus support surprise remove. To this, I
-    use return_abnormal_state function to return DID_NO_CONNECT for all
-    commands which sent to driver.
+From: Adel Gadllah <adel.gadllah@gmail.com>
 
-2. Remove stex_hba_stop in stex_remove because we cannot send command to
-    device after hotplug.
+commit d749947561af5996ccc076b2ffcc5f48b1be5d74 upstream.
 
-3. Add new device status:  MU_STATE_STOP, MU_STATE_NOCONNECT,
-    MU_STATE_STOP is currently no use. MU_STATE_NOCONNECT represent that
-    device is plug out from the host.
+Yet another device affected by this.
 
-4  At function stex_do_reset, I replace the part of code by
-    return_abnormal_state function.
-
-Signed-off-by: Charles Chiou <charles.chiou@tw.promise.com>
+Tested-by: Kevin Fenzi <kevin@scrye.com>
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
-  drivers/scsi/stex.c | 51 
-+++++++++++++++++++++++++++++++++------------------
-  1 file changed, 33 insertions(+), 18 deletions(-)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
-index f52f1de..c0bbbbd 100644
---- a/drivers/scsi/stex.c
-+++ b/drivers/scsi/stex.c
-@@ -83,6 +83,8 @@ enum {
-  	MU_STATE_STARTED			= 2,
-  	MU_STATE_RESETTING			= 3,
-  	MU_STATE_FAILED				= 4,
-+	MU_STATE_STOP				= 5,
-+	MU_STATE_NOCONNECT			= 6,
-
-  	MU_MAX_DELAY				= 120,
-  	MU_HANDSHAKE_SIGNATURE			= 0x55aaaa55,
-@@ -544,6 +546,27 @@ stex_ss_send_cmd(struct st_hba *hba, struct req_msg 
-*req, u16 tag)
-  	readl(hba->mmio_base + YH2I_REQ); /* flush */
-  }
-
-+static void return_abnormal_state(struct st_hba *hba, int status)
-+{
-+	struct st_ccb *ccb;
-+	unsigned long flags;
-+	u16 tag;
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -100,6 +100,9 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x04f3, 0x009b), .driver_info =
+ 			USB_QUIRK_DEVICE_QUALIFIER },
+ 
++	{ USB_DEVICE(0x04f3, 0x016f), .driver_info =
++			USB_QUIRK_DEVICE_QUALIFIER },
 +
-+	spin_lock_irqsave(hba->host->host_lock, flags);
-+	for (tag = 0; tag < hba->host->can_queue; tag++) {
-+		ccb = &hba->ccb[tag];
-+		if (ccb->req == NULL)
-+			continue;
-+		ccb->req = NULL;
-+		if (ccb->cmd) {
-+			scsi_dma_unmap(ccb->cmd);
-+			ccb->cmd->result = status << 16;
-+			ccb->cmd->scsi_done(ccb->cmd);
-+			ccb->cmd = NULL;
-+		}
-+	}
-+	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+}
-  static int
-  stex_slave_alloc(struct scsi_device *sdev)
-  {
-@@ -585,7 +608,11 @@ stex_queuecommand_lck(struct scsi_cmnd *cmd, void 
-(*done)(struct scsi_cmnd *))
-  	id = cmd->device->id;
-  	lun = cmd->device->lun;
-  	hba = (struct st_hba *) &host->hostdata[0];
--
-+	if (hba->mu_status == MU_STATE_NOCONNECT) {
-+		cmd->result = DID_NO_CONNECT;
-+		done(cmd);
-+		return 0;
-+	}
-  	if (unlikely(hba->mu_status == MU_STATE_RESETTING))
-  		return SCSI_MLQUEUE_HOST_BUSY;
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 
-@@ -1287,10 +1314,8 @@ static void stex_ss_reset(struct st_hba *hba)
-
-  static int stex_do_reset(struct st_hba *hba)
-  {
--	struct st_ccb *ccb;
-  	unsigned long flags;
-  	unsigned int mu_status = MU_STATE_RESETTING;
--	u16 tag;
-
-  	spin_lock_irqsave(hba->host->host_lock, flags);
-  	if (hba->mu_status == MU_STATE_STARTING) {
-@@ -1324,20 +1349,8 @@ static int stex_do_reset(struct st_hba *hba)
-  	else if (hba->cardtype == st_yel)
-  		stex_ss_reset(hba);
-
--	spin_lock_irqsave(hba->host->host_lock, flags);
--	for (tag = 0; tag < hba->host->can_queue; tag++) {
--		ccb = &hba->ccb[tag];
--		if (ccb->req == NULL)
--			continue;
--		ccb->req = NULL;
--		if (ccb->cmd) {
--			scsi_dma_unmap(ccb->cmd);
--			ccb->cmd->result = DID_RESET << 16;
--			ccb->cmd->scsi_done(ccb->cmd);
--			ccb->cmd = NULL;
--		}
--	}
--	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+
-+	return_abnormal_state(hba, DID_RESET);
-
-  	if (stex_handshake(hba) == 0)
-  		return 0;
-@@ -1802,9 +1815,11 @@ static void stex_remove(struct pci_dev *pdev)
-  {
-  	struct st_hba *hba = pci_get_drvdata(pdev);
-
-+	hba->mu_status = MU_STATE_NOCONNECT;
-+	return_abnormal_state(hba, DID_NO_CONNECT);
-  	scsi_remove_host(hba->host);
-
--	stex_hba_stop(hba);
-+	scsi_block_requests(hba->host);
-
-  	stex_hba_free(hba);
-
--- 
-1.9.1
 
