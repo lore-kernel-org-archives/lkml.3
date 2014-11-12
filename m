@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933018AbaKLBba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:31:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59318 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932980AbaKLBbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753978AbaKLBbT (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:31:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59314 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932946AbaKLBbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:31:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <johan@kernel.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.17 227/319] HID: usbhid: enable always-poll quirk for Elan Touchscreen
-Date: Wed, 12 Nov 2014 10:16:05 +0900
-Message-Id: <20141112011030.350153813@linuxfoundation.org>
+Subject: [PATCH 3.17 226/319] HID: usbhid: add always-poll quirk
+Date: Wed, 12 Nov 2014 10:16:04 +0900
+Message-Id: <20141112011030.186721000@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,50 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <johan@kernel.org>
 
-commit bfe3c873e978d78b542a5852575dd74f4d1a5838 upstream.
+commit 0b750b3baa2d64f1b77aecc10f20deeb28efe60d upstream.
 
-Enable the always-poll quirk for Elan Touchscreens found on some recent
-Samsung laptops.
+Add quirk to make sure that a device is always polled for input events
+even if it hasn't been opened.
 
-Without this quirk the device keeps disconnecting from the bus (and is
-re-enumerated) unless opened (and kept open, should an input event
-occur).
-
-Note that while the device can be run-time suspended, the autosuspend
-timeout must be high enough to allow the device to be polled at least
-once before being suspended. Specifically, using autosuspend_delay_ms=0
-will still cause the device to disconnect on input events.
+This is needed for devices that disconnects from the bus unless the
+interrupt endpoint has been polled at least once or when not responding
+to an input event (e.g. after having shut down X).
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/hid/usbhid/hid-core.c |   26 +++++++++++++++++++++++---
+ include/linux/hid.h           |    1 +
+ 2 files changed, 24 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -296,6 +296,9 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_73F7	0x73f7
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -82,7 +82,7 @@ static int hid_start_in(struct hid_devic
+ 	struct usbhid_device *usbhid = hid->driver_data;
  
-+#define USB_VENDOR_ID_ELAN		0x04f3
-+#define USB_DEVICE_ID_ELAN_TOUCHSCREEN	0x0089
+ 	spin_lock_irqsave(&usbhid->lock, flags);
+-	if (hid->open > 0 &&
++	if ((hid->open > 0 || hid->quirks & HID_QUIRK_ALWAYS_POLL) &&
+ 			!test_bit(HID_DISCONNECTED, &usbhid->iofl) &&
+ 			!test_bit(HID_SUSPENDED, &usbhid->iofl) &&
+ 			!test_and_set_bit(HID_IN_RUNNING, &usbhid->iofl)) {
+@@ -292,6 +292,8 @@ static void hid_irq_in(struct urb *urb)
+ 	case 0:			/* success */
+ 		usbhid_mark_busy(usbhid);
+ 		usbhid->retry_delay = 0;
++		if ((hid->quirks & HID_QUIRK_ALWAYS_POLL) && !hid->open)
++			break;
+ 		hid_input_report(urb->context, HID_INPUT_REPORT,
+ 				 urb->transfer_buffer,
+ 				 urb->actual_length, 1);
+@@ -735,8 +737,10 @@ void usbhid_close(struct hid_device *hid
+ 	if (!--hid->open) {
+ 		spin_unlock_irq(&usbhid->lock);
+ 		hid_cancel_delayed_stuff(usbhid);
+-		usb_kill_urb(usbhid->urbin);
+-		usbhid->intf->needs_remote_wakeup = 0;
++		if (!(hid->quirks & HID_QUIRK_ALWAYS_POLL)) {
++			usb_kill_urb(usbhid->urbin);
++			usbhid->intf->needs_remote_wakeup = 0;
++		}
+ 	} else {
+ 		spin_unlock_irq(&usbhid->lock);
+ 	}
+@@ -1134,6 +1138,19 @@ static int usbhid_start(struct hid_devic
+ 
+ 	set_bit(HID_STARTED, &usbhid->iofl);
+ 
++	if (hid->quirks & HID_QUIRK_ALWAYS_POLL) {
++		ret = usb_autopm_get_interface(usbhid->intf);
++		if (ret)
++			goto fail;
++		usbhid->intf->needs_remote_wakeup = 1;
++		ret = hid_start_in(hid);
++		if (ret) {
++			dev_err(&hid->dev,
++				"failed to start in urb: %d\n", ret);
++		}
++		usb_autopm_put_interface(usbhid->intf);
++	}
 +
- #define USB_VENDOR_ID_ELECOM		0x056e
- #define USB_DEVICE_ID_ELECOM_BM084	0x0061
+ 	/* Some keyboards don't work until their LEDs have been set.
+ 	 * Since BIOSes do set the LEDs, it must be safe for any device
+ 	 * that supports the keyboard boot protocol.
+@@ -1166,6 +1183,9 @@ static void usbhid_stop(struct hid_devic
+ 	if (WARN_ON(!usbhid))
+ 		return;
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -70,6 +70,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_3AXIS_5BUTTON_STICK, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN, HID_QUIRK_ALWAYS_POLL },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
++	if (hid->quirks & HID_QUIRK_ALWAYS_POLL)
++		usbhid->intf->needs_remote_wakeup = 0;
++
+ 	clear_bit(HID_STARTED, &usbhid->iofl);
+ 	spin_lock_irq(&usbhid->lock);	/* Sync with error and led handlers */
+ 	set_bit(HID_DISCONNECTED, &usbhid->iofl);
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -287,6 +287,7 @@ struct hid_item {
+ #define HID_QUIRK_HIDINPUT_FORCE		0x00000080
+ #define HID_QUIRK_NO_EMPTY_INPUT		0x00000100
+ #define HID_QUIRK_NO_INIT_INPUT_REPORTS		0x00000200
++#define HID_QUIRK_ALWAYS_POLL			0x00000400
+ #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
+ #define HID_QUIRK_SKIP_OUTPUT_REPORT_ID		0x00020000
+ #define HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP	0x00040000
 
 
