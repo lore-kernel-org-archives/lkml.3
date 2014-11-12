@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaKLKwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:52:11 -0500
-Received: from mout.web.de ([212.227.17.12]:50395 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723AbaKLKwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 05:52:08 -0500
-Message-ID: <54633BC0.3030700@users.sourceforge.net>
-Date: Wed, 12 Nov 2014 11:51:44 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH with SmPL?] staging: rtl8188eu: Adjustments around jump
- labels
-References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net> <alpine.DEB.2.10.1410311900201.2481@hadrien> <5453D013.9000007@users.sourceforge.net> <alpine.DEB.2.10.1410311911070.2481@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1410311911070.2481@hadrien>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:1OQNgb3VE7MITzJFh8Isz0tKbghd23jXGaLhqBFzbDFxl7eKPuN
- MQ4QQxgelL5bGSt8z0A4bKIMZZL0W70xpWcxl/uV2MzyklI97oiMJg6P7GvAbhmg7U/TOYw
- IvGoX4TxTF8tOuvPUskl+Q7N7PBCsl2An5mo5+/0KpExFNMrrjKIfNuUN2FWPAXLJWkKb50
- Yp7h6u+5sLSXJ5D05IeIA==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752603AbaKLKzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:55:31 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:43235 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751564AbaKLKz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 05:55:29 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 1/1] tty: bfin, define inlined structures
+Date: Wed, 12 Nov 2014 11:55:25 +0100
+Message-Id: <1415789725-857-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>> @@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16
->>>> _size_byte, u8  *pbuf)
->>>>  exit:
->>>>  	kfree(efuseTbl);
->>>>
->>>> -	if (eFuseWord)
->>>> -		kfree(eFuseWord);
->>>> +	kfree(eFuseWord);
->>>
->>> I think that this code has been updated already.  It would be better to
->>> add labels so that kfree is only executed when needed.
->>
->> Are there any chances to achieve the suggested fine-tuning for jump labels
->> also with another semantic patch approach?
-> 
-> No, I don't think so.  The pattern is not regular enough.
+struct bfin_serial_port contains structs circ_buf, timer_list, and
+work_struct directly (not pointers). This means that these structures
+have to be defined completely to be inlined in struct
+bfin_serial_port.
 
-Now I have got a different impression for corresponding improvement possibilities.
+So instead of struct declarations, define the structures by including
+proper headers. They were pulled in by linux/serial_core.h or others
+until now. But experimenting with circ_buf removal from serial_core,
+struct circ_buf becomes undefined in bfin_serial:
 
+In file included from arch/blackfin/kernel/debug-mmrs.c:21:0:
+arch/blackfin/include/asm/bfin_serial.h:44:18: error: field 'rx_dma_buf' has incomplete type
 
-elfring@Sonne:~/Projekte/Linux/stable-patched> spatch.opt -debug -sp-file ~/Projekte/Coccinelle/janitor/move_function_call_before_jump_label1.cocci drivers/staging/rtl8188eu/core/rtw_efuse.c
-init_defs_builtins: /usr/local/share/coccinelle/standard.h
------------------------------------------------------------------------
-processing semantic patch file: /home/elfring/Projekte/Coccinelle/janitor/move_function_call_before_jump_label1.cocci
-with isos from: /usr/local/share/coccinelle/standard.iso
------------------------------------------------------------------------
-@move_function_call_before_jump_label@
-expression x;
-identifier fu, label;
-type t;
-@@
- t fu(...)
- {
-  ... when any
-  x = kzalloc(...);
-  if (x == NULL) {
-     ...
-     goto label;
-  }
-  ... when any
-+    kfree(x);
-  label:
--    kfree(x);
-  ...
- }
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/blackfin/include/asm/bfin_serial.h | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-HANDLING: drivers/staging/rtl8188eu/core/rtw_efuse.c
------------------------------------------------------------------------
-let's go
------------------------------------------------------------------------
------------------------------------------------------------------------
------------------------------------------------------------------------
-move_function_call_before_jump_label = 
------------------------------------------------------------------------
-dependencies for rule move_function_call_before_jump_label satisfied:
-binding in = []
-binding relevant in = []
-     (ONCE) USING optional_storage builtin isomorphism
-     transformation info returned:
-          transform state: 5
-               with rule_elem: 
-                                 <<< kfree(move_function_call_before_jump_label:x);
-                               move_function_call_before_jump_label:label:
-               with binding: [move_function_call_before_jump_label.x --> efuseTbl]
-          transform state: 204
-               with rule_elem: -kfree-(-move_function_call_before_jump_label:x-)-;
-               with binding: [move_function_call_before_jump_label.x --> efuseTbl]
-     binding out = []
-     transform one node: 204
-     transform one node: 5
------------------------------------------------------------------------
-Finished
------------------------------------------------------------------------
-diff = 
---- drivers/staging/rtl8188eu/core/rtw_efuse.c
-+++ /tmp/cocci-output-4498-349827-rtw_efuse.c
-@@ -209,8 +209,8 @@ efuse_phymap_to_logical(u8 *phymap, u16
-        /*  5. Calculate Efuse utilization. */
-        /*  */
+diff --git a/arch/blackfin/include/asm/bfin_serial.h b/arch/blackfin/include/asm/bfin_serial.h
+index 2d90d62edc97..d00d732784b1 100644
+--- a/arch/blackfin/include/asm/bfin_serial.h
++++ b/arch/blackfin/include/asm/bfin_serial.h
+@@ -9,8 +9,11 @@
+ #ifndef __BFIN_ASM_SERIAL_H__
+ #define __BFIN_ASM_SERIAL_H__
  
-+kfree(efuseTbl);
- exit:
--       kfree(efuseTbl);
++#include <linux/circ_buf.h>
+ #include <linux/serial_core.h>
+ #include <linux/spinlock.h>
++#include <linux/timer.h>
++#include <linux/workqueue.h>
+ #include <mach/anomaly.h>
+ #include <mach/bfin_serial.h>
  
-        kfree(eFuseWord);
- }
-Check duplication for 1 files
+@@ -25,10 +28,6 @@
+ # endif
+ #endif
+ 
+-struct circ_buf;
+-struct timer_list;
+-struct work_struct;
+-
+ struct bfin_serial_port {
+ 	struct uart_port port;
+ 	unsigned int old_status;
+-- 
+2.1.3
 
-
-
-Can my update suggestion be generalised a bit more for the movement of specific jump labels
-towards the end of a function implementation like in the use case "efuse_phymap_to_logical()"?
-
-Regards,
-Markus
