@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062AbaKLEUz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:20:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58419 "EHLO
+	id S1756087AbaKLEVT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:21:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027AbaKLBUl (ORCPT
+	with ESMTP id S1752972AbaKLBUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:41 -0500
+	Tue, 11 Nov 2014 20:20:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 027/319] lockd: Try to reconnect if statd has moved
-Date: Wed, 12 Nov 2014 10:12:45 +0900
-Message-Id: <20141112010957.166839616@linuxfoundation.org>
+        kbuild test robot <fengguang.wu@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 025/319] drivers/net: macvtap and tun depend on INET
+Date: Wed, 12 Nov 2014 10:12:43 +0900
+Message-Id: <20141112010956.886837012@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,36 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 173b3afceebe76fa2205b2c8808682d5b541fe3c upstream.
+[ Upstream commit de11b0e8c569b96c2cf6a811e3805b7aeef498a3 ]
 
-If rpc.statd is restarted, upcalls to monitor hosts can fail with
-ECONNREFUSED.  In that case force a lookup of statd's new port and retry the
-upcall.
+These drivers now call ipv6_proxy_select_ident(), which is defined
+only if CONFIG_INET is enabled.  However, they have really depended
+on CONFIG_INET for as long as they have allowed sending GSO packets
+from userland.
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fixes: f43798c27684 ("tun: Allow GSO using virtio_net_hdr")
+Fixes: b9fb9ee07e67 ("macvtap: add GSO/csum offload support")
+Fixes: 5188cd44c55d ("drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/lockd/mon.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -159,6 +159,12 @@ static int nsm_mon_unmon(struct nsm_hand
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -135,6 +135,7 @@ config MACVLAN
+ config MACVTAP
+ 	tristate "MAC-VLAN based tap driver"
+ 	depends on MACVLAN
++	depends on INET
+ 	help
+ 	  This adds a specialized tap character device driver that is based
+ 	  on the MAC-VLAN network interface, called macvtap. A macvtap device
+@@ -201,6 +202,7 @@ config RIONET_RX_SIZE
  
- 	msg.rpc_proc = &clnt->cl_procinfo[proc];
- 	status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	if (status == -ECONNREFUSED) {
-+		dprintk("lockd:	NSM upcall RPC failed, status=%d, forcing rebind\n",
-+				status);
-+		rpc_force_rebind(clnt);
-+		status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	}
- 	if (status < 0)
- 		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
- 				status);
+ config TUN
+ 	tristate "Universal TUN/TAP device driver support"
++	depends on INET
+ 	select CRC32
+ 	---help---
+ 	  TUN/TAP provides packet reception and transmission for user space
 
 
