@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087AbaKLEVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:21:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58411 "EHLO
+	id S1753003AbaKLBUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58397 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972AbaKLBUf (ORCPT
+	with ESMTP id S1752972AbaKLBU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:35 -0500
+	Tue, 11 Nov 2014 20:20:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        kbuild test robot <fengguang.wu@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Tom Herbert <therbert@google.com>,
+        Alexander Duyck <alexander.h.duyck@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 025/319] drivers/net: macvtap and tun depend on INET
-Date: Wed, 12 Nov 2014 10:12:43 +0900
-Message-Id: <20141112010956.886837012@linuxfoundation.org>
+Subject: [PATCH 3.17 022/319] gre: Use inner mac length when computing tunnel length
+Date: Wed, 12 Nov 2014 10:12:40 +0900
+Message-Id: <20141112010956.380448822@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,43 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Tom Herbert <therbert@google.com>
 
-[ Upstream commit de11b0e8c569b96c2cf6a811e3805b7aeef498a3 ]
+[ Upstream commit 14051f0452a2c26a3f4791e6ad6a435e8f1945ff ]
 
-These drivers now call ipv6_proxy_select_ident(), which is defined
-only if CONFIG_INET is enabled.  However, they have really depended
-on CONFIG_INET for as long as they have allowed sending GSO packets
-from userland.
+Currently, skb_inner_network_header is used but this does not account
+for Ethernet header for ETH_P_TEB. Use skb_inner_mac_header which
+handles TEB and also should work with IP encapsulation in which case
+inner mac and inner network headers are the same.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: f43798c27684 ("tun: Allow GSO using virtio_net_hdr")
-Fixes: b9fb9ee07e67 ("macvtap: add GSO/csum offload support")
-Fixes: 5188cd44c55d ("drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets")
+Tested: Ran TCP_STREAM over GRE, worked as expected.
+
+Signed-off-by: Tom Herbert <therbert@google.com>
+Acked-by: Alexander Duyck <alexander.h.duyck@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/gre_offload.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -135,6 +135,7 @@ config MACVLAN
- config MACVTAP
- 	tristate "MAC-VLAN based tap driver"
- 	depends on MACVLAN
-+	depends on INET
- 	help
- 	  This adds a specialized tap character device driver that is based
- 	  on the MAC-VLAN network interface, called macvtap. A macvtap device
-@@ -201,6 +202,7 @@ config RIONET_RX_SIZE
+--- a/net/ipv4/gre_offload.c
++++ b/net/ipv4/gre_offload.c
+@@ -51,7 +51,7 @@ static struct sk_buff *gre_gso_segment(s
  
- config TUN
- 	tristate "Universal TUN/TAP device driver support"
-+	depends on INET
- 	select CRC32
- 	---help---
- 	  TUN/TAP provides packet reception and transmission for user space
+ 	greh = (struct gre_base_hdr *)skb_transport_header(skb);
+ 
+-	ghl = skb_inner_network_header(skb) - skb_transport_header(skb);
++	ghl = skb_inner_mac_header(skb) - skb_transport_header(skb);
+ 	if (unlikely(ghl < sizeof(*greh)))
+ 		goto out;
+ 
 
 
