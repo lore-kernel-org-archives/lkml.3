@@ -1,122 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaKLG0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:26:43 -0500
-Received: from ozlabs.org ([103.22.144.67]:46774 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936AbaKLG0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:26:40 -0500
-Date: Wed, 12 Nov 2014 17:26:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Burton <paul.burton@imgtec.com>
-Subject: linux-next: build warnings after merge of the mips tree
-Message-ID: <20141112172633.2b0c9cae@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753233AbaKLG0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:26:00 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:58986 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753120AbaKLGZ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 01:25:56 -0500
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <tglx@linutronix.de>, <jason@lakedaemon.net>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH v2 2/3] irqchip: dw-apb-ictl: enable IRQ_GC_MASK_CACHE_PER_TYPE
+Date: Wed, 12 Nov 2014 14:22:53 +0800
+Message-ID: <1415773374-4629-3-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415773374-4629-1-git-send-email-jszhang@marvell.com>
+References: <1415773374-4629-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_//1bjOwy8=0Xy7v/DVrvJZjT"; protocol="application/pgp-signature"
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
+ definitions=2014-11-12_04:2014-11-11,2014-11-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1411120057
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_//1bjOwy8=0Xy7v/DVrvJZjT
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The irq_chip_type instances have separate mask registers, so we need to
+enable IRQ_GC_MASK_CACHE_PER_TYPE to actually handle separate mask registers.
 
-Hi Ralf,
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+ drivers/irqchip/irq-dw-apb-ictl.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-After merging the mips tree, today's linux-next build (powerpc64
-allnoconfig) produced these warnings:
+diff --git a/drivers/irqchip/irq-dw-apb-ictl.c b/drivers/irqchip/irq-dw-apb-ictl.c
+index fcc3385..c136b67 100644
+--- a/drivers/irqchip/irq-dw-apb-ictl.c
++++ b/drivers/irqchip/irq-dw-apb-ictl.c
+@@ -115,6 +115,7 @@ static int __init dw_apb_ictl_init(struct device_node *np,
+ 
+ 	ret = irq_alloc_domain_generic_chips(domain, 32, (nrirqs > 32) ? 2 : 1,
+ 					     np->name, handle_level_irq, clr, 0,
++					     IRQ_GC_MASK_CACHE_PER_TYPE |
+ 					     IRQ_GC_INIT_MASK_CACHE);
+ 	if (ret) {
+ 		pr_err("%s: unable to alloc irq domain gc\n", np->full_name);
+-- 
+2.1.3
 
-In file included from fs/compat_binfmt_elf.c:145:0:
-fs/binfmt_elf.c: In function 'load_elf_binary':
-fs/binfmt_elf.c:718:13: warning: passing argument 1 of 'arch_elf_pt_proc' f=
-rom incompatible pointer type
-    retval =3D arch_elf_pt_proc(&loc->elf_ex, elf_ppnt,
-             ^
-In file included from include/linux/elfcore-compat.h:4:0,
-                 from fs/compat_binfmt_elf.c:20:
-include/linux/elf.h:81:19: note: expected 'struct elf64_hdr *' but argument=
- is of type 'struct elf32_hdr *'
- static inline int arch_elf_pt_proc(struct elfhdr *ehdr,
-                   ^
-In file included from fs/compat_binfmt_elf.c:145:0:
-fs/binfmt_elf.c:718:13: warning: passing argument 2 of 'arch_elf_pt_proc' f=
-rom incompatible pointer type
-    retval =3D arch_elf_pt_proc(&loc->elf_ex, elf_ppnt,
-             ^
-In file included from include/linux/elfcore-compat.h:4:0,
-                 from fs/compat_binfmt_elf.c:20:
-include/linux/elf.h:81:19: note: expected 'struct elf64_phdr *' but argumen=
-t is of type 'struct elf32_phdr *'
- static inline int arch_elf_pt_proc(struct elfhdr *ehdr,
-                   ^
-In file included from fs/compat_binfmt_elf.c:145:0:
-fs/binfmt_elf.c:747:14: warning: passing argument 1 of 'arch_elf_pt_proc' f=
-rom incompatible pointer type
-     retval =3D arch_elf_pt_proc(&loc->interp_elf_ex,
-              ^
-In file included from include/linux/elfcore-compat.h:4:0,
-                 from fs/compat_binfmt_elf.c:20:
-include/linux/elf.h:81:19: note: expected 'struct elf64_hdr *' but argument=
- is of type 'struct elf32_hdr *'
- static inline int arch_elf_pt_proc(struct elfhdr *ehdr,
-                   ^
-In file included from fs/compat_binfmt_elf.c:145:0:
-fs/binfmt_elf.c:747:14: warning: passing argument 2 of 'arch_elf_pt_proc' f=
-rom incompatible pointer type
-     retval =3D arch_elf_pt_proc(&loc->interp_elf_ex,
-              ^
-In file included from include/linux/elfcore-compat.h:4:0,
-                 from fs/compat_binfmt_elf.c:20:
-include/linux/elf.h:81:19: note: expected 'struct elf64_phdr *' but argumen=
-t is of type 'struct elf32_phdr *'
- static inline int arch_elf_pt_proc(struct elfhdr *ehdr,
-                   ^
-In file included from fs/compat_binfmt_elf.c:145:0:
-fs/binfmt_elf.c:761:11: warning: passing argument 1 of 'arch_check_elf' fro=
-m incompatible pointer type
-  retval =3D arch_check_elf(&loc->elf_ex, !!interpreter, &arch_state);
-           ^
-In file included from include/linux/elfcore-compat.h:4:0,
-                 from fs/compat_binfmt_elf.c:20:
-include/linux/elf.h:104:19: note: expected 'struct elf64_hdr *' but argumen=
-t is of type 'struct elf32_hdr *'
- static inline int arch_check_elf(struct elfhdr *ehdr, bool has_interp,
-                   ^
-
-Probably introduced by commit 7b76fe94c0e4 ("binfmt_elf: allow arch
-code to examine PT_LOPROC ... PT_HIPROC headers") and maybe the
-preceeding commits as well.
-
-binfmt_elf.c is included by compat_binfmt_elf.c after defining some
-things to build the compat versions of things.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_//1bjOwy8=0Xy7v/DVrvJZjT
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUYv2eAAoJEMDTa8Ir7ZwV5RUP+wVj0Ej1Q8MAQdDeRKwRdjK0
-uMnDfjfKp75IoB7KC/gcMlXqzbVlcR+hvsM2g8h2EmQr30ZqcDhmXZw92qOh8oQQ
-4SiYC4qwbGlBOV0xSHI2ZyvFvpfLkSzpiGJe9eTw1KniRfHd74OJFOMq6NfVT/2l
-wnZr3y21MWroK4gzkTmPTZ1MQ9OLIbQi7Y8nx1uluk6g4O0h/E2WrrTvNpyPOQeE
-xEEgZSlH7OMjOxSJNXq5YK/PxI61+Ijjqfkxds8NnxC1YfHNeg4Z0q/54StFOZ/A
-hjLwAjBc+Tr8jtcJ0AyXlUfzLhC1BqVoJdOR0BdAv7Rs9SncVaxoGsTq/az5Mmr+
-NlmyuzYW1w84/YSjiOEjhU4dsNB0NhEkkXSWlwwLPYhMP2c3tj41pwFX5duqfxnH
-vA8SujtP3iJPn0NMu+OTfuRyTQzj31lS4D2uDPQTDYtRU14jyN1I3a03dl6x1Ptq
-wlD4gfTcuhVDo7+KfLMq7dEW0B4xXPK5MgBx2S1ah9yqG0UBxcnsijJ6rAvUBhUp
-8pYMx8Y6imnAYPxOIEpeoSRo/fEzo5It+q0IigZGsFXTYQe4ZJHbAaxqo5yv+ftA
-eQcW2GMsp0wBHA+8uUCsmFuXsyEk/rw6YkFerrFHdJ1OGvj0J1oltvLE5bf1HiW3
-8aZx+Q/2cowegvkYiF8X
-=Gnih
------END PGP SIGNATURE-----
-
---Sig_//1bjOwy8=0Xy7v/DVrvJZjT--
