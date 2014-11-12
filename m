@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966132AbaKLBvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:51:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32830 "EHLO
+	id S966167AbaKLBwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:52:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966116AbaKLBvt (ORCPT
+	with ESMTP id S966135AbaKLBv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:51:49 -0500
+	Tue, 11 Nov 2014 20:51:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Darren Etheridge <detheridge@ti.com>,
-        Johannes Pointner <johannes.pointner@br-automation.com>,
-        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
-        Dave Airlie <airlied@redhat.com>,
-        "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-Subject: [PATCH 3.10 045/123] drm/tilcdc: Fix the error path in tilcdc_load()
-Date: Wed, 12 Nov 2014 10:16:51 +0900
-Message-Id: <20141112011721.051257055@linuxfoundation.org>
+        Maciej Matraszek <m.matraszek@samsung.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.10 047/123] media: v4l2-common: fix overflow in v4l_bound_align_image()
+Date: Wed, 12 Nov 2014 10:16:53 +0900
+Message-Id: <20141112011721.173996271@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -32,164 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+From: Maciej Matraszek <m.matraszek@samsung.com>
 
-commit b478e336b3e75505707a11e78ef8b964ef0a03af upstream.
+commit 3bacc10cd4a85bc70bc0b6c001d3bf995c7fe04c upstream.
 
-The current error path calls tilcdc_unload() in case of an error to release
-the resources. However, this is wrong because not all resources have been
-allocated by the time an error occurs in tilcdc_load().
+Fix clamp_align() used in v4l_bound_align_image() to prevent overflow
+when passed large value like UINT32_MAX.
 
-To fix it, this commit adds proper labels to bail out at the different
-stages in the load function, and release only the resources actually allocated.
+ In the current implementation:
+    clamp_align(UINT32_MAX, 8, 8192, 3)
 
-Tested-by: Darren Etheridge <detheridge@ti.com>
-Tested-by: Johannes Pointner <johannes.pointner@br-automation.com>
-Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Fixes: 3a49012224ca ("drm/tilcdc: panel: fix leak when unloading the module")
-Signed-off-by: Matwey V. Kornilov <matwey.kornilov@gmail.com>
+returns 8, because in line:
+
+    x = (x + (1 << (align - 1))) & mask;
+
+x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
+
+v4l_bound_align_image() is heavily used in VIDIOC_S_FMT and
+VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
+explicitly states that:
+
+"The modified format should be as close as possible to the original
+request."
+  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
+
+Thus one would expect, that passing UINT32_MAX as format width and
+height will result in setting maximum possible resolution for the
+device. Particularly, when the driver doesn't support
+VIDIOC_ENUM_FRAMESIZES ioctl, which is common in the codebase.
+
+Fixes changeset: b0d3159be9a3
+
+Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/tilcdc/tilcdc_drv.c |   60 ++++++++++++++++++++++++++++++------
- 1 file changed, 50 insertions(+), 10 deletions(-)
+ drivers/media/v4l2-core/v4l2-common.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -78,6 +78,7 @@ static int modeset_init(struct drm_devic
- 	if ((priv->num_encoders == 0) || (priv->num_connectors == 0)) {
- 		/* oh nos! */
- 		dev_err(dev->dev, "no encoders/connectors found\n");
-+		drm_mode_config_cleanup(dev);
- 		return -ENXIO;
- 	}
+--- a/drivers/media/v4l2-core/v4l2-common.c
++++ b/drivers/media/v4l2-core/v4l2-common.c
+@@ -485,16 +485,13 @@ static unsigned int clamp_align(unsigned
+ 	/* Bits that must be zero to be aligned */
+ 	unsigned int mask = ~((1 << align) - 1);
  
-@@ -170,33 +171,37 @@ static int tilcdc_load(struct drm_device
- 	dev->dev_private = priv;
- 
- 	priv->wq = alloc_ordered_workqueue("tilcdc", 0);
-+	if (!priv->wq) {
-+		ret = -ENOMEM;
-+		goto fail_free_priv;
-+	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(dev->dev, "failed to get memory resource\n");
- 		ret = -EINVAL;
--		goto fail;
-+		goto fail_free_wq;
- 	}
- 
- 	priv->mmio = ioremap_nocache(res->start, resource_size(res));
- 	if (!priv->mmio) {
- 		dev_err(dev->dev, "failed to ioremap\n");
- 		ret = -ENOMEM;
--		goto fail;
-+		goto fail_free_wq;
- 	}
- 
- 	priv->clk = clk_get(dev->dev, "fck");
- 	if (IS_ERR(priv->clk)) {
- 		dev_err(dev->dev, "failed to get functional clock\n");
- 		ret = -ENODEV;
--		goto fail;
-+		goto fail_iounmap;
- 	}
- 
- 	priv->disp_clk = clk_get(dev->dev, "dpll_disp_ck");
- 	if (IS_ERR(priv->clk)) {
- 		dev_err(dev->dev, "failed to get display clock\n");
- 		ret = -ENODEV;
--		goto fail;
-+		goto fail_put_clk;
- 	}
- 
- #ifdef CONFIG_CPU_FREQ
-@@ -206,7 +211,7 @@ static int tilcdc_load(struct drm_device
- 			CPUFREQ_TRANSITION_NOTIFIER);
- 	if (ret) {
- 		dev_err(dev->dev, "failed to register cpufreq notifier\n");
--		goto fail;
-+		goto fail_put_disp_clk;
- 	}
- #endif
- 
-@@ -238,13 +243,13 @@ static int tilcdc_load(struct drm_device
- 	ret = modeset_init(dev);
- 	if (ret < 0) {
- 		dev_err(dev->dev, "failed to initialize mode setting\n");
--		goto fail;
-+		goto fail_cpufreq_unregister;
- 	}
- 
- 	ret = drm_vblank_init(dev, 1);
- 	if (ret < 0) {
- 		dev_err(dev->dev, "failed to initialize vblank\n");
--		goto fail;
-+		goto fail_mode_config_cleanup;
- 	}
- 
- 	pm_runtime_get_sync(dev->dev);
-@@ -252,7 +257,7 @@ static int tilcdc_load(struct drm_device
- 	pm_runtime_put_sync(dev->dev);
- 	if (ret < 0) {
- 		dev_err(dev->dev, "failed to install IRQ handler\n");
--		goto fail;
-+		goto fail_vblank_cleanup;
- 	}
- 
- 	platform_set_drvdata(pdev, dev);
-@@ -260,13 +265,48 @@ static int tilcdc_load(struct drm_device
- 	priv->fbdev = drm_fbdev_cma_init(dev, 16,
- 			dev->mode_config.num_crtc,
- 			dev->mode_config.num_connector);
-+	if (IS_ERR(priv->fbdev)) {
-+		ret = PTR_ERR(priv->fbdev);
-+		goto fail_irq_uninstall;
-+	}
- 
- 	drm_kms_helper_poll_init(dev);
- 
- 	return 0;
- 
--fail:
--	tilcdc_unload(dev);
-+fail_irq_uninstall:
-+	pm_runtime_get_sync(dev->dev);
-+	drm_irq_uninstall(dev);
-+	pm_runtime_put_sync(dev->dev);
++	/* Clamp to aligned min and max */
++	x = clamp(x, (min + ~mask) & mask, max & mask);
 +
-+fail_vblank_cleanup:
-+	drm_vblank_cleanup(dev);
-+
-+fail_mode_config_cleanup:
-+	drm_mode_config_cleanup(dev);
-+
-+fail_cpufreq_unregister:
-+	pm_runtime_disable(dev->dev);
-+#ifdef CONFIG_CPU_FREQ
-+	cpufreq_unregister_notifier(&priv->freq_transition,
-+			CPUFREQ_TRANSITION_NOTIFIER);
-+fail_put_disp_clk:
-+	clk_put(priv->disp_clk);
-+#endif
-+
-+fail_put_clk:
-+	clk_put(priv->clk);
-+
-+fail_iounmap:
-+	iounmap(priv->mmio);
-+
-+fail_free_wq:
-+	flush_workqueue(priv->wq);
-+	destroy_workqueue(priv->wq);
-+
-+fail_free_priv:
-+	dev->dev_private = NULL;
-+	kfree(priv);
- 	return ret;
+ 	/* Round to nearest aligned value */
+ 	if (align)
+ 		x = (x + (1 << (align - 1))) & mask;
+ 
+-	/* Clamp to aligned value of min and max */
+-	if (x < min)
+-		x = (min + ~mask) & mask;
+-	else if (x > max)
+-		x = max & mask;
+-
+ 	return x;
  }
  
 
