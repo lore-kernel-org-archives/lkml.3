@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaKLDEn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:04:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60032 "EHLO
+	id S933089AbaKLDFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:05:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964889AbaKLBjd (ORCPT
+	with ESMTP id S964852AbaKLBjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:39:33 -0500
+	Tue, 11 Nov 2014 20:39:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vignesh R <vigneshr@ti.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.14 048/203] mfd: ti_am335x_tscadc: Fix TSC operation after ADC continouous mode
-Date: Wed, 12 Nov 2014 10:15:18 +0900
-Message-Id: <20141112011544.906534816@linuxfoundation.org>
+        zatimend@hotmail.co.uk, Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 045/203] random: add and use memzero_explicit() for clearing data
+Date: Wed, 12 Nov 2014 10:15:15 +0900
+Message-Id: <20141112011544.775863797@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,46 +30,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vignesh R <vigneshr@ti.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 6ac734d2242949f41eb1346ca0fd4ed010c937aa upstream.
+commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
 
-After enabling and disabling ADC continuous mode via sysfs, ts_print_raw
-fails to return any data. This is because when ADC is configured for
-continuous mode, it disables touch screen steps.These steps are not
-re-enabled when ADC continuous mode is disabled. Therefore existing values
-of REG_SE needs to be cached before enabling continuous mode and
-disabling touch screen steps and enabling ADC steps. The cached value
-are to be restored to REG_SE once ADC is disabled.
+zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
+memset() calls which clear out sensitive data in extract_{buf,entropy,
+entropy_user}() in random driver are being optimized away by gcc.
 
-Fixes: 7ca6740cd1cd ("mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization")
+Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
+that can be used in such cases where a variable with sensitive data is
+being cleared out in the end. Other use cases might also be in crypto
+code. [ I have put this into lib/string.c though, as it's always built-in
+and doesn't need any dependencies then. ]
 
-Signed-off-by: Vignesh R <vigneshr@ti.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Fixes kernel bugzilla: 82041
+
+Reported-by: zatimend@hotmail.co.uk
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/ti_am335x_tscadc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/char/random.c  |   10 +++++-----
+ include/linux/string.h |    5 +++--
+ lib/string.c           |   16 ++++++++++++++++
+ 3 files changed, 24 insertions(+), 7 deletions(-)
 
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -54,7 +54,7 @@ void am335x_tsc_se_set_cache(struct ti_t
- 	unsigned long flags;
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1063,8 +1063,8 @@ static void extract_buf(struct entropy_s
+ 	 * pool while mixing, and hash one final time.
+ 	 */
+ 	sha_transform(hash.w, extract, workspace);
+-	memset(extract, 0, sizeof(extract));
+-	memset(workspace, 0, sizeof(workspace));
++	memzero_explicit(extract, sizeof(extract));
++	memzero_explicit(workspace, sizeof(workspace));
  
- 	spin_lock_irqsave(&tsadc->reg_lock, flags);
--	tsadc->reg_se_cache = val;
-+	tsadc->reg_se_cache |= val;
- 	if (tsadc->adc_waiting)
- 		wake_up(&tsadc->reg_se_wait);
- 	else if (!tsadc->adc_in_use)
-@@ -97,6 +97,7 @@ static void am335x_tscadc_need_adc(struc
- void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
- {
- 	spin_lock_irq(&tsadc->reg_lock);
-+	tsadc->reg_se_cache |= val;
- 	am335x_tscadc_need_adc(tsadc);
+ 	/*
+ 	 * In case the hash function has some recognizable output
+@@ -1076,7 +1076,7 @@ static void extract_buf(struct entropy_s
+ 	hash.w[2] ^= rol32(hash.w[2], 16);
  
- 	tscadc_writel(tsadc, REG_SE, val);
+ 	memcpy(out, &hash, EXTRACT_SIZE);
+-	memset(&hash, 0, sizeof(hash));
++	memzero_explicit(&hash, sizeof(hash));
+ }
+ 
+ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+@@ -1124,7 +1124,7 @@ static ssize_t extract_entropy(struct en
+ 	}
+ 
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
+ 
+ 	return ret;
+ }
+@@ -1162,7 +1162,7 @@ static ssize_t extract_entropy_user(stru
+ 	}
+ 
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
+ 
+ 	return ret;
+ }
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -129,7 +129,7 @@ int bprintf(u32 *bin_buf, size_t size, c
+ #endif
+ 
+ extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
+-			const void *from, size_t available);
++				       const void *from, size_t available);
+ 
+ /**
+  * strstarts - does @str start with @prefix?
+@@ -141,7 +141,8 @@ static inline bool strstarts(const char
+ 	return strncmp(str, prefix, strlen(prefix)) == 0;
+ }
+ 
+-extern size_t memweight(const void *ptr, size_t bytes);
++size_t memweight(const void *ptr, size_t bytes);
++void memzero_explicit(void *s, size_t count);
+ 
+ /**
+  * kbasename - return the last part of a pathname.
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -586,6 +586,22 @@ void *memset(void *s, int c, size_t coun
+ EXPORT_SYMBOL(memset);
+ #endif
+ 
++/**
++ * memzero_explicit - Fill a region of memory (e.g. sensitive
++ *		      keying data) with 0s.
++ * @s: Pointer to the start of the area.
++ * @count: The size of the area.
++ *
++ * memzero_explicit() doesn't need an arch-specific version as
++ * it just invokes the one of memset() implicitly.
++ */
++void memzero_explicit(void *s, size_t count)
++{
++	memset(s, 0, count);
++	OPTIMIZER_HIDE_VAR(s);
++}
++EXPORT_SYMBOL(memzero_explicit);
++
+ #ifndef __HAVE_ARCH_MEMCPY
+ /**
+  * memcpy - Copy one area of memory to another
 
 
