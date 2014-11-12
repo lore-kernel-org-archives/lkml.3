@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaKLO6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:58:07 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54153 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377AbaKLO6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:58:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,369,1413270000"; 
-   d="scan'208";a="606626413"
-Message-ID: <54637576.7030004@intel.com>
-Date: Wed, 12 Nov 2014 06:57:58 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752898AbaKLO6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:58:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49615 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409AbaKLO6W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 09:58:22 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] usb: dwc3: gadget: Fix broken gadget on system suspend/resume
+Date: Wed, 12 Nov 2014 16:58:16 +0200
+Message-ID: <1415804296-28980-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: Borislav Petkov <bp@suse.de>, the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
-References: <5462999A.7090706@intel.com> <1415784298.14686.323.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1415784298.14686.323.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2014 01:24 AM, Matt Fleming wrote:
-> On Tue, 2014-11-11 at 15:19 -0800, Dave Hansen wrote:
->> I'm seeing a BUG() at boot in __phys_addr when it has DEBUG_VIRTUAL enabled:
->>
->>>> [    1.193264] ------------[ cut here ]------------
->>>> [    1.198502] kernel BUG at /home/davehans/linux.git/arch/x86/mm/physaddr.c:36!
->>> ...
->>>> [    1.368810] Call Trace:
->>>> [    1.371590]  [<ffffffff8105824c>] __change_page_attr_set_clr+0x42c/0xff0
->>>> [    1.379197]  [<ffffffff81059e42>] kernel_map_pages_in_pgd+0x72/0x110
->>>> [    1.386410]  [<ffffffff81fe2be2>] __map_region+0x45/0x63
->>>> [    1.392437]  [<ffffffff81fe2e13>] efi_map_region+0x32/0xce
->>>> [    1.398663]  [<ffffffff81fe2936>] efi_enter_virtual_mode+0x18c/0x3a4
->>>> [    1.405876]  [<ffffffff81fcb0b6>] start_kernel+0x421/0x4a1
->>>> [    1.412101]  [<ffffffff81fcaa85>] ? set_init_arg+0x55/0x55
->>>> [    1.418327]  [<ffffffff81fca120>] ? early_idt_handlers+0x120/0x120
->>>> [    1.425342]  [<ffffffff81fca5f2>] x86_64_start_reservations+0x2a/0x2c
->>>> [    1.432652]  [<ffffffff81fca746>] x86_64_start_kernel+0x152/0x161
->>>> [    1.439565] Code: 0f 94 c2 31 c0 e8 a6 47 83 00 48 c7 c7 41 49 cc 81 31 c0 e8 98 47 83 00 31 d2 be 01 00 00 00 48 c7 c7 a0 49 f2 81 e8 ab 4a 0e 00 <0f> 0b 0f 0b 4c 89 e2 48 c7 c6 b3 e5 a0 81 48 c7 c7 5c 7a ca 81 
->>>> [    1.461866] RIP  [<ffffffff8105c055>] __phys_addr+0x185/0x260
->>>> [    1.468400]  RSP <ffffffff81e03cf8>
->>>> [    1.472396] ---[ end trace b59b0f17341a4bc4 ]---
-> 
-> I'm having trouble linking that BUG_ON() with a line in Linus' tree.
-> What's the failing expression?
+On TI SoCs (e.g. DRA7) we don't support the DWC3 hibernation feature.
+We need to stop the gadget controller while system suspend
+else it results in L3 Bus errors on resume with broken
+USB gadget on J6-evm.
 
-It's actually tripping over this in __phys_addr:
+[   55.718226] WARNING: CPU: 0 PID: 0 at drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler+0x224/0x31c()
+[   55.718232] 44000000.ocp:L3 Custom Error: MASTER USB3 TARGET GPMC (Idle): Data Access in User mode during Functional access
+[   55.718263] Modules linked in: usb_f_ss_lb g_zero libcomposite configfs xhci_hcd btwilink bluetooth dwc3 6lowpan_iphc m25p80 dwc3_omap omap_remoteproc
+[   55.718271] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.19-02011-g3ece3ca-dirty #658
+[   55.718290] [<c0016090>] (unwind_backtrace) from [<c0012060>] (show_stack+0x10/0x14)
+[   55.718302] [<c0012060>] (show_stack) from [<c062a2e4>] (dump_stack+0x78/0x94)
+[   55.718315] [<c062a2e4>] (dump_stack) from [<c0043bc4>] (warn_slowpath_common+0x6c/0x90)
+[   55.718325] [<c0043bc4>] (warn_slowpath_common) from [<c0043c7c>] (warn_slowpath_fmt+0x30/0x40)
+[   55.718336] [<c0043c7c>] (warn_slowpath_fmt) from [<c030fb24>] (l3_interrupt_handler+0x224/0x31c)
+[   55.718348] [<c030fb24>] (l3_interrupt_handler) from [<c0093010>] (handle_irq_event_percpu+0x5c/0x23c)
+[   55.718358] [<c0093010>] (handle_irq_event_percpu) from [<c009322c>] (handle_irq_event+0x3c/0x5c)
+[   55.718367] [<c009322c>] (handle_irq_event) from [<c0096160>] (handle_fasteoi_irq+0x98/0x158)
+[   55.718377] [<c0096160>] (handle_fasteoi_irq) from [<c00929dc>] (generic_handle_irq+0x20/0x30)
+[   55.718385] [<c00929dc>] (generic_handle_irq) from [<c000eea8>] (handle_IRQ+0x4c/0xb0)
+[   55.718393] [<c000eea8>] (handle_IRQ) from [<c0008638>] (gic_handle_irq+0x28/0x5c)
+[   55.718402] [<c0008638>] (gic_handle_irq) from [<c0630964>] (__irq_svc+0x44/0x5c)
+[   55.718406] Exception stack(0xc09c1f68 to 0xc09c1fb0)
+[   55.718412] 1f60:                   00000001 00000001 00000000 00000000 c09c0000 00000000
+[   55.718418] 1f80: c09c0000 c09c0000 c0a7a1e4 c09c8938 c09c89b4 00000000 60000093 c09c1fb0
+[   55.718423] 1fa0: c008a2e4 c00926cc 60000013 ffffffff
+[   55.718433] [<c0630964>] (__irq_svc) from [<c00926cc>] (cpu_startup_entry+0x100/0x1f4)
+[   55.718444] [<c00926cc>] (cpu_startup_entry) from [<c0901ac4>] (start_kernel+0x324/0x388)
 
-     VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/usb/dwc3/gadget.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-I dumped out a few of the variables too:
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 3818b26..bc15b54 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -2741,7 +2741,13 @@ int dwc3_gadget_prepare(struct dwc3 *dwc)
+ {
+ 	if (dwc->pullups_connected) {
+ 		dwc3_gadget_disable_irq(dwc);
+-		dwc3_gadget_run_stop(dwc, true, true);
++		if (dwc->has_hibernation) {
++			dwc3_gadget_run_stop(dwc, true, true);
++		} else {
++			dwc3_gadget_run_stop(dwc, false, true);
++			/* remember to connect back on resume */
++			dwc->pullups_connected = true;
++		}
+ 	}
+ 
+ 	return 0;
+-- 
+1.8.3.2
 
-[    1.161406] __phys_addr() x: 0x000078009d3c6000
-[    1.166567] __phys_addr() origx: 0x000000009d3c6000
-[    1.171832] __phys_addr() y: 0x000000011d3c6000
-[    1.176999] __phys_addr() __START_KERNEL_map: 0xffffffff80000000
-[    1.183841] __phys_addr() PAGE_OFFSET: 0xffff880000000000
-[    1.189993] __phys_addr() x valid: 0
-
-So it looks like the root cause is a physical address getting pass in in
-the first place instead of a virtual.
