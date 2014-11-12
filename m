@@ -1,142 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965177AbaKLDmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:42:03 -0500
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:41421 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbaKLDl7 (ORCPT
+	id S934575AbaKLDm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:42:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59175 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491AbaKLB3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 22:41:59 -0500
+	Tue, 11 Nov 2014 20:29:43 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Frank Rowand <frank.rowand@sonymobile.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH 3.17 196/319] serial: msm_serial: Fix kgdb continue
+Date: Wed, 12 Nov 2014 10:15:34 +0900
+Message-Id: <20141112011025.223449530@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <1415732980.15957.33.camel@freescale.com>
-References: <1413515616-15874-1-git-send-email-B29983@freescale.com>
-	<CAKohpokotKSvQ13uU4MnCer+qzBUUbGVTd19y7xswCAEKk3nGQ@mail.gmail.com>
-	<6aaa50ef5f234fe2896f1c66eb646dfb@DM2PR03MB574.namprd03.prod.outlook.com>
-	<1415732980.15957.33.camel@freescale.com>
-Date: Wed, 12 Nov 2014 09:11:58 +0530
-Message-ID: <CAKohpomEZXOJBvYwMYvcxxjPnKd4X378Nhh7TNypmL3rvd7SnA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ platforms
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Yuantian Tang <Yuantian.Tang@freescale.com>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 November 2014 00:39, Scott Wood <scottwood@freescale.com> wrote:
-> What purpose do those "<arch> CPU frequency scaling drivers" submenus
-> serve, versus just including the options in the main cpufreq menu?  It's
-> not as if more than one arch would be visible at once (and when a
-> situation with multiple visible menus popped up, it was considered a
-> bug).
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Oh, that really looks fine to me. I will send it formally as well:
+------------------
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 3489f8f..a24d678 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -196,19 +196,19 @@ config CPUFREQ_DT
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-          If in doubt, say N.
+commit 8b374399468da1c25db5b5d436b167aafc10fbdc upstream.
 
--menu "x86 CPU frequency scaling drivers"
--depends on X86
-+if X86
- source "drivers/cpufreq/Kconfig.x86"
--endmenu
-+endif
+Frank reports that after continuing in kgdb the RX stale event
+doesn't occur until after the RX fifo is filled up with exactly
+the amount of characters programmed for the RX watermark (in this
+case it's 48). To read a single character from the uartdm
+hardware we force a stale event so that any characters in the RX
+packing buffer are flushed into the RX fifo immediately instead
+of waiting for a stale timeout or for the fifo to fill. Forcing
+that stale event asserts the stale interrupt but we never clear
+that interrupt via UART_CR_CMD_RESET_STALE_INT in the polling
+functions. So when kgdb continues the stale interrupt is left
+pending in the hardware and we don't timeout with a stale event,
+like we usually would if a user typed one character on the
+console, until the reset stale interrupt and stale event commands
+are sent. Frank could get things working again by running
+handle_rx_dm(). By putting enough characters into the fifo he
+could trigger a watermark interrupt, and thus cause
+handle_rx_dm() to run finally resetting the stale interrupt
+and enabling the stale event so that single characters would
+cause timeouts again.
 
--menu "ARM CPU frequency scaling drivers"
--depends on ARM || ARM64
-+if ARM || ARM64
- source "drivers/cpufreq/Kconfig.arm"
--endmenu
-+endif
+The fix is to just do what the interrupt routine was doing all
+along and clear the stale interrupt and enable the event again.
+Doing this also smooths over any differences in the fifo behavior
+between v1.3 and v1.4 hardware allowing us to skip forcing the
+uart into single character mode.
 
--menu "AVR32 CPU frequency scaling drivers"
--depends on AVR32
-+if PPC32 || PPC64
-+source "drivers/cpufreq/Kconfig.powerpc"
-+endif
+Reviewed-by: Frank Rowand <frank.rowand@sonymobile.com>
+Tested-by: Frank Rowand <frank.rowand@sonymobile.com>
+Fixes: f7e54d7ad743 "msm_serial: Add support for poll_{get,put}_char()"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-+if AVR32
- config AVR32_AT32AP_CPUFREQ
-        bool "CPU frequency driver for AT32AP"
-        depends on PLATFORM_AT32AP
-@@ -216,12 +216,9 @@ config AVR32_AT32AP_CPUFREQ
-        help
-          This enables the CPU frequency driver for AT32AP processors.
-          If in doubt, say N.
-+endif
+---
+ drivers/tty/serial/msm_serial.c |   22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
--endmenu
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -683,17 +683,6 @@ static void msm_power(struct uart_port *
+ }
+ 
+ #ifdef CONFIG_CONSOLE_POLL
+-static int msm_poll_init(struct uart_port *port)
+-{
+-	struct msm_port *msm_port = UART_TO_MSM(port);
 -
--menu "CPUFreq processor drivers"
--depends on IA64
+-	/* Enable single character mode on RX FIFO */
+-	if (msm_port->is_uartdm >= UARTDM_1P4)
+-		msm_write(port, UARTDM_DMEN_RX_SC_ENABLE, UARTDM_DMEN);
 -
-+if IA64
- config IA64_ACPI_CPUFREQ
-        tristate "ACPI Processor P-States driver"
-        depends on ACPI_PROCESSOR
-@@ -232,12 +229,9 @@ config IA64_ACPI_CPUFREQ
-        For details, take a look at <file:Documentation/cpu-freq/>.
-
-        If in doubt, say N.
-+endif
-
--endmenu
+-	return 0;
+-}
 -
--menu "MIPS CPUFreq processor drivers"
--depends on MIPS
--
-+if MIPS
- config LOONGSON2_CPUFREQ
-        tristate "Loongson2 CPUFreq Driver"
-        help
-@@ -249,16 +243,9 @@ config LOONGSON2_CPUFREQ
-          For details, take a look at <file:Documentation/cpu-freq/>.
+ static int msm_poll_get_char_single(struct uart_port *port)
+ {
+ 	struct msm_port *msm_port = UART_TO_MSM(port);
+@@ -705,7 +694,7 @@ static int msm_poll_get_char_single(stru
+ 		return msm_read(port, rf_reg) & 0xff;
+ }
+ 
+-static int msm_poll_get_char_dm_1p3(struct uart_port *port)
++static int msm_poll_get_char_dm(struct uart_port *port)
+ {
+ 	int c;
+ 	static u32 slop;
+@@ -729,6 +718,10 @@ static int msm_poll_get_char_dm_1p3(stru
+ 			slop = msm_read(port, UARTDM_RF);
+ 			c = sp[0];
+ 			count--;
++			msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
++			msm_write(port, 0xFFFFFF, UARTDM_DMRX);
++			msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE,
++				  UART_CR);
+ 		} else {
+ 			c = NO_POLL_CHAR;
+ 		}
+@@ -752,8 +745,8 @@ static int msm_poll_get_char(struct uart
+ 	imr = msm_read(port, UART_IMR);
+ 	msm_write(port, 0, UART_IMR);
+ 
+-	if (msm_port->is_uartdm == UARTDM_1P3)
+-		c = msm_poll_get_char_dm_1p3(port);
++	if (msm_port->is_uartdm)
++		c = msm_poll_get_char_dm(port);
+ 	else
+ 		c = msm_poll_get_char_single(port);
+ 
+@@ -812,7 +805,6 @@ static struct uart_ops msm_uart_pops = {
+ 	.verify_port = msm_verify_port,
+ 	.pm = msm_power,
+ #ifdef CONFIG_CONSOLE_POLL
+-	.poll_init = msm_poll_init,
+ 	.poll_get_char	= msm_poll_get_char,
+ 	.poll_put_char	= msm_poll_put_char,
+ #endif
 
-          If in doubt, say N.
-+endif
 
--endmenu
--
--menu "PowerPC CPU frequency scaling drivers"
--depends on PPC32 || PPC64
--source "drivers/cpufreq/Kconfig.powerpc"
--endmenu
--
--menu "SPARC CPU frequency scaling drivers"
--depends on SPARC64
-+if SPARC64
- config SPARC_US3_CPUFREQ
-        tristate "UltraSPARC-III CPU Frequency driver"
-        help
-@@ -276,10 +263,9 @@ config SPARC_US2E_CPUFREQ
-          For details, take a look at <file:Documentation/cpu-freq>.
-
-          If in doubt, say N.
--endmenu
-+endif
-
--menu "SH CPU Frequency scaling"
--depends on SUPERH
-+if SUPERH
- config SH_CPU_FREQ
-        tristate "SuperH CPU Frequency driver"
-        help
-@@ -293,7 +279,7 @@ config SH_CPU_FREQ
-          For details, take a look at <file:Documentation/cpu-freq>.
-
-          If unsure, say N.
--endmenu
-+endif
-
- endif
- endmenu
