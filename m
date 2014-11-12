@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaKLPsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:48:40 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:56483 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaKLPsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:48:39 -0500
+	id S1753075AbaKLPtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:49:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752982AbaKLPtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 10:49:13 -0500
+Message-ID: <54638174.50306@redhat.com>
+Date: Wed, 12 Nov 2014 16:49:08 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141112103011.GA16807@pd.tnic>
-References: <20141111213628.GP31490@pd.tnic> <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
- <20141111223316.GQ31490@pd.tnic> <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
- <20141111230926.GR31490@pd.tnic> <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
- <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
- <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com> <20141112103011.GA16807@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 12 Nov 2014 07:48:15 -0800
-Message-ID: <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Tony Luck <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: simplefb device tree bindings enumeration and handover
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 12, 2014 2:30 AM, "Borislav Petkov" <bp@alien8.de> wrote:
->
-> On Tue, Nov 11, 2014 at 06:06:48PM -0800, Tony Luck wrote:
-> > > Innocent bystanders have RIPV=1, EIPV=0 in MCG_STATUS ... so they
-> > > are quite easy to spot.
-> >
-> > Bother ... except for the SRAO cases where *everyone* is an innocent
-> > bystander - but someone should go look for the error and queue up
-> > a page offline event.  Perhaps for this we'd do the self-ipi trick and
-> > then scan the banks to look for SRAO signatures to process as well
-> > as clearing MCIP
->
-> First of all, good morning :-)
->
-> So I'm reading all those notes again and I can't say I'm convinced about
-> the change. And all those "but but, what might happen if" cases are what
-> bother me.
->
-> First, the stack: switching to a possibly almost full kernel stack
-> where we have other stuff already allocated is a bad idea IMO. There's
-> a good reason to have a known-good, solely-for-our-purpose stack which
-> we get to use. It is always there and it gives us the optimal conditions
-> possible for recovery. Switching back to the possibly crowded kernel
-> stack and causing stack overflows while handling an MCE is not an
-> improvement in my book.
+Hi all,
 
-I only switch stacks on entry from userspace, and the kernel stack is
-completely empty if that happens.
+Today I've had a long discussion with Grant Likely on irc, in the
+#devicetree channel, on the devicetree bindings for simplefb.
 
->
-> Tony:
-> > The current code has an ugly hole at the moment. End of
-> > do_machine_check() clears MCG_STATUS. At that point we are still
-> > running on the magic stack for machine check exceptions ... if we take
-> > a machine check in the small window from there until we get off this
-> > stack (iret) ... then we will enter the handler back on the same stack
-> > that we haven't finished using yet. Bad things ensue.
->
-> I'm not crazy about it either but how often does this actually happen in
-> practice? And if it does happen, then, well, we die, so be it. It can
-> happen with other MCEs coming in back-to-back like poisoned data (1st
-> MCE) being consumed on another core (2nd MCE). I know, Intel does the
-> broadcasting but that is going to change, I hear and AMD raises an MCE
-> on the core which detects it only.
->
-> Another big issue I see with this is verifying the locking works and
-> generally testing this serious change. MCA is core kernel infrastructure
-> and we cannot break this left and right. And changing stacks we're
-> running on and the whole dynamics of the code might open a whole other
-> can of worms.
+The 2 topics discussed were enumeration of simplefb nodes, and the
+handover to a hw specific driver later in the boot process.
 
-One nice thing for testing is that my patch applies to int3 from
-userspace as well, and that's easy to test.
+We've come to the following conclusions:
 
->
-> Oh, and we shouldn't forget why we're doing this: just to save two
-> members to task_struct and getting rid of paranoid_userspace. Yep, still
-> not convinced the effort is worth it.
+1) Since simplefb nodes represent runtime information they must be sub-nodes
+of the chosen node. The primary display node must be named framebuffer0,
+additional nodes must be called framebuffer1, etc.
 
-I think I want to make this change anyway, though, since it may
-simplify fsgsbase support enough to justify it solely on that account.
-I don't think that the machine check code needs to change at all to
-accommodate a stack switch, but I think it makes some simplifications
-possible.
+2) If a simplefb node represents the preferred console for user
+interaction, then the chosen node's stdout-path property must point to it.
 
->
-> Now, I think Andy had a much better/simpler/cleaner suggestion
-> yesterday: task_work_add(). It is basically what _TIF_MCE_NOTIFY does
-> and it is called in the same path - do_notify_resume() - but generic and
-> we can drop _TIF_MCE_NOTIFY then and use the generic thing.
->
-> Much less intrusive change.
+3) Older devicetree files may have a compatible = "simple-framebuffer"
+node in a different place, operating systems must first enumerate any
+framebuffer# nodes found under chosen and then check for other compatible
+nodes.
 
-Less intrusive is certainly true.
+4) If the devicetree contains nodes for the display hardware used by a simplefb,
+then one of the hw nodes must have a property called "framebuffer" pointing to
+the framebuffer# node in chosen, so that the operating system knows which
+simplefb to disable when handing over control to a driver for the real
+hardware. The bindings for the hw nodes must specify which node contains the
+framebuffer property.
 
---Andy
+5) It is advised that devicetree files contain pre-filled, disabled framebuffer#
+nodes, so that the firmware only needs to update the mode information and
+enable them. This way if e.g. later on support for more display clocks get
+added, the simplefb nodes will already contain this info and the firmware
+does not need to be updated.
 
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+I'll post a patch updating Documentation/devicetree/bindings/video/simple-framebuffer.txt
+to reflect this soon.
+
+Regards,
+
+Hans
+
