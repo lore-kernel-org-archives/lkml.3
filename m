@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656AbaKLB26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:28:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59118 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932626AbaKLB2z (ORCPT
+	id S934729AbaKLDp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:45:27 -0500
+Received: from mga01.intel.com ([192.55.52.88]:29635 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932706AbaKLDpV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:28:55 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joern Engel <joern@logfs.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.17 140/319] qla_target: dont delete changed nacls
-Date: Wed, 12 Nov 2014 10:14:38 +0900
-Message-Id: <20141112011015.700144617@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-References: <20141112010952.553519040@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 22:45:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,366,1413270000"; 
+   d="scan'208";a="630526058"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: "jonghwa3.lee@samsung.com" <jonghwa3.lee@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "sre@kernel.org" <sre@kernel.org>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "anton@enomsg.org" <anton@enomsg.org>
+Subject: RE: [PATCH 2/3] power: core: Add variables related temperature to
+ power_supply_info.
+Thread-Topic: [PATCH 2/3] power: core: Add variables related temperature to
+ power_supply_info.
+Thread-Index: AQHP4h28WS6Qmn8eW0+W+Bid+M8/ppxZ6CGAgACEzQCAAJeRcIAAuwqAgADMxpA=
+Date: Wed, 12 Nov 2014 03:45:03 +0000
+Message-ID: <20ADAB092842284E95860F279283C5642EDCE099@BGSMSX104.gar.corp.intel.com>
+References: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1412679518-21499-3-git-send-email-jonghwa3.lee@samsung.com>
+ <20ADAB092842284E95860F279283C5642ED9EDE3@BGSMSX104.gar.corp.intel.com>
+ <546158A0.5000707@samsung.com>
+ <20ADAB092842284E95860F279283C5642EDB8431@BGSMSX104.gar.corp.intel.com>
+ <20141111204219.GA1347@amd>
+In-Reply-To: <20141111204219.GA1347@amd>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+> > The CC/CV for each battery temperature zone is defined as part of battery spec.
+> This is
+> > as per the JEITA/PSE standards. So IMO, this is a battery charging information
+> > (charging object) rather than a thermal throttling information.
+> >
+> > Also the battery information may not fit into a standard format. Different standards
+> have
+> > different format for charging object. So I would suggest to make it flexible enough to
+> > support different charging object format. For example MIPI BIF charging object
+> format
+> > (https://members.mipi.org/wg/BIF/document/11518) and MIPI BIF Rule based
+> charging algorithm
+> > (http://mipi.org/sites/default/files/mipi_BIF_rule-based-charging_white-paper_1.pdf)
+> > has different charging object format. This is why the patch
+> https://lkml.org/lkml/2014/8/13/355
+> > has option to support different charging objects and different charging algorithms.
+> 
+> Yes, and this is also why your patches are not being
+> merged. Overengineered, too complex. Citing standards will not improve
+> the patches.
+> 
+> And yes, adding cc/cv to the thermal interface seems like a good idea
+> to me.
 
-------------------
+Sorry to disagree with you. IMHO it's a charging profile and not a thermal profile. The
+cc/cv information is defined as part of battery spec. If the intention here is to provide a
+place for battery info, then cc/cv should be part of battery info. The latest charger chips
+allows to configure CC/CV for different temperature zone. IMHO adding these information
+to thermal profile doesn't seems to be the right approach since the thermal subsystem
+need to be aware of the charging subsystem constraints.
 
-From: Joern Engel <joern@logfs.org>
+The standards were cited to point where the industry is moving. Anyway let the maintainer
+take a final call -  should we align with industry standards or stick to legacy charging
+methodologies?
 
-commit f4c24db1b7ad0ce84409e15744d26c6f86a96840 upstream.
-
-The code is currently riddled with "drop the hardware_lock to avoid a
-deadlock" bugs that expose races.  One of those races seems to expose a
-valid warning in tcm_qla2xxx_clear_nacl_from_fcport_map.  Add some
-bandaid to it.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/qla2xxx/tcm_qla2xxx.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
---- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-+++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-@@ -757,7 +757,16 @@ static void tcm_qla2xxx_clear_nacl_from_
- 	pr_debug("fc_rport domain: port_id 0x%06x\n", nacl->nport_id);
- 
- 	node = btree_remove32(&lport->lport_fcport_map, nacl->nport_id);
--	WARN_ON(node && (node != se_nacl));
-+	if (WARN_ON(node && (node != se_nacl))) {
-+		/*
-+		 * The nacl no longer matches what we think it should be.
-+		 * Most likely a new dynamic acl has been added while
-+		 * someone dropped the hardware lock.  It clearly is a
-+		 * bug elsewhere, but this bit can't make things worse.
-+		 */
-+		btree_insert32(&lport->lport_fcport_map, nacl->nport_id,
-+			       node, GFP_ATOMIC);
-+	}
- 
- 	pr_debug("Removed from fcport_map: %p for WWNN: 0x%016LX, port_id: 0x%06x\n",
- 	    se_nacl, nacl->nport_wwnn, nacl->nport_id);
-
-
+-Jenny
