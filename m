@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847AbaKLBad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:30:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59239 "EHLO
+	id S932860AbaKLBak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:30:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932829AbaKLBa3 (ORCPT
+	with ESMTP id S1753538AbaKLBaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:29 -0500
+	Tue, 11 Nov 2014 20:30:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Pham <jackp@codeaurora.org>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.17 210/319] usb: dwc3: gadget: Properly initialize LINK TRB
-Date: Wed, 12 Nov 2014 10:15:48 +0900
-Message-Id: <20141112011027.593460284@linuxfoundation.org>
+        Cong Wang <xiyou.wangcong@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.17 181/319] freezer: Do not freeze tasks killed by OOM killer
+Date: Wed, 12 Nov 2014 10:15:19 +0900
+Message-Id: <20141112011022.650143320@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,42 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
-commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
+commit 51fae6da640edf9d266c94f36bc806c63c301991 upstream.
 
-On ISOC endpoints the last trb_pool entry used as a
-LINK TRB is not getting zeroed out correctly due to
-memset being called incorrectly and in the wrong place.
-If pool allocated from DMA was not zero-initialized
-to begin with this will result in the size and ctrl
-values being random garbage. Call memset correctly after
-assignment of the trb_link pointer.
+Since f660daac474c6f (oom: thaw threads if oom killed thread is frozen
+before deferring) OOM killer relies on being able to thaw a frozen task
+to handle OOM situation but a3201227f803 (freezer: make freezing() test
+freeze conditions in effect instead of TIF_FREEZE) has reorganized the
+code and stopped clearing freeze flag in __thaw_task. This means that
+the target task only wakes up and goes into the fridge again because the
+freezing condition hasn't changed for it. This reintroduces the bug
+fixed by f660daac474c6f.
 
-Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Fix the issue by checking for TIF_MEMDIE thread flag in
+freezing_slow_path and exclude the task from freezing completely. If a
+task was already frozen it would get woken by __thaw_task from OOM killer
+and get out of freezer after rechecking freezing().
+
+Changes since v1
+- put TIF_MEMDIE check into freezing_slowpath rather than in __refrigerator
+  as per Oleg
+- return __thaw_task into oom_scan_process_thread because
+  oom_kill_process will not wake task in the fridge because it is
+  sleeping uninterruptible
+
+[mhocko@suse.cz: rewrote the changelog]
+Fixes: a3201227f803 (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE)
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/freezer.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -615,12 +615,11 @@ static int __dwc3_gadget_ep_enable(struc
- 		if (!usb_endpoint_xfer_isoc(desc))
- 			return 0;
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -42,6 +42,9 @@ bool freezing_slow_path(struct task_stru
+ 	if (p->flags & (PF_NOFREEZE | PF_SUSPEND_TASK))
+ 		return false;
  
--		memset(&trb_link, 0, sizeof(trb_link));
--
- 		/* Link TRB for ISOC. The HWO bit is never reset */
- 		trb_st_hw = &dep->trb_pool[0];
++	if (test_thread_flag(TIF_MEMDIE))
++		return false;
++
+ 	if (pm_nosig_freezing || cgroup_freezing(p))
+ 		return true;
  
- 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
-+		memset(trb_link, 0, sizeof(*trb_link));
- 
- 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
- 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
 
 
