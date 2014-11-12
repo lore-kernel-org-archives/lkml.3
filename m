@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaKLBTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:19:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58335 "EHLO
+	id S1752847AbaKLBUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58355 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaKLBTr (ORCPT
+	with ESMTP id S1752708AbaKLBT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:19:47 -0500
+	Tue, 11 Nov 2014 20:19:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Maloy <jon.maloy@ericsson.com>,
+        Sathya Perla <sathya.perla@emulex.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 010/319] tipc: fix bug in bundled buffer reception
-Date: Wed, 12 Nov 2014 10:12:28 +0900
-Message-Id: <20141112010954.346840586@linuxfoundation.org>
+Subject: [PATCH 3.17 014/319] net: fix saving TX flow hash in sock for outgoing connections
+Date: Wed, 12 Nov 2014 10:12:32 +0900
+Message-Id: <20141112010955.016820421@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,43 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Paul Maloy <jon.maloy@ericsson.com>
+From: Sathya Perla <sathya.perla@emulex.com>
 
-[ Upstream commit 643566d4b47e2956110e79c0e6f65db9b9ea42c6 ]
+[ Upstream commit 9e7ceb060754f134231f68cb29d5db31419fe1ed ]
 
-In commit ec8a2e5621db2da24badb3969eda7fd359e1869f ("tipc: same receive
-code path for connection protocol and data messages") we omitted the
-the possiblilty that an arriving message extracted from a bundle buffer
-may be a multicast message. Such messages need to be to be delivered to
-the socket via a separate function, tipc_sk_mcast_rcv(). As a result,
-small multicast messages arriving as members of a bundle buffer will be
-silently dropped.
+The commit "net: Save TX flow hash in sock and set in skbuf on xmit"
+introduced the inet_set_txhash() and ip6_set_txhash() routines to calculate
+and record flow hash(sk_txhash) in the socket structure. sk_txhash is used
+to set skb->hash which is used to spread flows across multiple TXQs.
 
-This commit corrects the error by considering this case in the function
-tipc_link_bundle_rcv().
+But, the above routines are invoked before the source port of the connection
+is created. Because of this all outgoing connections that just differ in the
+source port get hashed into the same TXQ.
 
-Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
+This patch fixes this problem for IPv4/6 by invoking the the above routines
+after the source port is available for the socket.
+
+Fixes: b73c3d0e4("net: Save TX flow hash in sock and set in skbuf on xmit")
+
+Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/tipc/link.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_ipv4.c |    4 ++--
+ net/ipv6/tcp_ipv6.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/tipc/link.c
-+++ b/net/tipc/link.c
-@@ -1936,7 +1936,12 @@ void tipc_link_bundle_rcv(struct sk_buff
- 		}
- 		omsg = buf_msg(obuf);
- 		pos += align(msg_size(omsg));
--		if (msg_isdata(omsg) || (msg_user(omsg) == CONN_MANAGER)) {
-+		if (msg_isdata(omsg)) {
-+			if (unlikely(msg_type(omsg) == TIPC_MCAST_MSG))
-+				tipc_sk_mcast_rcv(obuf);
-+			else
-+				tipc_sk_rcv(obuf);
-+		} else if (msg_user(omsg) == CONN_MANAGER) {
- 			tipc_sk_rcv(obuf);
- 		} else if (msg_user(omsg) == NAME_DISTRIBUTOR) {
- 			tipc_named_rcv(obuf);
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -208,8 +208,6 @@ int tcp_v4_connect(struct sock *sk, stru
+ 	inet->inet_dport = usin->sin_port;
+ 	inet->inet_daddr = daddr;
+ 
+-	inet_set_txhash(sk);
+-
+ 	inet_csk(sk)->icsk_ext_hdr_len = 0;
+ 	if (inet_opt)
+ 		inet_csk(sk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
+@@ -226,6 +224,8 @@ int tcp_v4_connect(struct sock *sk, stru
+ 	if (err)
+ 		goto failure;
+ 
++	inet_set_txhash(sk);
++
+ 	rt = ip_route_newports(fl4, rt, orig_sport, orig_dport,
+ 			       inet->inet_sport, inet->inet_dport, sk);
+ 	if (IS_ERR(rt)) {
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -198,8 +198,6 @@ static int tcp_v6_connect(struct sock *s
+ 	sk->sk_v6_daddr = usin->sin6_addr;
+ 	np->flow_label = fl6.flowlabel;
+ 
+-	ip6_set_txhash(sk);
+-
+ 	/*
+ 	 *	TCP over IPv4
+ 	 */
+@@ -295,6 +293,8 @@ static int tcp_v6_connect(struct sock *s
+ 	if (err)
+ 		goto late_failure;
+ 
++	ip6_set_txhash(sk);
++
+ 	if (!tp->write_seq && likely(!tp->repair))
+ 		tp->write_seq = secure_tcpv6_sequence_number(np->saddr.s6_addr32,
+ 							     sk->sk_v6_daddr.s6_addr32,
 
 
