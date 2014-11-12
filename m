@@ -1,118 +1,612 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbaKLMH6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:07:58 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:40075 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983AbaKLMH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:07:57 -0500
-Message-ID: <54634D97.9050500@kapsi.fi>
-Date: Wed, 12 Nov 2014 14:07:51 +0200
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, gnurou@gmail.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, wni@nvidia.com,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH v4 REPOST 1/5] of: Add descriptions of thermtrip properties
- to Tegra PMC bindings
-References: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi> <1415625137-4791-2-git-send-email-mikko.perttunen@kapsi.fi> <5461AEB7.70507@nvidia.com>
-In-Reply-To: <5461AEB7.70507@nvidia.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+	id S1753132AbaKLMIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:08:35 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:50162 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaKLMI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 07:08:29 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-4f-54634dbbe025
+From: Beomho Seo <beomho.seo@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: sameo@linux.intel.com, lee.jone@linaro.org, lgirdwood@gmail.com,
+        broonie@kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, cw00.choi@samsung.com, geunsik.lim@samsung.com,
+        inki.dae@samsung.com, sw0312.kim@samsung.com,
+        Beomho Seo <beomho.seo@samsung.com>
+Subject: [PATCH v3 1/5] mfd: rt5033: Add Richtek RT5033 driver core.
+Date: Wed, 12 Nov 2014 21:07:58 +0900
+Message-id: <1415794082-30277-2-git-send-email-beomho.seo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1415794082-30277-1-git-send-email-beomho.seo@samsung.com>
+References: <1415794082-30277-1-git-send-email-beomho.seo@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsWyRsSkWHe3b3KIwbv5YhanP21jt5j68Amb
+	xfUvz1ktJj15z2wx/8g5VouJKyczW/S/Wchq8WdCK5vFuVcrGS0m3Z/AYvF+zxlGi29XOpgs
+	Lu+aw2bxufcIo8XS6xeZLCZMX8ti0br3CLvF6W5Wi9O7SyxmTH7J5iDisWbeGkaPy329TB47
+	Z91l91i5/Aubx+YVWh6bVnWyedy5tofNY97JQI++LasYPT5vkgvgiuKySUnNySxLLdK3S+DK
+	2LVvEXvBvRbGinnrVrI1MO7M62Lk5JAQMJH4PO0vG4QtJnHh3nogm4tDSGApo8TT/TeZYIp2
+	vG5jB7GFBKYzStxpsoAoamOSuHvxMFiCTUBT4v2UKywgtohAhMTZZbNYQIqYBSYxS9x828PY
+	xcjBISzgIvFyviZIDYuAqsSrDx+YQWxeATeJw9fWs4OUSAgoSMyZZAMS5hRwl5j99QojxF43
+	iWMtLUwgIyUE5nJIXH79nBVijoDEt8mHWCB6ZSU2HWCGuFlS4uCKGywTGIUXMDKsYhRNLUgu
+	KE5KLzLVK07MLS7NS9dLzs/dxAiMydP/nk3cwXj/gPUhRgEORiUe3ozNSSFCrIllxZW5hxhN
+	gTZMZJYSTc4HRn5eSbyhsZmRhamJqbGRuaWZkjivjvTPYCGB9MSS1OzU1ILUovii0pzU4kOM
+	TBycUg2MkuerIrq367dauNz55aKZvWHx9ZU7lWIlj8oZe6w4/Wzv6swvBnWh/gcaD4Udzqln
+	bZy77uMVSQM/eR4lPa0WtXVP1SqPRGmtv1tsvPLln5bu7ix/jSs/28P9woPqsufeKpuYkW17
+	54tV8TmW97ve3zrhcito4fJpnN5ljXEvjmZu7ry+dl+dEktxRqKhFnNRcSIAx/gJxMQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jQd3dvskhBmuvclic/rSN3WLqwyds
+	Fte/PGe1mPTkPbPF/CPnWC0mrpzMbNH/ZiGrxZ8JrWwW516tZLSYdH8Ci8X7PWcYLb5d6WCy
+	uLxrDpvF594jjBZLr19kspgwfS2LReveI+wWp7tZLU7vLrGYMfklm4OIx5p5axg9Lvf1Mnns
+	nHWX3WPl8i9sHptXaHlsWtXJ5nHn2h42j3knAz36tqxi9Pi8SS6AK6qB0SYjNTEltUghNS85
+	PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6DslhbLEnFKgUEBicbGSvh2m
+	CaEhbroWMI0Rur4hQXA9RgZoIGENY8aufYvYC+61MFbMW7eSrYFxZ14XIyeHhICJxI7XbewQ
+	tpjEhXvr2UBsIYHpjBJ3miy6GLmA7DYmibsXD4MVsQloSryfcoUFxBYRiJA4u2wWC0gRs8Ak
+	Zombb3sYuxg5OIQFXCReztcEqWERUJV49eEDM4jNK+AmcfjaenaQEgkBBYk5k2xAwpwC7hKz
+	v15hhNjrJnGspYVpAiPvAkaGVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBEf9MagfjygaL
+	Q4wCHIxKPLycDskhQqyJZcWVuYcYJTiYlUR4r7sChXhTEiurUovy44tKc1KLDzGaAh01kVlK
+	NDkfmIzySuINjU3MjCyNzA0tjIzNlcR5D7RaBwoJpCeWpGanphakFsH0MXFwSjUwJsf7ak8+
+	pvtPO7FW47GOtSWnvdLcXY/uaH6OXjdTosW78+pJOdfrWo4bhcyLJ9iKpYtt71r4UE11f/Pe
+	BZ/2tQaxGAeVChiy2TW2Mq6eJF3qKCxle7U5sL+l71hpREMV5yeWsz+uOcifMlqx4bJlrdiO
+	in0Wx68vliqbpyHXPevSAZl0tZVKLMUZiYZazEXFiQBpZIwzDgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 08:37 AM, Alexandre Courbot wrote:
-> On 11/10/2014 10:12 PM, Mikko Perttunen wrote:
->> From: Mikko Perttunen <mperttunen@nvidia.com>
->>
->> Hardware-triggered thermal reset requires configuring the I2C
->> reset procedure. This configuration is read from the device tree,
->> so document the relevant properties in the binding documentation.
->>
->> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
->> Reviewed-by: Wei Ni <wni@nvidia.com>
->> Tested-by: Wei Ni <wni@nvidia.com>
->> ---
->>   .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      | 24
->> ++++++++++++++++++++++
->>   1 file changed, 24 insertions(+)
->>
->> diff --git
->> a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
->> b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
->> index 68ac65f..dc13fb0 100644
->> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
->> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
->> @@ -47,6 +47,21 @@ Required properties when nvidia,suspend-mode=<0>:
->>     sleep mode, the warm boot code will restore some PLLs, clocks and
->> then
->>     bring up CPU0 for resuming the system.
->>
->> +Hardware-triggered thermal reset:
->> +On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode
->> exists,
->> +hardware-triggered thermal reset will be enabled.
->> +
->> +Required properties for hardware-triggered thermal reset (inside
->> 'i2c-thermtrip'):
->> +- nvidia,i2c-bus : Phandle to I2C bus containing the PMU
->> +- nvidia,bus-addr : Bus address of the PMU on the I2C bus
->> +- nvidia,reg-addr : I2C register address to write poweroff command to
->> +- nvidia,reg-data : Poweroff command to write to PMU
->
-> This binding is taking two different routes to provide values to the
-> driver:
->
-> 1) It uses a phandle for i2c-bus (which must then be provided by another
-> binding implemented in the two following patches)
->
-> 2) It uses direct values for bus-addr, reg-addr and reg-data.
->
-> Do we need to use both approaches? bus-addr could just as well be
-> obtained through a phandle to the i2c device and reading its reg
-> property. From this phandle you could also go back up to the bus, making
-> the i2c-bus property unnecessary. reg-addr and reg-data cannot be
-> specified that way, obviously.
+This patch adds a new driver for Richtek RT5033 driver.
+RT5033 is a Multifunction device which includes battery charger, fuel gauge,
+flash LED current source, LDO and synchronous Buck converter. It is interfaced
+to host controller using I2C interface.
 
-This was in fact how I used to implement this, but Stephen or Thierry 
-pointed out that the reg property actually might not contain the correct 
-address (I think because the PMIC could have multiple addresses, and the 
-one in DT might not be the one that accepts the reset command).
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jone@linaro.org>
+Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+Changes in v3
+- Correct sentence errors.
+- Add author information the top of each drivers.
+- Remove unnecessary pre-initialise, struct member(rt5033->i2c) and blink.
+- Change some return check.
+- Use bool and of_match_ptr().
 
-The workaround for that was to either add this integer property for 
-bus-addr or add a new PMIC API for querying. I went for this as it is 
-much simpler.
+Changes in v2
+- Remove volatile_reg callback. Because this driver not in use regmap cache.
+- Revmoe unnecessary subnode of_compatible.
+- Add define for set_high impedance mode of charger.
+---
 
->
-> Actually I think I'd prefer to see i2c-bus become an integer property
-> instead of a phandle, because at the end of the day it is a value field
-> of a particular register and the reference is only used to retrieve that
-> value. It is not like we are actually going to call functions on the bus
-> instance or change its state. And for the single purpose of retrieving
-> that value, this binding requires the addition of a new property on the
-> bus node that will probably never be used for something else.
+ drivers/mfd/Kconfig                |   12 ++
+ drivers/mfd/Makefile               |    1 +
+ drivers/mfd/rt5033.c               |  141 +++++++++++++++++++
+ include/linux/mfd/rt5033-private.h |  260 ++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/rt5033.h         |   62 +++++++++
+ 5 files changed, 476 insertions(+)
+ create mode 100644 drivers/mfd/rt5033.c
+ create mode 100644 include/linux/mfd/rt5033-private.h
+ create mode 100644 include/linux/mfd/rt5033.h
 
-And this was how I used to implement this even earlier, but Thierry 
-objected to that since it was duplicating information :)
-
->
-> We can also imagine that some design may not have a PMIC device in the
-> DT but still want to use the thermal reset feature. In this case, it is
-> again preferable to use direct values.
->
-
-I don't see how that'd change anything; the hardware feature still 
-requires an I2C device to send a message to. If there's an I2C device on 
-one of the SoC buses, you probably should have it in the DT..
-
-Cheers,
-Mikko
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 72d3808..55b6551 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -618,6 +618,18 @@ config MFD_RTSX_PCI
+ 	  types of memory cards, such as Memory Stick, Memory Stick Pro,
+ 	  Secure Digital and MultiMediaCard.
+ 
++config MFD_RT5033
++	bool "Richtek RT5033 Power Management IC"
++	depends on I2C=y
++	select MFD_CORE
++	select REGMAP_I2C
++	help
++	  This driver provides for the Richtek RT5033 Power Management IC,
++	  which includes the I2C driver and the Core APIs. This driver provides
++	  common support for accessing the device. The device supports multiple
++	  sub-devices like charger, fuel gauge, flash LED, current source,
++	  LDO and Buck.
++
+ config MFD_RTSX_USB
+ 	tristate "Realtek USB card reader"
+ 	depends on USB
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 53467e2..4059c24 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -176,6 +176,7 @@ obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+ obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+ obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
+ obj-$(CONFIG_MFD_DLN2)		+= dln2.o
++obj-$(CONFIG_MFD_RT5033)	+= rt5033.o
+ 
+ intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+ obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+diff --git a/drivers/mfd/rt5033.c b/drivers/mfd/rt5033.c
+new file mode 100644
+index 0000000..e29c6d9
+--- /dev/null
++++ b/drivers/mfd/rt5033.c
+@@ -0,0 +1,141 @@
++/*
++ * MFD core driver for the Richtek RT5033.
++ *
++ * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
++ * Author: Beomho Seo <beomho.seo@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published bythe Free Software Foundation.
++ */
++
++#include <linux/err.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/of_device.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/rt5033.h>
++#include <linux/mfd/rt5033-private.h>
++
++static const struct regmap_irq rt5033_irqs[] = {
++	{ .mask = RT5033_PMIC_IRQ_BUCKOCP, },
++	{ .mask = RT5033_PMIC_IRQ_BUCKLV, },
++	{ .mask = RT5033_PMIC_IRQ_SAFELDOLV, },
++	{ .mask = RT5033_PMIC_IRQ_LDOLV, },
++	{ .mask = RT5033_PMIC_IRQ_OT, },
++	{ .mask = RT5033_PMIC_IRQ_VDDA_UV, },
++};
++
++static const struct regmap_irq_chip rt5033_irq_chip = {
++	.name		= "rt5033",
++	.status_base	= RT5033_REG_PMIC_IRQ_STAT,
++	.mask_base	= RT5033_REG_PMIC_IRQ_CTRL,
++	.mask_invert	= true,
++	.num_regs	= 1,
++	.irqs		= rt5033_irqs,
++	.num_irqs	= ARRAY_SIZE(rt5033_irqs),
++};
++
++static const struct mfd_cell rt5033_devs[] = {
++	{
++		.name = "rt5033-regulator",
++	}, {
++		.name = "rt5033-charger",
++		.of_compatible = "richtek,rt5033-charger",
++	}, {
++		.name = "rt5033-battery",
++		.of_compatible = "richtek,rt5033-battery",
++	},
++};
++
++static const struct of_device_id rt5033_dt_match[] = {
++	{ .compatible = "richtek,rt5033", },
++	{ }
++};
++
++static const struct regmap_config rt5033_regmap_config = {
++	.reg_bits	= 8,
++	.val_bits	= 8,
++	.max_register	= RT5033_REG_END,
++};
++
++static int rt5033_i2c_probe(struct i2c_client *i2c,
++				const struct i2c_device_id *id)
++{
++	struct rt5033_dev *rt5033;
++	unsigned int data;
++	int ret;
++
++	rt5033 = devm_kzalloc(&i2c->dev, sizeof(*rt5033), GFP_KERNEL);
++	if (!rt5033)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, rt5033);
++	rt5033->dev = &i2c->dev;
++	rt5033->irq = i2c->irq;
++	rt5033->wakeup = true;
++
++	rt5033->regmap = devm_regmap_init_i2c(i2c, &rt5033_regmap_config);
++	if (IS_ERR(rt5033->regmap)) {
++		dev_err(&i2c->dev, "Failed to allocate register map.\n");
++		return PTR_ERR(rt5033->regmap);
++	}
++
++	ret = regmap_read(rt5033->regmap, RT5033_REG_DEVICE_ID, &data);
++	if (ret) {
++		dev_err(&i2c->dev, "Device not found\n");
++		return -ENODEV;
++	}
++	dev_info(&i2c->dev, "Device found Device ID: %04x\n", data);
++
++	ret = regmap_add_irq_chip(rt5033->regmap, rt5033->irq,
++			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++			0, &rt5033_irq_chip, &rt5033->irq_data);
++	if (ret) {
++		dev_err(&i2c->dev, "Failed to request IRQ %d: %d\n",
++							rt5033->irq, ret);
++		return ret;
++	}
++
++	ret = mfd_add_devices(rt5033->dev, -1, rt5033_devs,
++			ARRAY_SIZE(rt5033_devs), NULL, 0,
++			regmap_irq_get_domain(rt5033->irq_data));
++	if (ret < 0) {
++		dev_err(&i2c->dev, "Failed to add RT5033 child device.\n");
++		return ret;
++	}
++
++	device_init_wakeup(rt5033->dev, rt5033->wakeup);
++
++	return 0;
++}
++
++static int rt5033_i2c_remove(struct i2c_client *i2c)
++{
++	struct rt5033_dev *rt5033 = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(rt5033->dev);
++
++	return 0;
++}
++
++static const struct i2c_device_id rt5033_i2c_id[] = {
++	{ "rt5033", },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, rt5033_i2c_id);
++
++static struct i2c_driver rt5033_driver = {
++	.driver = {
++		.name = "rt5033",
++		.of_match_table = of_match_ptr(rt5033_dt_match),
++	},
++	.probe = rt5033_i2c_probe,
++	.remove = rt5033_i2c_remove,
++	.id_table = rt5033_i2c_id,
++};
++module_i2c_driver(rt5033_driver);
++
++MODULE_DESCRIPTION("Richtek RT5033 multi-function core driver");
++MODULE_AUTHOR("Beomho Seo <beomho.seo@samsung.com>");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/rt5033-private.h b/include/linux/mfd/rt5033-private.h
+new file mode 100644
+index 0000000..1b63fc2
+--- /dev/null
++++ b/include/linux/mfd/rt5033-private.h
+@@ -0,0 +1,260 @@
++/*
++ * MFD core driver for Richtek RT5033
++ *
++ * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
++ * Author: Beomho Seo <beomho.seo@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published bythe Free Software Foundation.
++ */
++
++#ifndef __RT5033_PRIVATE_H__
++#define __RT5033_PRIVATE_H__
++
++enum rt5033_reg {
++	RT5033_REG_CHG_STAT		= 0x00,
++	RT5033_REG_CHG_CTRL1		= 0x01,
++	RT5033_REG_CHG_CTRL2		= 0x02,
++	RT5033_REG_DEVICE_ID		= 0x03,
++	RT5033_REG_CHG_CTRL3		= 0x04,
++	RT5033_REG_CHG_CTRL4		= 0x05,
++	RT5033_REG_CHG_CTRL5		= 0x06,
++	RT5033_REG_RT_CTRL0		= 0x07,
++	RT5033_REG_CHG_RESET		= 0x08,
++	/* Reserved 0x09~0x18 */
++	RT5033_REG_RT_CTRL1		= 0x19,
++	/* Reserved 0x1A~0x20 */
++	RT5033_REG_FLED_FUNCTION1	= 0x21,
++	RT5033_REG_FLED_FUNCTION2	= 0x22,
++	RT5033_REG_FLED_STROBE_CTRL1	= 0x23,
++	RT5033_REG_FLED_STROBE_CTRL2	= 0x24,
++	RT5033_REG_FLED_CTRL1		= 0x25,
++	RT5033_REG_FLED_CTRL2		= 0x26,
++	RT5033_REG_FLED_CTRL3		= 0x27,
++	RT5033_REG_FLED_CTRL4		= 0x28,
++	RT5033_REG_FLED_CTRL5		= 0x29,
++	/* Reserved 0x2A~0x40 */
++	RT5033_REG_CTRL			= 0x41,
++	RT5033_REG_BUCK_CTRL		= 0x42,
++	RT5033_REG_LDO_CTRL		= 0x43,
++	/* Reserved 0x44~0x46 */
++	RT5033_REG_MANUAL_RESET_CTRL	= 0x47,
++	/* Reserved 0x48~0x5F */
++	RT5033_REG_CHG_IRQ1		= 0x60,
++	RT5033_REG_CHG_IRQ2		= 0x61,
++	RT5033_REG_CHG_IRQ3		= 0x62,
++	RT5033_REG_CHG_IRQ1_CTRL	= 0x63,
++	RT5033_REG_CHG_IRQ2_CTRL	= 0x64,
++	RT5033_REG_CHG_IRQ3_CTRL	= 0x65,
++	RT5033_REG_LED_IRQ_STAT		= 0x66,
++	RT5033_REG_LED_IRQ_CTRL		= 0x67,
++	RT5033_REG_PMIC_IRQ_STAT	= 0x68,
++	RT5033_REG_PMIC_IRQ_CTRL	= 0x69,
++	RT5033_REG_SHDN_CTRL		= 0x6A,
++	RT5033_REG_OFF_EVENT		= 0x6B,
++
++	RT5033_REG_END,
++};
++
++/* RT5033 Charger state register */
++#define RT5033_CHG_STAT_MASK		0x20
++#define RT5033_CHG_STAT_DISCHARGING	0x00
++#define RT5033_CHG_STAT_FULL		0x10
++#define RT5033_CHG_STAT_CHARGING	0x20
++#define RT5033_CHG_STAT_NOT_CHARGING	0x30
++#define RT5033_CHG_STAT_TYPE_MASK	0x60
++#define RT5033_CHG_STAT_TYPE_PRE	0x20
++#define RT5033_CHG_STAT_TYPE_FAST	0x60
++
++/* RT5033 CHGCTRL1 register */
++#define RT5033_CHGCTRL1_IAICR_MASK	0xe0
++#define RT5033_CHGCTRL1_MODE_MASK	0x01
++
++/* RT5033 CHGCTRL2 register */
++#define RT5033_CHGCTRL2_CV_MASK		0xfc
++
++/* RT5033 CHGCTRL3 register */
++#define RT5033_CHGCTRL3_CFO_EN_MASK	0x40
++#define RT5033_CHGCTRL3_TIMER_MASK	0x38
++#define RT5033_CHGCTRL3_TIMER_EN_MASK	0x01
++
++/* RT5033 CHGCTRL4 register */
++#define RT5033_CHGCTRL4_EOC_MASK	0x07
++#define RT5033_CHGCTRL4_IPREC_MASK	0x18
++
++/* RT5033 CHGCTRL5 register */
++#define RT5033_CHGCTRL5_VPREC_MASK	0x0f
++#define RT5033_CHGCTRL5_ICHG_MASK	0xf0
++#define RT5033_CHGCTRL5_ICHG_SHIFT	0x04
++#define RT5033_CHG_MAX_CURRENT		0x0d
++
++/* RT5033 RT CTRL1 register */
++#define RT5033_RT_CTRL1_UUG_MASK	0x02
++#define RT5033_RT_HZ_MASK		0x01
++
++/* RT5033 control register */
++#define RT5033_CTRL_FCCM_BUCK_MASK		0x00
++#define RT5033_CTRL_BUCKOMS_MASK		0x01
++#define RT5033_CTRL_LDOOMS_MASK			0x02
++#define RT5033_CTRL_SLDOOMS_MASK		0x03
++#define RT5033_CTRL_EN_BUCK_MASK		0x04
++#define RT5033_CTRL_EN_LDO_MASK			0x05
++#define RT5033_CTRL_EN_SAFE_LDO_MASK		0x06
++#define RT5033_CTRL_LDO_SLEEP_MASK		0x07
++
++/* RT5033 BUCK control register */
++#define RT5033_BUCK_CTRL_MASK			0x1f
++
++/* RT5033 LDO control register */
++#define RT5033_LDO_CTRL_MASK			0x1f
++
++/* RT5033 charger property - model, manufacturer */
++
++#define RT5033_CHARGER_MODEL	"RT5033WSC Charger"
++#define RT5033_MANUFACTURER	"Richtek Technology Corporation"
++
++/*
++ * RT5033 charger fast-charge current lmits (as in CHGCTRL1 register),
++ * AICR mode limits the input current for example,
++ * the AIRC 100 mode limits the input current to 100 mA.
++ */
++#define RT5033_AICR_100_MODE			0x20
++#define RT5033_AICR_500_MODE			0x40
++#define RT5033_AICR_700_MODE			0x60
++#define RT5033_AICR_900_MODE			0x80
++#define RT5033_AICR_1500_MODE			0xc0
++#define RT5033_AICR_2000_MODE			0xe0
++#define RT5033_AICR_MODE_MASK			0xe0
++
++/* RT5033 use internal timer need to set time */
++#define RT5033_FAST_CHARGE_TIMER4		0x00
++#define RT5033_FAST_CHARGE_TIMER6		0x01
++#define RT5033_FAST_CHARGE_TIMER8		0x02
++#define RT5033_FAST_CHARGE_TIMER9		0x03
++#define RT5033_FAST_CHARGE_TIMER12		0x04
++#define RT5033_FAST_CHARGE_TIMER14		0x05
++#define RT5033_FAST_CHARGE_TIMER16		0x06
++
++#define RT5033_INT_TIMER_ENABLE			0x01
++
++/* RT5033 charger termination enable mask */
++#define RT5033_TE_ENABLE_MASK			0x08
++
++/*
++ * RT5033 charger opa mode. RT50300 have two opa mode charger mode
++ * and boost mode for OTG
++ */
++
++#define RT5033_CHARGER_MODE			0x00
++#define RT5033_BOOST_MODE			0x01
++
++/* RT5033 charger termination enable */
++#define RT5033_TE_ENABLE			0x08
++
++/* RT5033 charger CFO enable */
++#define RT5033_CFO_ENABLE			0x40
++
++/* RT5033 charger constant charge voltage (as in CHGCTRL2 register), uV */
++#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MIN	3650000U
++#define RT5033_CHARGER_CONST_VOLTAGE_STEP_NUM   25000U
++#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MAX	4400000U
++
++/* RT5033 charger pre-charge current limits (as in CHGCTRL4 register), uA */
++#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MIN	350000U
++#define RT5033_CHARGER_PRE_CURRENT_STEP_NUM	100000U
++#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MAX	650000U
++
++/* RT5033 charger fast-charge current (as in CHGCTRL5 register), uA */
++#define RT5033_CHARGER_FAST_CURRENT_MIN		700000U
++#define RT5033_CHARGER_FAST_CURRENT_STEP_NUM	100000U
++#define RT5033_CHARGER_FAST_CURRENT_MAX		2000000U
++
++/*
++ * RT5033 charger const-charge end of charger current (
++ * as in CHGCTRL4 register), uA
++ */
++#define RT5033_CHARGER_EOC_MIN			150000U
++#define RT5033_CHARGER_EOC_REF			300000U
++#define RT5033_CHARGER_EOC_STEP_NUM1		50000U
++#define RT5033_CHARGER_EOC_STEP_NUM2		100000U
++#define RT5033_CHARGER_EOC_MAX			600000U
++
++/*
++ * RT5033 charger pre-charge threshold volt limits
++ * (as in CHGCTRL5 register), uV
++ */
++
++#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MIN	2300000U
++#define RT5033_CHARGER_PRE_THRESHOLD_STEP_NUM	100000U
++#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MAX	3800000U
++
++/*
++ * RT5033 charger enable UUG, If UUG enable MOS auto control by H/W charger
++ * circuit.
++ */
++#define RT5033_CHARGER_UUG_ENABLE		0x02
++
++/* RT5033 charger High impedance mode */
++#define RT5033_CHARGER_HZ_DISABLE		0x00
++#define RT5033_CHARGER_HZ_ENABLE		0x01
++
++/* RT5033 regulator BUCK output voltage uV */
++#define RT5033_REGULATOR_BUCK_VOLTAGE_MIN		1000000U
++#define RT5033_REGULATOR_BUCK_VOLTAGE_MAX		3000000U
++#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP		100000U
++#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP_NUM		32
++
++/* RT5033 regulator LDO output voltage uV */
++#define RT5033_REGULATOR_LDO_VOLTAGE_MIN		1200000U
++#define RT5033_REGULATOR_LDO_VOLTAGE_MAX		3000000U
++#define RT5033_REGULATOR_LDO_VOLTAGE_STEP		100000U
++#define RT5033_REGULATOR_LDO_VOLTAGE_STEP_NUM		32
++
++/* RT5033 regulator SAFE LDO output voltage uV */
++#define RT5033_REGULATOR_SAFE_LDO_VOLTAGE		4900000U
++
++enum rt5033_fuel_reg {
++	RT5033_FUEL_REG_OCV_H		= 0x00,
++	RT5033_FUEL_REG_OCV_L		= 0x01,
++	RT5033_FUEL_REG_VBAT_H		= 0x02,
++	RT5033_FUEL_REG_VBAT_L		= 0x03,
++	RT5033_FUEL_REG_SOC_H		= 0x04,
++	RT5033_FUEL_REG_SOC_L		= 0x05,
++	RT5033_FUEL_REG_CTRL_H		= 0x06,
++	RT5033_FUEL_REG_CTRL_L		= 0x07,
++	RT5033_FUEL_REG_CRATE		= 0x08,
++	RT5033_FUEL_REG_DEVICE_ID	= 0x09,
++	RT5033_FUEL_REG_AVG_VOLT_H	= 0x0A,
++	RT5033_FUEL_REG_AVG_VOLT_L	= 0x0B,
++	RT5033_FUEL_REG_CONFIG_H	= 0x0C,
++	RT5033_FUEL_REG_CONFIG_L	= 0x0D,
++	/* Reserved 0x0E~0x0F */
++	RT5033_FUEL_REG_IRQ_CTRL	= 0x10,
++	RT5033_FUEL_REG_IRQ_FLAG	= 0x11,
++	RT5033_FUEL_VMIN		= 0x12,
++	RT5033_FUEL_SMIN		= 0x13,
++	/* Reserved 0x14~0x1F */
++	RT5033_FUEL_VGCOMP1		= 0x20,
++	RT5033_FUEL_VGCOMP2		= 0x21,
++	RT5033_FUEL_VGCOMP3		= 0x22,
++	RT5033_FUEL_VGCOMP4		= 0x23,
++	/* Reserved 0x24~0xFD */
++	RT5033_FUEL_MFA_H		= 0xFE,
++	RT5033_FUEL_MFA_L		= 0xFF,
++
++	RT5033_FUEL_REG_END,
++};
++
++/* RT5033 fuel gauge battery present property */
++#define RT5033_FUEL_BAT_PRESENT		0x02
++
++/* RT5033 PMIC interrupts */
++#define RT5033_PMIC_IRQ_BUCKOCP		2
++#define RT5033_PMIC_IRQ_BUCKLV		3
++#define RT5033_PMIC_IRQ_SAFELDOLV	4
++#define RT5033_PMIC_IRQ_LDOLV		5
++#define RT5033_PMIC_IRQ_OT		6
++#define RT5033_PMIC_IRQ_VDDA_UV		7
++
++#endif /* __RT5033_PRIVATE_H__ */
+diff --git a/include/linux/mfd/rt5033.h b/include/linux/mfd/rt5033.h
+new file mode 100644
+index 0000000..bd06415
+--- /dev/null
++++ b/include/linux/mfd/rt5033.h
+@@ -0,0 +1,62 @@
++/*
++ * MFD core driver for the RT5033
++ *
++ * Copyright (C) 2014 Samsung Electronics
++ * Author: Beomho Seo <beomho.seo@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published bythe Free Software Foundation.
++ */
++
++#ifndef __RT5033_H__
++#define __RT5033_H__
++
++#include <linux/regulator/consumer.h>
++#include <linux/i2c.h>
++#include <linux/regmap.h>
++#include <linux/power_supply.h>
++
++/* RT5033 regulator IDs */
++enum rt5033_regulators {
++	RT5033_BUCK = 0,
++	RT5033_LDO,
++	RT5033_SAFE_LDO,
++
++	RT5033_REGULATOR_NUM,
++};
++
++struct rt5033_dev {
++	struct device *dev;
++
++	struct regmap *regmap;
++	struct regmap_irq_chip_data *irq_data;
++	int irq;
++	bool wakeup;
++};
++
++struct rt5033_battery {
++	struct i2c_client	*client;
++	struct rt5033_dev	*rt5033;
++	struct regmap		*regmap;
++	struct power_supply	psy;
++};
++
++/* RT5033 charger platform data */
++struct rt5033_charger_data {
++	unsigned int pre_uamp;
++	unsigned int pre_uvolt;
++	unsigned int const_uvolt;
++	unsigned int eoc_uamp;
++	unsigned int fast_uamp;
++};
++
++struct rt5033_charger {
++	struct device		*dev;
++	struct rt5033_dev	*rt5033;
++	struct power_supply	psy;
++
++	struct rt5033_charger_data	*data;
++};
++
++#endif /* __RT5033_H__ */
+-- 
+1.7.9.5
 
