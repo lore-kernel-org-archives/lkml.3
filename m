@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965781AbaKLBtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:49:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60928 "EHLO
+	id S935209AbaKLC0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:26:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964953AbaKLBtu (ORCPT
+	with ESMTP id S965684AbaKLBte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:50 -0500
+	Tue, 11 Nov 2014 20:49:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Honggang Li <enjoymindful@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 007/123] Revert "percpu: free percpu allocation info for uniprocessor system"
-Date: Wed, 12 Nov 2014 10:16:13 +0900
-Message-Id: <20141112011719.323360282@linuxfoundation.org>
+        Ian Morgan <imorgan@primordial.ca>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 003/123] ax88179_178a: fix bonding failure
+Date: Wed, 12 Nov 2014 10:16:09 +0900
+Message-Id: <20141112011719.140927069@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,38 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Ian Morgan <imorgan@primordial.ca>
 
-commit bb2e226b3bef596dd56be97df655d857b4603923 upstream.
+[ Upstream commit 95ff88688781db2f64042e69bd499e518bbb36e5 ]
 
-This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
-uniprocessor system").
+The following patch fixes a bug which causes the ax88179_178a driver to be
+incapable of being added to a bond.
 
-The commit causes a hang with a crisv32 image. This may be an architecture
-problem, but at least for now the revert is necessary to be able to boot a
-crisv32 image.
+When I brought up the issue with the bonding maintainers, they indicated
+that the real problem was with the NIC driver which must return zero for
+success (of setting the MAC address). I see that several other NIC drivers
+follow that pattern by either simply always returing zero, or by passing
+through a negative (error) result while rewriting any positive return code
+to zero. With that same philisophy applied to the ax88179_178a driver, it
+allows it to work correctly with the bonding driver.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Honggang Li <enjoymindful@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
+I believe this is suitable for queuing in -stable, as it's a small, simple,
+and obvious fix that corrects a defect with no other known workaround.
+
+This patch is against vanilla 3.17(.0).
+
+Signed-off-by: Ian Morgan <imorgan@primordial.ca>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/percpu.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/net/usb/ax88179_178a.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1910,8 +1910,6 @@ void __init setup_per_cpu_areas(void)
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -695,6 +695,7 @@ static int ax88179_set_mac_addr(struct n
+ {
+ 	struct usbnet *dev = netdev_priv(net);
+ 	struct sockaddr *addr = p;
++	int ret;
  
- 	if (pcpu_setup_first_chunk(ai, fc) < 0)
- 		panic("Failed to initialize percpu areas.");
--
--	pcpu_free_alloc_info(ai);
+ 	if (netif_running(net))
+ 		return -EBUSY;
+@@ -704,8 +705,12 @@ static int ax88179_set_mac_addr(struct n
+ 	memcpy(net->dev_addr, addr->sa_data, ETH_ALEN);
+ 
+ 	/* Set the MAC address */
+-	return ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
++	ret = ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
+ 				 ETH_ALEN, net->dev_addr);
++	if (ret < 0)
++		return ret;
++
++	return 0;
  }
  
- #endif	/* CONFIG_SMP */
+ static const struct net_device_ops ax88179_netdev_ops = {
 
 
