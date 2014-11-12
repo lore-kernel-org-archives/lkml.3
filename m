@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965190AbaKLDt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:49:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59024 "EHLO
+	id S934464AbaKLDtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:49:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59013 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932424AbaKLB1x (ORCPT
+	with ESMTP id S932440AbaKLB1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:53 -0500
+	Tue, 11 Nov 2014 20:27:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH 3.17 162/319] ext4: fix overflow when updating superblock backups after resize
-Date: Wed, 12 Nov 2014 10:15:00 +0900
-Message-Id: <20141112011019.478867695@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Theodore Tso <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH 3.17 160/319] ext4: check s_chksum_driver when looking for bg csum presence
+Date: Wed, 12 Nov 2014 10:14:58 +0900
+Message-Id: <20141112011019.096800659@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,36 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 9378c6768e4fca48971e7b6a9075bc006eda981d upstream.
+commit 813d32f91333e4c33d5a19b67167c4bae42dae75 upstream.
 
-When there are no meta block groups update_backups() will compute the
-backup block in 32-bit arithmetics thus possibly overflowing the block
-number and corrupting the filesystem. OTOH filesystems without meta
-block groups larger than 16 TB should be rare. Fix the problem by doing
-the counting in 64-bit arithmetics.
+Convert the ext4_has_group_desc_csum predicate to look for a checksum
+driver instead of the metadata_csum flag and change the bg checksum
+calculation function to look for GDT_CSUM before taking the crc16
+path.
 
-Coverity-id: 741252
-Signed-off-by: Jan Kara <jack@suse.cz>
+Without this patch, if we mount with ^uninit_bg,^metadata_csum and
+later metadata_csum gets turned on by accident, the block group
+checksum functions will incorrectly assume that checksumming is
+enabled (metadata_csum) but that crc16 should be used
+(!s_chksum_driver).  This is totally wrong, so fix the predicate
+and the checksum formula selection.
+
+(Granted, if the metadata_csum feature bit gets enabled on a live FS
+then something underhanded is going on, but we could at least avoid
+writing garbage into the on-disk fields.)
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Reviewed-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ext4.h  |    4 ++--
+ fs/ext4/super.c |    4 ++++
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1081,7 +1081,7 @@ static void update_backups(struct super_
- 			break;
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2333,8 +2333,8 @@ extern int ext4_register_li_request(stru
+ static inline int ext4_has_group_desc_csum(struct super_block *sb)
+ {
+ 	return EXT4_HAS_RO_COMPAT_FEATURE(sb,
+-					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM |
+-					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM);
++					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM) ||
++	       (EXT4_SB(sb)->s_chksum_driver != NULL);
+ }
  
- 		if (meta_bg == 0)
--			backup_block = group * bpg + blk_off;
-+			backup_block = ((ext4_fsblk_t)group) * bpg + blk_off;
- 		else
- 			backup_block = (ext4_group_first_block_no(sb, group) +
- 					ext4_bg_has_super(sb, group));
+ static inline int ext4_has_metadata_csum(struct super_block *sb)
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2025,6 +2025,10 @@ static __le16 ext4_group_desc_csum(struc
+ 	}
+ 
+ 	/* old crc16 code */
++	if (!(sbi->s_es->s_feature_ro_compat &
++	      cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)))
++		return 0;
++
+ 	offset = offsetof(struct ext4_group_desc, bg_checksum);
+ 
+ 	crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
 
 
