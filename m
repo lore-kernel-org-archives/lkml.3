@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaKLWSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:18:36 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:23131 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865AbaKLWSf (ORCPT
+	id S1752790AbaKLWbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:31:53 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40780 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaKLWbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:18:35 -0500
-Date: Wed, 12 Nov 2014 17:18:13 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH V3 6/8] xen: Hide get_phys_to_machine() to be able to
- tune common path
-Message-ID: <20141112221813.GE7549@laptop.dumpdata.com>
-References: <1415684626-18590-1-git-send-email-jgross@suse.com>
- <1415684626-18590-7-git-send-email-jgross@suse.com>
+	Wed, 12 Nov 2014 17:31:52 -0500
+Date: Wed, 12 Nov 2014 16:31:54 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        List for communicating with real GTA04 owners 
+	<gta04-owner@goldelico.com>
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
+ enabled
+Message-ID: <20141112223154.GP641@saruman>
+Reply-To: <balbi@ti.com>
+References: <20141102180756.GH31454@atomide.com>
+ <5458D29E.50908@compulab.co.il>
+ <20141104154231.GP31454@atomide.com>
+ <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
+ <515E660B-B65D-41EF-97F5-74E4DE8FDD13@goldelico.com>
+ <20141112212027.GK26481@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oDto3OTLsk6uOlQH"
 Content-Disposition: inline
-In-Reply-To: <1415684626-18590-7-git-send-email-jgross@suse.com>
+In-Reply-To: <20141112212027.GK26481@atomide.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 06:43:44AM +0100, Juergen Gross wrote:
-> Today get_phys_to_machine() is always called when the mfn for a pfn
-> is to be obtained. Add a wrapper __pfn_to_mfn() as inline function
-> to be able to avoid calling get_phys_to_machine() when possible as
+--oDto3OTLsk6uOlQH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-s/when/where/
-> soon as the switch to a linear mapped p2m list has been done.
+On Wed, Nov 12, 2014 at 01:20:27PM -0800, Tony Lindgren wrote:
+> * Dr. H. Nikolaus Schaller <hns@goldelico.com> [141112 12:28]:
+> > Am 12.11.2014 um 16:45 schrieb Grazvydas Ignotas <notasas@gmail.com>:
+> > > On Tue, Nov 4, 2014 at 5:42 PM, Tony Lindgren <tony@atomide.com> wrot=
+e:
+> > >=20
+> > > Pandora does, as well as GTA04 AFAIK,
+> >=20
+> > Yes. The trick is that the power level that turns on the device is a li=
+ttle higher
+> > and the battery provides enough energy for approx. 30 seconds until it =
+drained
+> > to a level where it turns off. Depending on general setup (WIFI must re=
+main
+> > powered off after boot) this is enough to boot into Linux and start ful=
+l charging.
+> > Another trick is to modify MLO and U-Boot to raise the charging current.
+>=20
+> Depending on the device and the boot-up speed this seems to work only when
+> connected to a Linux PC though. AFAIK Windows PCs enforce the 100mA USB p=
+ower
+> limit until the device is enumerated which can keep the device in an eter=
+nal
+> reboot loop not being able to ever get the charging going :)
 
-But your inline function still calls get_phys_to_machine?
+this is actually what the USB Battery Charging spec requires us to
+implement. If Linux is doing differently, it's a bug on Linux which
+should be fixed :-)
 
+No host is allowed to source more then one unit load (100mA in LS/FS/HS,
+150mA in SS) until the device is fully enumerated. Host are also
+required to drop max current budget to 8mA (IIRC) if the device doesn't
+enumerate for however many minutes (I guess it was a pretty long
+threshold, something like half an hour or so. My memory fails me right
+now).
 
-> 
-> Signed-off-by: Juergen Gross <jgross@suse.com>
-> ---
->  arch/x86/include/asm/xen/page.h | 27 +++++++++++++++++++++------
->  arch/x86/xen/mmu.c              |  2 +-
->  arch/x86/xen/p2m.c              |  6 +++---
->  3 files changed, 25 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index 28fa795..07d8a7b 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -59,6 +59,22 @@ extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
->  				     struct page **pages, unsigned int count);
->  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
->  
-> +/*
-> + * When to use pfn_to_mfn(), __pfn_to_mfn() or get_phys_to_machine():
-> + * - pfn_to_mfn() returns either INVALID_P2M_ENTRY or the mfn. In case of an
-> + *   identity entry the identity indicator will be cleared.
+--=20
+balbi
 
-Why don't you say : In case of identity PFN the same PFN is returned.
+--oDto3OTLsk6uOlQH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-But you did miss that also the FOREIGN_FRAME_BIT is cleared.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> + * - __pfn_to_mfn() returns the found entry of the p2m table. A possibly set
+iQIcBAEBAgAGBQJUY9/aAAoJEIaOsuA1yqRERWsP/RUYuabRwR1hWbpKpTU5hhnU
+pYhODCI1EN7NnEMVnAognL1ZqLvBM0F5QCQxIDILszkswBtkVBLQxvjneIvrQprn
+q5Yiz5lhJiJzbEqogmm+4WUzVhhaGVhbB/jQsCJZuv5XKJVO+/D9ylj5puACZNfV
+NqmR+cwhbW+Hv5lu9rD7oQhtcuaBoPp3U4DejsePLwOq7emC4/A2aHyussMrqvs+
+Say3BRoEkXRox9xI2hfA4BnnQlpwyRpjZiFd7TIHqeVG7h5VLyA17WuInWqhAMn/
+lhuO8QotJHd67FjAliVTSvQX/wAuYpjm0XknvsURHDuFEokYbkoy0Mf5XYjEEMNo
+fBct3yio+K9aIFTBGXDHnj7B7Dktw0+WfSbcQkY3c/Tu8T2bbEuhAb/4Jy7imY1B
+R7DKn3cm1xREloDJlMQNsEUN3fieVn92K+2LOB+JB/sdx8cc/2HvX2sHY6F8nqq7
+jns2ax5nGnOehakQr+f79MGnujOELKOh/3NFIzNwiTHXwyjxB3uPag34iD4g4lWU
+TEJX1buTI+QKNk9o8gHRf3M5x7JAAIUA8yKB5kWLEVqcI0aYVz3QrqrvukA+uOlB
+Ko3TGNg0qEyTeEhpYQzLH9+3ik7FGFTIafZmqBVT6ZuGHFnEKQXnNZioe+qPyFhn
+nmxXDvg3xSXNL1/TsXQv
+=KRB2
+-----END PGP SIGNATURE-----
 
-s/of the/in the/
-> + *   identity indicator will be still set. __pfn_to_mfn() is encapsulating
-.. be still set if the PFN is an identity one.
-> + *   get_phys_to_machine() and might skip that function if possible to speed
-> + *   up the common path.
-
-How is is skipping that function? The patch below does no such thing?
-
-> + * - get_phys_to_machine() is basically the same as __pfn_to_mfn(), but
-> + *   without any short cuts for the common fast path.
-
-Right. Perhpas we should call it 'slow_p2m' instead of the 'get_phys_to_machine'.
-
-> + */
-> +static inline unsigned long __pfn_to_mfn(unsigned long pfn)
-> +{
-> +	return get_phys_to_machine(pfn);
-> +}
-> +
+--oDto3OTLsk6uOlQH--
