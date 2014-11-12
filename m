@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaKLIjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 03:39:09 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:52730 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751023AbaKLIjI (ORCPT
+	id S1751934AbaKLIqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 03:46:09 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:41538 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaKLIqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 03:39:08 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="43261193"
-Message-ID: <54631C7F.5090905@cn.fujitsu.com>
-Date: Wed, 12 Nov 2014 16:38:23 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 12 Nov 2014 03:46:07 -0500
+Message-ID: <54631E48.7090804@gmail.com>
+Date: Wed, 12 Nov 2014 14:16:00 +0530
+From: Sanchayan Maity <maitysanchayan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: <akpm@linux-foundation.org>, <grygorii.strashko@ti.com>,
-        <yinghai@kernel.org>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <fabf@skynet.be>, <nzimmer@sgi.com>, <wangnan0@huawei.com>,
-        <vdavydov@parallels.com>, <toshi.kani@hp.com>,
-        <phacht@linux.vnet.ibm.com>, <tj@kernel.org>,
-        <kirill.shutemov@linux.intel.com>, <riel@redhat.com>,
-        <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
-        <qiuxishi@huawei.com>, <mgorman@suse.de>, <rientjes@google.com>,
-        <hannes@cmpxchg.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH 0/2] Fix node meminfo corruption.
-References: <1415781410-19825-1-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1415781410-19825-1-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Stefan Agner <stefan@agner.ch>
+CC: rtc-linux@googlegroups.com, shawn.guo@linaro.org, linux@arm.linux.org.uk,
+        kernel@pengutronix.de, b35083@freescale.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [[PATCHv2] 2/3] ARM: dts: vfxxx: Add SNVS node
+References: <cover.1415364391.git.maitysanchayan@gmail.com> <64244b916de3864b714e829c3adeecec71aea2b3.1415364391.git.maitysanchayan@gmail.com> <38daf99040ba00bd5150e7bc73a2fd76@agner.ch>
+In-Reply-To: <38daf99040ba00bd5150e7bc73a2fd76@agner.ch>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, please ignore this series. Sent by mistake.
+Hello,
 
-On 11/12/2014 04:36 PM, Tang Chen wrote:
-> There are two problems when calculating node meminfo:
->
-> 1. When hot-adding a node without onlining any page, MemTotal corrupted.
->
-> # hot-add node2 (memory not onlined)
-> # cat /sys/device/system/node/node2/meminfo
-> Node 2 MemTotal:       33554432 kB			/* corrupted */
-> Node 2 MemFree:               0 kB
-> Node 2 MemUsed:        33554432 kB
-> Node 2 Active:                0 kB
-> ......
->
->
-> 2. When onlining memory on node2, MemFree of node3 corrupted.
->
-> # for ((i = 2048; i < 2064; i++)); do echo online_movable > /sys/devices/system/node/node2/memory$i/state; done
-> # cat /sys/devices/system/node/node2/meminfo
-> Node 2 MemTotal:       33554432 kB
-> Node 2 MemFree:        33549092 kB
-> Node 2 MemUsed:            5340 kB
-> ......
-> # cat /sys/devices/system/node/node3/meminfo
-> Node 3 MemTotal:              0 kB
-> Node 3 MemFree:               248 kB                    /* corrupted */
-> Node 3 MemUsed:               0 kB
-> ......
->
-> This patch-set fixes them.
->
-> Tang Chen (2):
->    mem-hotplug: Reset node managed pages when hot-adding a new pgdat.
->    mem-hotplug: Fix wrong check for zone->pageset initialization in
->      online_pages().
->
->   include/linux/bootmem.h |  1 +
->   include/linux/mm.h      |  1 +
->   mm/bootmem.c            |  9 +++++----
->   mm/memory_hotplug.c     | 15 ++++++++++++++-
->   mm/nobootmem.c          |  8 +++++---
->   mm/page_alloc.c         |  5 +++++
->   6 files changed, 31 insertions(+), 8 deletions(-)
->
+On Wednesday 12 November 2014 02:50 AM, Stefan Agner wrote:
+> On 2014-11-07 14:04, Sanchayan Maity wrote:
+>> This patch adds a devicetree node for the Secure
+>> Non-Volatile Storage (SNVS) on the VF610 platform.
+>> The SNVS block also has a Real Time Counter (RTC).
+>>
+>> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
+>> ---
+>>  arch/arm/boot/dts/vfxxx.dtsi |   15 +++++++++++++++
+>>  1 file changed, 15 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/vfxxx.dtsi b/arch/arm/boot/dts/vfxxx.dtsi
+>> index 4e70833..bc131b0 100644
+>> --- a/arch/arm/boot/dts/vfxxx.dtsi
+>> +++ b/arch/arm/boot/dts/vfxxx.dtsi
+>> @@ -338,6 +338,21 @@
+>>  				status = "disabled";
+>>  			};
+>>  
+>> +			snvs0: snvs@400a7000 {
+>> +				compatible = "fsl,sec-v4.0-mon", "simple-bus";
+>> +				#address-cells = <1>;
+>> +				#size-cells = <1>;
+>> +				ranges = <0 0x400a7000 0x2000>;
+>> +
+>> +				snvs-rtc-lp@34 {
+>> +					compatible = "fsl,sec-v4.0-mon-rtc-lp";
+>> +					reg = <0x34 0x58>;
+>> +					interrupts = <0 100 IRQ_TYPE_LEVEL_HIGH>;
+> 
+> With the new device tree structure, the interrupt field needs to be part
+> of the vf500.dtsi now. The vfxxx.dtsi will be the parent also for the
+> Cortex-M4 device tree, which uses a different interrupt controller.
+> 
+> While at it, use the GIC_SPI macro for the first cell (so this will be
+> blend into the other interrupt definitions).
 
+OK. Will fix this and send out a v3. My bad I missed the M4 changes.
+
+> 
+>> +					clocks = <&clks VF610_CLK_SNVS>;
+>> +					clock-names = "snvs-rtc";
+>> +				};
+>> +			};
+>> +
+>>  			uart4: serial@400a9000 {
+>>  				compatible = "fsl,vf610-lpuart";
+>>  				reg = <0x400a9000 0x1000>;
+> 
+
+Regards,
+Sanchayan.
