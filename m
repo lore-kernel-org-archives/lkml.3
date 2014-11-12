@@ -1,71 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaKLL1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:27:05 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:55614 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332AbaKLL1B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:27:01 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Robin Gong <b38343@freescale.com>, kernel@pengutronix.de,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, sre@kernel.org, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        smoch@web.de
-Subject: Re: [PATCH v4 0/3] add power off driver for i.mx6
-Date: Wed, 12 Nov 2014 12:26:03 +0100
-Message-ID: <8538337.xAQUHpampk@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141112105620.GM2704@dragon>
-References: <1415780439-29728-1-git-send-email-b38343@freescale.com> <20141112105620.GM2704@dragon>
+	id S1752209AbaKLL3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:29:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47440 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850AbaKLL3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 06:29:13 -0500
+Date: Wed, 12 Nov 2014 19:28:32 +0800
+From: Minfei Huang <mhuang@redhat.com>
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Cc: joro@8bytes.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH 1/1] x86/iommu: fix incorrect bit operations in setting
+ values
+Message-ID: <20141112112832.GA3334@dhcp-17-108.nay.redhat.com>
+References: <1415172619-4801-1-git-send-email-zhen-hual@hp.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:NSy42sJDTCAngF/eiZagYGvq5blbu0exLFAkSbhgPek
- emb3Gm3lrJSyA1nfph89RgrRqoULxoIh6X9QlIPnQo3EV6AQDy
- ACSSQuqYwZa6lBwi7GiDKKtmT6dTTeEIvbywRPk4ld8NAEtRm8
- z8tl4JjFlpp0+VYHGbXTo6dQUSwjTa+dKN0WTQ9FVvy1Zw0laL
- 7QwZIrOjtpbakLlGI/10HtQOTcc+EzDP83vEXVfqTBFhknacQ9
- IwJ1LC2WHfVngZ+F/i+nFwfVf2r/EkcDCMpayNsyHdp2TLu1An
- R+53eQrGZYKxObuoqtsoOSOV0Dgt+p2Dp+10rXYaPjeIA7g+Ye
- UgxWySdHEANHfy4KMU58=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415172619-4801-1-git-send-email-zhen-hual@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 November 2014 18:56:22 Shawn Guo wrote:
-> On Wed, Nov 12, 2014 at 04:20:36PM +0800, Robin Gong wrote:
-> > Resend the patchset  with the latest MAINTAINERS
-> > Add simple power off driver for i.mx6, including:
-> > - add basic imx-snvs-poweroff driver in drivers/power/reset
-> > - add device node in all dts files of i.mx6.
-> > - enable in config file
-> > 
-> > Change from v3:
-> > - disable poweroff driver in soc level dts and enable it in board level dts
-> > - replace 'EIO' with 'ENODEV' while of_iomap fail.
-> > Change from v2:
-> > - remove useless included head files
-> > - split device binding doc from dts patch
-> > - add description for the case that PMIC_ON_REQ not used as external power
-> >   control
-> > 
-> > Robin Gong (3):
-> >   ARM: dts: imx6: add pm_power_off support for i.mx6 chips
-> >   power: reset: imx-snvs-poweroff: add power off driver for i.mx6
-> >   ARM: configs: imx_v6_v7_defconfig: add power off driver
+The kdump starts 2nd kernel without any error message when I use
+3.18.0-rc4 merged last 6 patchs. The following is the message which 2nd
+kernel prints during booting.
+
+Patchset:
+	0001-iommu-vt-d-Update-iommu_attach_domain-and-its-caller.patch
+	0002-iommu-vt-d-Items-required-for-kdump.patch
+	0003-iommu-vt-d-data-types-and-functions-used-for-kdump.patch
+	0004-iommu-vt-d-Add-domain-id-functions.patch
+	0005-iommu-vt-d-enable-kdump-support-in-iommu-module.patch
+	0006-x86-iommu-fix-incorrect-bit-operations-in-setting-va.patch
+
+log:
+[    1.689604] IOMMU intel_iommu_in_crashdump = true
+[    1.694310] IOMMU Skip disabling iommu hardware translations
+[    1.699987] DMAR: No ATSR found
+[    1.703151] IOMMU Copying translate tables from panicked kernel
+[    1.710786] IOMMU: root_new_virt:0xffff8800296ec000 phys:0x0000296ec000
+[    1.717401] IOMMU:0 Domain ids from panicked kernel:
+[    1.722364] DID did:13(0x000d)
+[    1.725424] DID did:12(0x000c)
+[    1.728482] DID did:11(0x000b)
+[    1.731542] DID did:10(0x000a)
+[    1.734603] DID did:6(0x0006)
+[    1.737574] DID did:7(0x0007)
+[    1.740549] DID did:5(0x0005)
+[    1.743522] DID did:9(0x0009)
+[    1.746495] DID did:8(0x0008)
+[    1.749467] DID did:4(0x0004)
+[    1.752439] DID did:3(0x0003)
+[    1.755413] DID did:2(0x0002)
+[    1.758385] DID did:0(0x0000)
+[    1.761357] DID did:1(0x0001)
+[    1.764331] ----------------------------------------
+[    1.769302] IOMMU 0 0xfed50000: using Queued invalidation
+
+On 11/05/14 at 03:30pm, Li, Zhen-Hua wrote:
+> The function context_set_address_root() and set_root_value are setting new
+> address in a wrong way, and this patch is trying to fix this problem.
 > 
-> I'm fine with the series.  But before I take the patches, I need an ACK
-> from DT folks on the bindings.
-
-Looks ok to me. Using a syscon for fsl,sec-v4.0-mon might have been nicer
-than making it a simple-bus, but that decision has been made already,
-so this version is a logical extension of what we have already.
-
-	Arnd
+> According to Intel Vt-d specs(Feb 2011, Revision 1.3), Chapter 9.1 and 9.2,
+> field ctp in root entry is using bits 12:63, field asr in context entry is
+> using bits 12:63.
+> 
+> To set these fields, the following functions are used:
+> static inline void context_set_address_root(struct context_entry *context,
+>         unsigned long value);
+> and
+> static inline void set_root_value(struct root_entry *root, unsigned long value)
+> 
+> But they are using an invalid method to set these fields, in current code, only
+> a '|' operator is used to set it. This will not set the asr to the expected
+> value if it has an old value.
+> 
+> For example:
+> Before calling this function,
+> 	context->lo = 0x3456789012111;
+> 	value = 0x123456789abcef12;
+> 
+> After we call context_set_address_root(context, value), expected result is
+> 	context->lo == 0x123456789abce111;
+> 
+> But the actual result is:
+> 	context->lo == 0x1237577f9bbde111;
+> 
+> So we need to clear bits 12:63 before setting the new value, this will fix
+> this problem.
+> 
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>  drivers/iommu/intel-iommu.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index a27d6cb..11ac47b 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -195,6 +195,7 @@ static inline void set_root_present(struct root_entry *root)
+>  }
+>  static inline void set_root_value(struct root_entry *root, unsigned long value)
+>  {
+> +	root->val &= ~VTD_PAGE_MASK;
+>  	root->val |= value & VTD_PAGE_MASK;
+>  }
+>  
+> @@ -247,6 +248,7 @@ static inline void context_set_translation_type(struct context_entry *context,
+>  static inline void context_set_address_root(struct context_entry *context,
+>  					    unsigned long value)
+>  {
+> +	context->lo &= ~VTD_PAGE_MASK;
+>  	context->lo |= value & VTD_PAGE_MASK;
+>  }
+>  
+> -- 
+> 2.0.0-rc0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
