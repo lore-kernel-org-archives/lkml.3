@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaKLCqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:46:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60536 "EHLO
+	id S1755259AbaKLCqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:46:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934671AbaKLBoY (ORCPT
+	with ESMTP id S934642AbaKLBoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:44:24 -0500
+	Tue, 11 Nov 2014 20:44:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathaniel Ting <nathaniel.ting@silabs.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 133/203] USB: serial: cp210x: add Silicon Labs 358x VID and PID
-Date: Wed, 12 Nov 2014 10:16:43 +0900
-Message-Id: <20141112011548.804645483@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: [PATCH 3.14 088/203] ARC: [SMP] General Fixes
+Date: Wed, 12 Nov 2014 10:15:58 +0900
+Message-Id: <20141112011546.726274404@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,31 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathaniel Ting <nathaniel.ting@silabs.com>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 35cc83eab097e5720a9cc0ec12bdc3a726f58381 upstream.
+commit c3441edd2dea83923421fd6050d2ffdc57696323 upstream.
 
-Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
-driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
-connect to host PCs over a USB serial link.
+-Pass the expected arg to non-boot park'ing routine
+ (It worked so far because existing SMP backends don't use the arg)
 
-Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+-CONFIG_DEBUG_PREEMPT warning
+
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -155,6 +155,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
-+	{ USB_DEVICE(0x1BA4, 0x0002) },	/* Silicon Labs 358x factory default */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+---
+ arch/arc/kernel/head.S     |    7 ++++---
+ arch/arc/mm/cache_arc700.c |    3 +--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+--- a/arch/arc/kernel/head.S
++++ b/arch/arc/kernel/head.S
+@@ -24,13 +24,13 @@
+ 	.globl stext
+ stext:
+ 	;-------------------------------------------------------------------
+-	; Don't clobber r0-r4 yet. It might have bootloader provided info
++	; Don't clobber r0-r2 yet. It might have bootloader provided info
+ 	;-------------------------------------------------------------------
+ 
+ 	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
+ 
+ #ifdef CONFIG_SMP
+-	; Only Boot (Master) proceeds. Others wait in platform dependent way
++	; Ensure Boot (Master) proceeds. Others wait in platform dependent way
+ 	;	IDENTITY Reg [ 3  2  1  0 ]
+ 	;	(cpu-id)             ^^^	=> Zero for UP ARC700
+ 	;					=> #Core-ID if SMP (Master 0)
+@@ -39,7 +39,8 @@ stext:
+ 	; need to make sure only boot cpu takes this path.
+ 	GET_CPU_ID  r5
+ 	cmp	r5, 0
+-	jnz	arc_platform_smp_wait_to_boot
++	mov.ne	r0, r5
++	jne	arc_platform_smp_wait_to_boot
+ #endif
+ 	; Clear BSS before updating any globals
+ 	; XXX: use ZOL here
+--- a/arch/arc/mm/cache_arc700.c
++++ b/arch/arc/mm/cache_arc700.c
+@@ -100,10 +100,9 @@
+ #define DC_CTRL_INV_MODE_FLUSH  0x40
+ #define DC_CTRL_FLUSH_STATUS    0x100
+ 
+-char *arc_cache_mumbojumbo(int cpu_id, char *buf, int len)
++char *arc_cache_mumbojumbo(int c, char *buf, int len)
+ {
+ 	int n = 0;
+-	unsigned int c = smp_processor_id();
+ 
+ #define PR_CACHE(p, enb, str)						\
+ {									\
 
 
