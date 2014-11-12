@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935216AbaKLCfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:35:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60718 "EHLO
+	id S1754892AbaKLBqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:46:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60705 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934896AbaKLBrC (ORCPT
+	with ESMTP id S1754874AbaKLBqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:47:02 -0500
+	Tue, 11 Nov 2014 20:46:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 177/203] quota: Properly return errors from dquot_writeback_dquots()
-Date: Wed, 12 Nov 2014 10:17:27 +0900
-Message-Id: <20141112011550.807575036@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 173/203] nfsd4: fix crash on unknown operation number
+Date: Wed, 12 Nov 2014 10:17:23 +0900
+Message-Id: <20141112011550.620681990@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,33 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 474d2605d119479e5aa050f738632e63589d4bb5 upstream.
+commit 51904b08072a8bf2b9ed74d1bd7a5300a614471d upstream.
 
-Due to a switched left and right side of an assignment,
-dquot_writeback_dquots() never returned error. This could result in
-errors during quota writeback to not be reported to userspace properly.
-Fix it.
+Unknown operation numbers are caught in nfsd4_decode_compound() which
+sets op->opnum to OP_ILLEGAL and op->status to nfserr_op_illegal.  The
+error causes the main loop in nfsd4_proc_compound() to skip most
+processing.  But nfsd4_proc_compound also peeks ahead at the next
+operation in one case and doesn't take similar precautions there.
 
-Coverity-id: 1226884
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/quota/dquot.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfsd/nfs4proc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -637,7 +637,7 @@ int dquot_writeback_dquots(struct super_
- 			dqstats_inc(DQST_LOOKUPS);
- 			err = sb->dq_op->write_dquot(dquot);
- 			if (!ret && err)
--				err = ret;
-+				ret = err;
- 			dqput(dquot);
- 			spin_lock(&dq_list_lock);
- 		}
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -1243,7 +1243,8 @@ static bool need_wrongsec_check(struct s
+ 	 */
+ 	if (argp->opcnt == resp->opcnt)
+ 		return false;
+-
++	if (next->opnum == OP_ILLEGAL)
++		return false;
+ 	nextd = OPDESC(next);
+ 	/*
+ 	 * Rest of 2.6.3.1.1: certain operations will return WRONGSEC
 
 
