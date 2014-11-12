@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934979AbaKLD4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:56:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57545 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933282AbaKLD4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 22:56:09 -0500
-From: NeilBrown <neilb@suse.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
-Date: Wed, 12 Nov 2014 14:55:19 +1100
-Subject: [PATCH 2/2] mmc: core: reset sdio card properly on resume.
-Cc: GTA04 owners <gta04-owner@goldelico.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141112035519.18267.37985.stgit@notabene.brown>
-In-Reply-To: <20141112035217.18267.43304.stgit@notabene.brown>
-References: <20141112035217.18267.43304.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
+	id S934983AbaKLD44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:56:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58900 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194AbaKLB0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:26:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.17 133/319] KVM: x86: Fix wrong masking on relative jump/call
+Date: Wed, 12 Nov 2014 10:14:31 +0900
+Message-Id: <20141112011014.540138217@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmc_sdio_power_restore() calls
-	mmc_send_if_cond(host, host->card->ocr);
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-	ret = mmc_send_io_op_cond(host, 0, NULL);
+------------------
 
-between mmc_go_idle() and mmc_sdio_init_card().
-mmc_sdio_resume() needs to as well, else my libertas sdio wifi
-device doesn't resume properly from suspend.
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+commit 05c83ec9b73c8124555b706f6af777b10adf0862 upstream.
+
+Relative jumps and calls do the masking according to the operand size, and not
+according to the address size as the KVM emulator does today.
+
+This patch fixes KVM behavior.
+
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/mmc/core/sdio.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kvm/emulate.c |   27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index 3c0f07961fab..da927c61bf47 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -981,8 +981,12 @@ static int mmc_sdio_resume(struct mmc_host *host)
- 	if (mmc_card_is_removable(host) || !mmc_card_keep_power(host)) {
- 		sdio_reset(host);
- 		mmc_go_idle(host);
--		err = mmc_sdio_init_card(host, host->card->ocr, host->card,
--					mmc_card_keep_power(host));
-+		mmc_send_if_cond(host, host->card->ocr);
-+		err = mmc_send_io_op_cond(host, 0, NULL);
-+		if (!err)
-+			err = mmc_sdio_init_card(host, host->card->ocr,
-+						 host->card,
-+						 mmc_card_keep_power(host));
- 	} else if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
- 		/* We may have switched to 1-bit mode during suspend */
- 		err = sdio_enable_4bit_bus(host->card);
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -504,11 +504,6 @@ static void rsp_increment(struct x86_emu
+ 	masked_increment(reg_rmw(ctxt, VCPU_REGS_RSP), stack_mask(ctxt), inc);
+ }
+ 
+-static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
+-{
+-	register_address_increment(ctxt, &ctxt->_eip, rel);
+-}
+-
+ static u32 desc_limit_scaled(struct desc_struct *desc)
+ {
+ 	u32 limit = get_desc_limit(desc);
+@@ -568,6 +563,28 @@ static int emulate_nm(struct x86_emulate
+ 	return emulate_exception(ctxt, NM_VECTOR, 0, false);
+ }
+ 
++static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
++{
++	switch (ctxt->op_bytes) {
++	case 2:
++		ctxt->_eip = (u16)dst;
++		break;
++	case 4:
++		ctxt->_eip = (u32)dst;
++		break;
++	case 8:
++		ctxt->_eip = dst;
++		break;
++	default:
++		WARN(1, "unsupported eip assignment size\n");
++	}
++}
++
++static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
++{
++	assign_eip_near(ctxt, ctxt->_eip + rel);
++}
++
+ static u16 get_segment_selector(struct x86_emulate_ctxt *ctxt, unsigned seg)
+ {
+ 	u16 selector;
 
 
