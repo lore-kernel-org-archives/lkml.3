@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaKLBXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:23:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58666 "EHLO
+	id S1753831AbaKLBXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:23:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58653 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852AbaKLBXe (ORCPT
+	with ESMTP id S1752417AbaKLBXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:34 -0500
+	Tue, 11 Nov 2014 20:23:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 3.17 082/319] pstore: Fix duplicate {console,ftrace}-efi entries
-Date: Wed, 12 Nov 2014 10:13:40 +0900
-Message-Id: <20141112011006.183508076@linuxfoundation.org>
+        "D. Jared Dominguez" <Jared_Dominguez@Dell.com>,
+        Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.17 079/319] mfd: rtsx_pcr: Fix MSI enable error handling
+Date: Wed, 12 Nov 2014 10:13:37 +0900
+Message-Id: <20141112011005.680144752@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,64 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+From: Chris Ball <chris@printf.net>
 
-commit d4bf205da618bbd0b038e404d646f14e76915718 upstream.
+commit 5152970538a5e16c03bbcb9f1c780489a795ed40 upstream.
 
-The pstore filesystem still creates duplicate filename/inode pairs for
-some pstore types.  Add the id to the filename to prevent that.
+pci_enable_msi() can return failure with both positive and negative
+integers -- it returns 0 for success -- but is only tested here for
+"if (ret < 0)".  This causes us to try to use MSI on the RTS5249 SD
+reader in the Dell XPS 11 when enabling MSI failed, causing:
 
-Before patch:
+[    1.737110] rtsx_pci: probe of 0000:05:00.0 failed with error -110
 
-[/sys/fs/pstore] ls -li
-total 0
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-
-After:
-
-[/sys/fs/pstore] ls -li
-total 0
-1232 -r--r--r--. 1 root root 148 Sep 29 17:09 console-efi-141202499100000
-1231 -r--r--r--. 1 root root  67 Sep 29 17:09 console-efi-141202499200000
-1230 -r--r--r--. 1 root root 148 Sep 29 17:44 console-efi-141202705400000
-1229 -r--r--r--. 1 root root  67 Sep 29 17:44 console-efi-141202705500000
-1228 -r--r--r--. 1 root root  67 Sep 29 20:42 console-efi-141203772600000
-1227 -r--r--r--. 1 root root 148 Sep 29 23:42 console-efi-141204854900000
-1226 -r--r--r--. 1 root root  67 Sep 29 23:42 console-efi-141204855000000
-1225 -r--r--r--. 1 root root 148 Sep 29 23:59 console-efi-141204954200000
-1224 -r--r--r--. 1 root root  67 Sep 29 23:59 console-efi-141204954400000
-
-Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Reported-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
+Tested-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/pstore/inode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/rtsx_pcr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -320,10 +320,10 @@ int pstore_mkfile(enum pstore_type_id ty
- 						compressed ? ".enc.z" : "");
- 		break;
- 	case PSTORE_TYPE_CONSOLE:
--		sprintf(name, "console-%s", psname);
-+		sprintf(name, "console-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_FTRACE:
--		sprintf(name, "ftrace-%s", psname);
-+		sprintf(name, "ftrace-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_MCE:
- 		sprintf(name, "mce-%s-%lld", psname, id);
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1197,7 +1197,7 @@ static int rtsx_pci_probe(struct pci_dev
+ 	pcr->msi_en = msi_en;
+ 	if (pcr->msi_en) {
+ 		ret = pci_enable_msi(pcidev);
+-		if (ret < 0)
++		if (ret)
+ 			pcr->msi_en = false;
+ 	}
+ 
 
 
