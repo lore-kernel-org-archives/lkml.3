@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033AbaKLQdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 11:33:46 -0500
-Received: from www.sr71.net ([198.145.64.142]:58408 "EHLO blackbird.sr71.net"
+	id S1753184AbaKLQdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 11:33:52 -0500
+Received: from mx02.posteo.de ([89.146.194.165]:35722 "EHLO mx02.posteo.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377AbaKLQdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 11:33:45 -0500
-Message-ID: <54638BE4.3080509@sr71.net>
-Date: Wed, 12 Nov 2014 08:33:40 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>, Alexander Nyberg <alexn@dsv.su.se>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] mm/page_ext: resurrect struct page extending
- code for debugging
-References: <1415780835-24642-1-git-send-email-iamjoonsoo.kim@lge.com> <1415780835-24642-2-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1415780835-24642-2-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1753041AbaKLQdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 11:33:50 -0500
+From: Martin Kepplinger <martink@posteo.de>
+To: miklos@szeredi.hu
+Cc: fuse-devel@lists.sourceforge.net, thierry.reding@gmail.com,
+        gregkh@linuxfoundation.org, giedriuswork@gmail.com,
+        linux-kernel@vger.kernel.org, Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH] fuse: don't check for file->private_data on open().
+Date: Wed, 12 Nov 2014 17:31:34 +0100
+Message-Id: <1415809894-24084-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20141112112643.GA30821@ulmo.nvidia.com>
+References: <20141112112643.GA30821@ulmo.nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2014 12:27 AM, Joonsoo Kim wrote:
-> @@ -1092,6 +1096,14 @@ struct mem_section {
->  
->  	/* See declaration of similar field in struct zone */
->  	unsigned long *pageblock_flags;
-> +#ifdef CONFIG_PAGE_EXTENSION
-> +	/*
-> +	 * If !SPARSEMEM, pgdat doesn't have page_ext pointer. We use
-> +	 * section. (see page_ext.h about this.)
-> +	 */
-> +	struct page_ext *page_ext;
-> +	unsigned long pad;
-> +#endif
+The miscdevice core now sets file->private_data to the struct miscdevice
+so don't fail when this is not NULL.
 
-Will the distributions be amenable to enabling this?  If so, I'm all for
-it if it gets us things like page_owner at runtime.
+Reported-by: Thierry Reding <thierry.reding@gmail.com>
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+This is a question: what does this check provide and does overwriting
+file->private_data make any difference?
 
-If not, this becomes of much more questionable utility.
+Is open() by the user not allowed here, if file->private_data is set?
+
+thanks!!
+
+ fs/fuse/inode.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 03246cd..562407e 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -1092,9 +1092,6 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 
+ 	mutex_lock(&fuse_mutex);
+-	err = -EINVAL;
+-	if (file->private_data)
+-		goto err_unlock;
+ 
+ 	err = fuse_ctl_add_conn(fc);
+ 	if (err)
+-- 
+1.7.10.4
+
