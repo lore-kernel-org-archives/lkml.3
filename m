@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521AbaKLB2O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:28:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59046 "EHLO
+	id S932505AbaKLB2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:28:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754423AbaKLB2K (ORCPT
+	with ESMTP id S1754417AbaKLB2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:28:10 -0500
+	Tue, 11 Nov 2014 20:28:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "U. Artie Eoff" <ullysses.a.eoff@intel.com>,
-        Joe Konno <joe.konno@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.17 167/319] drm/i915: intel_backlight scale() math WA
-Date: Wed, 12 Nov 2014 10:15:05 +0900
-Message-Id: <20141112011020.323435473@linuxfoundation.org>
+        Brian Silverman <bsilver16384@gmail.com>, austin.linux@gmail.com,
+        darren@dvhart.com, peterz@infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.17 165/319] futex: Fix a race condition between REQUEUE_PI and task death
+Date: Wed, 12 Nov 2014 10:15:03 +0900
+Message-Id: <20141112011020.003503582@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,66 +30,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "U. Artie Eoff" <ullysses.a.eoff@intel.com>
+From: Brian Silverman <bsilver16384@gmail.com>
 
-commit 673e7bbdb3920b62cfc6c710bea626b0a9b0f43a upstream.
+commit 30a6b8031fe14031ab27c1fa3483cb9780e7f63c upstream.
 
-Improper truncated integer division in the scale() function causes
-actual_brightness != brightness. This (partial) work-around should be
-sufficient for a majority of use-cases, but it is by no means a complete
-solution.
+free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
+exit_pi_state_list takes the hb lock first, and most callers of
+free_pi_state do too. requeue_pi doesn't, which means free_pi_state
+can free the pi_state out from under exit_pi_state_list. For example:
 
-TODO: Determine how best to scale "user" values to "hw" values, and
-vice-versa, when the ranges are of different sizes. That would be a
-buggy scenario even with this work-around.
+task A                            |  task B
+exit_pi_state_list                |
+  pi_state =                      |
+      curr->pi_state_list->next   |
+                                  |  futex_requeue(requeue_pi=1)
+                                  |    // pi_state is the same as
+                                  |    // the one in task A
+                                  |    free_pi_state(pi_state)
+                                  |      list_del_init(&pi_state->list)
+                                  |      kfree(pi_state)
+  list_del_init(&pi_state->list)  |
 
-The issue was introduced in the following (v3.17-rc1) commit:
+Move the free_pi_state calls in requeue_pi to before it drops the hb
+locks which it's already holding.
 
-    6dda730 drm/i915: respect the VBT minimum backlight brightness
+[ tglx: Removed a pointless free_pi_state() call and the hb->lock held
+  	debugging. The latter comes via a seperate patch ]
 
-Note that for easier backporting this commit adds a duplicated macro.
-A follow-up cleanup patch rectifies this for 3.18+
-
-v2: (thanks to Chris Wilson) clarify commit message, use rounded division
-macro
-
-v3: -DIV_ROUND_CLOSEST() fails to build with CONFIG_X86_32=y. (Jani)
-    -Use DIV_ROUND_CLOSEST_ULL() instead. (Damien)
-    -v1 and v2 originally authored by Joe Konno.
-
-Signed-off-by: U. Artie Eoff <ullysses.a.eoff@intel.com>
-Reviewed-By: Joe Konno <joe.konno@intel.com>
-[danvet: Add backporting note.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
+Cc: austin.linux@gmail.com
+Cc: darren@dvhart.com
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1414282837-23092-1-git-send-email-bsilver16384@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ kernel/futex.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -398,6 +398,9 @@ intel_panel_detect(struct drm_device *de
- 	}
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -641,8 +641,14 @@ static struct futex_pi_state * alloc_pi_
+ 	return pi_state;
  }
  
-+#define DIV_ROUND_CLOSEST_ULL(ll, d)	\
-+({ unsigned long long _tmp = (ll)+(d)/2; do_div(_tmp, d); _tmp; })
++/*
++ * Must be called with the hb lock held.
++ */
+ static void free_pi_state(struct futex_pi_state *pi_state)
+ {
++	if (!pi_state)
++		return;
 +
- /**
-  * scale - scale values from one range to another
-  *
-@@ -419,9 +422,8 @@ static uint32_t scale(uint32_t source_va
- 	source_val = clamp(source_val, source_min, source_max);
+ 	if (!atomic_dec_and_test(&pi_state->refcount))
+ 		return;
  
- 	/* avoid overflows */
--	target_val = (uint64_t)(source_val - source_min) *
--		(target_max - target_min);
--	do_div(target_val, source_max - source_min);
-+	target_val = DIV_ROUND_CLOSEST_ULL((uint64_t)(source_val - source_min) *
-+			(target_max - target_min), source_max - source_min);
- 	target_val += target_min;
+@@ -1521,15 +1527,6 @@ static int futex_requeue(u32 __user *uad
+ 	}
  
- 	return target_val;
+ retry:
+-	if (pi_state != NULL) {
+-		/*
+-		 * We will have to lookup the pi_state again, so free this one
+-		 * to keep the accounting correct.
+-		 */
+-		free_pi_state(pi_state);
+-		pi_state = NULL;
+-	}
+-
+ 	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+@@ -1619,6 +1616,8 @@ retry_private:
+ 		case 0:
+ 			break;
+ 		case -EFAULT:
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			hb_waiters_dec(hb2);
+ 			put_futex_key(&key2);
+@@ -1634,6 +1633,8 @@ retry_private:
+ 			 *   exit to complete.
+ 			 * - The user space value changed.
+ 			 */
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			hb_waiters_dec(hb2);
+ 			put_futex_key(&key2);
+@@ -1710,6 +1711,7 @@ retry_private:
+ 	}
+ 
+ out_unlock:
++	free_pi_state(pi_state);
+ 	double_unlock_hb(hb1, hb2);
+ 	hb_waiters_dec(hb2);
+ 
+@@ -1727,8 +1729,6 @@ out_put_keys:
+ out_put_key1:
+ 	put_futex_key(&key1);
+ out:
+-	if (pi_state != NULL)
+-		free_pi_state(pi_state);
+ 	return ret ? ret : task_count;
+ }
+ 
 
 
