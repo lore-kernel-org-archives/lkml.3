@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966198AbaKLBwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:52:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32854 "EHLO
+	id S966215AbaKLBwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:52:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966183AbaKLBwI (ORCPT
+	with ESMTP id S966183AbaKLBwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:52:08 -0500
+	Tue, 11 Nov 2014 20:52:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Suresh Siddha <sbsiddha@gmail.com>,
+        Bean Anderson <bean@azulsystems.com>, Oleg Nesterov <oleg@redhat.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 018/123] x86, fpu: __restore_xstate_sig()->math_state_restore() needs preempt_disable()
-Date: Wed, 12 Nov 2014 10:16:24 +0900
-Message-Id: <20141112011719.844746252@linuxfoundation.org>
+Subject: [PATCH 3.10 019/123] x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
+Date: Wed, 12 Nov 2014 10:16:25 +0900
+Message-Id: <20141112011719.887486219@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -31,36 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-commit df24fb859a4e200d9324e2974229fbb7adf00aef upstream.
+commit 66463db4fc5605d51c7bb81d009d5bf30a783a2c upstream.
 
-Add preempt_disable() + preempt_enable() around math_state_restore() in
-__restore_xstate_sig(). Otherwise __switch_to() after __thread_fpu_begin()
-can overwrite fpu->state we are going to restore.
+save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
+can fail after that, in this case the next setup_rt_frame() triggered
+by SIGSEGV won't save fpu simply because the old state was lost. This
+obviously mean that fpu won't be restored after sys_rt_sigreturn() from
+SIGSEGV handler.
 
+Shift drop_init_fpu() into !failed branch in handle_signal().
+
+Test-case (needs -O2):
+
+	#include <stdio.h>
+	#include <signal.h>
+	#include <unistd.h>
+	#include <sys/syscall.h>
+	#include <sys/mman.h>
+	#include <pthread.h>
+	#include <assert.h>
+
+	volatile double D;
+
+	void test(double d)
+	{
+		int pid = getpid();
+
+		for (D = d; D == d; ) {
+			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
+			 * fp regs around "C" call */
+			asm ("" : : "a"(200), "D"(pid), "S"(1));
+			asm ("syscall" : : : "ax");
+		}
+
+		printf("ERR!!\n");
+	}
+
+	void sigh(int sig)
+	{
+	}
+
+	char altstack[4096 * 10] __attribute__((aligned(4096)));
+
+	void *tfunc(void *arg)
+	{
+		for (;;) {
+			mprotect(altstack, sizeof(altstack), PROT_READ);
+			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
+		}
+	}
+
+	int main(void)
+	{
+		stack_t st = {
+			.ss_sp = altstack,
+			.ss_size = sizeof(altstack),
+			.ss_flags = SS_ONSTACK,
+		};
+
+		struct sigaction sa = {
+			.sa_handler = sigh,
+		};
+
+		pthread_t pt;
+
+		sigaction(SIGSEGV, &sa, NULL);
+		sigaltstack(&st, NULL);
+		sa.sa_flags = SA_ONSTACK;
+		sigaction(SIGHUP, &sa, NULL);
+
+		pthread_create(&pt, NULL, tfunc, NULL);
+
+		test(123.456);
+		return 0;
+	}
+
+Reported-by: Bean Anderson <bean@azulsystems.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175717.GA21649@redhat.com
-Reviewed-by: Suresh Siddha <sbsiddha@gmail.com>
+Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/xsave.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/kernel/signal.c |    5 +++++
+ arch/x86/kernel/xsave.c  |    2 --
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -677,6 +677,11 @@ handle_signal(struct ksignal *ksig, stru
+ 		 * handler too.
+ 		 */
+ 		regs->flags &= ~X86_EFLAGS_TF;
++		/*
++		 * Ensure the signal handler starts with the new fpu state.
++		 */
++		if (used_math())
++			drop_init_fpu(current);
+ 	}
+ 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
 --- a/arch/x86/kernel/xsave.c
 +++ b/arch/x86/kernel/xsave.c
-@@ -400,8 +400,11 @@ int __restore_xstate_sig(void __user *bu
- 			set_used_math();
- 		}
+@@ -268,8 +268,6 @@ int save_xstate_sig(void __user *buf, vo
+ 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
+ 		return -1;
  
--		if (use_eager_fpu())
-+		if (use_eager_fpu()) {
-+			preempt_disable();
- 			math_state_restore();
-+			preempt_enable();
-+		}
+-	drop_init_fpu(tsk);	/* trigger finit */
+-
+ 	return 0;
+ }
  
- 		return err;
- 	} else {
 
 
