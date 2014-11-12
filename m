@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161093AbaKLBzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:55:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33106 "EHLO
+	id S1161110AbaKLB4B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:56:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33111 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161050AbaKLBzv (ORCPT
+	with ESMTP id S1161050AbaKLBz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:55:51 -0500
+	Tue, 11 Nov 2014 20:55:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.10 104/123] ext3: Dont check quota format when there are no quota files
-Date: Wed, 12 Nov 2014 10:17:50 +0900
-Message-Id: <20141112011723.733694080@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.10 106/123] tty: Fix high cpu load if tty is unreleaseable
+Date: Wed, 12 Nov 2014 10:17:52 +0900
+Message-Id: <20141112011723.814379233@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,37 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 7938db449bbc55bbeb164bec7af406212e7e98f1 upstream.
+commit 37b164578826406a173ca7c20d9ba7430134d23e upstream.
 
-The check whether quota format is set even though there are no
-quota files with journalled quota is pointless and it actually
-makes it impossible to turn off journalled quotas (as there's
-no way to unset journalled quota format). Just remove the check.
+Kernel oops can cause the tty to be unreleaseable (for example, if
+n_tty_read() crashes while on the read_wait queue). This will cause
+tty_release() to endlessly loop without sleeping.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Use a killable sleep timeout which grows by 2n+1 jiffies over the interval
+[0, 120 secs.) and then jumps to forever (but still killable).
+
+NB: killable just allows for the task to be rewoken manually, not
+to be terminated.
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext3/super.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/tty/tty_io.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -1300,13 +1300,6 @@ set_qf_format:
- 					"not specified.");
- 			return 0;
- 		}
--	} else {
--		if (sbi->s_jquota_fmt) {
--			ext3_msg(sb, KERN_ERR, "error: journaled quota format "
--					"specified with no journaling "
--					"enabled.");
--			return 0;
--		}
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1698,6 +1698,7 @@ int tty_release(struct inode *inode, str
+ 	int	pty_master, tty_closing, o_tty_closing, do_sleep;
+ 	int	idx;
+ 	char	buf[64];
++	long	timeout = 0;
+ 
+ 	if (tty_paranoia_check(tty, inode, __func__))
+ 		return 0;
+@@ -1782,7 +1783,11 @@ int tty_release(struct inode *inode, str
+ 				__func__, tty_name(tty, buf));
+ 		tty_unlock_pair(tty, o_tty);
+ 		mutex_unlock(&tty_mutex);
+-		schedule();
++		schedule_timeout_killable(timeout);
++		if (timeout < 120 * HZ)
++			timeout = 2 * timeout + 1;
++		else
++			timeout = MAX_SCHEDULE_TIMEOUT;
  	}
- #endif
- 	return 1;
+ 
+ 	/*
 
 
