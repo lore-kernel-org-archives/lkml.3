@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693AbaKLB3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:29:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59131 "EHLO
+	id S932704AbaKLB3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:29:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59136 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653AbaKLB3H (ORCPT
+	with ESMTP id S932688AbaKLB3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:29:07 -0500
+	Tue, 11 Nov 2014 20:29:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.17 187/319] OOM, PM: OOM killed task shouldnt escape PM suspend
-Date: Wed, 12 Nov 2014 10:15:25 +0900
-Message-Id: <20141112011023.683721829@linuxfoundation.org>
+        Robin van der Gracht <robin@protonic.nl>,
+        Denis Ciocca <denis.ciocca@st.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.17 188/319] iio: st_sensors: Fix buffer copy
+Date: Wed, 12 Nov 2014 10:15:26 +0900
+Message-Id: <20141112011023.860673836@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,171 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Robin van der Gracht <robin@protonic.nl>
 
-commit 5695be142e203167e3cb515ef86a88424f3524eb upstream.
+commit 4250c90b30b8bf2a1a21122ba0484f8f351f152d upstream.
 
-PM freezer relies on having all tasks frozen by the time devices are
-getting frozen so that no task will touch them while they are getting
-frozen. But OOM killer is allowed to kill an already frozen task in
-order to handle OOM situtation. In order to protect from late wake ups
-OOM killer is disabled after all tasks are frozen. This, however, still
-keeps a window open when a killed task didn't manage to die by the time
-freeze_processes finishes.
+Use byte_for_channel as iterator to properly initialize the buffer.
 
-Reduce the race window by checking all tasks after OOM killer has been
-disabled. This is still not race free completely unfortunately because
-oom_killer_disable cannot stop an already ongoing OOM killer so a task
-might still wake up from the fridge and get killed without
-freeze_processes noticing. Full synchronization of OOM and freezer is,
-however, too heavy weight for this highly unlikely case.
-
-Introduce and check oom_kills counter which gets incremented early when
-the allocator enters __alloc_pages_may_oom path and only check all the
-tasks if the counter changes during the freezing attempt. The counter
-is updated so early to reduce the race window since allocator checked
-oom_killer_disabled which is set by PM-freezing code. A false positive
-will push the PM-freezer into a slow path but that is not a big deal.
-
-Changes since v1
-- push the re-check loop out of freeze_processes into
-  check_frozen_processes and invert the condition to make the code more
-  readable as per Rafael
-
-Fixes: f660daac474c6f (oom: thaw threads if oom killed thread is frozen before deferring)
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Robin van der Gracht <robin@protonic.nl>
+Acked-by: Denis Ciocca <denis.ciocca@st.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/oom.h    |    3 +++
- kernel/power/process.c |   40 +++++++++++++++++++++++++++++++++++++++-
- mm/oom_kill.c          |   17 +++++++++++++++++
- mm/page_alloc.c        |    8 ++++++++
- 4 files changed, 67 insertions(+), 1 deletion(-)
+ drivers/iio/common/st_sensors/st_sensors_buffer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -50,6 +50,9 @@ static inline bool oom_task_origin(const
- extern unsigned long oom_badness(struct task_struct *p,
- 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
- 		unsigned long totalpages);
-+
-+extern int oom_kills_count(void);
-+extern void note_oom_kill(void);
- extern void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			     unsigned int points, unsigned long totalpages,
- 			     struct mem_cgroup *memcg, nodemask_t *nodemask,
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -108,6 +108,28 @@ static int try_to_freeze_tasks(bool user
- 	return todo ? -EBUSY : 0;
- }
+--- a/drivers/iio/common/st_sensors/st_sensors_buffer.c
++++ b/drivers/iio/common/st_sensors/st_sensors_buffer.c
+@@ -71,7 +71,7 @@ int st_sensors_get_buffer_element(struct
+ 				goto st_sensors_free_memory;
+ 			}
  
-+/*
-+ * Returns true if all freezable tasks (except for current) are frozen already
-+ */
-+static bool check_frozen_processes(void)
-+{
-+	struct task_struct *g, *p;
-+	bool ret = true;
-+
-+	read_lock(&tasklist_lock);
-+	for_each_process_thread(g, p) {
-+		if (p != current && !freezer_should_skip(p) &&
-+		    !frozen(p)) {
-+			ret = false;
-+			goto done;
-+		}
-+	}
-+done:
-+	read_unlock(&tasklist_lock);
-+
-+	return ret;
-+}
-+
- /**
-  * freeze_processes - Signal user space processes to enter the refrigerator.
-  * The current thread will not be frozen.  The same process that calls
-@@ -118,6 +140,7 @@ static int try_to_freeze_tasks(bool user
- int freeze_processes(void)
- {
- 	int error;
-+	int oom_kills_saved;
- 
- 	error = __usermodehelper_disable(UMH_FREEZING);
- 	if (error)
-@@ -131,12 +154,27 @@ int freeze_processes(void)
- 
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
-+	oom_kills_saved = oom_kills_count();
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
--		printk("done.");
- 		__usermodehelper_set_disable_depth(UMH_DISABLED);
- 		oom_killer_disable();
-+
-+		/*
-+		 * There might have been an OOM kill while we were
-+		 * freezing tasks and the killed task might be still
-+		 * on the way out so we have to double check for race.
-+		 */
-+		if (oom_kills_count() != oom_kills_saved &&
-+				!check_frozen_processes()) {
-+			__usermodehelper_set_disable_depth(UMH_ENABLED);
-+			printk("OOM in progress.");
-+			error = -EBUSY;
-+			goto done;
-+		}
-+		printk("done.");
- 	}
-+done:
- 	printk("\n");
- 	BUG_ON(in_atomic());
- 
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -404,6 +404,23 @@ static void dump_header(struct task_stru
- 		dump_tasks(memcg, nodemask);
- }
- 
-+/*
-+ * Number of OOM killer invocations (including memcg OOM killer).
-+ * Primarily used by PM freezer to check for potential races with
-+ * OOM killed frozen task.
-+ */
-+static atomic_t oom_kills = ATOMIC_INIT(0);
-+
-+int oom_kills_count(void)
-+{
-+	return atomic_read(&oom_kills);
-+}
-+
-+void note_oom_kill(void)
-+{
-+	atomic_inc(&oom_kills);
-+}
-+
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /*
-  * Must be called while holding a reference to p, which will be released upon
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2253,6 +2253,14 @@ __alloc_pages_may_oom(gfp_t gfp_mask, un
- 	}
- 
- 	/*
-+	 * PM-freezer should be notified that there might be an OOM killer on
-+	 * its way to kill and wake somebody up. This is too early and we might
-+	 * end up not killing anything but false positives are acceptable.
-+	 * See freeze_processes.
-+	 */
-+	note_oom_kill();
-+
-+	/*
- 	 * Go through the zonelist yet one more time, keep very high watermark
- 	 * here, this is only to catch a parallel oom killing, we must fail if
- 	 * we're still under heavy pressure.
+-			for (i = 0; i < n * num_data_channels; i++) {
++			for (i = 0; i < n * byte_for_channel; i++) {
+ 				if (i < n)
+ 					buf[i] = rx_array[i];
+ 				else
 
 
