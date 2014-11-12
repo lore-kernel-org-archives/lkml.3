@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaKLVvD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 16:51:03 -0500
-Received: from mout.web.de ([212.227.15.14]:51555 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865AbaKLVvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 16:51:00 -0500
-Message-ID: <5463D62D.3010206@users.sourceforge.net>
-Date: Wed, 12 Nov 2014 22:50:37 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752697AbaKLVxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 16:53:44 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:51711 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942AbaKLVxl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 16:53:41 -0500
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, trivial@kernel.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH v2 2/2] staging: rtl8188eu: Better memory clean-up in
- efuse_phymap_to_logical()
-References: <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net> <alpine.DEB.2.10.1410311900201.2481@hadrien> <5463C10D.6020409@users.sourceforge.net> <5463C373.5050804@users.sourceforge.net> <20141112211438.GI6749@mwanda>
-In-Reply-To: <20141112211438.GI6749@mwanda>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Pfn5oI5wG4XoMw0o2enhNZdM6rqwcccM6t9oaTYeGLJyrBwmK1S
- qUL2hKjuD+mHvyT2dPXi1DEYox9f/3+thK3Fkgjohlhfs6WlO76kzDIubEWf6o3GaS322ge
- XWyXh8xMG2Mq/U/w6d5YtRjLpQET+wbXH6/F6eSHROLgapO7aXTXKUCgTTZc5JOnu2Clexz
- +pjUUK/REsh8Z85PIownA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <87ppctm0zs.fsf@rustcorp.com.au>
+References: <87ppctm0zs.fsf@rustcorp.com.au>
+Date: Wed, 12 Nov 2014 13:53:40 -0800
+X-Google-Sender-Auth: a4Od0VQyncehYwIQR05lQn-K4Xk
+Message-ID: <CA+55aFwPkmvWiy9+aeg-LpWewfOVQ4if0q_5ROZs9StR96r07A@mail.gmail.com>
+Subject: Re: [PULL] params fix
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Richard Weinberger <richard@nod.at>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +		goto cleanup1;
-> 
-> 1) Don't use GW-BASIC label names.  Label names should reflect what the
-> label does such as free_fuse_word or free_fuse_tabel.
-> 
-> 2) Don't use do-nothing labels.  Just return directly.
+On Tue, Nov 11, 2014 at 9:39 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git
 
-Does the document "CodingStyle" need any extensions for special cases?
-Are there any update candidates in the chapter "7: Centralized exiting of functions"?
+Hmm. No proper branch name. I'm assuming it's "tags/fixes-for-linus",
+which seems to contain the proper commit id:
 
-Regards,
-Markus
+> for you to fetch changes up to 3438cf549d2f3ee8e52c82acc8e2a9710ac21a5b:
+
+  ...
+  447a55fea65010824295d605109f4bbbf1cd7ac2        refs/tags/fixes-for-linus
+  3438cf549d2f3ee8e52c82acc8e2a9710ac21a5b        refs/tags/fixes-for-linus^{}
+  ...
+
+but please fix whatever script it is you have that didn't list that tag name..
+
+                    Linus
