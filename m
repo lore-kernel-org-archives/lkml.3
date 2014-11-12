@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933841AbaKLEce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:32:34 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54401 "EHLO mail.eperm.de"
+	id S933899AbaKLEci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:32:38 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54411 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933662AbaKLEc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 23:32:28 -0500
+	id S933812AbaKLEce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 23:32:34 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -16,9 +16,9 @@ Cc: Marek Vasut <marex@denx.de>, "David S. Miller" <davem@davemloft.net>,
         "Joy M. Latten" <jmlatten@linux.vnet.ibm.com>,
         Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org
-Subject: [PATCH v3 07/13] crypto: Documentation - SHASH API documentation
-Date: Wed, 12 Nov 2014 05:27:16 +0100
-Message-ID: <1532314.JEsKM3iTVa@tachyon.chronox.de>
+Subject: [PATCH v3 06/13] crypto: Documentation - AHASH API documentation
+Date: Wed, 12 Nov 2014 05:26:41 +0100
+Message-ID: <3149556.vyoUx08By6@tachyon.chronox.de>
 User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
 In-Reply-To: <1800066.efQ8hkST4U@tachyon.chronox.de>
 References: <1800066.efQ8hkST4U@tachyon.chronox.de>
@@ -29,247 +29,345 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API function calls exported by the kernel crypto API for SHASHes
+The API function calls exported by the kernel crypto API for AHASHes
 to be used by consumers are documented.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- include/crypto/hash.h | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 164 insertions(+)
+ include/crypto/hash.h | 228 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 228 insertions(+)
 
 diff --git a/include/crypto/hash.h b/include/crypto/hash.h
-index b2c193a..3d66e8b 100644
+index bf458fc..b2c193a 100644
 --- a/include/crypto/hash.h
 +++ b/include/crypto/hash.h
-@@ -583,6 +583,33 @@ static inline void ahash_request_set_crypt(struct ahash_request *req,
- 	req->result = result;
+@@ -202,11 +202,35 @@ struct crypto_shash {
+ 	struct crypto_tfm base;
+ };
+ 
++/**
++ * DOC: Asynchronous Message Digest API
++ *
++ * The asynchronous message digest API is used with the ciphers of type
++ * CRYPTO_ALG_TYPE_AHASH (listed as type "ahash" in /proc/crypto)
++ *
++ * The asynchronous cipher operation discussion provided for the
++ * CRYPTO_ALG_TYPE_ABLKCIPHER API applies here as well.
++ */
++
+ static inline struct crypto_ahash *__crypto_ahash_cast(struct crypto_tfm *tfm)
+ {
+ 	return container_of(tfm, struct crypto_ahash, base);
  }
  
 +/**
-+ * DOC: Synchronous Message Digest API
-+ *
-+ * The synchronous message digest API is used with the ciphers of type
-+ * CRYPTO_ALG_TYPE_SHASH (listed as type "shash" in /proc/crypto)
-+ *
-+ * The message digest API is able to maintain state information for the
-+ * caller.
-+ *
-+ * The synchronous message digest API can store user-related context in in its
-+ * shash_desc request data structure.
-+ */
-+
-+/**
-+ * crypto_alloc_shash() - allocate message digest handle
++ * crypto_alloc_ahash() - allocate ahash cipher handle
 + * @alg_name: is the cra_name / name or cra_driver_name / driver name of the
-+ *	      message digest cipher
++ *	      ahash cipher
 + * @type: specifies the type of the cipher
 + * @mask: specifies the mask for the cipher
 + *
-+ * Allocate a cipher handle for a message digest. The returned &struct
-+ * crypto_shash is the cipher handle that is required for any subsequent
-+ * API invocation for that message digest.
++ * Allocate a cipher handle for an ahash. The returned struct
++ * crypto_ahash is the cipher handle that is required for any subsequent
++ * API invocation for that ahash.
 + *
 + * Return: allocated cipher handle in case of success; IS_ERR() is true in case
 + *	   of an error, PTR_ERR() returns the error code.
 + */
- struct crypto_shash *crypto_alloc_shash(const char *alg_name, u32 type,
+ struct crypto_ahash *crypto_alloc_ahash(const char *alg_name, u32 type,
  					u32 mask);
  
-@@ -591,6 +618,10 @@ static inline struct crypto_tfm *crypto_shash_tfm(struct crypto_shash *tfm)
+@@ -215,6 +239,10 @@ static inline struct crypto_tfm *crypto_ahash_tfm(struct crypto_ahash *tfm)
  	return &tfm->base;
  }
  
 +/**
-+ * crypto_free_shash() - zeroize and free the message digest handle
++ * crypto_free_ahash() - zeroize and free the ahash handle
 + * @tfm: cipher handle to be freed
 + */
- static inline void crypto_free_shash(struct crypto_shash *tfm)
+ static inline void crypto_free_ahash(struct crypto_ahash *tfm)
  {
- 	crypto_destroy_tfm(tfm, crypto_shash_tfm(tfm));
-@@ -602,6 +633,15 @@ static inline unsigned int crypto_shash_alignmask(
- 	return crypto_tfm_alg_alignmask(crypto_shash_tfm(tfm));
+ 	crypto_destroy_tfm(tfm, crypto_ahash_tfm(tfm));
+@@ -238,6 +266,16 @@ static inline struct hash_alg_common *crypto_hash_alg_common(
+ 	return __crypto_hash_alg_common(crypto_ahash_tfm(tfm)->__crt_alg);
  }
  
 +/**
-+ * crypto_shash_blocksize() - obtain block size for cipher
-+ * @tfm: cipher handle
-+ *
-+ * The block size for the message digest cipher referenced with the cipher
-+ * handle is returned.
-+ *
-+ * Return: block size of cipher
-+ */
- static inline unsigned int crypto_shash_blocksize(struct crypto_shash *tfm)
- {
- 	return crypto_tfm_alg_blocksize(crypto_shash_tfm(tfm));
-@@ -617,6 +657,15 @@ static inline struct shash_alg *crypto_shash_alg(struct crypto_shash *tfm)
- 	return __crypto_shash_alg(crypto_shash_tfm(tfm)->__crt_alg);
- }
- 
-+/**
-+ * crypto_shash_digestsize() - obtain message digest size
++ * crypto_ahash_digestsize() - obtain message digest size
 + * @tfm: cipher handle
 + *
 + * The size for the message digest created by the message digest cipher
 + * referenced with the cipher handle is returned.
 + *
-+ * Return: digest size of cipher
++ *
++ * Return: message digest size of cipher
 + */
- static inline unsigned int crypto_shash_digestsize(struct crypto_shash *tfm)
+ static inline unsigned int crypto_ahash_digestsize(struct crypto_ahash *tfm)
  {
- 	return crypto_shash_alg(tfm)->digestsize;
-@@ -642,6 +691,21 @@ static inline void crypto_shash_clear_flags(struct crypto_shash *tfm, u32 flags)
- 	crypto_tfm_clear_flags(crypto_shash_tfm(tfm), flags);
+ 	return crypto_hash_alg_common(tfm)->digestsize;
+@@ -263,12 +301,32 @@ static inline void crypto_ahash_clear_flags(struct crypto_ahash *tfm, u32 flags)
+ 	crypto_tfm_clear_flags(crypto_ahash_tfm(tfm), flags);
  }
  
 +/**
-+ * crypto_shash_descsize() - obtain the operational state size
++ * crypto_ahash_reqtfm() - obtain cipher handle from request
++ * @req: asynchronous request handle that contains the reference to the ahash
++ *	 cipher handle
++ *
++ * Return the ahash cipher handle that is registered with the asynchronous
++ * request handle ahash_request.
++ *
++ * Return: ahash cipher handle
++ */
+ static inline struct crypto_ahash *crypto_ahash_reqtfm(
+ 	struct ahash_request *req)
+ {
+ 	return __crypto_ahash_cast(req->base.tfm);
+ }
+ 
++/**
++ * crypto_ahash_reqsize() - obtain size of the request data structure
 + * @tfm: cipher handle
 + *
-+ * The size of the operational state the cipher needs during operation is
-+ * returned for the hash referenced with the cipher handle. This size is
-+ * required to calculate the memory requirements to allow the caller allocating
-+ * sufficient memory for operational state.
++ * Return the size of the ahash state size. With the crypto_ahash_export
++ * function, the caller can export the state into a buffer whose size is
++ * defined with this function.
 + *
-+ * The operational state is defined with struct shash_desc where the size of
-+ * that data structure is to be calculated as
-+ * sizeof(struct shash_desc) + crypto_shash_descsize(alg)
-+ *
-+ * Return: size of the operational state
++ * Return: size of the ahash state
 + */
- static inline unsigned int crypto_shash_descsize(struct crypto_shash *tfm)
+ static inline unsigned int crypto_ahash_reqsize(struct crypto_ahash *tfm)
  {
- 	return tfm->descsize;
-@@ -652,29 +716,129 @@ static inline void *shash_desc_ctx(struct shash_desc *desc)
- 	return desc->__ctx;
+ 	return tfm->reqsize;
+@@ -279,38 +337,166 @@ static inline void *ahash_request_ctx(struct ahash_request *req)
+ 	return req->__ctx;
  }
  
 +/**
-+ * crypto_shash_setkey() - set key for message digest
++ * crypto_ahash_setkey - set key for cipher handle
 + * @tfm: cipher handle
 + * @key: buffer holding the key
 + * @keylen: length of the key in bytes
 + *
-+ * The caller provided key is set for the keyed message digest cipher. The
-+ * cipher handle must point to a keyed message digest cipher in order for this
-+ * function to succeed.
++ * The caller provided key is set for the ahash cipher. The cipher
++ * handle must point to a keyed hash in order for this function to succeed.
 + *
 + * Return: 0 if the setting of the key was successful; < 0 if an error occurred
 + */
- int crypto_shash_setkey(struct crypto_shash *tfm, const u8 *key,
+ int crypto_ahash_setkey(struct crypto_ahash *tfm, const u8 *key,
  			unsigned int keylen);
 +
 +/**
-+ * crypto_shash_digest() - calculate message digest for buffer
-+ * @desc: see crypto_shash_final()
-+ * @data: see crypto_shash_update()
-+ * @len: see crypto_shash_update()
-+ * @out: see crypto_shash_final()
-+ *
-+ * This function is a "short-hand" for the function calls of crypto_shash_init,
-+ * crypto_shash_update and crypto_shash_final. The parameters have the same
-+ * meaning as discussed for those separate three functions.
-+ *
-+ * Return: 0 if the message digest creation was successful; < 0 if an error
-+ *	   occurred
-+ */
- int crypto_shash_digest(struct shash_desc *desc, const u8 *data,
- 			unsigned int len, u8 *out);
- 
-+/**
-+ * crypto_shash_export() - extract operational state for message digest
-+ * @desc: reference to the operational state handle whose state is exported
-+ * @out: output buffer of sufficient size that can hold the hash state
-+ *
-+ * This function exports the hash state of the operational state handle into the
-+ * caller-allocated output buffer out which must have sufficient size (e.g. by
-+ * calling crypto_shash_descsize).
-+ *
-+ * Return: 0 if the export creation was successful; < 0 if an error occurred
-+ */
- static inline int crypto_shash_export(struct shash_desc *desc, void *out)
- {
- 	return crypto_shash_alg(desc->tfm)->export(desc, out);
- }
- 
-+/**
-+ * crypto_shash_import() - import operational state
-+ * @desc: reference to the operational state handle the state imported into
-+ * @in: buffer holding the state
-+ *
-+ * This function imports the hash state into the operational state handle from
-+ * the input buffer. That buffer should have been generated with the
-+ * crypto_ahash_export function.
-+ *
-+ * Return: 0 if the import was successful; < 0 if an error occurred
-+ */
- static inline int crypto_shash_import(struct shash_desc *desc, const void *in)
- {
- 	return crypto_shash_alg(desc->tfm)->import(desc, in);
- }
- 
-+/**
-+ * crypto_shash_init() - (re)initialize message digest
-+ * @desc: operational state handle that is already filled
-+ *
-+ * The call (re-)initializes the message digest referenced by the
-+ * operational state handle. Any potentially existing state created by
-+ * previous operations is discarded.
-+ *
-+ * Return: 0 if the message digest initialization was successful; < 0 if an
-+ *	   error occurred
-+ */
- static inline int crypto_shash_init(struct shash_desc *desc)
- {
- 	return crypto_shash_alg(desc->tfm)->init(desc);
- }
- 
-+/**
-+ * crypto_shash_update() - add data to message digest for processing
-+ * @desc: operational state handle that is already initialized
-+ * @data: input data to be added to the message digest
-+ * @len: length of the input data
-+ *
-+ * Updates the message digest state of the operational state handle.
-+ *
-+ * Return: 0 if the message digest update was successful; < 0 if an error
-+ *	   occurred
-+ */
- int crypto_shash_update(struct shash_desc *desc, const u8 *data,
- 			unsigned int len);
-+
-+/**
-+ * crypto_shash_final() - calculate message digest
-+ * @desc: operational state handle that is already filled with data
-+ * @out: output buffer filled with the message digest
-+ *
-+ * Finalize the message digest operation and create the message digest
-+ * based on all data added to the cipher handle. The message digest is placed
-+ * into the output buffer. The caller must ensure that the output buffer is
-+ * large enough by using crypto_shash_digestsize.
-+ *
-+ * Return: 0 if the message digest creation was successful; < 0 if an error
-+ *	   occurred
-+ */
- int crypto_shash_final(struct shash_desc *desc, u8 *out);
-+
-+/**
-+ * crypto_shash_finup() - calculate message digest of buffer
-+ * @desc: see crypto_shash_final()
-+ * @data: see crypto_shash_update()
-+ * @len: see crypto_shash_update()
-+ * @out: see crypto_shash_final()
++ * crypto_ahash_finup() - update and finalize message digest
++ * @req: reference to the ahash_request handle that holds all information
++ *	 needed to perform the cipher operation
 + *
 + * This function is a "short-hand" for the function calls of
-+ * crypto_shash_update and crypto_shash_final. The parameters have the same
++ * crypto_ahash_update and crypto_shash_final. The parameters have the same
 + * meaning as discussed for those separate functions.
 + *
 + * Return: 0 if the message digest creation was successful; < 0 if an error
 + *	   occurred
 + */
- int crypto_shash_finup(struct shash_desc *desc, const u8 *data,
- 		       unsigned int len, u8 *out);
+ int crypto_ahash_finup(struct ahash_request *req);
++
++/**
++ * crypto_ahash_final() - calculate message digest
++ * @req: reference to the ahash_request handle that holds all information
++ *	 needed to perform the cipher operation
++ *
++ * Finalize the message digest operation and create the message digest
++ * based on all data added to the cipher handle. The message digest is placed
++ * into the output buffer registered with the ahash_request handle.
++ *
++ * Return: 0 if the message digest creation was successful; < 0 if an error
++ *	   occurred
++ */
+ int crypto_ahash_final(struct ahash_request *req);
++
++/**
++ * crypto_ahash_digest() - calculate message digest for a buffer
++ * @req: reference to the ahash_request handle that holds all information
++ *	 needed to perform the cipher operation
++ *
++ * This function is a "short-hand" for the function calls of crypto_ahash_init,
++ * crypto_ahash_update and crypto_ahash_final. The parameters have the same
++ * meaning as discussed for those separate three functions.
++ *
++ * Return: 0 if the message digest creation was successful; < 0 if an error
++ *	   occurred
++ */
+ int crypto_ahash_digest(struct ahash_request *req);
  
++/**
++ * crypto_ahash_export() - extract current message digest state
++ * @req: reference to the ahash_request handle whose state is exported
++ * @out: output buffer of sufficient size that can hold the hash state
++ *
++ * This function exports the hash state of the ahash_request handle into the
++ * caller-allocated output buffer out which must have sufficient size (e.g. by
++ * calling crypto_ahash_reqsize).
++ *
++ * Return: 0 if the export was successful; < 0 if an error occurred
++ */
+ static inline int crypto_ahash_export(struct ahash_request *req, void *out)
+ {
+ 	return crypto_ahash_reqtfm(req)->export(req, out);
+ }
+ 
++/**
++ * crypto_ahash_import() - import message digest state
++ * @req: reference to ahash_request handle the state is imported into
++ * @in: buffer holding the state
++ *
++ * This function imports the hash state into the ahash_request handle from the
++ * input buffer. That buffer should have been generated with the
++ * crypto_ahash_export function.
++ *
++ * Return: 0 if the import was successful; < 0 if an error occurred
++ */
+ static inline int crypto_ahash_import(struct ahash_request *req, const void *in)
+ {
+ 	return crypto_ahash_reqtfm(req)->import(req, in);
+ }
+ 
++/**
++ * crypto_ahash_init() - (re)initialize message digest handle
++ * @req: ahash_request handle that already is initialized with all necessary
++ *	 data using the ahash_request_* API functions
++ *
++ * The call (re-)initializes the message digest referenced by the ahash_request
++ * handle. Any potentially existing state created by previous operations is
++ * discarded.
++ *
++ * Return: 0 if the message digest initialization was successful; < 0 if an
++ *	   error occurred
++ */
+ static inline int crypto_ahash_init(struct ahash_request *req)
+ {
+ 	return crypto_ahash_reqtfm(req)->init(req);
+ }
+ 
++/**
++ * crypto_ahash_update() - add data to message digest for processing
++ * @req: ahash_request handle that was previously initialized with the
++ *	 crypto_ahash_init call.
++ *
++ * Updates the message digest state of the &ahash_request handle. The input data
++ * is pointed to by the scatter/gather list registered in the &ahash_request
++ * handle
++ *
++ * Return: 0 if the message digest update was successful; < 0 if an error
++ *	   occurred
++ */
+ static inline int crypto_ahash_update(struct ahash_request *req)
+ {
+ 	return crypto_ahash_reqtfm(req)->update(req);
+ }
+ 
++/**
++ * DOC: Asynchronous Hash Request Handle
++ *
++ * The &ahash_request data structure contains all pointers to data
++ * required for the asynchronous cipher operation. This includes the cipher
++ * handle (which can be used by multiple &ahash_request instances), pointer
++ * to plaintext and the message digest output buffer, asynchronous callback
++ * function, etc. It acts as a handle to the ahash_request_* API calls in a
++ * similar way as ahash handle to the crypto_ahash_* API calls.
++ */
++
++/**
++ * ahash_request_set_tfm() - update cipher handle reference in request
++ * @req: request handle to be modified
++ * @tfm: cipher handle that shall be added to the request handle
++ *
++ * Allow the caller to replace the existing ahash handle in the request
++ * data structure with a different one.
++ */
+ static inline void ahash_request_set_tfm(struct ahash_request *req,
+ 					 struct crypto_ahash *tfm)
+ {
+ 	req->base.tfm = crypto_ahash_tfm(tfm);
+ }
+ 
++/**
++ * ahash_request_alloc() - allocate request data structure
++ * @tfm: cipher handle to be registered with the request
++ * @gfp: memory allocation flag that is handed to kmalloc by the API call.
++ *
++ * Allocate the request data structure that must be used with the ahash
++ * message digest API calls. During
++ * the allocation, the provided ahash handle
++ * is registered in the request data structure.
++ *
++ * Return: allocated request handle in case of success; IS_ERR() is true in case
++ *	   of an error, PTR_ERR() returns the error code.
++ */
+ static inline struct ahash_request *ahash_request_alloc(
+ 	struct crypto_ahash *tfm, gfp_t gfp)
+ {
+@@ -325,6 +511,10 @@ static inline struct ahash_request *ahash_request_alloc(
+ 	return req;
+ }
+ 
++/**
++ * ahash_request_free() - zeroize and free the request data structure
++ * @req: request data structure cipher handle to be freed
++ */
+ static inline void ahash_request_free(struct ahash_request *req)
+ {
+ 	kzfree(req);
+@@ -336,6 +526,31 @@ static inline struct ahash_request *ahash_request_cast(
+ 	return container_of(req, struct ahash_request, base);
+ }
+ 
++/**
++ * ahash_request_set_callback() - set asynchronous callback function
++ * @req: request handle
++ * @flags: specify zero or an ORing of the flags
++ *	   CRYPTO_TFM_REQ_MAY_BACKLOG the request queue may back log and
++ *	   increase the wait queue beyond the initial maximum size;
++ *	   CRYPTO_TFM_REQ_MAY_SLEEP the request processing may sleep
++ * @compl: callback function pointer to be registered with the request handle
++ * @data: The data pointer refers to memory that is not used by the kernel
++ *	  crypto API, but provided to the callback function for it to use. Here,
++ *	  the caller can provide a reference to memory the callback function can
++ *	  operate on. As the callback function is invoked asynchronously to the
++ *	  related functionality, it may need to access data structures of the
++ *	  related functionality which can be referenced using this pointer. The
++ *	  callback function can access the memory via the "data" field in the
++ *	  &crypto_async_request data structure provided to the callback function.
++ *
++ * This function allows setting the callback function that is triggered once
++ * the cipher operation completes.
++ *
++ * The callback function is registered with the &ahash_request handle and
++ * must comply with the following template
++ *
++ *	void callback_function(struct crypto_async_request *req, int error)
++ */
+ static inline void ahash_request_set_callback(struct ahash_request *req,
+ 					      u32 flags,
+ 					      crypto_completion_t compl,
+@@ -346,6 +561,19 @@ static inline void ahash_request_set_callback(struct ahash_request *req,
+ 	req->base.flags = flags;
+ }
+ 
++/**
++ * ahash_request_set_crypt() - set data buffers
++ * @req: ahash_request handle to be updated
++ * @src: source scatter/gather list
++ * @result: buffer that is filled with the message digest -- the caller must
++ *	    ensure that the buffer has sufficient space by, for example, calling
++ *	    crypto_ahash_digestsize()
++ * @nbytes: number of bytes to process from the source scatter/gather list
++ *
++ * By using this call, the caller references the source scatter/gather list.
++ * The source scatter/gather list points to the data the message digest is to
++ * be calculated for.
++ */
+ static inline void ahash_request_set_crypt(struct ahash_request *req,
+ 					   struct scatterlist *src, u8 *result,
+ 					   unsigned int nbytes)
 -- 
 2.1.0
 
