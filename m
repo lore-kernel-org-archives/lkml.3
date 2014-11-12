@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaKLLsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:48:05 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:62772 "EHLO
+	id S1752869AbaKLLsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:48:13 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:11796 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697AbaKLLsC (ORCPT
+	with ESMTP id S1752799AbaKLLsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:48:02 -0500
+	Wed, 12 Nov 2014 06:48:09 -0500
 X-IronPort-AV: E=Sophos;i="5.07,368,1413244800"; 
-   d="scan'208";a="191922247"
+   d="scan'208";a="191922266"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
@@ -16,9 +16,9 @@ CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
         <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v9 11/13] xen/arm: introduce GNTTABOP_cache_flush
-Date: Wed, 12 Nov 2014 11:40:52 +0000
-Message-ID: <1415792454-23161-11-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v9 12/13] swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
+Date: Wed, 12 Nov 2014 11:40:53 +0000
+Message-ID: <1415792454-23161-12-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
@@ -29,153 +29,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce support for new hypercall GNTTABOP_cache_flush.
-Use it to perform cache flashing on pages used for dma when necessary.
-
-If GNTTABOP_cache_flush is supported by the hypervisor, we don't need to
-bounce dma map operations that involve foreign grants and non-coherent
-devices.
+xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
+handle as argument, not a physical address.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
 ---
+ drivers/xen/swiotlb-xen.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Changes in v5:
-- rename hypercall_flush to hypercall_cflush;
-- remove spurious change.
-
-Changes in v4:
-- add comment;
-- avoid bouncing dma map operations that involve foreign grants and
-non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
-
-Changes in v3:
-- fix the cache maintenance op call to match what Linux does natively;
-- update the hypercall interface to match Xen.
-
-Changes in v2:
-- update the hypercall interface to match Xen;
-- call the interface on a single page at a time.
----
- arch/arm/xen/mm.c                   |   34 ++++++++++++++++++++++++++++++++--
- include/xen/interface/grant_table.h |   19 +++++++++++++++++++
- 2 files changed, 51 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index 28ebf3e..351b24a 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -12,6 +12,7 @@
- #include <linux/swiotlb.h>
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 3725ee4..498b654 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -449,7 +449,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
  
- #include <xen/xen.h>
-+#include <xen/interface/grant_table.h>
- #include <xen/interface/memory.h>
- #include <xen/swiotlb-xen.h>
+ 	BUG_ON(dir == DMA_NONE);
  
-@@ -24,12 +25,14 @@ enum dma_cache_op {
-        DMA_UNMAP,
-        DMA_MAP,
- };
-+static bool hypercall_cflush = false;
+-	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
++	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
  
- /* functions called by SWIOTLB */
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr)) {
+@@ -497,14 +497,14 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+ 	BUG_ON(dir == DMA_NONE);
  
- static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
- 	size_t size, enum dma_data_direction dir, enum dma_cache_op op)
- {
-+	struct gnttab_cache_flush cflush;
- 	unsigned long pfn;
- 	size_t left = size;
+ 	if (target == SYNC_FOR_CPU)
+-		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
++		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
  
-@@ -39,7 +42,26 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
- 	do {
- 		size_t len = left;
- 	
--		/* TODO: cache flush */
-+		/* buffers in highmem or foreign pages cannot cross page
-+		 * boundaries */
-+		if (len + offset > PAGE_SIZE)
-+			len = PAGE_SIZE - offset;
-+
-+		cflush.op = 0;
-+		cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
-+		cflush.offset = offset;
-+		cflush.length = len;
-+
-+		if (op == DMA_UNMAP && dir != DMA_TO_DEVICE)
-+			cflush.op = GNTTAB_CACHE_INVAL;
-+		if (op == DMA_MAP) {
-+			if (dir == DMA_FROM_DEVICE)
-+				cflush.op = GNTTAB_CACHE_INVAL;
-+			else
-+				cflush.op = GNTTAB_CACHE_CLEAN;
-+		}
-+		if (cflush.op)
-+			HYPERVISOR_grant_table_op(GNTTABOP_cache_flush, &cflush, 1);
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr))
+ 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
  
- 		offset = 0;
- 		pfn++;
-@@ -104,7 +126,7 @@ bool xen_arch_need_swiotlb(struct device *dev,
- 			   unsigned long pfn,
- 			   unsigned long mfn)
- {
--	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-+	return (!hypercall_cflush && (pfn != mfn) && !is_device_dma_coherent(dev));
- }
+ 	if (target == SYNC_FOR_DEVICE)
+-		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
++		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
  
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
-@@ -147,10 +169,18 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
- 
- int __init xen_mm_init(void)
- {
-+	struct gnttab_cache_flush cflush;
- 	if (!xen_initial_domain())
- 		return 0;
- 	xen_swiotlb_init(1, false);
- 	xen_dma_ops = &xen_swiotlb_dma_ops;
-+
-+	cflush.op = 0;
-+	cflush.a.dev_bus_addr = 0;
-+	cflush.offset = 0;
-+	cflush.length = 0;
-+	if (HYPERVISOR_grant_table_op(GNTTABOP_cache_flush, &cflush, 1) != -ENOSYS)
-+		hypercall_cflush = true;
- 	return 0;
- }
- arch_initcall(xen_mm_init);
-diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
-index e40fae9..bcce564 100644
---- a/include/xen/interface/grant_table.h
-+++ b/include/xen/interface/grant_table.h
-@@ -479,6 +479,25 @@ struct gnttab_get_version {
- DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
- 
- /*
-+ * Issue one or more cache maintenance operations on a portion of a
-+ * page granted to the calling domain by a foreign domain.
-+ */
-+#define GNTTABOP_cache_flush          12
-+struct gnttab_cache_flush {
-+    union {
-+        uint64_t dev_bus_addr;
-+        grant_ref_t ref;
-+    } a;
-+    uint16_t offset;   /* offset from start of grant */
-+    uint16_t length;   /* size within the grant */
-+#define GNTTAB_CACHE_CLEAN          (1<<0)
-+#define GNTTAB_CACHE_INVAL          (1<<1)
-+#define GNTTAB_CACHE_SOURCE_GREF    (1<<31)
-+    uint32_t op;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(gnttab_cache_flush);
-+
-+/*
-  * Bitfield values for update_pin_status.flags.
-  */
-  /* Map the grant entry for access by I/O devices. */
+ 	if (dir != DMA_FROM_DEVICE)
+ 		return;
 -- 
 1.7.10.4
 
