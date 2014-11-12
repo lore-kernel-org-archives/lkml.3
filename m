@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaKLScY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 13:32:24 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:45065 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056AbaKLScW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 13:32:22 -0500
-Date: Wed, 12 Nov 2014 13:32:10 -0500 (EST)
-Message-Id: <20141112.133210.2150102649123612493.davem@davemloft.net>
-To: khalid.aziz@oracle.com
-Cc: bob.picco@oracle.com, sam@ravnborg.org, mgorman@suse.de, riel@redhat.com,
-        tkhai@yandex.ru, allen.pais@oracle.com, sfr@canb.auug.org.au,
-        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sparc64: Resolve conflict between sparc v9 and M7 on
- usage of bit 9 of TTE
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1415810741-25131-1-git-send-email-khalid.aziz@oracle.com>
-References: <1415810741-25131-1-git-send-email-khalid.aziz@oracle.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Nov 2014 10:32:20 -0800 (PST)
+	id S1753370AbaKLScN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 13:32:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:28805 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685AbaKLScM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 13:32:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,370,1413270000"; 
+   d="scan'208";a="606769782"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Chen Yucong <slaoub@gmail.com>
+CC: Borislav Petkov <bp@alien8.de>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 1/2] x86, mce, severity: extend the the mce_severity
+ mechanism to handle UCNA/DEFERRED error
+Thread-Topic: [PATCH v3 1/2] x86, mce, severity: extend the the mce_severity
+ mechanism to handle UCNA/DEFERRED error
+Thread-Index: AQHP+vUgoD/q7VyRgEG5Av0WO+I2NJxa9TcAgAADNAD//4mloIABKNEAgAAZJLCAAPUhAIAAnXKQ
+Date: Wed, 12 Nov 2014 18:28:40 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292B1A6@ORSMSX114.amr.corp.intel.com>
+References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
+	 <1415410821-15063-2-git-send-email-slaoub@gmail.com>
+	 <546136C8.5060104@amd.com> <20141110221728.GA23419@pd.tnic>
+	 <3908561D78D1C84285E8C5FCA982C28F329282FA@ORSMSX114.amr.corp.intel.com>
+	 <20141111085612.GA31490@pd.tnic>
+	 <3908561D78D1C84285E8C5FCA982C28F329293DE@ORSMSX114.amr.corp.intel.com>
+ <1415754212.12188.12.camel@debian>
+In-Reply-To: <1415754212.12188.12.camel@debian>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sACIWj9V019043
 
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Date: Wed, 12 Nov 2014 09:45:41 -0700
+> Just as what you said, the severity table entry for the "EN" check
+> should have been skipped when calling from the CMCI/Poll handler.
+> As shown below:
+>
+>        MCESEV(
+>                NO, "Not enabled",
+>                EXCP, BITCLR(MCI_STATUS_EN)
+>                ),
 
-> sparc64: Resolve conflict between sparc v9 and M7 on usage of bit 9 of TTE
-> 
-> Bit 9 of TTE is CV (Cacheable in V-cache) on sparc v9 processor while
-> the same bit 9 is MCDE (Memory Corruption Detection Enable) on M7
-> processor. This creates a conflicting usage of the same bit. Kernel
-> sets TTE.cv bit on all pages for sun4v architecture which works well
-> for sparc v9, but sets memory corruption detection bit on M7 processor
-> which is not the intent. This patch adds code to determine if kernel
-> is running on M7 processor and takes steps to not enable memory
-> corruption detection in TTE erroneously.
-> 
-> Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Yes - that worked.  The bank 7 error now gets processed and we offline the page.
 
-The hypervisor specification clearly defines bit 9 as V-Cache
-cacheable.
-
-Reusing this bit instead of doing something else was quite unwise if
-you ask me.
-
-I also really want a programmers manual for the M7 chip at this point
-before I'm willing to apply any patches of this nature.
-
-It's nearly impossible for me to sufficiently review all of the recent
-binutils (for new instructions) and now kernel (redefined TTE bits)
-changes without access to the programmer's manual.
-
-Thanks.
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
