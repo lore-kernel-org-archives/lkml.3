@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252AbaKLPCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:02:17 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:47973 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796AbaKLPCP (ORCPT
+	id S1753148AbaKLPCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:02:46 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34493 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752759AbaKLPCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:02:15 -0500
+	Wed, 12 Nov 2014 10:02:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <1415804444-9765-1-git-send-email-danieru.dressler@gmail.com>
-References: <danieru.dressler@gmail.com>
-	<1415804444-9765-1-git-send-email-danieru.dressler@gmail.com>
-Date: Thu, 13 Nov 2014 00:02:14 +0900
-Message-ID: <CAGC3nLBhb6roBF-1ib7pq=2CDpmnvw3f_aCZn=VT6A35xn17Zg@mail.gmail.com>
-Subject: Re: [PATCH] Btrfs: qgroup: add BUILD_BUG to report pointer cast breakage
-From: Daniel Dressler <danieru.dressler@gmail.com>
-To: "danieru.dressler@gmail.com" <danieru.dressler@gmail.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <20141112135455.GA6895@lerouge>
+References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org>
+	<alpine.DEB.2.11.1411012003390.5308@nanos>
+	<alpine.DEB.2.11.1411011646280.7732@gentwo.org>
+	<alpine.DEB.2.11.1411012313320.5308@nanos>
+	<alpine.DEB.2.11.1411061057470.5591@gentwo.org>
+	<CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com>
+	<20141110153147.GK4901@linux.vnet.ibm.com>
+	<alpine.DEB.2.11.1411101226310.12918@gentwo.org>
+	<20141111171526.GC3216@lerouge>
+	<CAKohpok3U_8zQurs219fOmwERFrnZ0sOE-YUc7B+fKYfFLmEpg@mail.gmail.com>
+	<20141112135455.GA6895@lerouge>
+Date: Wed, 12 Nov 2014 20:26:05 +0530
+Message-ID: <CAKohpo=U7K==YMytwcGwteTXdf1RFdxo8BoDhfR-9AriL83D8Q@mail.gmail.com>
+Subject: Re: Future of NOHZ full/isolation development (was Re: [NOHZ] Remove scheduler_tick_max_deferment)
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qti.qualcomm.com>,
+        Hugh Dickins <hughd@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am very very sorry, I forgot to even test building. Please pretend
-this patch was never submitted.
+On 12 November 2014 19:24, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> I'd rather leave that to tracepoints. Like trace_hrtimer_spurious().
 
-Daniel
+Yeah, it was just to prove things right on the console without getting
+into traces.
 
-2014-11-13 0:00 GMT+09:00 Daniel Dressler <danieru.dressler@gmail.com>:
-> Our ulist data structure stores at max 64bit
-> values. qgroup has used this structure to store
-> pointers. In the future when we upgrade to 128bit
-> this casting of pointers to uint64_t will break.
->
-> This patch adds a BUILD_BUG ensuring that this
-> code will not be left untouched in the upgrade.
->
-> It also marks this issue on the TODO list so it
-> may be addressed before such an upgrade.
->
-> Signed-off-by: Daniel Dressler <danieru.dressler@gmail.com>
-> ---
->  fs/btrfs/qgroup.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/fs/btrfs/qgroup.c b/fs/btrfs/qgroup.c
-> index 48b60db..87f7c98 100644
-> --- a/fs/btrfs/qgroup.c
-> +++ b/fs/btrfs/qgroup.c
-> @@ -44,6 +44,7 @@
->   *  - caches fuer ulists
->   *  - performance benchmarks
->   *  - check all ioctl parameters
-> + *  - do not cast uintptr_t to uint64_t in ulist usage
->   */
->
->  /*
-> @@ -101,6 +102,7 @@ struct btrfs_qgroup_list {
->
->  #define ptr_to_u64(x) ((u64)(uintptr_t)x)
->  #define u64_to_ptr(x) ((struct btrfs_qgroup *)(uintptr_t)x)
-> +BUILD_BUG_ON(UINTPTR_MAX > UINT64_MAX);
->
->  static int
->  qgroup_rescan_init(struct btrfs_fs_info *fs_info, u64 progress_objectid,
-> --
-> 2.1.0
->
+> Or better yet: have trace_hrtimer_interrupt() which we can compare against
+> trace_hrtimer_expire_entry/exit() to check if any hrtimer callback have run
+> in the interrupt. This way we avoid workarounds like the above count.
+
+Yeah, I also believe we better add this debug information to mainline kernel.
+I will try to get a patch for that soon.
+
+Would it be recommended to add both trace points?
+i.e. trace_hrtimer_interrupt() and trace_hrtimer_spurious() ?
+
+--
+viresh
