@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934523AbaKLBnG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:43:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60418 "EHLO
+	id S934543AbaKLBn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:43:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60445 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933830AbaKLBnB (ORCPT
+	with ESMTP id S933589AbaKLBnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:43:01 -0500
+	Tue, 11 Nov 2014 20:43:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 109/203] cpufreq: expose scaling_cur_freq sysfs file for set_policy() drivers
-Date: Wed, 12 Nov 2014 10:16:19 +0900
-Message-Id: <20141112011547.685060995@linuxfoundation.org>
+        Ong Boon Leong <boon.leong.ong@intel.com>,
+        "David E. Box" <david.e.box@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Subject: [PATCH 3.14 115/203] x86, iosf: Add Quark X1000 PCI ID
+Date: Wed, 12 Nov 2014 10:16:25 +0900
+Message-Id: <20141112011547.949147623@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,63 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Ong Boon Leong <boon.leong.ong@intel.com>
 
-commit c034b02e213d271b98c45c4a7b54af8f69aaac1e upstream.
+commit 90916e048c1e0c1d379577e43ab9b8e331490cfb upstream.
 
-Currently the core does not expose scaling_cur_freq for set_policy()
-drivers this breaks some userspace monitoring tools.
-Change the core to expose this file for all drivers and if the
-set_policy() driver supports the get() callback use it to retrieve the
-current frequency.
+Add PCI device ID, i.e. that of the Host Bridge,
+for IOSF MBI driver.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=73741
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Ong Boon Leong <boon.leong.ong@intel.com>
+Link: http://lkml.kernel.org/r/1399668248-24199-4-git-send-email-david.e.box@linux.intel.com
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ arch/x86/kernel/iosf_mbi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -460,7 +460,18 @@ show_one(cpuinfo_max_freq, cpuinfo.max_f
- show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
- show_one(scaling_min_freq, min);
- show_one(scaling_max_freq, max);
--show_one(scaling_cur_freq, cur);
-+
-+static ssize_t show_scaling_cur_freq(
-+	struct cpufreq_policy *policy, char *buf)
-+{
-+	ssize_t ret;
-+
-+	if (cpufreq_driver && cpufreq_driver->setpolicy && cpufreq_driver->get)
-+		ret = sprintf(buf, "%u\n", cpufreq_driver->get(policy->cpu));
-+	else
-+		ret = sprintf(buf, "%u\n", policy->cur);
-+	return ret;
-+}
+--- a/arch/x86/kernel/iosf_mbi.c
++++ b/arch/x86/kernel/iosf_mbi.c
+@@ -201,6 +201,7 @@ static int iosf_mbi_probe(struct pci_dev
  
- static int cpufreq_set_policy(struct cpufreq_policy *policy,
- 				struct cpufreq_policy *new_policy);
-@@ -854,11 +865,11 @@ static int cpufreq_add_dev_interface(str
- 		if (ret)
- 			goto err_out_kobj_put;
- 	}
--	if (has_target()) {
--		ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
--		if (ret)
--			goto err_out_kobj_put;
--	}
-+
-+	ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
-+	if (ret)
-+		goto err_out_kobj_put;
-+
- 	if (cpufreq_driver->bios_limit) {
- 		ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
- 		if (ret)
+ static DEFINE_PCI_DEVICE_TABLE(iosf_mbi_pci_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0F00) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0958) },
+ 	{ 0, },
+ };
+ MODULE_DEVICE_TABLE(pci, iosf_mbi_pci_ids);
 
 
