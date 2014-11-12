@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934860AbaKLBqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:46:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60674 "EHLO
+	id S934877AbaKLBqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:46:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60685 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965437AbaKLBqX (ORCPT
+	with ESMTP id S934207AbaKLBqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:46:23 -0500
+	Tue, 11 Nov 2014 20:46:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 131/203] staging:iio:ade7758: Remove "raw" from channel name
-Date: Wed, 12 Nov 2014 10:16:41 +0900
-Message-Id: <20141112011548.707858671@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 160/203] USB: opticon: fix non-atomic allocation in write path
+Date: Wed, 12 Nov 2014 10:17:10 +0900
+Message-Id: <20141112011550.019563455@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,151 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Johan Hovold <johan@kernel.org>
 
-commit b598aacc29331e7e638cd509108600e916c6331b upstream.
+commit e681286de221af78fc85db9222b6a203148c005a upstream.
 
-"raw" is a property of a channel, but should not be part of the name of
-channel.
+Write may be called from interrupt context so make sure to use
+GFP_ATOMIC for all allocations in write.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Fixes: 0d930e51cfe6 ("USB: opticon: Add Opticon OPN2001 write support")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/meter/ade7758_core.c |   24 +++++++++---------------
- 1 file changed, 9 insertions(+), 15 deletions(-)
+ drivers/usb/serial/opticon.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/iio/meter/ade7758_core.c
-+++ b/drivers/staging/iio/meter/ade7758_core.c
-@@ -630,7 +630,6 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
- 		.scan_index = 0,
- 		.scan_type = {
-@@ -642,7 +641,6 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_CURRENT,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
- 		.scan_index = 1,
- 		.scan_type = {
-@@ -654,7 +652,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "apparent_raw",
-+		.extend_name = "apparent",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
- 		.scan_index = 2,
- 		.scan_type = {
-@@ -666,7 +664,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "active_raw",
-+		.extend_name = "active",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
- 		.scan_index = 3,
- 		.scan_type = {
-@@ -678,7 +676,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "reactive_raw",
-+		.extend_name = "reactive",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
- 		.scan_index = 4,
- 		.scan_type = {
-@@ -690,7 +688,6 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
- 		.scan_index = 5,
- 		.scan_type = {
-@@ -702,7 +699,6 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_CURRENT,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
- 		.scan_index = 6,
- 		.scan_type = {
-@@ -714,7 +710,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "apparent_raw",
-+		.extend_name = "apparent",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
- 		.scan_index = 7,
- 		.scan_type = {
-@@ -726,7 +722,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "active_raw",
-+		.extend_name = "active",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
- 		.scan_index = 8,
- 		.scan_type = {
-@@ -738,7 +734,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "reactive_raw",
-+		.extend_name = "reactive",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
- 		.scan_index = 9,
- 		.scan_type = {
-@@ -750,7 +746,6 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
- 		.scan_index = 10,
- 		.scan_type = {
-@@ -762,7 +757,6 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_CURRENT,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
- 		.scan_index = 11,
- 		.scan_type = {
-@@ -774,7 +768,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "apparent_raw",
-+		.extend_name = "apparent",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
- 		.scan_index = 12,
- 		.scan_type = {
-@@ -786,7 +780,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "active_raw",
-+		.extend_name = "active",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
- 		.scan_index = 13,
- 		.scan_type = {
-@@ -798,7 +792,7 @@ static const struct iio_chan_spec ade775
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "reactive_raw",
-+		.extend_name = "reactive",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
- 		.scan_index = 14,
- 		.scan_type = {
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -215,7 +215,7 @@ static int opticon_write(struct tty_stru
+ 
+ 	/* The connected devices do not have a bulk write endpoint,
+ 	 * to transmit data to de barcode device the control endpoint is used */
+-	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
++	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_ATOMIC);
+ 	if (!dr) {
+ 		count = -ENOMEM;
+ 		goto error_no_dr;
 
 
