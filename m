@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaKLBYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:24:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58781 "EHLO
+	id S932074AbaKLBZC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:25:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58790 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127AbaKLBYt (ORCPT
+	with ESMTP id S1754169AbaKLBY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:24:49 -0500
+	Tue, 11 Nov 2014 20:24:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.17 074/319] UBI: Dispatch update notification if the volume is updated
-Date: Wed, 12 Nov 2014 10:13:32 +0900
-Message-Id: <20141112011004.833588310@linuxfoundation.org>
+        Vignesh R <vigneshr@ti.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.17 077/319] mfd: ti_am335x_tscadc: Fix TSC operation after ADC continouous mode
+Date: Wed, 12 Nov 2014 10:13:35 +0900
+Message-Id: <20141112011005.330776724@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,39 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+From: Vignesh R <vigneshr@ti.com>
 
-commit fda322a1b3b9e8ee231913c500f73c6988b1aff5 upstream.
+commit 6ac734d2242949f41eb1346ca0fd4ed010c937aa upstream.
 
-The UBI_IOCVOLUP ioctl is used to start an update and also to
-truncate a volume. In the first case, a "volume updated" notification
-is dispatched when the update is done.
+After enabling and disabling ADC continuous mode via sysfs, ts_print_raw
+fails to return any data. This is because when ADC is configured for
+continuous mode, it disables touch screen steps.These steps are not
+re-enabled when ADC continuous mode is disabled. Therefore existing values
+of REG_SE needs to be cached before enabling continuous mode and
+disabling touch screen steps and enabling ADC steps. The cached value
+are to be restored to REG_SE once ADC is disabled.
 
-This commit adds the "volume updated" notification to be also sent when
-the volume is truncated. This is required for UBI block and gluebi to get
-notified about the new volume size.
+Fixes: 7ca6740cd1cd ("mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization")
 
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Vignesh R <vigneshr@ti.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/cdev.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/mfd/ti_am335x_tscadc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/ubi/cdev.c
-+++ b/drivers/mtd/ubi/cdev.c
-@@ -425,8 +425,10 @@ static long vol_cdev_ioctl(struct file *
- 			break;
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -53,7 +53,7 @@ void am335x_tsc_se_set_cache(struct ti_t
+ 	unsigned long flags;
  
- 		err = ubi_start_update(ubi, vol, bytes);
--		if (bytes == 0)
-+		if (bytes == 0) {
-+			ubi_volume_notify(ubi, vol, UBI_VOLUME_UPDATED);
- 			revoke_exclusive(desc, UBI_READWRITE);
-+		}
- 		break;
- 	}
+ 	spin_lock_irqsave(&tsadc->reg_lock, flags);
+-	tsadc->reg_se_cache = val;
++	tsadc->reg_se_cache |= val;
+ 	if (tsadc->adc_waiting)
+ 		wake_up(&tsadc->reg_se_wait);
+ 	else if (!tsadc->adc_in_use)
+@@ -96,6 +96,7 @@ static void am335x_tscadc_need_adc(struc
+ void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
+ {
+ 	spin_lock_irq(&tsadc->reg_lock);
++	tsadc->reg_se_cache |= val;
+ 	am335x_tscadc_need_adc(tsadc);
  
+ 	tscadc_writel(tsadc, REG_SE, val);
 
 
