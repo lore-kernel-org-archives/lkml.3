@@ -1,89 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965309AbaKLCxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:53:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60397 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934468AbaKLBmn (ORCPT
+	id S965405AbaKLCxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:53:38 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:47156 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755457AbaKLCxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:42:43 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Theodore Tso <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH 3.14 105/203] ext4: check s_chksum_driver when looking for bg csum presence
-Date: Wed, 12 Nov 2014 10:16:15 +0900
-Message-Id: <20141112011547.509987184@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
-References: <20141112011542.686743533@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 21:53:16 -0500
+Message-ID: <5462CB90.1080303@roeck-us.net>
+Date: Tue, 11 Nov 2014 18:53:04 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+To: Bjorn Helgaas <bhelgaas@google.com>, Barto <mister.freeman@laposte.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+References: <54629CAE.2000207@laposte.net> <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com>
+In-Reply-To: <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.5462CB9C.00D0,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 11/11/2014 04:17 PM, Bjorn Helgaas wrote:
+> [+cc Guenter, linux-scsi]
+>
+> On Tue, Nov 11, 2014 at 4:33 PM, Barto <mister.freeman@laposte.net> wrote:
+>> Hello everyone,
+>>
+>> I notice a bug since kernel 3.17 ( and also with 3.18 branch ), a random
+>> hang at boot on some PC configurations, I did a "git bisect" and I found
+>> that the culprit is  :
+>>
+>> [045065d8a300a37218c548e9aa7becd581c6a0e8] [SCSI] fix qemu boot hang problem
+>>
+>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=045065d8a300a37218c548e9aa7becd581c6a0e8
+>>
+>> the author of this commit has choosen to inverse the logic of the if
+>> statement in the file  drivers/scsi/scsi_lib.c in order to solve an
+>> issue with qemu :
+>>
+>> --- a/drivers/scsi/scsi_lib.c
+>> +++ b/drivers/scsi/scsi_lib.c
+>> @@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct request_queue *q)
+>> blk_requeue_request(q, req);
+>> atomic_dec(&sdev->device_busy);
+>> out_delay:
+>> - if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+>> + if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+>> blk_delay_queue(q, SCSI_QUEUE_DELAY);
+>> }
+>>
 
-------------------
+The above commit was a follow-up to commit 71e75c97f97a, which did the following:
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+-       if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
++       if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
 
-commit 813d32f91333e4c33d5a19b67167c4bae42dae75 upstream.
+meaning it reversed the polarity of the check in the original code.
+Since that commit created problems as observed in qemu, I thought it
+would be obvious that restoring the original polarity would make sense.
+This is explained in my patch, so I am somewhat at loss why ...
 
-Convert the ext4_has_group_desc_csum predicate to look for a checksum
-driver instead of the metadata_csum flag and change the bg checksum
-calculation function to look for GDT_CSUM before taking the crc16
-path.
+>> this change triggers a bug on my PC ( I don't have SCSI devices, but
+>> only 3 SATA harddisks and 2 IDE harddisks, SATA disks are on an ICH7
+>> sata controler on the motherboard gigabyte GA-P31-DS3L, and IDE disk on
+>> a JMicron JMB363/368 Sata/IDE PCIe card ), every 5~10 boots the boot
+>> stops suddenly because of this commit,
+>>
+>> If I revert this commit then the bug is gone, more details can be found
+>> here, where I created a patch who reverts commit 045065d8 :
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=87581
+>>
+>> my question: why Guenter Roeck ( the author of the bad commit ) has
+>> choosen to inverse the logic in the if statement ?
 
-Without this patch, if we mount with ^uninit_bg,^metadata_csum and
-later metadata_csum gets turned on by accident, the block group
-checksum functions will incorrectly assume that checksumming is
-enabled (metadata_csum) but that crc16 should be used
-(!s_chksum_driver).  This is totally wrong, so fix the predicate
-and the checksum formula selection.
+this question is asked.
 
-(Granted, if the metadata_csum feature bit gets enabled on a live FS
-then something underhanded is going on, but we could at least avoid
-writing garbage into the on-disk fields.)
+Having said that, I don't really care one way or another. I am fine
+with reverting my commit; if that is done, I'll simply remove the
+related scsi tests from my qemu test runs.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Guenter
 
----
- fs/ext4/ext4.h  |    4 ++--
- fs/ext4/super.c |    4 ++++
- 2 files changed, 6 insertions(+), 2 deletions(-)
-
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2341,8 +2341,8 @@ extern int ext4_register_li_request(stru
- static inline int ext4_has_group_desc_csum(struct super_block *sb)
- {
- 	return EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM |
--					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM);
-+					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM) ||
-+	       (EXT4_SB(sb)->s_chksum_driver != NULL);
- }
- 
- static inline int ext4_has_metadata_csum(struct super_block *sb)
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2019,6 +2019,10 @@ static __le16 ext4_group_desc_csum(struc
- 	}
- 
- 	/* old crc16 code */
-+	if (!(sbi->s_es->s_feature_ro_compat &
-+	      cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)))
-+		return 0;
-+
- 	offset = offsetof(struct ext4_group_desc, bg_checksum);
- 
- 	crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
-
+>> before his commit the if statement was like this :
+>>
+>> if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+>> blk_delay_queue(q, SCSI_QUEUE_DELAY);
+>>
+>> if his decision to inverse the logic of
+>> "atomic_read(&sdev->device_busy)" is acceptable then the real bug is
+>> probably located elsewhere in the scsi source code, and we must solve
+>> this mistery because there is obviously a bug regression in SCSI code
+>> because with older kernels ( 3.16.7 and lower ) I don't have the random
+>> hang boot bug with my configuration,
+>>
+>> another user in archlinux forums has also this bug and he has a more
+>> modern PC ( intel i7 core cpu, SSD device ), my fear is when linux
+>> distros will move to kernel 3.17 then more users will have this weird
+>> random bug who can occur only on boot and only with a specific PC
+>> configuration, if the boot step is passed despite the random bug then
+>> the bug will not occur, it occurs only during the boot process, which
+>> probably means that the faulty source code is only called during the
+>> boot process,
+>>
+>> thanks for anyone who wants to dig this problem with me
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
