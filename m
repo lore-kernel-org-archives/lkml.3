@@ -1,82 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908AbaKLEYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:24:08 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:43290 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933847AbaKLEYF (ORCPT
+	id S933944AbaKLEYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:24:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58365 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703AbaKLBUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 23:24:05 -0500
-Date: Tue, 11 Nov 2014 21:23:59 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yijing Wang <wangyijing@huawei.com>, g@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 00/10] Save MSI chip in pci_sys_data
-Message-ID: <20141112042359.GK28161@google.com>
-References: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
+	Tue, 11 Nov 2014 20:20:05 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Crestez Dan Leonard <cdleonard@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 016/319] tcp: md5: do not use alloc_percpu()
+Date: Wed, 12 Nov 2014 10:12:34 +0900
+Message-Id: <20141112010955.353510532@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 03:48:37PM +0800, Yijing Wang wrote:
-> Now PCI host bridge drivers in arm associate MSI chip and
-> PCI bus by adding .add_bus(), and assign MSI chip pointer
-> to every PCI bus. Associating MSI chip and every PCI bus
-> is not necessary. All PCI busses under same PCI host brdige
-> share the same MSI chip. So saving MSI chip in pci_sys_data
-> is a better solution, it make PCI host bridge drivers clean.
-> Because we still need to provide arch spec pcibios_msi_controller()
-> to extract MSI controller pointer, a better solution is to
-> refactor PCI host bridge, make a generic pci_host_bridge, and
-> save common info like PCI domain number, MSI chip, resources
-> in it. We will do that work in another series as soon.
-> 
-> To Bjorn: Because struct msi_chip defined in struct hw_pci and pci_sys_data
-> is under the #ifdef CONFIG_PCI_MSI, if we use if(IS_ENABLED(CONFIG_PCI_MSI))
-> in PCI host bridge drivers, it will cause build errors when the CONFIG_PCI_MSI
-> is off. So I keep #ifdef CONFIG_PCI_MSI in this series.
-> 
-> Yijing Wang (10):
->   MSI: Rename msi_chip to msi_controller for better readability
->   PCI/MSI: Introduce weak pcibios_msi_controller()
->   arm/MSI: Save MSI controller in pci_sys_data
->   PCI: tegra: Save MSI controller in pci_sys_data
->   PCI: designware: Save MSI controller in pci_sys_data
->   PCI: rcar: Save MSI controller in pci_sys_data
->   PCI: mvebu: Save MSI controller in pci_sys_data
->   PCI: xilinx: Save MSI controller in pci_sys_data
->   arm/PCI: Clean unused pcibios_add_bus() and pcibios_remove_bus()
->   PCI/MSI: Remove useless bus->msi assignment
-> 
->  arch/arm/include/asm/mach/pci.h     |   10 +++++---
->  arch/arm/kernel/bios32.c            |   28 ++++++++++--------------
->  drivers/irqchip/irq-armada-370-xp.c |   22 +++++++++---------
->  drivers/of/of_pci.c                 |   40 +++++++++++++++++-----------------
->  drivers/pci/host/pci-keystone-dw.c  |    4 +-
->  drivers/pci/host/pci-keystone.h     |    2 +-
->  drivers/pci/host/pci-mvebu.c        |   14 ++++-------
->  drivers/pci/host/pci-tegra.c        |   37 +++++++++++++-------------------
->  drivers/pci/host/pcie-designware.c  |   25 +++++++--------------
->  drivers/pci/host/pcie-designware.h  |    2 +-
->  drivers/pci/host/pcie-rcar.c        |   37 +++++++++++++-------------------
->  drivers/pci/host/pcie-xilinx.c      |   27 +++++++----------------
->  drivers/pci/msi.c                   |   22 ++++++++++++++-----
->  drivers/pci/probe.c                 |    1 -
->  include/linux/msi.h                 |    6 ++--
->  include/linux/of_pci.h              |   14 ++++++------
->  include/linux/pci.h                 |    2 +-
->  17 files changed, 132 insertions(+), 161 deletions(-)
-> 
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Applied to pci/msi for v3.19, thanks.
+------------------
+
+From: Eric Dumazet <edumazet@google.com>
+
+[ Upstream commit 349ce993ac706869d553a1816426d3a4bfda02b1 ]
+
+percpu tcp_md5sig_pool contains memory blobs that ultimately
+go through sg_set_buf().
+
+-> sg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));
+
+This requires that whole area is in a physically contiguous portion
+of memory. And that @buf is not backed by vmalloc().
+
+Given that alloc_percpu() can use vmalloc() areas, this does not
+fit the requirements.
+
+Replace alloc_percpu() by a static DEFINE_PER_CPU() as tcp_md5sig_pool
+is small anyway, there is no gain to dynamically allocate it.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 765cf9976e93 ("tcp: md5: remove one indirection level in tcp_md5sig_pool")
+Reported-by: Crestez Dan Leonard <cdleonard@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/tcp.c |   59 +++++++++++++++++++--------------------------------------
+ 1 file changed, 20 insertions(+), 39 deletions(-)
+
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2985,61 +2985,42 @@ EXPORT_SYMBOL(compat_tcp_getsockopt);
+ #endif
+ 
+ #ifdef CONFIG_TCP_MD5SIG
+-static struct tcp_md5sig_pool __percpu *tcp_md5sig_pool __read_mostly;
++static DEFINE_PER_CPU(struct tcp_md5sig_pool, tcp_md5sig_pool);
+ static DEFINE_MUTEX(tcp_md5sig_mutex);
+-
+-static void __tcp_free_md5sig_pool(struct tcp_md5sig_pool __percpu *pool)
+-{
+-	int cpu;
+-
+-	for_each_possible_cpu(cpu) {
+-		struct tcp_md5sig_pool *p = per_cpu_ptr(pool, cpu);
+-
+-		if (p->md5_desc.tfm)
+-			crypto_free_hash(p->md5_desc.tfm);
+-	}
+-	free_percpu(pool);
+-}
++static bool tcp_md5sig_pool_populated = false;
+ 
+ static void __tcp_alloc_md5sig_pool(void)
+ {
+ 	int cpu;
+-	struct tcp_md5sig_pool __percpu *pool;
+-
+-	pool = alloc_percpu(struct tcp_md5sig_pool);
+-	if (!pool)
+-		return;
+ 
+ 	for_each_possible_cpu(cpu) {
+-		struct crypto_hash *hash;
++		if (!per_cpu(tcp_md5sig_pool, cpu).md5_desc.tfm) {
++			struct crypto_hash *hash;
+ 
+-		hash = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
+-		if (IS_ERR_OR_NULL(hash))
+-			goto out_free;
+-
+-		per_cpu_ptr(pool, cpu)->md5_desc.tfm = hash;
++			hash = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++			if (IS_ERR_OR_NULL(hash))
++				return;
++			per_cpu(tcp_md5sig_pool, cpu).md5_desc.tfm = hash;
++		}
+ 	}
+-	/* before setting tcp_md5sig_pool, we must commit all writes
+-	 * to memory. See ACCESS_ONCE() in tcp_get_md5sig_pool()
++	/* before setting tcp_md5sig_pool_populated, we must commit all writes
++	 * to memory. See smp_rmb() in tcp_get_md5sig_pool()
+ 	 */
+ 	smp_wmb();
+-	tcp_md5sig_pool = pool;
+-	return;
+-out_free:
+-	__tcp_free_md5sig_pool(pool);
++	tcp_md5sig_pool_populated = true;
+ }
+ 
+ bool tcp_alloc_md5sig_pool(void)
+ {
+-	if (unlikely(!tcp_md5sig_pool)) {
++	if (unlikely(!tcp_md5sig_pool_populated)) {
+ 		mutex_lock(&tcp_md5sig_mutex);
+ 
+-		if (!tcp_md5sig_pool)
++		if (!tcp_md5sig_pool_populated)
+ 			__tcp_alloc_md5sig_pool();
+ 
+ 		mutex_unlock(&tcp_md5sig_mutex);
+ 	}
+-	return tcp_md5sig_pool != NULL;
++	return tcp_md5sig_pool_populated;
+ }
+ EXPORT_SYMBOL(tcp_alloc_md5sig_pool);
+ 
+@@ -3053,13 +3034,13 @@ EXPORT_SYMBOL(tcp_alloc_md5sig_pool);
+  */
+ struct tcp_md5sig_pool *tcp_get_md5sig_pool(void)
+ {
+-	struct tcp_md5sig_pool __percpu *p;
+-
+ 	local_bh_disable();
+-	p = ACCESS_ONCE(tcp_md5sig_pool);
+-	if (p)
+-		return __this_cpu_ptr(p);
+ 
++	if (tcp_md5sig_pool_populated) {
++		/* coupled with smp_wmb() in __tcp_alloc_md5sig_pool() */
++		smp_rmb();
++		return this_cpu_ptr(&tcp_md5sig_pool);
++	}
+ 	local_bh_enable();
+ 	return NULL;
+ }
+
+
