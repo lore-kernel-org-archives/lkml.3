@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933849AbaKLBgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:36:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59802 "EHLO
+	id S933896AbaKLBhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:37:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59834 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932587AbaKLBgj (ORCPT
+	with ESMTP id S933879AbaKLBg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:36:39 -0500
+	Tue, 11 Nov 2014 20:36:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.17 287/319] drm/radeon: dpm fixes for asrock systems
-Date: Wed, 12 Nov 2014 10:17:05 +0900
-Message-Id: <20141112011040.360140888@linuxfoundation.org>
+        Olivier Gay <ogay@logitech.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.17 319/319] HID: add keyboard input assist hid usages
+Date: Wed, 12 Nov 2014 10:17:37 +0900
+Message-Id: <20141112011045.710023296@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,60 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Olivier Gay <ogay@logitech.com>
 
-commit 72b3f9183ed57e4a2f0601a1c25ae2fd39855952 upstream.
+commit f974008f07a62171a9dede08250c9a35c2b2b986 upstream.
 
-- bapm seems to cause CPU stuck messages so disable it.
-- nb dpm seems to prevent GPU dpm from getting enabled, so
-disable it.
+Add keyboard input assist controls usages from approved
+hid usage table request HUTTR42:
+http://www.usb.org/developers/hidpage/HUTRR42c.pdf
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=85107
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Olivier Gay <ogay@logitech.com>
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/kv_dpm.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ drivers/hid/hid-debug.c    |    6 ++++++
+ drivers/hid/hid-input.c    |    7 +++++++
+ include/uapi/linux/input.h |    7 +++++++
+ 3 files changed, 20 insertions(+)
 
---- a/drivers/gpu/drm/radeon/kv_dpm.c
-+++ b/drivers/gpu/drm/radeon/kv_dpm.c
-@@ -2725,7 +2725,11 @@ int kv_dpm_init(struct radeon_device *rd
+--- a/drivers/hid/hid-debug.c
++++ b/drivers/hid/hid-debug.c
+@@ -946,6 +946,12 @@ static const char *keys[KEY_MAX + 1] = {
+ 	[KEY_BRIGHTNESS_MIN] = "BrightnessMin",
+ 	[KEY_BRIGHTNESS_MAX] = "BrightnessMax",
+ 	[KEY_BRIGHTNESS_AUTO] = "BrightnessAuto",
++	[KEY_KBDINPUTASSIST_PREV] = "KbdInputAssistPrev",
++	[KEY_KBDINPUTASSIST_NEXT] = "KbdInputAssistNext",
++	[KEY_KBDINPUTASSIST_PREVGROUP] = "KbdInputAssistPrevGroup",
++	[KEY_KBDINPUTASSIST_NEXTGROUP] = "KbdInputAssistNextGroup",
++	[KEY_KBDINPUTASSIST_ACCEPT] = "KbdInputAssistAccept",
++	[KEY_KBDINPUTASSIST_CANCEL] = "KbdInputAssistCancel",
+ };
  
-         pi->sram_end = SMC_RAM_END;
+ static const char *relatives[REL_MAX + 1] = {
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -859,6 +859,13 @@ static void hidinput_configure_usage(str
+ 		case 0x28b: map_key_clear(KEY_FORWARDMAIL);	break;
+ 		case 0x28c: map_key_clear(KEY_SEND);		break;
  
--	pi->enable_nb_dpm = true;
-+	/* Enabling nb dpm on an asrock system prevents dpm from working */
-+	if (rdev->pdev->subsystem_vendor == 0x1849)
-+		pi->enable_nb_dpm = false;
-+	else
-+		pi->enable_nb_dpm = true;
++		case 0x2c7: map_key_clear(KEY_KBDINPUTASSIST_PREV);		break;
++		case 0x2c8: map_key_clear(KEY_KBDINPUTASSIST_NEXT);		break;
++		case 0x2c9: map_key_clear(KEY_KBDINPUTASSIST_PREVGROUP);		break;
++		case 0x2ca: map_key_clear(KEY_KBDINPUTASSIST_NEXTGROUP);		break;
++		case 0x2cb: map_key_clear(KEY_KBDINPUTASSIST_ACCEPT);	break;
++		case 0x2cc: map_key_clear(KEY_KBDINPUTASSIST_CANCEL);	break;
++
+ 		default:    goto ignore;
+ 		}
+ 		break;
+--- a/include/uapi/linux/input.h
++++ b/include/uapi/linux/input.h
+@@ -739,6 +739,13 @@ struct input_keymap_entry {
+ #define KEY_BRIGHTNESS_MIN		0x250	/* Set Brightness to Minimum */
+ #define KEY_BRIGHTNESS_MAX		0x251	/* Set Brightness to Maximum */
  
- 	pi->caps_power_containment = true;
- 	pi->caps_cac = true;
-@@ -2740,10 +2744,19 @@ int kv_dpm_init(struct radeon_device *rd
- 	pi->caps_sclk_ds = true;
- 	pi->enable_auto_thermal_throttling = true;
- 	pi->disable_nb_ps3_in_battery = false;
--	if (radeon_bapm == 0)
-+	if (radeon_bapm == -1) {
-+		/* There are stability issues reported on with
-+		 * bapm enabled on an asrock system.
-+		 */
-+		if (rdev->pdev->subsystem_vendor == 0x1849)
-+			pi->bapm_enable = false;
-+		else
-+			pi->bapm_enable = true;
-+	} else if (radeon_bapm == 0) {
- 		pi->bapm_enable = false;
--	else
-+	} else {
- 		pi->bapm_enable = true;
-+	}
- 	pi->voltage_drop_t = 0;
- 	pi->caps_sclk_throttle_low_notification = false;
- 	pi->caps_fps = false; /* true? */
++#define KEY_KBDINPUTASSIST_PREV		0x260
++#define KEY_KBDINPUTASSIST_NEXT		0x261
++#define KEY_KBDINPUTASSIST_PREVGROUP		0x262
++#define KEY_KBDINPUTASSIST_NEXTGROUP		0x263
++#define KEY_KBDINPUTASSIST_ACCEPT		0x264
++#define KEY_KBDINPUTASSIST_CANCEL		0x265
++
+ #define BTN_TRIGGER_HAPPY		0x2c0
+ #define BTN_TRIGGER_HAPPY1		0x2c0
+ #define BTN_TRIGGER_HAPPY2		0x2c1
 
 
