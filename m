@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaKLRJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 12:09:27 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51604 "EHLO arroyo.ext.ti.com"
+	id S1753307AbaKLRKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:10:54 -0500
+Received: from mga14.intel.com ([192.55.52.115]:63592 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752707AbaKLRJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 12:09:25 -0500
-Message-ID: <54639423.3030607@ti.com>
-Date: Wed, 12 Nov 2014 11:08:51 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv6 1/5] Documentation: dt: add common bindings for hwspinlock
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com> <1410553499-55951-2-git-send-email-s-anna@ti.com> <CAK=WgbZqj23J4M8n5FOkPdUOcyK3==TXgc3DfX=LKS6E8C+-Bg@mail.gmail.com>
-In-Reply-To: <CAK=WgbZqj23J4M8n5FOkPdUOcyK3==TXgc3DfX=LKS6E8C+-Bg@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752957AbaKLRKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:10:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,370,1413270000"; 
+   d="scan'208";a="621313649"
+Subject: [PATCH 02/11] mpx: extend siginfo structure to include bound violation information
+To: hpa@zytor.com
+Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, qiaowei.ren@intel.com,
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Wed, 12 Nov 2014 09:04:49 -0800
+References: <20141112170443.B4BD0899@viggo.jf.intel.com>
+In-Reply-To: <20141112170443.B4BD0899@viggo.jf.intel.com>
+Message-Id: <20141112170449.31E37276@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kumar, Mark, Rob,
 
-On 11/12/2014 09:14 AM, Ohad Ben-Cohen wrote:
-> Hi Suman,
-> 
-> On Fri, Sep 12, 2014 at 11:24 PM, Suman Anna <s-anna@ti.com> wrote:
->> This patch adds the generic common bindings used to represent
->> a hwlock device and use/request locks in a device-tree build.
->>
-> ...
->>
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Signed-off-by: Suman Anna <s-anna@ti.com>
->> ---
->>  .../devicetree/bindings/hwlock/hwlock.txt          | 55 ++++++++++++++++++++++
->>  1 file changed, 55 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
-> 
-> Please ask a DT maintainer to ACK this - otherwise I can't send this to Linus.
-> 
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Can one of you ack this patch and the next patch [1] so that Ohad can
-pick up the series for 3.19? This series has been in works for quite
-some time now and was reviewed by each of you at some point of time
-(thanks!!), the cover letter [2] has the history of the changes.
 
-regards
-Suman
+This patch adds new fields about bound violation into siginfo
+structure. si_lower and si_upper are respectively lower bound
+and upper bound when bound violation is caused.
 
-[1] https://patchwork.kernel.org/patch/4898001/
-[2] http://marc.info/?l=linux-omap&m=141055365213895&w=2
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
+ b/include/uapi/asm-generic/siginfo.h |    9 ++++++++-
+ b/kernel/signal.c                    |    4 ++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff -puN include/uapi/asm-generic/siginfo.h~2014-10-14-06_12-mpx-extend-siginfo-structure-to-include-bound-violation-information include/uapi/asm-generic/siginfo.h
+--- a/include/uapi/asm-generic/siginfo.h~2014-10-14-06_12-mpx-extend-siginfo-structure-to-include-bound-violation-information	2014-11-12 08:49:23.866797944 -0800
++++ b/include/uapi/asm-generic/siginfo.h	2014-11-12 08:49:23.871798169 -0800
+@@ -91,6 +91,10 @@ typedef struct siginfo {
+ 			int _trapno;	/* TRAP # which caused the signal */
+ #endif
+ 			short _addr_lsb; /* LSB of the reported address */
++			struct {
++				void __user *_lower;
++				void __user *_upper;
++			} _addr_bnd;
+ 		} _sigfault;
+ 
+ 		/* SIGPOLL */
+@@ -131,6 +135,8 @@ typedef struct siginfo {
+ #define si_trapno	_sifields._sigfault._trapno
+ #endif
+ #define si_addr_lsb	_sifields._sigfault._addr_lsb
++#define si_lower	_sifields._sigfault._addr_bnd._lower
++#define si_upper	_sifields._sigfault._addr_bnd._upper
+ #define si_band		_sifields._sigpoll._band
+ #define si_fd		_sifields._sigpoll._fd
+ #ifdef __ARCH_SIGSYS
+@@ -199,7 +205,8 @@ typedef struct siginfo {
+  */
+ #define SEGV_MAPERR	(__SI_FAULT|1)	/* address not mapped to object */
+ #define SEGV_ACCERR	(__SI_FAULT|2)	/* invalid permissions for mapped object */
+-#define NSIGSEGV	2
++#define SEGV_BNDERR	(__SI_FAULT|3)  /* failed address bound checks */
++#define NSIGSEGV	3
+ 
+ /*
+  * SIGBUS si_codes
+diff -puN kernel/signal.c~2014-10-14-06_12-mpx-extend-siginfo-structure-to-include-bound-violation-information kernel/signal.c
+--- a/kernel/signal.c~2014-10-14-06_12-mpx-extend-siginfo-structure-to-include-bound-violation-information	2014-11-12 08:49:23.868798034 -0800
++++ b/kernel/signal.c	2014-11-12 08:49:23.872798214 -0800
+@@ -2751,6 +2751,10 @@ int copy_siginfo_to_user(siginfo_t __use
+ 		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
+ 			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
+ #endif
++#ifdef SEGV_BNDERR
++		err |= __put_user(from->si_lower, &to->si_lower);
++		err |= __put_user(from->si_upper, &to->si_upper);
++#endif
+ 		break;
+ 	case __SI_CHLD:
+ 		err |= __put_user(from->si_pid, &to->si_pid);
+_
