@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaKLGLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:11:11 -0500
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:51730 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaKLGLJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:11:09 -0500
+	id S1753009AbaKLGZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:25:12 -0500
+Received: from o1678948x20.outbound-mail.sendgrid.net ([167.89.48.20]:21631
+	"EHLO o1678948x20.outbound-mail.sendgrid.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752541AbaKLGZK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 01:25:10 -0500
+X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 01:25:10 EST
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20141111171526.GC3216@lerouge>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org>
-	<alpine.DEB.2.11.1411012003390.5308@nanos>
-	<alpine.DEB.2.11.1411011646280.7732@gentwo.org>
-	<alpine.DEB.2.11.1411012313320.5308@nanos>
-	<alpine.DEB.2.11.1411061057470.5591@gentwo.org>
-	<CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com>
-	<20141110153147.GK4901@linux.vnet.ibm.com>
-	<alpine.DEB.2.11.1411101226310.12918@gentwo.org>
-	<20141111171526.GC3216@lerouge>
-Date: Wed, 12 Nov 2014 11:41:09 +0530
-Message-ID: <CAKohpok3U_8zQurs219fOmwERFrnZ0sOE-YUc7B+fKYfFLmEpg@mail.gmail.com>
-Subject: Re: Future of NOHZ full/isolation development (was Re: [NOHZ] Remove scheduler_tick_max_deferment)
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        Hugh Dickins <hughd@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+From: PayPal Inc <Paypal.support@customer.com>
+To: linux-kernel@vger.kernel.org
+Reply-To: Paypal.support@customer.com
+Subject: =?UTF-8?B?4pyUIEFsZXJ0ICEgWW91ciBQYXlQYWwgQWNjb3VudCBXaWxsIEJlIGxpbWl0ZWQgUFAxMzY2IA==?=
+Message-ID: <149a2a5390d.71e3.373105@ismtpd-002.sjc1.sendgrid.net>
+Date: Wed, 12 Nov 2014 06:16:17 +0000 (UTC)
+X-SG-EID: UsLXQ589HNP4HLBydmD9pgHURQozLYm9XliudupI8YtVaQd8NQ8/+UQTiXu8ZoPGvhXOcvA6ezQg5i
+ JxrePUaCJ2+KIeZ4FY0hvj5UxHCKj2MI+xLfkSlwr6mbUrDhbuT1foUOBHk30eFb0Ybhbspbs/2mpa
+ xEQNJfCQOToht5FjGAKIVYYy7TYpByAA39+Y
+X-SG-ID: VPWZYjw6GOzHdwkwPeoX9QiEbzQXX/gF9P8njHP5+LDpDFG3P+oawmxdAY9IrgfOZfwCIrK+F+7Kve
+ VBR48+jdPpVsqnckO2i7MiXRU3jZfWRAj+rGteU4lgh6w0g+DLA2lbiBzG4Cc5Wb+XnWUGOr8VTXe5
+ O66StTE1Ew9/GjD9/JPOAtNdHOlDCmMhSy1O
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 November 2014 22:45, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+----------------------------------------------------------------------
+Reminder: We need your help
+----------------------------------------------------------------------
 
-> Here is a summarized list:
->
-> * Unbound workqueues affinity (to housekeeper)
-> * Unbound timers affinity (to housekeeper)
-> * 1 Hz residual scheduler tick offlining to housekeeper
-> * Fix some scheduler accounting that don't even work with 1 Hz: cpu load
->   accounting, rt_scale, load balancing, etc...
-> * Lighten the syscall path and get rid of cputime accounting + RCU hooks
->   for people who want isolation + fast syscalls and faults.
-> * Work on non-affinable workqueues
-> * Work on non-affinable timers
-> * ...
 
-+ spurious interrupts with NOHZ_FULL on all architectures which break isolation
-but doesn't get caught with traces. Can be observed with this:
 
-diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
-index 481fa54..91d490d 100644
---- a/kernel/time/hrtimer.c
-+++ b/kernel/time/hrtimer.c
-@@ -1244,7 +1244,8 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- {
-        struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
-        ktime_t expires_next, now, entry_time, delta;
--       int i, retries = 0;
-+       int i, retries = 0, count = 0;
-+       static int total_spurious;
+We emailed you a little while ago to ask for your help resolving an issue
+with your account.
 
-        BUG_ON(!cpu_base->hres_active);
-        cpu_base->nr_events++;
-@@ -1304,10 +1305,14 @@ void hrtimer_interrupt(struct clock_event_device *dev)
-                                break;
-                        }
+What's the problem?
 
-+                       count++;
-                        __run_hrtimer(timer, &basenow);
-                }
-        }
+Until this issue is resolved, you'll be able to log in to your PayPal
+account but you might not be able to add money to it or use some of your
+account features.
 
-+       if (!count)
-+               pr_err("____%s: Totalspurious: %d\n", __func__,
-++total_spurious);
-+
-        /*
-         * Store the new expiry value so the migration code can verify
-         * against it.
+You must follow this link to resolve your issue:
+(For some security reasons. Your account will be disabled next 24 Hours)
+
+you can paste this link into your web browser:
+http://paypal.com.au.security-check.aquaempire.com.sg
+
+
+Notice : In case you find the link disabled . Use COPY-PAST in a new
+         Secure Window to reactivate.
+
+
+
+
+Before we can offer you certain products and services, federal regulations
+require that we collect specific information to verify your identity. This
+information includes your name, address, date of birth, and National Tax ID
+or Social Security Number. We haven't been able to verify your identity
+using the information you provided, so we need some additional
+documentation from you.
+
+
+Case ID Number: PP-003-462-000-607
+
+How you can help
+
+It's usually pretty easy to take care of things like this. Most of the
+time, we just need a little more information about your account or latest
+transactions.
+
+Please log in to your account and go to the Resolution Center to find out
+what you need to do. If we don't hear from you soon, we may limit what you
+can do with your account until the issue is resolved.
+
+Sincerely,
+PayPal
+
+----------------------------------------------------------------------
+Help Center: 
+http://paypal.com.au.security-check.aquaempire.com.sg
+
+
+This email was sent by an automated system, so if you reply, nobody will
+see it. To get in touch with us, log in to your account and click "Contact
+Us" at the bottom of any page.
+
+Copyright © 2014 PayPal, Inc. All rights reserved. PayPal is located at
+2211 N. First St., San Jose, CA 95131.
+
+PayPal Email ID PP1366 - ef5987d0fa716
