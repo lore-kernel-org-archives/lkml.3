@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933746AbaKLCbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:31:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60809 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965452AbaKLBsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:21 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang Nan <wangnan0@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 165/203] cgroup/kmemleak: add kmemleak_free() for cgroup deallocations.
-Date: Wed, 12 Nov 2014 10:17:15 +0900
-Message-Id: <20141112011550.253327823@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
-References: <20141112011542.686743533@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S965447AbaKLBsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:48:19 -0500
+Received: from mga01.intel.com ([192.55.52.88]:10087 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935056AbaKLBsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:48:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,365,1413270000"; 
+   d="scan'208";a="630482949"
+Message-ID: <5462BC5A.7070407@intel.com>
+Date: Wed, 12 Nov 2014 09:48:10 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lee Jones <lee.jones@linaro.org>
+CC: linux-acpi@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and
+ XPower
+References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com> <54616E55.80204@intel.com> <20141111111152.GX24004@x1> <3052882.EdcZmghHR3@vostro.rjw.lan>
+In-Reply-To: <3052882.EdcZmghHR3@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 11/12/2014 07:35 AM, Rafael J. Wysocki wrote:
+> On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
+>> On Tue, 11 Nov 2014, Aaron Lu wrote:
+>>
+>>> On 10/31/2014 02:08 PM, Aaron Lu wrote:
+>>>> On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
+>>>> ACPI operation regions defined for the Power Management Integrated Circuit
+>>>> device, one is for power resource handling and one is for thermal: sensor
+>>>> temperature reporting, trip point setting, etc. There are different PMIC
+>>>> chips used on those platforms and though each has the same two operation
+>>>> regions and functionality, their implementation is different so every PMIC
+>>>> will need a driver. But since their functionality is similar, some common
+>>>> code is abstracted into the intel_soc_pmic_opregion.c.
+>>>>
+>>>> The last version is posted here:
+>>>> https://lkml.org/lkml/2014/9/8/801
+>>>>
+>>>> Changes since then:
+>>>> 1 Move to drivers/acpi as discussed on the above thread;
+>>>> 2 Added support for XPower AXP288 PMIC operation region support;
+>>>> 3 Since operation region handler can not be removed(at the moment at least),
+>>>>   use bool for the two operation region driver configs instead of tristate;
+>>>>   Another reason to do this is that, with Mika's MFD ACPI support patch, all
+>>>>   those MFD cell devices created will have the same modalias as their parent's
+>>>>   so it doesn't make much sense to compile these drivers into modules.
+>>>>
+>>>> Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
+>>>> patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
+>>>> driver XPower AXP288 and iio driver axp288_adc is located.
+>>>
+>>> Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
+>>> would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
+>>>
+>>> Rafael,
+>>> Can I get your ACK for the three patches?
+>>>
+>>> Lee,
+>>> Can you please take the series if Rafael gives it ack?
+>>
+>> Yes, no problem.
+> 
+> Well, since the code is going to reside mostly in drivers/acpi, I think I should
+> be applying the patches and from your response it looks like you are fine with
+> them.  Is that correct?
 
-------------------
+Oh I thought you may not want to merge another branch into your next
+branch so I asked this question. If you can handle the whole thing in your
+tree, that's of course not a problem :-)
 
-From: Wang Nan <wangnan0@huawei.com>
-
-commit 401507d67d5c2854f5a88b3f93f64fc6f267bca5 upstream.
-
-Commit ff7ee93f4715 ("cgroup/kmemleak: Annotate alloc_page() for cgroup
-allocations") introduces kmemleak_alloc() for alloc_page_cgroup(), but
-corresponding kmemleak_free() is missing, which makes kmemleak be
-wrongly disabled after memory offlining.  Log is pasted at the end of
-this commit message.
-
-This patch add kmemleak_free() into free_page_cgroup().  During page
-offlining, this patch removes corresponding entries in kmemleak rbtree.
-After that, the freed memory can be allocated again by other subsystems
-without killing kmemleak.
-
-  bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
-
-  Offlined Pages 32768
-  kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
-  CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x46/0x58
-    create_object+0x266/0x2c0
-    kmemleak_alloc+0x26/0x50
-    kmem_cache_alloc+0xd3/0x160
-    __sigqueue_alloc+0x49/0xd0
-    __send_signal+0xcb/0x410
-    send_signal+0x45/0x90
-    __group_send_sig_info+0x13/0x20
-    do_notify_parent+0x1bb/0x260
-    do_exit+0x767/0xa40
-    do_group_exit+0x44/0xa0
-    SyS_exit_group+0x17/0x20
-    system_call_fastpath+0x16/0x1b
-
-  kmemleak: Kernel memory leak detector disabled
-  kmemleak: Object 0xffff880016900000 (size 524288):
-  kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
-  kmemleak:   min_count = 0
-  kmemleak:   count = 0
-  kmemleak:   flags = 0x1
-  kmemleak:   checksum = 0
-  kmemleak:   backtrace:
-        log_early+0x63/0x77
-        kmemleak_alloc+0x4b/0x50
-        init_section_page_cgroup+0x7f/0xf5
-        page_cgroup_init+0xc5/0xd0
-        start_kernel+0x333/0x408
-        x86_64_start_reservations+0x2a/0x2c
-        x86_64_start_kernel+0xf5/0xfc
-
-Fixes: ff7ee93f4715 (cgroup/kmemleak: Annotate alloc_page() for cgroup allocations)
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/page_cgroup.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -171,6 +171,7 @@ static void free_page_cgroup(void *addr)
- 			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
- 
- 		BUG_ON(PageReserved(page));
-+		kmemleak_free(addr);
- 		free_pages_exact(addr, table_size);
- 	}
- }
-
-
+Thanks,
+Aaron
