@@ -1,128 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaKLL3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:29:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47440 "EHLO mx1.redhat.com"
+	id S1752505AbaKLL3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:29:21 -0500
+Received: from mga14.intel.com ([192.55.52.115]:49700 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850AbaKLL3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:29:13 -0500
-Date: Wed, 12 Nov 2014 19:28:32 +0800
-From: Minfei Huang <mhuang@redhat.com>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Cc: joro@8bytes.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH 1/1] x86/iommu: fix incorrect bit operations in setting
- values
-Message-ID: <20141112112832.GA3334@dhcp-17-108.nay.redhat.com>
-References: <1415172619-4801-1-git-send-email-zhen-hual@hp.com>
+	id S1752235AbaKLL3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 06:29:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,368,1413270000"; 
+   d="scan'208";a="621123434"
+Date: Wed, 12 Nov 2014 17:00:11 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: dan.j.williams@intel.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
+        chanho61.park@samsung.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma: pl330: Fix bug to allocate resources on ARM 64bit
+ SoC
+Message-ID: <20141112113010.GL24582@intel.com>
+References: <1415790133-4206-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415172619-4801-1-git-send-email-zhen-hual@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415790133-4206-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kdump starts 2nd kernel without any error message when I use
-3.18.0-rc4 merged last 6 patchs. The following is the message which 2nd
-kernel prints during booting.
+On Wed, Nov 12, 2014 at 08:02:13PM +0900, Chanwoo Choi wrote:
+> This patch fix following bug to allocate resources on ARM 64bit SoC.
+> The patch[1] adds to check wheter dev is NULL or not.
 
-Patchset:
-	0001-iommu-vt-d-Update-iommu_attach_domain-and-its-caller.patch
-	0002-iommu-vt-d-Items-required-for-kdump.patch
-	0003-iommu-vt-d-data-types-and-functions-used-for-kdump.patch
-	0004-iommu-vt-d-Add-domain-id-functions.patch
-	0005-iommu-vt-d-enable-kdump-support-in-iommu-module.patch
-	0006-x86-iommu-fix-incorrect-bit-operations-in-setting-va.patch
+Fixed already by below in my tree
 
-log:
-[    1.689604] IOMMU intel_iommu_in_crashdump = true
-[    1.694310] IOMMU Skip disabling iommu hardware translations
-[    1.699987] DMAR: No ATSR found
-[    1.703151] IOMMU Copying translate tables from panicked kernel
-[    1.710786] IOMMU: root_new_virt:0xffff8800296ec000 phys:0x0000296ec000
-[    1.717401] IOMMU:0 Domain ids from panicked kernel:
-[    1.722364] DID did:13(0x000d)
-[    1.725424] DID did:12(0x000c)
-[    1.728482] DID did:11(0x000b)
-[    1.731542] DID did:10(0x000a)
-[    1.734603] DID did:6(0x0006)
-[    1.737574] DID did:7(0x0007)
-[    1.740549] DID did:5(0x0005)
-[    1.743522] DID did:9(0x0009)
-[    1.746495] DID did:8(0x0008)
-[    1.749467] DID did:4(0x0004)
-[    1.752439] DID did:3(0x0003)
-[    1.755413] DID did:2(0x0002)
-[    1.758385] DID did:0(0x0000)
-[    1.761357] DID did:1(0x0001)
-[    1.764331] ----------------------------------------
-[    1.769302] IOMMU 0 0xfed50000: using Queued invalidation
+commit 1d7e691f1b1793f8a9439b2e8eae069e5996a187
+Author: Andrew Jackson <Andrew.Jackson@arm.com>
+Date:   Thu Nov 6 11:39:47 2014 +0000
 
-On 11/05/14 at 03:30pm, Li, Zhen-Hua wrote:
-> The function context_set_address_root() and set_root_value are setting new
-> address in a wrong way, and this patch is trying to fix this problem.
+    dmaengine: pl330: Correct device assignment.
+
+    Commit f6f2421c0a1c removed pl330_info structure by embedding it into
+    pl330_dmac structure, but did not ensure that the dmac->ddma.dev
+    pointer gets initialised before use. When dma_alloc_coherent() gets
+    called on arm64 a WARN() gets triggered due to dev being NULL.
+
+    ------------[ cut here ]------------
+    WARNING: CPU: 1 PID: 1 at arch/arm64/mm/dma-mapping.c:49
+__dma_alloc_coherent+0xd0/0xe0()
+    Use an actual device structure for DMA allocation
+    Modules linked in:
+    CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.17.0+ #5
+    Call trace:
+    [<ffffffc000087f24>] dump_backtrace+0x0/0x130
+    [<ffffffc000088064>] show_stack+0x10/0x1c
+    [<ffffffc0004e8af8>] dump_stack+0x74/0xb8
+    [<ffffffc0000aa444>] warn_slowpath_common+0x8c/0xb4
+    [<ffffffc0000aa4b8>] warn_slowpath_fmt+0x4c/0x58
+    [<ffffffc000092580>] __dma_alloc_coherent+0xcc/0xe0
+    [<ffffffc000092734>] __dma_alloc_noncoherent+0x64/0x158
+    [<ffffffc000312cd8>] pl330_probe+0x650/0x8f0
+    [<ffffffc00030e1d4>] amba_probe+0xa0/0xc8
+    [<ffffffc000350240>] really_probe+0xc4/0x22c
+    [<ffffffc0003504b4>] __driver_attach+0xa0/0xa8
+    [<ffffffc00034e5fc>] bus_for_each_dev+0x54/0x98
+    [<ffffffc00034fd8c>] driver_attach+0x1c/0x28
+    [<ffffffc00034fa08>] bus_add_driver+0x14c/0x204
+    [<ffffffc000350b84>] driver_register+0x64/0x130
+    [<ffffffc00030dcf8>] amba_driver_register+0x50/0x5c
+    [<ffffffc0006a60d0>] pl330_driver_init+0x10/0x1c
+    [<ffffffc0000814ac>] do_one_initcall+0x88/0x19c
+    [<ffffffc00068dab8>] kernel_init_freeable+0x140/0x1e0
+    [<ffffffc0004e5e18>] kernel_init+0x10/0xd4
+    ---[ end trace 76f2d47a444e523e ]---
+    (NULL device *): dmac_alloc_resources:1821 Can't allocate memory!
+    (NULL device *): Unable to create channels for DMAC
+
+    This patch will also ensure that any dev_err messages are printed
+    with the appropriate device name.
+
+    Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+    Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+    Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+
+-- 
+~Vinod
+
 > 
-> According to Intel Vt-d specs(Feb 2011, Revision 1.3), Chapter 9.1 and 9.2,
-> field ctp in root entry is using bits 12:63, field asr in context entry is
-> using bits 12:63.
+>  [1] arm64: Warn on NULL device structure for dma APIs)
+>  - http://lists.infradead.org/pipermail/linux-arm-kernel/2013-December/218650.html
 > 
-> To set these fields, the following functions are used:
-> static inline void context_set_address_root(struct context_entry *context,
->         unsigned long value);
-> and
-> static inline void set_root_value(struct root_entry *root, unsigned long value)
+> [    0.488475] ------------[ cut here ]------------
+> [    0.493008] WARNING: CPU: 0 PID: 1 at arch/arm64/mm/dma-mapping.c:95 __dma_alloc_coherent+0x104/0x114()
+> [    0.503038] Use an actual device structure for DMA allocation
+> [    0.509123] Modules linked in:
+> [    0.512093] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc3+ #54
+> [    0.518548] Call trace:
+> [    0.520949] [<ffffffc000087eb8>] dump_backtrace+0x0/0x124
+> [    0.526345] [<ffffffc000087fec>] show_stack+0x10/0x1c
+> [    0.531359] [<ffffffc0005101cc>] dump_stack+0x74/0xb8
+> [    0.536412] [<ffffffc0000ac698>] warn_slowpath_common+0x8c/0xb4
+> [    0.542295] [<ffffffc0000ac70c>] warn_slowpath_fmt+0x4c/0x58
+> [    0.547958] [<ffffffc000093860>] __dma_alloc_coherent+0x100/0x114
+> [    0.554012] [<ffffffc0000938d8>] __dma_alloc_noncoherent+0x64/0x180
+> [    0.560281] [<ffffffc00032c034>] pl330_probe+0x650/0x8f8
+> [    0.565574] [<ffffffc000325f10>] amba_probe+0x90/0xe0
+> [    0.570595] [<ffffffc00036c1c4>] really_probe+0x7c/0x220
+> [    0.575902] [<ffffffc00036c474>] __driver_attach+0xa0/0xa8
+> [    0.581355] [<ffffffc00036a5c8>] bus_for_each_dev+0x54/0x98
+> [    0.586925] [<ffffffc00036bd58>] driver_attach+0x1c/0x28
+> [    0.592205] [<ffffffc00036b9d4>] bus_add_driver+0x14c/0x204
+> [    0.597776] [<ffffffc00036cb50>] driver_register+0x64/0x130
+> [    0.603315] [<ffffffc000325a38>] amba_driver_register+0x50/0x5c
+> [    0.609234] [<ffffffc0006f2de0>] pl330_driver_init+0x10/0x1c
+> [    0.614859] [<ffffffc0000814bc>] do_one_initcall+0x88/0x1ac
+> [    0.620432] [<ffffffc0006d9acc>] kernel_init_freeable+0x148/0x1e8
+> [    0.626508] [<ffffffc00050d41c>] kernel_init+0x10/0xd4
+> [    0.632028] ---[ end trace d75c52ba9660e12a ]---
 > 
-> But they are using an invalid method to set these fields, in current code, only
-> a '|' operator is used to set it. This will not set the asr to the expected
-> value if it has an old value.
-> 
-> For example:
-> Before calling this function,
-> 	context->lo = 0x3456789012111;
-> 	value = 0x123456789abcef12;
-> 
-> After we call context_set_address_root(context, value), expected result is
-> 	context->lo == 0x123456789abce111;
-> 
-> But the actual result is:
-> 	context->lo == 0x1237577f9bbde111;
-> 
-> So we need to clear bits 12:63 before setting the new value, this will fix
-> this problem.
-> 
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 > ---
->  drivers/iommu/intel-iommu.c | 2 ++
->  1 file changed, 2 insertions(+)
+>  drivers/dma/pl330.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index a27d6cb..11ac47b 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -195,6 +195,7 @@ static inline void set_root_present(struct root_entry *root)
->  }
->  static inline void set_root_value(struct root_entry *root, unsigned long value)
->  {
-> +	root->val &= ~VTD_PAGE_MASK;
->  	root->val |= value & VTD_PAGE_MASK;
->  }
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index 4839bfa..8c7d4e1 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -2611,6 +2611,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+>  	}
 >  
-> @@ -247,6 +248,7 @@ static inline void context_set_translation_type(struct context_entry *context,
->  static inline void context_set_address_root(struct context_entry *context,
->  					    unsigned long value)
->  {
-> +	context->lo &= ~VTD_PAGE_MASK;
->  	context->lo |= value & VTD_PAGE_MASK;
->  }
+>  	pl330->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
+> +	pl330->ddma.dev = &adev->dev;
 >  
+>  	res = &adev->res;
+>  	pl330->base = devm_ioremap_resource(&adev->dev, res);
 > -- 
-> 2.0.0-rc0
+> 1.8.5.5
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
