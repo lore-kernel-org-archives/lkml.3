@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734AbaKLCWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:22:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60990 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965907AbaKLBug (ORCPT
+	id S934985AbaKLCWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:22:22 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:47351 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934782AbaKLCWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:36 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH 3.10 030/123] UBI: add missing kmem_cache_free() in process_pool_aeb error path
-Date: Wed, 12 Nov 2014 10:16:36 +0900
-Message-Id: <20141112011720.395268754@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
-References: <20141112011718.985171261@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 21:22:19 -0500
+Date: Wed, 12 Nov 2014 11:22:16 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Calvin Owens <calvinowens@fb.com>, Wensong Zhang <wensong@linux-vs.org>,
+        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, agartrell@fb.com, kernel-team@fb.com
+Subject: Re: [PATCH] ipvs: Keep skb->sk when allocating headroom on tunnel
+ xmit
+Message-ID: <20141112022214.GE11597@verge.net.au>
+References: <1415147860-11389-1-git-send-email-calvinowens@fb.com>
+ <alpine.LFD.2.11.1411051048540.1631@ja.home.ssi.bg>
+ <545D43BD.8030203@fb.com>
+ <alpine.LFD.2.11.1411080814300.2081@ja.home.ssi.bg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1411080814300.2081@ja.home.ssi.bg>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Nov 08, 2014 at 08:16:58AM +0200, Julian Anastasov wrote:
+> 
+> 	Hello,
+> 
+> On Fri, 7 Nov 2014, Calvin Owens wrote:
+> 
+> > On 11/05/2014 01:21 AM, Julian Anastasov wrote:
+> > >
+> > >  Hello,
+> > >
+> > > On Tue, 4 Nov 2014, Calvin Owens wrote:
+> > >
+> > > > ip_vs_prepare_tunneled_skb() ignores ->sk when allocating a new
+> > > > skb, either unconditionally setting ->sk to NULL or allowing
+> > > > the uninitialized ->sk from a newly allocated skb to leak through
+> > > > to the caller.
+> > > >
+> > > > This patch properly copies ->sk and increments its reference count.
+> > > >
+> > > > Signed-off-by: Calvin Owens <calvinowens@fb.com>
+> > >
+> > > 	Good catch. Please, extend your patch to
+> > > fix also the second place that has such error,
+> > > ip_vs_tunnel_xmit_v6. This call is missing from long time,
+> > > it was not needed. But commits that allow skb->sk (local
+> > > clients) already need it, eg.
+> > 
+> > I'm not sure where exactly you mean: ip_vs_tunnel_xmit_v6() calls
+> > ip_vs_prepare_tunneled_skb() to do the allocation, so this patch covers that
+> > case.
+> > 
+> > In older versions of the kernel, ip_vs_tunnel_xmit_v6() does it directly,
+> > could that be what you're looking at?
+> 
+> 	Sorry, it seems I was checking old branch.
+> 
+> 	Simon, please apply.
+> 
+> Acked-by: Julian Anastasov <ja@ssi.bg>
 
-------------------
+Thanks, done.
 
-From: Richard Genoud <richard.genoud@gmail.com>
-
-commit 1bf1890e86869032099b539bc83b098be12fc5a7 upstream.
-
-I ran into this error after a ubiupdatevol, because I forgot to backport
-e9110361a9a4 UBI: fix the volumes tree sorting criteria.
-
-UBI error: process_pool_aeb: orphaned volume in fastmap pool
-UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
-kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
-[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
-[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
-[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
-[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
-[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
-[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
-[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
-[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
-[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
-UBI: scanning is finished
-
-Freeing the cache in the error path fixes the Slab error.
-
-Tested on at91sam9g35 (3.14.18+fastmap backports)
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/mtd/ubi/fastmap.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_d
- 		av = tmp_av;
- 	else {
- 		ubi_err("orphaned volume in fastmap pool!");
-+		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
- 		return UBI_BAD_FASTMAP;
- 	}
- 
-
-
+> > > - f2428ed5e7bc89c7 ("ipvs: load balance ipv6 connections from a local
+> > > process"), 2.6.28
+> > > - 4856c84c1358b798 ("ipvs: load balance IPv4 connections from a local
+> > > process"), 2.6.28
+> > >
+> > > > ---
+> > > >   net/netfilter/ipvs/ip_vs_xmit.c | 2 ++
+> > > >   1 file changed, 2 insertions(+)
+> > > >
+> > > > diff --git a/net/netfilter/ipvs/ip_vs_xmit.c
+> > > > b/net/netfilter/ipvs/ip_vs_xmit.c
+> > > > index 437a366..bd90bf8 100644
+> > > > --- a/net/netfilter/ipvs/ip_vs_xmit.c
+> > > > +++ b/net/netfilter/ipvs/ip_vs_xmit.c
+> > > > @@ -846,6 +846,8 @@ ip_vs_prepare_tunneled_skb(struct sk_buff *skb, int
+> > > > skb_af,
+> > > >     new_skb = skb_realloc_headroom(skb, max_headroom);
+> > > >     if (!new_skb)
+> > > >   			goto error;
+> > > > +		if (skb->sk)
+> > > > +			skb_set_owner_w(new_skb, skb->sk);
+> > > >     consume_skb(skb);
+> > > >     skb = new_skb;
+> > > >    }
+> 
+> Regards
+> 
+> --
+> Julian Anastasov <ja@ssi.bg>
+> 
