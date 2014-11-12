@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566AbaKLBWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58599 "EHLO
+	id S934166AbaKLEMZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:12:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492AbaKLBWg (ORCPT
+	with ESMTP id S1753531AbaKLBWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:36 -0500
+	Tue, 11 Nov 2014 20:22:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.17 063/319] missing data dependency barrier in prepend_name()
-Date: Wed, 12 Nov 2014 10:13:21 +0900
-Message-Id: <20141112011003.020530437@linuxfoundation.org>
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.17 062/319] ALSA: pcm: Zero-clear reserved fields of PCM status ioctl in compat mode
+Date: Wed, 12 Nov 2014 10:13:20 +0900
+Message-Id: <20141112011002.840159441@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,60 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 6d13f69444bd3d4888e43f7756449748f5a98bad upstream.
+commit 317168d0c766defd14b3d0e9c2c4a9a258b803ee upstream.
 
-AFAICS, prepend_name() is broken on SMP alpha.  Disclaimer: I don't have
-SMP alpha boxen to reproduce it on.  However, it really looks like the race
-is real.
+In compat mode, we copy each field of snd_pcm_status struct but don't
+touch the reserved fields, and this leaves uninitialized values
+there.  Meanwhile the native ioctl does zero-clear the whole
+structure, so we should follow the same rule in compat mode, too.
 
-CPU1: d_path() on /mnt/ramfs/<255-character>/foo
-CPU2: mv /mnt/ramfs/<255-character> /mnt/ramfs/<63-character>
-
-CPU2 does d_alloc(), which allocates an external name, stores the name there
-including terminating NUL, does smp_wmb() and stores its address in
-dentry->d_name.name.  It proceeds to d_add(dentry, NULL) and d_move()
-old dentry over to that.  ->d_name.name value ends up in that dentry.
-
-In the meanwhile, CPU1 gets to prepend_name() for that dentry.  It fetches
-->d_name.name and ->d_name.len; the former ends up pointing to new name
-(64-byte kmalloc'ed array), the latter - 255 (length of the old name).
-Nothing to force the ordering there, and normally that would be OK, since we'd
-run into the terminating NUL and stop.  Except that it's alpha, and we'd need
-a data dependency barrier to guarantee that we see that store of NUL
-__d_alloc() has done.  In a similar situation dentry_cmp() would survive; it
-does explicit smp_read_barrier_depends() after fetching ->d_name.name.
-prepend_name() doesn't and it risks walking past the end of kmalloc'ed object
-and possibly oops due to taking a page fault in kernel mode.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Reported-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ sound/core/pcm_compat.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2810,6 +2810,9 @@ static int prepend(char **buffer, int *b
-  * the beginning of the name. The sequence number check at the caller will
-  * retry it again when a d_move() does happen. So any garbage in the buffer
-  * due to mismatched pointer and length will be discarded.
-+ *
-+ * Data dependency barrier is needed to make sure that we see that terminating
-+ * NUL.  Alpha strikes again, film at 11...
-  */
- static int prepend_name(char **buffer, int *buflen, struct qstr *name)
- {
-@@ -2817,6 +2820,8 @@ static int prepend_name(char **buffer, i
- 	u32 dlen = ACCESS_ONCE(name->len);
- 	char *p;
+--- a/sound/core/pcm_compat.c
++++ b/sound/core/pcm_compat.c
+@@ -210,6 +210,8 @@ static int snd_pcm_status_user_compat(st
+ 	if (err < 0)
+ 		return err;
  
-+	smp_read_barrier_depends();
-+
- 	*buflen -= dlen + 1;
- 	if (*buflen < 0)
- 		return -ENAMETOOLONG;
++	if (clear_user(src, sizeof(*src)))
++		return -EFAULT;
+ 	if (put_user(status.state, &src->state) ||
+ 	    compat_put_timespec(&status.trigger_tstamp, &src->trigger_tstamp) ||
+ 	    compat_put_timespec(&status.tstamp, &src->tstamp) ||
 
 
