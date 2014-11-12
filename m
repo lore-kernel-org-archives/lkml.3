@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073AbaKLBUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58423 "EHLO
+	id S1753095AbaKLBUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58430 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026AbaKLBUo (ORCPT
+	with ESMTP id S1753075AbaKLBUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:44 -0500
+	Tue, 11 Nov 2014 20:20:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 028/319] SUNRPC: Dont wake tasks during connection abort
-Date: Wed, 12 Nov 2014 10:12:46 +0900
-Message-Id: <20141112010957.307432028@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 003/319] x86: bpf_jit: fix two bugs in eBPF JIT compiler
+Date: Wed, 12 Nov 2014 10:12:21 +0900
+Message-Id: <20141112010953.153435820@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,56 +30,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-commit a743419f420a64d442280845c0377a915b76644f upstream.
+[ Upstream commit e0ee9c12157dc74e49e4731e0d07512e7d1ceb95 ]
 
-When aborting a connection to preserve source ports, don't wake the task in
-xs_error_report.  This allows tasks with RPC_TASK_SOFTCONN to succeed if the
-connection needs to be re-established since it preserves the task's status
-instead of setting it to the status of the aborting kernel_connect().
+1.
+JIT compiler using multi-pass approach to converge to final image size,
+since x86 instructions are variable length. It starts with large
+gaps between instructions (so some jumps may use imm32 instead of imm8)
+and iterates until total program size is the same as in previous pass.
+This algorithm works only if program size is strictly decreasing.
+Programs that use LD_ABS insn need additional code in prologue, but it
+was not emitted during 1st pass, so there was a chance that 2nd pass would
+adjust imm32->imm8 jump offsets to the same number of bytes as increase in
+prologue, which may cause algorithm to erroneously decide that size converged.
+Fix it by always emitting largest prologue in the first pass which
+is detected by oldproglen==0 check.
+Also change error check condition 'proglen != oldproglen' to fail gracefully.
 
-This may also avoid a potential conflict on the socket's lock.
+2.
+while staring at the code realized that 64-byte buffer may not be enough
+when 1st insn is large, so increase it to 128 to avoid buffer overflow
+(theoretical maximum size of prologue+div is 109) and add runtime check.
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+Reported-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Tested-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/sunrpc/xprt.h |    1 +
- net/sunrpc/xprtsock.c       |    4 ++++
- 2 files changed, 5 insertions(+)
+ arch/x86/net/bpf_jit_comp.c |   25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
---- a/include/linux/sunrpc/xprt.h
-+++ b/include/linux/sunrpc/xprt.h
-@@ -357,6 +357,7 @@ int			xs_swapper(struct rpc_xprt *xprt,
- #define XPRT_CONNECTION_ABORT	(7)
- #define XPRT_CONNECTION_CLOSE	(8)
- #define XPRT_CONGESTED		(9)
-+#define XPRT_CONNECTION_REUSE	(10)
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -211,12 +211,17 @@ struct jit_context {
+ 	bool seen_ld_abs;
+ };
  
- static inline void xprt_set_connected(struct rpc_xprt *xprt)
++/* maximum number of bytes emitted while JITing one eBPF insn */
++#define BPF_MAX_INSN_SIZE	128
++#define BPF_INSN_SAFETY		64
++
+ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+ 		  int oldproglen, struct jit_context *ctx)
  {
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -845,6 +845,8 @@ static void xs_error_report(struct sock
- 	dprintk("RPC:       xs_error_report client %p, error=%d...\n",
- 			xprt, -err);
- 	trace_rpc_socket_error(xprt, sk->sk_socket, err);
-+	if (test_bit(XPRT_CONNECTION_REUSE, &xprt->state))
-+		goto out;
- 	xprt_wake_pending_tasks(xprt, err);
-  out:
- 	read_unlock_bh(&sk->sk_callback_lock);
-@@ -2245,7 +2247,9 @@ static void xs_tcp_setup_socket(struct w
- 		abort_and_exit = test_and_clear_bit(XPRT_CONNECTION_ABORT,
- 				&xprt->state);
- 		/* "close" the socket, preserving the local port */
-+		set_bit(XPRT_CONNECTION_REUSE, &xprt->state);
- 		xs_tcp_reuse_connection(transport);
-+		clear_bit(XPRT_CONNECTION_REUSE, &xprt->state);
+ 	struct bpf_insn *insn = bpf_prog->insnsi;
+ 	int insn_cnt = bpf_prog->len;
+-	u8 temp[64];
++	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
++	u8 temp[BPF_MAX_INSN_SIZE + BPF_INSN_SAFETY];
+ 	int i;
+ 	int proglen = 0;
+ 	u8 *prog = temp;
+@@ -254,7 +259,7 @@ static int do_jit(struct bpf_prog *bpf_p
+ 	EMIT2(0x31, 0xc0); /* xor eax, eax */
+ 	EMIT3(0x4D, 0x31, 0xED); /* xor r13, r13 */
  
- 		if (abort_and_exit)
- 			goto out_eagain;
+-	if (ctx->seen_ld_abs) {
++	if (seen_ld_abs) {
+ 		/* r9d : skb->len - skb->data_len (headlen)
+ 		 * r10 : skb->data
+ 		 */
+@@ -655,7 +660,7 @@ xadd:			if (is_imm8(insn->off))
+ 		case BPF_JMP | BPF_CALL:
+ 			func = (u8 *) __bpf_call_base + imm32;
+ 			jmp_offset = func - (image + addrs[i]);
+-			if (ctx->seen_ld_abs) {
++			if (seen_ld_abs) {
+ 				EMIT2(0x41, 0x52); /* push %r10 */
+ 				EMIT2(0x41, 0x51); /* push %r9 */
+ 				/* need to adjust jmp offset, since
+@@ -669,7 +674,7 @@ xadd:			if (is_imm8(insn->off))
+ 				return -EINVAL;
+ 			}
+ 			EMIT1_off32(0xE8, jmp_offset);
+-			if (ctx->seen_ld_abs) {
++			if (seen_ld_abs) {
+ 				EMIT2(0x41, 0x59); /* pop %r9 */
+ 				EMIT2(0x41, 0x5A); /* pop %r10 */
+ 			}
+@@ -774,7 +779,8 @@ emit_jmp:
+ 			goto common_load;
+ 		case BPF_LD | BPF_ABS | BPF_W:
+ 			func = CHOOSE_LOAD_FUNC(imm32, sk_load_word);
+-common_load:		ctx->seen_ld_abs = true;
++common_load:
++			ctx->seen_ld_abs = seen_ld_abs = true;
+ 			jmp_offset = func - (image + addrs[i]);
+ 			if (!func || !is_simm32(jmp_offset)) {
+ 				pr_err("unsupported bpf func %d addr %p image %p\n",
+@@ -848,6 +854,11 @@ common_load:		ctx->seen_ld_abs = true;
+ 		}
+ 
+ 		ilen = prog - temp;
++		if (ilen > BPF_MAX_INSN_SIZE) {
++			pr_err("bpf_jit_compile fatal insn size error\n");
++			return -EFAULT;
++		}
++
+ 		if (image) {
+ 			if (unlikely(proglen + ilen > oldproglen)) {
+ 				pr_err("bpf_jit_compile fatal error\n");
+@@ -904,9 +915,11 @@ void bpf_int_jit_compile(struct bpf_prog
+ 			goto out;
+ 		}
+ 		if (image) {
+-			if (proglen != oldproglen)
++			if (proglen != oldproglen) {
+ 				pr_err("bpf_jit: proglen=%d != oldproglen=%d\n",
+ 				       proglen, oldproglen);
++				goto out;
++			}
+ 			break;
+ 		}
+ 		if (proglen == oldproglen) {
 
 
