@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaKLOef (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:34:35 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:63658 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaKLOci (ORCPT
+	id S1752909AbaKLOha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:37:30 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:55893 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaKLOh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:32:38 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-27-54636f8395ca
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Cc: Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v11 3/6] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
-Date: Wed, 12 Nov 2014 15:32:25 +0100
-Message-id: <1415802748-30530-4-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t/xq7rN+ckhBreXqVpsnLGe1WL61AuM
-	Fqun/mW1eP3C0OLp5sdMFmeb3rBbdE5cwm4xa8peJovLu+awWXzuPcJocfsyr8XaI3fZLe6e
-	Ospmceb0JVaLCb8vsFkcXxtu8bJvP4uDoEdLcw+bx+yOmawei/e8ZPLYtKqTzePOtT1sHluu
-	trN4zL77g9Gjb8sqRo8Vq7+ze3zeJBfAFcVlk5Kak1mWWqRvl8CVsaS1uGACX8Wzs4vZGhiP
-	cHcxcnJICJhINO7dygZhi0lcuLceyObiEBJYyigxs/ssO4TTxySxf2YHK0gVm4CxxOblS8Cq
-	RATamSX61k0Fa2cWWMQk0TRVEcQWFkiTmDlpOiOIzSKgKvG+fzcTiM0r4C5x98U/Voh1chIn
-	j00GszkFPCS+bPsLNkcIqObM5YMsExh5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQI
-	CfOvOxiXHrM6xCjAwajEw/tBKzlEiDWxrLgy9xCjBAezkgjvrhygEG9KYmVValF+fFFpTmrx
-	IUYmDk6pBkaTw+eDZwfFfXLyqNjxKEjYrkf9Zvf21prPmVJ2qoKNk+UcO+ZxvNm8/nuqvYGu
-	yI0PhttjOc5On3eANS+Sb8WWE2zXp06fes71UqiizNS2oNqCW6uP3k1cu+NUUcjX0mM9pwMu
-	uagU3jr3PM77V+hrKwmjRudn5tGLmC9Mf2G+7J5ZWWa3ymolluKMREMt5qLiRAADusSuUQIA	AA==
+	Wed, 12 Nov 2014 09:37:29 -0500
+From: Mahendran Ganesh <opensource.ganesh@gmail.com>
+To: ngupta@vflare.org, minchan@kernel.org, weijie.yang@samsung.com,
+        sergey.senozhatsky@gmail.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mahendran Ganesh <opensource.ganesh@gmail.com>
+Subject: [PATCH] mm/zram: correct ZRAM_ZERO flag bit position
+Date: Wed, 12 Nov 2014 22:37:18 +0800
+Message-Id: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AMBA bus driver defines runtime Power Management functions which
-disable and unprepare AMBA bus clock. This is problematic for runtime PM
-because unpreparing a clock might sleep so it is not interrupt safe.
+In struct zram_table_entry, the element *value* contains obj size and
+obj zram flags. Bit 0 to bit (ZRAM_FLAG_SHIFT - 1) represent obj size,
+and bit ZRAM_FLAG_SHIFT to the highest bit of unsigned long represent obj
+zram_flags. So the first zram flag(ZRAM_ZERO) should be from ZRAM_FLAG_SHIFT
+instead of (ZRAM_FLAG_SHIFT + 1).
 
-However some drivers may want to implement runtime PM functions in
-interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-bus driver should only disable/enable the clock in runtime suspend and
-resume callbacks.
+This patch fixes this issue.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Also this patch fixes a typo, "page in now accessed" -> "page is now accessed"
+
+Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
 ---
- drivers/amba/bus.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/block/zram/zram_drv.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index a4ac490dd784..c2153a1d1981 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -95,8 +95,12 @@ static int amba_pm_runtime_suspend(struct device *dev)
- 	struct amba_device *pcdev = to_amba_device(dev);
- 	int ret = pm_generic_runtime_suspend(dev);
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index c6ee271..b05a816 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -66,8 +66,8 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
+ /* Flags for zram pages (table[page_no].value) */
+ enum zram_pageflags {
+ 	/* Page consists entirely of zeros */
+-	ZRAM_ZERO = ZRAM_FLAG_SHIFT + 1,
+-	ZRAM_ACCESS,	/* page in now accessed */
++	ZRAM_ZERO = ZRAM_FLAG_SHIFT,
++	ZRAM_ACCESS,	/* page is now accessed */
  
--	if (ret == 0 && dev->driver)
--		clk_disable_unprepare(pcdev->pclk);
-+	if (ret == 0 && dev->driver) {
-+		if (pm_runtime_is_irq_safe(dev))
-+			clk_disable(pcdev->pclk);
-+		else
-+			clk_disable_unprepare(pcdev->pclk);
-+	}
- 
- 	return ret;
- }
-@@ -107,7 +111,10 @@ static int amba_pm_runtime_resume(struct device *dev)
- 	int ret;
- 
- 	if (dev->driver) {
--		ret = clk_prepare_enable(pcdev->pclk);
-+		if (pm_runtime_is_irq_safe(dev))
-+			ret = clk_enable(pcdev->pclk);
-+		else
-+			ret = clk_prepare_enable(pcdev->pclk);
- 		/* Failure is probably fatal to the system, but... */
- 		if (ret)
- 			return ret;
-@@ -115,7 +122,7 @@ static int amba_pm_runtime_resume(struct device *dev)
- 
- 	return pm_generic_runtime_resume(dev);
- }
--#endif
-+#endif /* CONFIG_PM */
- 
- static const struct dev_pm_ops amba_pm = {
- 	.suspend	= pm_generic_suspend,
+ 	__NR_ZRAM_PAGEFLAGS,
+ };
 -- 
-1.9.1
+1.7.9.5
 
