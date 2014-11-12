@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaKLAgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 19:36:09 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59501 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387AbaKLAgH (ORCPT
+	id S1752666AbaKLAgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 19:36:37 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:60621 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaKLAgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 19:36:07 -0500
+	Tue, 11 Nov 2014 19:36:36 -0500
+Date: Wed, 12 Nov 2014 01:36:34 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, acme@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 5/8] perf, tools: Support source line numbers in
+ annotate
+Message-ID: <20141112003634.GN12538@two.firstfloor.org>
+References: <1411774636-6870-1-git-send-email-andi@firstfloor.org>
+ <1411774636-6870-6-git-send-email-andi@firstfloor.org>
+ <20141020180605.GC9913@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFz1oxCgZiY4oWu41fFUbKft9g5_gQXXzAKuW8+pnR72Vw@mail.gmail.com>
-References: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
-	<54611D86.4040306@de.ibm.com>
-	<CA+55aFyEigSL64RJH8AO86gFBBB84+dgk7eEUPx=CaLwJMcO_w@mail.gmail.com>
-	<54627CBF.2000704@de.ibm.com>
-	<CA+55aFz1oxCgZiY4oWu41fFUbKft9g5_gQXXzAKuW8+pnR72Vw@mail.gmail.com>
-Date: Tue, 11 Nov 2014 16:36:06 -0800
-X-Google-Sender-Auth: JxBXknOavMlie-6kXlXKJgvV30I
-Message-ID: <CA+55aFw+cLJ6xW0Wk6nMbK+e1yr2KGCWN+-v2a7xK1u8zTtDtA@mail.gmail.com>
-Subject: Re: compiler bug gcc4.6/4.7 with ACCESS_ONCE and workarounds
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020180605.GC9913@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 4:33 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I guess as a workaround it is fine, as long as we don't lose sight of
-> trying to eventually do a better job.
+> and making the source line not to be shifted
+> right by line number width would be great
 
-Oh, and when it comes to the actual gcc bug - do you have any reason
-to believe that it's somehow triggered more easily by something
-particular in the arch/s390/kvm/gaccess.c code?
+That was intentional, so that if you have a 80 char terminal and the
+source code is 80 characters no unnecessary space is wasted.
 
-IOW, why does this problem not hit the x86 spinlocks that also use
-volatile pointers to aggregate types? Or does it?
-
-                       Linus
+-Andi
