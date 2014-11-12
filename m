@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaKLBV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:21:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58527 "EHLO
+	id S1753422AbaKLBWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58540 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaKLBV4 (ORCPT
+	with ESMTP id S1753383AbaKLBWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:21:56 -0500
+	Tue, 11 Nov 2014 20:22:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.17 051/319] x86: Reject x32 executables if x32 ABI not supported
-Date: Wed, 12 Nov 2014 10:13:09 +0900
-Message-Id: <20141112011001.043545646@linuxfoundation.org>
+        Bean Anderson <bean@azulsystems.com>, Oleg Nesterov <oleg@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.17 053/319] x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
+Date: Wed, 12 Nov 2014 10:13:11 +0900
+Message-Id: <20141112011001.406790941@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,39 +29,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1 upstream.
+commit 66463db4fc5605d51c7bb81d009d5bf30a783a2c upstream.
 
-It is currently possible to execve() an x32 executable on an x86_64
-kernel that has only ia32 compat enabled.  However all its syscalls
-will fail, even _exit().  This usually causes it to segfault.
+save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
+can fail after that, in this case the next setup_rt_frame() triggered
+by SIGSEGV won't save fpu simply because the old state was lost. This
+obviously mean that fpu won't be restored after sys_rt_sigreturn() from
+SIGSEGV handler.
 
-Change the ELF compat architecture check so that x32 executables are
-rejected if we don't support the x32 ABI.
+Shift drop_init_fpu() into !failed branch in handle_signal().
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Link: http://lkml.kernel.org/r/1410120305.6822.9.camel@decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Test-case (needs -O2):
+
+	#include <stdio.h>
+	#include <signal.h>
+	#include <unistd.h>
+	#include <sys/syscall.h>
+	#include <sys/mman.h>
+	#include <pthread.h>
+	#include <assert.h>
+
+	volatile double D;
+
+	void test(double d)
+	{
+		int pid = getpid();
+
+		for (D = d; D == d; ) {
+			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
+			 * fp regs around "C" call */
+			asm ("" : : "a"(200), "D"(pid), "S"(1));
+			asm ("syscall" : : : "ax");
+		}
+
+		printf("ERR!!\n");
+	}
+
+	void sigh(int sig)
+	{
+	}
+
+	char altstack[4096 * 10] __attribute__((aligned(4096)));
+
+	void *tfunc(void *arg)
+	{
+		for (;;) {
+			mprotect(altstack, sizeof(altstack), PROT_READ);
+			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
+		}
+	}
+
+	int main(void)
+	{
+		stack_t st = {
+			.ss_sp = altstack,
+			.ss_size = sizeof(altstack),
+			.ss_flags = SS_ONSTACK,
+		};
+
+		struct sigaction sa = {
+			.sa_handler = sigh,
+		};
+
+		pthread_t pt;
+
+		sigaction(SIGSEGV, &sa, NULL);
+		sigaltstack(&st, NULL);
+		sa.sa_flags = SA_ONSTACK;
+		sigaction(SIGHUP, &sa, NULL);
+
+		pthread_create(&pt, NULL, tfunc, NULL);
+
+		test(123.456);
+		return 0;
+	}
+
+Reported-by: Bean Anderson <bean@azulsystems.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/elf.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/signal.c |    5 +++++
+ arch/x86/kernel/xsave.c  |    2 --
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -160,8 +160,9 @@ do {						\
- #define elf_check_arch(x)			\
- 	((x)->e_machine == EM_X86_64)
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -675,6 +675,11 @@ handle_signal(struct ksignal *ksig, stru
+ 		 * handler too.
+ 		 */
+ 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
++		/*
++		 * Ensure the signal handler starts with the new fpu state.
++		 */
++		if (used_math())
++			drop_init_fpu(current);
+ 	}
+ 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -271,8 +271,6 @@ int save_xstate_sig(void __user *buf, vo
+ 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
+ 		return -1;
  
--#define compat_elf_check_arch(x)		\
--	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
-+#define compat_elf_check_arch(x)					\
-+	(elf_check_arch_ia32(x) ||					\
-+	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine == EM_X86_64))
+-	drop_init_fpu(tsk);	/* trigger finit */
+-
+ 	return 0;
+ }
  
- #if __USER32_DS != __USER_DS
- # error "The following code assumes __USER32_DS == __USER_DS"
 
 
