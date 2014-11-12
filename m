@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965570AbaKLCyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:54:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60243 "EHLO
+	id S965085AbaKLBmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:42:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933739AbaKLBmZ (ORCPT
+	with ESMTP id S933739AbaKLBmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:42:25 -0500
+	Tue, 11 Nov 2014 20:42:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.14 099/203] ext4: dont check quota format when there are no quota files
-Date: Wed, 12 Nov 2014 10:16:09 +0900
-Message-Id: <20141112011547.228467345@linuxfoundation.org>
+        Shivnandan Kumar <shivnandan.k@samsung.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.14 052/203] selinux: fix inode security list corruption
+Date: Wed, 12 Nov 2014 10:15:22 +0900
+Message-Id: <20141112011545.082500126@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,38 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Stephen Smalley <sds@tycho.nsa.gov>
 
-commit 279bf6d390933d5353ab298fcc306c391a961469 upstream.
+commit 923190d32de4428afbea5e5773be86bea60a9925 upstream.
 
-The check whether quota format is set even though there are no
-quota files with journalled quota is pointless and it actually
-makes it impossible to turn off journalled quotas (as there's
-no way to unset journalled quota format). Just remove the check.
+sb_finish_set_opts() can race with inode_free_security()
+when initializing inode security structures for inodes
+created prior to initial policy load or by the filesystem
+during ->mount().   This appears to have always been
+a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
+NULL pointer dereference in selinux_inode_permission()")
+made it more evident by immediately reusing the unioned
+list/rcu element  of the inode security structure for call_rcu()
+upon an inode_free_security().  But the underlying issue
+was already present before that commit as a possible use-after-free
+of isec.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Shivnandan Kumar reported the list corruption and proposed
+a patch to split the list and rcu elements out of the union
+as separate fields of the inode_security_struct so that setting
+the rcu element would not affect the list element.  However,
+this would merely hide the issue and not truly fix the code.
+
+This patch instead moves up the deletion of the list entry
+prior to dropping the sbsec->isec_lock initially.  Then,
+if the inode is dropped subsequently, there will be no further
+references to the isec.
+
+Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
+Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    7 -------
- 1 file changed, 7 deletions(-)
+ security/selinux/hooks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1706,13 +1706,6 @@ static int parse_options(char *options,
- 					"not specified");
- 			return 0;
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -470,6 +470,7 @@ next_inode:
+ 				list_entry(sbsec->isec_head.next,
+ 					   struct inode_security_struct, list);
+ 		struct inode *inode = isec->inode;
++		list_del_init(&isec->list);
+ 		spin_unlock(&sbsec->isec_lock);
+ 		inode = igrab(inode);
+ 		if (inode) {
+@@ -478,7 +479,6 @@ next_inode:
+ 			iput(inode);
  		}
--	} else {
--		if (sbi->s_jquota_fmt) {
--			ext4_msg(sb, KERN_ERR, "journaled quota format "
--					"specified with no journaling "
--					"enabled");
--			return 0;
--		}
+ 		spin_lock(&sbsec->isec_lock);
+-		list_del_init(&isec->list);
+ 		goto next_inode;
  	}
- #endif
- 	if (test_opt(sb, DIOREAD_NOLOCK)) {
+ 	spin_unlock(&sbsec->isec_lock);
 
 
