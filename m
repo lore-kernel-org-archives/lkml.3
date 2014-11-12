@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964773AbaKLDKi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:10:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59921 "EHLO
+	id S934378AbaKLDLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:11:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59906 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754799AbaKLBiK (ORCPT
+	with ESMTP id S932529AbaKLBh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:38:10 -0500
+	Tue, 11 Nov 2014 20:37:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.14 026/203] UBIFS: remove mst_mutex
-Date: Wed, 12 Nov 2014 10:14:56 +0900
-Message-Id: <20141112011543.938033089@linuxfoundation.org>
+        Tom Herbert <therbert@google.com>,
+        Alexander Duyck <alexander.h.duyck@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 009/203] gre: Use inner mac length when computing tunnel length
+Date: Wed, 12 Nov 2014 10:14:39 +0900
+Message-Id: <20141112011543.130047064@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,86 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Tom Herbert <therbert@google.com>
 
-commit 07e19dff63e3d5d6500d831e36554ac9b1b0560e upstream.
+[ Upstream commit 14051f0452a2c26a3f4791e6ad6a435e8f1945ff ]
 
-The 'mst_mutex' is not needed since because 'ubifs_write_master()' is only
-called on the mount path and commit path. The mount path is sequential and
-there is no parallelism, and the commit path is also serialized - there is only
-one commit going on at a time.
+Currently, skb_inner_network_header is used but this does not account
+for Ethernet header for ETH_P_TEB. Use skb_inner_mac_header which
+handles TEB and also should work with IP encapsulation in which case
+inner mac and inner network headers are the same.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Tested: Ran TCP_STREAM over GRE, worked as expected.
+
+Signed-off-by: Tom Herbert <therbert@google.com>
+Acked-by: Alexander Duyck <alexander.h.duyck@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ubifs/commit.c |    2 --
- fs/ubifs/master.c |    7 +++----
- fs/ubifs/super.c  |    1 -
- fs/ubifs/ubifs.h  |    2 --
- 4 files changed, 3 insertions(+), 9 deletions(-)
+ net/ipv4/gre_offload.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ubifs/commit.c
-+++ b/fs/ubifs/commit.c
-@@ -174,7 +174,6 @@ static int do_commit(struct ubifs_info *
- 	if (err)
+--- a/net/ipv4/gre_offload.c
++++ b/net/ipv4/gre_offload.c
+@@ -50,7 +50,7 @@ static struct sk_buff *gre_gso_segment(s
+ 
+ 	greh = (struct gre_base_hdr *)skb_transport_header(skb);
+ 
+-	ghl = skb_inner_network_header(skb) - skb_transport_header(skb);
++	ghl = skb_inner_mac_header(skb) - skb_transport_header(skb);
+ 	if (unlikely(ghl < sizeof(*greh)))
  		goto out;
  
--	mutex_lock(&c->mst_mutex);
- 	c->mst_node->cmt_no      = cpu_to_le64(c->cmt_no);
- 	c->mst_node->log_lnum    = cpu_to_le32(new_ltail_lnum);
- 	c->mst_node->root_lnum   = cpu_to_le32(zroot.lnum);
-@@ -204,7 +203,6 @@ static int do_commit(struct ubifs_info *
- 	else
- 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
- 	err = ubifs_write_master(c);
--	mutex_unlock(&c->mst_mutex);
- 	if (err)
- 		goto out;
- 
---- a/fs/ubifs/master.c
-+++ b/fs/ubifs/master.c
-@@ -352,10 +352,9 @@ int ubifs_read_master(struct ubifs_info
-  * ubifs_write_master - write master node.
-  * @c: UBIFS file-system description object
-  *
-- * This function writes the master node. The caller has to take the
-- * @c->mst_mutex lock before calling this function. Returns zero in case of
-- * success and a negative error code in case of failure. The master node is
-- * written twice to enable recovery.
-+ * This function writes the master node. Returns zero in case of success and a
-+ * negative error code in case of failure. The master node is written twice to
-+ * enable recovery.
-  */
- int ubifs_write_master(struct ubifs_info *c)
- {
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1957,7 +1957,6 @@ static struct ubifs_info *alloc_ubifs_in
- 		mutex_init(&c->lp_mutex);
- 		mutex_init(&c->tnc_mutex);
- 		mutex_init(&c->log_mutex);
--		mutex_init(&c->mst_mutex);
- 		mutex_init(&c->umount_mutex);
- 		mutex_init(&c->bu_mutex);
- 		mutex_init(&c->write_reserve_mutex);
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -1042,7 +1042,6 @@ struct ubifs_debug_info;
-  *
-  * @mst_node: master node
-  * @mst_offs: offset of valid master node
-- * @mst_mutex: protects the master node area, @mst_node, and @mst_offs
-  *
-  * @max_bu_buf_len: maximum bulk-read buffer length
-  * @bu_mutex: protects the pre-allocated bulk-read buffer and @c->bu
-@@ -1282,7 +1281,6 @@ struct ubifs_info {
- 
- 	struct ubifs_mst_node *mst_node;
- 	int mst_offs;
--	struct mutex mst_mutex;
- 
- 	int max_bu_buf_len;
- 	struct mutex bu_mutex;
 
 
