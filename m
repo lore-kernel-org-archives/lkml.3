@@ -1,70 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaKLKvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:51:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35670 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571AbaKLKve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 05:51:34 -0500
+	id S1752982AbaKLKwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:52:11 -0500
+Received: from mout.web.de ([212.227.17.12]:50395 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752723AbaKLKwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 05:52:08 -0500
+Message-ID: <54633BC0.3030700@users.sourceforge.net>
+Date: Wed, 12 Nov 2014 11:51:44 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141112095846.GA6759@red-moon>
-References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
-	<20141111122901.GA4419@red-moon>
-	<CACVXFVNAc9axtESmo1zGZ3GMquTzjzWR3jx-b3tbhhLfQDDRcg@mail.gmail.com>
-	<20141111182418.GA5507@red-moon>
-	<CACVXFVPzo2qNGa5DWESS3TXor=u82_SxHb+xzrBCRXtcQxq4Cg@mail.gmail.com>
-	<20141112095846.GA6759@red-moon>
-Date: Wed, 12 Nov 2014 18:51:31 +0800
-Message-ID: <CACVXFVNn=mDuJ9h3wavvo=H29hzFNisKAYEoF0OiFgm4wVAaLw@mail.gmail.com>
-Subject: Re: [PATCH] pci: generic host: make it more generic
-From: Ming Lei <ming.lei@canonical.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        alvise rigo <a.rigo@virtualopensystems.com>
-Content-Type: text/plain; charset=UTF-8
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH with SmPL?] staging: rtl8188eu: Adjustments around jump
+ labels
+References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net> <alpine.DEB.2.10.1410311900201.2481@hadrien> <5453D013.9000007@users.sourceforge.net> <alpine.DEB.2.10.1410311911070.2481@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1410311911070.2481@hadrien>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:1OQNgb3VE7MITzJFh8Isz0tKbghd23jXGaLhqBFzbDFxl7eKPuN
+ MQ4QQxgelL5bGSt8z0A4bKIMZZL0W70xpWcxl/uV2MzyklI97oiMJg6P7GvAbhmg7U/TOYw
+ IvGoX4TxTF8tOuvPUskl+Q7N7PBCsl2An5mo5+/0KpExFNMrrjKIfNuUN2FWPAXLJWkKb50
+ Yp7h6u+5sLSXJ5D05IeIA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 5:58 PM, Lorenzo Pieralisi
-<lorenzo.pieralisi@arm.com> wrote:
-> On Wed, Nov 12, 2014 at 02:12:12AM +0000, Ming Lei wrote:
->> On Wed, Nov 12, 2014 at 2:24 AM, Lorenzo Pieralisi
->> <lorenzo.pieralisi@arm.com> wrote:
->> > On Tue, Nov 11, 2014 at 02:02:20PM +0000, Ming Lei wrote:
->> >
->> > [...]
->> >
->> >> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296535.html
->> >> >
->> >> > Patch above is already queued and applies most of the changes you have posted
->> >> > above.
->> >>
->> >> I should have looked at list first before writing the patch, :-(
->> >>
->> >> Could you make it more generic so that other ARCHs(at least ARM64)
->> >> can benefit from it too?
->> >
->> > That's our current goal, we are carrying out clean-ups to remove arch
->> > dependency and move code to the generic layer PCI layer.
+>>>> @@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16
+>>>> _size_byte, u8  *pbuf)
+>>>>  exit:
+>>>>  	kfree(efuseTbl);
+>>>>
+>>>> -	if (eFuseWord)
+>>>> -		kfree(eFuseWord);
+>>>> +	kfree(eFuseWord);
+>>>
+>>> I think that this code has been updated already.  It would be better to
+>>> add labels so that kfree is only executed when needed.
 >>
->> OK, I am glad to test them after you post them out.
->>
->> At least, the 'struct gen_pci' pointer can be put in driver data
->> of the platform_device now, which may remove dependency on
->> pci_sysdata in this driver.  But ARCH's pcibios code still may
->> access 'pci_sysdata', do you have patches or solution to handle
->> this issue?
->
-> I will consider adding struct gen_pci pointer as platform device
-> driver data, we are working on removing pci_sys_data dependency in the ARM
-> pcibios backend, and I do not think we are far from achieving that.
+>> Are there any chances to achieve the suggested fine-tuning for jump labels
+>> also with another semantic patch approach?
+> 
+> No, I don't think so.  The pattern is not regular enough.
 
-Other ARCHs has sort of pcibios backend too, so that said it still
-depends on ARM or ARM64, doesn't it?
+Now I have got a different impression for corresponding improvement possibilities.
 
-Thanks,
+
+elfring@Sonne:~/Projekte/Linux/stable-patched> spatch.opt -debug -sp-file ~/Projekte/Coccinelle/janitor/move_function_call_before_jump_label1.cocci drivers/staging/rtl8188eu/core/rtw_efuse.c
+init_defs_builtins: /usr/local/share/coccinelle/standard.h
+-----------------------------------------------------------------------
+processing semantic patch file: /home/elfring/Projekte/Coccinelle/janitor/move_function_call_before_jump_label1.cocci
+with isos from: /usr/local/share/coccinelle/standard.iso
+-----------------------------------------------------------------------
+@move_function_call_before_jump_label@
+expression x;
+identifier fu, label;
+type t;
+@@
+ t fu(...)
+ {
+  ... when any
+  x = kzalloc(...);
+  if (x == NULL) {
+     ...
+     goto label;
+  }
+  ... when any
++    kfree(x);
+  label:
+-    kfree(x);
+  ...
+ }
+
+HANDLING: drivers/staging/rtl8188eu/core/rtw_efuse.c
+-----------------------------------------------------------------------
+let's go
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+move_function_call_before_jump_label = 
+-----------------------------------------------------------------------
+dependencies for rule move_function_call_before_jump_label satisfied:
+binding in = []
+binding relevant in = []
+     (ONCE) USING optional_storage builtin isomorphism
+     transformation info returned:
+          transform state: 5
+               with rule_elem: 
+                                 <<< kfree(move_function_call_before_jump_label:x);
+                               move_function_call_before_jump_label:label:
+               with binding: [move_function_call_before_jump_label.x --> efuseTbl]
+          transform state: 204
+               with rule_elem: -kfree-(-move_function_call_before_jump_label:x-)-;
+               with binding: [move_function_call_before_jump_label.x --> efuseTbl]
+     binding out = []
+     transform one node: 204
+     transform one node: 5
+-----------------------------------------------------------------------
+Finished
+-----------------------------------------------------------------------
+diff = 
+--- drivers/staging/rtl8188eu/core/rtw_efuse.c
++++ /tmp/cocci-output-4498-349827-rtw_efuse.c
+@@ -209,8 +209,8 @@ efuse_phymap_to_logical(u8 *phymap, u16
+        /*  5. Calculate Efuse utilization. */
+        /*  */
+ 
++kfree(efuseTbl);
+ exit:
+-       kfree(efuseTbl);
+ 
+        kfree(eFuseWord);
+ }
+Check duplication for 1 files
+
+
+
+Can my update suggestion be generalised a bit more for the movement of specific jump labels
+towards the end of a function implementation like in the use case "efuse_phymap_to_logical()"?
+
+Regards,
+Markus
