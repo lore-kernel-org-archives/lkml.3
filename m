@@ -1,102 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaKLMHo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:07:44 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:47976 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbaKLMHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:07:42 -0500
-Date: Wed, 12 Nov 2014 13:07:42 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] fuse: Add support for pid namespaces
-Message-ID: <20141112120742.GF333@tucsk>
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
- <1414013060-137148-2-git-send-email-seth.forshee@canonical.com>
- <20141111132734.GC333@tucsk>
- <20141111152429.GA7906@ubuntu-hedt>
+	id S1752859AbaKLMH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:07:58 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:40075 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751983AbaKLMH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 07:07:57 -0500
+Message-ID: <54634D97.9050500@kapsi.fi>
+Date: Wed, 12 Nov 2014 14:07:51 +0200
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141111152429.GA7906@ubuntu-hedt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Courbot <acourbot@nvidia.com>, swarren@wwwdotorg.org,
+        thierry.reding@gmail.com, gnurou@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, wni@nvidia.com,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH v4 REPOST 1/5] of: Add descriptions of thermtrip properties
+ to Tegra PMC bindings
+References: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi> <1415625137-4791-2-git-send-email-mikko.perttunen@kapsi.fi> <5461AEB7.70507@nvidia.com>
+In-Reply-To: <5461AEB7.70507@nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 09:24:29AM -0600, Seth Forshee wrote:
-> > What happens when the server does indeed change pid namespace after mounting?
-> > Will just receive bogus pid values?  Shouldn't it receive an error instead?
-> 
-> Yeah, I suppose it does receive bogus pids and userid values. About all
-> we could do to prevent this is make the /dev/fuse read/write paths
-> return an error if the current namespace isn't the same as the one at
-> mount time. But then requests could get stuck in the queue forever, so
-> maybe we should also fail all requests in the queue when this happens.
-> Unless you have a better idea?
+On 11/11/2014 08:37 AM, Alexandre Courbot wrote:
+> On 11/10/2014 10:12 PM, Mikko Perttunen wrote:
+>> From: Mikko Perttunen <mperttunen@nvidia.com>
+>>
+>> Hardware-triggered thermal reset requires configuring the I2C
+>> reset procedure. This configuration is read from the device tree,
+>> so document the relevant properties in the binding documentation.
+>>
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> Reviewed-by: Wei Ni <wni@nvidia.com>
+>> Tested-by: Wei Ni <wni@nvidia.com>
+>> ---
+>>   .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      | 24
+>> ++++++++++++++++++++++
+>>   1 file changed, 24 insertions(+)
+>>
+>> diff --git
+>> a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>> b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>> index 68ac65f..dc13fb0 100644
+>> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>> @@ -47,6 +47,21 @@ Required properties when nvidia,suspend-mode=<0>:
+>>     sleep mode, the warm boot code will restore some PLLs, clocks and
+>> then
+>>     bring up CPU0 for resuming the system.
+>>
+>> +Hardware-triggered thermal reset:
+>> +On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode
+>> exists,
+>> +hardware-triggered thermal reset will be enabled.
+>> +
+>> +Required properties for hardware-triggered thermal reset (inside
+>> 'i2c-thermtrip'):
+>> +- nvidia,i2c-bus : Phandle to I2C bus containing the PMU
+>> +- nvidia,bus-addr : Bus address of the PMU on the I2C bus
+>> +- nvidia,reg-addr : I2C register address to write poweroff command to
+>> +- nvidia,reg-data : Poweroff command to write to PMU
+>
+> This binding is taking two different routes to provide values to the
+> driver:
+>
+> 1) It uses a phandle for i2c-bus (which must then be provided by another
+> binding implemented in the two following patches)
+>
+> 2) It uses direct values for bus-addr, reg-addr and reg-data.
+>
+> Do we need to use both approaches? bus-addr could just as well be
+> obtained through a phandle to the i2c device and reading its reg
+> property. From this phandle you could also go back up to the bus, making
+> the i2c-bus property unnecessary. reg-addr and reg-data cannot be
+> specified that way, obviously.
 
-In fuse_dev_do_read() just after dequeuing the request check if the namespaces
-match, and if not, reject with EIO.
+This was in fact how I used to implement this, but Stephen or Thierry 
+pointed out that the reg property actually might not contain the correct 
+address (I think because the PMIC could have multiple addresses, and the 
+one in DT might not be the one that accepts the reset command).
 
-> > > @@ -2146,7 +2147,11 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
-> > >  
-> > >  		fl->fl_start = ffl->start;
-> > >  		fl->fl_end = ffl->end;
-> > > -		fl->fl_pid = ffl->pid;
-> > > +		rcu_read_lock();
-> > > +		fl->fl_pid = pid_vnr(find_pid_ns(ffl->pid, fc->pid_ns));
-> > > +		rcu_read_unlock();
-> > > +		if (ffl->pid != 0 && fl->fl_pid == 0)
-> > > +			return -EIO;
-> > 
-> > This needs some comments: is this trying to translate the pid backwards?
-> > Why is it not checking the return of find_pid_ns() then?  The man page
-> > documents l_pid value of -1 but not of 0, so why are we checking for
-> > "ffl->pid != 0"?  Or is the man page incomplete and in practice we get l_pid
-> > == 0 values?
-> 
-> I'll add comments. It's converting the pid in the fuse_file_lock into
-> the current pid namespace. pid_vnr calls pid_nr_ns, which returns 0 if
-> the pid can't be translated into the namespace, thus we return the
-> error.
-> 
-> pid_vnr's return values don't necessarily conform to the expectations of
-> the fcntl syscall in all cases, and as far as I can tell it should never
-> return <0. But if fcntl doesn't expect l_pid == 0 and pid_vnr could
-> return that value then doesn't it makes sense for fuse to return an
-> error in cases where this would happen?
+The workaround for that was to either add this integer property for 
+bus-addr or add a new PMIC API for querying. I went for this as it is 
+much simpler.
 
-Not necessarily.  The conflicting lock might be held by a process whose pid is
-not visible from the client's namespace.  That doesn't mean that the GETLK
-should fail, it just means that l_pid can't be filled in (same as in NFS when a
-lock held on a different client).  AFAICS, NFS fills l_pid with zero in that
-case.  Makes sense, not sure why the man page doesn't document that.
+>
+> Actually I think I'd prefer to see i2c-bus become an integer property
+> instead of a phandle, because at the end of the day it is a value field
+> of a particular register and the reference is only used to retrieve that
+> value. It is not like we are actually going to call functions on the bus
+> instance or change its state. And for the single purpose of retrieving
+> that value, this binding requires the addition of a new property on the
+> bus node that will probably never be used for something else.
 
-> > > @@ -2170,7 +2175,9 @@ static void fuse_lk_fill(struct fuse_req *req, struct file *file,
-> > >  	arg->lk.start = fl->fl_start;
-> > >  	arg->lk.end = fl->fl_end;
-> > >  	arg->lk.type = fl->fl_type;
-> > > -	arg->lk.pid = pid;
-> > > +	arg->lk.pid = pid_nr_ns(pid, fc->pid_ns);
-> > > +	if (pid && arg->lk.pid == 0)
-> > > +		return -EOVERFLOW;
-> > 
-> > Could have done the conversion immediately after getting 'pid' with task_tgid(),
-> > then the changes would have been smaller and more localized.
-> 
-> The changes would be very marginally smaller since currently only one
-> caller of fuse_lk_fill which passes a non-zero pid. If additional
-> callers were ever added with non-zero pids then there would be
-> duplication of this code. But I'll do it whichever way you prefer, just
-> let me know.
+And this was how I used to implement this even earlier, but Thierry 
+objected to that since it was duplicating information :)
 
-I prefer the simpler (even if only marginally) one.
+>
+> We can also imagine that some design may not have a PMIC device in the
+> DT but still want to use the thermal reset feature. In this case, it is
+> again preferable to use direct values.
+>
 
-Thanks,
-Miklos
+I don't see how that'd change anything; the hardware feature still 
+requires an I2C device to send a message to. If there's an I2C device on 
+one of the SoC buses, you probably should have it in the DT..
+
+Cheers,
+Mikko
+
