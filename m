@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274AbaKLBZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:25:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58860 "EHLO
+	id S1754295AbaKLB0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:26:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251AbaKLBZw (ORCPT
+	with ESMTP id S1754264AbaKLB0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:25:52 -0500
+	Tue, 11 Nov 2014 20:26:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.17 124/319] KVM: emulate: avoid accessing NULL ctxt->memopp
-Date: Wed, 12 Nov 2014 10:14:22 +0900
-Message-Id: <20141112011013.120174052@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.17 129/319] KVM: x86: Prevent host from panicking on shared MSR writes.
+Date: Wed, 12 Nov 2014 10:14:27 +0900
+Message-Id: <20141112011013.946755620@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,38 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Andy Honig <ahonig@google.com>
 
-commit a430c9166312e1aa3d80bce32374233bdbfeba32 upstream.
+commit 8b3c3104c3f4f706e99365c3e0d2aa61b95f969f upstream.
 
-A failure to decode the instruction can cause a NULL pointer access.
-This is fixed simply by moving the "done" label as close as possible
-to the return.
+The previous patch blocked invalid writes directly when the MSR
+is written.  As a precaution, prevent future similar mistakes by
+gracefulling handle GPs caused by writes to shared MSRs.
 
-This fixes CVE-2014-8481.
-
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Fixes: 41061cdb98a0bec464278b4db8e894a3121671f5
+Signed-off-by: Andrew Honig <ahonig@google.com>
+[Remove parts obsoleted by Nadav's patch. - Paolo]
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ arch/x86/kvm/vmx.c              |    7 +++++--
+ arch/x86/kvm/x86.c              |   11 ++++++++---
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4481,10 +4481,10 @@ done_prefixes:
- 	/* Decode and fetch the destination operand: register or memory. */
- 	rc = decode_operand(ctxt, &ctxt->dst, (ctxt->d >> DstShift) & OpMask);
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -1049,7 +1049,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcp
+ void kvm_vcpu_reset(struct kvm_vcpu *vcpu);
  
--done:
- 	if (ctxt->rip_relative)
- 		ctxt->memopp->addr.mem.ea += ctxt->_eip;
+ void kvm_define_shared_msr(unsigned index, u32 msr);
+-void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
++int kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
  
-+done:
- 	return (rc != X86EMUL_CONTINUE) ? EMULATION_FAILED : EMULATION_OK;
+ bool kvm_is_linear_rip(struct kvm_vcpu *vcpu, unsigned long linear_rip);
+ 
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2632,12 +2632,15 @@ static int vmx_set_msr(struct kvm_vcpu *
+ 	default:
+ 		msr = find_msr_entry(vmx, msr_index);
+ 		if (msr) {
++			u64 old_msr_data = msr->data;
+ 			msr->data = data;
+ 			if (msr - vmx->guest_msrs < vmx->save_nmsrs) {
+ 				preempt_disable();
+-				kvm_set_shared_msr(msr->index, msr->data,
+-						   msr->mask);
++				ret = kvm_set_shared_msr(msr->index, msr->data,
++							 msr->mask);
+ 				preempt_enable();
++				if (ret)
++					msr->data = old_msr_data;
+ 			}
+ 			break;
+ 		}
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -229,20 +229,25 @@ static void kvm_shared_msr_cpu_online(vo
+ 		shared_msr_update(i, shared_msrs_global.msrs[i]);
  }
+ 
+-void kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
++int kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
+ {
+ 	unsigned int cpu = smp_processor_id();
+ 	struct kvm_shared_msrs *smsr = per_cpu_ptr(shared_msrs, cpu);
++	int err;
+ 
+ 	if (((value ^ smsr->values[slot].curr) & mask) == 0)
+-		return;
++		return 0;
+ 	smsr->values[slot].curr = value;
+-	wrmsrl(shared_msrs_global.msrs[slot], value);
++	err = wrmsrl_safe(shared_msrs_global.msrs[slot], value);
++	if (err)
++		return 1;
++
+ 	if (!smsr->registered) {
+ 		smsr->urn.on_user_return = kvm_on_user_return;
+ 		user_return_notifier_register(&smsr->urn);
+ 		smsr->registered = true;
+ 	}
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(kvm_set_shared_msr);
  
 
 
