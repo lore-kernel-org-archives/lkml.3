@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507AbaKLHAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 02:00:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58989 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720AbaKLHAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 02:00:43 -0500
-Message-ID: <1415775644.1761.1.camel@linux-0dmf.site>
-Subject: Re: [PATCH] brcmfmac: unlink URB when request timed out
-From: Oliver Neukum <oneukum@suse.de>
-To: Mathy Vanhoef <vanhoefm@gmail.com>
-Cc: brudley@broadcom.com, Arend van Spriel <arend@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
-        John Linville <linville@tuxdriver.com>, pieterpg@broadcom.com,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 12 Nov 2014 08:00:44 +0100
-In-Reply-To: <5462B1A3.9020401@gmail.com>
-References: <545FAE05.2030701@gmail.com>
-	 <1415610506.16488.20.camel@linux-0dmf.site> <5462B1A3.9020401@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751782AbaKLHBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 02:01:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52618 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaKLHBf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 02:01:35 -0500
+Date: Wed, 12 Nov 2014 08:01:27 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Johan Hovold <johan@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 19/22] dt/bindings: add micrel,rmii_ref_clk_sel_25_mhz to
+ eth-phy binding
+Message-ID: <20141112070127.GF30369@pengutronix.de>
+References: <1415727460-20417-1-git-send-email-johan@kernel.org>
+ <1415727460-20417-20-git-send-email-johan@kernel.org>
+ <20141111175741.GF25295@leverpostej>
+ <20141111181825.GH29789@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141111181825.GH29789@localhost>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 07:52:18 up 27 days, 18:06, 50 users,  load average: 0.00, 0.01,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 20:02 -0500, Mathy Vanhoef wrote:
-> On 11/10/2014 04:08 AM, Oliver Neukum wrote:
-
-> > Which means that you are freeing memory that may still be used by DMA
-> > at this time.
-> > In addition you have no guarantee that the unlink is indeed finished
-> > by the time the URB is reused.
-> > If you wish to take this approach you better forget about this URB
-> > and allocate a new one and free the buffer from the callback.
+On Tue, Nov 11, 2014 at 07:18:25PM +0100, Johan Hovold wrote:
+> On Tue, Nov 11, 2014 at 05:57:42PM +0000, Mark Rutland wrote:
+> > On Tue, Nov 11, 2014 at 05:37:37PM +0000, Johan Hovold wrote:
+> > > Add "micrel,rmii_ref_clk_sel_25_mhz" to Micrel ethernet PHY binding
+> > > documentation.
+> > > 
+> > > Cc: devicetree@vger.kernel.org
+> > > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > > ---
+> > >  Documentation/devicetree/bindings/net/micrel.txt | 5 +++++
+> > >  1 file changed, 5 insertions(+)
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
+> > > index a1bab5eaae02..9b08dd6551dd 100644
+> > > --- a/Documentation/devicetree/bindings/net/micrel.txt
+> > > +++ b/Documentation/devicetree/bindings/net/micrel.txt
+> > > @@ -19,6 +19,11 @@ Optional properties:
+> > >  
+> > >                See the respective PHY datasheet for the mode values.
+> > >  
+> > > + - micrel,rmii_ref_clk_sel_25_mhz: rmii_ref_clk_sel bit selects 25 MHz mode
+> > > +
+> > > +		Whether 25 MHz (rather than 50 Mhz) clock mode is selected
+> > > +		when the rmii_ref_clk_sel bit is set.
+> > 
+> > s/_/-/ in property names please.
 > 
-> Hi Oliver,
+> Ouch, copied from variable name, sorry.
 > 
-> Good catch. I think the DMA issue is also present in the current driver: it
-> frees the buffer without unlinking/killing the URB at all. Can a malicious USB
-
-Yes, it is present.
-
-> device force a timeout to occur (i.e. delay the call to the completion
-> handler)? If so this might be a use-after-free vulnerability.
+> > That said, I don't follow the meaning. Does this cause the kernel to do
+> > something different, or is is simply that a 25MHz ref clock is wired up?
 > 
-> It seems using usb_kill_urb instead of usb_unlink_urb in the patch prevents any
-> possible use-after-free. Can someone double check?
+> Yes, the driver currently sets this configuration bit based on a common
+> clock binding.
+> 
+> However, it turns out the meaning of the bit is reversed on some PHY
+> variants. On most PHYs 50 MHz mode is selected by setting this bit,
+> whereas on the PHYs that need this new property, setting it selects 25
+> MHz mode instead.
 
-usb_kill_urb() will do the job.
+Maybe rename the property to something like rmii-ref-clk-25mhz-active-high
+then? Also you should probably make it more explicit that this is a
+hardware property and not for adjusting the clock.
 
-	Regards
-		Oliver
+It's not very nice from Micrel to create Phys with exactly the same
+device id but the meaning of this bit reversed.
 
+Sascha
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
