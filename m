@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965807AbaKLBzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:55:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33062 "EHLO
+	id S966731AbaKLBz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:55:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33067 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966681AbaKLBzU (ORCPT
+	with ESMTP id S966715AbaKLBzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:55:20 -0500
+	Tue, 11 Nov 2014 20:55:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 098/123] scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND
-Date: Wed, 12 Nov 2014 10:17:44 +0900
-Message-Id: <20141112011723.438471597@linuxfoundation.org>
+        Jason Baron <jbaron@akamai.com>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.10 099/123] i82860_edac: Report CE events properly
+Date: Wed, 12 Nov 2014 10:17:45 +0900
+Message-Id: <20141112011723.489015593@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,47 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jason Baron <jbaron@akamai.com>
 
-commit 84ce0f0e94ac97217398b3b69c21c7a62ebeed05 upstream.
+commit ab0543de6ff0877474f57a5aafbb51a61e88676f upstream.
 
-When sg_scsi_ioctl() fails to prepare request to submit in
-blk_rq_map_kern() we jump to a label where we just end up copying
-(luckily zeroed-out) kernel buffer to userspace instead of reporting
-error. Fix the problem by jumping to the right label.
+Fix CE event being reported as HW_EVENT_ERR_UNCORRECTED.
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: linux-scsi@vger.kernel.org
-Coverity-id: 1226871
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+Link: http://lkml.kernel.org/r/7aee8e244a32ff86b399a8f966c4aae70296aae0.1413405053.git.jbaron@akamai.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Fixed up the, now unused, out label.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
-
 ---
- block/scsi_ioctl.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/edac/i82860_edac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -506,7 +506,7 @@ int sg_scsi_ioctl(struct request_queue *
- 
- 	if (bytes && blk_rq_map_kern(q, rq, buffer, bytes, __GFP_WAIT)) {
- 		err = DRIVER_ERROR << 24;
--		goto out;
-+		goto error;
- 	}
- 
- 	memset(sense, 0, sizeof(sense));
-@@ -516,7 +516,6 @@ int sg_scsi_ioctl(struct request_queue *
- 
- 	blk_execute_rq(q, disk, rq, 0);
- 
--out:
- 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
- 	if (err) {
- 		if (rq->sense_len && rq->sense) {
+--- a/drivers/edac/i82860_edac.c
++++ b/drivers/edac/i82860_edac.c
+@@ -124,7 +124,7 @@ static int i82860_process_error_info(str
+ 				     dimm->location[0], dimm->location[1], -1,
+ 				     "i82860 UE", "");
+ 	else
+-		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1,
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 1,
+ 				     info->eap, 0, info->derrsyn,
+ 				     dimm->location[0], dimm->location[1], -1,
+ 				     "i82860 CE", "");
 
 
