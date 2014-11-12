@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaKLJCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:02:31 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3396 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaKLJC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:02:27 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 12 Nov 2014 01:02:41 -0800
-Date: Wed, 12 Nov 2014 10:02:17 +0100
-From: Thierry Reding <treding@nvidia.com>
-To: bpqw <bpqw@micron.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
+	id S1752014AbaKLJMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:12:09 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:44380 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547AbaKLJMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 04:12:05 -0500
+Message-ID: <1415783543.4820.4.camel@mm-sol.com>
+Subject: Re: [PATCH] mfd: qcom-spmi-pmic: Add support for more chips versions
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+Cc: Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
-        "Mark Brown" <broonie@kernel.org>, Heiko Stuebner <heiko@sntech.de>,
-        "Florian Vaussard" <florian.vaussard@epfl.ch>,
-        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
-        Hayato Suzuki <hytszk@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 V2] devicetree: bindings: Add vendor prefix for
- Micron Technology Co., Ltd.
-Message-ID: <20141112090215.GA29664@ulmo.nvidia.com>
-References: <A765B125120D1346A63912DDE6D8B6315EB0ED@NTXXIAMBX02.xacn.micron.com>
-MIME-Version: 1.0
-In-Reply-To: <A765B125120D1346A63912DDE6D8B6315EB0ED@NTXXIAMBX02.xacn.micron.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.2.68.108]
-X-ClientProxiedBy: UKMAIL102.nvidia.com (10.26.138.15) To
- UKMAIL101.nvidia.com (10.26.138.13)
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Date: Wed, 12 Nov 2014 11:12:23 +0200
+In-Reply-To: <20141111202708.GA13013@sonymobile.com>
+References: <1415108003-16387-1-git-send-email-iivanov@mm-sol.com>
+	 <CAJAp7OgU64=KCuDhYEZTYppVeBz6wKvTDsof5vDRznfdZgAfZw@mail.gmail.com>
+	 <1415212271.14949.1.camel@mm-sol.com>
+	 <CAJAp7OgXHGWQj7MWh51LTUdmZpgZc=6m=o-Az=z8QxR7yfrw7g@mail.gmail.com>
+	 <1415260480.13103.3.camel@mm-sol.com>
+	 <CAJAp7OgPGhM=EnMNU2JfjG6Qb-EiWSPSRyZWGicSPmpicBQW7g@mail.gmail.com>
+	 <1415374390.26058.1.camel@mm-sol.com> <1415374852.26058.3.camel@mm-sol.com>
+	 <20141111202708.GA13013@sonymobile.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.6-fta3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 12, 2014 at 01:26:58AM +0000, bpqw wrote:
-> >Signed-off-by: bean huo <beanhuo@micron.com>
-> >Signed-off-by: bpqw <bpqw@micron.com>
-> >---
-> >V2:
->  > - Add signed-off-by
->  > - Modify commit logs that wrapped to less than 80 columns
->=20
-> Dear maintainers:
->=20
-> Please give some tips,if this patch is OK?thanks!
+On Tue, 2014-11-11 at 12:27 -0800, Courtney Cavin wrote:
+> On Fri, Nov 07, 2014 at 04:40:52PM +0100, Ivan T. Ivanov wrote:
+> > 
+> > Forgot to add. PMIC subtype and version are used also in charger and BMS
+> > drivers to workaround hardware issues.
+> 
+> All of the blocks on the PM8x41 series have their own version numbers.
+> There's no need to look at the chip revision.
 
-Patch looks okay to me content-wise, but you might want to use proper
-names and capitalization for the From: and Signed-off-by: lines. bpqw
-doesn't look like a real name to me, and "bean huo" should probably
-be "Bean Huo".
+I am suspecting that, for whatever the reason is, after updates inside blocks,
+the PMIC chip revisions update was made instead of blocks own version update.
 
-Thierry
+> 
+> In fact, the SMBB (charger) documentation (80-NA555-12) specifically
 
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature
+It would be nice if I had this document :-).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> refers to the SMBB_MISC block revision registers as the method for
+> determining the hardware version.  The "qpnp-charger" SMBB driver in the
+> CAF 3.4 & 3.10 trees utilizes block specific revision numbers, as do the
+> "qpnp-bms" BMS driver, the "qpnp-adc-current" IADC driver, and the
+> "qpnp-adc-voltage" VADC driver.
 
-iQIcBAEBAgAGBQJUYyIXAAoJEN0jrNd/PrOhO/EP/juUDVqscA4O+XpTsaq3pekP
-IrTzP9gLmCtl8aGZLGkKCmqAKs23H2h8ceJJt5X0LEPvGuYR8r7dt6o/DK8fCnio
-HexEBZ2v3G5p+QEELhjC5uxg5KnpR1vHy5mLx/dIJkwpuvtI42RmA3e4KWIAsZZ9
-ZDA6I3+9Yl0Zlc42RjvXL89au5WziiB6mWzHP8HdR9dJHHk1tHn/SEB2FgraNrw3
-LW6QIlTFfc8xHjxm1hAtCv/FQiIPE4tEpeDivL0UeV0LB0x74kB/MUbONyXnPFUb
-xgek4aHE8ixMGV7AYFAlDZaIdggRvKcq6t00moiJTPEWGjhNBtndnQQ0zrkKmeHX
-SchRVDjTbeDpDBNCaYB9wHWoezQQt2gcP80R2+zToqVzdT+kbtMV8t6DaTX4RZu9
-Dc8HWGLqAaqbkipMkTE6k+JNQlq3qXAQ9gKCgqUfPSyaW3uMi1x1uJQS7++MVnL2
-B1QWEpjjmUDPG1Ws56iGo5ALllHNtoYYNlRN9ziElUK4ds3Wr4/amsB1wOG22mH5
-2Hk75P3ea9TTET6LywhiUatkKUPd4iLdEG16d2TqxUpWbLe0bYH1vnNI81mEPiQq
-DXsm5QbSyAAyjczEb1Yd5hbWWcejdXkObj02fJs/D+3VPWq8xPaSpsbTNcMRzeEP
-KjKxwoxC3wtcmVCpgzjv
-=TjLE
------END PGP SIGNATURE-----
+Hm, they read its own block revision, but they are using PMIC chip revision
+for workaround decisions. What could be the reason for this?
 
---AqsLC8rIMeq19msA--
+> 
+> The revision of the PMIC itself should be completely irrelevant to any
+> of the software interfacing with it.
+> 
+
+It will be really nice if this is the case, but I am afraid it is not.
+
+Regards,
+Ivan
+
+
+
