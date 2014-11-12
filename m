@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003AbaKLBho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:37:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59882 "EHLO
+	id S934037AbaKLBhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:37:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932753AbaKLBhk (ORCPT
+	with ESMTP id S934019AbaKLBhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:37:40 -0500
+	Tue, 11 Nov 2014 20:37:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Li RongQing <roy.qing.li@gmail.com>,
+        Ian Morgan <imorgan@primordial.ca>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 004/203] vxlan: using pskb_may_pull as early as possible
-Date: Wed, 12 Nov 2014 10:14:34 +0900
-Message-Id: <20141112011542.883724332@linuxfoundation.org>
+Subject: [PATCH 3.14 007/203] ax88179_178a: fix bonding failure
+Date: Wed, 12 Nov 2014 10:14:37 +0900
+Message-Id: <20141112011543.027733424@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -30,42 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Ian Morgan <imorgan@primordial.ca>
 
-[ Upstream commit 91269e390d062b526432f2ef1352b8df82e0e0bc ]
+[ Upstream commit 95ff88688781db2f64042e69bd499e518bbb36e5 ]
 
-pskb_may_pull should be used to check if skb->data has enough space,
-skb->len can not ensure that.
+The following patch fixes a bug which causes the ax88179_178a driver to be
+incapable of being added to a bond.
 
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+When I brought up the issue with the bonding maintainers, they indicated
+that the real problem was with the NIC driver which must return zero for
+success (of setting the MAC address). I see that several other NIC drivers
+follow that pattern by either simply always returing zero, or by passing
+through a negative (error) result while rewriting any positive return code
+to zero. With that same philisophy applied to the ax88179_178a driver, it
+allows it to work correctly with the bonding driver.
+
+I believe this is suitable for queuing in -stable, as it's a small, simple,
+and obvious fix that corrects a defect with no other known workaround.
+
+This patch is against vanilla 3.17(.0).
+
+Signed-off-by: Ian Morgan <imorgan@primordial.ca>
+
+ drivers/net/usb/ax88179_178a.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/usb/ax88179_178a.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1447,9 +1447,6 @@ static int neigh_reduce(struct net_devic
- 	if (!in6_dev)
- 		goto out;
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -696,6 +696,7 @@ static int ax88179_set_mac_addr(struct n
+ {
+ 	struct usbnet *dev = netdev_priv(net);
+ 	struct sockaddr *addr = p;
++	int ret;
  
--	if (!pskb_may_pull(skb, skb->len))
--		goto out;
--
- 	iphdr = ipv6_hdr(skb);
- 	saddr = &iphdr->saddr;
- 	daddr = &iphdr->daddr;
-@@ -1979,7 +1976,8 @@ static netdev_tx_t vxlan_xmit(struct sk_
- 			return arp_reduce(dev, skb);
- #if IS_ENABLED(CONFIG_IPV6)
- 		else if (ntohs(eth->h_proto) == ETH_P_IPV6 &&
--			 skb->len >= sizeof(struct ipv6hdr) + sizeof(struct nd_msg) &&
-+			 pskb_may_pull(skb, sizeof(struct ipv6hdr)
-+				       + sizeof(struct nd_msg)) &&
- 			 ipv6_hdr(skb)->nexthdr == IPPROTO_ICMPV6) {
- 				struct nd_msg *msg;
+ 	if (netif_running(net))
+ 		return -EBUSY;
+@@ -705,8 +706,12 @@ static int ax88179_set_mac_addr(struct n
+ 	memcpy(net->dev_addr, addr->sa_data, ETH_ALEN);
  
+ 	/* Set the MAC address */
+-	return ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
++	ret = ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
+ 				 ETH_ALEN, net->dev_addr);
++	if (ret < 0)
++		return ret;
++
++	return 0;
+ }
+ 
+ static const struct net_device_ops ax88179_netdev_ops = {
 
 
