@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934754AbaKLBpR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:45:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60592 "EHLO
+	id S965376AbaKLBp2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:45:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933477AbaKLBpL (ORCPT
+	with ESMTP id S965344AbaKLBpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:45:11 -0500
+	Tue, 11 Nov 2014 20:45:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Pham <jackp@codeaurora.org>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 144/203] usb: dwc3: gadget: Properly initialize LINK TRB
-Date: Wed, 12 Nov 2014 10:16:54 +0900
-Message-Id: <20141112011549.316603677@linuxfoundation.org>
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Andrea Adami <andrea.adami@gmail.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.14 147/203] spi: pxa2xx: toggle clocks on suspend if not disabled by runtime PM
+Date: Wed, 12 Nov 2014 10:16:57 +0900
+Message-Id: <20141112011549.463633645@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,42 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
+commit 2b9375b91bef65b837bed61a05fb387159b38ddf upstream.
 
-On ISOC endpoints the last trb_pool entry used as a
-LINK TRB is not getting zeroed out correctly due to
-memset being called incorrectly and in the wrong place.
-If pool allocated from DMA was not zero-initialized
-to begin with this will result in the size and ctrl
-values being random garbage. Call memset correctly after
-assignment of the trb_link pointer.
+If PM_RUNTIME is enabled, it is easy to trigger the following backtrace
+on pxa2xx hosts:
 
-Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at /home/lumag/linux/arch/arm/mach-pxa/clock.c:35 clk_disable+0xa0/0xa8()
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-00007-g1b3d2ee-dirty #104
+[<c000de68>] (unwind_backtrace) from [<c000c078>] (show_stack+0x10/0x14)
+[<c000c078>] (show_stack) from [<c001d75c>] (warn_slowpath_common+0x6c/0x8c)
+[<c001d75c>] (warn_slowpath_common) from [<c001d818>] (warn_slowpath_null+0x1c/0x24)
+[<c001d818>] (warn_slowpath_null) from [<c0015e80>] (clk_disable+0xa0/0xa8)
+[<c0015e80>] (clk_disable) from [<c02507f8>] (pxa2xx_spi_suspend+0x2c/0x34)
+[<c02507f8>] (pxa2xx_spi_suspend) from [<c0200360>] (platform_pm_suspend+0x2c/0x54)
+[<c0200360>] (platform_pm_suspend) from [<c0207fec>] (dpm_run_callback.isra.14+0x2c/0x74)
+[<c0207fec>] (dpm_run_callback.isra.14) from [<c0209254>] (__device_suspend+0x120/0x2f8)
+[<c0209254>] (__device_suspend) from [<c0209a94>] (dpm_suspend+0x50/0x208)
+[<c0209a94>] (dpm_suspend) from [<c00455ac>] (suspend_devices_and_enter+0x8c/0x3a0)
+[<c00455ac>] (suspend_devices_and_enter) from [<c0045ad4>] (pm_suspend+0x214/0x2a8)
+[<c0045ad4>] (pm_suspend) from [<c04b5c34>] (test_suspend+0x14c/0x1dc)
+[<c04b5c34>] (test_suspend) from [<c000880c>] (do_one_initcall+0x8c/0x1fc)
+[<c000880c>] (do_one_initcall) from [<c04aecfc>] (kernel_init_freeable+0xf4/0x1b4)
+[<c04aecfc>] (kernel_init_freeable) from [<c0378078>] (kernel_init+0x8/0xec)
+[<c0378078>] (kernel_init) from [<c0009590>] (ret_from_fork+0x14/0x24)
+---[ end trace 46524156d8faa4f6 ]---
+
+This happens because suspend function tries to disable a clock that is
+already disabled by runtime_suspend callback. Add if
+(!pm_runtime_suspended()) checks to suspend/resume path.
+
+Fixes: 7d94a505858 (spi/pxa2xx: add support for runtime PM)
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Reported-by: Andrea Adami <andrea.adami@gmail.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/spi/spi-pxa2xx.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -532,12 +532,11 @@ static int __dwc3_gadget_ep_enable(struc
- 		if (!usb_endpoint_xfer_isoc(desc))
- 			return 0;
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1280,7 +1280,9 @@ static int pxa2xx_spi_suspend(struct dev
+ 	if (status != 0)
+ 		return status;
+ 	write_SSCR0(0, drv_data->ioaddr);
+-	clk_disable_unprepare(ssp->clk);
++
++	if (!pm_runtime_suspended(dev))
++		clk_disable_unprepare(ssp->clk);
  
--		memset(&trb_link, 0, sizeof(trb_link));
--
- 		/* Link TRB for ISOC. The HWO bit is never reset */
- 		trb_st_hw = &dep->trb_pool[0];
+ 	return 0;
+ }
+@@ -1294,7 +1296,8 @@ static int pxa2xx_spi_resume(struct devi
+ 	pxa2xx_spi_dma_resume(drv_data);
  
- 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
-+		memset(trb_link, 0, sizeof(*trb_link));
+ 	/* Enable the SSP clock */
+-	clk_prepare_enable(ssp->clk);
++	if (!pm_runtime_suspended(dev))
++		clk_prepare_enable(ssp->clk);
  
- 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
- 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
+ 	/* Restore LPSS private register bits */
+ 	lpss_ssp_setup(drv_data);
 
 
