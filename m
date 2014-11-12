@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaKLPoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:44:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42775 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881AbaKLPoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:44:11 -0500
-Message-ID: <54638003.3070801@redhat.com>
-Date: Wed, 12 Nov 2014 07:42:59 -0800
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753348AbaKLPpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:45:16 -0500
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:63866 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857AbaKLPpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 10:45:13 -0500
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Tony Luck <tony.luck@intel.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] arch: Introduce read_acquire()
-References: <20141111185510.2181.75347.stgit@ahduyck-workstation.home> <CA+55aFwo9f3tWaRqN1Xam9UkWv1B5F4YnRP1Qx3T78E4o=8YJQ@mail.gmail.com> <20141112101051.GA26437@arm.com>
-In-Reply-To: <20141112101051.GA26437@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141104154231.GP31454@atomide.com>
+References: <20141102180756.GH31454@atomide.com>
+	<5458D29E.50908@compulab.co.il>
+	<20141104154231.GP31454@atomide.com>
+Date: Wed, 12 Nov 2014 17:45:12 +0200
+Message-ID: <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration enabled
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Igor Grinberg <grinberg@compulab.co.il>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 11/12/2014 02:10 AM, Will Deacon wrote:
-> On Tue, Nov 11, 2014 at 07:40:22PM +0000, Linus Torvalds wrote:
->> On Tue, Nov 11, 2014 at 10:57 AM,  <alexander.duyck@gmail.com> wrote:
->>> On reviewing the documentation and code for smp_load_acquire() it occured
->>> to me that implementing something similar for CPU <-> device interraction
->>> would be worth while.  This commit provides just the load/read side of this
->>> in the form of read_acquire().
->> So I don't hate the concept, but. there's a couple of reasons to think
->> this is broken.
+On Tue, Nov 4, 2014 at 5:42 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Igor Grinberg <grinberg@compulab.co.il> [141104 05:22]:
+>> Hi Tony,
 >>
->> One is just the name. Why do we have "smp_load_acquire()", but then
->> call the non-smp version "read_acquire()"? That makes very little
->> sense to me. Why did "load" become "read"?
-> [...]
->
->> But we do have a very real difference between "smp_rmb()" (inter-cpu
->> cache coherency read barrier) and "rmb()" (full memory barrier that
->> synchronizes with IO).
+>> On 11/02/14 20:07, Tony Lindgren wrote:
+>> > Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+>> > configuration") enabled configuring the PM features for twl4030.
+>> >
+>> > This caused poweroff command to fail on devices that have the
+>> > BCI charger on twl4030 wired, or have power wired for VBUS.
+>> > Instead of powering off, the device reboots. This is because
+>> > voltage is detected on charger or VBUS with the default bits
+>> > enabled for the power transition registers.
+>> >
+>> > To fix the issue, let's just clear VBUS and CHG bits as we want
+>> > poweroff command to keep the system powered off.
 >>
->> And your patch is very confused about this. In *some* places you use
->> "rmb()", and in other places you just use "smp_load_acquire()". Have
->> you done extensive verification to check that this is actually ok?
->> Because the performance difference you quote very much seems to be
->> about your x86 testing now akipping the IO-synchronizing "rmb()", and
->> depending on DMA being ordered even without it.
->>
->> And I'm pretty sure that's actually fine on x86. The real
->> IO-synchronizing rmb() (which translates into a lfence) is only needed
->> for when you have uncached accesses (ie mmio) on x86. So I don't think
->> your code is wrong, I just want to verify that everybody understands
->> the issues. I'm not even sure DMA can ever really have weaker memory
->> ordering (I really don't see how you'd be able to do a read barrier
->> without DMA stores being ordered natively), so maybe I worry too much,
->> but the ppc people in particular should look at this, because the ppc
->> memory ordering rules and serialization are some completely odd ad-hoc
->> black magic....
-> Right, so now I see what's going on here. This isn't actually anything
-> to do with acquire/release (I don't know of any architectures that have
-> a read-barrier-acquire instruction), it's all about DMA to main memory.
-
-Actually it is sort of, I just hadn't realized it until I read some of 
-the explanations of the C11 acquire/release memory order specifics, but 
-I believe most network drivers are engaged in acquire/release logic 
-because we are usually using something such as a lockless descriptor 
-ring to pass data back and forth between the device and the system.  The 
-net win for device drivers is that we can remove some of the 
-heavy-weight barriers that are having to be used by making use of 
-lighter barriers or primitives such as lwsync vs sync in PowerPC or ldar 
-vs dsb(ld) on arm64.
-
-> If a device is DMA'ing data *and* control information (e.g. 'descriptor
-> valid') to memory, then it must be maintaining order between those writes
-> with respect to memory. In that case, using the usual MMIO barriers can
-> be overkill because we really just want to enforce read-ordering on the CPU
-> side. In fact, I think you could even do this with a fake address dependency
-> on ARM (although I'm not actually suggesting we do that).
+>> What about devices that really need to start once VBUS or CHG is connected?
 >
-> In light of that, it actually sounds like we want a new set of barrier
-> macros that apply only to DMA buffer accesses by the CPU -- they wouldn't
-> enforce ordering against things like MMIO registers. I wonder whether any
-> architectures would implement them differently to the smp_* flavours?
-
-My concern would be the cost of the barriers vs the acquire/release 
-primitives.  In the case of arm64 I am assuming there is a reason for 
-wanting to use ldar vs dsb instructions.  I would imagine the devices 
-drivers would want to get the same kind of advantages.
-
->> But anything with non-cache-coherent DMA is obviously very suspect too.
-> I think non-cache-coherent DMA should work too (at least, on ARM), but
-> only for buffers mapped via dma_alloc_coherent (i.e. a non-cacheable
-> mapping).
+> More handling can be added for some cases. With this patch the
+> poweron bits will clear to defaults if power is completely removed.
+> So start-up with VBUS and CHG works in that case.
 >
-> Will
+> However, if you have a battery connected, and you poweroff, with
+> this patch the device won't power up with VBUS or CHG connected.
+>
+> Note that most battery operated devices are not using the charger
+> on twl4030 because it has issues charging a completely empty
+> battery AFAIK. So most battery powered devices have been using an
+> external USB charger chip that's not affected by this patch.
 
-For now my plan is to focus on coherent memory only with this. 
-Specifically it is only really intended for use with dma_alloc_coherent.
+Pandora does, as well as GTA04 AFAIK, but that's not "most devices" I
+guess.. At least pandora was booting up on charger connect up until
+now. I don't know why shutdown used to work for Russell in legacy boot
+and it changed for DT, the device would always start up when there was
+AC power here.
 
-Thanks,
 
-Alex
+Grazvydas
+
+>
+> We could consider exporting a function for the charger driver to
+> configure the poweron mask. And we could also consider passing a
+> mask in ti,use_poweroff = 0xff.
+>
+>> It seems to me that forcing these bits on power off can break that kind of
+>> devices and these settings should really be board specific.
+>> What do you think?
+>
+> There's a patch series for "[RFC,01/16] kernel: Add support for
+> poweroff handler call chain" that should help with that. For sure
+> the poweroff handling needs to be board specific as some systems
+> may need to use a GPIO to shut off a regulator powering something
+> before powering off the SoC.
+>
+> Regards,
+>
+> Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
