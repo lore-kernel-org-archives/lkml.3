@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaKLVtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 16:49:21 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:52846 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942AbaKLVtU (ORCPT
+	id S1753573AbaKLVuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 16:50:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49426 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798AbaKLVuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 16:49:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141112213845.GA14153@dtor-ws>
-References: <20141112213845.GA14153@dtor-ws>
-Date: Wed, 12 Nov 2014 13:49:18 -0800
-X-Google-Sender-Auth: jLppc3PXpDsXT6IZkARD49MSbRI
-Message-ID: <CAD=FV=UsYWDw0wB6KSANXZYnnBFdTL9wOEqf9DoUF8aFuDpNSw@mail.gmail.com>
-Subject: Re: [PATCH] clk: rockchip: ensure HCLK_VIO2_H2P and PCLK_VIO2_H2P
- stay enabled
-From: Doug Anderson <dianders@chromium.org>
-To: Dmitry Torokhov <dtor@chromium.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Jianqun <jay.xu@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Mark yao <mark.yao@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 12 Nov 2014 16:50:12 -0500
+Date: Wed, 12 Nov 2014 13:50:09 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Drysdale <drysdale@google.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rich Felker <dalias@aerifal.cx>,
+        Christoph Hellwig <hch@infradead.org>, x86@kernel.org,
+        linux-arch@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCHv7 0/3] syscalls,x86: Add execveat() system call
+Message-Id: <20141112135009.5a887d200be262d94ba50495@linux-foundation.org>
+In-Reply-To: <1415379664-31555-1-git-send-email-drysdale@google.com>
+References: <1415379664-31555-1-git-send-email-drysdale@google.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri,  7 Nov 2014 17:01:01 +0000 David Drysdale <drysdale@google.com> wrote:
 
-On Wed, Nov 12, 2014 at 1:38 PM, Dmitry Torokhov <dtor@chromium.org> wrote:
-> Currently there is no driver owning these clocks and they have to stay
-> up for the system to function properly, so let's mark them as
-> CLK_IGNORE_UNUSED.
->
-> Without this patch we have trouble with suspend/resume and we have
-> trouble turning the eDP back on if it ever idles off.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-> ---
->  drivers/clk/rockchip/clk-rk3288.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> This patch set adds execveat(2) for x86, and is derived from Meredydd
+> Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
+> 
+> The primary aim of adding an execveat syscall is to allow an
+> implementation of fexecve(3) that does not rely on the /proc
+> filesystem, at least for executables (rather than scripts).  The
+> current glibc version of fexecve(3) is implemented via /proc, which
+> causes problems in sandboxed or otherwise restricted environments.
 
-I'm already on the signed-off-by (mostly because I tweaked the commit
-message and tested this), but in case anyone cares I have reviewed
-this and tested it.  ;)
-
-...obviously we want to get to the bottom of the right way to handle
-all of these clocks, but since we _just_ removed the blanket "leave
-all clocks enabled" adding a few clocks back into the fold seems sane
-until we get all our ducks in a row.
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
+Have the relevant glibc people seen/reviewed/liked this?  
