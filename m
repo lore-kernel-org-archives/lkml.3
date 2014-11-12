@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965765AbaKLBtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:49:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60920 "EHLO
+	id S965812AbaKLBuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:50:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60933 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965219AbaKLBtp (ORCPT
+	with ESMTP id S964953AbaKLBt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:45 -0500
+	Tue, 11 Nov 2014 20:49:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 006/123] lockd: Try to reconnect if statd has moved
-Date: Wed, 12 Nov 2014 10:16:12 +0900
-Message-Id: <20141112011719.280551358@linuxfoundation.org>
+        Ondrej Zary <linux@rainbow-software.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 009/123] libata-sff: Fix controllers with no ctl port
+Date: Wed, 12 Nov 2014 10:16:15 +0900
+Message-Id: <20141112011719.407947734@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,36 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit 173b3afceebe76fa2205b2c8808682d5b541fe3c upstream.
+commit 6d8ca28fa688a9354bc9fbc935bdaeb3651b6677 upstream.
 
-If rpc.statd is restarted, upcalls to monitor hosts can fail with
-ECONNREFUSED.  In that case force a lookup of statd's new port and retry the
-upcall.
+Currently, ata_sff_softreset is skipped for controllers with no ctl port.
+But that also skips ata_sff_dev_classify required for device detection.
+This means that libata is currently broken on controllers with no ctl port.
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+No device connected:
+[    1.872480] pata_isapnp 01:01.02: activated
+[    1.889823] scsi2 : pata_isapnp
+[    1.890109] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    6.888110] ata3.01: qc timeout (cmd 0xec)
+[    6.888179] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   16.888085] ata3.01: qc timeout (cmd 0xec)
+[   16.888147] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.888086] ata3.01: qc timeout (cmd 0xec)
+[   46.888148] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   51.888100] ata3.00: qc timeout (cmd 0xec)
+[   51.888160] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   61.888079] ata3.00: qc timeout (cmd 0xec)
+[   61.888141] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   91.888089] ata3.00: qc timeout (cmd 0xec)
+[   91.888152] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+
+ATAPI device connected:
+[    1.882061] pata_isapnp 01:01.02: activated
+[    1.893430] scsi2 : pata_isapnp
+[    1.893719] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    6.892107] ata3.01: qc timeout (cmd 0xec)
+[    6.892171] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   16.892079] ata3.01: qc timeout (cmd 0xec)
+[   16.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.892079] ata3.01: qc timeout (cmd 0xec)
+[   46.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.908586] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
+[   46.924570] ata3.00: configured for PIO0 (device error ignored)
+[   46.926295] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
+[   46.984519] sr0: scsi3-mmc drive: 6x/6x xa/form2 tray
+[   46.984592] cdrom: Uniform CD-ROM driver Revision: 3.20
+
+So don't skip ata_sff_softreset, just skip the reset part of ata_bus_softreset
+if the ctl port is not available.
+
+This makes IDE port on ES968 behave correctly:
+
+No device connected:
+[    4.670888] pata_isapnp 01:01.02: activated
+[    4.673207] scsi host2: pata_isapnp
+[    4.673675] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    7.081840] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
+
+ATAPI device connected:
+[    4.704362] pata_isapnp 01:01.02: activated
+[    4.706620] scsi host2: pata_isapnp
+[    4.706877] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    4.872782] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
+[    4.888673] ata3.00: configured for PIO0 (device error ignored)
+[    4.893984] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
+[    7.015578] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/mon.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/ata/libata-sff.c |   20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -159,6 +159,12 @@ static int nsm_mon_unmon(struct nsm_hand
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -2008,13 +2008,15 @@ static int ata_bus_softreset(struct ata_
  
- 	msg.rpc_proc = &clnt->cl_procinfo[proc];
- 	status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	if (status == -ECONNREFUSED) {
-+		dprintk("lockd:	NSM upcall RPC failed, status=%d, forcing rebind\n",
-+				status);
-+		rpc_force_rebind(clnt);
-+		status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
+ 	DPRINTK("ata%u: bus reset via SRST\n", ap->print_id);
+ 
+-	/* software reset.  causes dev0 to be selected */
+-	iowrite8(ap->ctl, ioaddr->ctl_addr);
+-	udelay(20);	/* FIXME: flush */
+-	iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
+-	udelay(20);	/* FIXME: flush */
+-	iowrite8(ap->ctl, ioaddr->ctl_addr);
+-	ap->last_ctl = ap->ctl;
++	if (ap->ioaddr.ctl_addr) {
++		/* software reset.  causes dev0 to be selected */
++		iowrite8(ap->ctl, ioaddr->ctl_addr);
++		udelay(20);	/* FIXME: flush */
++		iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
++		udelay(20);	/* FIXME: flush */
++		iowrite8(ap->ctl, ioaddr->ctl_addr);
++		ap->last_ctl = ap->ctl;
 +	}
- 	if (status < 0)
- 		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
- 				status);
+ 
+ 	/* wait the port to become ready */
+ 	return ata_sff_wait_after_reset(&ap->link, devmask, deadline);
+@@ -2215,10 +2217,6 @@ void ata_sff_error_handler(struct ata_po
+ 
+ 	spin_unlock_irqrestore(ap->lock, flags);
+ 
+-	/* ignore ata_sff_softreset if ctl isn't accessible */
+-	if (softreset == ata_sff_softreset && !ap->ioaddr.ctl_addr)
+-		softreset = NULL;
+-
+ 	/* ignore built-in hardresets if SCR access is not available */
+ 	if ((hardreset == sata_std_hardreset ||
+ 	     hardreset == sata_sff_hardreset) && !sata_scr_valid(&ap->link))
 
 
