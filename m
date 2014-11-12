@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933385AbaKLBeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59591 "EHLO
+	id S933435AbaKLBe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:34:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59606 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778AbaKLBeI (ORCPT
+	with ESMTP id S933394AbaKLBeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:08 -0500
+	Tue, 11 Nov 2014 20:34:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.17 274/319] posix-timers: Fix stack info leak in timer_create()
-Date: Wed, 12 Nov 2014 10:16:52 +0900
-Message-Id: <20141112011038.140012187@linuxfoundation.org>
+        Tony Battersby <tonyb@cybernetics.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.17 250/319] lib/scatterlist: fix memory leak with scsi-mq
+Date: Wed, 12 Nov 2014 10:16:28 +0900
+Message-Id: <20141112011034.143366246@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -31,45 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Tony Battersby <tonyb@cybernetics.com>
 
-commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
+commit c21e59d8dc04b2107bdb4ff0f412a9b7ae3349f3 upstream.
 
-If userland creates a timer without specifying a sigevent info, we'll
-create one ourself, using a stack local variable. Particularly will we
-use the timer ID as sival_int. But as sigev_value is a union containing
-a pointer and an int, that assignment will only partially initialize
-sigev_value on systems where the size of a pointer is bigger than the
-size of an int. On such systems we'll copy the uninitialized stack bytes
-from the timer_create() call to userland when the timer actually fires
-and we're going to deliver the signal.
+Fix a memory leak with scsi-mq triggered by commands with large data
+transfer length.
 
-Initialize sigev_value with 0 to plug the stack info leak.
-
-Found in the PaX patch, written by the PaX Team.
-
-Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: c53c6d6a68b1 ("scatterlist: allow chaining to preallocated chunks")
+Signed-off-by: Tony Battersby <tonyb@cybernetics.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/posix-timers.c |    1 +
- 1 file changed, 1 insertion(+)
+ lib/scatterlist.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/kernel/time/posix-timers.c
-+++ b/kernel/time/posix-timers.c
-@@ -636,6 +636,7 @@ SYSCALL_DEFINE3(timer_create, const cloc
- 			goto out;
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -203,10 +203,10 @@ void __sg_free_table(struct sg_table *ta
  		}
- 	} else {
-+		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
- 		event.sigev_notify = SIGEV_SIGNAL;
- 		event.sigev_signo = SIGALRM;
- 		event.sigev_value.sival_int = new_timer->it_id;
+ 
+ 		table->orig_nents -= sg_size;
+-		if (!skip_first_chunk) {
+-			free_fn(sgl, alloc_size);
++		if (skip_first_chunk)
+ 			skip_first_chunk = false;
+-		}
++		else
++			free_fn(sgl, alloc_size);
+ 		sgl = next;
+ 	}
+ 
 
 
