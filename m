@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908AbaKLWNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:13:52 -0500
-Received: from gproxy9-pub.mail.unifiedlayer.com ([69.89.20.122]:51232 "HELO
-	gproxy9-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752273AbaKLWNu (ORCPT
+	id S1753506AbaKLWOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:14:51 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:8683 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752273AbaKLWOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:13:50 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 17:13:50 EST
-X-Authority-Analysis: v=2.1 cv=b7chvL2x c=1 sm=1 tr=0
- a=9W6Fsu4pMcyimqnCr1W0/w==:117 a=9W6Fsu4pMcyimqnCr1W0/w==:17 a=cNaOj0WVAAAA:8
- a=f5113yIGAAAA:8 a=kj9zAlcOel0A:10 a=TBVoxVdAAAAA:8 a=GhZ5P8ky69gA:10
- a=noBwr2J6l1kA:10 a=wkt-CnUX7WkRnzVWUtUA:9 a=CjuIK1q_8ugA:10
-Date: Wed, 12 Nov 2014 14:07:41 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Joerg Roedel <jroedel@suse.de>
-Cc: Oded Gabbay <oded.gabbay@amd.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: export find_extend_vma and handle_mm_fault for
- driver use
-Message-ID: <20141112140741.0ebef398@jbarnes-hsw>
-In-Reply-To: <20141106130122.GJ8354@suse.de>
-References: <1414179271-7621-1-git-send-email-jbarnes@virtuousgeek.org>
-	<20141027151327.GE9734@suse.de>
-	<544E61A1.7090400@amd.com>
-	<20141027083552.4af5753f@jbarnes-hsw>
-	<5450B472.1020301@amd.com>
-	<20141105120351.GH8354@suse.de>
-	<20141105135109.39ea54fe@jbarnes-hsw>
-	<20141106130122.GJ8354@suse.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 12 Nov 2014 17:14:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Au0NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2aHUQKBHBcBAXyEAgEBBAEjBBEeIgEQIwICBRYEBwICCQMCAQIBJxUJBg0BBwEBFogeCQ22b5R2AQEBAQEBAQMBAQEBAQEBARqBLIUIiXIRAVAHgneBVAEEi2SEBYZmiEOGO4cjgx+CEYFvgjSBYh8vgQ+BPAEBAQ
+X-IPAS-Result: Au0NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2aHUQKBHBcBAXyEAgEBBAEjBBEeIgEQIwICBRYEBwICCQMCAQIBJxUJBg0BBwEBFogeCQ22b5R2AQEBAQEBAQMBAQEBAQEBARqBLIUIiXIRAVAHgneBVAEEi2SEBYZmiEOGO4cjgx+CEYFvgjSBYh8vgQ+BPAEBAQ
+X-IronPort-AV: E=Sophos;i="5.04,797,1406606400"; 
+   d="scan'208";a="96795868"
+Message-ID: <5463DBD5.9080303@voxpopuli.im>
+Date: Wed, 12 Nov 2014 17:14:45 -0500
+From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Trace Compass Developer Discussions 
+	<tracecompass-dev@eclipse.org>
+Subject: Support for Perf CTF traces now in master (was Re: FW: [RFC 0/5]
+ perf tools: Add perf data CTF conversion)
+References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im> <5457C259.8030605@linutronix.de> <545829CA.7040900@voxpopuli.im> <20141105125028.GA30087@linutronix.de> <545AEA37.601@voxpopuli.im> <5460156E.3050601@voxpopuli.im>
+In-Reply-To: <5460156E.3050601@voxpopuli.im>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Nov 2014 14:01:22 +0100
-Joerg Roedel <jroedel@suse.de> wrote:
 
-> On Wed, Nov 05, 2014 at 01:51:09PM -0800, Jesse Barnes wrote:
-> > On Wed, 5 Nov 2014 13:03:51 +0100
-> > Joerg Roedel <jroedel@suse.de> wrote:
-> > > Thanks for testing Oded. Jesse, the patch looks good to me, except the
-> > > task accounting for the page-faults. I'd like to get rid of using
-> > > task_struct in the IOMMUv2 driver entirely if possible. Also it is not
-> > > really the CPU task causing the faults, but some non-CPU process.
-> > 
-> > Hm, but the CPU task initiates the activity on the GPU, so we should
-> > account for it somewhere, right?  I guess I had been thinking of the
-> > "task" as spanning the CPUs and GPUs and other devices in the system,
-> > rather than just representing the CPU activity.
-> 
-> One problem is that the task that called amd_iommu_bind_pasid() isn't
-> necessarily the same task (thread) that queues the jobs to the device.
-> The thread that called amd_iommu_bind_pasid() might even exit while
-> other threads still use the mappings.
-> 
-> Besides that, from an abstract point of view, what is running on the
-> device (GPU) is a logically seperate 'thread' of the process which we
-> should account for seperatly. If we want accounting for these off-CPU
-> threads we should probably introduce some concept of a non-CPU task to
-> the kernel and do the accounting there?
+On 11/09/2014 08:31 PM, Alexandre Montplaisir wrote:
+> On 2014-11-05 10:25 PM, Alexandre Montplaisir wrote:
+>>
+>>>
+>>>> But if you could for example tell me the perf equivalents of all the
+>>>> strings in that file, I could hack together such wrapper. With that,
+>>>> in theory, perf traces should behave exactly the same as LTTng traces
+>>>> in the viewer!
+>>> Oooh, that would be awesome. So I installed maven but didn't get much
+>>> further. Let me gather this for you.
+>>
+>> Awesome, thanks!
+>>
+>> I am travelling this week, so I'm a bit busy, but I will try to 
+>> prototype a "wrapper" for the kernel analysis, and adding support for 
+>> the perf events, whenever I have a chance. I'll keep you posted.
+>
+> Ok, some good news!
+>
+> I managed to get the CTF traces from perf working in Trace Compass! 
+> See attached screenshots. This is showing the "ctf-out2" trace from 
+> your previous email. The other trace seems to have less events 
+> enabled, so it would only show some WAIT_FOR_CPU states in the view.
+>
+> If anybody wishes to try it, you can grab the whole branch ending at 
+> https://git.eclipse.org/r/#/c/36200/ . Or run:
+> $ git fetch 
+> git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass 
+> refs/changes/00/36200/3 && git checkout FETCH_HEAD
 
-Yeah those are good points; I hadn't been thinking of multi-threaded
-stuff.  Logically the GPU stuff really is a separate thread in that
-sense, so monitoring faults separately makes sense.
+Just a quick note, this branch is now merged to master. So anyone who 
+pulls the code from the master branch at
+git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass.git
+should be able to load perf-CTF traces in the viewer. The trace type is 
+now called "Common Trace Format -> Linux Kernel Trace" and should 
+support both LTTng kernel and perf traces in CTF format (although 
+auto-detection should work in most cases).
 
-I wonder if we need a new "device_task_struct" or
-"coprocessor_task_struct" or something to wrap some simple stuff on
-non-CPU devices.  They could be sub-classed by drivers that needed
-additional driver specific data.
+This was based on the most recent file format I was aware of, we will 
+update it accordingly if required.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Testing welcome!
+
+Cheers,
+Alexandre
+
+>
+> It reuses much of the code from the LTTng analysis, which is why it 
+> was relatively quick to do. For now, it looks for the domain in the 
+> CTF environment to be "kernel-perf". But this will be easy to update, 
+> if needed, once the final format is decided.
+>
+> Maybe I missed it, but I couldn't find the system call names in the 
+> trace. Using the sys_enter and sys_exit events, the viewer is able to 
+> determine the kernel-mode states (in blue), but we cannot show the 
+> exact system call names like we do with LTTng.
+> There is also something weird with the arrows in the Control Flow View 
+> (disabled in the screenshot), I don't know if it's due to the 
+> particularity of the trace or to a bug in the view. We'll investigate.
+>
+> Feedback is very welcome.
+>
+> Cheers,
+> Alexandre
+
