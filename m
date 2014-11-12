@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964884AbaKLBjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:39:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60021 "EHLO
+	id S934156AbaKLBj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:39:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964843AbaKLBjU (ORCPT
+	with ESMTP id S964881AbaKLBjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:39:20 -0500
+	Tue, 11 Nov 2014 20:39:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ondrej Zary <linux@rainbow-software.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 019/203] libata-sff: Fix controllers with no ctl port
-Date: Wed, 12 Nov 2014 10:14:49 +0900
-Message-Id: <20141112011543.582107644@linuxfoundation.org>
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH 3.14 046/203] UBI: add missing kmem_cache_free() in process_pool_aeb error path
+Date: Wed, 12 Nov 2014 10:15:16 +0900
+Message-Id: <20141112011544.818634928@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,110 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-commit 6d8ca28fa688a9354bc9fbc935bdaeb3651b6677 upstream.
+commit 1bf1890e86869032099b539bc83b098be12fc5a7 upstream.
 
-Currently, ata_sff_softreset is skipped for controllers with no ctl port.
-But that also skips ata_sff_dev_classify required for device detection.
-This means that libata is currently broken on controllers with no ctl port.
+I ran into this error after a ubiupdatevol, because I forgot to backport
+e9110361a9a4 UBI: fix the volumes tree sorting criteria.
 
-No device connected:
-[    1.872480] pata_isapnp 01:01.02: activated
-[    1.889823] scsi2 : pata_isapnp
-[    1.890109] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    6.888110] ata3.01: qc timeout (cmd 0xec)
-[    6.888179] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   16.888085] ata3.01: qc timeout (cmd 0xec)
-[   16.888147] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.888086] ata3.01: qc timeout (cmd 0xec)
-[   46.888148] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   51.888100] ata3.00: qc timeout (cmd 0xec)
-[   51.888160] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   61.888079] ata3.00: qc timeout (cmd 0xec)
-[   61.888141] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   91.888089] ata3.00: qc timeout (cmd 0xec)
-[   91.888152] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+UBI error: process_pool_aeb: orphaned volume in fastmap pool
+UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
+kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
+[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
+[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
+[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
+[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
+[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
+[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
+[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
+[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
+[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
+UBI: scanning is finished
 
-ATAPI device connected:
-[    1.882061] pata_isapnp 01:01.02: activated
-[    1.893430] scsi2 : pata_isapnp
-[    1.893719] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    6.892107] ata3.01: qc timeout (cmd 0xec)
-[    6.892171] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   16.892079] ata3.01: qc timeout (cmd 0xec)
-[   16.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.892079] ata3.01: qc timeout (cmd 0xec)
-[   46.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.908586] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
-[   46.924570] ata3.00: configured for PIO0 (device error ignored)
-[   46.926295] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
-[   46.984519] sr0: scsi3-mmc drive: 6x/6x xa/form2 tray
-[   46.984592] cdrom: Uniform CD-ROM driver Revision: 3.20
+Freeing the cache in the error path fixes the Slab error.
 
-So don't skip ata_sff_softreset, just skip the reset part of ata_bus_softreset
-if the ctl port is not available.
+Tested on at91sam9g35 (3.14.18+fastmap backports)
 
-This makes IDE port on ES968 behave correctly:
-
-No device connected:
-[    4.670888] pata_isapnp 01:01.02: activated
-[    4.673207] scsi host2: pata_isapnp
-[    4.673675] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    7.081840] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
-
-ATAPI device connected:
-[    4.704362] pata_isapnp 01:01.02: activated
-[    4.706620] scsi host2: pata_isapnp
-[    4.706877] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    4.872782] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
-[    4.888673] ata3.00: configured for PIO0 (device error ignored)
-[    4.893984] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
-[    7.015578] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-sff.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ drivers/mtd/ubi/fastmap.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2008,13 +2008,15 @@ static int ata_bus_softreset(struct ata_
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_d
+ 		av = tmp_av;
+ 	else {
+ 		ubi_err("orphaned volume in fastmap pool!");
++		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
+ 		return UBI_BAD_FASTMAP;
+ 	}
  
- 	DPRINTK("ata%u: bus reset via SRST\n", ap->print_id);
- 
--	/* software reset.  causes dev0 to be selected */
--	iowrite8(ap->ctl, ioaddr->ctl_addr);
--	udelay(20);	/* FIXME: flush */
--	iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
--	udelay(20);	/* FIXME: flush */
--	iowrite8(ap->ctl, ioaddr->ctl_addr);
--	ap->last_ctl = ap->ctl;
-+	if (ap->ioaddr.ctl_addr) {
-+		/* software reset.  causes dev0 to be selected */
-+		iowrite8(ap->ctl, ioaddr->ctl_addr);
-+		udelay(20);	/* FIXME: flush */
-+		iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
-+		udelay(20);	/* FIXME: flush */
-+		iowrite8(ap->ctl, ioaddr->ctl_addr);
-+		ap->last_ctl = ap->ctl;
-+	}
- 
- 	/* wait the port to become ready */
- 	return ata_sff_wait_after_reset(&ap->link, devmask, deadline);
-@@ -2215,10 +2217,6 @@ void ata_sff_error_handler(struct ata_po
- 
- 	spin_unlock_irqrestore(ap->lock, flags);
- 
--	/* ignore ata_sff_softreset if ctl isn't accessible */
--	if (softreset == ata_sff_softreset && !ap->ioaddr.ctl_addr)
--		softreset = NULL;
--
- 	/* ignore built-in hardresets if SCR access is not available */
- 	if ((hardreset == sata_std_hardreset ||
- 	     hardreset == sata_sff_hardreset) && !sata_scr_valid(&ap->link))
 
 
