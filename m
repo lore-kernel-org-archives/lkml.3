@@ -1,184 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaKLAOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 19:14:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:50619 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751712AbaKLAOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 19:14:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
-   d="scan'208";a="630447662"
-Date: Wed, 12 Nov 2014 07:53:20 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH v4] sched/deadline: support dl task migration during cpu
- hotplug
-Message-ID: <20141111235320.GA3946@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1415673043-62281-1-git-send-email-wanpeng.li@linux.intel.com>
- <1415704209.15631.14.camel@tkhai>
- <546209FD.8060102@gmail.com>
- <1415711354.15631.15.camel@tkhai>
+	id S1752484AbaKLAOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 19:14:16 -0500
+Received: from mail-bn1bon0082.outbound.protection.outlook.com ([157.56.111.82]:52224
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751712AbaKLAOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 19:14:10 -0500
+From: <tthayer@opensource.altera.com>
+To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <dinguyen@opensource.altera.com>,
+        <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
+        <tthayer@opensource.altera.com>
+Subject: [PATCHv5 0/5] Add Altera peripheral memories to EDAC framework
+Date: Tue, 11 Nov 2014 18:14:18 -0600
+Message-ID: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415711354.15631.15.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY2PR06CA049.namprd06.prod.outlook.com (10.141.250.167) To
+ BLUPR03MB118.namprd03.prod.outlook.com (10.255.212.19)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB118;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB118;
+X-Forefront-PRVS: 03932714EB
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(87286001)(48376002)(101416001)(104166001)(66066001)(87976001)(46102003)(50466002)(64706001)(19580395003)(33646002)(21056001)(19580405001)(69596002)(86362001)(92566001)(89996001)(86152002)(92726001)(2201001)(95666004)(99396003)(81156004)(42186005)(106356001)(97736003)(120916001)(105586002)(31966008)(4396001)(62966003)(77096003)(77156002)(50226001)(50986999)(122386002)(107046002)(47776003)(20776003)(102836001)(40100003)(53416004)(229853001)(921003)(1121002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB118;H:dinh-ubuntu.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB118;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB165;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
-On Tue, Nov 11, 2014 at 04:09:14PM +0300, Kirill Tkhai wrote:
->В Вт, 11/11/2014 в 21:07 +0800, Wanpeng Li пишет:
->> Hi Kirill,
->> On 11/11/14, 7:10 PM, Kirill Tkhai wrote:
->> > В Вт, 11/11/2014 в 10:30 +0800, Wanpeng Li пишет:
->> >> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
->> >> addition, task may/may not be running again if cpu is added back. The root cause
->> >> which I found is that dl task will be throtted and removed from dl rq after
->> >> comsuming all budget, which leads to stop task can't pick it up from dl rq and
->> >> migrate to other cpus during hotplug.
->> >>
->> >> The method to reproduce:
->> >> schedtool -E -t 50000:100000 -e ./test
->> >> Actually test is just a simple for loop. Then observe which cpu the test
->> >> task is on.
->> >> echo 0 > /sys/devices/system/cpu/cpuN/online
->> >>
->> >> This patch fix it by push the task to another cpu in dl_task_timer() if
->> >> rq is offline.
->> >>
->> >> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> > I'm still thinking we don't have to guarantee any "deadlines" during cpu hotplug...
->> > But, if speaking about this way:
->> >
->> >> ---
->> >> v3 -> v4:
->> >>   * use tsk_cpus_allowed wrapper
->> >>   * fix compile error
->> >> v2 -> v3:
->> >>   * don't get_task_struct
->> >>   * if cannot preempt any rq, fallback to pick any online cpus
->> >>   * use cpu_active_mask as original later_mask if cpu is offline
->> >> v1 -> v2:
->> >>   * push the task to another cpu in dl_task_timer() if rq is offline.
->> >>
->> >>
->> >>   kernel/sched/deadline.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++---
->> >>   1 file changed, 48 insertions(+), 3 deletions(-)
->> >>
->> >> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> >> index 00324af..e0fbba4 100644
->> >> --- a/kernel/sched/deadline.c
->> >> +++ b/kernel/sched/deadline.c
->> >> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
->> >>   	return hrtimer_active(&dl_se->dl_timer);
->> >>   }
->> >>   
->> >> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
->> >>   /*
->> >>    * This is the bandwidth enforcement timer callback. If here, we know
->> >>    * a task is not on its dl_rq, since the fact that the timer was running
->> >> @@ -538,6 +539,46 @@ again:
->> >>   	update_rq_clock(rq);
->> >>   	dl_se->dl_throttled = 0;
->> >>   	dl_se->dl_yielded = 0;
->> >> +
->> >> +	/*
->> >> +	 * So if we find that the rq the task was on is no longer
->> >> +	 * available, we need to select a new rq.
->> >> +	 */
->> >> +	if (!rq->online) {
->> >> +		struct rq *later_rq = NULL;
->> >> +
->> >> +		raw_spin_unlock(&rq->lock);
->> >> +
->> >> +		later_rq = find_lock_later_rq(p, rq);
->> > find_lock_later_rq() expects that rq is locked.
->> >
->> > The comment near its head confuses a reader. It locks newly found rq.
->> 
->> Sorry for my bad, what's you think should be changed?
->
->raw_spin_unlock(&rq->lock) is wrong here. It's not need.
->
+From: Thor Thayer <tthayer@opensource.altera.com>
 
-The machine down after remove this.
+This patch adds the L2 cache and OCRAM peripherals to the EDAC framework
+using the EDAC device framework. The ECC is enabled early in the boot
+process in the platform specific code.
 
-Regards,
-Wanpeng Li 
+v2 changes:
+- Split On-Chip RAM ECC platform initialization into separate patch from
+  L2 ECC platform initialization.
+- Fix L2 cache dependency comments.
+- Remove OCRAM node from dts and reference prior patch.
 
->> 
->> >
->> >> +
->> >> +		if (!later_rq) {
->> >> +			int cpu;
->> >> +
->> >> +			/*
->> >> +			 * If cannot preempt any rq, fallback to pick any
->> >> +			 * online cpu.
->> >> +			 */
->> >> +			for_each_cpu(cpu, tsk_cpus_allowed(p))
->> >> +				if (cpu_online(cpu))
->> >> +					later_rq = cpu_rq(cpu);
->> >> +			if (!later_rq) {
->> >> +				pr_warn("fail to find any online and task "
->> >> +				    "will never come back to us\n");
->> >> +				goto out;
->> >> +			}
->> >> +		}
->> >> +
->> >> +		deactivate_task(rq, p, 0);
->> >> +		set_task_cpu(p, later_rq->cpu);
->> >> +		activate_task(later_rq, p, 0);
->> >> +
->> >> +		resched_curr(later_rq);
->> >> +
->> >> +		double_unlock_balance(rq, later_rq);
->> > double_unlock_balance() unlocks later_rq only.
->> >
->> >> +
->> >> +		goto out;
->> >> +	}
->> >> +
->> >>   	if (task_on_rq_queued(p)) {
->> >>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
->> >>   		if (dl_task(rq->curr))
->> >> @@ -555,7 +596,7 @@ again:
->> >>   	}
->> >>   unlock:
->> >>   	raw_spin_unlock(&rq->lock);
->> >> -
->> >> +out:
->> >>   	return HRTIMER_NORESTART;
->> >>   }
->> >>   
->> >> @@ -1185,8 +1226,12 @@ static int find_later_rq(struct task_struct *task)
->> >>   	 * We have to consider system topology and task affinity
->> >>   	 * first, then we can look for a suitable cpu.
->> >>   	 */
->> >> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
->> >> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
->> >> +	if (likely(task_rq(task)->online)) {
->> >> +		cpumask_copy(later_mask, task_rq(task)->rd->span);
->> >> +		cpumask_and(later_mask, later_mask, cpu_active_mask);
->> >> +	} else
->> >> +		/* for offline cpus we have a singleton rd */
->> >> +		cpumask_copy(later_mask, cpu_active_mask);
->> >>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->> >>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->> >>   			task, later_mask);
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->> 
->
+v3 changes:
+- Move L2 cache & On-Chip RAM EDAC code into altera_edac.c
+- Remove SDRAM module compile.
+
+v4 changes:
+- Change mask defines to use BIT().
+- Fix comment style to agree with kernel coding style.
+- Better printk description for read != write in trigger.
+- Remove SysFS debugging message.
+- Better dci->mod_name
+- Move gen_pool pointer assignment to end of function.
+- Invert logic to reduce indent in ocram depenency check.
+- Change from dev_err() to edac_printk()
+- Replace magic numbers with defines & comments.
+- Improve error injection test.
+- Change Makefile intermediary name to altr (from alt)
+
+v5 changes:
+- Remove l2cache.h by using if (IS_ENABLED(CONFIG_EDAC_ALTERA_L2C))
+- Remove ocram.h by using if (IS_ENABLED(CONFIG_EDAC_ALTERA_OCRAM))
+- Check prop variable before using. Include io.h.
+- Add defines for better readability. Remove MAINTAINERS changes.
+
+Thor Thayer (5):
+  arm: socfpga: Enable L2 Cache ECC on startup.
+  arm: socfpga: Enable OCRAM ECC on startup.
+  edac: altera: Remove SDRAM module compile
+  edac: altera: Add Altera L2 Cache and OCRAM EDAC Support
+  arm: dts: Add Altera L2 Cache and OCRAM EDAC
+
+ .../bindings/arm/altera/socfpga-l2-edac.txt        |   15 +
+ .../bindings/arm/altera/socfpga-ocram-edac.txt     |   16 +
+ arch/arm/boot/dts/socfpga.dtsi                     |   15 +-
+ arch/arm/mach-socfpga/Makefile                     |    2 +
+ arch/arm/mach-socfpga/core.h                       |    3 +
+ arch/arm/mach-socfpga/l2_cache.c                   |   41 ++
+ arch/arm/mach-socfpga/ocram.c                      |   90 ++++
+ arch/arm/mach-socfpga/socfpga.c                    |   13 +-
+ drivers/edac/Kconfig                               |   18 +-
+ drivers/edac/Makefile                              |    5 +-
+ drivers/edac/altera_edac.c                         |  481 +++++++++++++++++++-
+ 11 files changed, 693 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-l2-edac.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-ocram-edac.txt
+ create mode 100644 arch/arm/mach-socfpga/l2_cache.c
+ create mode 100644 arch/arm/mach-socfpga/ocram.c
+
+-- 
+1.7.9.5
+
