@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaKLKDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:03:06 -0500
-Received: from michael.mail.tiscali.it ([213.205.33.246]:43206 "EHLO
-	michael.mail.tiscali.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954AbaKLKDC (ORCPT
+	id S1752373AbaKLKIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:08:46 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:57713 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751679AbaKLKIn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 05:03:02 -0500
-X-Greylist: delayed 501 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 05:03:02 EST
-Message-ID: <54632E58.60709@assyoma.it>
-Date: Wed, 12 Nov 2014 10:54:32 +0100
-From: Gionatan Danti <g.danti@assyoma.it>
-Organization: Assyoma s.r.l.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 12 Nov 2014 05:08:43 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="43266644"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
+Subject: [PATCH v7 0/2] ns, procfs: pid conversion between ns and showing pidns hierarchy
+Date: Wed, 12 Nov 2014 18:08:17 +0800
+Message-ID: <1415786899-13392-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: g.danti@assyoma.it
-Subject: Re: AHCI maximum transfer size
-References: <a39687c7cc1c7137f0187aea4ee38676@assyoma.it> <5417FB30.8030908@assyoma.it>
-In-Reply-To: <5417FB30.8030908@assyoma.it>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/09/2014 10:56, Gionatan Danti wrote:
->> Hi all,
->> I searched the list and the internet for this question, but I did not
->> find a definitive answer.
->>
->> I wonder what is the maximum AHCI transfer size for kernel 2.6.32.x
->> Let me explain: using a command as "dd if=/dev/zero of=/dev/sda bs=2M" I
->> can see, via iostat, that request-size is at 2M (as expected). However
->> it seems to me that the effective transfer size is way lower: disabling
->> writeback cache on the target disk, I see very low performance even for
->> big-chunk transfers.
->>
->> Googling, I found this post on stackoverflow stating that maximum
->> observerd AHCI transfer size (with a SATA protocol analyzer) is 128KB:
->> http://stackoverflow.com/questions/24053662/how-to-enlarge-sata-transfer-size-in-linux-ahci-driver.
->>
->>
->> The stackoverflow post seems to agree with this old LWN.net article:
->> http://lwn.net/Articles/77981/
->>
->> Anyone has any idea of how to find (and eventually change) the used AHCI
->> transfer size without touching the code?
->>
->> NOTE: please CC me directly.
->> Regards.
->>
->
-> Hi all,
-> any idea on the subject?
->
-> Regards.
+This series will expose pid inside containers
+via procfs.
+Also show the hierarchy of pid namespcae.
+Then we could know how pid looks inside a container
+and their ns relationships.
 
-Hi guys,
-anyone with a suggestion?
+1. helpful for nested container check/restore
+>From /proc/PID/ns/pid, we could know whether two pid lived
+in the same ns.
+>From this patch, we could know whether two pid had relationship
+between each other.
 
-Thank you.
+2. used for pid translation from container
+Ex:
+     init_pid_ns    ns1         ns2
+ t1  2
+ t2   `- 3          1
+ t3   `- 4          3
+ t4       `- 5      `- 5        1
+ t5       `- 6      `- 8        3
+
+It could solve problems like: we see a pid 3 goes wrong
+in container's log, what is its pid on hosts:
+a) inside container:
+# readlink /proc/3/ns/pid
+pid:[4026532388]
+
+b) on host:
+We show it in the form of :
+<init_PID> <parent_of_init_PID> <relative PID level>
+
+# cat /proc/pidns_hierarchy
+14918 1 1
+16263 14918 2
+16581 1 1
+Then we could easily find /proc/16263/ns/pid->4026532388.
+On host, we knew that reported pid 3 is in level 2,
+   and its parental pid ns is from pid 14918.
+
+c) on host, check child of 16263, grep it from status:
+NSpid:  16268   8       3
+
+We knew that pid 16268 is pid 3 reported by container.
+
+v7: change stype to be consistent with current interface like
+    <init_PID> <parent_of_init_PID> <relative PID level>
+    remove EXPERT dependent in Kconfig
+v6: fix some get_pid leaks and do some cleanups
+v5: collect pid by find_ge_pid;
+    use local list inside nslist_proc_show;
+    use get_pid, remove mutex lock.
+v4: simplify pid collection and some performance optimizamtion
+    fix another race issue.
+v3: fix a race issue and memory leak issue in pidns_hierarchy;
+    add another two fielsd: NSpgid and NSsid.
+v2: use a procfs text file instead of dirs under /proc for
+    showing pidns hierarchy;
+    add two new fields: NStgid and NSpid
+    keep fields of Tgid and Pid unchanged for back compatibility.
+
+Chen Hanxiao (2):
+  procfs: show hierarchy of pid namespace
+  /proc/PID/status: show all sets of pid according to ns
+
+ fs/proc/Kconfig           |   6 +
+ fs/proc/Makefile          |   1 +
+ fs/proc/array.c           |  17 +++
+ fs/proc/pidns_hierarchy.c | 280 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 304 insertions(+)
+ create mode 100644 fs/proc/pidns_hierarchy.c
 
 -- 
-Danti Gionatan
-Supporto Tecnico
-Assyoma S.r.l. - www.assyoma.it
-email: g.danti@assyoma.it - info@assyoma.it
-GPG public key ID: FF5F32A8
+1.9.3
+
