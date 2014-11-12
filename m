@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934664AbaKLBoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:44:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60524 "EHLO
+	id S934683AbaKLBoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:44:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60535 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933477AbaKLBoQ (ORCPT
+	with ESMTP id S933477AbaKLBoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:44:16 -0500
+	Tue, 11 Nov 2014 20:44:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Theodore Tso <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>
-Subject: [PATCH 3.14 097/203] jbd2: free bh when descriptor block checksum fails
-Date: Wed, 12 Nov 2014 10:16:07 +0900
-Message-Id: <20141112011547.142000977@linuxfoundation.org>
+        Cong Wang <xiyou.wangcong@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 124/203] freezer: Do not freeze tasks killed by OOM killer
+Date: Wed, 12 Nov 2014 10:16:34 +0900
+Message-Id: <20141112011548.360670804@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,34 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
-commit 064d83892e9ba547f7d4eae22cbca066d95210ce upstream.
+commit 51fae6da640edf9d266c94f36bc806c63c301991 upstream.
 
-Free the buffer head if the journal descriptor block fails checksum
-verification.
+Since f660daac474c6f (oom: thaw threads if oom killed thread is frozen
+before deferring) OOM killer relies on being able to thaw a frozen task
+to handle OOM situation but a3201227f803 (freezer: make freezing() test
+freeze conditions in effect instead of TIF_FREEZE) has reorganized the
+code and stopped clearing freeze flag in __thaw_task. This means that
+the target task only wakes up and goes into the fridge again because the
+freezing condition hasn't changed for it. This reintroduces the bug
+fixed by f660daac474c6f.
 
-This is the jbd2 port of the e2fsprogs patch "e2fsck: free bh on csum
-verify error in do_one_pass".
+Fix the issue by checking for TIF_MEMDIE thread flag in
+freezing_slow_path and exclude the task from freezing completely. If a
+task was already frozen it would get woken by __thaw_task from OOM killer
+and get out of freezer after rechecking freezing().
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Changes since v1
+- put TIF_MEMDIE check into freezing_slowpath rather than in __refrigerator
+  as per Oleg
+- return __thaw_task into oom_scan_process_thread because
+  oom_kill_process will not wake task in the fridge because it is
+  sleeping uninterruptible
+
+[mhocko@suse.cz: rewrote the changelog]
+Fixes: a3201227f803 (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE)
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/recovery.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/freezer.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -525,6 +525,7 @@ static int do_one_pass(journal_t *journa
- 			    !jbd2_descr_block_csum_verify(journal,
- 							  bh->b_data)) {
- 				err = -EIO;
-+				brelse(bh);
- 				goto failed;
- 			}
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -42,6 +42,9 @@ bool freezing_slow_path(struct task_stru
+ 	if (p->flags & (PF_NOFREEZE | PF_SUSPEND_TASK))
+ 		return false;
+ 
++	if (test_thread_flag(TIF_MEMDIE))
++		return false;
++
+ 	if (pm_nosig_freezing || cgroup_freezing(p))
+ 		return true;
  
 
 
