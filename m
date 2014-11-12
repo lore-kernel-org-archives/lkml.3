@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713AbaKLB17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:27:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59027 "EHLO
+	id S965190AbaKLDt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:49:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455AbaKLB14 (ORCPT
+	with ESMTP id S932424AbaKLB1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:56 -0500
+	Tue, 11 Nov 2014 20:27:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.17 163/319] ext4: enable journal checksum when metadata checksum feature enabled
-Date: Wed, 12 Nov 2014 10:15:01 +0900
-Message-Id: <20141112011019.650097827@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH 3.17 162/319] ext4: fix overflow when updating superblock backups after resize
+Date: Wed, 12 Nov 2014 10:15:00 +0900
+Message-Id: <20141112011019.478867695@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,33 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 98c1a7593fa355fda7f5a5940c8bf5326ca964ba upstream.
+commit 9378c6768e4fca48971e7b6a9075bc006eda981d upstream.
 
-If metadata checksumming is turned on for the FS, we need to tell the
-journal to use checksumming too.
+When there are no meta block groups update_backups() will compute the
+backup block in 32-bit arithmetics thus possibly overflowing the block
+number and corrupting the filesystem. OTOH filesystems without meta
+block groups larger than 16 TB should be rare. Fix the problem by doing
+the counting in 64-bit arithmetics.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Coverity-id: 741252
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/ext4/resize.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3498,6 +3498,10 @@ static int ext4_fill_super(struct super_
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
- 	set_opt(sb, POSIX_ACL);
- #endif
-+	/* don't forget to enable journal_csum when metadata_csum is enabled. */
-+	if (ext4_has_metadata_csum(sb))
-+		set_opt(sb, JOURNAL_CHECKSUM);
-+
- 	if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_DATA)
- 		set_opt(sb, JOURNAL_DATA);
- 	else if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_ORDERED)
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1081,7 +1081,7 @@ static void update_backups(struct super_
+ 			break;
+ 
+ 		if (meta_bg == 0)
+-			backup_block = group * bpg + blk_off;
++			backup_block = ((ext4_fsblk_t)group) * bpg + blk_off;
+ 		else
+ 			backup_block = (ext4_group_first_block_no(sb, group) +
+ 					ext4_bg_has_super(sb, group));
 
 
