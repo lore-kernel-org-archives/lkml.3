@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaKLOM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:12:58 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48153 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516AbaKLOM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:12:57 -0500
-Date: Wed, 12 Nov 2014 15:12:50 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Anvin, H Peter" <h.peter.anvin@intel.com>
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH 3/6] x86: Add support for the clwb instruction
-Message-ID: <20141112141250.GE16807@pd.tnic>
-References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
- <1415731396-19364-4-git-send-email-ross.zwisler@linux.intel.com>
- <20141112123909.GD16807@pd.tnic>
- <C40DC70F50313144AB3AF8625D4F407F71D61056@ORSMSX101.amr.corp.intel.com>
+	id S1752915AbaKLON2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:13:28 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:56891 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752532AbaKLON1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 09:13:27 -0500
+X-Listener-Flag: 11101
+Subject: Re: [patch 00/16] genirq: Hierarchical irq domains and generic MSI
+ interrupt code
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yijing Wang <wangyijing@huawei.com>
+In-Reply-To: <20141112133941.647950773@linutronix.de>
+References: <20141112133941.647950773@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Nov 2014 22:13:20 +0800
+Message-ID: <1415801600.17958.6.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <C40DC70F50313144AB3AF8625D4F407F71D61056@ORSMSX101.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 01:38:45PM +0000, Anvin, H Peter wrote:
-> No, it doesn't.  x86 requires 3.4+ at a minimum.
+On Wed, 2014-11-12 at 13:42 +0000, Thomas Gleixner wrote:
+> This is an extract from Jiangs various patch series which only
+> contains the generic irq and MSI parts w/o the x86 specific
+> modifications.
+> 
+> This is roughly what I plan to merge into the generic irq core, so the
+> various outstanding patches (irqchip/x86/...) can be based on this.
+> 
+> It's available from git as well:
+> 
+>     git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/irqdomain
+> 
+> Note, that branch is not yet exposed to linux-next and subject to
+> modifications including rebasing.
 
-The only test I see is:
+Hi,
 
-#if GCC_VERSION < 30200
-# error Sorry, your compiler is too old - please upgrade it.
-#endif
+I checked the branch and it is just plain v3.18-rc4. Is this branch
+ready now?
 
-And even if we do require 3.4, the build fails with 4.1+ so...
+https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/log/?h=irq/irqdomain
 
--- 
-Regards/Gruss,
-    Boris.
+Joe.C
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
