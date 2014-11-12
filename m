@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933593AbaKLBfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:35:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59675 "EHLO
+	id S933657AbaKLBfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:35:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59706 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933575AbaKLBe6 (ORCPT
+	with ESMTP id S933637AbaKLBfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:58 -0500
+	Tue, 11 Nov 2014 20:35:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 3.17 292/319] mm: cma: Dont crash on allocation if CMA area cant be activated
-Date: Wed, 12 Nov 2014 10:17:10 +0900
-Message-Id: <20141112011041.156811215@linuxfoundation.org>
+        Dan Streetman <ddstreet@ieee.org>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.17 299/319] powerpc: use device_online/offline() instead of cpu_up/down()
+Date: Wed, 12 Nov 2014 10:17:17 +0900
+Message-Id: <20141112011042.310226848@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,33 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+From: Dan Streetman <ddstreet@ieee.org>
 
-commit f022d8cb7ec70fe8edd56383d876001317ee76b1 upstream.
+commit 10ccaf178b2b961d8bca252d647ed7ed8aae2a20 upstream.
 
-If activation of the CMA area fails its mutex won't be initialized,
-leading to an oops at allocation time when trying to lock the mutex. Fix
-this by setting the cma area count field to 0 when activation fails,
-leading to allocation returning NULL immediately.
+In powerpc pseries platform dlpar operations, use device_online() and
+device_offline() instead of cpu_up() and cpu_down().
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Calling cpu_up/down() directly does not update the cpu device offline
+field, which is used to online/offline a cpu from sysfs. Calling
+device_online/offline() instead keeps the sysfs cpu online value
+correct. The hotplug lock, which is required to be held when calling
+device_online/offline(), is already held when dlpar_online/offline_cpu()
+are called, since they are called only from cpu_probe|release_store().
+
+This patch fixes errors on phyp (PowerVM) systems that have cpu(s)
+added/removed using dlpar operations; without this patch, the
+/sys/devices/system/cpu/cpuN/online nodes do not correctly show the
+online state of added/removed cpus.
+
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Fixes: 0902a9044fa5 ("Driver core: Use generic offline/online for CPU offline/online")
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/cma.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/platforms/pseries/dlpar.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -123,6 +123,7 @@ static int __init cma_activate_area(stru
- 
- err:
- 	kfree(cma->bitmap);
-+	cma->count = 0;
- 	return -EINVAL;
- }
- 
+--- a/arch/powerpc/platforms/pseries/dlpar.c
++++ b/arch/powerpc/platforms/pseries/dlpar.c
+@@ -379,7 +379,7 @@ static int dlpar_online_cpu(struct devic
+ 			BUG_ON(get_cpu_current_state(cpu)
+ 					!= CPU_STATE_OFFLINE);
+ 			cpu_maps_update_done();
+-			rc = cpu_up(cpu);
++			rc = device_online(get_cpu_device(cpu));
+ 			if (rc)
+ 				goto out;
+ 			cpu_maps_update_begin();
+@@ -462,7 +462,7 @@ static int dlpar_offline_cpu(struct devi
+ 			if (get_cpu_current_state(cpu) == CPU_STATE_ONLINE) {
+ 				set_preferred_offline_state(cpu, CPU_STATE_OFFLINE);
+ 				cpu_maps_update_done();
+-				rc = cpu_down(cpu);
++				rc = device_offline(get_cpu_device(cpu));
+ 				if (rc)
+ 					goto out;
+ 				cpu_maps_update_begin();
 
 
