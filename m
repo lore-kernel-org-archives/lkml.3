@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965755AbaKLC47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:56:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60199 "EHLO
+	id S965758AbaKLC5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:57:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60192 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934364AbaKLBlq (ORCPT
+	with ESMTP id S934293AbaKLBlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:41:46 -0500
+	Tue, 11 Nov 2014 20:41:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <akolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 3.14 086/203] ARC: [nsimosci] Allow "headless" models to boot
-Date: Wed, 12 Nov 2014 10:15:56 +0900
-Message-Id: <20141112011546.633819992@linuxfoundation.org>
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 084/203] KVM: x86: Emulator fixes for eip canonical checks on near branches
+Date: Wed, 12 Nov 2014 10:15:54 +0900
+Message-Id: <20141112011546.545792688@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,35 +29,234 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit 5c05483e2db91890faa9a7be0a831701a3f442d6 upstream.
+commit 234f3ce485d54017f15cf5e0699cff4100121601 upstream.
 
-There are certain test configuration of virtual platform which don't
-have any real console device (uart/pgu). So add tty0 as a fallback console
-device to allow system to boot and be accessible via telnet
+Before changing rip (during jmp, call, ret, etc.) the target should be asserted
+to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
+should be canonical. If any of these values is noncanonical, a #GP exception
+should occur.  The exception to this rule are syscall and sysenter instructions
+in which the assigned rip is checked during the assignment to the relevant
+MSRs.
 
-Otherwise with ttyS0 as only console, but 8250 disabled in kernel build,
-init chokes.
+This patch fixes the emulator to behave as real CPUs do for near branches.
+Far branches are handled by the next patch.
 
-Reported-by: Anton Kolesov <akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+This fixes CVE-2014-3647.
+
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/boot/dts/nsimosci.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/emulate.c |   78 +++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 54 insertions(+), 24 deletions(-)
 
---- a/arch/arc/boot/dts/nsimosci.dts
-+++ b/arch/arc/boot/dts/nsimosci.dts
-@@ -20,7 +20,7 @@
- 		/* this is for console on PGU */
- 		/* bootargs = "console=tty0 consoleblank=0"; */
- 		/* this is for console on serial */
--		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=ttyS0,115200n8 consoleblank=0 debug";
-+		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=tty0 console=ttyS0,115200n8 consoleblank=0 debug";
- 	};
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -571,7 +571,8 @@ static int emulate_nm(struct x86_emulate
+ 	return emulate_exception(ctxt, NM_VECTOR, 0, false);
+ }
  
- 	aliases {
+-static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
++static inline int assign_eip_far(struct x86_emulate_ctxt *ctxt, ulong dst,
++			       int cs_l)
+ {
+ 	switch (ctxt->op_bytes) {
+ 	case 2:
+@@ -581,16 +582,25 @@ static inline void assign_eip_near(struc
+ 		ctxt->_eip = (u32)dst;
+ 		break;
+ 	case 8:
++		if ((cs_l && is_noncanonical_address(dst)) ||
++		    (!cs_l && (dst & ~(u32)-1)))
++			return emulate_gp(ctxt, 0);
+ 		ctxt->_eip = dst;
+ 		break;
+ 	default:
+ 		WARN(1, "unsupported eip assignment size\n");
+ 	}
++	return X86EMUL_CONTINUE;
++}
++
++static inline int assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
++{
++	return assign_eip_far(ctxt, dst, ctxt->mode == X86EMUL_MODE_PROT64);
+ }
+ 
+-static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
++static inline int jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
+ {
+-	assign_eip_near(ctxt, ctxt->_eip + rel);
++	return assign_eip_near(ctxt, ctxt->_eip + rel);
+ }
+ 
+ static u16 get_segment_selector(struct x86_emulate_ctxt *ctxt, unsigned seg)
+@@ -1975,13 +1985,15 @@ static int em_grp45(struct x86_emulate_c
+ 	case 2: /* call near abs */ {
+ 		long int old_eip;
+ 		old_eip = ctxt->_eip;
+-		ctxt->_eip = ctxt->src.val;
++		rc = assign_eip_near(ctxt, ctxt->src.val);
++		if (rc != X86EMUL_CONTINUE)
++			break;
+ 		ctxt->src.val = old_eip;
+ 		rc = em_push(ctxt);
+ 		break;
+ 	}
+ 	case 4: /* jmp abs */
+-		ctxt->_eip = ctxt->src.val;
++		rc = assign_eip_near(ctxt, ctxt->src.val);
+ 		break;
+ 	case 5: /* jmp far */
+ 		rc = em_jmp_far(ctxt);
+@@ -2013,10 +2025,14 @@ static int em_cmpxchg8b(struct x86_emula
+ 
+ static int em_ret(struct x86_emulate_ctxt *ctxt)
+ {
+-	ctxt->dst.type = OP_REG;
+-	ctxt->dst.addr.reg = &ctxt->_eip;
+-	ctxt->dst.bytes = ctxt->op_bytes;
+-	return em_pop(ctxt);
++	int rc;
++	unsigned long eip;
++
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++
++	return assign_eip_near(ctxt, eip);
+ }
+ 
+ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+@@ -2294,7 +2310,7 @@ static int em_sysexit(struct x86_emulate
+ {
+ 	const struct x86_emulate_ops *ops = ctxt->ops;
+ 	struct desc_struct cs, ss;
+-	u64 msr_data;
++	u64 msr_data, rcx, rdx;
+ 	int usermode;
+ 	u16 cs_sel = 0, ss_sel = 0;
+ 
+@@ -2310,6 +2326,9 @@ static int em_sysexit(struct x86_emulate
+ 	else
+ 		usermode = X86EMUL_MODE_PROT32;
+ 
++	rcx = reg_read(ctxt, VCPU_REGS_RCX);
++	rdx = reg_read(ctxt, VCPU_REGS_RDX);
++
+ 	cs.dpl = 3;
+ 	ss.dpl = 3;
+ 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_CS, &msr_data);
+@@ -2327,6 +2346,9 @@ static int em_sysexit(struct x86_emulate
+ 		ss_sel = cs_sel + 8;
+ 		cs.d = 0;
+ 		cs.l = 1;
++		if (is_noncanonical_address(rcx) ||
++		    is_noncanonical_address(rdx))
++			return emulate_gp(ctxt, 0);
+ 		break;
+ 	}
+ 	cs_sel |= SELECTOR_RPL_MASK;
+@@ -2335,8 +2357,8 @@ static int em_sysexit(struct x86_emulate
+ 	ops->set_segment(ctxt, cs_sel, &cs, 0, VCPU_SREG_CS);
+ 	ops->set_segment(ctxt, ss_sel, &ss, 0, VCPU_SREG_SS);
+ 
+-	ctxt->_eip = reg_read(ctxt, VCPU_REGS_RDX);
+-	*reg_write(ctxt, VCPU_REGS_RSP) = reg_read(ctxt, VCPU_REGS_RCX);
++	ctxt->_eip = rdx;
++	*reg_write(ctxt, VCPU_REGS_RSP) = rcx;
+ 
+ 	return X86EMUL_CONTINUE;
+ }
+@@ -2875,10 +2897,13 @@ static int em_aad(struct x86_emulate_ctx
+ 
+ static int em_call(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc;
+ 	long rel = ctxt->src.val;
+ 
+ 	ctxt->src.val = (unsigned long)ctxt->_eip;
+-	jmp_rel(ctxt, rel);
++	rc = jmp_rel(ctxt, rel);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
+ 	return em_push(ctxt);
+ }
+ 
+@@ -2910,11 +2935,12 @@ static int em_call_far(struct x86_emulat
+ static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
++	unsigned long eip;
+ 
+-	ctxt->dst.type = OP_REG;
+-	ctxt->dst.addr.reg = &ctxt->_eip;
+-	ctxt->dst.bytes = ctxt->op_bytes;
+-	rc = emulate_pop(ctxt, &ctxt->dst.val, ctxt->op_bytes);
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++	rc = assign_eip_near(ctxt, eip);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	rsp_increment(ctxt, ctxt->src.val);
+@@ -3244,20 +3270,24 @@ static int em_lmsw(struct x86_emulate_ct
+ 
+ static int em_loop(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc = X86EMUL_CONTINUE;
++
+ 	register_address_increment(ctxt, reg_rmw(ctxt, VCPU_REGS_RCX), -1);
+ 	if ((address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) != 0) &&
+ 	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 
+-	return X86EMUL_CONTINUE;
++	return rc;
+ }
+ 
+ static int em_jcxz(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc = X86EMUL_CONTINUE;
++
+ 	if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0)
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 
+-	return X86EMUL_CONTINUE;
++	return rc;
+ }
+ 
+ static int em_in(struct x86_emulate_ctxt *ctxt)
+@@ -4654,7 +4684,7 @@ special_insn:
+ 		break;
+ 	case 0x70 ... 0x7f: /* jcc (short) */
+ 		if (test_cc(ctxt->b, ctxt->eflags))
+-			jmp_rel(ctxt, ctxt->src.val);
++			rc = jmp_rel(ctxt, ctxt->src.val);
+ 		break;
+ 	case 0x8d: /* lea r16/r32, m */
+ 		ctxt->dst.val = ctxt->src.addr.mem.ea;
+@@ -4683,7 +4713,7 @@ special_insn:
+ 		break;
+ 	case 0xe9: /* jmp rel */
+ 	case 0xeb: /* jmp rel short */
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 		ctxt->dst.type = OP_NONE; /* Disable writeback. */
+ 		break;
+ 	case 0xf4:              /* hlt */
+@@ -4803,7 +4833,7 @@ twobyte_insn:
+ 		break;
+ 	case 0x80 ... 0x8f: /* jnz rel, etc*/
+ 		if (test_cc(ctxt->b, ctxt->eflags))
+-			jmp_rel(ctxt, ctxt->src.val);
++			rc = jmp_rel(ctxt, ctxt->src.val);
+ 		break;
+ 	case 0x90 ... 0x9f:     /* setcc r/m8 */
+ 		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
 
 
