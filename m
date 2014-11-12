@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031AbaKLBYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:24:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58727 "EHLO
+	id S1754044AbaKLBYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:24:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013AbaKLBYN (ORCPT
+	with ESMTP id S1754029AbaKLBYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:24:13 -0500
+	Tue, 11 Nov 2014 20:24:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Meelis Roos <mroos@linux.ee>
-Subject: [PATCH 3.17 094/319] Revert "block: all blk-mq requests are tagged"
-Date: Wed, 12 Nov 2014 10:13:52 +0900
-Message-Id: <20141112011008.103568477@linuxfoundation.org>
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.17 095/319] dm log userspace: fix memory leak in dm_ulog_tfr_init failure path
+Date: Wed, 12 Nov 2014 10:13:53 +0900
+Message-Id: <20141112011008.253707691@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,38 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit e999dbc254044e8d2a5818d92d205f65bae28f37 upstream.
+commit 56ec16cb1e1ce46354de8511eef962a417c32c92 upstream.
 
-This reverts commit fb3ccb5da71273e7f0d50b50bc879e50cedd60e7.
+If cn_add_callback() fails in dm_ulog_tfr_init(), it does not
+deallocate prealloced memory but calls cn_del_callback().
 
-SCSI-2/SPI actually needs the tagged/untagged flag in the request to
-work properly.  Revert this patch and add a follow on to set it in
-the right place.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Reviewed-by: Jonathan Brassow <jbrassow@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/blkdev.h |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/md/dm-log-userspace-transfer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1142,8 +1142,7 @@ static inline bool blk_needs_flush_plug(
- /*
-  * tag stuff
-  */
--#define blk_rq_tagged(rq) \
--	((rq)->mq_ctx || ((rq)->cmd_flags & REQ_QUEUED))
-+#define blk_rq_tagged(rq)		((rq)->cmd_flags & REQ_QUEUED)
- extern int blk_queue_start_tag(struct request_queue *, struct request *);
- extern struct request *blk_queue_find_tag(struct request_queue *, int);
- extern void blk_queue_end_tag(struct request_queue *, struct request *);
+--- a/drivers/md/dm-log-userspace-transfer.c
++++ b/drivers/md/dm-log-userspace-transfer.c
+@@ -272,7 +272,7 @@ int dm_ulog_tfr_init(void)
+ 
+ 	r = cn_add_callback(&ulog_cn_id, "dmlogusr", cn_ulog_callback);
+ 	if (r) {
+-		cn_del_callback(&ulog_cn_id);
++		kfree(prealloced_cn_msg);
+ 		return r;
+ 	}
+ 
 
 
