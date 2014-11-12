@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965534AbaKLBsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:48:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60844 "EHLO
+	id S932520AbaKLC3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:29:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965471AbaKLBsk (ORCPT
+	with ESMTP id S965503AbaKLBsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:40 -0500
+	Tue, 11 Nov 2014 20:48:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Leon Romanovsky <leon@leon.nu>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 203/203] mm: page_alloc: fix zone allocation fairness on UP
-Date: Wed, 12 Nov 2014 10:17:53 +0900
-Message-Id: <20141112011552.007597313@linuxfoundation.org>
+        Yehuda Sadeh <yehuda@inktank.com>, Sage Weil <sage@inktank.com>,
+        ceph-devel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Ilya Dryomov <idryomov@redhat.com>
+Subject: [PATCH 3.14 194/203] rbd: Fix error recovery in rbd_obj_read_sync()
+Date: Wed, 12 Nov 2014 10:17:44 +0900
+Message-Id: <20141112011551.597465119@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -31,61 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Jan Kara <jack@suse.cz>
 
-commit abe5f972912d086c080be4bde67750630b6fb38b upstream.
+commit a8d4205623ae965e36c68629db306ca0695a2771 upstream.
 
-The zone allocation batches can easily underflow due to higher-order
-allocations or spills to remote nodes.  On SMP that's fine, because
-underflows are expected from concurrency and dealt with by returning 0.
-But on UP, zone_page_state will just return a wrapped unsigned long,
-which will get past the <= 0 check and then consider the zone eligible
-until its watermarks are hit.
+When we fail to allocate page vector in rbd_obj_read_sync() we just
+basically ignore the problem and continue which will result in an oops
+later. Fix the problem by returning proper error.
 
-Commit 3a025760fc15 ("mm: page_alloc: spill to remote nodes before
-waking kswapd") already made the counter-resetting use
-atomic_long_read() to accomodate underflows from remote spills, but it
-didn't go all the way with it.
-
-Make it clear that these batches are expected to go negative regardless
-of concurrency, and use atomic_long_read() everywhere.
-
-Fixes: 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
-Reported-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Leon Romanovsky <leon@leon.nu>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: <stable@vger.kernel.org>	[3.12+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Yehuda Sadeh <yehuda@inktank.com>
+CC: Sage Weil <sage@inktank.com>
+CC: ceph-devel@vger.kernel.org
+Coverity-id: 1226882
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/block/rbd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1957,7 +1957,7 @@ zonelist_scan:
- 		if (alloc_flags & ALLOC_FAIR) {
- 			if (!zone_local(preferred_zone, zone))
- 				continue;
--			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-+			if (atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]) <= 0)
- 				continue;
- 		}
- 		/*
-@@ -5670,9 +5670,8 @@ static void __setup_per_zone_wmarks(void
- 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -3217,7 +3217,7 @@ static int rbd_obj_read_sync(struct rbd_
+ 	page_count = (u32) calc_pages_for(offset, length);
+ 	pages = ceph_alloc_page_vector(page_count, GFP_KERNEL);
+ 	if (IS_ERR(pages))
+-		ret = PTR_ERR(pages);
++		return PTR_ERR(pages);
  
- 		__mod_zone_page_state(zone, NR_ALLOC_BATCH,
--				      high_wmark_pages(zone) -
--				      low_wmark_pages(zone) -
--				      zone_page_state(zone, NR_ALLOC_BATCH));
-+			high_wmark_pages(zone) - low_wmark_pages(zone) -
-+			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
- 
- 		setup_zone_migrate_reserve(zone);
- 		spin_unlock_irqrestore(&zone->lock, flags);
+ 	ret = -ENOMEM;
+ 	obj_request = rbd_obj_request_create(object_name, offset, length,
 
 
