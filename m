@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871AbaKLOLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:11:20 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62941 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686AbaKLOLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:11:15 -0500
-Date: Wed, 12 Nov 2014 15:11:31 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: David Airlie <airlied@linux.ie>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH v2 v3.18-rc4 2/4] drm: prime: Document gem_prime_mmap
-Message-ID: <20141112141131.GU25711@phenom.ffwll.local>
-Mail-Followup-To: Daniel Thompson <daniel.thompson@linaro.org>,
-	David Airlie <airlied@linux.ie>, linaro-kernel@lists.linaro.org,
-	patches@linaro.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org,
-	Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-	Joonyoung Shim <jy0922.shim@samsung.com>
-References: <1415639805-17477-1-git-send-email-daniel.thompson@linaro.org>
- <1415792295-2466-1-git-send-email-daniel.thompson@linaro.org>
- <1415792295-2466-3-git-send-email-daniel.thompson@linaro.org>
+	id S1752883AbaKLOM6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:12:58 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48153 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752516AbaKLOM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 09:12:57 -0500
+Date: Wed, 12 Nov 2014 15:12:50 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Anvin, H Peter" <h.peter.anvin@intel.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH 3/6] x86: Add support for the clwb instruction
+Message-ID: <20141112141250.GE16807@pd.tnic>
+References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1415731396-19364-4-git-send-email-ross.zwisler@linux.intel.com>
+ <20141112123909.GD16807@pd.tnic>
+ <C40DC70F50313144AB3AF8625D4F407F71D61056@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1415792295-2466-3-git-send-email-daniel.thompson@linaro.org>
-X-Operating-System: Linux phenom 3.16-2-amd64 
+In-Reply-To: <C40DC70F50313144AB3AF8625D4F407F71D61056@ORSMSX101.amr.corp.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 11:38:13AM +0000, Daniel Thompson wrote:
-> gem_prime_map is not currently described in the DRM manual, lets document
-> it.
-> 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+On Wed, Nov 12, 2014 at 01:38:45PM +0000, Anvin, H Peter wrote:
+> No, it doesn't.  x86 requires 3.4+ at a minimum.
 
-Patches 1&2 are Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+The only test I see is:
 
-Nit: Since this fixes an oversight in an earlier patch I usally cc the
-people of the offending patch:
+#if GCC_VERSION < 30200
+# error Sorry, your compiler is too old - please upgrade it.
+#endif
 
-commit 7c397cd97b8f46659698396b420bd48c3e6703e6
-Author: Joonyoung Shim <jy0922.shim@samsung.com>
-Date:   Fri Jun 28 14:24:53 2013 +0900
+And even if we do require 3.4, the build fails with 4.1+ so...
 
-    drm: add mmap function to prime helpers
-
-Cheers, Daniel
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
