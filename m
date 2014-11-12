@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685AbaKLBdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:33:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59464 "EHLO
+	id S933262AbaKLBd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:33:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963AbaKLBdN (ORCPT
+	with ESMTP id S1752963AbaKLBdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:13 -0500
+	Tue, 11 Nov 2014 20:33:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.17 260/319] iwlwifi: configure the LTR
-Date: Wed, 12 Nov 2014 10:16:38 +0900
-Message-Id: <20141112011035.750084467@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.17 263/319] ext3: Dont check quota format when there are no quota files
+Date: Wed, 12 Nov 2014 10:16:41 +0900
+Message-Id: <20141112011036.356865723@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,168 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 9180ac50716a097a407c6d7e7e4589754a922260 upstream.
+commit 7938db449bbc55bbeb164bec7af406212e7e98f1 upstream.
 
-The LTR is the handshake between the device and the root
-complex about the latency allowed when the bus exits power
-save. This configuration was missing and this led to high
-latency in the link power up. The end user could experience
-high latency in the network because of this.
+The check whether quota format is set even though there are no
+quota files with journalled quota is pointless and it actually
+makes it impossible to turn off journalled quotas (as there's
+no way to unset journalled quota format). Just remove the check.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-trans.h        |    2 +
- drivers/net/wireless/iwlwifi/mvm/fw-api-power.h |   35 +++++++++++++++++++++++-
- drivers/net/wireless/iwlwifi/mvm/fw-api.h       |    1 
- drivers/net/wireless/iwlwifi/mvm/fw.c           |    9 ++++++
- drivers/net/wireless/iwlwifi/mvm/ops.c          |    1 
- drivers/net/wireless/iwlwifi/pcie/trans.c       |   16 ++++++----
- 6 files changed, 56 insertions(+), 8 deletions(-)
+ fs/ext3/super.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-trans.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans.h
-@@ -548,6 +548,7 @@ enum iwl_trans_state {
-  *	Set during transport allocation.
-  * @hw_id_str: a string with info about HW ID. Set during transport allocation.
-  * @pm_support: set to true in start_hw if link pm is supported
-+ * @ltr_enabled: set to true if the LTR is enabled
-  * @dev_cmd_pool: pool for Tx cmd allocation - for internal use only.
-  *	The user should use iwl_trans_{alloc,free}_tx_cmd.
-  * @dev_cmd_headroom: room needed for the transport's private use before the
-@@ -574,6 +575,7 @@ struct iwl_trans {
- 	u8 rx_mpdu_cmd, rx_mpdu_cmd_hdr_size;
- 
- 	bool pm_support;
-+	bool ltr_enabled;
- 
- 	/* The following fields are internal only */
- 	struct kmem_cache *dev_cmd_pool;
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-@@ -66,13 +66,46 @@
- 
- /* Power Management Commands, Responses, Notifications */
- 
-+/**
-+ * enum iwl_ltr_config_flags - masks for LTR config command flags
-+ * @LTR_CFG_FLAG_FEATURE_ENABLE: Feature operational status
-+ * @LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS: allow LTR change on shadow
-+ *	memory access
-+ * @LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH: allow LTR msg send on ANY LTR
-+ *	reg change
-+ * @LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3: allow LTR msg send on transition from
-+ *	D0 to D3
-+ * @LTR_CFG_FLAG_SW_SET_SHORT: fixed static short LTR register
-+ * @LTR_CFG_FLAG_SW_SET_LONG: fixed static short LONG register
-+ * @LTR_CFG_FLAG_DENIE_C10_ON_PD: allow going into C10 on PD
-+ */
-+enum iwl_ltr_config_flags {
-+	LTR_CFG_FLAG_FEATURE_ENABLE = BIT(0),
-+	LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS = BIT(1),
-+	LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH = BIT(2),
-+	LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3 = BIT(3),
-+	LTR_CFG_FLAG_SW_SET_SHORT = BIT(4),
-+	LTR_CFG_FLAG_SW_SET_LONG = BIT(5),
-+	LTR_CFG_FLAG_DENIE_C10_ON_PD = BIT(6),
-+};
-+
-+/**
-+ * struct iwl_ltr_config_cmd - configures the LTR
-+ * @flags: See %enum iwl_ltr_config_flags
-+ */
-+struct iwl_ltr_config_cmd {
-+	__le32 flags;
-+	__le32 static_long;
-+	__le32 static_short;
-+} __packed;
-+
- /* Radio LP RX Energy Threshold measured in dBm */
- #define POWER_LPRX_RSSI_THRESHOLD	75
- #define POWER_LPRX_RSSI_THRESHOLD_MAX	94
- #define POWER_LPRX_RSSI_THRESHOLD_MIN	30
- 
- /**
-- * enum iwl_scan_flags - masks for power table command flags
-+ * enum iwl_power_flags - masks for power table command flags
-  * @POWER_FLAGS_POWER_SAVE_ENA_MSK: '1' Allow to save power by turning off
-  *		receiver and transmitter. '0' - does not allow.
-  * @POWER_FLAGS_POWER_MANAGEMENT_ENA_MSK: '0' Driver disables power management,
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-@@ -148,6 +148,7 @@ enum {
- 	/* Power - legacy power table command */
- 	POWER_TABLE_CMD = 0x77,
- 	PSM_UAPSD_AP_MISBEHAVING_NOTIFICATION = 0x78,
-+	LTR_CONFIG = 0xee,
- 
- 	/* Thermal Throttling*/
- 	REPLY_THERMAL_MNG_BACKOFF = 0x7e,
---- a/drivers/net/wireless/iwlwifi/mvm/fw.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw.c
-@@ -475,6 +475,15 @@ int iwl_mvm_up(struct iwl_mvm *mvm)
- 	/* Initialize tx backoffs to the minimal possible */
- 	iwl_mvm_tt_tx_backoff(mvm, 0);
- 
-+	if (mvm->trans->ltr_enabled) {
-+		struct iwl_ltr_config_cmd cmd = {
-+			.flags = cpu_to_le32(LTR_CFG_FLAG_FEATURE_ENABLE),
-+		};
-+
-+		WARN_ON(iwl_mvm_send_cmd_pdu(mvm, LTR_CONFIG, 0,
-+					     sizeof(cmd), &cmd));
-+	}
-+
- 	ret = iwl_mvm_power_update_device(mvm);
- 	if (ret)
- 		goto error;
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -332,6 +332,7 @@ static const char *const iwl_mvm_cmd_str
- 	CMD(REPLY_BEACON_FILTERING_CMD),
- 	CMD(REPLY_THERMAL_MNG_BACKOFF),
- 	CMD(MAC_PM_POWER_TABLE),
-+	CMD(LTR_CONFIG),
- 	CMD(BT_COEX_CI),
- 	CMD(BT_COEX_UPDATE_SW_BOOST),
- 	CMD(BT_COEX_UPDATE_CORUN_LUT),
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -172,6 +172,7 @@ static void iwl_pcie_apm_config(struct i
- {
- 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
- 	u16 lctl;
-+	u16 cap;
- 
- 	/*
- 	 * HW bug W/A for instability in PCIe bus L0S->L1 transition.
-@@ -182,16 +183,17 @@ static void iwl_pcie_apm_config(struct i
- 	 *    power savings, even without L1.
- 	 */
- 	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
--	if (lctl & PCI_EXP_LNKCTL_ASPM_L1) {
--		/* L1-ASPM enabled; disable(!) L0S */
-+	if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
- 		iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Enabled; Disabling L0S\n");
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -1354,13 +1354,6 @@ set_qf_format:
+ 					"not specified.");
+ 			return 0;
+ 		}
 -	} else {
--		/* L1-ASPM disabled; enable(!) L0S */
-+	else
- 		iwl_clear_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Disabled; Enabling L0S\n");
--	}
- 	trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
-+
-+	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_DEVCTL2, &cap);
-+	trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
-+	dev_info(trans->dev, "L1 %sabled - LTR %sabled\n",
-+		 (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
-+		 trans->ltr_enabled ? "En" : "Dis");
- }
- 
- /*
+-		if (sbi->s_jquota_fmt) {
+-			ext3_msg(sb, KERN_ERR, "error: journaled quota format "
+-					"specified with no journaling "
+-					"enabled.");
+-			return 0;
+-		}
+ 	}
+ #endif
+ 	return 1;
 
 
