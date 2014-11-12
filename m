@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964974AbaKLBk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:40:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60093 "EHLO
+	id S964988AbaKLBkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:40:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60104 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964949AbaKLBkZ (ORCPT
+	with ESMTP id S933440AbaKLBke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:40:25 -0500
+	Tue, 11 Nov 2014 20:40:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 064/203] Input: i8042 - add noloop quirk for Asus X750LN
-Date: Wed, 12 Nov 2014 10:15:34 +0900
-Message-Id: <20141112011545.647626928@linuxfoundation.org>
+        Jeffrey Bastian <jbastian@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.14 067/203] drm/vmwgfx: Fix drm.h include
+Date: Wed, 12 Nov 2014 10:15:37 +0900
+Message-Id: <20141112011545.783505356@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,37 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Josh Boyer <jwboyer@fedoraproject.org>
 
-commit 9ff84a17302aeb8913ff244ecc0d8f9d219fecb5 upstream.
+commit e351943b081f4d9e6f692ce1a6117e8d2e71f478 upstream.
 
-Without this the aux port does not get detected, and consequently the
-touchpad will not work.
+The userspace drm.h include doesn't prefix the drm directory.  This can lead
+to compile failures as /usr/include/drm/ isn't in the standard gcc include
+paths.  Fix it to be <drm/drm.h>, which matches the rest of the driver drm
+header files that get installed into /usr/include/drm.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1110011
+Red Hat Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1138759
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Fixes: 1d7a5cbf8f74e
+Reported-by: Jeffrey Bastian <jbastian@redhat.com>
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+ include/uapi/drm/vmwgfx_drm.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -101,6 +101,12 @@ static const struct dmi_system_id __init
- 	},
- 	{
- 		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X750LN"),
-+		},
-+	},
-+	{
-+		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
- 			DMI_MATCH(DMI_PRODUCT_NAME , "ProLiant"),
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "8500"),
+--- a/include/uapi/drm/vmwgfx_drm.h
++++ b/include/uapi/drm/vmwgfx_drm.h
+@@ -29,7 +29,7 @@
+ #define __VMWGFX_DRM_H__
+ 
+ #ifndef __KERNEL__
+-#include <drm.h>
++#include <drm/drm.h>
+ #endif
+ 
+ #define DRM_VMW_MAX_SURFACE_FACES 6
 
 
