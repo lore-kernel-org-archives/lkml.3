@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbaKLBWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58602 "EHLO
+	id S1753631AbaKLBWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58609 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562AbaKLBWk (ORCPT
+	with ESMTP id S1753607AbaKLBWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:40 -0500
+	Tue, 11 Nov 2014 20:22:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Harris <jefftharris@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.17 064/319] [jffs2] kill wbuf_queued/wbuf_dwork_lock
-Date: Wed, 12 Nov 2014 10:13:22 +0900
-Message-Id: <20141112011003.186930045@linuxfoundation.org>
+        Ilya Dryomov <idryomov@redhat.com>, Micha Krause <micha@krausam.de>,
+        Sage Weil <sage@redhat.com>
+Subject: [PATCH 3.17 066/319] rbd: rbd workqueues need a resque worker
+Date: Wed, 12 Nov 2014 10:13:24 +0900
+Message-Id: <20141112011003.554135655@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,98 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Ilya Dryomov <idryomov@redhat.com>
 
-commit 99358a1ca53e8e6ce09423500191396f0e6584d2 upstream.
+commit 792c3a914910bd34302c5345578f85cfcb5e2c01 upstream.
 
-schedule_delayed_work() happening when the work is already pending is
-a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
-broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
-and pointless.  It's cheaper to let schedule_delayed_work() handle that
-case.
+Need to use WQ_MEM_RECLAIM for our workqueues to prevent I/O lockups
+under memory pressure - we sit on the memory reclaim path.
 
-Reported-by: Jeff Harris <jefftharris@gmail.com>
-Tested-by: Jeff Harris <jefftharris@gmail.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
+Tested-by: Micha Krause <micha@krausam.de>
+Reviewed-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/jffs2_fs_sb.h |    2 --
- fs/jffs2/wbuf.c        |   17 ++---------------
- 2 files changed, 2 insertions(+), 17 deletions(-)
+ drivers/block/rbd.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/jffs2/jffs2_fs_sb.h
-+++ b/fs/jffs2/jffs2_fs_sb.h
-@@ -134,8 +134,6 @@ struct jffs2_sb_info {
- 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -5087,7 +5087,8 @@ static int rbd_dev_device_setup(struct r
+ 	set_capacity(rbd_dev->disk, rbd_dev->mapping.size / SECTOR_SIZE);
+ 	set_disk_ro(rbd_dev->disk, rbd_dev->mapping.read_only);
  
- 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
--	int wbuf_queued;                /* non-zero delayed work is queued */
--	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
- 
- 	unsigned char *oobbuf;
- 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
---- a/fs/jffs2/wbuf.c
-+++ b/fs/jffs2/wbuf.c
-@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct wor
- 	struct jffs2_sb_info *c = work_to_sb(work);
- 	struct super_block *sb = OFNI_BS_2SFFJ(c);
- 
--	spin_lock(&c->wbuf_dwork_lock);
--	c->wbuf_queued = 0;
--	spin_unlock(&c->wbuf_dwork_lock);
--
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		jffs2_dbg(1, "%s()\n", __func__);
- 		jffs2_flush_wbuf_gc(c, 0);
-@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb
- 	if (sb->s_flags & MS_RDONLY)
- 		return;
- 
--	spin_lock(&c->wbuf_dwork_lock);
--	if (!c->wbuf_queued) {
-+	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
-+	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
- 		jffs2_dbg(1, "%s()\n", __func__);
--		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
--		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
--		c->wbuf_queued = 1;
--	}
--	spin_unlock(&c->wbuf_dwork_lock);
- }
- 
- int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
-@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_
- 
- 	/* Initialise write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 	c->wbuf_pagesize = c->mtd->writesize;
- 	c->wbuf_ofs = 0xFFFFFFFF;
-@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_s
- 
- 	/* Initialize write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 	c->wbuf_pagesize =  c->mtd->erasesize;
- 
-@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jf
- 
- 	/* Initialize write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 
- 	c->wbuf_pagesize = c->mtd->writesize;
-@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_i
- 		return 0;
- 
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 
- 	c->wbuf_pagesize =  c->mtd->writesize;
+-	rbd_dev->rq_wq = alloc_workqueue("%s", 0, 0, rbd_dev->disk->disk_name);
++	rbd_dev->rq_wq = alloc_workqueue("%s", WQ_MEM_RECLAIM, 0,
++					 rbd_dev->disk->disk_name);
+ 	if (!rbd_dev->rq_wq) {
+ 		ret = -ENOMEM;
+ 		goto err_out_mapping;
 
 
