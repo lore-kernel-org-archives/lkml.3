@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151AbaKLD1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:27:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59470 "EHLO
+	id S1755187AbaKLD2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:28:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690AbaKLBdU (ORCPT
+	with ESMTP id S1754658AbaKLBdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:20 -0500
+	Tue, 11 Nov 2014 20:33:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.17 262/319] Revert "iwlwifi: mvm: treat EAPOLs like mgmt frames wrt rate"
-Date: Wed, 12 Nov 2014 10:16:40 +0900
-Message-Id: <20141112011036.156815130@linuxfoundation.org>
+Subject: [PATCH 3.17 259/319] iwlwifi: mvm: BT Coex - update the MPLUT Boost register value
+Date: Wed, 12 Nov 2014 10:16:37 +0900
+Message-Id: <20141112011035.583751975@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,73 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 1ffde699aae127e7abdb98dbdedc2cc6a973a1a1 upstream.
+commit d14b28fd2c61af0bf310230472e342864d799c98 upstream.
 
-This reverts commit aa11bbf3df026d6b1c6b528bef634fd9de7c2619.
-This commit was causing connection issues and is not needed
-if IWL_MVM_RS_RSSI_BASED_INIT_RATE is set to false by default.
-
-Regardless of the issues mentioned above, this patch added the
-following WARNING:
-
-WARNING: CPU: 0 PID: 3946 at drivers/net/wireless/iwlwifi/mvm/tx.c:190 iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]()
-Got an HT rate for a non data frame 0x8
-CPU: 0 PID: 3946 Comm: wpa_supplicant Tainted: G           O   3.17.0+ #6
-Hardware name: LENOVO 20ANCTO1WW/20ANCTO1WW, BIOS GLET71WW (2.25 ) 07/02/2014
- 0000000000000009 ffffffff814fa911 ffff8804288db8f8 ffffffff81064f52
- 0000000000001808 ffff8804288db948 ffff88040add8660 ffff8804291b5600
- 0000000000000000 ffffffff81064fb7 ffffffffa07b73d0 0000000000000020
-Call Trace:
- [<ffffffff814fa911>] ? dump_stack+0x41/0x51
- [<ffffffff81064f52>] ? warn_slowpath_common+0x72/0x90
- [<ffffffff81064fb7>] ? warn_slowpath_fmt+0x47/0x50
- [<ffffffffa07a39ea>] ? iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]
- [<ffffffffa07a3cf8>] ? iwl_mvm_tx_skb+0x48/0x3c0 [iwlmvm]
- [<ffffffffa079cb9b>] ? iwl_mvm_mac_tx+0x7b/0x180 [iwlmvm]
- [<ffffffffa0746ce9>] ? __ieee80211_tx+0x2b9/0x3c0 [mac80211]
- [<ffffffffa07492f3>] ? ieee80211_tx+0xb3/0x100 [mac80211]
- [<ffffffffa0749c49>] ? ieee80211_subif_start_xmit+0x459/0xca0 [mac80211]
- [<ffffffff814116e7>] ? dev_hard_start_xmit+0x337/0x5f0
- [<ffffffff81430d46>] ? sch_direct_xmit+0x96/0x1f0
- [<ffffffff81411ba3>] ? __dev_queue_xmit+0x203/0x4f0
- [<ffffffff8142f670>] ? ether_setup+0x70/0x70
- [<ffffffff814e96a1>] ? packet_sendmsg+0xf81/0x1110
- [<ffffffff8140625c>] ? skb_free_datagram+0xc/0x40
- [<ffffffff813f7538>] ? sock_sendmsg+0x88/0xc0
- [<ffffffff813f7274>] ? move_addr_to_kernel.part.20+0x14/0x60
- [<ffffffff811c47c2>] ? __inode_wait_for_writeback+0x62/0xb0
- [<ffffffff813f7a91>] ? SYSC_sendto+0xf1/0x180
- [<ffffffff813f88f9>] ? __sys_recvmsg+0x39/0x70
- [<ffffffff8150066d>] ? system_call_fastpath+0x1a/0x1f
----[ end trace cc19a150d311fc63 ]---
-
-which was reported here: https://bugzilla.kernel.org/show_bug.cgi?id=85691
-
+Fixes: 2adc8949efab ("iwlwifi: mvm: BT Coex - fix boost register / LUT values")
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/tx.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/coex.c        |    4 ++--
+ drivers/net/wireless/iwlwifi/mvm/coex_legacy.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
-@@ -168,14 +168,10 @@ static void iwl_mvm_set_tx_cmd_rate(stru
+--- a/drivers/net/wireless/iwlwifi/mvm/coex.c
++++ b/drivers/net/wireless/iwlwifi/mvm/coex.c
+@@ -301,8 +301,8 @@ static const __le64 iwl_ci_mask[][3] = {
+ };
  
- 	/*
- 	 * for data packets, rate info comes from the table inside the fw. This
--	 * table is controlled by LINK_QUALITY commands. Exclude ctrl port
--	 * frames like EAPOLs which should be treated as mgmt frames. This
--	 * avoids them being sent initially in high rates which increases the
--	 * chances for completion of the 4-Way handshake.
-+	 * table is controlled by LINK_QUALITY commands
- 	 */
+ static const __le32 iwl_bt_mprio_lut[BT_COEX_MULTI_PRIO_LUT_SIZE] = {
+-	cpu_to_le32(0x28412201),
+-	cpu_to_le32(0x11118451),
++	cpu_to_le32(0x2e402280),
++	cpu_to_le32(0x7711a751),
+ };
  
--	if (ieee80211_is_data(fc) && sta &&
--	    !(info->control.flags & IEEE80211_TX_CTRL_PORT_CTRL_PROTO)) {
-+	if (ieee80211_is_data(fc) && sta) {
- 		tx_cmd->initial_rate_index = 0;
- 		tx_cmd->tx_flags |= cpu_to_le32(TX_CMD_FLG_STA_RATE);
- 		return;
+ struct corunning_block_luts {
+--- a/drivers/net/wireless/iwlwifi/mvm/coex_legacy.c
++++ b/drivers/net/wireless/iwlwifi/mvm/coex_legacy.c
+@@ -289,8 +289,8 @@ static const __le64 iwl_ci_mask[][3] = {
+ };
+ 
+ static const __le32 iwl_bt_mprio_lut[BT_COEX_MULTI_PRIO_LUT_SIZE] = {
+-	cpu_to_le32(0x28412201),
+-	cpu_to_le32(0x11118451),
++	cpu_to_le32(0x2e402280),
++	cpu_to_le32(0x7711a751),
+ };
+ 
+ struct corunning_block_luts {
 
 
