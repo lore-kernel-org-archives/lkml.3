@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaKLAWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 19:22:08 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29490 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563AbaKLAWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 19:22:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
-   d="scan'208";a="635376676"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>
-CC: X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Oleg Nesterov" <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>
-Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBag
-Date: Wed, 12 Nov 2014 00:22:04 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141111213628.GP31490@pd.tnic>
- <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
- <20141111223316.GQ31490@pd.tnic>
- <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
- <20141111230926.GR31490@pd.tnic>
- <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
-In-Reply-To: <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752692AbaKLAXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 19:23:42 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36391 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751712AbaKLAXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 19:23:40 -0500
+Message-ID: <1415751802.3398.107.camel@decadent.org.uk>
+Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
+ arndale platform
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: "Stam, Michel [FINT]" <M.Stam@fugro.nl>, Riku Voipio <riku.voipio@iki.fi>,
+        davem@davemloft.net, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Date: Wed, 12 Nov 2014 00:23:22 +0000
+In-Reply-To: <20141104200914.GN23178@opensource.wolfsonmicro.com>
+References: <20141104072236.GA559@afflict.kos.to>
+	 <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local>
+	 <20141104094336.GA3145@afflict.kos.to>
+	 <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local>
+	 <20141104200914.GN23178@opensource.wolfsonmicro.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-AIfNf5xTiBlgC4y0RSEY"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC0MEq3008784
 
-Andy said:
-> Yeah.  But if you haven't cleared MCIP, you go boom, which is the same
-> with pretty much any approach.
 
-The current code has an ugly hole at the moment.  End of do_machine_check()
-clears MCG_STATUS.  At that point we are still running on the magic stack for
-machine check exceptions ... if we take a machine check in the small window
-from there until we get off this stack (iret) ... then we will enter the handler
-back on the same stack that we haven't finished using yet. Bad things ensue.
+--=-AIfNf5xTiBlgC4y0RSEY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Andy's RFC patch removes this window.  We are already off on the normal stack
-when we clear MCG_STATUS.MCIP ... so we enter the new machine check on the
-magic stack, but then (I hope) transition to the kernel stack (pushing a new frame
-below the other one).
+On Tue, 2014-11-04 at 20:09 +0000, Charles Keepax wrote:
+> On Tue, Nov 04, 2014 at 11:23:06AM +0100, Stam, Michel [FINT] wrote:
+> > Hello Riku,
+> >=20
+> > >Fixing a bug (ethtool support) must not cause breakage elsewhere (in
+> > this case on arndale). This is now a regression of functionality from
+> > 3.17.
+> > >
+> > >I think it would better to revert the change now and with less hurry
+> > introduce a ethtool fix that doesn't break arndale.
+> >=20
+> > I don't fully agree here;=20
+> > I would like to point out that this commit is a revert itself. Fixing
+> > the armdale will then cause breakage in other implementations, such as
+> > ours. Blankly reverting breaks other peoples' implementations.
+> >=20
+> > The PHY reset is the thing that breaks ethtool support, so any fix that
+> > appeases all would have to take existing PHY state into account.=20
+[...]
+> --- a/drivers/net/usb/asix_devices.c
+> +++ b/drivers/net/usb/asix_devices.c
+> @@ -299,6 +299,7 @@ static int ax88772_reset(struct usbnet *dev)
+>  {
+>         struct asix_data *data =3D (struct asix_data *)&dev->data;
+>         int ret, embd_phy;
+> +       int reg;
+>         u16 rx_ctl;
+>=20
+>         ret =3D asix_write_gpio(dev,
+> @@ -359,8 +360,10 @@ static int ax88772_reset(struct usbnet *dev)
+>         msleep(150);
+>=20
+>         asix_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
+> -       asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE,
+> -                       ADVERTISE_ALL | ADVERTISE_CSMA);
+> +       reg =3D asix_mdio_read(dev->net, dev->mii.phy_id, MII_ADVERTISE);
+> +       if (!reg)
+> +               reg =3D ADVERTISE_ALL | ADVERTISE_CSMA;
+> +       asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE, reg);
+[...]
 
-Boris said:
-> This is the key: if I enable irqs and the process gets scheduled on
-> another CPU, I lose. So I have to be able to say: before you run this
-> task on any CPU, kill it.
+Why is there no sleep after setting the RESET bit?  Doesn't that make
+the following register writes unreliable?
 
-I don't think it matters if sleep and schedule this task on another cpu. When
-we run there we'll keep running the memory_failure() code that we were
-in the middle of when we slept.  The task can move around - we just need to
-make sure it doesn't *return to the user-mode instruction* that hit the machine
-check before we find the pte and zero it and mark the page as POISON.
+Ben.
 
--Tony
+--=20
+Ben Hutchings
+Experience is directly proportional to the value of equipment destroyed.
+                                                         - Carolyn Scheppne=
+r
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--=-AIfNf5xTiBlgC4y0RSEY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVGKof+e/yOyVhhEJAQpNmA//YzP85bqno+y9Phv7nG3/6nobdFZ14xRa
+2QqMNOfITadD1HEwmcRMgoyF4h8M3Wg4RVDKgFyyZcYGvSEXXvFw857X3yWG/WYv
+LkHOdPWAtiFQBsJAzruRRwGaGhaG/IRKQFlSiIJZLRT4rVtrbpAdG3dPGmZvUjZV
+WZx9ca2u5hy9gDWh6gc/AvoUDOcDZchMi4caYZrTH1q3RDui9Lp5PVkTZ8oqqa/p
+Fa3awiqqIhhRDhTZltNrUxOh9llmlWC/q4sq+0PYu1uBozrkvzpLgsVqckECsTIl
+cDfUiEKKaUVV6Y0AUbatJjx7oQcG2YFTyPhr1M76DT6TKdrL2WzemBNieouuqHbu
+YT7pUWkCvt9avwDw3sJ/djkjottW2zhj8WWj1O6+O6evJP4rn5FkqXKdWQzyQyJv
+UOYcQFQI04NJyrHKmc/uCcjt3zhX5/kOjZNdEAYXbWxmnFJMQEQWX4FiBViEY5Z4
+AdqGhiAgm088aIEqg4fkJLUYxNnt9tkFXYfOUrK/fTIMc5pnfNuyabwMhEXbrvSz
+w/5XF0p9eoYNwIWsX52I+sXfmwx/mt0FcxhGEn5uH2hOTEE28pSwexSv0V5tN8rw
+msaCkSQD/X4+7UG6M6PzV+fFb1VtKz0Y/wtA4f1Tl/58VG5heAZttoeccjBW1zg2
+EPmFxUZ98t4=
+=Atva
+-----END PGP SIGNATURE-----
+
+--=-AIfNf5xTiBlgC4y0RSEY--
