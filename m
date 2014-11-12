@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360AbaKLCtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:49:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60464 "EHLO
+	id S1755379AbaKLCuH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:50:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60441 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934589AbaKLBni (ORCPT
+	with ESMTP id S934054AbaKLBnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:43:38 -0500
+	Tue, 11 Nov 2014 20:43:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Derek Browne <Derek.Browne@intel.com>,
-        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
+        Ong Boon Leong <boon.leong.ong@intel.com>,
+        "David E. Box" <david.e.box@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.14 118/203] mmc: sdhci-pci: SDIO host controller support for Intel Quark X1000
-Date: Wed, 12 Nov 2014 10:16:28 +0900
-Message-Id: <20141112011548.087788788@linuxfoundation.org>
+Subject: [PATCH 3.14 114/203] x86, iosf: Added Quark MBI identifiers
+Date: Wed, 12 Nov 2014 10:16:24 +0900
+Message-Id: <20141112011547.906640242@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -31,60 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Derek Browne <Derek.Browne@intel.com>
+From: Ong Boon Leong <boon.leong.ong@intel.com>
 
-commit 43e968cec79b6334cf7cb3e11184cce720541712 upstream.
+commit 7ef1def800e907edd28ddb1a5c64bae6b8749cdd upstream.
 
-This patch is to enable SDIO host controller for Intel Quark X1000.
+Added all the MBI units below and their associated read/write
+opcodes:
+ - Host Bridge Arbiter
+ - Host Bridge
+ - Remote Management Unit
+ - Memory Manager & eSRAM
+ - SoC Unit
 
-Signed-off-by: Derek Browne <Derek.Browne@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Ong Boon Leong <boon.leong.ong@intel.com>
+Link: http://lkml.kernel.org/r/1399668248-24199-3-git-send-email-david.e.box@linux.intel.com
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-pci.c |   12 ++++++++++++
- drivers/mmc/host/sdhci-pci.h |    1 +
- 2 files changed, 13 insertions(+)
+ arch/x86/include/asm/iosf_mbi.h |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -103,6 +103,10 @@ static const struct sdhci_pci_fixes sdhc
- 			  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
- };
+--- a/arch/x86/include/asm/iosf_mbi.h
++++ b/arch/x86/include/asm/iosf_mbi.h
+@@ -50,6 +50,28 @@
+ #define BT_MBI_PCIE_READ	0x00
+ #define BT_MBI_PCIE_WRITE	0x01
  
-+static const struct sdhci_pci_fixes sdhci_intel_qrk = {
-+	.quirks		= SDHCI_QUIRK_NO_HISPD_BIT,
-+};
++/* Quark available units */
++#define QRK_MBI_UNIT_HBA	0x00
++#define QRK_MBI_UNIT_HB	0x03
++#define QRK_MBI_UNIT_RMU	0x04
++#define QRK_MBI_UNIT_MM	0x05
++#define QRK_MBI_UNIT_MMESRAM	0x05
++#define QRK_MBI_UNIT_SOC	0x31
 +
- static int mrst_hc_probe_slot(struct sdhci_pci_slot *slot)
- {
- 	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA;
-@@ -732,6 +736,14 @@ static const struct pci_device_id pci_id
- 	},
- 
- 	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_QRK_SD,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_intel_qrk,
-+	},
++/* Quark read/write opcodes */
++#define QRK_MBI_HBA_READ	0x10
++#define QRK_MBI_HBA_WRITE	0x11
++#define QRK_MBI_HB_READ	0x10
++#define QRK_MBI_HB_WRITE	0x11
++#define QRK_MBI_RMU_READ	0x10
++#define QRK_MBI_RMU_WRITE	0x11
++#define QRK_MBI_MM_READ	0x10
++#define QRK_MBI_MM_WRITE	0x11
++#define QRK_MBI_MMESRAM_READ	0x12
++#define QRK_MBI_MMESRAM_WRITE	0x13
++#define QRK_MBI_SOC_READ	0x06
++#define QRK_MBI_SOC_WRITE	0x07
 +
-+	{
- 		.vendor		= PCI_VENDOR_ID_INTEL,
- 		.device		= PCI_DEVICE_ID_INTEL_MRST_SD0,
- 		.subvendor	= PCI_ANY_ID,
---- a/drivers/mmc/host/sdhci-pci.h
-+++ b/drivers/mmc/host/sdhci-pci.h
-@@ -17,6 +17,7 @@
- #define PCI_DEVICE_ID_INTEL_CLV_SDIO2	0x08fb
- #define PCI_DEVICE_ID_INTEL_CLV_EMMC0	0x08e5
- #define PCI_DEVICE_ID_INTEL_CLV_EMMC1	0x08e6
-+#define PCI_DEVICE_ID_INTEL_QRK_SD	0x08A7
+ #if IS_ENABLED(CONFIG_IOSF_MBI)
  
- /*
-  * PCI registers
+ bool iosf_mbi_available(void);
 
 
