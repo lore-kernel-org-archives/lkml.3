@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaKLEbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:31:47 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54341 "EHLO mail.eperm.de"
+	id S933672AbaKLEbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:31:50 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54351 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740AbaKLEbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 23:31:45 -0500
+	id S1751740AbaKLEbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 23:31:48 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -16,9 +16,9 @@ Cc: Marek Vasut <marex@denx.de>, "David S. Miller" <davem@davemloft.net>,
         "Joy M. Latten" <jmlatten@linux.vnet.ibm.com>,
         Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org
-Subject: [PATCH v3 13/13] crypto: Documentation - HASH API documentation
-Date: Wed, 12 Nov 2014 05:30:42 +0100
-Message-ID: <2257814.zHSU59ZKgh@tachyon.chronox.de>
+Subject: [PATCH v3 12/13] crypto: Documentation - CIPHER API documentation
+Date: Wed, 12 Nov 2014 05:30:06 +0100
+Message-ID: <2142029.lWC3fkng5E@tachyon.chronox.de>
 User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
 In-Reply-To: <1800066.efQ8hkST4U@tachyon.chronox.de>
 References: <1800066.efQ8hkST4U@tachyon.chronox.de>
@@ -30,206 +30,159 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The API function calls exported by the kernel crypto API for
-message digests to be used by consumers are documented.
+signle block ciphers to be used by consumers are documented.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- include/linux/crypto.h | 119 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 119 insertions(+)
+ include/linux/crypto.h | 89 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
 
 diff --git a/include/linux/crypto.h b/include/linux/crypto.h
-index 0f95a07..208a632 100644
+index c9ebe45..0f95a07 100644
 --- a/include/linux/crypto.h
 +++ b/include/linux/crypto.h
-@@ -2082,6 +2082,13 @@ static inline void crypto_cipher_decrypt_one(struct crypto_cipher *tfm,
- 						dst, src);
+@@ -1900,6 +1900,23 @@ static inline void crypto_blkcipher_get_iv(struct crypto_blkcipher *tfm,
+ 	memcpy(dst, crypto_blkcipher_crt(tfm)->iv, len);
  }
  
 +/**
-+ * DOC: Synchronous Message Digest API
++ * DOC: Single Block Cipher API
 + *
-+ * The synchronous message digest API is used with the ciphers of type
-+ * CRYPTO_ALG_TYPE_HASH (listed as type "hash" in /proc/crypto)
++ * The single block cipher API is used with the ciphers of type
++ * CRYPTO_ALG_TYPE_CIPHER (listed as type "cipher" in /proc/crypto).
++ *
++ * Using the single block cipher API calls, operations with the basic cipher
++ * primitive can be implemented. These cipher primitives exclude any block
++ * chaining operations including IV handling.
++ *
++ * The purpose of this single block cipher API is to support the implementation
++ * of templates or other concepts that only need to perform the cipher operation
++ * on one block at a time. Templates invoke the underlying cipher primitive
++ * block-wise and process either the input or the output data of these cipher
++ * operations.
 + */
 +
- static inline struct crypto_hash *__crypto_hash_cast(struct crypto_tfm *tfm)
+ static inline struct crypto_cipher *__crypto_cipher_cast(struct crypto_tfm *tfm)
  {
- 	return (struct crypto_hash *)tfm;
-@@ -2094,6 +2101,20 @@ static inline struct crypto_hash *crypto_hash_cast(struct crypto_tfm *tfm)
- 	return __crypto_hash_cast(tfm);
+ 	return (struct crypto_cipher *)tfm;
+@@ -1911,6 +1928,20 @@ static inline struct crypto_cipher *crypto_cipher_cast(struct crypto_tfm *tfm)
+ 	return __crypto_cipher_cast(tfm);
  }
  
 +/**
-+ * crypto_alloc_hash() - allocate synchronous message digest handle
++ * crypto_alloc_cipher() - allocate single block cipher handle
 + * @alg_name: is the cra_name / name or cra_driver_name / driver name of the
-+ *	      message digest cipher
++ *	     single block cipher
 + * @type: specifies the type of the cipher
 + * @mask: specifies the mask for the cipher
 + *
-+ * Allocate a cipher handle for a message digest. The returned struct
-+ * crypto_hash is the cipher handle that is required for any subsequent
-+ * API invocation for that message digest.
++ * Allocate a cipher handle for a single block cipher. The returned struct
++ * crypto_cipher is the cipher handle that is required for any subsequent API
++ * invocation for that single block cipher.
 + *
 + * Return: allocated cipher handle in case of success; IS_ERR() is true in case
-+ * of an error, PTR_ERR() returns the error code.
++ *	   of an error, PTR_ERR() returns the error code.
 + */
- static inline struct crypto_hash *crypto_alloc_hash(const char *alg_name,
- 						    u32 type, u32 mask)
+ static inline struct crypto_cipher *crypto_alloc_cipher(const char *alg_name,
+ 							u32 type, u32 mask)
  {
-@@ -2110,11 +2131,25 @@ static inline struct crypto_tfm *crypto_hash_tfm(struct crypto_hash *tfm)
+@@ -1926,11 +1957,25 @@ static inline struct crypto_tfm *crypto_cipher_tfm(struct crypto_cipher *tfm)
  	return &tfm->base;
  }
  
 +/**
-+ * crypto_free_hash() - zeroize and free message digest handle
++ * crypto_free_cipher() - zeroize and free the single block cipher handle
 + * @tfm: cipher handle to be freed
 + */
- static inline void crypto_free_hash(struct crypto_hash *tfm)
+ static inline void crypto_free_cipher(struct crypto_cipher *tfm)
  {
- 	crypto_free_tfm(crypto_hash_tfm(tfm));
+ 	crypto_free_tfm(crypto_cipher_tfm(tfm));
  }
  
 +/**
-+ * crypto_has_hash() - Search for the availability of a message digest
++ * crypto_has_cipher() - Search for the availability of a single block cipher
 + * @alg_name: is the cra_name / name or cra_driver_name / driver name of the
-+ *	      message digest cipher
++ *	     single block cipher
 + * @type: specifies the type of the cipher
 + * @mask: specifies the mask for the cipher
 + *
-+ * Return: true when the message digest cipher is known to the kernel crypto
-+ *	   API; false otherwise
++ * Return: true when the single block cipher is known to the kernel crypto API;
++ *	   false otherwise
 + */
- static inline int crypto_has_hash(const char *alg_name, u32 type, u32 mask)
+ static inline int crypto_has_cipher(const char *alg_name, u32 type, u32 mask)
  {
  	type &= ~CRYPTO_ALG_TYPE_MASK;
-@@ -2130,6 +2165,15 @@ static inline struct hash_tfm *crypto_hash_crt(struct crypto_hash *tfm)
- 	return &crypto_hash_tfm(tfm)->crt_hash;
+@@ -1945,6 +1990,16 @@ static inline struct cipher_tfm *crypto_cipher_crt(struct crypto_cipher *tfm)
+ 	return &crypto_cipher_tfm(tfm)->crt_cipher;
  }
  
 +/**
-+ * crypto_hash_blocksize() - obtain block size for message digest
++ * crypto_cipher_blocksize() - obtain block size for cipher
 + * @tfm: cipher handle
 + *
-+ * The block size for the message digest cipher referenced with the cipher
-+ * handle is returned.
++ * The block size for the single block cipher referenced with the cipher handle
++ * tfm is returned. The caller may use that information to allocate appropriate
++ * memory for the data returned by the encryption or decryption operation
 + *
 + * Return: block size of cipher
 + */
- static inline unsigned int crypto_hash_blocksize(struct crypto_hash *tfm)
+ static inline unsigned int crypto_cipher_blocksize(struct crypto_cipher *tfm)
  {
- 	return crypto_tfm_alg_blocksize(crypto_hash_tfm(tfm));
-@@ -2140,6 +2184,15 @@ static inline unsigned int crypto_hash_alignmask(struct crypto_hash *tfm)
- 	return crypto_tfm_alg_alignmask(crypto_hash_tfm(tfm));
+ 	return crypto_tfm_alg_blocksize(crypto_cipher_tfm(tfm));
+@@ -1972,6 +2027,22 @@ static inline void crypto_cipher_clear_flags(struct crypto_cipher *tfm,
+ 	crypto_tfm_clear_flags(crypto_cipher_tfm(tfm), flags);
  }
  
 +/**
-+ * crypto_hash_digestsize() - obtain message digest size
++ * crypto_cipher_setkey() - set key for cipher
 + * @tfm: cipher handle
-+ *
-+ * The size for the message digest created by the message digest cipher
-+ * referenced with the cipher handle is returned.
-+ *
-+ * Return: message digest size
-+ */
- static inline unsigned int crypto_hash_digestsize(struct crypto_hash *tfm)
- {
- 	return crypto_hash_crt(tfm)->digestsize;
-@@ -2160,11 +2213,38 @@ static inline void crypto_hash_clear_flags(struct crypto_hash *tfm, u32 flags)
- 	crypto_tfm_clear_flags(crypto_hash_tfm(tfm), flags);
- }
- 
-+/**
-+ * crypto_hash_init() - (re)initialize message digest handle
-+ * @desc: cipher request handle that to be filled by caller --
-+ *	  desc.tfm is filled with the hash cipher handle;
-+ *	  desc.flags is filled with either CRYPTO_TFM_REQ_MAY_SLEEP or 0.
-+ *
-+ * The call (re-)initializes the message digest referenced by the hash cipher
-+ * request handle. Any potentially existing state created by previous
-+ * operations is discarded.
-+ *
-+ * Return: 0 if the message digest initialization was successful; < 0 if an
-+ *	   error occurred
-+ */
- static inline int crypto_hash_init(struct hash_desc *desc)
- {
- 	return crypto_hash_crt(desc->tfm)->init(desc);
- }
- 
-+/**
-+ * crypto_hash_update() - add data to message digest for processing
-+ * @desc: cipher request handle
-+ * @sg: scatter / gather list pointing to the data to be added to the message
-+ *      digest
-+ * @nbytes: number of bytes to be processed from @sg
-+ *
-+ * Updates the message digest state of the cipher handle pointed to by the
-+ * hash cipher request handle with the input data pointed to by the
-+ * scatter/gather list.
-+ *
-+ * Return: 0 if the message digest update was successful; < 0 if an error
-+ *	   occurred
-+ */
- static inline int crypto_hash_update(struct hash_desc *desc,
- 				     struct scatterlist *sg,
- 				     unsigned int nbytes)
-@@ -2172,11 +2252,39 @@ static inline int crypto_hash_update(struct hash_desc *desc,
- 	return crypto_hash_crt(desc->tfm)->update(desc, sg, nbytes);
- }
- 
-+/**
-+ * crypto_hash_final() - calculate message digest
-+ * @desc: cipher request handle
-+ * @out: message digest output buffer -- The caller must ensure that the out
-+ *	 buffer has a sufficient size (e.g. by using the crypto_hash_digestsize
-+ *	 function).
-+ *
-+ * Finalize the message digest operation and create the message digest
-+ * based on all data added to the cipher handle. The message digest is placed
-+ * into the output buffer.
-+ *
-+ * Return: 0 if the message digest creation was successful; < 0 if an error
-+ *	   occurred
-+ */
- static inline int crypto_hash_final(struct hash_desc *desc, u8 *out)
- {
- 	return crypto_hash_crt(desc->tfm)->final(desc, out);
- }
- 
-+/**
-+ * crypto_hash_digest() - calculate message digest for a buffer
-+ * @desc: see crypto_hash_final()
-+ * @sg: see crypto_hash_update()
-+ * @nbytes:  see crypto_hash_update()
-+ * @out: see crypto_hash_final()
-+ *
-+ * This function is a "short-hand" for the function calls of crypto_hash_init,
-+ * crypto_hash_update and crypto_hash_final. The parameters have the same
-+ * meaning as discussed for those separate three functions.
-+ *
-+ * Return: 0 if the message digest creation was successful; < 0 if an error
-+ *	   occurred
-+ */
- static inline int crypto_hash_digest(struct hash_desc *desc,
- 				     struct scatterlist *sg,
- 				     unsigned int nbytes, u8 *out)
-@@ -2184,6 +2292,17 @@ static inline int crypto_hash_digest(struct hash_desc *desc,
- 	return crypto_hash_crt(desc->tfm)->digest(desc, sg, nbytes, out);
- }
- 
-+/**
-+ * crypto_hash_setkey() - set key for message digest
-+ * @hash: cipher handle
 + * @key: buffer holding the key
 + * @keylen: length of the key in bytes
 + *
-+ * The caller provided key is set for the message digest cipher. The cipher
-+ * handle must point to a keyed hash in order for this function to succeed.
++ * The caller provided key is set for the single block cipher referenced by the
++ * cipher handle.
++ *
++ * Note, the key length determines the cipher type. Many block ciphers implement
++ * different cipher modes depending on the key size, such as AES-128 vs AES-192
++ * vs. AES-256. When providing a 16 byte key for an AES cipher handle, AES-128
++ * is performed.
 + *
 + * Return: 0 if the setting of the key was successful; < 0 if an error occurred
 + */
- static inline int crypto_hash_setkey(struct crypto_hash *hash,
- 				     const u8 *key, unsigned int keylen)
+ static inline int crypto_cipher_setkey(struct crypto_cipher *tfm,
+                                        const u8 *key, unsigned int keylen)
+ {
+@@ -1979,6 +2050,15 @@ static inline int crypto_cipher_setkey(struct crypto_cipher *tfm,
+ 						  key, keylen);
+ }
+ 
++/**
++ * crypto_cipher_encrypt_one() - encrypt one block of plaintext
++ * @tfm: cipher handle
++ * @dst: points to the buffer that will be filled with the ciphertext
++ * @src: buffer holding the plaintext to be encrypted
++ *
++ * Invoke the encryption operation of one block. The caller must ensure that
++ * the plaintext and ciphertext buffers are at least one block in size.
++ */
+ static inline void crypto_cipher_encrypt_one(struct crypto_cipher *tfm,
+ 					     u8 *dst, const u8 *src)
+ {
+@@ -1986,6 +2066,15 @@ static inline void crypto_cipher_encrypt_one(struct crypto_cipher *tfm,
+ 						dst, src);
+ }
+ 
++/**
++ * crypto_cipher_decrypt_one() - decrypt one block of ciphertext
++ * @tfm: cipher handle
++ * @dst: points to the buffer that will be filled with the plaintext
++ * @src: buffer holding the ciphertext to be decrypted
++ *
++ * Invoke the decryption operation of one block. The caller must ensure that
++ * the plaintext and ciphertext buffers are at least one block in size.
++ */
+ static inline void crypto_cipher_decrypt_one(struct crypto_cipher *tfm,
+ 					     u8 *dst, const u8 *src)
  {
 -- 
 2.1.0
