@@ -1,133 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934575AbaKLDm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:42:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59175 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491AbaKLB3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:29:43 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frank Rowand <frank.rowand@sonymobile.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH 3.17 196/319] serial: msm_serial: Fix kgdb continue
-Date: Wed, 12 Nov 2014 10:15:34 +0900
-Message-Id: <20141112011025.223449530@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-References: <20141112010952.553519040@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S934679AbaKLDmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:42:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:27000 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932834AbaKLDm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 22:42:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,366,1413270000"; 
+   d="scan'208";a="630525015"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, "Wu, Feng" <feng.wu@intel.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLv//ljeA//5lqcA=
+Date: Wed, 12 Nov 2014 03:42:02 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
+References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
+ <5461EC99.1000101@redhat.com>
+In-Reply-To: <5461EC99.1000101@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC3gq5l013655
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+Paolo Bonzini wrote on 2014-11-11:
+> 
+> 
+> On 11/11/2014 10:20, Wu, Feng wrote:
+>>> Since legacy KVM device assignment is effectively deprecated, have
+>>> you considered how we might do this with VFIO?  Thanks,
+>> 
+>> I haven't thought about how to enable this in VFIO so far. I think I
+>> can continue to implement that if needed after this patch set is finished.
+> What do you think of this?
+> 
+> Hi Feng,
+> 
+> we are not applying new features to legacy KVM device assignment,
+> since it is unsafe (it does not honor ACS).
 
-------------------
+Personally, I think this feature will be helpful to the legacy device assignment. Agree, vfio is the right solution for future feature enabling. But the old kvm without the good vfio supporting is still used largely today. The user really looking for this feature but they will not upgrade their kernel. It's easy for us to backport this feature to old kvm with the legacy device assignment, but it is impossible to backport the whole vfio. So I think you guys can take a consider to add this feature to both vfio and legacy device assignment.
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-
-commit 8b374399468da1c25db5b5d436b167aafc10fbdc upstream.
-
-Frank reports that after continuing in kgdb the RX stale event
-doesn't occur until after the RX fifo is filled up with exactly
-the amount of characters programmed for the RX watermark (in this
-case it's 48). To read a single character from the uartdm
-hardware we force a stale event so that any characters in the RX
-packing buffer are flushed into the RX fifo immediately instead
-of waiting for a stale timeout or for the fifo to fill. Forcing
-that stale event asserts the stale interrupt but we never clear
-that interrupt via UART_CR_CMD_RESET_STALE_INT in the polling
-functions. So when kgdb continues the stale interrupt is left
-pending in the hardware and we don't timeout with a stale event,
-like we usually would if a user typed one character on the
-console, until the reset stale interrupt and stale event commands
-are sent. Frank could get things working again by running
-handle_rx_dm(). By putting enough characters into the fifo he
-could trigger a watermark interrupt, and thus cause
-handle_rx_dm() to run finally resetting the stale interrupt
-and enabling the stale event so that single characters would
-cause timeouts again.
-
-The fix is to just do what the interrupt routine was doing all
-along and clear the stale interrupt and enable the event again.
-Doing this also smooths over any differences in the fifo behavior
-between v1.3 and v1.4 hardware allowing us to skip forcing the
-uart into single character mode.
-
-Reviewed-by: Frank Rowand <frank.rowand@sonymobile.com>
-Tested-by: Frank Rowand <frank.rowand@sonymobile.com>
-Fixes: f7e54d7ad743 "msm_serial: Add support for poll_{get,put}_char()"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/serial/msm_serial.c |   22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
-
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -683,17 +683,6 @@ static void msm_power(struct uart_port *
- }
- 
- #ifdef CONFIG_CONSOLE_POLL
--static int msm_poll_init(struct uart_port *port)
--{
--	struct msm_port *msm_port = UART_TO_MSM(port);
--
--	/* Enable single character mode on RX FIFO */
--	if (msm_port->is_uartdm >= UARTDM_1P4)
--		msm_write(port, UARTDM_DMEN_RX_SC_ENABLE, UARTDM_DMEN);
--
--	return 0;
--}
--
- static int msm_poll_get_char_single(struct uart_port *port)
- {
- 	struct msm_port *msm_port = UART_TO_MSM(port);
-@@ -705,7 +694,7 @@ static int msm_poll_get_char_single(stru
- 		return msm_read(port, rf_reg) & 0xff;
- }
- 
--static int msm_poll_get_char_dm_1p3(struct uart_port *port)
-+static int msm_poll_get_char_dm(struct uart_port *port)
- {
- 	int c;
- 	static u32 slop;
-@@ -729,6 +718,10 @@ static int msm_poll_get_char_dm_1p3(stru
- 			slop = msm_read(port, UARTDM_RF);
- 			c = sp[0];
- 			count--;
-+			msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
-+			msm_write(port, 0xFFFFFF, UARTDM_DMRX);
-+			msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE,
-+				  UART_CR);
- 		} else {
- 			c = NO_POLL_CHAR;
- 		}
-@@ -752,8 +745,8 @@ static int msm_poll_get_char(struct uart
- 	imr = msm_read(port, UART_IMR);
- 	msm_write(port, 0, UART_IMR);
- 
--	if (msm_port->is_uartdm == UARTDM_1P3)
--		c = msm_poll_get_char_dm_1p3(port);
-+	if (msm_port->is_uartdm)
-+		c = msm_poll_get_char_dm(port);
- 	else
- 		c = msm_poll_get_char_single(port);
- 
-@@ -812,7 +805,6 @@ static struct uart_ops msm_uart_pops = {
- 	.verify_port = msm_verify_port,
- 	.pm = msm_power,
- #ifdef CONFIG_CONSOLE_POLL
--	.poll_init = msm_poll_init,
- 	.poll_get_char	= msm_poll_get_char,
- 	.poll_put_char	= msm_poll_put_char,
- #endif
+> 
+> I and Alex can help you with designing a way to interface VFIO with
+> KVM posted interrupts.  Give us a few days to study these patches
+> more, or feel free to request comments if you have ideas about it yourself.
+> 
+> Paolo
 
 
+Best regards,
+Yang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
