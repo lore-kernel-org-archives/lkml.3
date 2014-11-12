@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaKLXW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 18:22:28 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:35870 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364AbaKLXW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 18:22:26 -0500
+	id S1753731AbaKLXXP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 18:23:15 -0500
+Received: from mga03.intel.com ([134.134.136.65]:22961 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752692AbaKLXXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 18:23:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="487028924"
+Date: Thu, 13 Nov 2014 07:02:17 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
+ hotplug
+Message-ID: <20141112230217.GB23249@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
+ <546377FC.4090408@arm.com>
+ <20141112153906.GL29390@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1415624983-22413-1-git-send-email-kever.yang@rock-chips.com>
-References: <1415624983-22413-1-git-send-email-kever.yang@rock-chips.com>
-Date: Wed, 12 Nov 2014 15:22:25 -0800
-X-Google-Sender-Auth: H-56rMnr_zauOYHqsVWVlH4rV0E
-Message-ID: <CAD=FV=V-D3qTtnwjme8k=boUkoGGPmfvcF=Jboq0qcRBzKrY6g@mail.gmail.com>
-Subject: Re: [PATCH v3] usb: dwc2: add bus suspend/resume for dwc2
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>, romain.perier@gmail.com,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        lyz <lyz@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jwerner@chromium.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141112153906.GL29390@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
-
-On Mon, Nov 10, 2014 at 5:09 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> Hcd controller needs bus_suspend/resume, dwc2 controller make
-> root hub generate suspend/resume signal with hprt0 register
-> when work in host mode.
-> After the root hub enter suspend, we can make controller enter
-> low power state with PCGCTL register.
+Hi Peter,
+On Wed, Nov 12, 2014 at 04:39:06PM +0100, Peter Zijlstra wrote:
+>On Wed, Nov 12, 2014 at 03:08:44PM +0000, Juri Lelli wrote:
+>> > @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
+>> >  	 * We have to consider system topology and task affinity
+>> >  	 * first, then we can look for a suitable cpu.
+>> >  	 */
+>> > -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+>> > -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+>> > +	cpumask_copy(later_mask, cpu_active_mask);
+>> > +	if (likely(task_rq(task)->online))
+>> > +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
+>> 
+>> So, here you consider the span only when the task_rq is online,
+>> but there might be others cpus still online belonging to the same
+>> rd->span. And you have to consider them when migrating. Actually,
+>> migration must still be restricted to the online cpus of task's
+>> original rd->span, or I fear you can break clustered scheduling.
 >
-> We also update the lx_state for hsotg state.
->
-> This patch has tested on rk3288 with suspend/resume.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> Acked-by: Paul Zimmerman <paulz@synopsys.com>
-> ---
->
-> Changes in v3:
-> - remove CONFIG_PM macro for bus_suspend/resume
-> - add PCGCTL operation for no device connect case
->
-> Changes in v2:
-> - update commit message
-> - make dwc2 suspend/resume sourcecode work
->
->  drivers/usb/dwc2/hcd.c | 88 +++++++++++++++++++++++++++++++++++++++++++-------
->  1 file changed, 77 insertions(+), 11 deletions(-)
+>Ah, good point that, we must somehow find the right root domain to
+>'restore' the task to. Now I'm not entirely sure we still have this.
+>Lemme ponder that.
 
-I would certainly appreciate confirmation, but my inclination is to
-NAK this change due to the fact that it regresses functionality.  I
-haven't done any serious review of it, but I've been testing it and it
-appears to break hotplug.
+Any idea is a great appreciated. :-)
 
-Said another way, I did this:
-
-1. Without this patch, I booted with a USB stick in.  It was detected.
-I unplugged it, waited 5 seconds, and then plugged it back in.  The
-USB stick was redetcted.
-
-2. With this patch, I did the same thing.  The USB not redected after
-plugging it back in.
-
--Doug
+Regards,
+Wanpeng Li 
