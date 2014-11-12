@@ -1,139 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaKLUZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:25:35 -0500
-Received: from mout.web.de ([212.227.17.12]:49447 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753332AbaKLUZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:25:34 -0500
-Message-ID: <5463C22B.7060405@users.sourceforge.net>
-Date: Wed, 12 Nov 2014 21:25:15 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH v2 1/2] staging: rtl8188eu: Deletion of unnecessary checks
- before three function calls
-References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net> <alpine.DEB.2.10.1410311900201.2481@hadrien> <5463C10D.6020409@users.sourceforge.net>
-In-Reply-To: <5463C10D.6020409@users.sourceforge.net>
+	id S1753344AbaKLU1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:27:07 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.162]:62345 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295AbaKLU1F convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 15:27:05 -0500
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat+g9Pnyo0=
+X-RZG-CLASS-ID: mo00
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:iyYeY+1XYLgkOd/zlDLtKLJkRDTEGlY5QDGkYztsErIRrexmLmO
- OCSec7T9MQ1qFl9T5MUoze2wBUCudyOO8A07WQzEfeYtp+a9K2DDRE3ztkHMWc1Kec1cJ9x
- YkmrZO1njac4L6Q30m6S0DAF8dp1lc+VrlG23WSKH+iQ40+9Ep6B2fOqsAtAxZ7lHJLPv0h
- IJILRVvQZM63l68047BiA==
-X-UI-Out-Filterresults: notjunk:1;
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration enabled
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
+Date: Wed, 12 Nov 2014 21:26:54 +0100
+Cc: Igor Grinberg <grinberg@compulab.co.il>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        List for communicating with real GTA04 owners 
+	<gta04-owner@goldelico.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <515E660B-B65D-41EF-97F5-74E4DE8FDD13@goldelico.com>
+References: <20141102180756.GH31454@atomide.com> <5458D29E.50908@compulab.co.il> <20141104154231.GP31454@atomide.com> <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
+To: Grazvydas Ignotas <notasas@gmail.com>, Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 12 Nov 2014 20:25:49 +0100
 
-The functions kfree(), rtw_free_netdev() and vfree() test whether their
-argument is NULL and then return immediately. Thus the test around the call
-is not needed.
+Am 12.11.2014 um 16:45 schrieb Grazvydas Ignotas <notasas@gmail.com>:
 
-This issue was detected by using the Coccinelle software.
+> On Tue, Nov 4, 2014 at 5:42 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> * Igor Grinberg <grinberg@compulab.co.il> [141104 05:22]:
+>>> Hi Tony,
+>>> 
+>>> On 11/02/14 20:07, Tony Lindgren wrote:
+>>>> Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+>>>> configuration") enabled configuring the PM features for twl4030.
+>>>> 
+>>>> This caused poweroff command to fail on devices that have the
+>>>> BCI charger on twl4030 wired, or have power wired for VBUS.
+>>>> Instead of powering off, the device reboots. This is because
+>>>> voltage is detected on charger or VBUS with the default bits
+>>>> enabled for the power transition registers.
+>>>> 
+>>>> To fix the issue, let's just clear VBUS and CHG bits as we want
+>>>> poweroff command to keep the system powered off.
+>>> 
+>>> What about devices that really need to start once VBUS or CHG is connected?
+>> 
+>> More handling can be added for some cases. With this patch the
+>> poweron bits will clear to defaults if power is completely removed.
+>> So start-up with VBUS and CHG works in that case.
+>> 
+>> However, if you have a battery connected, and you poweroff, with
+>> this patch the device won't power up with VBUS or CHG connected.
+>> 
+>> Note that most battery operated devices are not using the charger
+>> on twl4030 because it has issues charging a completely empty
+>> battery AFAIK. So most battery powered devices have been using an
+>> external USB charger chip that's not affected by this patch.
+> 
+> Pandora does, as well as GTA04 AFAIK,
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/staging/rtl8188eu/core/rtw_efuse.c   | 3 +--
- drivers/staging/rtl8188eu/core/rtw_mlme.c    | 3 +--
- drivers/staging/rtl8188eu/core/rtw_sta_mgt.c | 3 +--
- drivers/staging/rtl8188eu/core/rtw_xmit.c    | 6 ++----
- drivers/staging/rtl8188eu/os_dep/usb_intf.c  | 6 +++---
- 5 files changed, 8 insertions(+), 13 deletions(-)
+Yes. The trick is that the power level that turns on the device is a little higher
+and the battery provides enough energy for approx. 30 seconds until it drained
+to a level where it turns off. Depending on general setup (WIFI must remain
+powered off after boot) this is enough to boot into Linux and start full charging.
+Another trick is to modify MLO and U-Boot to raise the charging current.
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-index 5b997b2..697876b 100644
---- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-@@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16 _size_byte, u8  *pbuf)
- exit:
- 	kfree(efuseTbl);
- 
--	if (eFuseWord)
--		kfree(eFuseWord);
-+	kfree(eFuseWord);
- }
- 
- static void efuse_read_phymap_from_txpktbuf(
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-index 149c271..df54350 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-@@ -122,8 +122,7 @@ void rtw_free_mlme_priv(struct mlme_priv *pmlmepriv)
- 	rtw_free_mlme_priv_ie_data(pmlmepriv);
- 
- 	if (pmlmepriv) {
--		if (pmlmepriv->free_bss_buf)
--			vfree(pmlmepriv->free_bss_buf);
-+		vfree(pmlmepriv->free_bss_buf);
- 	}
- }
- 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-index e1dc8fa..af1de9c 100644
---- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-@@ -201,8 +201,7 @@ u32	_rtw_free_sta_priv(struct	sta_priv *pstapriv)
- 
- 		rtw_mfree_sta_priv_lock(pstapriv);
- 
--		if (pstapriv->pallocated_stainfo_buf)
--			vfree(pstapriv->pallocated_stainfo_buf);
-+		vfree(pstapriv->pallocated_stainfo_buf);
- 	}
- 
- 	return _SUCCESS;
-diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-index 639ace0..011c9cf 100644
---- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-@@ -246,11 +246,9 @@ void _rtw_free_xmit_priv (struct xmit_priv *pxmitpriv)
- 		pxmitbuf++;
- 	}
- 
--	if (pxmitpriv->pallocated_frame_buf)
--		vfree(pxmitpriv->pallocated_frame_buf);
-+	vfree(pxmitpriv->pallocated_frame_buf);
- 
--	if (pxmitpriv->pallocated_xmitbuf)
--		vfree(pxmitpriv->pallocated_xmitbuf);
-+	vfree(pxmitpriv->pallocated_xmitbuf);
- 
- 	/*  free xmit extension buff */
- 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 407a318..4e2c34b 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -456,8 +456,9 @@ free_adapter:
- 	if (status != _SUCCESS) {
- 		if (pnetdev)
- 			rtw_free_netdev(pnetdev);
--		else if (padapter)
-+		else
- 			vfree(padapter);
-+
- 		padapter = NULL;
- 	}
- exit:
-@@ -487,8 +488,7 @@ static void rtw_usb_if1_deinit(struct adapter *if1)
- 	DBG_88E("+r871xu_dev_remove, hw_init_completed=%d\n",
- 		if1->hw_init_completed);
- 	rtw_free_drv_sw(if1);
--	if (pnetdev)
--		rtw_free_netdev(pnetdev);
-+	rtw_free_netdev(pnetdev);
- }
- 
- static int rtw_drv_init(struct usb_interface *pusb_intf, const struct usb_device_id *pdid)
--- 
-2.1.3
+> but that's not "most devices“ I
 
+Indeed.
+
+> guess.. At least pandora was booting up on charger connect up until
+> now.
+
+Same for GTA04.
+
+> I don't know why shutdown used to work for Russell in legacy boot
+> and it changed for DT, the device would always start up when there was
+> AC power here.
+> 
+> 
+> Grazvydas
+> 
+>> 
+>> We could consider exporting a function for the charger driver to
+>> configure the poweron mask. And we could also consider passing a
+>> mask in ti,use_poweroff = 0xff.
+
+Yes, exporting these masks would be fine - if a board needs a non-default
+setup.
+
+>> 
+>>> It seems to me that forcing these bits on power off can break that kind of
+>>> devices and these settings should really be board specific.
+>>> What do you think?
+>> 
+>> There's a patch series for "[RFC,01/16] kernel: Add support for
+>> poweroff handler call chain" that should help with that. For sure
+>> the poweroff handling needs to be board specific as some systems
+>> may need to use a GPIO to shut off a regulator powering something
+>> before powering off the SoC.
+>> 
+>> Regards,
+>> 
+>> Tony
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+BR,
+Nikolaus
 
