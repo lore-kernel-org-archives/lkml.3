@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916AbaKLBa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:30:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59285 "EHLO
+	id S932925AbaKLBbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:31:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59289 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932877AbaKLBaz (ORCPT
+	with ESMTP id S932877AbaKLBa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:55 -0500
+	Tue, 11 Nov 2014 20:30:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 212/319] spi: fsl-dspi: Fix CTAR selection
-Date: Wed, 12 Nov 2014 10:15:50 +0900
-Message-Id: <20141112011027.910148050@linuxfoundation.org>
+        Torsten Fleischer <to-fleischer@t-online.de>,
+        Peter Chen <peter.chen@freescale.com>
+Subject: [PATCH 3.17 221/319] usb: chipidea: Fix oops when removing the ci_hdrc module
+Date: Wed, 12 Nov 2014 10:15:59 +0900
+Message-Id: <20141112011029.337936450@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,43 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Stein <alexander.stein@systec-electronic.com>
+From: Torsten Fleischer <to-fleischer@t-online.de>
 
-commit 5cc7b04740effa5cc0af53f434134b5859d58b73 upstream.
+commit 9680b60ed79edaf52f84b65cbb20859bbb26cb68 upstream.
 
-There are only 4 CTAR registers (CTAR0 - CTAR3) so we can only use the
-lower 2 bits of the chip select to select a CTAR register.
-SPI_PUSHR_CTAS used the lower 3 bits which would result in wrong bit values
-if the chip selects 4/5 are used. For those chip selects SPI_CTAR even
-calculated offsets of non-existing registers.
+The call of 'kfree(ci->hw_bank.regmap)' in ci_hdrc_remove() sometimes causes
+a kernel oops when removing the ci_hdrc module.
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Since there is no separate memory allocated for the ci->hw_bank.regmap array,
+there is no need to free it.
+
+Signed-off-by: Torsten Fleischer <to-fleischer@t-online.de>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-fsl-dspi.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/chipidea/core.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/spi/spi-fsl-dspi.c
-+++ b/drivers/spi/spi-fsl-dspi.c
-@@ -46,7 +46,7 @@
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -732,7 +732,6 @@ static int ci_hdrc_remove(struct platfor
+ 	ci_role_destroy(ci);
+ 	ci_hdrc_enter_lpm(ci, true);
+ 	usb_phy_shutdown(ci->transceiver);
+-	kfree(ci->hw_bank.regmap);
  
- #define SPI_TCR			0x08
- 
--#define SPI_CTAR(x)		(0x0c + (x * 4))
-+#define SPI_CTAR(x)		(0x0c + (((x) & 0x3) * 4))
- #define SPI_CTAR_FMSZ(x)	(((x) & 0x0000000f) << 27)
- #define SPI_CTAR_CPOL(x)	((x) << 26)
- #define SPI_CTAR_CPHA(x)	((x) << 25)
-@@ -70,7 +70,7 @@
- 
- #define SPI_PUSHR		0x34
- #define SPI_PUSHR_CONT		(1 << 31)
--#define SPI_PUSHR_CTAS(x)	(((x) & 0x00000007) << 28)
-+#define SPI_PUSHR_CTAS(x)	(((x) & 0x00000003) << 28)
- #define SPI_PUSHR_EOQ		(1 << 27)
- #define SPI_PUSHR_CTCNT	(1 << 26)
- #define SPI_PUSHR_PCS(x)	(((1 << x) & 0x0000003f) << 16)
+ 	return 0;
+ }
 
 
