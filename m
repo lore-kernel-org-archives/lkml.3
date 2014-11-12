@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161216AbaKLB4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:56:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33156 "EHLO
+	id S1754929AbaKLCBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:01:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33154 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161161AbaKLB4g (ORCPT
+	with ESMTP id S1161180AbaKLB4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:56:36 -0500
+	Tue, 11 Nov 2014 20:56:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 116/123] drm/radeon: remove invalid pci id
-Date: Wed, 12 Nov 2014 10:18:02 +0900
-Message-Id: <20141112011724.246904096@linuxfoundation.org>
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.10 115/123] usb: gadget: udc: core: fix kernel oops with soft-connect
+Date: Wed, 12 Nov 2014 10:18:01 +0900
+Message-Id: <20141112011724.200383060@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,30 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 8c3e434769b1707fd2d24de5a2eb25fedc634c4a upstream.
+[ Upstream commit bfa6b18c680450c17512c741ed1d818695747621 ]
 
-0x4c6e is a secondary device id so should not be used
-by the driver.
+Currently, there's no guarantee that udc->driver
+will be valid when using soft_connect sysfs
+interface. In fact, we can very easily trigger
+a NULL pointer dereference by trying to disconnect
+when a gadget driver isn't loaded.
 
-Noticed-by: Mark Kettenis <mark.kettenis@xs4all.nl>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Fix this bug:
+
+~# echo disconnect > soft_connect
+[   33.685743] Unable to handle kernel NULL pointer dereference at virtual address 00000014
+[   33.694221] pgd = ed0cc000
+[   33.697174] [00000014] *pgd=ae351831, *pte=00000000, *ppte=00000000
+[   33.703766] Internal error: Oops: 17 [#1] SMP ARM
+[   33.708697] Modules linked in: xhci_plat_hcd xhci_hcd snd_soc_davinci_mcasp snd_soc_tlv320aic3x snd_soc_edma snd_soc_omap snd_soc_evm snd_soc_core dwc3 snd_compress snd_pcm_dmaengine snd_pcm snd_timer snd lis3lv02d_i2c matrix_keypad lis3lv02d dwc3_omap input_polldev soundcore
+[   33.734372] CPU: 0 PID: 1457 Comm: bash Not tainted 3.17.0-09740-ga93416e-dirty #345
+[   33.742457] task: ee71ce00 ti: ee68a000 task.ti: ee68a000
+[   33.748116] PC is at usb_udc_softconn_store+0xa4/0xec
+[   33.753416] LR is at mark_held_locks+0x78/0x90
+[   33.758057] pc : [<c04df128>]    lr : [<c00896a4>]    psr: 20000013
+[   33.758057] sp : ee68bec8  ip : c0c00008  fp : ee68bee4
+[   33.770050] r10: ee6b394c  r9 : ee68bf80  r8 : ee6062c0
+[   33.775508] r7 : 00000000  r6 : ee6062c0  r5 : 0000000b  r4 : ee739408
+[   33.782346] r3 : 00000000  r2 : 00000000  r1 : ee71d390  r0 : ee664170
+[   33.789168] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[   33.796636] Control: 10c5387d  Table: ad0cc059  DAC: 00000015
+[   33.802638] Process bash (pid: 1457, stack limit = 0xee68a248)
+[   33.808740] Stack: (0xee68bec8 to 0xee68c000)
+[   33.813299] bec0:                   0000000b c0411284 ee6062c0 00000000 ee68bef4 ee68bee8
+[   33.821862] bee0: c04112ac c04df090 ee68bf14 ee68bef8 c01c2868 c0411290 0000000b ee6b3940
+[   33.830419] bf00: 00000000 00000000 ee68bf4c ee68bf18 c01c1a24 c01c2818 00000000 00000000
+[   33.838990] bf20: ee61b940 ee2f47c0 0000000b 000ce408 ee68bf80 c000f304 ee68a000 00000000
+[   33.847544] bf40: ee68bf7c ee68bf50 c0152dd8 c01c1960 ee68bf7c c0170af8 ee68bf7c ee2f47c0
+[   33.856099] bf60: ee2f47c0 000ce408 0000000b c000f304 ee68bfa4 ee68bf80 c0153330 c0152d34
+[   33.864653] bf80: 00000000 00000000 0000000b 000ce408 b6e7fb50 00000004 00000000 ee68bfa8
+[   33.873204] bfa0: c000f080 c01532e8 0000000b 000ce408 00000001 000ce408 0000000b 00000000
+[   33.881763] bfc0: 0000000b 000ce408 b6e7fb50 00000004 0000000b 00000000 000c5758 00000000
+[   33.890319] bfe0: 00000000 bec2c924 b6de422d b6e1d226 40000030 00000001 75716d2f 00657565
+[   33.898890] [<c04df128>] (usb_udc_softconn_store) from [<c04112ac>] (dev_attr_store+0x28/0x34)
+[   33.907920] [<c04112ac>] (dev_attr_store) from [<c01c2868>] (sysfs_kf_write+0x5c/0x60)
+[   33.916200] [<c01c2868>] (sysfs_kf_write) from [<c01c1a24>] (kernfs_fop_write+0xd0/0x194)
+[   33.924773] [<c01c1a24>] (kernfs_fop_write) from [<c0152dd8>] (vfs_write+0xb0/0x1bc)
+[   33.932874] [<c0152dd8>] (vfs_write) from [<c0153330>] (SyS_write+0x54/0xb0)
+[   33.940247] [<c0153330>] (SyS_write) from [<c000f080>] (ret_fast_syscall+0x0/0x48)
+[   33.948160] Code: e1a01007 e12fff33 e5140004 e5143008 (e5933014)
+[   33.954625] ---[ end trace f849bead94eab7ea ]---
+
+Fixes: 2ccea03 (usb: gadget: introduce UDC Class)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/drm/drm_pciids.h |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/gadget/udc-core.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -52,7 +52,6 @@
- 	{0x1002, 0x4C64, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV250|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x4C66, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV250|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x4C67, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV250|RADEON_IS_MOBILITY}, \
--	{0x1002, 0x4C6E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV280|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x4E44, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R300}, \
- 	{0x1002, 0x4E45, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R300}, \
- 	{0x1002, 0x4E46, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R300}, \
+--- a/drivers/usb/gadget/udc-core.c
++++ b/drivers/usb/gadget/udc-core.c
+@@ -439,6 +439,11 @@ static ssize_t usb_udc_softconn_store(st
+ {
+ 	struct usb_udc		*udc = container_of(dev, struct usb_udc, dev);
+ 
++	if (!udc->driver) {
++		dev_err(dev, "soft-connect without a gadget driver\n");
++		return -EOPNOTSUPP;
++	}
++
+ 	if (sysfs_streq(buf, "connect")) {
+ 		usb_gadget_udc_start(udc->gadget, udc->driver);
+ 		usb_gadget_connect(udc->gadget);
 
 
