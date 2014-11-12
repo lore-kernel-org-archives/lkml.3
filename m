@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaKLLhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:37:47 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43463 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319AbaKLLhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:37:45 -0500
-Date: Wed, 12 Nov 2014 12:37:37 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] sched/cputime: fix clock_nanosleep/clock_gettime
- inconsistency
-Message-ID: <20141112113737.GI10476@twins.programming.kicks-ass.net>
-References: <1415788168-3165-1-git-send-email-sgruszka@redhat.com>
- <20141112111553.GA21343@twins.programming.kicks-ass.net>
+	id S1752532AbaKLLiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:38:12 -0500
+Received: from [65.55.169.131] ([65.55.169.131]:41766 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752492AbaKLLiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 06:38:09 -0500
+X-WSS-ID: 0NEXC8C-08-5K7-02
+X-M-MSG: 
+Message-ID: <54634627.60502@amd.com>
+Date: Wed, 12 Nov 2014 18:36:07 +0700
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141112111553.GA21343@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Srikanth Thokala <sriku.linux@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <liviu.dudau@arm.com>,
+        <lorenzo.pieralisi@arm.com>, <will.deacon@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 2/2] PCI: generic: Add msi_parent DT binding
+References: <1415733454-24322-1-git-send-email-suravee.suthikulpanit@amd.com>
+	<1415733454-24322-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <CA+mB=1LEEtPCixB9Ej74L03yPPH7D6YvfpkZyJgsHCm97-GvKg@mail.gmail.com>
+In-Reply-To: <CA+mB=1LEEtPCixB9Ej74L03yPPH7D6YvfpkZyJgsHCm97-GvKg@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51704005)(199003)(189002)(479174003)(46102003)(47776003)(86362001)(92726001)(92566001)(4396001)(65956001)(64706001)(20776003)(102836001)(77156002)(23676002)(101416001)(68736004)(77096003)(62966003)(99396003)(120916001)(110136001)(65816999)(50986999)(44976005)(76176999)(83506001)(54356999)(31966008)(84676001)(21056001)(36756003)(50466002)(97736003)(65806001)(105586002)(64126003)(117636001)(95666004)(87936001)(106466001)(107046002)(41533002)(62816006);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB208;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
+X-Forefront-PRVS: 03932714EB
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 12:15:53PM +0100, Peter Zijlstra wrote:
-> On Wed, Nov 12, 2014 at 11:29:28AM +0100, Stanislaw Gruszka wrote:
+On 11/12/14 13:56, Srikanth Thokala wrote:
+>> @@ -122,9 +123,19 @@ static int gen_pci_config_write(struct pci_bus *bus, unsigned int devfn,
+>> >         return PCIBIOS_SUCCESSFUL;
+>> >  }
+>> >
+>> >+static int gen_pci_set_msi_parent(struct pci_bus *bus)
+>> >+{
+>> >+       struct gen_pci *pci = bus_to_gen_pci(bus);
+>> >+
+>> >+       bus->msi = pci->mchip;
+>> >+
+>> >+       return PCIBIOS_SUCCESSFUL;
+>> >+}
+>> >+
+>> >  static struct pci_ops gen_pci_ops = {
+>> >         .read   = gen_pci_config_read,
+>> >         .write  = gen_pci_config_write,
+>> >+       .set_msi_parent = gen_pci_set_msi_parent,
+> We assign the msi chip through add_bus() call, do we still need this?
 
-> > Issue happens because on start in thread_group_cputimer() we initialize
-> > sum_exec_runtime of cputimer with threads runtime not yet accounted and
-> > then add the threads runtime again on scheduler tick. When cputimer
-> > finish, it's sum_exec_runtime value is bigger than current sum counted
-> > by iterating over the threads in thread_group_cputime().
+Certain architecture (i.e arm64) doesn't implement struct hw_pci. 
+Therefore, there is no add_bus().  However, this new API should allow 
+non-arch dependent implementation.
 
-I'm not seeing how that can happen. We iterate each task once, for each
-task we grab sum_exec_runtime + whatever delta.
-
-It doesnt matter if a later interrupt or whatever folds the delta into
-sum_exec_runtime, we never look at it again.
-
-What I did found is that we appear to add the delta for the calling task
-twice, through:
-
-  cpu_timer_sample_group()
-    thread_group_cputimer()
-      thread_group_cputime()
-        times->sum_exec_runtime += task_sched_runtime();
-
-    *sample = cputime.sum_exec_runtime + task_delta_exec();
-
-Which would make the sample run ahead, making the sleep short. So would
-something like the below not cure things?
-
----
- include/linux/kernel_stat.h    |  5 -----
- kernel/sched/core.c            | 13 -------------
- kernel/time/posix-cpu-timers.c |  2 +-
- 3 files changed, 1 insertion(+), 19 deletions(-)
-
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 8422b4ed6882..b9376cd5a187 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -77,11 +77,6 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
- 	return kstat_cpu(cpu).irqs_sum;
- }
- 
--/*
-- * Lock/unlock the current runqueue - to extract task statistics:
-- */
--extern unsigned long long task_delta_exec(struct task_struct *);
--
- extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
- extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
- extern void account_steal_time(cputime_t);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5df22f1da07d..85ff99db2591 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2481,19 +2481,6 @@ static u64 do_task_delta_exec(struct task_struct *p, struct rq *rq)
- 	return ns;
- }
- 
--unsigned long long task_delta_exec(struct task_struct *p)
--{
--	unsigned long flags;
--	struct rq *rq;
--	u64 ns = 0;
--
--	rq = task_rq_lock(p, &flags);
--	ns = do_task_delta_exec(p, rq);
--	task_rq_unlock(rq, p, &flags);
--
--	return ns;
--}
--
- /*
-  * Return accounted runtime for the task.
-  * In case the task is currently running, return the runtime plus current's
-diff --git a/kernel/time/posix-cpu-timers.c b/kernel/time/posix-cpu-timers.c
-index 492b986195d5..a16b67859e2a 100644
---- a/kernel/time/posix-cpu-timers.c
-+++ b/kernel/time/posix-cpu-timers.c
-@@ -553,7 +553,7 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
- 		*sample = cputime_to_expires(cputime.utime);
- 		break;
- 	case CPUCLOCK_SCHED:
--		*sample = cputime.sum_exec_runtime + task_delta_exec(p);
-+		*sample = cputime.sum_exec_runtime;
- 		break;
- 	}
- 	return 0;
+Suravee
