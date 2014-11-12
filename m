@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaKLT3g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:29:36 -0500
-Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:12115 "EHLO
-	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753151AbaKLT3f (ORCPT
+	id S1753462AbaKLT35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:29:57 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46084 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaKLT3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:29:35 -0500
-Date: Wed, 12 Nov 2014 13:29:29 -0600
-From: Jeff Epler <jepler@unpythonic.net>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: cmetcalf@tilera.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: tile: kernel: kgdb.c: Use memcpy() instead of
- pointer copy one by one
-Message-ID: <20141112192929.GC53560@unpythonic.net>
-References: <5454DD70.6060004@gmail.com>
- <5462C1D3.3010504@gmail.com>
- <20141112132741.GA53560@unpythonic.net>
- <5463800C.8050404@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5463800C.8050404@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Nov 2014 14:29:55 -0500
+Message-ID: <1415820588.15847.6.camel@smoke>
+Subject: [PATCH V3] kexec: Add IND_FLAGS macro
+From: Geoff Levand <geoff@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev@lists.ozlabs.org, kexec@lists.infradead.org,
+        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>
+Date: Wed, 12 Nov 2014 11:29:48 -0800
+In-Reply-To: <20141007175248.GG27464@redhat.com>
+References: <cover.1412640584.git.geoff@infradead.org>
+	 <adf97d602657c72f6ee59aefe5d51149159a3e99.1412640584.git.geoff@infradead.org>
+	 <20141007175248.GG27464@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 11:43:08PM +0800, Chen Gang wrote:
-> >                                                       (I assume the
-> > compiler could do things like replace an intended load from memory with
-> > a constant load or even no load at all)
-> > 
-> 
-> Excuse me, my English is not quite well, I can not understand what you
-> said above. (If necessary, please help provide more details for it).
+Add a new kexec preprocessor macro IND_FLAGS, which is the bitwise OR of
+all the possible kexec IND_ kimage_entry indirection flags.  Having this
+macro allows for simplified code in the processing of the kexec
+kimage_entry items.  Also, remove the local powerpc definition and use
+the generic one.
 
-I am concerned that writing regs[TREG_TP] is "undefined behavior"
-according to the C standard.
+Signed-off-by: Geoff Levand <geoff@infradead.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+---
+Hi Ben,
 
-This expression is equivalent to *(regs + TREG_TP).  The expression
-(regs + TREG_TP) does not result in a pointer to any element of regs[],
-so dereferencing it is undefined behavior.  (Source: C99 draft standard
-WG14/N1256, annex J.2, "[The behavior is undefined if t]he operand of
-the unary * operator has an invalid value")
+Could you give your ack on this, then I'll try to get it
+merged with my other kexec patches.
 
-That is why the compiler showed the original diagnostic, but the same
-logic that made the loop's behavior undefined also makes the expression
-regs[TREG_TP] undefined whereever it appears.
+Thanks.
 
-None of this is a specific problem with your proposed patch.  Rather, it
-is a suggestion that the whole structure's design needs to be revisited
-in light of compilers beginning to notice that regs[TREG_TP] is
-undefined behavior and change their generated code as a result.
+-Geoff
 
-Unfortunately it looks like this header is also a part of the userspace
-API, so it can't simply be changed just in case all in-kernel uses are
-changed.
+ arch/powerpc/kernel/machine_kexec_64.c | 2 --
+ include/linux/kexec.h                  | 1 +
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-Jeff
+diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
+index 879b3aa..75652a32 100644
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -96,8 +96,6 @@ int default_machine_kexec_prepare(struct kimage *image)
+ 	return 0;
+ }
+ 
+-#define IND_FLAGS (IND_DESTINATION | IND_INDIRECTION | IND_DONE | IND_SOURCE)
+-
+ static void copy_segments(unsigned long ind)
+ {
+ 	unsigned long entry;
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 25e039c..b23412c 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -10,6 +10,7 @@
+ #define IND_INDIRECTION  (1 << IND_INDIRECTION_BIT)
+ #define IND_DONE         (1 << IND_DONE_BIT)
+ #define IND_SOURCE       (1 << IND_SOURCE_BIT)
++#define IND_FLAGS (IND_DESTINATION | IND_INDIRECTION | IND_DONE | IND_SOURCE)
+ 
+ #if !defined(__ASSEMBLY__)
+ 
+-- 
+1.9.1
+
+
+
