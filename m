@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934908AbaKLDMq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:12:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59869 "EHLO
+	id S1755589AbaKLDNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:13:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59861 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933960AbaKLBh2 (ORCPT
+	with ESMTP id S933933AbaKLBhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:37:28 -0500
+	Tue, 11 Nov 2014 20:37:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 015/203] SUNRPC: Dont wake tasks during connection abort
-Date: Wed, 12 Nov 2014 10:14:45 +0900
-Message-Id: <20141112011543.406467927@linuxfoundation.org>
+        kbuild test robot <fengguang.wu@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 013/203] drivers/net: macvtap and tun depend on INET
+Date: Wed, 12 Nov 2014 10:14:43 +0900
+Message-Id: <20141112011543.315528276@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,56 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit a743419f420a64d442280845c0377a915b76644f upstream.
+[ Upstream commit de11b0e8c569b96c2cf6a811e3805b7aeef498a3 ]
 
-When aborting a connection to preserve source ports, don't wake the task in
-xs_error_report.  This allows tasks with RPC_TASK_SOFTCONN to succeed if the
-connection needs to be re-established since it preserves the task's status
-instead of setting it to the status of the aborting kernel_connect().
+These drivers now call ipv6_proxy_select_ident(), which is defined
+only if CONFIG_INET is enabled.  However, they have really depended
+on CONFIG_INET for as long as they have allowed sending GSO packets
+from userland.
 
-This may also avoid a potential conflict on the socket's lock.
-
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fixes: f43798c27684 ("tun: Allow GSO using virtio_net_hdr")
+Fixes: b9fb9ee07e67 ("macvtap: add GSO/csum offload support")
+Fixes: 5188cd44c55d ("drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/sunrpc/xprt.h |    1 +
- net/sunrpc/xprtsock.c       |    4 ++++
- 2 files changed, 5 insertions(+)
+ drivers/net/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/linux/sunrpc/xprt.h
-+++ b/include/linux/sunrpc/xprt.h
-@@ -340,6 +340,7 @@ int			xs_swapper(struct rpc_xprt *xprt,
- #define XPRT_CONNECTION_ABORT	(7)
- #define XPRT_CONNECTION_CLOSE	(8)
- #define XPRT_CONGESTED		(9)
-+#define XPRT_CONNECTION_REUSE	(10)
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -135,6 +135,7 @@ config MACVLAN
+ config MACVTAP
+ 	tristate "MAC-VLAN based tap driver"
+ 	depends on MACVLAN
++	depends on INET
+ 	help
+ 	  This adds a specialized tap character device driver that is based
+ 	  on the MAC-VLAN network interface, called macvtap. A macvtap device
+@@ -205,6 +206,7 @@ config RIONET_RX_SIZE
  
- static inline void xprt_set_connected(struct rpc_xprt *xprt)
- {
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -842,6 +842,8 @@ static void xs_error_report(struct sock
- 	dprintk("RPC:       xs_error_report client %p, error=%d...\n",
- 			xprt, -err);
- 	trace_rpc_socket_error(xprt, sk->sk_socket, err);
-+	if (test_bit(XPRT_CONNECTION_REUSE, &xprt->state))
-+		goto out;
- 	xprt_wake_pending_tasks(xprt, err);
-  out:
- 	read_unlock_bh(&sk->sk_callback_lock);
-@@ -2251,7 +2253,9 @@ static void xs_tcp_setup_socket(struct w
- 		abort_and_exit = test_and_clear_bit(XPRT_CONNECTION_ABORT,
- 				&xprt->state);
- 		/* "close" the socket, preserving the local port */
-+		set_bit(XPRT_CONNECTION_REUSE, &xprt->state);
- 		xs_tcp_reuse_connection(transport);
-+		clear_bit(XPRT_CONNECTION_REUSE, &xprt->state);
- 
- 		if (abort_and_exit)
- 			goto out_eagain;
+ config TUN
+ 	tristate "Universal TUN/TAP device driver support"
++	depends on INET
+ 	select CRC32
+ 	---help---
+ 	  TUN/TAP provides packet reception and transmission for user space
 
 
