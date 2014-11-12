@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780AbaKLBeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59565 "EHLO
+	id S933385AbaKLBeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:34:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59591 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764AbaKLBeE (ORCPT
+	with ESMTP id S1754778AbaKLBeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:04 -0500
+	Tue, 11 Nov 2014 20:34:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andrea Adami <andrea.adami@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.17 273/319] mtd: cfi_cmdset_0001.c: fix resume for LH28F640BF chips
-Date: Wed, 12 Nov 2014 10:16:51 +0900
-Message-Id: <20141112011037.946825129@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.17 274/319] posix-timers: Fix stack info leak in timer_create()
+Date: Wed, 12 Nov 2014 10:16:52 +0900
+Message-Id: <20141112011038.140012187@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,42 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 89cf38dd536a7301d6b5f5ddd73f42074c01bfaa upstream.
+commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
 
-After '#echo mem > /sys/power/state' some devices can not be properly resumed
-because apparently the MTD Partition Configuration Register has been reset
-to default thus the rootfs cannot be mounted cleanly on resume.
-An example of this can be found in the SA-1100 Developer's Manual at 9.5.3.3
-where the second step of the Sleep Shutdown Sequence is described:
-"An internal reset is applied to the SA-1100. All units are reset...".
+If userland creates a timer without specifying a sigevent info, we'll
+create one ourself, using a stack local variable. Particularly will we
+use the timer ID as sival_int. But as sigev_value is a union containing
+a pointer and an int, that assignment will only partially initialize
+sigev_value on systems where the size of a pointer is bigger than the
+size of an int. On such systems we'll copy the uninitialized stack bytes
+from the timer_create() call to userland when the timer actually fires
+and we're going to deliver the signal.
 
-As workaround we refresh the PCR value as done initially on chip setup.
+Initialize sigev_value with 0 to plug the stack info leak.
 
-This behavior and the fix are confirmed by our tests done on 2 different Zaurus
-collie units with kernel 3.17.
+Found in the PaX patch, written by the PaX Team.
 
-Fixes: 812c5fa82bae: ("mtd: cfi_cmdset_0001.c: add support for Sharp LH28F640BF NOR")
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/chips/cfi_cmdset_0001.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/time/posix-timers.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mtd/chips/cfi_cmdset_0001.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-@@ -2590,6 +2590,8 @@ static void cfi_intelext_resume(struct m
- 
- 		/* Go to known state. Chip may have been power cycled */
- 		if (chip->state == FL_PM_SUSPENDED) {
-+			/* Refresh LH28F640BF Partition Config. Register */
-+			fixup_LH28F640BF(mtd);
- 			map_write(map, CMD(0xFF), cfi->chips[i].start);
- 			chip->oldstate = chip->state = FL_READY;
- 			wake_up(&chip->wq);
+--- a/kernel/time/posix-timers.c
++++ b/kernel/time/posix-timers.c
+@@ -636,6 +636,7 @@ SYSCALL_DEFINE3(timer_create, const cloc
+ 			goto out;
+ 		}
+ 	} else {
++		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
+ 		event.sigev_notify = SIGEV_SIGNAL;
+ 		event.sigev_signo = SIGALRM;
+ 		event.sigev_value.sival_int = new_timer->it_id;
 
 
