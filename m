@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590AbaKLB2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:28:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59086 "EHLO
+	id S932627AbaKLB2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:28:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556AbaKLB2f (ORCPT
+	with ESMTP id S932580AbaKLB2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:28:35 -0500
+	Tue, 11 Nov 2014 20:28:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David E. Box" <david.e.box@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.17 175/319] x86/platform/intel/iosf: Add Braswell PCI ID
-Date: Wed, 12 Nov 2014 10:15:13 +0900
-Message-Id: <20141112011021.643477509@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.17 147/319] MIPS: ftrace: Fix a microMIPS build problem
+Date: Wed, 12 Nov 2014 10:14:45 +0900
+Message-Id: <20141112011016.830115878@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,39 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David E. Box" <david.e.box@linux.intel.com>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 849f5d894383d25c49132437aa289c9a9c98d5df upstream.
+commit aedd153f5bb5b1f1d6d9142014f521ae2ec294cc upstream.
 
-Add Braswell PCI ID to list of supported ID's for the IOSF driver.
+Code before the .fixup section needs to have the .insn directive.
+This has no side effects on MIPS32/64 but it affects the way microMIPS
+loads the address for the return label.
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Link: http://lkml.kernel.org/r/1411017231-20807-2-git-send-email-david.e.box@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Fixes the following build problem:
+mips-linux-gnu-ld: arch/mips/built-in.o: .fixup+0x4a0: Unsupported jump between
+ISA modes; consider recompiling with interlinking enabled.
+mips-linux-gnu-ld: final link failed: Bad value
+Makefile:819: recipe for target 'vmlinux' failed
+
+The fix is similar to 1658f914ff91c3bf ("MIPS: microMIPS:
+Disable LL/SC and fix linker bug.")
+
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/8117/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/iosf_mbi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/mips/include/asm/ftrace.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/iosf_mbi.c
-+++ b/arch/x86/kernel/iosf_mbi.c
-@@ -26,6 +26,7 @@
- #include <asm/iosf_mbi.h>
- 
- #define PCI_DEVICE_ID_BAYTRAIL		0x0F00
-+#define PCI_DEVICE_ID_BRASWELL		0x2280
- #define PCI_DEVICE_ID_QUARK_X1000	0x0958
- 
- static DEFINE_SPINLOCK(iosf_mbi_lock);
-@@ -204,6 +205,7 @@ static int iosf_mbi_probe(struct pci_dev
- 
- static const struct pci_device_id iosf_mbi_pci_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BAYTRAIL) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BRASWELL) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_QUARK_X1000) },
- 	{ 0, },
- };
+--- a/arch/mips/include/asm/ftrace.h
++++ b/arch/mips/include/asm/ftrace.h
+@@ -24,7 +24,7 @@ do {							\
+ 	asm volatile (					\
+ 		"1: " load " %[tmp_dst], 0(%[tmp_src])\n"	\
+ 		"   li %[tmp_err], 0\n"			\
+-		"2:\n"					\
++		"2: .insn\n"				\
+ 							\
+ 		".section .fixup, \"ax\"\n"		\
+ 		"3: li %[tmp_err], 1\n"			\
+@@ -46,7 +46,7 @@ do {						\
+ 	asm volatile (				\
+ 		"1: " store " %[tmp_src], 0(%[tmp_dst])\n"\
+ 		"   li %[tmp_err], 0\n"		\
+-		"2:\n"				\
++		"2: .insn\n"			\
+ 						\
+ 		".section .fixup, \"ax\"\n"	\
+ 		"3: li %[tmp_err], 1\n"		\
 
 
