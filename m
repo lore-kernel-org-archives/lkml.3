@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426AbaKLEAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:00:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58803 "EHLO
+	id S1755447AbaKLEBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:01:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58786 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078AbaKLBZG (ORCPT
+	with ESMTP id S1752493AbaKLBY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:25:06 -0500
+	Tue, 11 Nov 2014 20:24:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.17 105/319] drm/nouveau/gpio: rename g92 class to g94
-Date: Wed, 12 Nov 2014 10:14:03 +0900
-Message-Id: <20141112011009.947208325@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.17 076/319] mnt: Prevent pivot_root from creating a loop in the mount tree
+Date: Wed, 12 Nov 2014 10:13:34 +0900
+Message-Id: <20141112011005.147305555@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,403 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Velikov <emil.l.velikov@gmail.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit b485a7005faba38286bc02ab1d80e2cbf61c1002 upstream.
+commit 0d0826019e529f21c84687521d03f60cd241ca7d upstream.
 
-nv92 hardware has only 16 interrupt lines, while nv94 and later
-has 32. Accessing 0xe0c{0,4} registers on nv92 can lead to incorrect
-PDISP setup. This is a regression introduced with
+Andy Lutomirski recently demonstrated that when chroot is used to set
+the root path below the path for the new ``root'' passed to pivot_root
+the pivot_root system call succeeds and leaks mounts.
 
-commit 9d0f5ec9ee0fd5dc5fc1cc2cf559286431e406e3
-Author: Ben Skeggs <bskeggs@redhat.com>
-Date:   Mon May 12 15:22:42 2014 +1000
+In examining the code I see that starting with a new root that is
+below the current root in the mount tree will result in a loop in the
+mount tree after the mounts are detached and then reattached to one
+another.  Resulting in all kinds of ugliness including a leak of that
+mounts involved in the leak of the mount loop.
 
-    gpio: split g92 class from nv50
+Prevent this problem by ensuring that the new mount is reachable from
+the current root of the mount tree.
 
-Reported-by: estece on #nouveau
-Signed-off-by: Emil Velikov <emil.l.velikov@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+[Added stable cc.  Fixes CVE-2014-7970.  --Andy]
+
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/87bnpmihks.fsf@x220.int.ebiederm.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/Makefile                   |    2 
- drivers/gpu/drm/nouveau/core/engine/device/nv50.c  |   22 +++---
- drivers/gpu/drm/nouveau/core/engine/device/nvc0.c  |   14 +--
- drivers/gpu/drm/nouveau/core/include/subdev/gpio.h |    2 
- drivers/gpu/drm/nouveau/core/subdev/gpio/nv92.c    |   74 ---------------------
- drivers/gpu/drm/nouveau/core/subdev/gpio/nv94.c    |   74 +++++++++++++++++++++
- drivers/gpu/drm/nouveau/core/subdev/gpio/nvd0.c    |    4 -
- drivers/gpu/drm/nouveau/core/subdev/gpio/priv.h    |    4 -
- 8 files changed, 98 insertions(+), 98 deletions(-)
+ fs/namespace.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/Makefile
-+++ b/drivers/gpu/drm/nouveau/Makefile
-@@ -129,7 +129,7 @@ nouveau-y += core/subdev/fb/gddr5.o
- nouveau-y += core/subdev/gpio/base.o
- nouveau-y += core/subdev/gpio/nv10.o
- nouveau-y += core/subdev/gpio/nv50.o
--nouveau-y += core/subdev/gpio/nv92.o
-+nouveau-y += core/subdev/gpio/nv94.o
- nouveau-y += core/subdev/gpio/nvd0.o
- nouveau-y += core/subdev/gpio/nve0.o
- nouveau-y += core/subdev/i2c/base.o
---- a/drivers/gpu/drm/nouveau/core/engine/device/nv50.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/device/nv50.c
-@@ -141,7 +141,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0x92:
- 		device->cname = "G92";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv50_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv50_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] =  nv84_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nv84_therm_oclass;
-@@ -169,7 +169,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0x94:
- 		device->cname = "G94";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] =  nv84_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nv84_therm_oclass;
-@@ -197,7 +197,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0x96:
- 		device->cname = "G96";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] =  nv84_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nv84_therm_oclass;
-@@ -225,7 +225,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0x98:
- 		device->cname = "G98";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] =  nv84_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nv84_therm_oclass;
-@@ -253,7 +253,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0xa0:
- 		device->cname = "G200";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv50_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] =  nv84_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nv84_therm_oclass;
-@@ -281,7 +281,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0xaa:
- 		device->cname = "MCP77/MCP78";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] =  nvaa_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nv84_therm_oclass;
-@@ -309,7 +309,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0xac:
- 		device->cname = "MCP79/MCP7A";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] =  nvaa_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nv84_therm_oclass;
-@@ -337,7 +337,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0xa3:
- 		device->cname = "GT215";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nva3_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -367,7 +367,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0xa5:
- 		device->cname = "GT216";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nva3_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -396,7 +396,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0xa8:
- 		device->cname = "GT218";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nva3_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -425,7 +425,7 @@ nv50_identify(struct nouveau_device *dev
- 	case 0xaf:
- 		device->cname = "MCP89";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nva3_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
---- a/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c
-@@ -60,7 +60,7 @@ nvc0_identify(struct nouveau_device *dev
- 	case 0xc0:
- 		device->cname = "GF100";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nvc0_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -92,7 +92,7 @@ nvc0_identify(struct nouveau_device *dev
- 	case 0xc4:
- 		device->cname = "GF104";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nvc0_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -124,7 +124,7 @@ nvc0_identify(struct nouveau_device *dev
- 	case 0xc3:
- 		device->cname = "GF106";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nvc0_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -155,7 +155,7 @@ nvc0_identify(struct nouveau_device *dev
- 	case 0xce:
- 		device->cname = "GF114";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nvc0_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -187,7 +187,7 @@ nvc0_identify(struct nouveau_device *dev
- 	case 0xcf:
- 		device->cname = "GF116";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nvc0_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -219,7 +219,7 @@ nvc0_identify(struct nouveau_device *dev
- 	case 0xc1:
- 		device->cname = "GF108";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nvc0_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
-@@ -250,7 +250,7 @@ nvc0_identify(struct nouveau_device *dev
- 	case 0xc8:
- 		device->cname = "GF110";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv92_gpio_oclass;
-+		device->oclass[NVDEV_SUBDEV_GPIO   ] =  nv94_gpio_oclass;
- 		device->oclass[NVDEV_SUBDEV_I2C    ] =  nv94_i2c_oclass;
- 		device->oclass[NVDEV_SUBDEV_CLOCK  ] = &nvc0_clock_oclass;
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
---- a/drivers/gpu/drm/nouveau/core/include/subdev/gpio.h
-+++ b/drivers/gpu/drm/nouveau/core/include/subdev/gpio.h
-@@ -40,7 +40,7 @@ nouveau_gpio(void *obj)
- 
- extern struct nouveau_oclass *nv10_gpio_oclass;
- extern struct nouveau_oclass *nv50_gpio_oclass;
--extern struct nouveau_oclass *nv92_gpio_oclass;
-+extern struct nouveau_oclass *nv94_gpio_oclass;
- extern struct nouveau_oclass *nvd0_gpio_oclass;
- extern struct nouveau_oclass *nve0_gpio_oclass;
- 
---- a/drivers/gpu/drm/nouveau/core/subdev/gpio/nv92.c
-+++ /dev/null
-@@ -1,74 +0,0 @@
--/*
-- * Copyright 2012 Red Hat Inc.
-- *
-- * Permission is hereby granted, free of charge, to any person obtaining a
-- * copy of this software and associated documentation files (the "Software"),
-- * to deal in the Software without restriction, including without limitation
-- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-- * and/or sell copies of the Software, and to permit persons to whom the
-- * Software is furnished to do so, subject to the following conditions:
-- *
-- * The above copyright notice and this permission notice shall be included in
-- * all copies or substantial portions of the Software.
-- *
-- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-- * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-- * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-- * OTHER DEALINGS IN THE SOFTWARE.
-- *
-- * Authors: Ben Skeggs
-- */
--
--#include "priv.h"
--
--void
--nv92_gpio_intr_stat(struct nouveau_gpio *gpio, u32 *hi, u32 *lo)
--{
--	u32 intr0 = nv_rd32(gpio, 0x00e054);
--	u32 intr1 = nv_rd32(gpio, 0x00e074);
--	u32 stat0 = nv_rd32(gpio, 0x00e050) & intr0;
--	u32 stat1 = nv_rd32(gpio, 0x00e070) & intr1;
--	*lo = (stat1 & 0xffff0000) | (stat0 >> 16);
--	*hi = (stat1 << 16) | (stat0 & 0x0000ffff);
--	nv_wr32(gpio, 0x00e054, intr0);
--	nv_wr32(gpio, 0x00e074, intr1);
--}
--
--void
--nv92_gpio_intr_mask(struct nouveau_gpio *gpio, u32 type, u32 mask, u32 data)
--{
--	u32 inte0 = nv_rd32(gpio, 0x00e050);
--	u32 inte1 = nv_rd32(gpio, 0x00e070);
--	if (type & NVKM_GPIO_LO)
--		inte0 = (inte0 & ~(mask << 16)) | (data << 16);
--	if (type & NVKM_GPIO_HI)
--		inte0 = (inte0 & ~(mask & 0xffff)) | (data & 0xffff);
--	mask >>= 16;
--	data >>= 16;
--	if (type & NVKM_GPIO_LO)
--		inte1 = (inte1 & ~(mask << 16)) | (data << 16);
--	if (type & NVKM_GPIO_HI)
--		inte1 = (inte1 & ~mask) | data;
--	nv_wr32(gpio, 0x00e050, inte0);
--	nv_wr32(gpio, 0x00e070, inte1);
--}
--
--struct nouveau_oclass *
--nv92_gpio_oclass = &(struct nouveau_gpio_impl) {
--	.base.handle = NV_SUBDEV(GPIO, 0x92),
--	.base.ofuncs = &(struct nouveau_ofuncs) {
--		.ctor = _nouveau_gpio_ctor,
--		.dtor = _nouveau_gpio_dtor,
--		.init = _nouveau_gpio_init,
--		.fini = _nouveau_gpio_fini,
--	},
--	.lines = 32,
--	.intr_stat = nv92_gpio_intr_stat,
--	.intr_mask = nv92_gpio_intr_mask,
--	.drive = nv50_gpio_drive,
--	.sense = nv50_gpio_sense,
--	.reset = nv50_gpio_reset,
--}.base;
---- /dev/null
-+++ b/drivers/gpu/drm/nouveau/core/subdev/gpio/nv94.c
-@@ -0,0 +1,74 @@
-+/*
-+ * Copyright 2012 Red Hat Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ *
-+ * Authors: Ben Skeggs
-+ */
-+
-+#include "priv.h"
-+
-+void
-+nv94_gpio_intr_stat(struct nouveau_gpio *gpio, u32 *hi, u32 *lo)
-+{
-+	u32 intr0 = nv_rd32(gpio, 0x00e054);
-+	u32 intr1 = nv_rd32(gpio, 0x00e074);
-+	u32 stat0 = nv_rd32(gpio, 0x00e050) & intr0;
-+	u32 stat1 = nv_rd32(gpio, 0x00e070) & intr1;
-+	*lo = (stat1 & 0xffff0000) | (stat0 >> 16);
-+	*hi = (stat1 << 16) | (stat0 & 0x0000ffff);
-+	nv_wr32(gpio, 0x00e054, intr0);
-+	nv_wr32(gpio, 0x00e074, intr1);
-+}
-+
-+void
-+nv94_gpio_intr_mask(struct nouveau_gpio *gpio, u32 type, u32 mask, u32 data)
-+{
-+	u32 inte0 = nv_rd32(gpio, 0x00e050);
-+	u32 inte1 = nv_rd32(gpio, 0x00e070);
-+	if (type & NVKM_GPIO_LO)
-+		inte0 = (inte0 & ~(mask << 16)) | (data << 16);
-+	if (type & NVKM_GPIO_HI)
-+		inte0 = (inte0 & ~(mask & 0xffff)) | (data & 0xffff);
-+	mask >>= 16;
-+	data >>= 16;
-+	if (type & NVKM_GPIO_LO)
-+		inte1 = (inte1 & ~(mask << 16)) | (data << 16);
-+	if (type & NVKM_GPIO_HI)
-+		inte1 = (inte1 & ~mask) | data;
-+	nv_wr32(gpio, 0x00e050, inte0);
-+	nv_wr32(gpio, 0x00e070, inte1);
-+}
-+
-+struct nouveau_oclass *
-+nv94_gpio_oclass = &(struct nouveau_gpio_impl) {
-+	.base.handle = NV_SUBDEV(GPIO, 0x94),
-+	.base.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = _nouveau_gpio_ctor,
-+		.dtor = _nouveau_gpio_dtor,
-+		.init = _nouveau_gpio_init,
-+		.fini = _nouveau_gpio_fini,
-+	},
-+	.lines = 32,
-+	.intr_stat = nv94_gpio_intr_stat,
-+	.intr_mask = nv94_gpio_intr_mask,
-+	.drive = nv50_gpio_drive,
-+	.sense = nv50_gpio_sense,
-+	.reset = nv50_gpio_reset,
-+}.base;
---- a/drivers/gpu/drm/nouveau/core/subdev/gpio/nvd0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/gpio/nvd0.c
-@@ -77,8 +77,8 @@ nvd0_gpio_oclass = &(struct nouveau_gpio
- 		.fini = _nouveau_gpio_fini,
- 	},
- 	.lines = 32,
--	.intr_stat = nv92_gpio_intr_stat,
--	.intr_mask = nv92_gpio_intr_mask,
-+	.intr_stat = nv94_gpio_intr_stat,
-+	.intr_mask = nv94_gpio_intr_mask,
- 	.drive = nvd0_gpio_drive,
- 	.sense = nvd0_gpio_sense,
- 	.reset = nvd0_gpio_reset,
---- a/drivers/gpu/drm/nouveau/core/subdev/gpio/priv.h
-+++ b/drivers/gpu/drm/nouveau/core/subdev/gpio/priv.h
-@@ -56,8 +56,8 @@ void nv50_gpio_reset(struct nouveau_gpio
- int  nv50_gpio_drive(struct nouveau_gpio *, int, int, int);
- int  nv50_gpio_sense(struct nouveau_gpio *, int);
- 
--void nv92_gpio_intr_stat(struct nouveau_gpio *, u32 *, u32 *);
--void nv92_gpio_intr_mask(struct nouveau_gpio *, u32, u32, u32);
-+void nv94_gpio_intr_stat(struct nouveau_gpio *, u32 *, u32 *);
-+void nv94_gpio_intr_mask(struct nouveau_gpio *, u32, u32, u32);
- 
- void nvd0_gpio_reset(struct nouveau_gpio *, u8);
- int  nvd0_gpio_drive(struct nouveau_gpio *, int, int, int);
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2822,6 +2822,9 @@ SYSCALL_DEFINE2(pivot_root, const char _
+ 	/* make sure we can reach put_old from new_root */
+ 	if (!is_path_reachable(old_mnt, old.dentry, &new))
+ 		goto out4;
++	/* make certain new is below the root */
++	if (!is_path_reachable(new_mnt, new.dentry, &root))
++		goto out4;
+ 	root_mp->m_count++; /* pin it so it won't go away */
+ 	lock_mount_hash();
+ 	detach_mnt(new_mnt, &parent_path);
 
 
