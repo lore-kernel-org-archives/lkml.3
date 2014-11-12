@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797AbaKLBXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:23:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58637 "EHLO
+	id S1753813AbaKLBXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:23:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762AbaKLBXJ (ORCPT
+	with ESMTP id S1753762AbaKLBXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:09 -0500
+	Tue, 11 Nov 2014 20:23:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Tseng <rogerable@realtek.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.17 041/319] mmc: rtsx_usb_sdmmc: fix incorrect last byte in R2 response
-Date: Wed, 12 Nov 2014 10:12:59 +0900
-Message-Id: <20141112010959.483515726@linuxfoundation.org>
+        Thorsten Knabe <linux@thorsten-knabe.de>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 3.17 069/319] um: ubd: Fix for processes stuck in D state forever
+Date: Wed, 12 Nov 2014 10:13:27 +0900
+Message-Id: <20141112011004.011938120@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,42 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Tseng <rogerable@realtek.com>
+From: Thorsten Knabe <linux@thorsten-knabe.de>
 
-commit 6f67cc6fd1cf339a0f19b9d4a998ec3c0123b1b6 upstream.
+commit 2a2361228c5e6d8c1733f00653481de918598e50 upstream.
 
-Current code erroneously fill the last byte of R2 response with an undefined
-value. In addition, the controller actually 'offloads' the last byte
-(CRC7, end bit) while receiving R2 response and thus it's impossible to get the
-actual value. This could cause mmc stack to obtain inconsistent CID from the
-same card after resume and misidentify it as a different card.
+Starting with Linux 3.12 processes get stuck in D state forever in
+UserModeLinux under sync heavy workloads. This bug was introduced by
+commit 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport).
+Fix bug by adding a check if FLUSH request was successfully submitted to
+the I/O thread and keeping the FLUSH request on the request queue on
+submission failures.
 
-Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
-
-Fixes: c7f6558d84af ("mmc: Add realtek USB sdmmc host driver")
-Signed-off-by: Roger Tseng <rogerable@realtek.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Fixes: 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport)
+Signed-off-by: Thorsten Knabe <linux@thorsten-knabe.de>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/rtsx_usb_sdmmc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/um/drivers/ubd_kern.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/host/rtsx_usb_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
-@@ -435,6 +435,13 @@ static void sd_send_cmd_get_rsp(struct r
- 	}
+--- a/arch/um/drivers/ubd_kern.c
++++ b/arch/um/drivers/ubd_kern.c
+@@ -1277,7 +1277,7 @@ static void do_ubd_request(struct reques
  
- 	if (rsp_type == SD_RSP_TYPE_R2) {
-+		/*
-+		 * The controller offloads the last byte {CRC-7, end bit 1'b1}
-+		 * of response type R2. Assign dummy CRC, 0, and end bit to the
-+		 * byte(ptr[16], goes into the LSB of resp[3] later).
-+		 */
-+		ptr[16] = 1;
-+
- 		for (i = 0; i < 4; i++) {
- 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
- 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
+ 	while(1){
+ 		struct ubd *dev = q->queuedata;
+-		if(dev->end_sg == 0){
++		if(dev->request == NULL){
+ 			struct request *req = blk_fetch_request(q);
+ 			if(req == NULL)
+ 				return;
+@@ -1299,7 +1299,8 @@ static void do_ubd_request(struct reques
+ 				return;
+ 			}
+ 			prepare_flush_request(req, io_req);
+-			submit_request(io_req, dev);
++			if (submit_request(io_req, dev) == false)
++				return;
+ 		}
+ 
+ 		while(dev->start_sg < dev->end_sg){
 
 
