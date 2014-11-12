@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089AbaKLLnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:43:20 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:35101 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505AbaKLLnP (ORCPT
+	id S1753136AbaKLLnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:43:52 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:60341 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954AbaKLLlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:43:15 -0500
+	Wed, 12 Nov 2014 06:41:16 -0500
+X-IronPort-AV: E=Sophos;i="5.07,368,1413244800"; 
+   d="scan'208";a="191920927"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux@arm.linux.org.uk>
+Subject: [PATCH v9 05/13] arm: introduce is_device_dma_coherent
+Date: Wed, 12 Nov 2014 11:40:46 +0000
+Message-ID: <1415792454-23161-5-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <1415678111-29914-3-git-send-email-ibanezchen@gmail.com>
-References: <1415678111-29914-1-git-send-email-ibanezchen@gmail.com>
-	<1415678111-29914-3-git-send-email-ibanezchen@gmail.com>
-Date: Wed, 12 Nov 2014 12:43:13 +0100
-Message-ID: <CABuKBeJRW9aKdbmK5Yum6dM99m3AihA9t-1U3+3H9XjtfUHvmw@mail.gmail.com>
-Subject: Re: [PATCH v5 3/3] dt-bindings: add documentation for Mediatek SoC
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Howard Chen <ibanezchen@gmail.com>
-Cc: arm@kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-11 4:55 GMT+01:00 Howard Chen <ibanezchen@gmail.com>:
-> This adds a DT binding documentation for the MT6592 SoC from Mediatek.
->
-> Signed-off-by: Howard Chen <ibanezchen@gmail.com>
-> ---
->  Documentation/devicetree/bindings/arm/mediatek.txt    | 7 +++++--
->  Documentation/devicetree/bindings/serial/mtk-uart.txt | 3 ++-
->  2 files changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/arm/mediatek.txt b/Documentation/devicetree/bindings/arm/mediatek.txt
-> index fa25226..1d2d151 100644
-> --- a/Documentation/devicetree/bindings/arm/mediatek.txt
-> +++ b/Documentation/devicetree/bindings/arm/mediatek.txt
-> @@ -1,10 +1,10 @@
->  Mediatek MT6589 Platforms Device Tree Bindings
->
-> -Boards with a SoC of the Mediatek MT6589 shall have the following property:
-> +Boards with a SoC from Mediatek shall have the following property:
->
->  Required root node property:
->
-> -compatible: must contain "mediatek,mt6589"
-> +compatible: must contain one of "mediatek,mt6589", "mediatek,mt6592"
->
->
->  Supported boards:
-> @@ -12,3 +12,6 @@ Supported boards:
->  - bq Aquaris5 smart phone:
->      Required root node properties:
->        - compatible = "mundoreader,bq-aquaris5", "mediatek,mt6589";
-> +
-> +- Evaluation board for MT6592:
-> +      - compatible = "mediatek,mt6592-evb", "mediatek,mt6592";
-> diff --git a/Documentation/devicetree/bindings/serial/mtk-uart.txt b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> index 48358a3..e2864b7 100644
-> --- a/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> +++ b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> @@ -2,9 +2,10 @@
->
->  Required properties:
->  - compatible should contain:
-> +  * "mediatek,mt6592-uart" for MT6592 compatible UARTS
->    * "mediatek,mt6589-uart" for MT6589 compatible UARTS
->    * "mediatek,mt6582-uart" for MT6582 compatible UARTS
-> -  * "mediatek,mt6577-uart" for all compatible UARTS (MT6589, MT6582, MT6577)
-> +  * "mediatek,mt6577-uart" for all compatible UARTS on MT65xx
+Introduce a boolean flag and an accessor function to check whether a
+device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
 
-This should be two seperate patches, one for the SoC documentation and
-one for the UART documentation.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux@arm.linux.org.uk
+---
+ arch/arm/include/asm/device.h      |    1 +
+ arch/arm/include/asm/dma-mapping.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
->
->  - reg: The base address of the UART register bank.
->
-> --
-> 1.9.1
->
-
-
-
+diff --git a/arch/arm/include/asm/device.h b/arch/arm/include/asm/device.h
+index dc662fc..4111592 100644
+--- a/arch/arm/include/asm/device.h
++++ b/arch/arm/include/asm/device.h
+@@ -17,6 +17,7 @@ struct dev_archdata {
+ #ifdef CONFIG_ARM_DMA_USE_IOMMU
+ 	struct dma_iommu_mapping	*mapping;
+ #endif
++	bool dma_coherent;
+ };
+ 
+ struct omap_device;
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 85738b2..8c3b616 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -123,11 +123,17 @@ static inline unsigned long dma_max_pfn(struct device *dev)
+ 
+ static inline int set_arch_dma_coherent_ops(struct device *dev)
+ {
++	dev->archdata.dma_coherent = true;
+ 	set_dma_ops(dev, &arm_coherent_dma_ops);
+ 	return 0;
+ }
+ #define set_arch_dma_coherent_ops(dev)	set_arch_dma_coherent_ops(dev)
+ 
++static inline bool is_device_dma_coherent(struct device *dev)
++{
++	return dev->archdata.dma_coherent;
++}
++
+ static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+ {
+ 	unsigned int offset = paddr & ~PAGE_MASK;
 -- 
-motzblog.wordpress.com
+1.7.10.4
+
