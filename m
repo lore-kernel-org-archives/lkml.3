@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934464AbaKLDtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:49:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59013 "EHLO
+	id S1754428AbaKLDuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:50:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440AbaKLB1r (ORCPT
+	with ESMTP id S932431AbaKLB1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:47 -0500
+	Tue, 11 Nov 2014 20:27:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Theodore Tso <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH 3.17 160/319] ext4: check s_chksum_driver when looking for bg csum presence
-Date: Wed, 12 Nov 2014 10:14:58 +0900
-Message-Id: <20141112011019.096800659@linuxfoundation.org>
+        Quinn Tran <quinn.tran@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.17 142/319] target: Fix queue full status NULL pointer for SCF_TRANSPORT_TASK_SENSE
+Date: Wed, 12 Nov 2014 10:14:40 +0900
+Message-Id: <20141112011015.987512594@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,61 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Quinn Tran <quinn.tran@qlogic.com>
 
-commit 813d32f91333e4c33d5a19b67167c4bae42dae75 upstream.
+commit 082f58ac4a48d3f5cb4597232cb2ac6823a96f43 upstream.
 
-Convert the ext4_has_group_desc_csum predicate to look for a checksum
-driver instead of the metadata_csum flag and change the bg checksum
-calculation function to look for GDT_CSUM before taking the crc16
-path.
+During temporary resource starvation at lower transport layer, command
+is placed on queue full retry path, which expose this problem.  The TCM
+queue full handling of SCF_TRANSPORT_TASK_SENSE currently sends the same
+cmd twice to lower layer.  The 1st time led to cmd normal free path.
+The 2nd time cause Null pointer access.
 
-Without this patch, if we mount with ^uninit_bg,^metadata_csum and
-later metadata_csum gets turned on by accident, the block group
-checksum functions will incorrectly assume that checksumming is
-enabled (metadata_csum) but that crc16 should be used
-(!s_chksum_driver).  This is totally wrong, so fix the predicate
-and the checksum formula selection.
+This regression bug was originally introduced v3.1-rc code in the
+following commit:
 
-(Granted, if the metadata_csum feature bit gets enabled on a live FS
-then something underhanded is going on, but we could at least avoid
-writing garbage into the on-disk fields.)
+commit e057f53308a5f071556ee80586b99ee755bf07f5
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Mon Oct 17 13:56:41 2011 -0400
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Dmitry Monakhov <dmonakhov@openvz.org>
+    target: remove the transport_qf_callback se_cmd callback
+
+Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h  |    4 ++--
- fs/ext4/super.c |    4 ++++
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/target/target_core_transport.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2333,8 +2333,8 @@ extern int ext4_register_li_request(stru
- static inline int ext4_has_group_desc_csum(struct super_block *sb)
- {
- 	return EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM |
--					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM);
-+					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM) ||
-+	       (EXT4_SB(sb)->s_chksum_driver != NULL);
- }
- 
- static inline int ext4_has_metadata_csum(struct super_block *sb)
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2025,6 +2025,10 @@ static __le16 ext4_group_desc_csum(struc
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1877,8 +1877,7 @@ static void transport_complete_qf(struct
+ 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
+ 		trace_target_cmd_complete(cmd);
+ 		ret = cmd->se_tfo->queue_status(cmd);
+-		if (ret)
+-			goto out;
++		goto out;
  	}
  
- 	/* old crc16 code */
-+	if (!(sbi->s_es->s_feature_ro_compat &
-+	      cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)))
-+		return 0;
-+
- 	offset = offsetof(struct ext4_group_desc, bg_checksum);
- 
- 	crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
+ 	switch (cmd->data_direction) {
 
 
