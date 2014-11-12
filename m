@@ -1,146 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965405AbaKLCxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:53:38 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47156 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457AbaKLCxQ (ORCPT
+	id S965481AbaKLCyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:54:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60257 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934458AbaKLBme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:53:16 -0500
-Message-ID: <5462CB90.1080303@roeck-us.net>
-Date: Tue, 11 Nov 2014 18:53:04 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 11 Nov 2014 20:42:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sami Liedes <sami.liedes@iki.fi>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 102/203] ext4: add ext4_iget_normal() which is to be used for dir tree lookups
+Date: Wed, 12 Nov 2014 10:16:12 +0900
+Message-Id: <20141112011547.362219353@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
+References: <20141112011542.686743533@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Barto <mister.freeman@laposte.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: BUG in scsi_lib.c due to a bad commit
-References: <54629CAE.2000207@laposte.net> <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com>
-In-Reply-To: <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.5462CB9C.00D0,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 04:17 PM, Bjorn Helgaas wrote:
-> [+cc Guenter, linux-scsi]
->
-> On Tue, Nov 11, 2014 at 4:33 PM, Barto <mister.freeman@laposte.net> wrote:
->> Hello everyone,
->>
->> I notice a bug since kernel 3.17 ( and also with 3.18 branch ), a random
->> hang at boot on some PC configurations, I did a "git bisect" and I found
->> that the culprit is  :
->>
->> [045065d8a300a37218c548e9aa7becd581c6a0e8] [SCSI] fix qemu boot hang problem
->>
->> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=045065d8a300a37218c548e9aa7becd581c6a0e8
->>
->> the author of this commit has choosen to inverse the logic of the if
->> statement in the file  drivers/scsi/scsi_lib.c in order to solve an
->> issue with qemu :
->>
->> --- a/drivers/scsi/scsi_lib.c
->> +++ b/drivers/scsi/scsi_lib.c
->> @@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct request_queue *q)
->> blk_requeue_request(q, req);
->> atomic_dec(&sdev->device_busy);
->> out_delay:
->> - if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->> + if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->> blk_delay_queue(q, SCSI_QUEUE_DELAY);
->> }
->>
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-The above commit was a follow-up to commit 71e75c97f97a, which did the following:
+------------------
 
--       if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
-+       if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+From: Theodore Ts'o <tytso@mit.edu>
 
-meaning it reversed the polarity of the check in the original code.
-Since that commit created problems as observed in qemu, I thought it
-would be obvious that restoring the original polarity would make sense.
-This is explained in my patch, so I am somewhat at loss why ...
+commit f4bb2981024fc91b23b4d09a8817c415396dbabb upstream.
 
->> this change triggers a bug on my PC ( I don't have SCSI devices, but
->> only 3 SATA harddisks and 2 IDE harddisks, SATA disks are on an ICH7
->> sata controler on the motherboard gigabyte GA-P31-DS3L, and IDE disk on
->> a JMicron JMB363/368 Sata/IDE PCIe card ), every 5~10 boots the boot
->> stops suddenly because of this commit,
->>
->> If I revert this commit then the bug is gone, more details can be found
->> here, where I created a patch who reverts commit 045065d8 :
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=87581
->>
->> my question: why Guenter Roeck ( the author of the bad commit ) has
->> choosen to inverse the logic in the if statement ?
+If there is a corrupted file system which has directory entries that
+point at reserved, metadata inodes, prohibit them from being used by
+treating them the same way we treat Boot Loader inodes --- that is,
+mark them to be bad inodes.  This prohibits them from being opened,
+deleted, or modified via chmod, chown, utimes, etc.
 
-this question is asked.
+In particular, this prevents a corrupted file system which has a
+directory entry which points at the journal inode from being deleted
+and its blocks released, after which point Much Hilarity Ensues.
 
-Having said that, I don't really care one way or another. I am fine
-with reverting my commit; if that is done, I'll simply remove the
-related scsi tests from my qemu test runs.
+Reported-by: Sami Liedes <sami.liedes@iki.fi>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Guenter
+---
+ fs/ext4/ext4.h  |    1 +
+ fs/ext4/inode.c |    7 +++++++
+ fs/ext4/namei.c |    4 ++--
+ fs/ext4/super.c |    2 +-
+ 4 files changed, 11 insertions(+), 3 deletions(-)
 
->> before his commit the if statement was like this :
->>
->> if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->> blk_delay_queue(q, SCSI_QUEUE_DELAY);
->>
->> if his decision to inverse the logic of
->> "atomic_read(&sdev->device_busy)" is acceptable then the real bug is
->> probably located elsewhere in the scsi source code, and we must solve
->> this mistery because there is obviously a bug regression in SCSI code
->> because with older kernels ( 3.16.7 and lower ) I don't have the random
->> hang boot bug with my configuration,
->>
->> another user in archlinux forums has also this bug and he has a more
->> modern PC ( intel i7 core cpu, SSD device ), my fear is when linux
->> distros will move to kernel 3.17 then more users will have this weird
->> random bug who can occur only on boot and only with a specific PC
->> configuration, if the boot step is passed despite the random bug then
->> the bug will not occur, it occurs only during the boot process, which
->> probably means that the faulty source code is only called during the
->> boot process,
->>
->> thanks for anyone who wants to dig this problem with me
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2110,6 +2110,7 @@ int do_journal_get_write_access(handle_t
+ #define CONVERT_INLINE_DATA	 2
+ 
+ extern struct inode *ext4_iget(struct super_block *, unsigned long);
++extern struct inode *ext4_iget_normal(struct super_block *, unsigned long);
+ extern int  ext4_write_inode(struct inode *, struct writeback_control *);
+ extern int  ext4_setattr(struct dentry *, struct iattr *);
+ extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4250,6 +4250,13 @@ bad_inode:
+ 	return ERR_PTR(ret);
+ }
+ 
++struct inode *ext4_iget_normal(struct super_block *sb, unsigned long ino)
++{
++	if (ino < EXT4_FIRST_INO(sb) && ino != EXT4_ROOT_INO)
++		return ERR_PTR(-EIO);
++	return ext4_iget(sb, ino);
++}
++
+ static int ext4_inode_blocks_set(handle_t *handle,
+ 				struct ext4_inode *raw_inode,
+ 				struct ext4_inode_info *ei)
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1429,7 +1429,7 @@ static struct dentry *ext4_lookup(struct
+ 					 dentry);
+ 			return ERR_PTR(-EIO);
+ 		}
+-		inode = ext4_iget(dir->i_sb, ino);
++		inode = ext4_iget_normal(dir->i_sb, ino);
+ 		if (inode == ERR_PTR(-ESTALE)) {
+ 			EXT4_ERROR_INODE(dir,
+ 					 "deleted inode referenced: %u",
+@@ -1460,7 +1460,7 @@ struct dentry *ext4_get_parent(struct de
+ 		return ERR_PTR(-EIO);
+ 	}
+ 
+-	return d_obtain_alias(ext4_iget(child->d_inode->i_sb, ino));
++	return d_obtain_alias(ext4_iget_normal(child->d_inode->i_sb, ino));
+ }
+ 
+ /*
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -996,7 +996,7 @@ static struct inode *ext4_nfs_get_inode(
+ 	 * Currently we don't know the generation for parent directory, so
+ 	 * a generation of 0 means "accept any"
+ 	 */
+-	inode = ext4_iget(sb, ino);
++	inode = ext4_iget_normal(sb, ino);
+ 	if (IS_ERR(inode))
+ 		return ERR_CAST(inode);
+ 	if (generation && inode->i_generation != generation) {
+
 
