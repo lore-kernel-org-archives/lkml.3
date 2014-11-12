@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009AbaKLGZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:25:12 -0500
-Received: from o1678948x20.outbound-mail.sendgrid.net ([167.89.48.20]:21631
-	"EHLO o1678948x20.outbound-mail.sendgrid.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752541AbaKLGZK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:25:10 -0500
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 01:25:10 EST
-Content-Type: text/plain; charset="utf-8"
+	id S1753091AbaKLGZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:25:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35116 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882AbaKLGZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 01:25:37 -0500
+Date: Wed, 12 Nov 2014 15:22:55 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 000/123] 3.10.60-stable review
+Message-ID: <20141112062255.GB3256@kroah.com>
+References: <20141112011718.985171261@linuxfoundation.org>
+ <5462EE6C.3070202@roeck-us.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: PayPal Inc <Paypal.support@customer.com>
-To: linux-kernel@vger.kernel.org
-Reply-To: Paypal.support@customer.com
-Subject: =?UTF-8?B?4pyUIEFsZXJ0ICEgWW91ciBQYXlQYWwgQWNjb3VudCBXaWxsIEJlIGxpbWl0ZWQgUFAxMzY2IA==?=
-Message-ID: <149a2a5390d.71e3.373105@ismtpd-002.sjc1.sendgrid.net>
-Date: Wed, 12 Nov 2014 06:16:17 +0000 (UTC)
-X-SG-EID: UsLXQ589HNP4HLBydmD9pgHURQozLYm9XliudupI8YtVaQd8NQ8/+UQTiXu8ZoPGvhXOcvA6ezQg5i
- JxrePUaCJ2+KIeZ4FY0hvj5UxHCKj2MI+xLfkSlwr6mbUrDhbuT1foUOBHk30eFb0Ybhbspbs/2mpa
- xEQNJfCQOToht5FjGAKIVYYy7TYpByAA39+Y
-X-SG-ID: VPWZYjw6GOzHdwkwPeoX9QiEbzQXX/gF9P8njHP5+LDpDFG3P+oawmxdAY9IrgfOZfwCIrK+F+7Kve
- VBR48+jdPpVsqnckO2i7MiXRU3jZfWRAj+rGteU4lgh6w0g+DLA2lbiBzG4Cc5Wb+XnWUGOr8VTXe5
- O66StTE1Ew9/GjD9/JPOAtNdHOlDCmMhSy1O
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5462EE6C.3070202@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-----------------------------------------------------------------------
-Reminder: We need your help
-----------------------------------------------------------------------
+On Tue, Nov 11, 2014 at 09:21:48PM -0800, Guenter Roeck wrote:
+> On 11/11/2014 05:16 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.10.60 release.
+> >There are 123 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Fri Nov 14 01:17:00 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> As an early heads up, I see some builds failing in 3.10 and 3.14 with
+> 
+> drivers/of/selftest.c: In function 'of_selftest':
+> drivers/of/selftest.c:224:2: error: implicit declaration of function 'of_selftest_property_match_string' [-Werror=implicit-function-declaration]
+>   of_selftest_property_match_string();
+>   ^
+> drivers/of/selftest.c: At top level:
+> drivers/of/selftest.c:129:20: warning: 'of_selftest_property_string' defined but not used [-Wunused-function]
+>  static void __init of_selftest_property_string(void)
+>                     ^
+> 
+> Not surprising, since commit 'of: Fix overflow bug in string property
+> parsing functions' replaces the now missing function with the defined
+> but unused function, apparently without changing the caller.
+> Oddly enough, the referenced upstream commit _does_ replace the
+> function name for both caller and callee.
 
+Crap, I took the "ignore the rejects" too literally when applying that
+patch, let me go rework it and see if I can fix it up.
 
+thanks for letting me know.
 
-We emailed you a little while ago to ask for your help resolving an issue
-with your account.
-
-What's the problem?
-
-Until this issue is resolved, you'll be able to log in to your PayPal
-account but you might not be able to add money to it or use some of your
-account features.
-
-You must follow this link to resolve your issue:
-(For some security reasons. Your account will be disabled next 24 Hours)
-
-you can paste this link into your web browser:
-http://paypal.com.au.security-check.aquaempire.com.sg
-
-
-Notice : In case you find the link disabled . Use COPY-PAST in a new
-         Secure Window to reactivate.
-
-
-
-
-Before we can offer you certain products and services, federal regulations
-require that we collect specific information to verify your identity. This
-information includes your name, address, date of birth, and National Tax ID
-or Social Security Number. We haven't been able to verify your identity
-using the information you provided, so we need some additional
-documentation from you.
-
-
-Case ID Number: PP-003-462-000-607
-
-How you can help
-
-It's usually pretty easy to take care of things like this. Most of the
-time, we just need a little more information about your account or latest
-transactions.
-
-Please log in to your account and go to the Resolution Center to find out
-what you need to do. If we don't hear from you soon, we may limit what you
-can do with your account until the issue is resolved.
-
-Sincerely,
-PayPal
-
-----------------------------------------------------------------------
-Help Center: 
-http://paypal.com.au.security-check.aquaempire.com.sg
-
-
-This email was sent by an automated system, so if you reply, nobody will
-see it. To get in touch with us, log in to your account and click "Contact
-Us" at the bottom of any page.
-
-Copyright © 2014 PayPal, Inc. All rights reserved. PayPal is located at
-2211 N. First St., San Jose, CA 95131.
-
-PayPal Email ID PP1366 - ef5987d0fa716
+greg k-h
