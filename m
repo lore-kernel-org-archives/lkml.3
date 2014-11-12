@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaKLOdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:33:07 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:60986 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaKLOcl (ORCPT
+	id S1753086AbaKLOdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:33:24 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:61207 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033AbaKLOdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:32:41 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-2f-54636f85e7f5
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Cc: Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v11 6/6] amba: Use inlines instead of macros for
- amba_pclk_enable/disable
-Date: Wed, 12 Nov 2014 15:32:28 +0100
-Message-id: <1415802748-30530-7-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xq7qt+ckhBnd6DCw2zljPajF96gVG
-	i9VT/7JavH5haPF082Mmi7NNb9gtOicuYbeYNWUvk8XlXXPYLD73HmG0uH2Z12LtkbvsFndP
-	HWWzOHP6EqvFhN8X2CyOrw23eNm3n8VB0KOluYfNY3bHTFaPxXteMnlsWtXJ5nHn2h42jy1X
-	21k8Zt/9wejRt2UVo8eK1d/ZPT5vkgvgiuKySUnNySxLLdK3S+DKWH/2MnvBLc6KzvUbWBoY
-	53N0MXJySAiYSGzrX88IYYtJXLi3nq2LkYtDSGApo8SCJ8eZQRJCAn1MEtveFYHYbALGEpuX
-	LwErEhFoZ5boWzeVDSTBLLCISaJpqmIXIweHsEC0xKFfoiBhFgFViSubDoGV8Aq4S7w584Md
-	YpmcxMljk1lBbE4BD4kv2/6yQexylzhz+SDLBEbeBYwMqxhFU0uTC4qT0nON9IoTc4tL89L1
-	kvNzNzFCgvzrDsalx6wOMQpwMCrx8H7QSg4RYk0sK67MPcQowcGsJMK7KwcoxJuSWFmVWpQf
-	X1Sak1p8iJGJg1OqgfH2wjLV7bdXrvPpWDH51j1X1/scO+p/OnU39/YcdLz8yLdfyWR157QZ
-	nv2yKudLNu1XerQ5O1/pjOAztVc+TGdftHKaFMQvnWb1fvVUg9uK3w+5WS3KKmTRstpU4p2a
-	WrCfrSCf9cCz+NURU/Yo309U+3V0RsZulh57Ke6L9XMOyy0p/vjm0zQlluKMREMt5qLiRACA
-	z6gdUAIAAA==
+	Wed, 12 Nov 2014 09:33:20 -0500
+Date: Wed, 12 Nov 2014 08:33:14 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, seth.forshee@canonical.com
+Subject: Re: [PATCH v5 1/4] fuse: Add support for pid namespaces
+Message-ID: <20141112143314.GA31775@ubuntu-hedt>
+Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Michael j Theall <mtheall@us.ibm.com>,
+	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+ <1414013060-137148-2-git-send-email-seth.forshee@canonical.com>
+ <20141111132734.GC333@tucsk>
+ <20141111152429.GA7906@ubuntu-hedt>
+ <20141112120742.GF333@tucsk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141112120742.GF333@tucsk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the amba_pclk_enable and amba_pclk_disable macros with static
-inline functions and remove checks for IS_ERR. The amba bus clock won't
-be ERR because probe would fail before the use of these functions.
+On Wed, Nov 12, 2014 at 01:07:42PM +0100, Miklos Szeredi wrote:
+> On Tue, Nov 11, 2014 at 09:24:29AM -0600, Seth Forshee wrote:
+> > > What happens when the server does indeed change pid namespace after mounting?
+> > > Will just receive bogus pid values?  Shouldn't it receive an error instead?
+> > 
+> > Yeah, I suppose it does receive bogus pids and userid values. About all
+> > we could do to prevent this is make the /dev/fuse read/write paths
+> > return an error if the current namespace isn't the same as the one at
+> > mount time. But then requests could get stuck in the queue forever, so
+> > maybe we should also fail all requests in the queue when this happens.
+> > Unless you have a better idea?
+> 
+> In fuse_dev_do_read() just after dequeuing the request check if the namespaces
+> match, and if not, reject with EIO.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- include/linux/amba/bus.h | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+Okay, I'll do that.
 
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index 2afc618b15ce..7daba00ddabd 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -92,11 +92,15 @@ struct amba_device *amba_find_device(const char *, struct device *, unsigned int
- int amba_request_regions(struct amba_device *, const char *);
- void amba_release_regions(struct amba_device *);
- 
--#define amba_pclk_enable(d)	\
--	(IS_ERR((d)->pclk) ? 0 : clk_enable((d)->pclk))
-+static inline int amba_pclk_enable(struct amba_device *dev)
-+{
-+	return clk_enable(dev->pclk);
-+}
- 
--#define amba_pclk_disable(d)	\
--	do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
-+static inline void amba_pclk_disable(struct amba_device *dev)
-+{
-+	clk_disable(dev->pclk);
-+}
- 
- static inline int amba_pclk_prepare(struct amba_device *dev)
- {
--- 
-1.9.1
+> > > > @@ -2146,7 +2147,11 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+> > > >  
+> > > >  		fl->fl_start = ffl->start;
+> > > >  		fl->fl_end = ffl->end;
+> > > > -		fl->fl_pid = ffl->pid;
+> > > > +		rcu_read_lock();
+> > > > +		fl->fl_pid = pid_vnr(find_pid_ns(ffl->pid, fc->pid_ns));
+> > > > +		rcu_read_unlock();
+> > > > +		if (ffl->pid != 0 && fl->fl_pid == 0)
+> > > > +			return -EIO;
+> > > 
+> > > This needs some comments: is this trying to translate the pid backwards?
+> > > Why is it not checking the return of find_pid_ns() then?  The man page
+> > > documents l_pid value of -1 but not of 0, so why are we checking for
+> > > "ffl->pid != 0"?  Or is the man page incomplete and in practice we get l_pid
+> > > == 0 values?
+> > 
+> > I'll add comments. It's converting the pid in the fuse_file_lock into
+> > the current pid namespace. pid_vnr calls pid_nr_ns, which returns 0 if
+> > the pid can't be translated into the namespace, thus we return the
+> > error.
+> > 
+> > pid_vnr's return values don't necessarily conform to the expectations of
+> > the fcntl syscall in all cases, and as far as I can tell it should never
+> > return <0. But if fcntl doesn't expect l_pid == 0 and pid_vnr could
+> > return that value then doesn't it makes sense for fuse to return an
+> > error in cases where this would happen?
+> 
+> Not necessarily.  The conflicting lock might be held by a process whose pid is
+> not visible from the client's namespace.  That doesn't mean that the GETLK
+> should fail, it just means that l_pid can't be filled in (same as in NFS when a
+> lock held on a different client).  AFAICS, NFS fills l_pid with zero in that
+> case.  Makes sense, not sure why the man page doesn't document that.
 
+Seems reasonable to follow the precedence set by NFS then.
+
+> 
+> > > > @@ -2170,7 +2175,9 @@ static void fuse_lk_fill(struct fuse_req *req, struct file *file,
+> > > >  	arg->lk.start = fl->fl_start;
+> > > >  	arg->lk.end = fl->fl_end;
+> > > >  	arg->lk.type = fl->fl_type;
+> > > > -	arg->lk.pid = pid;
+> > > > +	arg->lk.pid = pid_nr_ns(pid, fc->pid_ns);
+> > > > +	if (pid && arg->lk.pid == 0)
+> > > > +		return -EOVERFLOW;
+> > > 
+> > > Could have done the conversion immediately after getting 'pid' with task_tgid(),
+> > > then the changes would have been smaller and more localized.
+> > 
+> > The changes would be very marginally smaller since currently only one
+> > caller of fuse_lk_fill which passes a non-zero pid. If additional
+> > callers were ever added with non-zero pids then there would be
+> > duplication of this code. But I'll do it whichever way you prefer, just
+> > let me know.
+> 
+> I prefer the simpler (even if only marginally) one.
+
+I'll change it then.
+
+Thanks,
+Seth
