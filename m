@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaKLCMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:12:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33523 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885AbaKLCMP (ORCPT
+	id S1755196AbaKLCNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:13:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32934 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966391AbaKLBxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:12:15 -0500
+	Tue, 11 Nov 2014 20:53:22 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Sandeen <sandeen@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: [PATCH 3.10 069/123] ext4: fix reservation overflow in ext4_da_write_begin
+Date: Wed, 12 Nov 2014 10:17:15 +0900
+Message-Id: <20141112011722.143753859@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
+References: <20141112011718.985171261@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <20141111182418.GA5507@red-moon>
-References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
-	<20141111122901.GA4419@red-moon>
-	<CACVXFVNAc9axtESmo1zGZ3GMquTzjzWR3jx-b3tbhhLfQDDRcg@mail.gmail.com>
-	<20141111182418.GA5507@red-moon>
-Date: Wed, 12 Nov 2014 10:12:12 +0800
-Message-ID: <CACVXFVPzo2qNGa5DWESS3TXor=u82_SxHb+xzrBCRXtcQxq4Cg@mail.gmail.com>
-Subject: Re: [PATCH] pci: generic host: make it more generic
-From: Ming Lei <ming.lei@canonical.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        alvise rigo <a.rigo@virtualopensystems.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 2:24 AM, Lorenzo Pieralisi
-<lorenzo.pieralisi@arm.com> wrote:
-> On Tue, Nov 11, 2014 at 02:02:20PM +0000, Ming Lei wrote:
->
-> [...]
->
->> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296535.html
->> >
->> > Patch above is already queued and applies most of the changes you have posted
->> > above.
->>
->> I should have looked at list first before writing the patch, :-(
->>
->> Could you make it more generic so that other ARCHs(at least ARM64)
->> can benefit from it too?
->
-> That's our current goal, we are carrying out clean-ups to remove arch
-> dependency and move code to the generic layer PCI layer.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-OK, I am glad to test them after you post them out.
+------------------
 
-At least, the 'struct gen_pci' pointer can be put in driver data
-of the platform_device now, which may remove dependency on
-pci_sysdata in this driver.  But ARCH's pcibios code still may
-access 'pci_sysdata', do you have patches or solution to handle
-this issue?
+From: Eric Sandeen <sandeen@redhat.com>
 
-Do you think it is doable to introduce a option(from module
-parameter, or device tree, ...) to let the driver and PCI core
-ignore/bypass all pcibios handling for the generic bus?  If that
-is OK, it can provide an approach to reach the goal a bit easy.
-In reality, generic host controller should be only used by VM,
-and VM's firmware shouldn't be very complicated and I think
-the option can meet most of demands.
+commit 0ff8947fc5f700172b37cbca811a38eb9cb81e08 upstream.
 
-Thanks,
-Ming Lei
+Delalloc write journal reservations only reserve 1 credit,
+to update the inode if necessary.  However, it may happen
+once in a filesystem's lifetime that a file will cross
+the 2G threshold, and require the LARGE_FILE feature to
+be set in the superblock as well, if it was not set already.
+
+This overruns the transaction reservation, and can be
+demonstrated simply on any ext4 filesystem without the LARGE_FILE
+feature already set:
+
+dd if=/dev/zero of=testfile bs=1 seek=2147483646 count=1 \
+	conv=notrunc of=testfile
+sync
+dd if=/dev/zero of=testfile bs=1 seek=2147483647 count=1 \
+	conv=notrunc of=testfile
+
+leads to:
+
+EXT4-fs: ext4_do_update_inode:4296: aborting transaction: error 28 in __ext4_handle_dirty_super
+EXT4-fs error (device loop0) in ext4_do_update_inode:4301: error 28
+EXT4-fs error (device loop0) in ext4_reserve_inode_write:4757: Readonly filesystem
+EXT4-fs error (device loop0) in ext4_dirty_inode:4876: error 28
+EXT4-fs error (device loop0) in ext4_da_write_end:2685: error 28
+
+Adjust the number of credits based on whether the flag is
+already set, and whether the current write may extend past the
+LARGE_FILE limit.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/inode.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2647,6 +2647,20 @@ static int ext4_nonda_switch(struct supe
+ 	return 0;
+ }
+ 
++/* We always reserve for an inode update; the superblock could be there too */
++static int ext4_da_write_credits(struct inode *inode, loff_t pos, unsigned len)
++{
++	if (likely(EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++				EXT4_FEATURE_RO_COMPAT_LARGE_FILE)))
++		return 1;
++
++	if (pos + len <= 0x7fffffffULL)
++		return 1;
++
++	/* We might need to update the superblock to set LARGE_FILE */
++	return 2;
++}
++
+ static int ext4_da_write_begin(struct file *file, struct address_space *mapping,
+ 			       loff_t pos, unsigned len, unsigned flags,
+ 			       struct page **pagep, void **fsdata)
+@@ -2697,7 +2711,8 @@ retry_grab:
+ 	 * of file which has an already mapped buffer.
+ 	 */
+ retry_journal:
+-	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE, 1);
++	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE,
++				ext4_da_write_credits(inode, pos, len));
+ 	if (IS_ERR(handle)) {
+ 		page_cache_release(page);
+ 		return PTR_ERR(handle);
+
+
