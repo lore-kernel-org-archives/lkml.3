@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaKLJMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:12:09 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:44380 "EHLO extserv.mm-sol.com"
+	id S1752193AbaKLJPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:15:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39666 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaKLJMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:12:05 -0500
-Message-ID: <1415783543.4820.4.camel@mm-sol.com>
-Subject: Re: [PATCH] mfd: qcom-spmi-pmic: Add support for more chips versions
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Cc: Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Date: Wed, 12 Nov 2014 11:12:23 +0200
-In-Reply-To: <20141111202708.GA13013@sonymobile.com>
-References: <1415108003-16387-1-git-send-email-iivanov@mm-sol.com>
-	 <CAJAp7OgU64=KCuDhYEZTYppVeBz6wKvTDsof5vDRznfdZgAfZw@mail.gmail.com>
-	 <1415212271.14949.1.camel@mm-sol.com>
-	 <CAJAp7OgXHGWQj7MWh51LTUdmZpgZc=6m=o-Az=z8QxR7yfrw7g@mail.gmail.com>
-	 <1415260480.13103.3.camel@mm-sol.com>
-	 <CAJAp7OgPGhM=EnMNU2JfjG6Qb-EiWSPSRyZWGicSPmpicBQW7g@mail.gmail.com>
-	 <1415374390.26058.1.camel@mm-sol.com> <1415374852.26058.3.camel@mm-sol.com>
-	 <20141111202708.GA13013@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.6-fta3 
-Mime-Version: 1.0
+	id S1751533AbaKLJPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 04:15:13 -0500
+Message-ID: <546324F4.8010002@redhat.com>
+Date: Wed, 12 Nov 2014 10:14:28 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>, "Wu, Feng" <feng.wu@intel.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest interrupt configuration
+ changes
+References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com> <5461EC99.1000101@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Tue, 2014-11-11 at 12:27 -0800, Courtney Cavin wrote:
-> On Fri, Nov 07, 2014 at 04:40:52PM +0100, Ivan T. Ivanov wrote:
-> > 
-> > Forgot to add. PMIC subtype and version are used also in charger and BMS
-> > drivers to workaround hardware issues.
-> 
-> All of the blocks on the PM8x41 series have their own version numbers.
-> There's no need to look at the chip revision.
 
-I am suspecting that, for whatever the reason is, after updates inside blocks,
-the PMIC chip revisions update was made instead of blocks own version update.
+On 12/11/2014 04:42, Zhang, Yang Z wrote:
+> Personally, I think this feature will be helpful to the legacy device
+> assignment. Agree, vfio is the right solution for future feature
+> enabling. But the old kvm without the good vfio supporting is still
+> used largely today. The user really looking for this feature but they
+> will not upgrade their kernel. It's easy for us to backport this
+> feature to old kvm with the legacy device assignment, but it is
+> impossible to backport the whole vfio.
 
-> 
-> In fact, the SMBB (charger) documentation (80-NA555-12) specifically
+You can certainly backport these patches to distros that do not have
+VFIO.  But upstream we should work on VFIO first.  VFIO has feature
+parity with legacy device assignment, and adding a new feature that is
+not in VFIO would be a bad idea.
 
-It would be nice if I had this document :-).
+By the way, do you have benchmark results for it?  We have not been able
+to see any performance improvement for APICv on e.g. netperf.
 
-> refers to the SMBB_MISC block revision registers as the method for
-> determining the hardware version.  The "qpnp-charger" SMBB driver in the
-> CAF 3.4 & 3.10 trees utilizes block specific revision numbers, as do the
-> "qpnp-bms" BMS driver, the "qpnp-adc-current" IADC driver, and the
-> "qpnp-adc-voltage" VADC driver.
-
-Hm, they read its own block revision, but they are using PMIC chip revision
-for workaround decisions. What could be the reason for this?
-
-> 
-> The revision of the PMIC itself should be completely irrelevant to any
-> of the software interfacing with it.
-> 
-
-It will be really nice if this is the case, but I am afraid it is not.
-
-Regards,
-Ivan
-
-
-
+Paolo
