@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390AbaKLUDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:03:19 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:43979 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228AbaKLUDS convert rfc822-to-8bit (ORCPT
+	id S1753420AbaKLUE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:04:28 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:46060 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228AbaKLUE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:03:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <yw1x1tp8hbxk.fsf@unicorn.mansr.com>
-References: <a2e126c9-3001-4255-91c9-6311b54988c5@EXC02-ATKLA.omicron.at>
-	<yw1x4mu5j3c3.fsf@unicorn.mansr.com>
-	<CABkLObqGP2488XYCATKE_U-uDjo=tWgEAaU2+YkwstDTnoeetA@mail.gmail.com>
-	<yw1x1tp8hbxk.fsf@unicorn.mansr.com>
-Date: Wed, 12 Nov 2014 21:03:16 +0100
-X-Google-Sender-Auth: 6QVqUiJ5X-F_WYLrYp1pyo0jRhg
-Message-ID: <CABkLOboD+sEtPgft2Gpm6EGfVHzdkyUORntqjNBkCLSPH3Mb8w@mail.gmail.com>
-Subject: Re: [PATCH v2] n_tty: Fix read_buf race condition, increment
- read_head after pushing data
-From: Christian Riesch <christian.riesch@omicron.at>
-To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Nov 2014 15:04:26 -0500
+Date: Wed, 12 Nov 2014 15:04:23 -0500 (EST)
+Message-Id: <20141112.150423.1660890641226643870.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next] hyperv: Add processing of MTU reduced by the
+ host
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <ecc2fd8e646147fabb30d3120c889431@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1415748472-27463-1-git-send-email-haiyangz@microsoft.com>
+	<20141112.144640.703336197189868183.davem@davemloft.net>
+	<ecc2fd8e646147fabb30d3120c889431@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Nov 2014 12:04:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 12:53 PM, Måns Rullgård <mans@mansr.com> wrote:
-> Christian Riesch <christian.riesch@omicron.at> writes:
->
->> On Tue, Nov 11, 2014 at 2:04 PM, Måns Rullgård <mans@mansr.com> wrote:
->>> Christian Riesch <christian.riesch@omicron.at> writes:
->> [...]>> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
->>>> index 2e900a9..b09f326 100644
->>>> --- a/drivers/tty/n_tty.c
->>>> +++ b/drivers/tty/n_tty.c
->>>> @@ -321,7 +321,9 @@ static void n_tty_check_unthrottle(struct tty_struct *tty)
->>>>
->>>>  static inline void put_tty_queue(unsigned char c, struct n_tty_data *ldata)
->>>>  {
->>>> -     *read_buf_addr(ldata, ldata->read_head++) = c;
->>>> +     *read_buf_addr(ldata, ldata->read_head) = c;
->>>> +     /* increment read_head _after_ placing the character in the buffer */
->>>> +     ldata->read_head++;
->>>>  }
->>>
->>> Is that comment really necessary?
->>
->> No, I am pretty sure that removing the comment would not break the code ;-)
->>
->> I just thought it would be good to have some kind of reminder here.
->> Otherwise someone may think: Hey, it would be a good idea to do the
->> increment right in the first line. And submit a patch for it.
->
-> The intent all along was to increment after the write.  Nobody needs
-> reminding of that.  The problem was a misunderstanding of when the
-> post-increment takes effect.  As much as we'd like for everybody to have
-> a thorough knowledge of C, a random tty driver doesn't seem the place to
-> educate them.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Wed, 12 Nov 2014 20:02:11 +0000
 
-Ok. I will send a new patch without the comment.
-Thanks, Christian
+> The Hyper-V host doesn't support MTU below 1500. If we try setting MTU to a 
+> value < 1500, the host will use 1500 automatically and return 1500 in the 
+> RNDIS_OID_GEN_MAXIMUM_FRAME_SIZE query and guest will also use it. That's 
+> why I set the lower limit to ETH_DATA_LEN.
+> 
+> Are you suggesting that we keep the 68 as the lower limit, and let the host 
+> auto-reset it to 1500 when we trying to set an MTU < 1500?
+
+Then you need to add a comment, because without any information or
+context that change looks wrong.
