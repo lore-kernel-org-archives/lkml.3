@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934105AbaKLBid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:38:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59946 "EHLO
+	id S964781AbaKLBij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:38:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833AbaKLBi3 (ORCPT
+	with ESMTP id S934106AbaKLBif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:38:29 -0500
+	Tue, 11 Nov 2014 20:38:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bean Anderson <bean@azulsystems.com>, Oleg Nesterov <oleg@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.14 032/203] x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
-Date: Wed, 12 Nov 2014 10:15:02 +0900
-Message-Id: <20141112011544.201380193@linuxfoundation.org>
+        Rusty Russell <rusty@ozlabs.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 034/203] x86_64, entry: Fix out of bounds read on sysenter
+Date: Wed, 12 Nov 2014 10:15:04 +0900
+Message-Id: <20141112011544.284594489@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,118 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 66463db4fc5605d51c7bb81d009d5bf30a783a2c upstream.
+commit 653bc77af60911ead1f423e588f54fc2547c4957 upstream.
 
-save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
-can fail after that, in this case the next setup_rt_frame() triggered
-by SIGSEGV won't save fpu simply because the old state was lost. This
-obviously mean that fpu won't be restored after sys_rt_sigreturn() from
-SIGSEGV handler.
+Rusty noticed a Really Bad Bug (tm) in my NT fix.  The entry code
+reads out of bounds, causing the NT fix to be unreliable.  But, and
+this is much, much worse, if your stack is somehow just below the
+top of the direct map (or a hole), you read out of bounds and crash.
 
-Shift drop_init_fpu() into !failed branch in handle_signal().
+Excerpt from the crash:
 
-Test-case (needs -O2):
+[    1.129513] RSP: 0018:ffff88001da4bf88  EFLAGS: 00010296
 
-	#include <stdio.h>
-	#include <signal.h>
-	#include <unistd.h>
-	#include <sys/syscall.h>
-	#include <sys/mman.h>
-	#include <pthread.h>
-	#include <assert.h>
+  2b:*    f7 84 24 90 00 00 00     testl  $0x4000,0x90(%rsp)
 
-	volatile double D;
+That read is deterministically above the top of the stack.  I
+thought I even single-stepped through this code when I wrote it to
+check the offset, but I clearly screwed it up.
 
-	void test(double d)
-	{
-		int pid = getpid();
-
-		for (D = d; D == d; ) {
-			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
-			 * fp regs around "C" call */
-			asm ("" : : "a"(200), "D"(pid), "S"(1));
-			asm ("syscall" : : : "ax");
-		}
-
-		printf("ERR!!\n");
-	}
-
-	void sigh(int sig)
-	{
-	}
-
-	char altstack[4096 * 10] __attribute__((aligned(4096)));
-
-	void *tfunc(void *arg)
-	{
-		for (;;) {
-			mprotect(altstack, sizeof(altstack), PROT_READ);
-			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
-		}
-	}
-
-	int main(void)
-	{
-		stack_t st = {
-			.ss_sp = altstack,
-			.ss_size = sizeof(altstack),
-			.ss_flags = SS_ONSTACK,
-		};
-
-		struct sigaction sa = {
-			.sa_handler = sigh,
-		};
-
-		pthread_t pt;
-
-		sigaction(SIGSEGV, &sa, NULL);
-		sigaltstack(&st, NULL);
-		sa.sa_flags = SA_ONSTACK;
-		sigaction(SIGHUP, &sa, NULL);
-
-		pthread_create(&pt, NULL, tfunc, NULL);
-
-		test(123.456);
-		return 0;
-	}
-
-Reported-by: Bean Anderson <bean@azulsystems.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: 8c7aa698baca ("x86_64, entry: Filter RFLAGS.NT on entry from userspace")
+Reported-by: Rusty Russell <rusty@ozlabs.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/signal.c |    5 +++++
- arch/x86/kernel/xsave.c  |    2 --
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/ia32/ia32entry.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -673,6 +673,11 @@ handle_signal(struct ksignal *ksig, stru
- 		 * handler too.
- 		 */
- 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
-+		/*
-+		 * Ensure the signal handler starts with the new fpu state.
-+		 */
-+		if (used_math())
-+			drop_init_fpu(current);
- 	}
- 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
- }
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -268,8 +268,6 @@ int save_xstate_sig(void __user *buf, vo
- 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
- 		return -1;
- 
--	drop_init_fpu(tsk);	/* trigger finit */
--
- 	return 0;
- }
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -157,7 +157,7 @@ ENTRY(ia32_sysenter_target)
+ 	 * ourselves.  To save a few cycles, we can check whether
+ 	 * NT was set instead of doing an unconditional popfq.
+ 	 */
+-	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
++	testl $X86_EFLAGS_NT,EFLAGS-ARGOFFSET(%rsp)
+ 	jnz sysenter_fix_flags
+ sysenter_flags_fixed:
  
 
 
