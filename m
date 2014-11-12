@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaKLTtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:49:53 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:45883 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151AbaKLTtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:49:52 -0500
-Date: Wed, 12 Nov 2014 14:49:49 -0500 (EST)
-Message-Id: <20141112.144949.645590790916569141.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2ECE46C@RTITMBSV03.realtek.com.tw>
-References: <0835B3720019904CB8F7AA43166CEEB2ECE442@RTITMBSV03.realtek.com.tw>
-	<20141112.004331.1112374574697663525.davem@davemloft.net>
-	<0835B3720019904CB8F7AA43166CEEB2ECE46C@RTITMBSV03.realtek.com.tw>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753564AbaKLTur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:50:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57938 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248AbaKLTup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 14:50:45 -0500
+Message-ID: <5463B9F7.8040105@ti.com>
+Date: Wed, 12 Nov 2014 13:50:15 -0600
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv6 5/5] hwspinlock/omap: add support for dt nodes
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com> <1410553499-55951-6-git-send-email-s-anna@ti.com> <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
+In-Reply-To: <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Nov 2014 11:49:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Wed, 12 Nov 2014 06:29:46 +0000
+Hi Ohad,
 
-> David Miller [mailto:davem@davemloft.net] 
->> Sent: Wednesday, November 12, 2014 1:44 PM
-> [...]
->> What do other USB network drivers do in similar situations?
+On 11/12/2014 01:14 PM, Ohad Ben-Cohen wrote:
+> Hi Suman,
 > 
-> According to the usbnet.c, it would make sure to submit the
-> number of min(10, RX_QLEN(dev)) rx buffers. If there are
-> not enough rx buffers, it schedule a tasklet for next try.
+> On Fri, Sep 12, 2014 at 11:24 PM, Suman Anna <s-anna@ti.com> wrote:
+>>  static int omap_hwspinlock_probe(struct platform_device *pdev)
+>>  {
+>> -       struct hwspinlock_pdata *pdata = pdev->dev.platform_data;
+>> +       struct device_node *node = pdev->dev.of_node;
+>>         struct hwspinlock_device *bank;
+>>         struct hwspinlock *hwlock;
+>>         struct resource *res;
+>>         void __iomem *io_base;
+>> -       int num_locks, i, ret;
+>> +       int num_locks, i, ret, base_id;
+>>
+>> -       if (!pdata)
+>> +       if (!node)
+>>                 return -ENODEV;
+>>
+>> +       ret = of_hwspin_lock_get_base_id(node);
+>> +       if (ret < 0 && ret != -EINVAL)
+>> +               return -ENODEV;
+>> +       base_id = (ret > 0 ? ret : 0);
 > 
-> The brief flow is as following.
-> 1. Call open().
->    - schedule a tasklet.
-> 2. Tasklet is called.
->    if (dev->rxq.qlen < RX_QLEN(dev)) {
-> 	   - submit rx buffers util the number of
-> 	     min(10, RX_QLEN(dev)). If the error
-> 	     occurs, break the loop.
-> 	   - If the dev->rxq.qlen < RX_QLEN(dev),
-> 	     schedule the tasklet.
->    }
+> Does this mean you allow nodes not to have the base_id property? How
+> do we protect against multiple nodes not having a base_id property
+> then?
+> 
+> Implicitly assuming a base_id value (zero in this case) may not be always safe.
 
-That sounds like a better recovery model, why don't you mimick it?
+None of the OMAPs have multiple IP instances, and as such the base-id is
+an optional property. I have made this change to make sure we atleast
+attempt to use the value if mentioned in DT and not hard-coding the
+value to begin with (going by the optional property semantics). If and
+when multiple instances get added and a secondary node doesn't add the
+property, the node will not be registered with the core due to an
+overlap failure. Here is the previous version [1] for reference.
+
+regards
+Suman
+
+[1] https://patchwork.kernel.org/patch/4096881/
