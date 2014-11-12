@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965256AbaKLDi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:38:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59235 "EHLO
+	id S965288AbaKLDjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:39:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754187AbaKLBa0 (ORCPT
+	with ESMTP id S1754070AbaKLBaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:26 -0500
+	Tue, 11 Nov 2014 20:30:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George Cherian <george.cherian@ti.com>, Roger Quadros <rogerq@ti.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.17 209/319] Revert "usb: dwc3: dwc3-omap: Disable/Enable only wrapper interrupts in prepare/complete"
-Date: Wed, 12 Nov 2014 10:15:47 +0900
-Message-Id: <20141112011027.456745815@linuxfoundation.org>
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.17 179/319] intel_pstate: Fix BYT frequency reporting
+Date: Wed, 12 Nov 2014 10:15:17 +0900
+Message-Id: <20141112011022.320050385@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,67 +29,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit b01ff5cb2fc99d45e4edc97077b6e17186570a16 upstream.
+commit b27580b05e6f5253228debc60b8ff4a786ff573a upstream.
 
-This reverts commit 02dae36aa649a66c5c6181157ddd806e7b4913fc.
+BYT has a different conversion from P state to frequency than the core
+processors.  This causes the min/max and current frequency to be
+misreported on some BYT SKUs. Tested on BYT N2820, Ivybridge and
+Haswell processors.
 
-That commit is bogus in two ways:
-
-1) There's no way dwc3-omap's ->suspend() can cause any effect
-	on xhci's ->suspend(). Linux device driver model guarantees
-	that a parent's ->suspend() will only be called after all
-	children are suspended. dwc3-omap is the parent of the
-	parent of xhci.
-
-2) When implementing Deep Sleep states where context is lost,
-	USBOTGSS_IRQ0 register, well, looses context so we
-	_must_ rewrite it otherwise core IRQs will never be
-	reenabled and USB will appear to be dead.
-
-Fixes: 02dae36 (usb: dwc3: dwc3-omap: Disable/Enable only
-	wrapper interrupts in prepare/complete)
-Cc: George Cherian <george.cherian@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Link: https://bugzilla.yoctoproject.org/show_bug.cgi?id=6663
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/dwc3-omap.c |   15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/cpufreq/intel_pstate.c |   42 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 36 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -599,7 +599,7 @@ static int dwc3_omap_prepare(struct devi
- {
- 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -64,6 +64,7 @@ struct pstate_data {
+ 	int	current_pstate;
+ 	int	min_pstate;
+ 	int	max_pstate;
++	int	scaling;
+ 	int	turbo_pstate;
+ };
  
--	dwc3_omap_write_irqmisc_set(omap, 0x00);
-+	dwc3_omap_disable_irqs(omap);
- 
- 	return 0;
- }
-@@ -607,19 +607,8 @@ static int dwc3_omap_prepare(struct devi
- static void dwc3_omap_complete(struct device *dev)
- {
- 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
--	u32			reg;
- 
--	reg = (USBOTGSS_IRQMISC_OEVT |
--			USBOTGSS_IRQMISC_DRVVBUS_RISE |
--			USBOTGSS_IRQMISC_CHRGVBUS_RISE |
--			USBOTGSS_IRQMISC_DISCHRGVBUS_RISE |
--			USBOTGSS_IRQMISC_IDPULLUP_RISE |
--			USBOTGSS_IRQMISC_DRVVBUS_FALL |
--			USBOTGSS_IRQMISC_CHRGVBUS_FALL |
--			USBOTGSS_IRQMISC_DISCHRGVBUS_FALL |
--			USBOTGSS_IRQMISC_IDPULLUP_FALL);
--
--	dwc3_omap_write_irqmisc_set(omap, reg);
-+	dwc3_omap_enable_irqs(omap);
+@@ -113,6 +114,7 @@ struct pstate_funcs {
+ 	int (*get_max)(void);
+ 	int (*get_min)(void);
+ 	int (*get_turbo)(void);
++	int (*get_scaling)(void);
+ 	void (*set)(struct cpudata*, int pstate);
+ 	void (*get_vid)(struct cpudata *);
+ };
+@@ -433,6 +435,22 @@ static void byt_set_pstate(struct cpudat
+ 	wrmsrl(MSR_IA32_PERF_CTL, val);
  }
  
- static int dwc3_omap_suspend(struct device *dev)
++#define BYT_BCLK_FREQS 5
++static int byt_freq_table[BYT_BCLK_FREQS] = { 833, 1000, 1333, 1167, 800};
++
++static int byt_get_scaling(void)
++{
++	u64 value;
++	int i;
++
++	rdmsrl(MSR_FSB_FREQ, value);
++	i = value & 0x3;
++
++	BUG_ON(i > BYT_BCLK_FREQS);
++
++	return byt_freq_table[i] * 100;
++}
++
+ static void byt_get_vid(struct cpudata *cpudata)
+ {
+ 	u64 value;
+@@ -478,6 +496,11 @@ static int core_get_turbo_pstate(void)
+ 	return ret;
+ }
+ 
++static inline int core_get_scaling(void)
++{
++	return 100000;
++}
++
+ static void core_set_pstate(struct cpudata *cpudata, int pstate)
+ {
+ 	u64 val;
+@@ -502,6 +525,7 @@ static struct cpu_defaults core_params =
+ 		.get_max = core_get_max_pstate,
+ 		.get_min = core_get_min_pstate,
+ 		.get_turbo = core_get_turbo_pstate,
++		.get_scaling = core_get_scaling,
+ 		.set = core_set_pstate,
+ 	},
+ };
+@@ -520,6 +544,7 @@ static struct cpu_defaults byt_params =
+ 		.get_min = byt_get_min_pstate,
+ 		.get_turbo = byt_get_turbo_pstate,
+ 		.set = byt_set_pstate,
++		.get_scaling = byt_get_scaling,
+ 		.get_vid = byt_get_vid,
+ 	},
+ };
+@@ -554,7 +579,7 @@ static void intel_pstate_set_pstate(stru
+ 	if (pstate == cpu->pstate.current_pstate)
+ 		return;
+ 
+-	trace_cpu_frequency(pstate * 100000, cpu->cpu);
++	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
+ 
+ 	cpu->pstate.current_pstate = pstate;
+ 
+@@ -566,6 +591,7 @@ static void intel_pstate_get_cpu_pstates
+ 	cpu->pstate.min_pstate = pstate_funcs.get_min();
+ 	cpu->pstate.max_pstate = pstate_funcs.get_max();
+ 	cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
++	cpu->pstate.scaling = pstate_funcs.get_scaling();
+ 
+ 	if (pstate_funcs.get_vid)
+ 		pstate_funcs.get_vid(cpu);
+@@ -581,7 +607,9 @@ static inline void intel_pstate_calc_bus
+ 	core_pct = div64_u64(core_pct, int_tofp(sample->mperf));
+ 
+ 	sample->freq = fp_toint(
+-		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
++		mul_fp(int_tofp(
++			cpu->pstate.max_pstate * cpu->pstate.scaling / 100),
++			core_pct));
+ 
+ 	sample->core_pct_busy = (int32_t)core_pct;
+ }
+@@ -803,12 +831,13 @@ static int intel_pstate_cpu_init(struct
+ 	else
+ 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
+ 
+-	policy->min = cpu->pstate.min_pstate * 100000;
+-	policy->max = cpu->pstate.turbo_pstate * 100000;
++	policy->min = cpu->pstate.min_pstate * cpu->pstate.scaling;
++	policy->max = cpu->pstate.turbo_pstate * cpu->pstate.scaling;
+ 
+ 	/* cpuinfo and default policy values */
+-	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * 100000;
+-	policy->cpuinfo.max_freq = cpu->pstate.turbo_pstate * 100000;
++	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * cpu->pstate.scaling;
++	policy->cpuinfo.max_freq =
++		cpu->pstate.turbo_pstate * cpu->pstate.scaling;
+ 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+ 	cpumask_set_cpu(policy->cpu, policy->cpus);
+ 
+@@ -866,6 +895,7 @@ static void copy_cpu_funcs(struct pstate
+ 	pstate_funcs.get_max   = funcs->get_max;
+ 	pstate_funcs.get_min   = funcs->get_min;
+ 	pstate_funcs.get_turbo = funcs->get_turbo;
++	pstate_funcs.get_scaling = funcs->get_scaling;
+ 	pstate_funcs.set       = funcs->set;
+ 	pstate_funcs.get_vid   = funcs->get_vid;
+ }
 
 
