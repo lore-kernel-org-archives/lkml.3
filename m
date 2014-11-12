@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaKLBUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58355 "EHLO
+	id S1752905AbaKLBUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaKLBT7 (ORCPT
+	with ESMTP id S1752624AbaKLBUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:19:59 -0500
+	Tue, 11 Nov 2014 20:20:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sathya Perla <sathya.perla@emulex.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Anish Bhatt <anish@chelsio.com>, Casey Leedom <leedom@chelsio.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 014/319] net: fix saving TX flow hash in sock for outgoing connections
-Date: Wed, 12 Nov 2014 10:12:32 +0900
-Message-Id: <20141112010955.016820421@linuxfoundation.org>
+Subject: [PATCH 3.17 018/319] cxgb4 : Fix missing initialization of win0_lock
+Date: Wed, 12 Nov 2014 10:12:36 +0900
+Message-Id: <20141112010955.679102933@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,72 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sathya Perla <sathya.perla@emulex.com>
+From: Anish Bhatt <anish@chelsio.com>
 
-[ Upstream commit 9e7ceb060754f134231f68cb29d5db31419fe1ed ]
+[ Upstream commit e327c225c911529898ec300cb96d2088893de3df ]
 
-The commit "net: Save TX flow hash in sock and set in skbuf on xmit"
-introduced the inet_set_txhash() and ip6_set_txhash() routines to calculate
-and record flow hash(sk_txhash) in the socket structure. sk_txhash is used
-to set skb->hash which is used to spread flows across multiple TXQs.
+win0_lock was being used un-initialized, resulting in warning traces
+being seen when lock debugging is enabled (and just wrong)
 
-But, the above routines are invoked before the source port of the connection
-is created. Because of this all outgoing connections that just differ in the
-source port get hashed into the same TXQ.
+Fixes : fc5ab0209650 ('cxgb4: Replaced the backdoor mechanism to access the HW
+ memory with PCIe Window method')
 
-This patch fixes this problem for IPv4/6 by invoking the the above routines
-after the source port is available for the socket.
-
-Fixes: b73c3d0e4("net: Save TX flow hash in sock and set in skbuf on xmit")
-
-Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Anish Bhatt <anish@chelsio.com>
+Signed-off-by: Casey Leedom <leedom@chelsio.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_ipv4.c |    4 ++--
- net/ipv6/tcp_ipv6.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -208,8 +208,6 @@ int tcp_v4_connect(struct sock *sk, stru
- 	inet->inet_dport = usin->sin_port;
- 	inet->inet_daddr = daddr;
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+@@ -6557,6 +6557,7 @@ static int init_one(struct pci_dev *pdev
  
--	inet_set_txhash(sk);
--
- 	inet_csk(sk)->icsk_ext_hdr_len = 0;
- 	if (inet_opt)
- 		inet_csk(sk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
-@@ -226,6 +224,8 @@ int tcp_v4_connect(struct sock *sk, stru
- 	if (err)
- 		goto failure;
+ 	spin_lock_init(&adapter->stats_lock);
+ 	spin_lock_init(&adapter->tid_release_lock);
++	spin_lock_init(&adapter->win0_lock);
  
-+	inet_set_txhash(sk);
-+
- 	rt = ip_route_newports(fl4, rt, orig_sport, orig_dport,
- 			       inet->inet_sport, inet->inet_dport, sk);
- 	if (IS_ERR(rt)) {
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -198,8 +198,6 @@ static int tcp_v6_connect(struct sock *s
- 	sk->sk_v6_daddr = usin->sin6_addr;
- 	np->flow_label = fl6.flowlabel;
- 
--	ip6_set_txhash(sk);
--
- 	/*
- 	 *	TCP over IPv4
- 	 */
-@@ -295,6 +293,8 @@ static int tcp_v6_connect(struct sock *s
- 	if (err)
- 		goto late_failure;
- 
-+	ip6_set_txhash(sk);
-+
- 	if (!tp->write_seq && likely(!tp->repair))
- 		tp->write_seq = secure_tcpv6_sequence_number(np->saddr.s6_addr32,
- 							     sk->sk_v6_daddr.s6_addr32,
+ 	INIT_WORK(&adapter->tid_release_task, process_tid_release_list);
+ 	INIT_WORK(&adapter->db_full_task, process_db_full);
 
 
