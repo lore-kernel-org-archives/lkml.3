@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917AbaKLDB1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:01:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60097 "EHLO
+	id S965526AbaKLDBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:01:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964963AbaKLBk1 (ORCPT
+	with ESMTP id S964958AbaKLBkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:40:27 -0500
+	Tue, 11 Nov 2014 20:40:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 065/203] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
-Date: Wed, 12 Nov 2014 10:15:35 +0900
-Message-Id: <20141112011545.694989052@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.14 063/203] framebuffer: fix border color
+Date: Wed, 12 Nov 2014 10:15:33 +0900
+Message-Id: <20141112011545.598799460@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,46 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
+commit f74a289b9480648a654e5afd8458c2263c03a1e1 upstream.
 
-These models need i8042.notimeout, otherwise the touchpad will not work.
+The framebuffer code uses the current background color to fill the border
+when switching consoles, however, this results in inconsistent behavior.
+For example:
+- start Midnigh Commander
+- the border is black
+- switch to another console and switch back
+- the border is cyan
+- type something into the command line in mc
+- the border is cyan
+- switch to another console and switch back
+- the border is black
+- press F9 to go to menu
+- the border is black
+- switch to another console and switch back
+- the border is dark blue
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+When switching to a console with Midnight Commander, the border is random
+color that was left selected by the slang subsystem.
+
+This patch fixes this inconsistency by always using black as the
+background color when switching consoles.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/video/console/bitblit.c   |    3 +--
+ drivers/video/console/fbcon_ccw.c |    3 +--
+ drivers/video/console/fbcon_cw.c  |    3 +--
+ drivers/video/console/fbcon_ud.c  |    3 +--
+ 4 files changed, 4 insertions(+), 8 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -615,6 +615,22 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Fujitsu A544 laptop */
-+		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
-+		},
-+	},
-+	{
-+		/* Fujitsu AH544 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
-+		},
-+	},
-+	{
- 		/* Fujitsu U574 laptop */
- 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
- 		.matches = {
+--- a/drivers/video/console/bitblit.c
++++ b/drivers/video/console/bitblit.c
+@@ -205,7 +205,6 @@ static void bit_putcs(struct vc_data *vc
+ static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
+ 			      int bottom_only)
+ {
+-	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
+ 	unsigned int cw = vc->vc_font.width;
+ 	unsigned int ch = vc->vc_font.height;
+ 	unsigned int rw = info->var.xres - (vc->vc_cols*cw);
+@@ -214,7 +213,7 @@ static void bit_clear_margins(struct vc_
+ 	unsigned int bs = info->var.yres - bh;
+ 	struct fb_fillrect region;
+ 
+-	region.color = attr_bgcol_ec(bgshift, vc, info);
++	region.color = 0;
+ 	region.rop = ROP_COPY;
+ 
+ 	if (rw && !bottom_only) {
+--- a/drivers/video/console/fbcon_ccw.c
++++ b/drivers/video/console/fbcon_ccw.c
+@@ -197,9 +197,8 @@ static void ccw_clear_margins(struct vc_
+ 	unsigned int bh = info->var.xres - (vc->vc_rows*ch);
+ 	unsigned int bs = vc->vc_rows*ch;
+ 	struct fb_fillrect region;
+-	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
+ 
+-	region.color = attr_bgcol_ec(bgshift,vc,info);
++	region.color = 0;
+ 	region.rop = ROP_COPY;
+ 
+ 	if (rw && !bottom_only) {
+--- a/drivers/video/console/fbcon_cw.c
++++ b/drivers/video/console/fbcon_cw.c
+@@ -180,9 +180,8 @@ static void cw_clear_margins(struct vc_d
+ 	unsigned int bh = info->var.xres - (vc->vc_rows*ch);
+ 	unsigned int rs = info->var.yres - rw;
+ 	struct fb_fillrect region;
+-	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
+ 
+-	region.color = attr_bgcol_ec(bgshift,vc,info);
++	region.color = 0;
+ 	region.rop = ROP_COPY;
+ 
+ 	if (rw && !bottom_only) {
+--- a/drivers/video/console/fbcon_ud.c
++++ b/drivers/video/console/fbcon_ud.c
+@@ -227,9 +227,8 @@ static void ud_clear_margins(struct vc_d
+ 	unsigned int rw = info->var.xres - (vc->vc_cols*cw);
+ 	unsigned int bh = info->var.yres - (vc->vc_rows*ch);
+ 	struct fb_fillrect region;
+-	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
+ 
+-	region.color = attr_bgcol_ec(bgshift,vc,info);
++	region.color = 0;
+ 	region.rop = ROP_COPY;
+ 
+ 	if (rw && !bottom_only) {
 
 
