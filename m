@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaKLOBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:01:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40606 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797AbaKLOBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:01:51 -0500
-Message-ID: <1415800911.1761.21.camel@linux-0dmf.site>
-Subject: Re: [V2 PATCH 04/10] added media agnostic (MA) USB packet handling
-From: Oliver Neukum <oneukum@suse.de>
-To: Stephanie Wallick <stephanie.s.wallick@intel.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        "Sean O. Stalley" <sean.stalley@intel.com>
-Date: Wed, 12 Nov 2014 15:01:51 +0100
-In-Reply-To: <1415671781-11351-4-git-send-email-stephanie.s.wallick@intel.com>
-References: <MA USB drivers>
-	 <1415671781-11351-1-git-send-email-stephanie.s.wallick@intel.com>
-	 <1415671781-11351-4-git-send-email-stephanie.s.wallick@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752811AbaKLOCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:02:36 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:37389 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582AbaKLOCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 09:02:35 -0500
+MIME-Version: 1.0
+Date: Wed, 12 Nov 2014 15:02:29 +0100
+X-Google-Sender-Auth: IV7rcHBG35UJB4QLyFMr3YhL2uQ
+Message-ID: <CAMuHMdX1U1YQ29gcveLq2YbdGohk60+pXbjjJU1bV+AM1ZxZFg@mail.gmail.com>
+Subject: [git pull] clk/shmobile updates for v3.19
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Ulrich Hecht <ulrich.hecht@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 18:09 -0800, Stephanie Wallick wrote:
-> +/**
-> + * Compares 2 request IDs. Returns true if a is less than b. Handles
-> request id
-> + * wraparound.
-> + */
-> +bool mausb_req_id_lt(u8 a, u8 b)
+Hi Mike,
 
-Unify such functions. It's just silly to have so many of them.
+This is my first pull request from renesas-drivers.
+If there's anything that can be improved, please let me know.
+Thanks!
 
-> +/**
-> + * Calculates the total length of data contained in an ms_pkt (in
-> bytes).
-> + * Returns the length of the kvec, or 0 on an error.
-> + */
-> +static int mausb_ms_data_length(struct ms_pkt *pkt)
-> +{
-> +       int             i;
-> +       int             total_length;
-> +       struct kvec     *current_kvec;
-> +
-> +       for (i = 0; i < pkt->nents; ++i) {
-> +               current_kvec = &pkt->kvec[i];
-> +               if (NULL == current_kvec)
-> +                       return -EINVAL;
-> +               else
-> +                       total_length += current_kvec->iov_len;
-> +       }
-> +
-> +       return total_length;
-> +}
-> +
+The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
 
-	Regards
-		Oliver
+  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
 
--- 
-Oliver Neukum <oneukum@suse.de>
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/renesas-drivers.git
+div6-clk-for-3.19
+
+for you to fetch changes up to bfadcadf03a63bc841f69ed1c47e930b2ba2273d:
+
+  clk: shmobile: document DIV6 clock parent bindings (2014-11-12 14:24:08 +0100)
+
+Summary:
+  - clk: shmobile: DIV6 clock variable parent support (from Ulrich Hecht)
+
+Thanks for pulling!
+
+----------------------------------------------------------------
+Ulrich Hecht (2):
+      clk: shmobile: div6: support selectable-input clocks
+      clk: shmobile: document DIV6 clock parent bindings
+
+ .../bindings/clock/renesas,cpg-div6-clocks.txt     |  18 ++--
+ drivers/clk/shmobile/clk-div6.c                    | 113 ++++++++++++++++++---
+ 2 files changed, 113 insertions(+), 18 deletions(-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
