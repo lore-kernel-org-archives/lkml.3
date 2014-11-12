@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966251AbaKLBw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:52:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32874 "EHLO
+	id S966269AbaKLBwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:52:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966217AbaKLBwZ (ORCPT
+	with ESMTP id S966217AbaKLBwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:52:25 -0500
+	Tue, 11 Nov 2014 20:52:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.10 012/123] fs: Fix theoretical division by 0 in super_cache_scan().
-Date: Wed, 12 Nov 2014 10:16:18 +0900
-Message-Id: <20141112011719.547172416@linuxfoundation.org>
+        Anton Kolesov <akolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.10 058/123] ARC: [nsimosci] Allow "headless" models to boot
+Date: Wed, 12 Nov 2014 10:17:04 +0900
+Message-Id: <20141112011721.652481489@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,37 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 475d0db742e3755c6b267f48577ff7cbb7dfda0d upstream.
+commit 5c05483e2db91890faa9a7be0a831701a3f442d6 upstream.
 
-total_objects could be 0 and is used as a denom.
+There are certain test configuration of virtual platform which don't
+have any real console device (uart/pgu). So add tty0 as a fallback console
+device to allow system to boot and be accessible via telnet
 
-While total_objects is a "long", total_objects == 0 unlikely happens for
-3.12 and later kernels because 32-bit architectures would not be able to
-hold (1 << 32) objects. However, total_objects == 0 may happen for kernels
-between 3.1 and 3.11 because total_objects in prune_super() was an "int"
-and (e.g.) x86_64 architecture might be able to hold (1 << 32) objects.
+Otherwise with ttyS0 as only console, but 8250 disabled in kernel build,
+init chokes.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Reported-by: Anton Kolesov <akolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/super.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arc/boot/dts/nsimosci.dts |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -76,6 +76,8 @@ static int prune_super(struct shrinker *
+--- a/arch/arc/boot/dts/nsimosci.dts
++++ b/arch/arc/boot/dts/nsimosci.dts
+@@ -20,7 +20,7 @@
+ 		/* this is for console on PGU */
+ 		/* bootargs = "console=tty0 consoleblank=0"; */
+ 		/* this is for console on serial */
+-		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=ttyS0,115200n8 consoleblank=0 debug";
++		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=tty0 console=ttyS0,115200n8 consoleblank=0 debug";
+ 	};
  
- 	total_objects = sb->s_nr_dentry_unused +
- 			sb->s_nr_inodes_unused + fs_objects + 1;
-+	if (!total_objects)
-+		total_objects = 1;
- 
- 	if (sc->nr_to_scan) {
- 		int	dentries;
+ 	aliases {
 
 
