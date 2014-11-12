@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934683AbaKLBoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:44:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60535 "EHLO
+	id S934640AbaKLBoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:44:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933477AbaKLBoV (ORCPT
+	with ESMTP id S965251AbaKLBoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:44:21 -0500
+	Tue, 11 Nov 2014 20:44:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <xiyou.wangcong@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 124/203] freezer: Do not freeze tasks killed by OOM killer
-Date: Wed, 12 Nov 2014 10:16:34 +0900
-Message-Id: <20141112011548.360670804@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.14 094/203] MIPS: ftrace: Fix a microMIPS build problem
+Date: Wed, 12 Nov 2014 10:16:04 +0900
+Message-Id: <20141112011547.007475206@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -30,54 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 51fae6da640edf9d266c94f36bc806c63c301991 upstream.
+commit aedd153f5bb5b1f1d6d9142014f521ae2ec294cc upstream.
 
-Since f660daac474c6f (oom: thaw threads if oom killed thread is frozen
-before deferring) OOM killer relies on being able to thaw a frozen task
-to handle OOM situation but a3201227f803 (freezer: make freezing() test
-freeze conditions in effect instead of TIF_FREEZE) has reorganized the
-code and stopped clearing freeze flag in __thaw_task. This means that
-the target task only wakes up and goes into the fridge again because the
-freezing condition hasn't changed for it. This reintroduces the bug
-fixed by f660daac474c6f.
+Code before the .fixup section needs to have the .insn directive.
+This has no side effects on MIPS32/64 but it affects the way microMIPS
+loads the address for the return label.
 
-Fix the issue by checking for TIF_MEMDIE thread flag in
-freezing_slow_path and exclude the task from freezing completely. If a
-task was already frozen it would get woken by __thaw_task from OOM killer
-and get out of freezer after rechecking freezing().
+Fixes the following build problem:
+mips-linux-gnu-ld: arch/mips/built-in.o: .fixup+0x4a0: Unsupported jump between
+ISA modes; consider recompiling with interlinking enabled.
+mips-linux-gnu-ld: final link failed: Bad value
+Makefile:819: recipe for target 'vmlinux' failed
 
-Changes since v1
-- put TIF_MEMDIE check into freezing_slowpath rather than in __refrigerator
-  as per Oleg
-- return __thaw_task into oom_scan_process_thread because
-  oom_kill_process will not wake task in the fridge because it is
-  sleeping uninterruptible
+The fix is similar to 1658f914ff91c3bf ("MIPS: microMIPS:
+Disable LL/SC and fix linker bug.")
 
-[mhocko@suse.cz: rewrote the changelog]
-Fixes: a3201227f803 (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE)
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/8117/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/freezer.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/mips/include/asm/ftrace.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -42,6 +42,9 @@ bool freezing_slow_path(struct task_stru
- 	if (p->flags & (PF_NOFREEZE | PF_SUSPEND_TASK))
- 		return false;
- 
-+	if (test_thread_flag(TIF_MEMDIE))
-+		return false;
-+
- 	if (pm_nosig_freezing || cgroup_freezing(p))
- 		return true;
- 
+--- a/arch/mips/include/asm/ftrace.h
++++ b/arch/mips/include/asm/ftrace.h
+@@ -24,7 +24,7 @@ do {							\
+ 	asm volatile (					\
+ 		"1: " load " %[tmp_dst], 0(%[tmp_src])\n"	\
+ 		"   li %[tmp_err], 0\n"			\
+-		"2:\n"					\
++		"2: .insn\n"				\
+ 							\
+ 		".section .fixup, \"ax\"\n"		\
+ 		"3: li %[tmp_err], 1\n"			\
+@@ -46,7 +46,7 @@ do {						\
+ 	asm volatile (				\
+ 		"1: " store " %[tmp_src], 0(%[tmp_dst])\n"\
+ 		"   li %[tmp_err], 0\n"		\
+-		"2:\n"				\
++		"2: .insn\n"			\
+ 						\
+ 		".section .fixup, \"ax\"\n"	\
+ 		"3: li %[tmp_err], 1\n"		\
 
 
