@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966181AbaKLBwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:52:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32849 "EHLO
+	id S966198AbaKLBwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:52:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966135AbaKLBwE (ORCPT
+	with ESMTP id S966183AbaKLBwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:52:04 -0500
+	Tue, 11 Nov 2014 20:52:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 017/123] x86: Reject x32 executables if x32 ABI not supported
-Date: Wed, 12 Nov 2014 10:16:23 +0900
-Message-Id: <20141112011719.801908267@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Suresh Siddha <sbsiddha@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.10 018/123] x86, fpu: __restore_xstate_sig()->math_state_restore() needs preempt_disable()
+Date: Wed, 12 Nov 2014 10:16:24 +0900
+Message-Id: <20141112011719.844746252@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,39 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1 upstream.
+commit df24fb859a4e200d9324e2974229fbb7adf00aef upstream.
 
-It is currently possible to execve() an x32 executable on an x86_64
-kernel that has only ia32 compat enabled.  However all its syscalls
-will fail, even _exit().  This usually causes it to segfault.
+Add preempt_disable() + preempt_enable() around math_state_restore() in
+__restore_xstate_sig(). Otherwise __switch_to() after __thread_fpu_begin()
+can overwrite fpu->state we are going to restore.
 
-Change the ELF compat architecture check so that x32 executables are
-rejected if we don't support the x32 ABI.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Link: http://lkml.kernel.org/r/1410120305.6822.9.camel@decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20140902175717.GA21649@redhat.com
+Reviewed-by: Suresh Siddha <sbsiddha@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/elf.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/xsave.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -155,8 +155,9 @@ do {						\
- #define elf_check_arch(x)			\
- 	((x)->e_machine == EM_X86_64)
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -400,8 +400,11 @@ int __restore_xstate_sig(void __user *bu
+ 			set_used_math();
+ 		}
  
--#define compat_elf_check_arch(x)		\
--	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
-+#define compat_elf_check_arch(x)					\
-+	(elf_check_arch_ia32(x) ||					\
-+	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine == EM_X86_64))
+-		if (use_eager_fpu())
++		if (use_eager_fpu()) {
++			preempt_disable();
+ 			math_state_restore();
++			preempt_enable();
++		}
  
- #if __USER32_DS != __USER_DS
- # error "The following code assumes __USER32_DS == __USER_DS"
+ 		return err;
+ 	} else {
 
 
