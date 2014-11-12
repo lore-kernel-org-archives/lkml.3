@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934037AbaKLBhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:37:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59895 "EHLO
+	id S1754797AbaKLBiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:38:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934019AbaKLBhv (ORCPT
+	with ESMTP id S934032AbaKLBhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:37:51 -0500
+	Tue, 11 Nov 2014 20:37:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Morgan <imorgan@primordial.ca>,
+        Eric Dumazet <edumazet@google.com>,
+        Crestez Dan Leonard <cdleonard@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 007/203] ax88179_178a: fix bonding failure
-Date: Wed, 12 Nov 2014 10:14:37 +0900
-Message-Id: <20141112011543.027733424@linuxfoundation.org>
+Subject: [PATCH 3.14 008/203] tcp: md5: do not use alloc_percpu()
+Date: Wed, 12 Nov 2014 10:14:38 +0900
+Message-Id: <20141112011543.078870365@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,59 +30,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Morgan <imorgan@primordial.ca>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 95ff88688781db2f64042e69bd499e518bbb36e5 ]
+[ Upstream commit 349ce993ac706869d553a1816426d3a4bfda02b1 ]
 
-The following patch fixes a bug which causes the ax88179_178a driver to be
-incapable of being added to a bond.
+percpu tcp_md5sig_pool contains memory blobs that ultimately
+go through sg_set_buf().
 
-When I brought up the issue with the bonding maintainers, they indicated
-that the real problem was with the NIC driver which must return zero for
-success (of setting the MAC address). I see that several other NIC drivers
-follow that pattern by either simply always returing zero, or by passing
-through a negative (error) result while rewriting any positive return code
-to zero. With that same philisophy applied to the ax88179_178a driver, it
-allows it to work correctly with the bonding driver.
+-> sg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));
 
-I believe this is suitable for queuing in -stable, as it's a small, simple,
-and obvious fix that corrects a defect with no other known workaround.
+This requires that whole area is in a physically contiguous portion
+of memory. And that @buf is not backed by vmalloc().
 
-This patch is against vanilla 3.17(.0).
+Given that alloc_percpu() can use vmalloc() areas, this does not
+fit the requirements.
 
-Signed-off-by: Ian Morgan <imorgan@primordial.ca>
+Replace alloc_percpu() by a static DEFINE_PER_CPU() as tcp_md5sig_pool
+is small anyway, there is no gain to dynamically allocate it.
 
- drivers/net/usb/ax88179_178a.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 765cf9976e93 ("tcp: md5: remove one indirection level in tcp_md5sig_pool")
+Reported-by: Crestez Dan Leonard <cdleonard@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/ax88179_178a.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ net/ipv4/tcp.c |   59 +++++++++++++++++++--------------------------------------
+ 1 file changed, 20 insertions(+), 39 deletions(-)
 
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -696,6 +696,7 @@ static int ax88179_set_mac_addr(struct n
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2954,61 +2954,42 @@ EXPORT_SYMBOL(compat_tcp_getsockopt);
+ #endif
+ 
+ #ifdef CONFIG_TCP_MD5SIG
+-static struct tcp_md5sig_pool __percpu *tcp_md5sig_pool __read_mostly;
++static DEFINE_PER_CPU(struct tcp_md5sig_pool, tcp_md5sig_pool);
+ static DEFINE_MUTEX(tcp_md5sig_mutex);
+-
+-static void __tcp_free_md5sig_pool(struct tcp_md5sig_pool __percpu *pool)
+-{
+-	int cpu;
+-
+-	for_each_possible_cpu(cpu) {
+-		struct tcp_md5sig_pool *p = per_cpu_ptr(pool, cpu);
+-
+-		if (p->md5_desc.tfm)
+-			crypto_free_hash(p->md5_desc.tfm);
+-	}
+-	free_percpu(pool);
+-}
++static bool tcp_md5sig_pool_populated = false;
+ 
+ static void __tcp_alloc_md5sig_pool(void)
  {
- 	struct usbnet *dev = netdev_priv(net);
- 	struct sockaddr *addr = p;
-+	int ret;
+ 	int cpu;
+-	struct tcp_md5sig_pool __percpu *pool;
+-
+-	pool = alloc_percpu(struct tcp_md5sig_pool);
+-	if (!pool)
+-		return;
  
- 	if (netif_running(net))
- 		return -EBUSY;
-@@ -705,8 +706,12 @@ static int ax88179_set_mac_addr(struct n
- 	memcpy(net->dev_addr, addr->sa_data, ETH_ALEN);
+ 	for_each_possible_cpu(cpu) {
+-		struct crypto_hash *hash;
++		if (!per_cpu(tcp_md5sig_pool, cpu).md5_desc.tfm) {
++			struct crypto_hash *hash;
  
- 	/* Set the MAC address */
--	return ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
-+	ret = ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
- 				 ETH_ALEN, net->dev_addr);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
+-		hash = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
+-		if (IS_ERR_OR_NULL(hash))
+-			goto out_free;
+-
+-		per_cpu_ptr(pool, cpu)->md5_desc.tfm = hash;
++			hash = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++			if (IS_ERR_OR_NULL(hash))
++				return;
++			per_cpu(tcp_md5sig_pool, cpu).md5_desc.tfm = hash;
++		}
+ 	}
+-	/* before setting tcp_md5sig_pool, we must commit all writes
+-	 * to memory. See ACCESS_ONCE() in tcp_get_md5sig_pool()
++	/* before setting tcp_md5sig_pool_populated, we must commit all writes
++	 * to memory. See smp_rmb() in tcp_get_md5sig_pool()
+ 	 */
+ 	smp_wmb();
+-	tcp_md5sig_pool = pool;
+-	return;
+-out_free:
+-	__tcp_free_md5sig_pool(pool);
++	tcp_md5sig_pool_populated = true;
  }
  
- static const struct net_device_ops ax88179_netdev_ops = {
+ bool tcp_alloc_md5sig_pool(void)
+ {
+-	if (unlikely(!tcp_md5sig_pool)) {
++	if (unlikely(!tcp_md5sig_pool_populated)) {
+ 		mutex_lock(&tcp_md5sig_mutex);
+ 
+-		if (!tcp_md5sig_pool)
++		if (!tcp_md5sig_pool_populated)
+ 			__tcp_alloc_md5sig_pool();
+ 
+ 		mutex_unlock(&tcp_md5sig_mutex);
+ 	}
+-	return tcp_md5sig_pool != NULL;
++	return tcp_md5sig_pool_populated;
+ }
+ EXPORT_SYMBOL(tcp_alloc_md5sig_pool);
+ 
+@@ -3022,13 +3003,13 @@ EXPORT_SYMBOL(tcp_alloc_md5sig_pool);
+  */
+ struct tcp_md5sig_pool *tcp_get_md5sig_pool(void)
+ {
+-	struct tcp_md5sig_pool __percpu *p;
+-
+ 	local_bh_disable();
+-	p = ACCESS_ONCE(tcp_md5sig_pool);
+-	if (p)
+-		return __this_cpu_ptr(p);
+ 
++	if (tcp_md5sig_pool_populated) {
++		/* coupled with smp_wmb() in __tcp_alloc_md5sig_pool() */
++		smp_rmb();
++		return this_cpu_ptr(&tcp_md5sig_pool);
++	}
+ 	local_bh_enable();
+ 	return NULL;
+ }
 
 
