@@ -1,87 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500AbaKLEHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:07:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58673 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360AbaKLBXi (ORCPT
+	id S1756001AbaKLEIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:08:16 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:30746 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaKLEIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:38 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shivnandan Kumar <shivnandan.k@samsung.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.17 083/319] selinux: fix inode security list corruption
-Date: Wed, 12 Nov 2014 10:13:41 +0900
-Message-Id: <20141112011006.356936823@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-References: <20141112010952.553519040@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+	Tue, 11 Nov 2014 23:08:12 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-6f-5462dd29eb74
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>
+Cc: dri-devel@lists.freedesktop.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        seanpaul@google.com, ajaykumar.rs@samsung.com,
+        "'Inki Dae'" <inki.dae@samsung.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1414675442-3471-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1414675442-3471-1-git-send-email-gautam.vivek@samsung.com>
+Subject: Re: [PATCH v2 1/2] drm/exynos: dp: Remove support for unused dptx-phy
+Date: Wed, 12 Nov 2014 13:08:53 +0900
+Message-id: <000001cffe2e$5f83fd30$1e8bf790$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac/0RMsilL+Zfp5HRleDa1hcgYiJ6gJ6E1lg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zY13Nu0khBl/uSFkceH+QxWL+kXOs
+	Fle+vmezaLtykN1i0v0JLBaXF15itbi8aw6bxYzz+5gs5h7MdeD0WLCp1ON+93Emj74tqxg9
+	Pm+SC2CJ4rJJSc3JLEst0rdL4MroWvWAueCocsWTv7wNjBtluhg5OCQETCTuT/LtYuQEMsUk
+	Ltxbz9bFyMUhJLCMUeLVyb2sEAkTiXs77kAlpjNKnJk9jREkISTwi1Hi3N8KEJtNQE3iy5fD
+	7CC2iICuRM/EjywgDcwCfxglps67BdXgLtE1dR0LiM0p4CGx4msbM4gtLOAn8efYMrA4i4Cq
+	xL3lP8HivAK2Ek03l0PZghI/Jt8Dq2EW0JJYv/M4E4QtL7F5zVtmiG/UJR791QUxRQSMJGau
+	dYOoEJHY9+IdI8g5EgJv2SV6fk9lhFglIPFt8iEWiFZZiU0HmCH+lZQ4uOIGywRGiVlIFs9C
+	sngWksWzkKxYwMiyilE0tSC5oDgpvchIrzgxt7g0L10vOT93EyMkfvt2MN48YH2IUYCDUYmH
+	N2NzUogQa2JZcWXuIUZToIsmMkuJJucDk0ReSbyhsZmRhamJqbGRuaWZkjhvgtTPYCGB9MSS
+	1OzU1ILUovii0pzU4kOMTBycUg2M2vJrDup//2we+rJMzPjsakeHn0mrz8oam759dYhBJ3Rp
+	qWPczS02y/8sFIvxzvOTCwnKCjqh6Rvqyvb8R9WC7relfFv2Jy34fUhL73XLVrve7XyyrBcW
+	bUitrLj1alZo5i3+g4feae2SPOlW97DqY4VuRx3vw/1izCfvvf1zWUdw4duwq5NuK7EUZyQa
+	ajEXFScCAFZ7J/zaAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQV3Nu0khBj/uiloceH+QxWL+kXOs
+	Fle+vmezaLtykN1i0v0JLBaXF15itbi8aw6bxYzz+5gs5h7MdeD0WLCp1ON+93Emj74tqxg9
+	Pm+SC2CJamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
+	zAE6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0bXqAXPBUeWKJ395
+	Gxg3ynQxcnJICJhI3Ntxhw3CFpO4cG89kM3FISQwnVHizOxpjCAJIYFfjBLn/laA2GwCahJf
+	vhxmB7FFBHQleiZ+ZAFpYBb4wygxdd4tqAZ3ia6p61hAbE4BD4kVX9uYQWxhAT+JP8eWgcVZ
+	BFQl7i3/CRbnFbCVaLq5HMoWlPgx+R5YDbOAlsT6nceZIGx5ic1r3gLVcABdqi7x6K8uiCki
+	YCQxc60bRIWIxL4X7xgnMArNQjJoFpJBs5AMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0
+	veT83E2M4PTwTHoH46oGi0OMAhyMSjy8GZuTQoRYE8uKK3MPMUpwMCuJ8D5YChTiTUmsrEot
+	yo8vKs1JLT7EaAr050RmKdHkfGDqyiuJNzQ2MTOyNDKzMDIxN1cS5z3Yah0oJJCeWJKanZpa
+	kFoE08fEwSnVwLiwUkHsvdpqbuFcqcZWpS33LdrEHEzOnVnfW/7BIub3wuq1P3eKhS5ce0NM
+	8WrljGZ/LqYJPw/JtNqLFMU0mfYUHiiwCFvo8+ziMubdIc/3ft4WuuKUmfkEQ7ZDX3/Xfz+b
+	uET5sae9ZeLlBcJHfx1f6+h4Q1B4lfi27ar8KVnHD8pWnd1T7qTEUpyRaKjFXFScCAAMtML3
+	JQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Thursday, October 30, 2014 10:24 PM, Vivek Gautam wrote:
+> 
+> Now that we have moved to generic phy based bindings,
+> we don't need to have any code related to older dptx-phy.
+> Nobody is using this dptx-phy anymore, so removing the
+> same.
 
-------------------
+Right, older dptx-phy was replaced long time ago.
+However, it was not removed for DT compatibility.
+I think that now these old DT properties can be removed.
 
-From: Stephen Smalley <sds@tycho.nsa.gov>
+I added some comments below.
 
-commit 923190d32de4428afbea5e5773be86bea60a9925 upstream.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Cc: Inki Dae <inki.dae@samsung.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> ---
+> 
+> Changes from V1:
+>  - Reworked error handling in exynos_dp_dt_parse_phydata() as commented
+>    by Inki.
+> 
+>  drivers/gpu/drm/exynos/exynos_dp_core.c |   67 ++++++++-----------------------
+>  drivers/gpu/drm/exynos/exynos_dp_core.h |    2 -
+>  2 files changed, 17 insertions(+), 52 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.c b/drivers/gpu/drm/exynos/exynos_dp_core.c
+> index cd50ece..206163b 100644
+> --- a/drivers/gpu/drm/exynos/exynos_dp_core.c
+> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.c
+> @@ -1052,28 +1052,14 @@ static int exynos_dp_create_connector(struct exynos_drm_display *display,
+> 
+>  static void exynos_dp_phy_init(struct exynos_dp_device *dp)
+>  {
+> -	if (dp->phy) {
+> +	if (dp->phy)
+>  		phy_power_on(dp->phy);
+> -	} else if (dp->phy_addr) {
+> -		u32 reg;
+> -
+> -		reg = __raw_readl(dp->phy_addr);
+> -		reg |= dp->enable_mask;
+> -		__raw_writel(reg, dp->phy_addr);
+> -	}
+>  }
+> 
+>  static void exynos_dp_phy_exit(struct exynos_dp_device *dp)
+>  {
+> -	if (dp->phy) {
+> +	if (dp->phy)
+>  		phy_power_off(dp->phy);
+> -	} else if (dp->phy_addr) {
+> -		u32 reg;
+> -
+> -		reg = __raw_readl(dp->phy_addr);
+> -		reg &= ~(dp->enable_mask);
+> -		__raw_writel(reg, dp->phy_addr);
+> -	}
+>  }
+> 
+>  static void exynos_dp_poweron(struct exynos_drm_display *display)
+> @@ -1212,40 +1198,13 @@ static struct video_info *exynos_dp_dt_parse_pdata(struct device *dev)
+> 
+>  static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
+>  {
+> -	struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
+> -	u32 phy_base;
+> -	int ret = 0;
+> -
+> -	dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
+> -	if (!dp_phy_node) {
+> -		dp->phy = devm_phy_get(dp->dev, "dp");
+> -		return PTR_ERR_OR_ZERO(dp->phy);
+> -	}
+> -
+> -	if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
+> -		dev_err(dp->dev, "failed to get reg for dptx-phy\n");
+> -		ret = -EINVAL;
+> -		goto err;
+> -	}
+> -
+> -	if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
+> -				&dp->enable_mask)) {
+> -		dev_err(dp->dev, "failed to get enable-mask for dptx-phy\n");
+> -		ret = -EINVAL;
+> -		goto err;
+> -	}
+> -
+> -	dp->phy_addr = ioremap(phy_base, SZ_4);
+> -	if (!dp->phy_addr) {
+> -		dev_err(dp->dev, "failed to ioremap dp-phy\n");
+> -		ret = -ENOMEM;
+> -		goto err;
+> +	dp->phy = devm_phy_get(dp->dev, "dp");
+> +	if (IS_ERR(dp->phy)) {
+> +		dev_err(dp->dev, "no DP phy configured\n");
+> +		return PTR_ERR(dp->phy);
+>  	}
+> 
+> -err:
+> -	of_node_put(dp_phy_node);
+> -
+> -	return ret;
+> +	return 0;
+>  }
+> 
+>  static int exynos_dp_dt_parse_panel(struct exynos_dp_device *dp)
+> @@ -1278,8 +1237,16 @@ static int exynos_dp_bind(struct device *dev, struct device *master, void *data)
+>  		return PTR_ERR(dp->video_info);
+> 
+>  	ret = exynos_dp_dt_parse_phydata(dp);
 
-sb_finish_set_opts() can race with inode_free_security()
-when initializing inode security structures for inodes
-created prior to initial policy load or by the filesystem
-during ->mount().   This appears to have always been
-a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
-NULL pointer dereference in selinux_inode_permission()")
-made it more evident by immediately reusing the unioned
-list/rcu element  of the inode security structure for call_rcu()
-upon an inode_free_security().  But the underlying issue
-was already present before that commit as a possible use-after-free
-of isec.
+In your patch, exynos_dp_dt_parse_phydata() calls only devm_phy_get().
+Then, how about calling devm_phy_get() directly and removing
+exynos_dp_dt_parse_phydata()? It looks simpler.
 
-Shivnandan Kumar reported the list corruption and proposed
-a patch to split the list and rcu elements out of the union
-as separate fields of the inode_security_struct so that setting
-the rcu element would not affect the list element.  However,
-this would merely hide the issue and not truly fix the code.
+Best regards,
+Jingoo Han
 
-This patch instead moves up the deletion of the list entry
-prior to dropping the sbsec->isec_lock initially.  Then,
-if the inode is dropped subsequently, there will be no further
-references to the isec.
-
-Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
-Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- security/selinux/hooks.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -481,6 +481,7 @@ next_inode:
- 				list_entry(sbsec->isec_head.next,
- 					   struct inode_security_struct, list);
- 		struct inode *inode = isec->inode;
-+		list_del_init(&isec->list);
- 		spin_unlock(&sbsec->isec_lock);
- 		inode = igrab(inode);
- 		if (inode) {
-@@ -489,7 +490,6 @@ next_inode:
- 			iput(inode);
- 		}
- 		spin_lock(&sbsec->isec_lock);
--		list_del_init(&isec->list);
- 		goto next_inode;
- 	}
- 	spin_unlock(&sbsec->isec_lock);
-
+> -	if (ret)
+> -		return ret;
+> +	if (ret) {
+> +		/*
+> +		 * phy itself is not enabled, so we can move forward
+> +		 * assigning NULL to phy pointer.
+> +		 */
+> +		if (ret == -ENOSYS || ret == -ENODEV)
+> +			dp->phy = NULL;
+> +		else
+> +			return ret;
+> +	}
+> 
+>  	if (!dp->panel) {
+>  		ret = exynos_dp_dt_parse_panel(dp);
+> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.h b/drivers/gpu/drm/exynos/exynos_dp_core.h
+> index a1aee69..6426201 100644
+> --- a/drivers/gpu/drm/exynos/exynos_dp_core.h
+> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.h
+> @@ -153,8 +153,6 @@ struct exynos_dp_device {
+>  	struct clk		*clock;
+>  	unsigned int		irq;
+>  	void __iomem		*reg_base;
+> -	void __iomem		*phy_addr;
+> -	unsigned int		enable_mask;
+> 
+>  	struct video_info	*video_info;
+>  	struct link_train	link_train;
+> --
+> 1.7.10.4
 
