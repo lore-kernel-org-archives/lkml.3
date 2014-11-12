@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952AbaKLBUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58388 "EHLO
+	id S1753047AbaKLBUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaKLBUU (ORCPT
+	with ESMTP id S1753024AbaKLBUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:20 -0500
+	Tue, 11 Nov 2014 20:20:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Or Gerlitz <ogerlitz@mellanox.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 020/319] net/mlx4_en: Dont attempt to TX offload the outer UDP checksum for VXLAN
-Date: Wed, 12 Nov 2014 10:12:38 +0900
-Message-Id: <20141112010956.063479743@linuxfoundation.org>
+Subject: [PATCH 3.17 026/319] stmmac: pci: set default of the filter bins
+Date: Wed, 12 Nov 2014 10:12:44 +0900
+Message-Id: <20141112010957.016758254@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,41 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-[ Upstream commit a4f2dacbf2a5045e34b98a35d9a3857800f25a7b ]
+[ Upstream commit 1e19e084eae727654052339757ab7f1eaff58bad ]
 
-For VXLAN/NVGRE encapsulation, the current HW doesn't support offloading
-both the outer UDP TX checksum and the inner TCP/UDP TX checksum.
+The commit 3b57de958e2a brought the support for a different amount of the
+filter bins, but didn't update the PCI driver accordingly. This patch appends
+the default values when the device is enumerated via PCI bus.
 
-The driver doesn't advertize SKB_GSO_UDP_TUNNEL_CSUM, however we are wrongly
-telling the HW to offload the outer UDP checksum for encapsulated packets,
-fix that.
-
-Fixes: 837052d0ccc5 ('net/mlx4_en: Add netdev support for TCP/IP
-		     offloads of vxlan tunneling')
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Fixes: 3b57de958e2a (net: stmmac: Support devicetree configs for mcast and ucast filter entries)
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_tx.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-@@ -808,8 +808,11 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff
- 	tx_desc->ctrl.fence_size = (real_size / 16) & 0x3f;
- 	tx_desc->ctrl.srcrb_flags = priv->ctrl_flags;
- 	if (likely(skb->ip_summed == CHECKSUM_PARTIAL)) {
--		tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM |
--							 MLX4_WQE_CTRL_TCP_UDP_CSUM);
-+		if (!skb->encapsulation)
-+			tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM |
-+								 MLX4_WQE_CTRL_TCP_UDP_CSUM);
-+		else
-+			tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM);
- 		ring->tx_csum++;
- 	}
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
+@@ -33,6 +33,7 @@ static struct stmmac_dma_cfg dma_cfg;
+ static void stmmac_default_data(void)
+ {
+ 	memset(&plat_dat, 0, sizeof(struct plat_stmmacenet_data));
++
+ 	plat_dat.bus_id = 1;
+ 	plat_dat.phy_addr = 0;
+ 	plat_dat.interface = PHY_INTERFACE_MODE_GMII;
+@@ -47,6 +48,12 @@ static void stmmac_default_data(void)
+ 	dma_cfg.pbl = 32;
+ 	dma_cfg.burst_len = DMA_AXI_BLEN_256;
+ 	plat_dat.dma_cfg = &dma_cfg;
++
++	/* Set default value for multicast hash bins */
++	plat_dat.multicast_filter_bins = HASH_TABLE_SIZE;
++
++	/* Set default value for unicast filter entries */
++	plat_dat.unicast_filter_entries = 1;
+ }
  
+ /**
 
 
