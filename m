@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965090AbaKLDw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:52:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58957 "EHLO
+	id S965205AbaKLDxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:53:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368AbaKLB1F (ORCPT
+	with ESMTP id S932315AbaKLB07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:05 -0500
+	Tue, 11 Nov 2014 20:26:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.17 104/319] drm/ast: Fix HW cursor image
-Date: Wed, 12 Nov 2014 10:14:02 +0900
-Message-Id: <20141112011009.800160245@linuxfoundation.org>
+        Maciej Matraszek <m.matraszek@samsung.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.17 112/319] media: v4l2-common: fix overflow in v4l_bound_align_image()
+Date: Wed, 12 Nov 2014 10:14:10 +0900
+Message-Id: <20141112011011.120221904@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,34 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Maciej Matraszek <m.matraszek@samsung.com>
 
-commit 1e99cfa8de0f0879091e33cd65fd60418d006ad9 upstream.
+commit 3bacc10cd4a85bc70bc0b6c001d3bf995c7fe04c upstream.
 
-The translation from the X driver to the KMS one typo'ed a couple
-of array indices, causing the HW cursor to look weird (blocky with
-leaking edge colors). This fixes it.
+Fix clamp_align() used in v4l_bound_align_image() to prevent overflow
+when passed large value like UINT32_MAX.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+ In the current implementation:
+    clamp_align(UINT32_MAX, 8, 8192, 3)
+
+returns 8, because in line:
+
+    x = (x + (1 << (align - 1))) & mask;
+
+x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
+
+v4l_bound_align_image() is heavily used in VIDIOC_S_FMT and
+VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
+explicitly states that:
+
+"The modified format should be as close as possible to the original
+request."
+  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
+
+Thus one would expect, that passing UINT32_MAX as format width and
+height will result in setting maximum possible resolution for the
+device. Particularly, when the driver doesn't support
+VIDIOC_ENUM_FRAMESIZES ioctl, which is common in the codebase.
+
+Fixes changeset: b0d3159be9a3
+
+Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ast/ast_mode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/v4l2-core/v4l2-common.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/ast/ast_mode.c
-+++ b/drivers/gpu/drm/ast/ast_mode.c
-@@ -1080,8 +1080,8 @@ static u32 copy_cursor_image(u8 *src, u8
- 			srcdata32[1].ul = *((u32 *)(srcxor + 4)) & 0xf0f0f0f0;
- 			data32.b[0] = srcdata32[0].b[1] | (srcdata32[0].b[0] >> 4);
- 			data32.b[1] = srcdata32[0].b[3] | (srcdata32[0].b[2] >> 4);
--			data32.b[2] = srcdata32[0].b[1] | (srcdata32[1].b[0] >> 4);
--			data32.b[3] = srcdata32[0].b[3] | (srcdata32[1].b[2] >> 4);
-+			data32.b[2] = srcdata32[1].b[1] | (srcdata32[1].b[0] >> 4);
-+			data32.b[3] = srcdata32[1].b[3] | (srcdata32[1].b[2] >> 4);
+--- a/drivers/media/v4l2-core/v4l2-common.c
++++ b/drivers/media/v4l2-core/v4l2-common.c
+@@ -435,16 +435,13 @@ static unsigned int clamp_align(unsigned
+ 	/* Bits that must be zero to be aligned */
+ 	unsigned int mask = ~((1 << align) - 1);
  
- 			writel(data32.ul, dstxor);
- 			csum += data32.ul;
++	/* Clamp to aligned min and max */
++	x = clamp(x, (min + ~mask) & mask, max & mask);
++
+ 	/* Round to nearest aligned value */
+ 	if (align)
+ 		x = (x + (1 << (align - 1))) & mask;
+ 
+-	/* Clamp to aligned value of min and max */
+-	if (x < min)
+-		x = (min + ~mask) & mask;
+-	else if (x > max)
+-		x = max & mask;
+-
+ 	return x;
+ }
+ 
 
 
