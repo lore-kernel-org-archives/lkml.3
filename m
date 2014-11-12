@@ -1,143 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaKLPHo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:07:44 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46378 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020AbaKLPHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:07:43 -0500
-Date: Wed, 12 Nov 2014 09:08:09 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: gadget: Fix broken gadget on system
- suspend/resume
-Message-ID: <20141112150809.GE641@saruman>
-Reply-To: <balbi@ti.com>
-References: <1415804296-28980-1-git-send-email-rogerq@ti.com>
+	id S1753059AbaKLPIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:08:32 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52476 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377AbaKLPIa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 10:08:30 -0500
+Message-ID: <546377FC.4090408@arm.com>
+Date: Wed, 12 Nov 2014 15:08:44 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9ADF8FXzFeE7X4jE"
-Content-Disposition: inline
-In-Reply-To: <1415804296-28980-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
+ hotplug
+References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 12 Nov 2014 15:08:24.0849 (UTC) FILETIME=[817DF010:01CFFE8A]
+X-MC-Unique: 114111215082702601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---9ADF8FXzFeE7X4jE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Wed, Nov 12, 2014 at 04:58:16PM +0200, Roger Quadros wrote:
-> On TI SoCs (e.g. DRA7) we don't support the DWC3 hibernation feature.
-> We need to stop the gadget controller while system suspend
-> else it results in L3 Bus errors on resume with broken
-> USB gadget on J6-evm.
->=20
-> [   55.718226] WARNING: CPU: 0 PID: 0 at drivers/bus/omap_l3_noc.c:147 l3=
-_interrupt_handler+0x224/0x31c()
-> [   55.718232] 44000000.ocp:L3 Custom Error: MASTER USB3 TARGET GPMC (Idl=
-e): Data Access in User mode during Functional access
-> [   55.718263] Modules linked in: usb_f_ss_lb g_zero libcomposite configf=
-s xhci_hcd btwilink bluetooth dwc3 6lowpan_iphc m25p80 dwc3_omap omap_remot=
-eproc
-> [   55.718271] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.19-02011-g3=
-ece3ca-dirty #658
-> [   55.718290] [<c0016090>] (unwind_backtrace) from [<c0012060>] (show_st=
-ack+0x10/0x14)
-> [   55.718302] [<c0012060>] (show_stack) from [<c062a2e4>] (dump_stack+0x=
-78/0x94)
-> [   55.718315] [<c062a2e4>] (dump_stack) from [<c0043bc4>] (warn_slowpath=
-_common+0x6c/0x90)
-> [   55.718325] [<c0043bc4>] (warn_slowpath_common) from [<c0043c7c>] (war=
-n_slowpath_fmt+0x30/0x40)
-> [   55.718336] [<c0043c7c>] (warn_slowpath_fmt) from [<c030fb24>] (l3_int=
-errupt_handler+0x224/0x31c)
-> [   55.718348] [<c030fb24>] (l3_interrupt_handler) from [<c0093010>] (han=
-dle_irq_event_percpu+0x5c/0x23c)
-> [   55.718358] [<c0093010>] (handle_irq_event_percpu) from [<c009322c>] (=
-handle_irq_event+0x3c/0x5c)
-> [   55.718367] [<c009322c>] (handle_irq_event) from [<c0096160>] (handle_=
-fasteoi_irq+0x98/0x158)
-> [   55.718377] [<c0096160>] (handle_fasteoi_irq) from [<c00929dc>] (gener=
-ic_handle_irq+0x20/0x30)
-> [   55.718385] [<c00929dc>] (generic_handle_irq) from [<c000eea8>] (handl=
-e_IRQ+0x4c/0xb0)
-> [   55.718393] [<c000eea8>] (handle_IRQ) from [<c0008638>] (gic_handle_ir=
-q+0x28/0x5c)
-> [   55.718402] [<c0008638>] (gic_handle_irq) from [<c0630964>] (__irq_svc=
-+0x44/0x5c)
-> [   55.718406] Exception stack(0xc09c1f68 to 0xc09c1fb0)
-> [   55.718412] 1f60:                   00000001 00000001 00000000 0000000=
-0 c09c0000 00000000
-> [   55.718418] 1f80: c09c0000 c09c0000 c0a7a1e4 c09c8938 c09c89b4 0000000=
-0 60000093 c09c1fb0
-> [   55.718423] 1fa0: c008a2e4 c00926cc 60000013 ffffffff
-> [   55.718433] [<c0630964>] (__irq_svc) from [<c00926cc>] (cpu_startup_en=
-try+0x100/0x1f4)
-> [   55.718444] [<c00926cc>] (cpu_startup_entry) from [<c0901ac4>] (start_=
-kernel+0x324/0x388)
->=20
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+On 12/11/14 01:06, Wanpeng Li wrote:
+> I observe that dl task can't be migrated to other cpus during cpu hotplug, 
+> in addition, task may/may not be running again if cpu is added back. The 
+> root cause which I found is that dl task will be throtted and removed from 
+> dl rq after comsuming all budget, which leads to stop task can't pick it up 
+> from dl rq and migrate to other cpus during hotplug.
+> 
+> The method to reproduce:
+> schedtool -E -t 50000:100000 -e ./test
+> Actually test is just a simple for loop. Then observe which cpu the test
+> task is on.
+> echo 0 > /sys/devices/system/cpu/cpuN/online
+> 
+> This patch adds the dl task migration during cpu hotplug by finding a most 
+> suitable later deadline rq after dl timer fire if current rq is offline, 
+> if fail to find a suitable later deadline rq then fallback to any eligible 
+> online cpu in order that the deadline task will come back to us, and the 
+> push/pull mechanism should then move it around properly.
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 > ---
->  drivers/usb/dwc3/gadget.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> index 3818b26..bc15b54 100644
-> --- a/drivers/usb/dwc3/gadget.c
-> +++ b/drivers/usb/dwc3/gadget.c
-> @@ -2741,7 +2741,13 @@ int dwc3_gadget_prepare(struct dwc3 *dwc)
-
-there is no more dwc3_gadget_prepare(), please rebase on 'next'.
-
->  {
->  	if (dwc->pullups_connected) {
->  		dwc3_gadget_disable_irq(dwc);
-> -		dwc3_gadget_run_stop(dwc, true, true);
-> +		if (dwc->has_hibernation) {
-> +			dwc3_gadget_run_stop(dwc, true, true);
-> +		} else {
-> +			dwc3_gadget_run_stop(dwc, false, true);
-> +			/* remember to connect back on resume */
-> +			dwc->pullups_connected =3D true;
+> v4 -> v5:
+>  * remove raw_spin_unlock(&rq->lock)
+>  * cleanup codes, spotted by Peterz
+>  * cleanup patch description
+> v3 -> v4:
+>  * use tsk_cpus_allowed wrapper
+>  * fix compile error
+> v2 -> v3:
+>  * don't get_task_struct
+>  * if cannot preempt any rq, fallback to pick any online cpus
+>  * use cpu_active_mask as original later_mask if cpu is offline
+> v1 -> v2:
+>  * push the task to another cpu in dl_task_timer() if rq is offline.
+> 
+>  kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 41 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index f3d7776..7c31906 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+>  	return hrtimer_active(&dl_se->dl_timer);
+>  }
+>  
+> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+>  /*
+>   * This is the bandwidth enforcement timer callback. If here, we know
+>   * a task is not on its dl_rq, since the fact that the timer was running
+> @@ -538,6 +539,43 @@ again:
+>  	update_rq_clock(rq);
+>  	dl_se->dl_throttled = 0;
+>  	dl_se->dl_yielded = 0;
+> +
+> +	/*
+> +	 * So if we find that the rq the task was on is no longer
+> +	 * available, we need to select a new rq.
+> +	 */
+> +	if (unlikely(!rq->online)) {
+> +		struct rq *later_rq = NULL;
+> +
+> +		later_rq = find_lock_later_rq(p, rq);
+> +
+> +		if (!later_rq) {
+> +			int cpu;
+> +
+> +			/*
+> +			 * If cannot preempt any rq, fallback to pick any
+> +			 * online cpu.
+> +			 */
+> +			cpu = cpumask_any_and(cpu_active_mask,
+> +					tsk_cpus_allowed(p));
+> +			if (cpu >= nr_cpu_ids) {
+> +				pr_warn("fail to find any online cpu and task will never come back\n");
+> +				goto unlock;
+> +			}
+> +			later_rq = cpu_rq(cpu);
 > +		}
+> +
+> +		deactivate_task(rq, p, 0);
+> +		set_task_cpu(p, later_rq->cpu);
+> +		activate_task(later_rq, p, 0);
+> +
+> +		resched_curr(later_rq);
+> +
+> +		double_unlock_balance(rq, later_rq);
+> +
+> +		goto unlock;
+> +	}
+> +
+>  	if (task_on_rq_queued(p)) {
+>  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>  		if (dl_task(rq->curr))
+> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
+>  	 * We have to consider system topology and task affinity
+>  	 * first, then we can look for a suitable cpu.
+>  	 */
+> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+> +	cpumask_copy(later_mask, cpu_active_mask);
+> +	if (likely(task_rq(task)->online))
+> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
 
-Another thing you probably want to do is make sure there is nothing
-pending on our request list because if there is, then we need to wait
-for any in-flight transfers to complete before disconnecting.
+So, here you consider the span only when the task_rq is online,
+but there might be others cpus still online belonging to the same
+rd->span. And you have to consider them when migrating. Actually,
+migration must still be restricted to the online cpus of task's
+original rd->span, or I fear you can break clustered scheduling.
 
-I also wonder if current code isn't really fragile... I mean, when you
-clear run_stop bit, you should notify the gadget by means of
-->disconnect() and so on... But since we can't test this with mainline,
-then it's difficult to tell.
+Thanks,
 
---=20
-balbi
+- Juri
 
---9ADF8FXzFeE7X4jE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>  			task, later_mask);
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUY3fZAAoJEIaOsuA1yqREjA0P/jd4NJG8DNkfhdytwecEtQQH
-GZ6W1dJ2ZSSHhlBIiUBPXxTl5O53SwxWP2+fbP6Mkv9Jo2LojX+kFnq9VYoWsbF1
-Eo0i1Sk6k51thb4jT9D1TGnyPyOE9fFgmTC5mwPlVicY/7oZY2Yu9Fey04WHUxyU
-mSm+L3tTEgmJD3rQzfhbisfBBT9pNCjbxOua1Ajgj7LtN5RTD6J4wge56mA0ZAU8
-72ERpyzJgIK4VqxY7jDGyHYx3dcd2kKd+Pj6ALlHyo4z7c3/ULwmSILRtwEK9J6E
-Pql/lw+icKBqoBeRLAI4QQuV/GnC5apzbABjHoK93KSfw6kGu2NElc6d7TSqQOHf
-BhZoHf0duTbvn9QCQRgeA6ZLTZRBr7j7/Ehdb9v1jN24g23h91uRFf0w5VgCpA2y
-OJxDTCpJYPQKtROoJRpwGscHYMAg8t7zhmJxFqamMklI0G2Yr/C3GEAbKFZuqnF/
-n1KmFzllBquH66RqdnFmZGtaqpiyBwJPfBP/aAMBU67aTSRalOGLVCZ6UVsTG0xW
-vfdiRWnVW1xCUDRi+1YL1H4cZAGVvPxVq0ZJmmYbS2td4QQgfTKZbA5HLZ0gp9wF
-NLiwsE0/bok+R0KC2Ox0X/SQDLOoeXKVxemkP08aTm1Qt+e2rWNr7l32ez8gOVpi
-Zl2cUOr1/oWBCF0fVZMK
-=/GEh
------END PGP SIGNATURE-----
-
---9ADF8FXzFeE7X4jE--
