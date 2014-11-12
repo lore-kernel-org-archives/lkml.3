@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576AbaKLWK5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:10:57 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18415 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534AbaKLWKp (ORCPT
+	id S1753603AbaKLWLC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:11:02 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35533 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaKLWK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:10:45 -0500
-Date: Wed, 12 Nov 2014 17:10:21 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH V3 4/8] xen: Delay invalidating extra memory
-Message-ID: <20141112221021.GC7549@laptop.dumpdata.com>
-References: <1415684626-18590-1-git-send-email-jgross@suse.com>
- <1415684626-18590-5-git-send-email-jgross@suse.com>
+	Wed, 12 Nov 2014 17:10:59 -0500
+Date: Wed, 12 Nov 2014 22:09:35 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        James Hartley <James.Hartley@imgtec.com>,
+        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20141112220935.GS3815@sirena.org.uk>
+References: <1415828274-24727-1-git-send-email-abrestic@chromium.org>
+ <1415828274-24727-2-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pJCrgSoq0Ldj8RFP"
 Content-Disposition: inline
-In-Reply-To: <1415684626-18590-5-git-send-email-jgross@suse.com>
+In-Reply-To: <1415828274-24727-2-git-send-email-abrestic@chromium.org>
+X-Cookie: Some optional equipment shown.
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] of: Add binding document for IMG SPFI controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -376,12 +374,14 @@ void __init xen_build_dynamic_phys_to_machine(void)
->  	unsigned long max_pfn;
->  	unsigned long pfn;
->  
-> -	 if (xen_feature(XENFEAT_auto_translated_physmap))
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
 
-Spurious change.
+--pJCrgSoq0Ldj8RFP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-.. snip..
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index 0e5f9b6..8d5985b 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -75,7 +75,6 @@ static unsigned long xen_remap_mfn __initdata = INVALID_P2M_ENTRY;
->  
->  static void __init xen_add_extra_mem(u64 start, u64 size)
->  {
-> -	unsigned long pfn;
->  	int i;
->  
->  	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
-> @@ -95,17 +94,74 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
->  		printk(KERN_WARNING "Warning: not enough extra memory regions\n");
->  
->  	memblock_reserve(start, size);
-> +}
->  
-> -	xen_max_p2m_pfn = PFN_DOWN(start + size);
-> -	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
-> -		unsigned long mfn = pfn_to_mfn(pfn);
-> +static void __init xen_del_extra_mem(u64 start, u64 size)
-> +{
-> +	int i;
-> +	u64 start_r, size_r;
->  
-> -		if (WARN_ONCE(mfn == pfn, "Trying to over-write 1-1 mapping (pfn: %lx)\n", pfn))
-> -			continue;
-> -		WARN_ONCE(mfn != INVALID_P2M_ENTRY, "Trying to remove %lx which has %lx mfn!\n",
-> -			  pfn, mfn);
-> +	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
-> +		start_r = xen_extra_mem[i].start;
-> +		size_r = xen_extra_mem[i].size;
-> +
-> +		/* Start of region. */
-> +		if (start_r == start) {
-> +			BUG_ON(size > size_r);
-> +			xen_extra_mem[i].start += size;
-> +			xen_extra_mem[i].size -= size;
-> +			break;
-> +		}
-> +		/* End of region. */
-> +		if (start_r + size_r == start + size) {
-> +			BUG_ON(size > size_r);
-> +			xen_extra_mem[i].size -= size;
-> +			break;
-> +		}
-> +		/* Mid of region. */
-> +		if (start > start_r && start < start_r + size_r) {
-> +			BUG_ON(start + size > start_r + size_r);
-> +			xen_extra_mem[i].size = start - start_r;
-> +			xen_add_extra_mem(start + size, start_r + size_r -
-> +					  (start + size));
+On Wed, Nov 12, 2014 at 01:37:53PM -0800, Andrew Bresticker wrote:
+> The Synchronous Peripheral Flash Interface (SPFI) controller found
+> on IMG SoCs supports single, dual, and (optionally) quad mode SPI
+> transfers.
 
-Which ends up calling 'memblock_reserve' for an region it already has
-reserved. Should we call memblock_free(start_r, size_r - size) before calling this?
+This is OK but please use subject lines matching the style for the
+subsystem; people often filter on subject line when describing what to
+read.  I do note that the binding lists the DMA as mandatory but the
+implementation tolerates it being missing, this is fine since the code
+is more liberal.
 
-Or is that not neccessary as memblock_* is pretty smart about this sort of thing?
+--pJCrgSoq0Ldj8RFP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +			break;
-> +		}
-> +	}
-> +	memblock_free(start, size);
-> +}
-> +
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUY9qeAAoJECTWi3JdVIfQud8H/3pe3bHtN5f7+tljerf9qKWv
+6hgAKEORrHS9mMieTqb0bAKsv7WSAP7P1sZt8+eRVNHBiPAQ5KWB4BNk6JGpGTEd
+zChO11UDiLT0bwhLmWn5flvtvfqypHKjsGrBER2EopuWZkYAglapjohwEf8rRdh7
+J8d77YzYXuq6PGwXxG53Fn49T3I6iDi6sFchTjloHnr0ztJr3T0lTHE4fh9TKQIP
+cPkB/5r1xAbSkyTLUlJwOoKiyYQ63fe/+QNIX6I9jUGMySupeoIJLGvCA90MRl2e
+FmEEx56hVIszyHlzXxq/o2gZrCP+FiL47m6HZMRmXCs3mvST6p7TILTuw9kML3Q=
+=YnDi
+-----END PGP SIGNATURE-----
+
+--pJCrgSoq0Ldj8RFP--
