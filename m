@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaKLMU1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:20:27 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:59273 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaKLMU0 (ORCPT
+	id S1752530AbaKLMXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:23:35 -0500
+Received: from mail.kamstrup.com ([93.167.225.188]:24263 "EHLO
+	mail.kamstrup.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaKLMXd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:20:26 -0500
-Date: Wed, 12 Nov 2014 13:20:20 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: swarren@wwwdotorg.org, gnurou@gmail.com, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linux-foundation.org
-Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
-Message-ID: <20141112122017.GC30821@ulmo.nvidia.com>
-References: <1415738970-7963-1-git-send-email-olof@lixom.net>
+	Wed, 12 Nov 2014 07:23:33 -0500
+X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 07:23:33 EST
+From: Bruno Thomsen <bth@kamstrup.dk>
+To: Johan Hovold <johan@kernel.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "f.fainelli@gmail.com" <f.fainelli@gmail.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "bruno.thomsen@gmail.com" <bruno.thomsen@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: phy/micrel: KSZ8031RNL RMII clock reconfiguration bug
+Thread-Topic: phy/micrel: KSZ8031RNL RMII clock reconfiguration bug
+Thread-Index: AQHP/edt42BN9510lU6hFQj4Hn+7ZZxcv/Eg
+Date: Wed, 12 Nov 2014 12:17:57 +0000
+Message-ID: <915054555B5659448ACF8A70E114824D01704B9131@Exchange2010.kamstrup.dk>
+References: <1412866094-4972-1-git-send-email-bth@kamstrup.dk>
+ <20141111194101.GI29789@localhost>
+In-Reply-To: <20141111194101.GI29789@localhost>
+Accept-Language: da-DK, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.20.13.8]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
-Content-Disposition: inline
-In-Reply-To: <1415738970-7963-1-git-send-email-olof@lixom.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Johan,
 
---FsscpQKzF/jJk6ya
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> As you may have seen by now, I've been working on refactoring the micrel phy driver to be able to use common initialisation code.
+>
+> Specifically, I've added generic support for disabling the broadcast address, which is what the MII_KSZPHY_OMSO write above does.
+>
+> Generally you want this to be the first thing you do in order to avoid unnecessary reconfigurations. If we ever were to allow concurrent probing this would also be a requirement.
+>
+> Could you provide some detail about the setup were you find that the PHY becomes unresponsive without your patch? Do you have more than one PHY on the bus? Using what addresses? And using what clock modes (i.e. 25 MHz or 50 MHz)?
+> 
+> Also, what exactly do you mean by "unresponsive"? Are you still able to read the PHY registers for example?
 
-On Tue, Nov 11, 2014 at 12:49:30PM -0800, Olof Johansson wrote:
-> There are general changes pending to make the /aliases/serial* entries
-> number the serial ports on the system. On tegra, so far the ports have be=
-en
-> just numbered dynamically as they are configured so that makes them chang=
-e.
->=20
-> To avoid this, add specific aliases per board to keep the old numbers. Th=
-is
-> allows us to change the numbering by default on future SoCs while keeping=
- the
-> numbering on existing boards.
->=20
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
->=20
-> Stephen/Thierry/Alex, as noticed this week we really should try to get
-> this in before the 3.19 merge window so that the global aliases change
-> can happen there without regression.
->=20
-> If you have more fixes queued up, feel free to add this to the next pull
-> request. If not, a review and ack would be appreciated.
->=20
->  arch/arm/boot/dts/tegra114-dalmore.dts        |    1 +
->  arch/arm/boot/dts/tegra114-roth.dts           |    4 ++++
->  arch/arm/boot/dts/tegra114-tn7.dts            |    4 ++++
->  arch/arm/boot/dts/tegra114.dtsi               |    7 -------
->  arch/arm/boot/dts/tegra124-jetson-tk1.dts     |    1 +
->  arch/arm/boot/dts/tegra124-nyan-big.dts       |    1 +
->  arch/arm/boot/dts/tegra124-venice2.dts        |    1 +
->  arch/arm/boot/dts/tegra124.dtsi               |    7 -------
->  arch/arm/boot/dts/tegra20-harmony.dts         |    1 +
->  arch/arm/boot/dts/tegra20-iris-512.dts        |    5 +++++
->  arch/arm/boot/dts/tegra20-medcom-wide.dts     |    4 ++++
->  arch/arm/boot/dts/tegra20-paz00.dts           |    2 ++
->  arch/arm/boot/dts/tegra20-seaboard.dts        |    1 +
->  arch/arm/boot/dts/tegra20-tamonten.dtsi       |    1 +
->  arch/arm/boot/dts/tegra20-trimslice.dts       |    1 +
->  arch/arm/boot/dts/tegra20-ventana.dts         |    1 +
->  arch/arm/boot/dts/tegra20-whistler.dts        |    1 +
->  arch/arm/boot/dts/tegra20.dtsi                |    8 --------
->  arch/arm/boot/dts/tegra30-apalis-eval.dts     |    4 ++++
->  arch/arm/boot/dts/tegra30-beaver.dts          |    1 +
->  arch/arm/boot/dts/tegra30-cardhu.dtsi         |    2 ++
->  arch/arm/boot/dts/tegra30-colibri-eval-v3.dts |    3 +++
->  arch/arm/boot/dts/tegra30.dtsi                |    8 --------
->  23 files changed, 39 insertions(+), 30 deletions(-)
+I think it sounds like a good idea to refactor the init code.
 
-I have applied this to the for-3.19/dt branch. So for anything that is
-post Tegra124 the new rule shall be to add aliases to the SoC .dtsi and
-then use consistent numbering of UART ports across boards?
+My setup:
+iMX28 processor with dual Ethernet MAC; FEC0 (enabled) and FEC1 (disabled).
+There is a single KSZ8031 PHY that receives 50MHz RMII clock from the MAC.
+I am unable to read PHY registers from both user-land tools and extra debug PHY reads in driver code.
 
-The alternative is to remain consistent with what this patch does, which
-would be to make the serial port numbering a property of the board. That
-doesn't sound too bad to me either since it'll hide all the unused ports
-on a given board.
+Boot trace:
+[   22.277785] fec 800f0000.ethernet eth0: Freescale FEC PHY driver [Micrel KSZ8031] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+[   22.292527] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+[   24.276217] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+[   24.285094] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
 
-Thierry
 
---FsscpQKzF/jJk6ya
-Content-Type: application/pgp-signature
+Venlig hilsen / Best regards
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Kamstrup A/S <http://www.kamstrup.dk> 
+Bruno Thomsen
+Development engineer
+Technology
 
-iQIcBAEBAgAGBQJUY1CBAAoJEN0jrNd/PrOhm7kP/1JR2p/do2geWu2e++hAoUgr
-dUsBz2dPEfGusbytnZKm13Uu+jUAplEPqywZUpan4APvr+QzKW7FP3a6uoaSMm4x
-m/oJKCzIA4OGRJOi6NmJhBzJbPj0/UTMQta1cK/UQ+znVcW+YS5siqIsF5G59xZ6
-kEM60mRzvFx7UcEXYMjt7HfIOibom/EfmcGymaqeL6phbkQXOwuLMRJmJdJ+v7xP
-U5pMucWkhXqDdT/4oZQ821e+a3YyhgOxA0z0G4Rk2fLOlSJ9ByTw7PJwHPlS/eKp
-RHI6y1h6u7cfKaa8tA29296dCwlRtbvkzEXJVsbTn78j7XfGIBCd5gNvghHxc3ba
-CikblGDVWP732E77VrFUX10CbJClTXygXgGUGzVZOwkVomd/enh19Iuh4h4wwX6b
-5xVirCcO6GQpAGR46VqXtZIxyKRMgI+4tpxX3x03kSKkSiReYpDVewoRTBEphbbi
-yuWOeDYS9KFw9kGZWYB6QeqwOsS3gItH+TvjQBzu5n2gP8C2tyUB/A6Pno67OifJ
-cJbEAiehN3cM04TusYeAe6POGO/VtJN9IdtTEaPfPPeSzBpxWNPaMI0yIKc3m155
-AD9g8Fk+G6tc4yiqAmJ63cI61oLtlfWoo8joSZ2skmGXlb5O4XtlKtxp83Dbk3dC
-9e/mkGMxvx+/prEWXLAt
-=LiT5
------END PGP SIGNATURE-----
-
---FsscpQKzF/jJk6ya--
+Kamstrup A/S
+Industrivej 28
+DK-8660 Skanderborg
+Tel:	 +45 89 93 10 00	 
+Fax:	 +45 89 93 10 01	 
+Dir:	 +45 89 93 13 94	 
+E-mail:	 bth@kamstrup.dk	 
+Web:	 www.kamstrup.dk
