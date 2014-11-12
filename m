@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaKLBDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:03:52 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44876 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaKLBDu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:03:50 -0500
-Message-ID: <1415754212.12188.12.camel@debian>
-Subject: Re: [PATCH v3 1/2] x86, mce, severity: extend the the mce_severity
- mechanism to handle UCNA/DEFERRED error
-From: Chen Yucong <slaoub@gmail.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 12 Nov 2014 09:03:32 +0800
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F329293DE@ORSMSX114.amr.corp.intel.com>
-References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
-	 <1415410821-15063-2-git-send-email-slaoub@gmail.com>
-	 <546136C8.5060104@amd.com> <20141110221728.GA23419@pd.tnic>
-	 <3908561D78D1C84285E8C5FCA982C28F329282FA@ORSMSX114.amr.corp.intel.com>
-	 <20141111085612.GA31490@pd.tnic>
-	 <3908561D78D1C84285E8C5FCA982C28F329293DE@ORSMSX114.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752610AbaKLBHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:07:08 -0500
+Received: from mga14.intel.com ([192.55.52.115]:11144 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752105AbaKLBHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:07:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,364,1413270000"; 
+   d="scan'208";a="620879306"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEA==
+Date: Wed, 12 Nov 2014 01:06:06 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141111213628.GP31490@pd.tnic>
+ <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
+ <20141111223316.GQ31490@pd.tnic>
+ <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+ <20141111230926.GR31490@pd.tnic>
+ <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+In-Reply-To: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC17FEP008937
 
-On Tue, 2014-11-11 at 18:44 +0000, Luck, Tony wrote:
-> >> The bank 7 error reported as severity 0 because EN=0 ... so we took no action for it.
-> >
-> > How come EN is 0? Bank7 error reporting is not enabled? Why? Or the
-> > error injection thing doesn't do it?
-> 
-> The "EN" bit is poorly named, and not well documented.  Here's a clip from the SDM:
-> 
-> One of bullets in 15.10.4.1 Machine-Check Exception Handler for Error Recovery
-> 
->  When the EN flag is zero but the VAL and UC flags are one in the
->  IA32_MCi_STATUS register, the reported uncorrected error in this bank
->  is not enabled. As uncorrected errors with the EN flag = 0 are not the
->  source of machine check exceptions, the MCE handler should log and clear
->  non-enabled errors when the S bit is set and should continue searching
->  for enabled errors from the other IA32_MCi_STATUS registers. Note that
->  when IA32_MCG_CAP [24] is 0, any uncorrected error condition (VAL =1
->  and UC=1) including the one with the EN flag cleared are fatal and the
->  handler must signal the operating system to reset the system. For the
->  errors that do not generate machine check exceptions, the EN flag has
->  no meaning. See Chapter 19: Table 19-15 to find the errors that do not
->  generate machine check exceptions.
-> 
-> Unfortunately the reference to chapter 19 is stale (that is now all about
-> performance monitoring - I'll log a bug with the SDM editor to find the
-> right reference and fix this).
-> 
-> What this is trying to say is that the "EN" bit is to enable signaling
-> of machine checks - so it only has meaning when checking banks from the
-> machine check handler.  Errors that are logged, but not signaled, or signaled
-> as CMCI will have MCi_STATUS.EN=0
-> 
-> 
-> >> The bank 3 error got past that hurdle, then through the next BIT(8) set indicates a
-> >> cache error. Fell at the last check because ADDRV=0.
-> >
-> > I guess you could tweak the injection path to write in a default address
-> > so that that check gets bypassed...
-> 
-> I don't think this is an injection artifact. I think on this processor the mid-level-cache
-> just isn't providing an address in this case.  It doesn't help to make one up - our whole
-> game plan is to offline a page with a UC error - and we must have an address to know
-> which page to offline.
-> 
-> Perhaps the severity table entries for UCNA and DEFERRED errors should look to see
-> if ADDRV is set - if not, don't report this as UCNA/DEFERRED?
-> 
-We can also find the following snippet from AMD APM Volume 2:
+> I've thought about one sneaky option.  If we can reliably determine
+> that we're an innocent bystander of a broadcast #MC, can we send an
+> IPI-to-self and return without clearing MCIP?  Then we get another
+> interrupt as soon as interrupts are enabled, and we can clear MCIP at
+> a time when we're definitely not running on the IST stack.
 
-9.3.2 Error-Reporting Register Banks - MCi_STATUS
+Innocent bystanders have RIPV=1, EIPV=0 in MCG_STATUS ... so they
+are quite easy to spot.  Perhaps we might look at subverting the silly
+broadcast by just having them immediately clear MCG_STATUS and iret
+(i.e. not go to do_machine_check() at all).  That would require lots of
+surgery to do_machine_check() and friends - now it wouldn't be sure
+how many processors to expect to show up.  It also opens a different
+window - once they are back running normal code they might trip another
+machine check while the victims of the first are still processing - so
+another "boom, you're dead".  The advantage of hitting everyone
+with the machine check is that it lessens the chance that another will
+happen as everyone is running looking at a few pages of kernel code
+& data.
 
-ENâ€”Bit 60. When set to 1, this bit indicates that the error condition is
-enabled in the corresponding error-reporting control register (MCi_CTL).
-Errors disabled by MCi_CTL do not cause a `machine-check exception'.
+The worrying part in that is "as soon as interrupts are enabled". Until
+we do clear MCIP we're sitting in a mode where another machine check
+means instant death no saving throw.  Nominally better than the "we'll
+mess the stack up for you" that we are trying to avoid - but the old window
+is quite short and known to be bounded. The new one might be a lot bigger.
 
-Just as what you said, the severity table entry for the "EN" check
-should have been skipped when calling from the CMCI/Poll handler.
-As shown below:
+-Tony
 
-        MCESEV(
-                NO, "Not enabled",
-                EXCP, BITCLR(MCI_STATUS_EN)
-                ),
-
-thx!
-cyc
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
