@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966481AbaKLBxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:53:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32963 "EHLO
+	id S966497AbaKLBxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:53:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32968 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965507AbaKLBxr (ORCPT
+	with ESMTP id S965507AbaKLBxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:53:47 -0500
+	Tue, 11 Nov 2014 20:53:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 075/123] OOM, PM: OOM killed task shouldnt escape PM suspend
-Date: Wed, 12 Nov 2014 10:17:21 +0900
-Message-Id: <20141112011722.410875215@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 076/123] staging:iio:ad5933: Fix NULL pointer deref when enabling buffer
+Date: Wed, 12 Nov 2014 10:17:22 +0900
+Message-Id: <20141112011722.458562968@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,171 +29,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 5695be142e203167e3cb515ef86a88424f3524eb upstream.
+commit 824269c5868d2a7a26417e5ef3841a27d42c6139 upstream.
 
-PM freezer relies on having all tasks frozen by the time devices are
-getting frozen so that no task will touch them while they are getting
-frozen. But OOM killer is allowed to kill an already frozen task in
-order to handle OOM situtation. In order to protect from late wake ups
-OOM killer is disabled after all tasks are frozen. This, however, still
-keeps a window open when a killed task didn't manage to die by the time
-freeze_processes finishes.
+In older versions of the IIO framework it was possible to pass a
+completely different set of channels to iio_buffer_register() as the one
+that is assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
+iio_sw_buffer_preenable much more general.") introduced a restriction that
+requires that the set of channels that is passed to iio_buffer_register() is
+a subset of the channels assigned to the IIO device as the IIO core will use
+the list of channels that is assigned to the device to lookup a channel by
+scan index in iio_compute_scan_bytes(). If it can not find the channel the
+function will crash. This patch fixes the issue by making sure that the same
+set of channels is assigned to the IIO device and passed to
+iio_buffer_register().
 
-Reduce the race window by checking all tasks after OOM killer has been
-disabled. This is still not race free completely unfortunately because
-oom_killer_disable cannot stop an already ongoing OOM killer so a task
-might still wake up from the fridge and get killed without
-freeze_processes noticing. Full synchronization of OOM and freezer is,
-however, too heavy weight for this highly unlikely case.
+Fixes the follow NULL pointer derefernce kernel crash:
+	Unable to handle kernel NULL pointer dereference at virtual address 00000016
+	pgd = d53d0000
+	[00000016] *pgd=1534e831, *pte=00000000, *ppte=00000000
+	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+	Modules linked in:
+	CPU: 1 PID: 1626 Comm: bash Not tainted 3.15.0-19969-g2a180eb-dirty #9545
+	task: d6c124c0 ti: d539a000 task.ti: d539a000
+	PC is at iio_compute_scan_bytes+0x34/0xa8
+	LR is at iio_compute_scan_bytes+0x34/0xa8
+	pc : [<c03052e4>]    lr : [<c03052e4>]    psr: 60070013
+	sp : d539beb8  ip : 00000001  fp : 00000000
+	r10: 00000002  r9 : 00000000  r8 : 00000001
+	r7 : 00000000  r6 : d6dc8800  r5 : d7571000  r4 : 00000002
+	r3 : d7571000  r2 : 00000044  r1 : 00000001  r0 : 00000000
+	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+	Control: 18c5387d  Table: 153d004a  DAC: 00000015
+	Process bash (pid: 1626, stack limit = 0xd539a240)
+	Stack: (0xd539beb8 to 0xd539c000)
+	bea0:                                                       c02fc0e4 d7571000
+	bec0: d76c1640 d6dc8800 d757117c 00000000 d757112c c0305b04 d76c1690 d76c1640
+	bee0: d7571188 00000002 00000000 d7571000 d539a000 00000000 000dd1c8 c0305d54
+	bf00: d7571010 0160b868 00000002 c69d3900 d7573278 d7573308 c69d3900 c01ece90
+	bf20: 00000002 c0103fac c0103f6c d539bf88 00000002 c69d3b00 c69d3b0c c0103468
+	bf40: 00000000 00000000 d7694a00 00000002 000af408 d539bf88 c000dd84 c00b2f94
+	bf60: d7694a00 000af408 00000002 d7694a00 d7694a00 00000002 000af408 c000dd84
+	bf80: 00000000 c00b32d0 00000000 00000000 00000002 b6f1aa78 00000002 000af408
+	bfa0: 00000004 c000dc00 b6f1aa78 00000002 00000001 000af408 00000002 00000000
+	bfc0: b6f1aa78 00000002 000af408 00000004 be806a4c 000a6094 00000000 000dd1c8
+	bfe0: 00000000 be8069cc b6e8ab77 b6ec125c 40070010 00000001 22940489 154a5007
+	[<c03052e4>] (iio_compute_scan_bytes) from [<c0305b04>] (__iio_update_buffers+0x248/0x438)
+	[<c0305b04>] (__iio_update_buffers) from [<c0305d54>] (iio_buffer_store_enable+0x60/0x7c)
+	[<c0305d54>] (iio_buffer_store_enable) from [<c01ece90>] (dev_attr_store+0x18/0x24)
+	[<c01ece90>] (dev_attr_store) from [<c0103fac>] (sysfs_kf_write+0x40/0x4c)
+	[<c0103fac>] (sysfs_kf_write) from [<c0103468>] (kernfs_fop_write+0x110/0x154)
+	[<c0103468>] (kernfs_fop_write) from [<c00b2f94>] (vfs_write+0xd0/0x160)
+	[<c00b2f94>] (vfs_write) from [<c00b32d0>] (SyS_write+0x40/0x78)
+	[<c00b32d0>] (SyS_write) from [<c000dc00>] (ret_fast_syscall+0x0/0x30)
+	Code: ea00000e e1a01008 e1a00005 ebfff6fc (e5d0a016)
 
-Introduce and check oom_kills counter which gets incremented early when
-the allocator enters __alloc_pages_may_oom path and only check all the
-tasks if the counter changes during the freezing attempt. The counter
-is updated so early to reduce the race window since allocator checked
-oom_killer_disabled which is set by PM-freezing code. A false positive
-will push the PM-freezer into a slow path but that is not a big deal.
-
-Changes since v1
-- push the re-check loop out of freeze_processes into
-  check_frozen_processes and invert the condition to make the code more
-  readable as per Rafael
-
-Fixes: f660daac474c6f (oom: thaw threads if oom killed thread is frozen before deferring)
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/oom.h    |    3 +++
- kernel/power/process.c |   40 +++++++++++++++++++++++++++++++++++++++-
- mm/oom_kill.c          |   17 +++++++++++++++++
- mm/page_alloc.c        |    8 ++++++++
- 4 files changed, 67 insertions(+), 1 deletion(-)
+ drivers/staging/iio/impedance-analyzer/ad5933.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -50,6 +50,9 @@ static inline bool oom_task_origin(const
- extern unsigned long oom_badness(struct task_struct *p,
- 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
- 		unsigned long totalpages);
-+
-+extern int oom_kills_count(void);
-+extern void note_oom_kill(void);
- extern void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			     unsigned int points, unsigned long totalpages,
- 			     struct mem_cgroup *memcg, nodemask_t *nodemask,
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -103,6 +103,28 @@ static int try_to_freeze_tasks(bool user
- 	return todo ? -EBUSY : 0;
- }
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -115,6 +115,7 @@ static const struct iio_chan_spec ad5933
+ 		.channel = 0,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+ 		.address = AD5933_REG_TEMP_DATA,
++		.scan_index = -1,
+ 		.scan_type = {
+ 			.sign = 's',
+ 			.realbits = 14,
+@@ -125,8 +126,6 @@ static const struct iio_chan_spec ad5933
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "real_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_REAL_DATA,
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -139,8 +138,6 @@ static const struct iio_chan_spec ad5933
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "imag_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_IMAG_DATA,
+ 		.scan_index = 1,
+ 		.scan_type = {
+@@ -746,14 +743,14 @@ static int ad5933_probe(struct i2c_clien
+ 	indio_dev->name = id->name;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	indio_dev->channels = ad5933_channels;
+-	indio_dev->num_channels = 1; /* only register temp0_input */
++	indio_dev->num_channels = ARRAY_SIZE(ad5933_channels);
  
-+/*
-+ * Returns true if all freezable tasks (except for current) are frozen already
-+ */
-+static bool check_frozen_processes(void)
-+{
-+	struct task_struct *g, *p;
-+	bool ret = true;
-+
-+	read_lock(&tasklist_lock);
-+	for_each_process_thread(g, p) {
-+		if (p != current && !freezer_should_skip(p) &&
-+		    !frozen(p)) {
-+			ret = false;
-+			goto done;
-+		}
-+	}
-+done:
-+	read_unlock(&tasklist_lock);
-+
-+	return ret;
-+}
-+
- /**
-  * freeze_processes - Signal user space processes to enter the refrigerator.
-  *
-@@ -111,6 +133,7 @@ static int try_to_freeze_tasks(bool user
- int freeze_processes(void)
- {
- 	int error;
-+	int oom_kills_saved;
+ 	ret = ad5933_register_ring_funcs_and_init(indio_dev);
+ 	if (ret)
+ 		goto error_disable_reg;
  
- 	error = __usermodehelper_disable(UMH_FREEZING);
- 	if (error)
-@@ -121,12 +144,27 @@ int freeze_processes(void)
+-	/* skip temp0_input, register in0_(real|imag)_raw */
+-	ret = iio_buffer_register(indio_dev, &ad5933_channels[1], 2);
++	ret = iio_buffer_register(indio_dev, ad5933_channels,
++		ARRAY_SIZE(ad5933_channels));
+ 	if (ret)
+ 		goto error_unreg_ring;
  
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
-+	oom_kills_saved = oom_kills_count();
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
--		printk("done.");
- 		__usermodehelper_set_disable_depth(UMH_DISABLED);
- 		oom_killer_disable();
-+
-+		/*
-+		 * There might have been an OOM kill while we were
-+		 * freezing tasks and the killed task might be still
-+		 * on the way out so we have to double check for race.
-+		 */
-+		if (oom_kills_count() != oom_kills_saved &&
-+				!check_frozen_processes()) {
-+			__usermodehelper_set_disable_depth(UMH_ENABLED);
-+			printk("OOM in progress.");
-+			error = -EBUSY;
-+			goto done;
-+		}
-+		printk("done.");
- 	}
-+done:
- 	printk("\n");
- 	BUG_ON(in_atomic());
- 
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -402,6 +402,23 @@ static void dump_header(struct task_stru
- 		dump_tasks(memcg, nodemask);
- }
- 
-+/*
-+ * Number of OOM killer invocations (including memcg OOM killer).
-+ * Primarily used by PM freezer to check for potential races with
-+ * OOM killed frozen task.
-+ */
-+static atomic_t oom_kills = ATOMIC_INIT(0);
-+
-+int oom_kills_count(void)
-+{
-+	return atomic_read(&oom_kills);
-+}
-+
-+void note_oom_kill(void)
-+{
-+	atomic_inc(&oom_kills);
-+}
-+
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /*
-  * Must be called while holding a reference to p, which will be released upon
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2120,6 +2120,14 @@ __alloc_pages_may_oom(gfp_t gfp_mask, un
- 	}
- 
- 	/*
-+	 * PM-freezer should be notified that there might be an OOM killer on
-+	 * its way to kill and wake somebody up. This is too early and we might
-+	 * end up not killing anything but false positives are acceptable.
-+	 * See freeze_processes.
-+	 */
-+	note_oom_kill();
-+
-+	/*
- 	 * Go through the zonelist yet one more time, keep very high watermark
- 	 * here, this is only to catch a parallel oom killing, we must fail if
- 	 * we're still under heavy pressure.
 
 
