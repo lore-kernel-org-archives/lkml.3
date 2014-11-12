@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaKLBXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:23:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58684 "EHLO
+	id S1753942AbaKLBX4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:23:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872AbaKLBXq (ORCPT
+	with ESMTP id S1753872AbaKLBXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:46 -0500
+	Tue, 11 Nov 2014 20:23:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.17 086/319] xen/blkback: unmap all persistent grants when frontend gets disconnected
-Date: Wed, 12 Nov 2014 10:13:44 +0900
-Message-Id: <20141112011006.836787628@linuxfoundation.org>
+        zatimend@hotmail.co.uk, Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.17 070/319] random: add and use memzero_explicit() for clearing data
+Date: Wed, 12 Nov 2014 10:13:28 +0900
+Message-Id: <20141112011004.194044137@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,75 +30,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 12ea729645ace01e08f9654df155622898d3aae6 upstream.
+commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
 
-blkback does not unmap persistent grants when frontend goes to Closed
-state (e.g. when blkfront module is being removed). This leads to the
-following in guest's dmesg:
+zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
+memset() calls which clear out sensitive data in extract_{buf,entropy,
+entropy_user}() in random driver are being optimized away by gcc.
 
-[  343.243825] xen:grant_table: WARNING: g.e. 0x445 still in use!
-[  343.243825] xen:grant_table: WARNING: g.e. 0x42a still in use!
-...
+Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
+that can be used in such cases where a variable with sensitive data is
+being cleared out in the end. Other use cases might also be in crypto
+code. [ I have put this into lib/string.c though, as it's always built-in
+and doesn't need any dependencies then. ]
 
-When load module -> use device -> unload module sequence is performed multiple times
-it is possible to hit BUG() condition in blkfront module:
+Fixes kernel bugzilla: 82041
 
-[  343.243825] kernel BUG at drivers/block/xen-blkfront.c:954!
-[  343.243825] invalid opcode: 0000 [#1] SMP
-[  343.243825] Modules linked in: xen_blkfront(-) ata_generic pata_acpi [last unloaded: xen_blkfront]
-...
-[  343.243825] Call Trace:
-[  343.243825]  [<ffffffff814111ef>] ? unregister_xenbus_watch+0x16f/0x1e0
-[  343.243825]  [<ffffffffa0016fbf>] blkfront_remove+0x3f/0x140 [xen_blkfront]
-...
-[  343.243825] RIP  [<ffffffffa0016aae>] blkif_free+0x34e/0x360 [xen_blkfront]
-[  343.243825]  RSP <ffff88001eb8fdc0>
-
-We don't need to keep these grants if we're disconnecting as frontend might already
-forgot about them. Solve the issue by moving xen_blkbk_free_caches() call from
-xen_blkif_free() to xen_blkif_disconnect().
-
-Now we can see the following:
-[  928.590893] xen:grant_table: WARNING: g.e. 0x587 still in use!
-[  928.591861] xen:grant_table: WARNING: g.e. 0x372 still in use!
-...
-[  929.592146] xen:grant_table: freeing g.e. 0x587
-[  929.597174] xen:grant_table: freeing g.e. 0x372
-...
-
-Backend does not keep persistent grants any more, reconnect works fine.
-
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: zatimend@hotmail.co.uk
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/xenbus.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/char/random.c  |    8 ++++----
+ include/linux/string.h |    5 +++--
+ lib/string.c           |   16 ++++++++++++++++
+ 3 files changed, 23 insertions(+), 6 deletions(-)
 
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -270,6 +270,9 @@ static int xen_blkif_disconnect(struct x
- 		blkif->blk_rings.common.sring = NULL;
- 	}
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1106,7 +1106,7 @@ static void extract_buf(struct entropy_s
+ 	__mix_pool_bytes(r, hash.w, sizeof(hash.w));
+ 	spin_unlock_irqrestore(&r->lock, flags);
  
-+	/* Remove all persistent grants and the cache of ballooned pages. */
-+	xen_blkbk_free_caches(blkif);
-+
- 	return 0;
+-	memset(workspace, 0, sizeof(workspace));
++	memzero_explicit(workspace, sizeof(workspace));
+ 
+ 	/*
+ 	 * In case the hash function has some recognizable output
+@@ -1118,7 +1118,7 @@ static void extract_buf(struct entropy_s
+ 	hash.w[2] ^= rol32(hash.w[2], 16);
+ 
+ 	memcpy(out, &hash, EXTRACT_SIZE);
+-	memset(&hash, 0, sizeof(hash));
++	memzero_explicit(&hash, sizeof(hash));
  }
  
-@@ -281,9 +284,6 @@ static void xen_blkif_free(struct xen_bl
- 	xen_blkif_disconnect(blkif);
- 	xen_vbd_free(&blkif->vbd);
+ /*
+@@ -1175,7 +1175,7 @@ static ssize_t extract_entropy(struct en
+ 	}
  
--	/* Remove all persistent grants and the cache of ballooned pages. */
--	xen_blkbk_free_caches(blkif);
--
- 	/* Make sure everything is drained before shutting down */
- 	BUG_ON(blkif->persistent_gnt_c != 0);
- 	BUG_ON(atomic_read(&blkif->persistent_gnt_in_use) != 0);
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
+ 
+ 	return ret;
+ }
+@@ -1218,7 +1218,7 @@ static ssize_t extract_entropy_user(stru
+ 	}
+ 
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
+ 
+ 	return ret;
+ }
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -132,7 +132,7 @@ int bprintf(u32 *bin_buf, size_t size, c
+ #endif
+ 
+ extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
+-			const void *from, size_t available);
++				       const void *from, size_t available);
+ 
+ /**
+  * strstarts - does @str start with @prefix?
+@@ -144,7 +144,8 @@ static inline bool strstarts(const char
+ 	return strncmp(str, prefix, strlen(prefix)) == 0;
+ }
+ 
+-extern size_t memweight(const void *ptr, size_t bytes);
++size_t memweight(const void *ptr, size_t bytes);
++void memzero_explicit(void *s, size_t count);
+ 
+ /**
+  * kbasename - return the last part of a pathname.
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -604,6 +604,22 @@ void *memset(void *s, int c, size_t coun
+ EXPORT_SYMBOL(memset);
+ #endif
+ 
++/**
++ * memzero_explicit - Fill a region of memory (e.g. sensitive
++ *		      keying data) with 0s.
++ * @s: Pointer to the start of the area.
++ * @count: The size of the area.
++ *
++ * memzero_explicit() doesn't need an arch-specific version as
++ * it just invokes the one of memset() implicitly.
++ */
++void memzero_explicit(void *s, size_t count)
++{
++	memset(s, 0, count);
++	OPTIMIZER_HIDE_VAR(s);
++}
++EXPORT_SYMBOL(memzero_explicit);
++
+ #ifndef __HAVE_ARCH_MEMCPY
+ /**
+  * memcpy - Copy one area of memory to another
 
 
