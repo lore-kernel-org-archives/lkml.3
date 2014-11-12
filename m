@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934482AbaKLCCG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:02:06 -0500
-Received: from mail-bn1on0146.outbound.protection.outlook.com ([157.56.110.146]:2656
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932917AbaKLCCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:02:04 -0500
-Message-ID: <5462BF8D.2090805@freescale.com>
-Date: Tue, 11 Nov 2014 20:01:49 -0600
-From: German Rivera <German.Rivera@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S934670AbaKLCCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:02:17 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:32888 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932917AbaKLCCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 21:02:12 -0500
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>, <gregkh@linuxfoundation.org>,
-        <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
-CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
-        <scottwood@freescale.com>, <bhamciu1@freescale.com>,
-        <R89243@freescale.com>, <Geoff.Thorpe@freescale.com>,
-        <bhupesh.sharma@freescale.com>, <nir.erez@freescale.com>,
-        <richard.schmitt@freescale.com>
-Subject: Re: [PATCH 2/3 v3] drivers/bus: Freescale Management Complex (fsl-mc)
- bus driver
-References: <1412429015-30564-1-git-send-email-German.Rivera@freescale.com> <1412429015-30564-3-git-send-email-German.Rivera@freescale.com> <545B7C9A.8000309@suse.de>
-In-Reply-To: <545B7C9A.8000309@suse.de>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.88.168.49]
-X-ClientProxiedBy: BY2PR06CA046.namprd06.prod.outlook.com (10.141.250.164) To
- CY1PR0301MB1305.namprd03.prod.outlook.com (25.161.212.15)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1305;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1305;
-X-Forefront-PRVS: 03932714EB
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6049001)(6009001)(189002)(51704005)(377454003)(479174003)(199003)(24454002)(50466002)(46102003)(105586002)(20776003)(87976001)(65806001)(66066001)(65956001)(64126003)(95666004)(106356001)(47776003)(122386002)(64706001)(80316001)(36756003)(101416001)(42186005)(23746002)(76176999)(50986999)(87266999)(120916001)(54356999)(65816999)(99396003)(21056001)(4396001)(77096003)(97736003)(92726001)(62966003)(77156002)(86362001)(2201001)(107046002)(92566001)(102836001)(40100003)(33656002)(59896002)(31966008);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1305;H:[10.214.85.150];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1305;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141111213628.GP31490@pd.tnic> <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
+ <20141111223316.GQ31490@pd.tnic> <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+ <20141111230926.GR31490@pd.tnic> <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com> <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Nov 2014 18:01:50 -0800
+Message-ID: <CALCETrUkeB8cV5TWDsrOX=BPw+=+P2cTurb20jK9XfZ3ybEZ8Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 07:50 AM, Alexander Graf wrote:
+On Tue, Nov 11, 2014 at 5:06 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> I've thought about one sneaky option.  If we can reliably determine
+>> that we're an innocent bystander of a broadcast #MC, can we send an
+>> IPI-to-self and return without clearing MCIP?  Then we get another
+>> interrupt as soon as interrupts are enabled, and we can clear MCIP at
+>> a time when we're definitely not running on the IST stack.
 >
-[cut]
->> +++ b/drivers/bus/fsl-mc/Kconfig
->> @@ -0,0 +1,13 @@
->> +#
->> +# Freescale Management Complex (MC) bus drivers
->> +#
->> +# Copyright (C) 2014 Freescale Semiconductor, Inc.
->> +#
->> +# This file is released under the GPLv2
->> +#
->> +
->> +config FSL_MC_BUS
->> +	tristate "Freescale Management Complex (MC) bus driver"
->> +	help
->> +	  Driver to enable the bus infrastructure for the Freescale
->> +          QorIQ Management Complex.
+> Innocent bystanders have RIPV=1, EIPV=0 in MCG_STATUS ... so they
+> are quite easy to spot.  Perhaps we might look at subverting the silly
+> broadcast by just having them immediately clear MCG_STATUS and iret
+> (i.e. not go to do_machine_check() at all).  That would require lots of
+> surgery to do_machine_check() and friends - now it wouldn't be sure
+> how many processors to expect to show up.  It also opens a different
+> window - once they are back running normal code they might trip another
+> machine check while the victims of the first are still processing - so
+> another "boom, you're dead".  The advantage of hitting everyone
+> with the machine check is that it lessens the chance that another will
+> happen as everyone is running looking at a few pages of kernel code
+> & data.
 >
-> Isn't this missing some scope limitations? Should we really have the
-> driver enabled on x86 for example?
->
-I will add depends on OF && ARM64
+> The worrying part in that is "as soon as interrupts are enabled". Until
+> we do clear MCIP we're sitting in a mode where another machine check
+> means instant death no saving throw.  Nominally better than the "we'll
+> mess the stack up for you" that we are trying to avoid - but the old window
+> is quite short and known to be bounded. The new one might be a lot bigger.
 
-> I would also make this slightly more verbose. People don't necessarily
-> know what the QorIQ Management Complex is. Give people some idea what
-> they're dealing with and preferably tell them hints that guide them from
-> "SoC name" to "should I enable this option?".
->
-> Also, usually the help text gives some guidance on what to do with the
-> option if you're not sure. In this case, I would say advise the user to
-> say N.
->
-Will do.
+Yeah, fair enough.
 
->
-> Alex
->
+The annoying thing is that there's no way to atomically return from
+interrupt and clear MCIP.
+
+Here's a different idea.  In do_machine_check, check if (regs->sp
+points at the machine check IST stack && !user_mode(regs)) and, if so,
+declare the machine check to be unrecoverable.  There are a couple
+ways this can happen:
+
+ - This is a second #MC that hit after clearing MCIP and before
+returning.  It's genuinely unrecoverable (we're well and truly screwed
+at this point), but we probably won't actually crash unless we try to
+return.
+
+ - This is a normal #MC that hit in kernel mode during a time when sp
+was bogus and coincidentally pointed at the #MC IST stack.
+
+This isn't perfect.  A malicious user can do dummy syscalls in a loop
+on one CPU with rsp pointing at the IST stack and try to cause a
+machine check on a different CPU, causing the system to panic when it
+thinks that the first CPU had a recursive IST usage.  I think that we
+probably have bigger problems if a malicious user can cause machine
+checks, though.
+
+--Andy
