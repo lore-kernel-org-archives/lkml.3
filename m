@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaKLQoB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 11:44:01 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42501 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149AbaKLQoA (ORCPT
+	id S1753151AbaKLQpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 11:45:53 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:41696 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707AbaKLQpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 11:44:00 -0500
-Date: Wed, 12 Nov 2014 17:43:57 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Zyngier <marc.zyngier@arm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 16/16] PCI/MSI: Enhance core to support hierarchy
- irqdomain
-In-Reply-To: <54637CCF.6020501@arm.com>
-Message-ID: <alpine.DEB.2.11.1411121743170.3935@nanos>
-References: <20141112133941.647950773@linutronix.de> <20141112134121.196562300@linutronix.de> <54637CCF.6020501@arm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 12 Nov 2014 11:45:52 -0500
+Date: Wed, 12 Nov 2014 17:45:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2] sched/cputime: fix clock_nanosleep/clock_gettime
+ inconsistency
+Message-ID: <20141112164541.GN29390@twins.programming.kicks-ass.net>
+References: <1415788168-3165-1-git-send-email-sgruszka@redhat.com>
+ <20141112111553.GA21343@twins.programming.kicks-ass.net>
+ <20141112122155.GA3250@redhat.com>
+ <20141112125158.GB21343@twins.programming.kicks-ass.net>
+ <20141112155843.GA24803@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141112155843.GA24803@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014, Marc Zyngier wrote:
-> > +#ifdef CONFIG_PCI_MSI_IRQ_DOMAIN
-> > +void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *msg)
-> > +{
-> > +	struct msi_desc *desc = irq_data->msi_desc;
-> > +
-> > +	/*
-> > +	 * MSI-X message is written per-IRQ.
-> > +	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
-> > +	 */
-> > +	if (desc->irq == irq_data->irq)
-> > +		pci_write_msi_msg(desc, msg);
-> 
-> My compiler barks at this. Shouldn't that be either:
-> 		pci_write_msi_msg(desc->irq, msg);
-> or
-> 		__pci_write_msi_msg(desc, msg);
+On Wed, Nov 12, 2014 at 04:58:44PM +0100, Stanislaw Gruszka wrote:
+> +static void update_curr_fair(struct rq *rq)
+> +{
+> +	update_curr(&rq->cfs);
 
-The latter.
++       update_curr(cfs_rq_of(&rq->curr.se));
 
-Thanks,
+> +}
 
-	tglx
+I did the above change. While looking it over I realized we'd not
+actually update the task when cgroups are in use.
