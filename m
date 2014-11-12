@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966099AbaKLBvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:51:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32822 "EHLO
+	id S966132AbaKLBvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:51:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32830 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966082AbaKLBvl (ORCPT
+	with ESMTP id S966116AbaKLBvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:51:41 -0500
+	Tue, 11 Nov 2014 20:51:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 043/123] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
-Date: Wed, 12 Nov 2014 10:16:49 +0900
-Message-Id: <20141112011720.973312560@linuxfoundation.org>
+        Darren Etheridge <detheridge@ti.com>,
+        Johannes Pointner <johannes.pointner@br-automation.com>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        Dave Airlie <airlied@redhat.com>,
+        "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+Subject: [PATCH 3.10 045/123] drm/tilcdc: Fix the error path in tilcdc_load()
+Date: Wed, 12 Nov 2014 10:16:51 +0900
+Message-Id: <20141112011721.051257055@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,46 +32,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 
-commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
+commit b478e336b3e75505707a11e78ef8b964ef0a03af upstream.
 
-These models need i8042.notimeout, otherwise the touchpad will not work.
+The current error path calls tilcdc_unload() in case of an error to release
+the resources. However, this is wrong because not all resources have been
+allocated by the time an error occurs in tilcdc_load().
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To fix it, this commit adds proper labels to bail out at the different
+stages in the load function, and release only the resources actually allocated.
+
+Tested-by: Darren Etheridge <detheridge@ti.com>
+Tested-by: Johannes Pointner <johannes.pointner@br-automation.com>
+Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fixes: 3a49012224ca ("drm/tilcdc: panel: fix leak when unloading the module")
+Signed-off-by: Matwey V. Kornilov <matwey.kornilov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/gpu/drm/tilcdc/tilcdc_drv.c |   60 ++++++++++++++++++++++++++++++------
+ 1 file changed, 50 insertions(+), 10 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -615,6 +615,22 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Fujitsu A544 laptop */
-+		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
-+		},
-+	},
-+	{
-+		/* Fujitsu AH544 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
-+		},
-+	},
-+	{
- 		/* Fujitsu U574 laptop */
- 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
- 		.matches = {
+--- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
++++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
+@@ -78,6 +78,7 @@ static int modeset_init(struct drm_devic
+ 	if ((priv->num_encoders == 0) || (priv->num_connectors == 0)) {
+ 		/* oh nos! */
+ 		dev_err(dev->dev, "no encoders/connectors found\n");
++		drm_mode_config_cleanup(dev);
+ 		return -ENXIO;
+ 	}
+ 
+@@ -170,33 +171,37 @@ static int tilcdc_load(struct drm_device
+ 	dev->dev_private = priv;
+ 
+ 	priv->wq = alloc_ordered_workqueue("tilcdc", 0);
++	if (!priv->wq) {
++		ret = -ENOMEM;
++		goto fail_free_priv;
++	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(dev->dev, "failed to get memory resource\n");
+ 		ret = -EINVAL;
+-		goto fail;
++		goto fail_free_wq;
+ 	}
+ 
+ 	priv->mmio = ioremap_nocache(res->start, resource_size(res));
+ 	if (!priv->mmio) {
+ 		dev_err(dev->dev, "failed to ioremap\n");
+ 		ret = -ENOMEM;
+-		goto fail;
++		goto fail_free_wq;
+ 	}
+ 
+ 	priv->clk = clk_get(dev->dev, "fck");
+ 	if (IS_ERR(priv->clk)) {
+ 		dev_err(dev->dev, "failed to get functional clock\n");
+ 		ret = -ENODEV;
+-		goto fail;
++		goto fail_iounmap;
+ 	}
+ 
+ 	priv->disp_clk = clk_get(dev->dev, "dpll_disp_ck");
+ 	if (IS_ERR(priv->clk)) {
+ 		dev_err(dev->dev, "failed to get display clock\n");
+ 		ret = -ENODEV;
+-		goto fail;
++		goto fail_put_clk;
+ 	}
+ 
+ #ifdef CONFIG_CPU_FREQ
+@@ -206,7 +211,7 @@ static int tilcdc_load(struct drm_device
+ 			CPUFREQ_TRANSITION_NOTIFIER);
+ 	if (ret) {
+ 		dev_err(dev->dev, "failed to register cpufreq notifier\n");
+-		goto fail;
++		goto fail_put_disp_clk;
+ 	}
+ #endif
+ 
+@@ -238,13 +243,13 @@ static int tilcdc_load(struct drm_device
+ 	ret = modeset_init(dev);
+ 	if (ret < 0) {
+ 		dev_err(dev->dev, "failed to initialize mode setting\n");
+-		goto fail;
++		goto fail_cpufreq_unregister;
+ 	}
+ 
+ 	ret = drm_vblank_init(dev, 1);
+ 	if (ret < 0) {
+ 		dev_err(dev->dev, "failed to initialize vblank\n");
+-		goto fail;
++		goto fail_mode_config_cleanup;
+ 	}
+ 
+ 	pm_runtime_get_sync(dev->dev);
+@@ -252,7 +257,7 @@ static int tilcdc_load(struct drm_device
+ 	pm_runtime_put_sync(dev->dev);
+ 	if (ret < 0) {
+ 		dev_err(dev->dev, "failed to install IRQ handler\n");
+-		goto fail;
++		goto fail_vblank_cleanup;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, dev);
+@@ -260,13 +265,48 @@ static int tilcdc_load(struct drm_device
+ 	priv->fbdev = drm_fbdev_cma_init(dev, 16,
+ 			dev->mode_config.num_crtc,
+ 			dev->mode_config.num_connector);
++	if (IS_ERR(priv->fbdev)) {
++		ret = PTR_ERR(priv->fbdev);
++		goto fail_irq_uninstall;
++	}
+ 
+ 	drm_kms_helper_poll_init(dev);
+ 
+ 	return 0;
+ 
+-fail:
+-	tilcdc_unload(dev);
++fail_irq_uninstall:
++	pm_runtime_get_sync(dev->dev);
++	drm_irq_uninstall(dev);
++	pm_runtime_put_sync(dev->dev);
++
++fail_vblank_cleanup:
++	drm_vblank_cleanup(dev);
++
++fail_mode_config_cleanup:
++	drm_mode_config_cleanup(dev);
++
++fail_cpufreq_unregister:
++	pm_runtime_disable(dev->dev);
++#ifdef CONFIG_CPU_FREQ
++	cpufreq_unregister_notifier(&priv->freq_transition,
++			CPUFREQ_TRANSITION_NOTIFIER);
++fail_put_disp_clk:
++	clk_put(priv->disp_clk);
++#endif
++
++fail_put_clk:
++	clk_put(priv->clk);
++
++fail_iounmap:
++	iounmap(priv->mmio);
++
++fail_free_wq:
++	flush_workqueue(priv->wq);
++	destroy_workqueue(priv->wq);
++
++fail_free_priv:
++	dev->dev_private = NULL;
++	kfree(priv);
+ 	return ret;
+ }
+ 
 
 
