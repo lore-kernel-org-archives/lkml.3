@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaKLBYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:24:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58768 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127AbaKLBYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754129AbaKLBYl (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:24:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58762 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932AbaKLBYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:24:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Gerecke <jason.gerecke@wacom.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Ping Cheng <pingc@wacom.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.17 103/319] HID: input: Fix TransducerSerialNumber implementation
-Date: Wed, 12 Nov 2014 10:14:01 +0900
-Message-Id: <20141112011009.633499522@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.17 102/319] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
+Date: Wed, 12 Nov 2014 10:14:00 +0900
+Message-Id: <20141112011009.430140709@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,40 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Gerecke <killertofu@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 5989a55a4c9aafba8b152c6bf52244510c2b88b9 upstream.
+commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
 
-The commit which introduced TransducerSerialNumber (368c966) is missing
-two crucial implementation details. Firstly, the commit does not set the
-type/code/bit/max fields as expected later down the code which can cause
-the driver to crash when a tablet with this usage is connected. Secondly,
-the call to 'set_bit' causes MSC_PULSELED to be sent instead of the
-expected MSC_SERIAL. This commit addreses both issues.
+These models need i8042.notimeout, otherwise the touchpad will not work.
 
-Signed-off-by: Jason Gerecke <jason.gerecke@wacom.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Reviewed-by: Ping Cheng <pingc@wacom.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-input.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/input/serio/i8042-x86ia64io.h |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -689,7 +689,10 @@ static void hidinput_configure_usage(str
- 			break;
- 
- 		case 0x5b: /* TransducerSerialNumber */
--			set_bit(MSC_SERIAL, input->mscbit);
-+			usage->type = EV_MSC;
-+			usage->code = MSC_SERIAL;
-+			bit = input->mscbit;
-+			max = MSC_MAX;
- 			break;
- 
- 		default:  goto unknown;
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -629,6 +629,22 @@ static const struct dmi_system_id __init
+ 		},
+ 	},
+ 	{
++		/* Fujitsu A544 laptop */
++		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
++		},
++	},
++	{
++		/* Fujitsu AH544 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
++		},
++	},
++	{
+ 		/* Fujitsu U574 laptop */
+ 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
+ 		.matches = {
 
 
