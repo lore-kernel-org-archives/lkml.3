@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934104AbaKLCbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:31:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60797 "EHLO
+	id S934343AbaKLCcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:32:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60787 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935101AbaKLBsL (ORCPT
+	with ESMTP id S935079AbaKLBsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:11 -0500
+	Tue, 11 Nov 2014 20:48:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andriy Skulysh <askulysh@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 163/203] sh: fix sh770x SCIF memory regions
-Date: Wed, 12 Nov 2014 10:17:13 +0900
-Message-Id: <20141112011550.155948966@linuxfoundation.org>
+        Sinclair Yeh <syeh@vmware.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>
+Subject: [PATCH 3.14 191/203] drm/vmwgfx: Filter out modes those cannot be supported by the current VRAM size.
+Date: Wed, 12 Nov 2014 10:17:41 +0900
+Message-Id: <20141112011551.454116769@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -32,55 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andriy Skulysh <askulysh@gmail.com>
+From: Sinclair Yeh <syeh@vmware.com>
 
-commit 5417421b270229bfce0795ccc99a4b481e4954ca upstream.
+commit 9a72384d86b26cb8a2b25106677e1197f606668f upstream.
 
-Resources scif1_resources & scif2_resources overlap.  Actual SCIF region
-size is 0x10.
+When screen objects are enabled, the bpp is assumed to be 32, otherwise
+it is set to 16.
 
-This is regression from commit d850acf975be ("sh: Declare SCIF register
-base and IRQ as resources")
+v2:
+* Use u32 instead of u64 for assumed_bpp.
+* Fixed mechanism to check for screen objects
+* Limit the back buffer size to VRAM.
 
-Signed-off-by: Andriy Skulysh <askulysh@gmail.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sinclair Yeh <syeh@vmware.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/kernel/cpu/sh3/setup-sh770x.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    6 +++++-
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |   16 +++++++++++++---
+ 2 files changed, 18 insertions(+), 4 deletions(-)
 
---- a/arch/sh/kernel/cpu/sh3/setup-sh770x.c
-+++ b/arch/sh/kernel/cpu/sh3/setup-sh770x.c
-@@ -118,7 +118,7 @@ static struct plat_sci_port scif0_platfo
- };
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -688,7 +688,11 @@ static int vmw_driver_load(struct drm_de
+ 		goto out_err0;
+ 	}
  
- static struct resource scif0_resources[] = {
--	DEFINE_RES_MEM(0xfffffe80, 0x100),
-+	DEFINE_RES_MEM(0xfffffe80, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x4e0)),
- };
+-	if (unlikely(dev_priv->prim_bb_mem < dev_priv->vram_size))
++	/*
++	 * Limit back buffer size to VRAM size.  Remove this once
++	 * screen targets are implemented.
++	 */
++	if (dev_priv->prim_bb_mem > dev_priv->vram_size)
+ 		dev_priv->prim_bb_mem = dev_priv->vram_size;
  
-@@ -143,7 +143,7 @@ static struct plat_sci_port scif1_platfo
- };
+ 	mutex_unlock(&dev_priv->hw_mutex);
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -1954,6 +1954,14 @@ int vmw_du_connector_fill_modes(struct d
+ 		DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC)
+ 	};
+ 	int i;
++	u32 assumed_bpp = 2;
++
++	/*
++	 * If using screen objects, then assume 32-bpp because that's what the
++	 * SVGA device is assuming
++	 */
++	if (dev_priv->sou_priv)
++		assumed_bpp = 4;
  
- static struct resource scif1_resources[] = {
--	DEFINE_RES_MEM(0xa4000150, 0x100),
-+	DEFINE_RES_MEM(0xa4000150, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x900)),
- };
+ 	/* Add preferred mode */
+ 	{
+@@ -1964,8 +1972,9 @@ int vmw_du_connector_fill_modes(struct d
+ 		mode->vdisplay = du->pref_height;
+ 		vmw_guess_mode_timing(mode);
  
-@@ -169,7 +169,7 @@ static struct plat_sci_port scif2_platfo
- };
+-		if (vmw_kms_validate_mode_vram(dev_priv, mode->hdisplay * 2,
+-					       mode->vdisplay)) {
++		if (vmw_kms_validate_mode_vram(dev_priv,
++						mode->hdisplay * assumed_bpp,
++						mode->vdisplay)) {
+ 			drm_mode_probed_add(connector, mode);
+ 		} else {
+ 			drm_mode_destroy(dev, mode);
+@@ -1987,7 +1996,8 @@ int vmw_du_connector_fill_modes(struct d
+ 		    bmode->vdisplay > max_height)
+ 			continue;
  
- static struct resource scif2_resources[] = {
--	DEFINE_RES_MEM(0xa4000140, 0x100),
-+	DEFINE_RES_MEM(0xa4000140, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x880)),
- };
+-		if (!vmw_kms_validate_mode_vram(dev_priv, bmode->hdisplay * 2,
++		if (!vmw_kms_validate_mode_vram(dev_priv,
++						bmode->hdisplay * assumed_bpp,
+ 						bmode->vdisplay))
+ 			continue;
  
 
 
