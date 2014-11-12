@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaKLHeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 02:34:23 -0500
-Received: from [157.56.110.100] ([157.56.110.100]:15118 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752227AbaKLHeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 02:34:19 -0500
-Message-ID: <54630D32.1000307@opensource.altera.com>
-Date: Wed, 12 Nov 2014 01:33:06 -0600
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <tthayer@opensource.altera.com>, <bp@alien8.de>,
-        <dougthompson@xmission.com>, <m.chehab@samsung.com>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
-Subject: Re: [PATCHv5 2/5] arm: socfpga: Enable OCRAM ECC on startup.
-References: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com> <1415751263-1830-3-git-send-email-tthayer@opensource.altera.com>
-In-Reply-To: <1415751263-1830-3-git-send-email-tthayer@opensource.altera.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751863AbaKLHmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 02:42:17 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55156 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750749AbaKLHmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 02:42:16 -0500
+Message-ID: <1415777029.5124.42.camel@kernel.crashing.org>
+Subject: Re: [PATCH RFC v2 1/2] drivers: pci: fix pci_mmap_fits()
+ implementation for procfs mmap
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Simek <monstr@monstr.eu>,
+        Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Date: Wed, 12 Nov 2014 18:23:49 +1100
+In-Reply-To: <20141110230454.GA21470@google.com>
+References: <1414168089-8130-1-git-send-email-lorenzo.pieralisi@arm.com>
+	 <1414168089-8130-2-git-send-email-lorenzo.pieralisi@arm.com>
+	 <20141110230454.GA21470@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [99.103.66.154]
-X-ClientProxiedBy: CO2PR11CA0009.namprd11.prod.outlook.com (10.141.242.147) To
- DM2PR0301MB1199.namprd03.prod.outlook.com (25.160.217.149)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1199;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1199;
-X-Forefront-PRVS: 03932714EB
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(479174003)(24454002)(189002)(51704005)(377454003)(199003)(87976001)(21056001)(86362001)(87266999)(50986999)(76176999)(23756003)(33656002)(54356999)(92566001)(4396001)(92726001)(2201001)(31966008)(102836001)(99136001)(97736003)(40100003)(65816999)(77156002)(77096003)(106356001)(59896002)(105586002)(46102003)(95666004)(50466002)(107046002)(83506001)(19580405001)(66066001)(62966003)(99396003)(64126003)(65956001)(65806001)(101416001)(120916001)(47776003)(20776003)(19580395003)(80316001)(42186005)(64706001)(122386002)(921003)(1121002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1199;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1199;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0845;
-X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-11-10 at 16:04 -0700, Bjorn Helgaas wrote:
+> But I'm not sure I have this right.  If the procfs offset is either
+> the
+> CPU physical address or the BAR value, then pci_resource_to_user()
+> should be (depending on the arch) either a no-op or use
+> pci_resource_to_bus().
+> 
+> But that's not how it's implemented.  Maybe it *could* be?  If
+> pci_resource_to_user() gives you something that's not a CPU physical
+> address and not a bus address, what *does* it give you, and why would
+> we
+> need this third kind of thing?
+> 
+> FWIW, I think the discussion leading up to pci_resource_to_user() is
+> here:
+> http://lkml.iu.edu/hypermail/linux/kernel/0504.3/0467.html
 
+Oh, man... I remember that was all a giant trainwreck and some stuff
+just couldn't be made completely right due to broken assumptions by
+the proc code and users of it... but I don't remember all the details.
 
-On 11/11/14, 6:14 PM, tthayer@opensource.altera.com wrote:
-> From: Thor Thayer <tthayer@opensource.altera.com>
-> 
-> This patch enables the ECC for On-Chip RAM on machine
-> startup.  The ECC has to be enabled before data is
-> is stored in memory otherwise the ECC will fail on
-> reads.
-> 
-> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
-> ---
-> v2: Split OCRAM ECC portion separately. Addition of iounmap()
-> and reorganization of gen_pool_free. Remove defconfig from patch.
-> 
-> v3/4: No change
-> 
-> v5: Remove ocram.h, use io.h instead of clk-provider.h
->     Check prop in correct place. Add ECC EN defines.
-> ---
->  arch/arm/mach-socfpga/Makefile  |    1 +
->  arch/arm/mach-socfpga/core.h    |    1 +
->  arch/arm/mach-socfpga/ocram.c   |   90 +++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-socfpga/socfpga.c |    9 ++++
->  4 files changed, 101 insertions(+)
->  create mode 100644 arch/arm/mach-socfpga/ocram.c
-> 
+I think /proc users don't necessarily pass a BAR value but something
+they try to somewhat translates themselves via the "resources" file,
+which ends up working ... or not, depending on various factors such
+as 32 vs 64 bit etc...
 
-Acked-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+I wonder who still uses this interface....
+
+Cheers,
+Ben.
+
 
