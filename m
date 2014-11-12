@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933435AbaKLBe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59606 "EHLO
+	id S933472AbaKLBeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:34:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933394AbaKLBeR (ORCPT
+	with ESMTP id S933447AbaKLBeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:17 -0500
+	Tue, 11 Nov 2014 20:34:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Battersby <tonyb@cybernetics.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.17 250/319] lib/scatterlist: fix memory leak with scsi-mq
-Date: Wed, 12 Nov 2014 10:16:28 +0900
-Message-Id: <20141112011034.143366246@linuxfoundation.org>
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.17 281/319] usb: gadget: function: acm: make f_acm pass USB20CV Chapter9
+Date: Wed, 12 Nov 2014 10:16:59 +0900
+Message-Id: <20141112011039.334953206@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,38 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Battersby <tonyb@cybernetics.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit c21e59d8dc04b2107bdb4ff0f412a9b7ae3349f3 upstream.
+[ Upstream commit 52ec49a5e56a27c5b6f8217708783eff39f24c16 ]
 
-Fix a memory leak with scsi-mq triggered by commands with large data
-transfer length.
+During Halt Endpoint Test, our interrupt endpoint
+will be disabled, which will clear out ep->desc
+to NULL. Unless we call config_ep_by_speed() again,
+we will not be able to enable this endpoint which
+will make us fail that test.
 
-Fixes: c53c6d6a68b1 ("scatterlist: allow chaining to preallocated chunks")
-Signed-off-by: Tony Battersby <tonyb@cybernetics.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Fixes: f9c56cd (usb: gadget: Clear usb_endpoint_descriptor
+	inside the struct usb_ep on disable)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- lib/scatterlist.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/gadget/function/f_acm.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -203,10 +203,10 @@ void __sg_free_table(struct sg_table *ta
- 		}
- 
- 		table->orig_nents -= sg_size;
--		if (!skip_first_chunk) {
--			free_fn(sgl, alloc_size);
-+		if (skip_first_chunk)
- 			skip_first_chunk = false;
+--- a/drivers/usb/gadget/function/f_acm.c
++++ b/drivers/usb/gadget/function/f_acm.c
+@@ -430,11 +430,12 @@ static int acm_set_alt(struct usb_functi
+ 		if (acm->notify->driver_data) {
+ 			VDBG(cdev, "reset acm control interface %d\n", intf);
+ 			usb_ep_disable(acm->notify);
+-		} else {
+-			VDBG(cdev, "init acm ctrl interface %d\n", intf);
++		}
++
++		if (!acm->notify->desc)
+ 			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
+ 				return -EINVAL;
 -		}
-+		else
-+			free_fn(sgl, alloc_size);
- 		sgl = next;
- 	}
++
+ 		usb_ep_enable(acm->notify);
+ 		acm->notify->driver_data = acm;
  
 
 
