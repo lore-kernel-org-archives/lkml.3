@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460AbaKLTnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:43:33 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:53117 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161AbaKLTnc (ORCPT
+	id S1753495AbaKLTnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:43:50 -0500
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:38230 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaKLTnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:43:32 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.18-rc5
-Date: Wed, 12 Nov 2014 11:43:26 -0800
-Message-Id: <1415821406-18384-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.5463B863.02DC,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Wed, 12 Nov 2014 14:43:47 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V5 0/4] MIPS: GIC device-tree support
+Date: Wed, 12 Nov 2014 11:43:35 -0800
+Message-Id: <1415821419-26974-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This series add support for mapping and routing GIC interrupts as well
+as setting up the GIC timer through device-tree.  Patches 1 adds the
+"mti" vendor prefix, patch 2 adds the GIC binding document, and patches
+3 and 4 add device-tree support for the GIC irqchip and clocksource drivers,
+respectively.
 
-Please pull hwmon fixes for Linux 3.18-rc5 from signed tag:
+Based on next-20141028, which includes part 1 [0] and part 2 [1] of my
+GIC cleanup series.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus-v3.18-rc5
+Changes from v4:
+ - don't probe clocksource from irqchip; just WARN() if device-tree
+   is incorrect
 
-Thanks,
-Guenter
-------
+Changes from v3:
+ - dropped the CPU name from the compatible string
+ - replaced available-cpu-vectors property with reserved-cpu-vectors
+ - made reg property optional
+ - probed GIC timer from GIC irqchip driver
 
-The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
+Changes from v2:
+ - added back third cell to specifier to differentiate between shared and
+   local interrupts
+ - added timer sub-node and it's properties
+ - changed compatible string to include CPU version
+ - rebased on GIC cleanup series
 
-  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
+Changes from v1:
+ - updated bindings to drop third interrupt cell and remove CPU interrupt
+   controller as the parent of the GIC
+ - moved GIC to drivers/irqchip/
+ - other minor fixes/cleanups
 
-are available in the git repository at:
+[0] https://lkml.org/lkml/2014/9/18/487
+[1] https://lkml.org/lkml/2014/10/20/481
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus-v3.18-rc5
+Andrew Bresticker (4):
+  of: Add vendor prefix for MIPS Technologies, Inc.
+  of: Add binding document for MIPS GIC
+  irqchip: mips-gic: Add device-tree support
+  clocksource: mips-gic: Add device-tree support
 
-for you to fetch changes up to 0bd52941586b3b59ab9b6e89e55b2dc9e2680de9:
+ .../bindings/interrupt-controller/mips-gic.txt     | 55 +++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ drivers/clocksource/Kconfig                        |  1 +
+ drivers/clocksource/mips-gic-timer.c               | 41 ++++++++--
+ drivers/irqchip/irq-mips-gic.c                     | 92 ++++++++++++++++++++--
+ .../dt-bindings/interrupt-controller/mips-gic.h    |  9 +++
+ 6 files changed, 187 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
+ create mode 100644 include/dt-bindings/interrupt-controller/mips-gic.h
 
-  hwmon: (fam15h_power) Fix NB device ID for F16h M30h (2014-11-11 10:39:45 -0800)
+-- 
+2.1.0.rc2.206.gedb03e5
 
-----------------------------------------------------------------
-Fix PCI device ID in fam15h_power driver
-Fix suspend/resume behavior in pwm-fan driver
-Reduce logging noise created by ibmpowernv driver
-
-----------------------------------------------------------------
-Aravind Gopalakrishnan (1):
-      hwmon: (fam15h_power) Fix NB device ID for F16h M30h
-
-Kamil Debski (1):
-      hwmon: (pwm-fan) Fix suspend/resume behavior
-
-Michael Ellerman (1):
-      hwmon: (ibmpowernv) Quieten when probing finds no device
-
- drivers/hwmon/fam15h_power.c |  2 +-
- drivers/hwmon/ibmpowernv.c   |  6 ++++--
- drivers/hwmon/pwm-fan.c      | 13 ++++++++++---
- 3 files changed, 15 insertions(+), 6 deletions(-)
