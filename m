@@ -1,36 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaKLM4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:56:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:53322 "EHLO mail.kernel.org"
+	id S1752826AbaKLM4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:56:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38436 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005AbaKLM4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:56:32 -0500
-Date: Wed, 12 Nov 2014 09:56:26 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: WANG Chao <chaowang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH] perf test: fix typo in python test
-Message-ID: <20141112125626.GW18464@kernel.org>
-References: <1415780826-13250-1-git-send-email-chaowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415780826-13250-1-git-send-email-chaowang@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752227AbaKLM4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 07:56:44 -0500
+Message-ID: <1415797006.1761.11.camel@linux-0dmf.site>
+Subject: Re: Erich Schubert you cannot Diminish me. (systemd fanboi /male
+ feminist bans further discussion)
+From: Oliver Neukum <oneukum@suse.de>
+To: Castle OfWhite <castleofwhite@mail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 12 Nov 2014 13:56:46 +0100
+In-Reply-To: <trinity-c968a14e-d2d2-4301-9bae-2cd4b9fa2514-1415785894140@3capp-mailcom-lxa15>
+References: <trinity-c968a14e-d2d2-4301-9bae-2cd4b9fa2514-1415785894140@3capp-mailcom-lxa15>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 12, 2014 at 04:27:05PM +0800, WANG Chao escreveu:
-> Library loading in python syntax should be 'import perf', not 'use perf'.
+On Wed, 2014-11-12 at 10:51 +0100, Castle OfWhite wrote:
+> "We are unable to post your comment because you have been blocked by
+> Vitavonni. Find out more."
 
-Thanks, applied.
+We don't care. This is the kernel list. Take that elsewhere.
 
-- Arnaldo
+	Oliver
+
+
