@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaKLMcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:32:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35558 "EHLO mga02.intel.com"
+	id S1752796AbaKLMeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:34:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56476 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910AbaKLMcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:32:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,368,1413270000"; 
-   d="scan'208";a="606548141"
-Message-ID: <1415795552.22887.247.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Wed, 12 Nov 2014 14:32:32 +0200
-In-Reply-To: <54626835.40503@nod.at>
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>
-			 <5460F7D8.2030100@nod.at> <5461C5AD.5040705@nod.at>
-		 <1415707434.22887.158.camel@sauron.fi.intel.com> <5462003C.9090509@nod.at>
-	 <1415712477.22887.172.camel@sauron.fi.intel.com> <54626835.40503@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752227AbaKLMeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 07:34:17 -0500
+Date: Wed, 12 Nov 2014 13:33:43 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: kan.liang@intel.com
+Cc: acme@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        ak@linux.intel.com
+Subject: Re: [PATCH 2/2] perf tools: Construct LBR call chain
+Message-ID: <20141112123305.GA27796@krava.redhat.com>
+References: <1415285886-16949-1-git-send-email-kan.liang@intel.com>
+ <1415285886-16949-3-git-send-email-kan.liang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415285886-16949-3-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 20:49 +0100, Richard Weinberger wrote:
-> > I am OK with removing function names from warnings and errors, though.
-> > But they were there since the very beginning, and changing this is a
-> > separate subject, so I'd prefer someone else to submit a corresponding
-> > patch.
+On Thu, Nov 06, 2014 at 09:58:06AM -0500, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
 > 
-> If we keep the function names away from ubi_msg() I'm perfectly fine. :-)
 
-OK, I'm pushing the patch I sent.
+SNIP
 
+> +	/* LBR call stack */
+> +	if (lbr) {
+> +		struct branch_stack *lbr_stack = sample->branch_stack;
+> +		int lbr_nr = lbr_stack->nr;
+> +		int mix_chain_nr;
+>  
+> -		if (callchain_param.order == ORDER_CALLEE)
+> -			j = i;
+> -		else
+> -			j = chain->nr - i - 1;
+> +		for (i = 0; i < chain_nr; i++) {
+> +			if (chain->ips[i] == PERF_CONTEXT_USER)
+> +				break;
+> +		}
+>  
+> -#ifdef HAVE_SKIP_CALLCHAIN_IDX
+> -		if (j == skip_idx)
+> -			continue;
+> -#endif
+> -		ip = chain->ips[j];
+> +		/* LBR only affects the user callchain */
+> +		if (i == chain_nr) {
+> +			lbr = 0;
+> +			goto again;
+> +		}
+
+'goto again' sounds like u want to try something again,
+but you prepare the condition already with lbr = 0,
+could you please restruct the code in another way?
+
+
+SNIP
+
+> +				goto exit;
+>  		}
+> +	} else {
+>  
+> -		err = callchain_cursor_append(&callchain_cursor,
+> -					      ip, al.map, al.sym);
+> -		if (err)
+> -			return err;
+> -	}
+> +		/*
+> +		 * Based on DWARF debug information, some architectures skip
+> +		 * a callchain entry saved by the kernel.
+> +		 */
+> +		skip_idx = arch_skip_callchain_idx(thread, chain);
+>  
+> -	return 0;
+> +		for (i = 0; i < chain_nr; i++) {
+> +			struct addr_location al;
+> +
+> +			if (callchain_param.order == ORDER_CALLEE)
+> +				j = i;
+> +			else
+> +				j = chain->nr - i - 1;
+> +
+> +#ifdef HAVE_SKIP_CALLCHAIN_IDX
+> +			if (j == skip_idx)
+> +				continue;
+> +#endif
+> +			ip = chain->ips[j];
+> +			err = __thread__resolve_callchain_sample(thread,
+
+Uou factored out the common functionality into __thread__resolve_callchain_sample
+function and added your own functionality.. could you please split this into 2
+separate patches? (first the new function, then your change)
+IMO It'll make the change simple and more obvious.
+
+thanks,
+jirka
