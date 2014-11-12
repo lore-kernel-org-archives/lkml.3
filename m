@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935072AbaKLBsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:48:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60777 "EHLO
+	id S935090AbaKLBsG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:48:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935056AbaKLBr4 (ORCPT
+	with ESMTP id S935056AbaKLBsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:47:56 -0500
+	Tue, 11 Nov 2014 20:48:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Baldyga <r.baldyga@samsung.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 189/203] [PATCH backport v2] usb: gadget: f_fs: remove redundant ffs_data_get()
-Date: Wed, 12 Nov 2014 10:17:39 +0900
-Message-Id: <20141112011551.352303200@linuxfoundation.org>
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 190/203] sched: Use rq->rd in sched_setaffinity() under RCU read lock
+Date: Wed, 12 Nov 2014 10:17:40 +0900
+Message-Id: <20141112011551.408450371@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,50 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Kirill Tkhai <ktkhai@parallels.com>
 
-From: Robert Baldyga <r.baldyga@samsung.com>
+commit f1e3a0932f3a9554371792a7daaf1e0eb19f66d5 upstream.
 
-[ Upstream commit a3058a5d82e296daaca07411c3738a9ddd79f302 ]
+Probability of use-after-free isn't zero in this place.
 
-During FunctionFS bind, ffs_data_get() function was called twice
-(in functionfs_bind() and in ffs_do_functionfs_bind()), while on unbind
-ffs_data_put() was called once (in functionfs_unbind() function).
-In result refcount never reached value 0, and ffs memory resources has
-been never released.
-
-Since ffs_data_get() call in ffs_do_functionfs_bind() is redundant
-and not neccessary, we remove it to have equal number of gets ans puts,
-and free allocated memory after refcount reach 0.
-
-Fixes: 5920cda (usb: gadget: FunctionFS: convert to new function
-	interface with backward compatibility)
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140922183636.11015.83611.stgit@localhost
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/usb/gadget/f_fs.c | 2 --
- 1 file changed, 2 deletions(-)
+ kernel/sched/core.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 5bcf7d0..afd0a15 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1995,8 +1995,6 @@ static inline struct f_fs_opts *ffs_do_functionfs_bind(struct usb_function *f,
- 	func->conf = c;
- 	func->gadget = c->cdev->gadget;
- 
--	ffs_data_get(func->ffs);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3941,13 +3941,14 @@ long sched_setaffinity(pid_t pid, const
+ 	 * root_domain.
+ 	 */
+ #ifdef CONFIG_SMP
+-	if (task_has_dl_policy(p)) {
+-		const struct cpumask *span = task_rq(p)->rd->span;
 -
- 	/*
- 	 * in drivers/usb/gadget/configfs.c:configfs_composite_bind()
- 	 * configurations are bound in sequence with list_for_each_entry,
--- 
-2.1.0.GIT
-
---
-To unsubscribe from this list: send the line "unsubscribe stable" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+-		if (dl_bandwidth_enabled() && !cpumask_subset(span, new_mask)) {
++	if (task_has_dl_policy(p) && dl_bandwidth_enabled()) {
++		rcu_read_lock();
++		if (!cpumask_subset(task_rq(p)->rd->span, new_mask)) {
+ 			retval = -EBUSY;
++			rcu_read_unlock();
+ 			goto out_unlock;
+ 		}
++		rcu_read_unlock();
+ 	}
+ #endif
+ again:
 
 
