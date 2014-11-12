@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606AbaKLDNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:13:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59852 "EHLO
+	id S933913AbaKLBhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:37:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933918AbaKLBhN (ORCPT
+	with ESMTP id S933895AbaKLBhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:37:13 -0500
+	Tue, 11 Nov 2014 20:37:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 011/203] drivers/net: Disable UFO through virtio
-Date: Wed, 12 Nov 2014 10:14:41 +0900
-Message-Id: <20141112011543.223022930@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.17 318/319] xfs: track bulkstat progress by agino
+Date: Wed, 12 Nov 2014 10:17:36 +0900
+Message-Id: <20141112011045.533389707@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
-References: <20141112011542.686743533@linuxfoundation.org>
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,221 +25,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Dave Chinner <dchinner@redhat.com>
 
-[ Upstream commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 ]
+commit 002758992693ae63c04122603ea9261a0a58d728 upstream.
 
-IPv6 does not allow fragmentation by routers, so there is no
-fragmentation ID in the fixed header.  UFO for IPv6 requires the ID to
-be passed separately, but there is no provision for this in the virtio
-net protocol.
+The bulkstat main loop progress is tracked by the "lastino"
+variable, which is a full 64 bit inode. However, the loop actually
+works on agno/agino pairs, and so there's a significant disconnect
+between the rest of the loop and the main cursor. Convert this to
+use the agino, and pass the agino into the chunk formatting function
+and convert it too.
 
-Until recently our software implementation of UFO/IPv6 generated a new
-ID, but this was a bug.  Now we will use ID=0 for any UFO/IPv6 packet
-passed through a tap, which is even worse.
+This gets rid of the inconsistency in the loop processing, and
+finally makes it simple for us to skip inodes at any point in the
+loop simply by incrementing the agino cursor.
 
-Unfortunately there is no distinction between UFO/IPv4 and v6
-features, so disable UFO on taps and virtio_net completely until we
-have a proper solution.
-
-We cannot depend on VM managers respecting the tap feature flags, so
-keep accepting UFO packets but log a warning the first time we do
-this.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: 916e4cf46d02 ("ipv6: reuse ip6_frag_id from ip6_ufo_append_data")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/macvtap.c    |   13 +++++--------
- drivers/net/tun.c        |   19 +++++++++++--------
- drivers/net/virtio_net.c |   24 ++++++++++++++----------
- 3 files changed, 30 insertions(+), 26 deletions(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -65,7 +65,7 @@ static struct cdev macvtap_cdev;
- static const struct proto_ops macvtap_socket_ops;
+---
+ fs/xfs/xfs_itable.c |   71 ++++++++++++++++++++++++----------------------------
+ 1 file changed, 34 insertions(+), 37 deletions(-)
+
+--- a/fs/xfs/xfs_itable.c
++++ b/fs/xfs/xfs_itable.c
+@@ -282,30 +282,31 @@ xfs_bulkstat_ag_ichunk(
+ 	bulkstat_one_pf			formatter,
+ 	size_t				statstruct_size,
+ 	struct xfs_bulkstat_agichunk	*acp,
+-	xfs_ino_t			*lastino)
++	xfs_agino_t			*last_agino)
+ {
+ 	char				__user **ubufp = acp->ac_ubuffer;
+ 	int				chunkidx;
+ 	int				error = 0;
+-	xfs_agino_t			agino;
++	xfs_agino_t			agino = irbp->ir_startino;
  
- #define TUN_OFFLOADS (NETIF_F_HW_CSUM | NETIF_F_TSO_ECN | NETIF_F_TSO | \
--		      NETIF_F_TSO6 | NETIF_F_UFO)
-+		      NETIF_F_TSO6)
- #define RX_OFFLOADS (NETIF_F_GRO | NETIF_F_LRO)
- #define TAP_FEATURES (NETIF_F_GSO | NETIF_F_SG)
- 
-@@ -569,6 +569,8 @@ static int macvtap_skb_from_vnet_hdr(str
- 			gso_type = SKB_GSO_TCPV6;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
-+			pr_warn_once("macvtap: %s: using disabled UFO feature; please fix this program\n",
-+				     current->comm);
- 			gso_type = SKB_GSO_UDP;
- 			break;
- 		default:
-@@ -614,8 +616,6 @@ static void macvtap_skb_to_vnet_hdr(cons
- 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 		else if (sinfo->gso_type & SKB_GSO_TCPV6)
- 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
--		else if (sinfo->gso_type & SKB_GSO_UDP)
--			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 		else
- 			BUG();
- 		if (sinfo->gso_type & SKB_GSO_TCP_ECN)
-@@ -950,9 +950,6 @@ static int set_offload(struct macvtap_qu
- 			if (arg & TUN_F_TSO6)
- 				feature_mask |= NETIF_F_TSO6;
- 		}
--
--		if (arg & TUN_F_UFO)
--			feature_mask |= NETIF_F_UFO;
- 	}
- 
- 	/* tun/tap driver inverts the usage for TSO offloads, where
-@@ -963,7 +960,7 @@ static int set_offload(struct macvtap_qu
- 	 * When user space turns off TSO, we turn off GSO/LRO so that
- 	 * user-space will not receive TSO frames.
- 	 */
--	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_UFO))
-+	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6))
- 		features |= RX_OFFLOADS;
- 	else
- 		features &= ~RX_OFFLOADS;
-@@ -1064,7 +1061,7 @@ static long macvtap_ioctl(struct file *f
- 	case TUNSETOFFLOAD:
- 		/* let the user check for future flags */
- 		if (arg & ~(TUN_F_CSUM | TUN_F_TSO4 | TUN_F_TSO6 |
--			    TUN_F_TSO_ECN | TUN_F_UFO))
-+			    TUN_F_TSO_ECN))
- 			return -EINVAL;
- 
- 		rtnl_lock();
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -174,7 +174,7 @@ struct tun_struct {
- 	struct net_device	*dev;
- 	netdev_features_t	set_features;
- #define TUN_USER_FEATURES (NETIF_F_HW_CSUM|NETIF_F_TSO_ECN|NETIF_F_TSO| \
--			  NETIF_F_TSO6|NETIF_F_UFO)
-+			  NETIF_F_TSO6)
- 
- 	int			vnet_hdr_sz;
- 	int			sndbuf;
-@@ -1150,8 +1150,18 @@ static ssize_t tun_get_user(struct tun_s
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
-+		{
-+			static bool warned;
+-	agino = irbp->ir_startino;
+ 	for (chunkidx = 0; chunkidx < XFS_INODES_PER_CHUNK;
+ 	     chunkidx++, agino++) {
+ 		int		fmterror;
+ 		int		ubused;
+-		xfs_ino_t	ino = XFS_AGINO_TO_INO(mp, agno, agino);
 +
-+			if (!warned) {
-+				warned = true;
-+				netdev_warn(tun->dev,
-+					    "%s: using disabled UFO feature; please fix this program\n",
-+					    current->comm);
-+			}
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
- 			break;
-+		}
- 		default:
- 			tun->dev->stats.rx_frame_errors++;
- 			kfree_skb(skb);
-@@ -1252,8 +1262,6 @@ static ssize_t tun_put_user(struct tun_s
- 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 			else if (sinfo->gso_type & SKB_GSO_TCPV6)
- 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
--			else if (sinfo->gso_type & SKB_GSO_UDP)
--				gso.gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 			else {
- 				pr_err("unexpected GSO type: "
- 				       "0x%x, gso_size %d, hdr_len %d\n",
-@@ -1783,11 +1791,6 @@ static int set_offload(struct tun_struct
- 				features |= NETIF_F_TSO6;
- 			arg &= ~(TUN_F_TSO4|TUN_F_TSO6);
- 		}
--
--		if (arg & TUN_F_UFO) {
--			features |= NETIF_F_UFO;
--			arg &= ~TUN_F_UFO;
++		/* inode won't fit in buffer, we are done */
++		if (acp->ac_ubleft < statstruct_size)
++			break;
+ 
+ 		/* Skip if this inode is free */
+-		if (XFS_INOBT_MASK(chunkidx) & irbp->ir_free) {
+-			*lastino = ino;
++		if (XFS_INOBT_MASK(chunkidx) & irbp->ir_free)
+ 			continue;
 -		}
- 	}
  
- 	/* This gives the user a way to test for new features in future by
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -496,8 +496,17 @@ static void receive_buf(struct receive_q
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
-+		{
-+			static bool warned;
+ 		/* Get the inode and fill in a single buffer */
+ 		ubused = statstruct_size;
+-		error = formatter(mp, ino, *ubufp, acp->ac_ubleft,
+-				  &ubused, &fmterror);
++		error = formatter(mp, XFS_AGINO_TO_INO(mp, agno, agino),
++				  *ubufp, acp->ac_ubleft, &ubused, &fmterror);
 +
-+			if (!warned) {
-+				warned = true;
-+				netdev_warn(dev,
-+					    "host using disabled UFO feature; please fix it\n");
-+			}
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
- 			break;
-+		}
- 		case VIRTIO_NET_HDR_GSO_TCPV6:
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
- 			break;
-@@ -836,8 +845,6 @@ static int xmit_skb(struct send_queue *s
- 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 		else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
- 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
--		else if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP)
--			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 		else
- 			BUG();
- 		if (skb_shinfo(skb)->gso_type & SKB_GSO_TCP_ECN)
-@@ -1657,7 +1664,7 @@ static int virtnet_probe(struct virtio_d
- 			dev->features |= NETIF_F_HW_CSUM|NETIF_F_SG|NETIF_F_FRAGLIST;
+ 		if (fmterror == BULKSTAT_RV_GIVEUP ||
+ 		    (error && error != -ENOENT && error != -EINVAL)) {
+ 			acp->ac_ubleft = 0;
+@@ -315,7 +316,6 @@ xfs_bulkstat_ag_ichunk(
  
- 		if (virtio_has_feature(vdev, VIRTIO_NET_F_GSO)) {
--			dev->hw_features |= NETIF_F_TSO | NETIF_F_UFO
-+			dev->hw_features |= NETIF_F_TSO
- 				| NETIF_F_TSO_ECN | NETIF_F_TSO6;
+ 		/* be careful not to leak error if at end of chunk */
+ 		if (fmterror == BULKSTAT_RV_NOTHING || error) {
+-			*lastino = ino;
+ 			error = 0;
+ 			continue;
  		}
- 		/* Individual feature bits: what can host handle? */
-@@ -1667,11 +1674,9 @@ static int virtnet_probe(struct virtio_d
- 			dev->hw_features |= NETIF_F_TSO6;
- 		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_ECN))
- 			dev->hw_features |= NETIF_F_TSO_ECN;
--		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_UFO))
--			dev->hw_features |= NETIF_F_UFO;
- 
- 		if (gso)
--			dev->features |= dev->hw_features & (NETIF_F_ALL_TSO|NETIF_F_UFO);
-+			dev->features |= dev->hw_features & NETIF_F_ALL_TSO;
- 		/* (!csum && gso) case will be fixed by register_netdev() */
+@@ -323,12 +323,18 @@ xfs_bulkstat_ag_ichunk(
+ 		*ubufp += ubused;
+ 		acp->ac_ubleft -= ubused;
+ 		acp->ac_ubelem++;
+-		*lastino = ino;
+-
+-		if (acp->ac_ubleft < statstruct_size)
+-			break;
  	}
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_CSUM))
-@@ -1711,8 +1716,7 @@ static int virtnet_probe(struct virtio_d
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
- 		vi->big_packets = true;
  
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
-@@ -1903,9 +1907,9 @@ static struct virtio_device_id id_table[
- static unsigned int features[] = {
- 	VIRTIO_NET_F_CSUM, VIRTIO_NET_F_GUEST_CSUM,
- 	VIRTIO_NET_F_GSO, VIRTIO_NET_F_MAC,
--	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_UFO, VIRTIO_NET_F_HOST_TSO6,
-+	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_TSO6,
- 	VIRTIO_NET_F_HOST_ECN, VIRTIO_NET_F_GUEST_TSO4, VIRTIO_NET_F_GUEST_TSO6,
--	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
-+	VIRTIO_NET_F_GUEST_ECN,
- 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
- 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
- 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
++	/*
++	 * Post-update *last_agino. At this point, agino will always point one
++	 * inode past the last inode we processed successfully. Hence we
++	 * substract that inode when setting the *last_agino cursor so that we
++	 * return the correct cookie to userspace. On the next bulkstat call,
++	 * the inode under the lastino cookie will be skipped as we have already
++	 * processed it here.
++	 */
++	*last_agino = agino - 1;
++
+ 	return error;
+ }
+ 
+@@ -352,7 +358,6 @@ xfs_bulkstat(
+ 	xfs_btree_cur_t		*cur;	/* btree cursor for ialloc btree */
+ 	size_t			irbsize; /* size of irec buffer in bytes */
+ 	xfs_inobt_rec_incore_t	*irbuf;	/* start of irec buffer */
+-	xfs_ino_t		lastino; /* last inode number returned */
+ 	int			nirbuf;	/* size of irbuf */
+ 	int			ubcount; /* size of user's buffer */
+ 	struct xfs_bulkstat_agichunk ac;
+@@ -361,11 +366,10 @@ xfs_bulkstat(
+ 	/*
+ 	 * Get the last inode value, see if there's nothing to do.
+ 	 */
+-	lastino = *lastinop;
+-	agno = XFS_INO_TO_AGNO(mp, lastino);
+-	agino = XFS_INO_TO_AGINO(mp, lastino);
++	agno = XFS_INO_TO_AGNO(mp, *lastinop);
++	agino = XFS_INO_TO_AGINO(mp, *lastinop);
+ 	if (agno >= mp->m_sb.sb_agcount ||
+-	    lastino != XFS_AGINO_TO_INO(mp, agno, agino)) {
++	    *lastinop != XFS_AGINO_TO_INO(mp, agno, agino)) {
+ 		*done = 1;
+ 		*ubcountp = 0;
+ 		return 0;
+@@ -420,7 +424,6 @@ xfs_bulkstat(
+ 				irbp->ir_freecount = r.ir_freecount;
+ 				irbp->ir_free = r.ir_free;
+ 				irbp++;
+-				agino = r.ir_startino + XFS_INODES_PER_CHUNK;
+ 			}
+ 			/* Increment to the next record */
+ 			error = xfs_btree_increment(cur, 0, &stat);
+@@ -458,10 +461,6 @@ xfs_bulkstat(
+ 				irbp++;
+ 				icount += XFS_INODES_PER_CHUNK - r.ir_freecount;
+ 			}
+-			/*
+-			 * Set agino to after this chunk and bump the cursor.
+-			 */
+-			agino = r.ir_startino + XFS_INODES_PER_CHUNK;
+ 			error = xfs_btree_increment(cur, 0, &stat);
+ 			if (error || stat == 0) {
+ 				end_of_ag = true;
+@@ -481,7 +480,9 @@ del_cursor:
+ 		if (error)
+ 			break;
+ 		/*
+-		 * Now format all the good inodes into the user's buffer.
++		 * Now format all the good inodes into the user's buffer. The
++		 * call to xfs_bulkstat_ag_ichunk() sets up the agino pointer
++		 * for the next loop iteration.
+ 		 */
+ 		irbufend = irbp;
+ 		for (irbp = irbuf;
+@@ -489,7 +490,7 @@ del_cursor:
+ 		     irbp++) {
+ 			error = xfs_bulkstat_ag_ichunk(mp, agno, irbp,
+ 					formatter, statstruct_size, &ac,
+-					&lastino);
++					&agino);
+ 			if (error)
+ 				break;
+ 
+@@ -506,8 +507,7 @@ del_cursor:
+ 		if (end_of_ag) {
+ 			agno++;
+ 			agino = 0;
+-		} else
+-			agino = XFS_INO_TO_AGINO(mp, lastino);
++		}
+ 	}
+ 	/*
+ 	 * Done, we're either out of filesystem or space to put the data.
+@@ -525,16 +525,13 @@ del_cursor:
+ 	if (ac.ac_ubelem)
+ 		error = 0;
+ 
+-	if (agno >= mp->m_sb.sb_agcount) {
+-		/*
+-		 * If we ran out of filesystem, mark lastino as off
+-		 * the end of the filesystem, so the next call
+-		 * will return immediately.
+-		 */
+-		*lastinop = (xfs_ino_t)XFS_AGINO_TO_INO(mp, agno, 0);
++	/*
++	 * If we ran out of filesystem, lastino will point off the end of
++	 * the filesystem so the next call will return immediately.
++	 */
++	*lastinop = XFS_AGINO_TO_INO(mp, agno, agino);
++	if (agno >= mp->m_sb.sb_agcount)
+ 		*done = 1;
+-	} else
+-		*lastinop = (xfs_ino_t)lastino;
+ 
+ 	return error;
+ }
 
 
