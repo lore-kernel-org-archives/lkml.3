@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaKLMB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:01:58 -0500
-Received: from regular1.263xmail.com ([211.150.99.132]:51706 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072AbaKLMB4 (ORCPT
+	id S1752809AbaKLMCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:02:13 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:35776 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768AbaKLMCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:01:56 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <50f78295e72af236cea48677f100622c>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v8 2/9] staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
-Date: Wed, 12 Nov 2014 20:01:36 +0800
-Message-Id: <1415793696-5168-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
+	Wed, 12 Nov 2014 07:02:10 -0500
+Date: Wed, 12 Nov 2014 13:02:04 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Allen Martin <amartin@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Ensure voltages are within the allowed range
+Message-ID: <20141112120201.GB30821@ulmo.nvidia.com>
+References: <1415787125-31218-1-git-send-email-thierry.reding@gmail.com>
+ <20141112114505.GE3815@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tsOsTdHNUZQcU9Ye"
+Content-Disposition: inline
+In-Reply-To: <20141112114505.GE3815@sirena.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm driver may probe before the i2c bus, so the driver should
-defer probing until it is available
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+--tsOsTdHNUZQcU9Ye
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
+On Wed, Nov 12, 2014 at 11:45:05AM +0000, Mark Brown wrote:
+> On Wed, Nov 12, 2014 at 11:12:05AM +0100, Thierry Reding wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> >=20
+> > Unless a regulator has a fixed output voltage the core will not attempt
+> > to modify the output voltage. This can cause a situation where a driver
+> > enables the regulator but the currently configured voltage is outside
+> > the valid range.
+> >=20
+> > Fix this by constraining the current voltage to the allowed range upon
+> > regulator registration.
+>=20
+> I've thought about doing this before but it's tricky as if there is a
+> voltage range it's possible something needs it at the high rather than
+> low end of the range and will get upset if the voltage gets lowered.
+> Setting the top voltage also has risks (though less bad when constraints
+> are sane) and requires working out what that is which we'd need to write
+> the machinery to do.
+>=20
+> This is all especially likely to break given the depressing desire
+> everyone seems to have to put the maximum possible voltage range for
+> their regulators in constraints regardless of what's actually sensible
+> for their board design.
 
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4:
-- defer probe ddc i2c adapter
+Perhaps rather than checking that the voltage is within the valid range
+we could at least cover the case where voltage is zero, which is what
+triggered me to write this patch.
 
-Changes in v3: None
-Changes in v2: None
+As it is, regulators with a valid voltage range but for which a voltage
+isn't explicitly set will remain off if their default voltage is 0.
 
- drivers/staging/imx-drm/imx-hdmi.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Do you have any recommendations to work around this other than adjusting
+the actual voltage to be within the range?
 
-diff --git a/drivers/staging/imx-drm/imx-hdmi.c b/drivers/staging/imx-drm/imx-hdmi.c
-index 79daec4..c2b035a 100644
---- a/drivers/staging/imx-drm/imx-hdmi.c
-+++ b/drivers/staging/imx-drm/imx-hdmi.c
-@@ -1611,8 +1611,11 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
--		if (!hdmi->ddc)
-+		if (!hdmi->ddc) {
- 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
-+			of_node_put(ddc_node);
-+			return -EPROBE_DEFER;
-+		}
- 
- 		of_node_put(ddc_node);
- 	} else {
--- 
-1.9.1
+Thierry
 
+--tsOsTdHNUZQcU9Ye
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUY0w5AAoJEN0jrNd/PrOh9xMP/jhvbQEFT3dMaPZDlK9pn+On
+5G38GPU1HWUDCF5ovJRJQrkazLisLvNWDDpSDH/raPWDn8AcC2uCHDn46SzzLr6Z
+KsDgUM0pm0+TnCVOiVoZHrhcMnVNi7UKZyC/QY71AC2y0BmnTogADBpfhBoD2mAz
+pa2lvtgmOhujQwOyuKwItSxuX1q1xk3VAfwtGWnVY8WALI60ZeA0Li0oq9ZeFOgk
+h7oq1IRhLM0BrjpPIcTWb9NsF0q3WEAGThshb8yN4G6iIvwuOq++CbC8yrdmOQxG
+DDAB0np1TMRWBkMnFLclrJcF5vLVkOz1A9nzGjzwxpsxqHO//gR37zMFfsVPKs6q
+J5fmQ6w+qXc9fN3lYeuVkcAnch2xiEqbT2SFog6GAGiumePz+63hZ7+mJDUFqQb9
+r3VcIdB5sctTPL4+PmhBuSTDczZ7YnLw5teAMyXTnJgpFlqPSEmxIlTlY7o9WaUi
+jEEEEA3cfCXsBQqOZRyY51OjAX7I/it7Ok/yG04p0fdJaG0Hbp9Fp7S6fONnexUx
+uhw4FFiGVUFQShI3fIUcaBTCRWvD4Eg+4Q4Dz+Fdn2HzDzpSzHZuaPmV3tkCqajV
+sXO99e74pXBUowfLN5y+si9KhVdXqEBxvdiDF1XXYEciDlNJPM5q79uPiU/LWFE2
+TAe1bpPZsZs8pMcgh8QG
+=gRCh
+-----END PGP SIGNATURE-----
+
+--tsOsTdHNUZQcU9Ye--
