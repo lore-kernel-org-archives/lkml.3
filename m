@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaKLB3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:29:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59187 "EHLO
+	id S932778AbaKLBaC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:30:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003AbaKLB3w (ORCPT
+	with ESMTP id S932760AbaKLB36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:29:52 -0500
+	Tue, 11 Nov 2014 20:29:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.17 199/319] usb: serial: ftdi_sio: add Awinda Station and Dongle products
-Date: Wed, 12 Nov 2014 10:15:37 +0900
-Message-Id: <20141112011025.736784522@linuxfoundation.org>
+        Karl Palsson <karlp@tweak.net.au>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.17 201/319] USB: cdc-acm: add device id for GW Instek AFG-2225
+Date: Wed, 12 Nov 2014 10:15:39 +0900
+Message-Id: <20141112011026.113402295@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,50 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frans Klaver <frans.klaver@xsens.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit edd74ffab1f6909eee400c7de8ce621870aacac9 upstream.
+commit cf84a691a61606a2e7269907d3727e2d9fa148ee upstream.
 
-Add new IDs for the Xsens Awinda Station and Awinda Dongle.
+Add device-id entry for GW Instek AFG-2225, which has a byte swapped
+bInterfaceSubClass (0x20).
 
-While at it, order the definitions by PID and add a logical separation
-between devices using Xsens' VID and those using FTDI's VID.
-
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+Reported-by: Karl Palsson <karlp@tweak.net.au>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 +++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -661,6 +661,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
-+	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
-+	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
- 	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
- 	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -143,8 +143,12 @@
-  * Xsens Technologies BV products (http://www.xsens.com).
-  */
- #define XSENS_VID		0x2639
--#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
-+#define XSENS_AWINDA_STATION_PID 0x0101
-+#define XSENS_AWINDA_DONGLE_PID 0x0102
- #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
-+#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
-+
-+/* Xsens devices using FTDI VID */
- #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
- #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
- #define XSENS_CONVERTER_2_PID	0xD38A
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1681,6 +1681,7 @@ static const struct usb_device_id acm_id
+ 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
+ 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
+ 	},
++	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
+ 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
+ 	},
+ 	/* Motorola H24 HSPA module: */
 
 
