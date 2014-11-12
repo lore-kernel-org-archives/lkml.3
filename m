@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369AbaKLBdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:33:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59505 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933264AbaKLBdt (ORCPT
+	id S1752392AbaKLD0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:26:36 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:48134 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232AbaKLD0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:49 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.17 269/319] PM / Sleep: fix recovery during resuming from hibernation
-Date: Wed, 12 Nov 2014 10:16:47 +0900
-Message-Id: <20141112011037.260154768@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-References: <20141112010952.553519040@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 22:26:33 -0500
+Message-ID: <5462D366.5030106@gmail.com>
+Date: Wed, 12 Nov 2014 11:26:30 +0800
+From: Charles Chiou <ch1102chiou@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [V2 PATCH 1/4] scsi:stex.c Support to Pegasus series.
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+ From 5fdb4203c09d6896e7b71a8f839e46e84234eeb9 Mon Sep 17 00:00:00 2001
+From: Charles Chiou <charles.chiou@tw.promise.com>
+Date: Wed, 5 Nov 2014 14:18:43 +0800
+Subject: [PATCH 1/4] scsi:stex.c Support to Pegasus series.
 
-From: Imre Deak <imre.deak@intel.com>
+Pegasus is a high performace hardware RAID solution designed to unleash
+the raw power of Thunderbolt technology.
 
-commit 94fb823fcb4892614f57e59601bb9d4920f24711 upstream.
+I add code to distinct SuperTrack and Pegasus series by subID.
+It's needed for backward compatibility.
 
-If a device's dev_pm_ops::freeze callback fails during the QUIESCE
-phase, we don't rollback things correctly calling the thaw and complete
-callbacks. This could leave some devices in a suspended state in case of
-an error during resuming from hibernation.
-
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Change the driver version.
 ---
- kernel/power/hibernate.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+  drivers/scsi/stex.c | 24 +++++++++++++++++++-----
+  1 file changed, 19 insertions(+), 5 deletions(-)
 
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -502,8 +502,14 @@ int hibernation_restore(int platform_mod
- 	error = dpm_suspend_start(PMSG_QUIESCE);
- 	if (!error) {
- 		error = resume_target_kernel(platform_mode);
--		dpm_resume_end(PMSG_RECOVER);
-+		/*
-+		 * The above should either succeed and jump to the new kernel,
-+		 * or return with an error. Otherwise things are just
-+		 * undefined, so let's be paranoid.
-+		 */
-+		BUG_ON(!error);
- 	}
-+	dpm_resume_end(PMSG_RECOVER);
- 	pm_restore_gfp_mask();
- 	resume_console();
- 	pm_restore_console();
+diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
+index 1aa4bef..f52f1de 100644
+--- a/drivers/scsi/stex.c
++++ b/drivers/scsi/stex.c
+@@ -37,11 +37,11 @@
+  #include <scsi/scsi_eh.h>
 
+  #define DRV_NAME "stex"
+-#define ST_DRIVER_VERSION "4.6.0000.4"
+-#define ST_VER_MAJOR		4
+-#define ST_VER_MINOR		6
+-#define ST_OEM			0
+-#define ST_BUILD_VER		4
++#define ST_DRIVER_VERSION "5.00.0000.01"
++#define ST_VER_MAJOR		5
++#define ST_VER_MINOR		00
++#define ST_OEM			0000
++#define ST_BUILD_VER		01
+
+  enum {
+  	/* MU register offset */
+@@ -327,6 +327,7 @@ struct st_hba {
+  	u16 rq_count;
+  	u16 rq_size;
+  	u16 sts_count;
++	u8  yellowstone;
+  };
+
+  struct st_card_info {
+@@ -1546,6 +1547,7 @@ static int stex_probe(struct pci_dev *pdev, const 
+struct pci_device_id *id)
+  	struct Scsi_Host *host;
+  	const struct st_card_info *ci = NULL;
+  	u32 sts_offset, cp_offset, scratch_offset;
++	u32 subID;
+  	int err;
+
+  	err = pci_enable_device(pdev);
+@@ -1590,6 +1592,18 @@ static int stex_probe(struct pci_dev *pdev, const 
+struct pci_device_id *id)
+
+  	hba->cardtype = (unsigned int) id->driver_data;
+  	ci = &stex_card_info[hba->cardtype];
++	subID = id->subdevice;
++	if ((subID == 0x4221 || subID == 0x4222 ||
++	    subID == 0x4223 || subID == 0x4224 ||
++	    subID == 0x4225 || subID == 0x4226 ||
++	    subID == 0x4227 || subID == 0x4261 ||
++	    subID == 0x4262 || subID == 0x4263 ||
++	    subID == 0x4264 || subID == 0x4265) &&
++	    (hba->cardtype == st_yel)) {
++		hba->yellowstone = 1;
++	} else if (hba->cardtype == st_yel) {
++		hba->yellowstone = 0;
++	}
+  	sts_offset = scratch_offset = (ci->rq_count+1) * ci->rq_size;
+  	if (hba->cardtype == st_yel)
+  		sts_offset += (ci->sts_count+1) * sizeof(u32);
+-- 
+1.9.1
 
