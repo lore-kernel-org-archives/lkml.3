@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965611AbaKLC7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:59:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60124 "EHLO
+	id S965694AbaKLDAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:00:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964999AbaKLBkr (ORCPT
+	with ESMTP id S933502AbaKLBkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:40:47 -0500
+	Tue, 11 Nov 2014 20:40:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maciej Matraszek <m.matraszek@samsung.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.14 071/203] media: v4l2-common: fix overflow in v4l_bound_align_image()
-Date: Wed, 12 Nov 2014 10:15:41 +0900
-Message-Id: <20141112011545.959051374@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>, Scot Doyle <lkml14@scotdoyle.com>
+Subject: [PATCH 3.14 069/203] drm/i915: dont warn if backlight unexpectedly enabled
+Date: Wed, 12 Nov 2014 10:15:39 +0900
+Message-Id: <20141112011545.867755777@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -30,67 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maciej Matraszek <m.matraszek@samsung.com>
+From: Scot Doyle <lkml14@scotdoyle.com>
 
-commit 3bacc10cd4a85bc70bc0b6c001d3bf995c7fe04c upstream.
+commit 813008cd3e93ea8a571b2b7d5b9360a3105b50f7 upstream.
 
-Fix clamp_align() used in v4l_bound_align_image() to prevent overflow
-when passed large value like UINT32_MAX.
+BIOS or firmware can modify hardware state during suspend/resume,
+for example on the Toshiba CB35 or Lenovo T400, so log a debug message
+instead of a warning if the backlight is unexpectedly enabled.
 
- In the current implementation:
-    clamp_align(UINT32_MAX, 8, 8192, 3)
-
-returns 8, because in line:
-
-    x = (x + (1 << (align - 1))) & mask;
-
-x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
-
-v4l_bound_align_image() is heavily used in VIDIOC_S_FMT and
-VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
-explicitly states that:
-
-"The modified format should be as close as possible to the original
-request."
-  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
-
-Thus one would expect, that passing UINT32_MAX as format width and
-height will result in setting maximum possible resolution for the
-device. Particularly, when the driver doesn't support
-VIDIOC_ENUM_FRAMESIZES ioctl, which is common in the codebase.
-
-Fixes changeset: b0d3159be9a3
-
-Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=80930
+Cc: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-common.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_panel.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/media/v4l2-core/v4l2-common.c
-+++ b/drivers/media/v4l2-core/v4l2-common.c
-@@ -431,16 +431,13 @@ static unsigned int clamp_align(unsigned
- 	/* Bits that must be zero to be aligned */
- 	unsigned int mask = ~((1 << align) - 1);
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -645,7 +645,7 @@ static void pch_enable_backlight(struct
  
-+	/* Clamp to aligned min and max */
-+	x = clamp(x, (min + ~mask) & mask, max & mask);
-+
- 	/* Round to nearest aligned value */
- 	if (align)
- 		x = (x + (1 << (align - 1))) & mask;
+ 	cpu_ctl2 = I915_READ(BLC_PWM_CPU_CTL2);
+ 	if (cpu_ctl2 & BLM_PWM_ENABLE) {
+-		WARN(1, "cpu backlight already enabled\n");
++		DRM_DEBUG_KMS("cpu backlight already enabled\n");
+ 		cpu_ctl2 &= ~BLM_PWM_ENABLE;
+ 		I915_WRITE(BLC_PWM_CPU_CTL2, cpu_ctl2);
+ 	}
+@@ -693,7 +693,7 @@ static void i9xx_enable_backlight(struct
  
--	/* Clamp to aligned value of min and max */
--	if (x < min)
--		x = (min + ~mask) & mask;
--	else if (x > max)
--		x = max & mask;
--
- 	return x;
- }
+ 	ctl = I915_READ(BLC_PWM_CTL);
+ 	if (ctl & BACKLIGHT_DUTY_CYCLE_MASK_PNV) {
+-		WARN(1, "backlight already enabled\n");
++		DRM_DEBUG_KMS("backlight already enabled\n");
+ 		I915_WRITE(BLC_PWM_CTL, 0);
+ 	}
  
+@@ -724,7 +724,7 @@ static void i965_enable_backlight(struct
+ 
+ 	ctl2 = I915_READ(BLC_PWM_CTL2);
+ 	if (ctl2 & BLM_PWM_ENABLE) {
+-		WARN(1, "backlight already enabled\n");
++		DRM_DEBUG_KMS("backlight already enabled\n");
+ 		ctl2 &= ~BLM_PWM_ENABLE;
+ 		I915_WRITE(BLC_PWM_CTL2, ctl2);
+ 	}
+@@ -758,7 +758,7 @@ static void vlv_enable_backlight(struct
+ 
+ 	ctl2 = I915_READ(VLV_BLC_PWM_CTL2(pipe));
+ 	if (ctl2 & BLM_PWM_ENABLE) {
+-		WARN(1, "backlight already enabled\n");
++		DRM_DEBUG_KMS("backlight already enabled\n");
+ 		ctl2 &= ~BLM_PWM_ENABLE;
+ 		I915_WRITE(VLV_BLC_PWM_CTL2(pipe), ctl2);
+ 	}
 
 
