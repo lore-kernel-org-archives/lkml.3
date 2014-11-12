@@ -1,161 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaKLPDK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:03:10 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44558 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaKLPDG (ORCPT
+	id S1753291AbaKLPDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:03:08 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64791 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaKLPDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Nov 2014 10:03:06 -0500
-Date: Wed, 12 Nov 2014 16:02:54 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req
- before idle
-Message-ID: <20141112150254.GD21343@twins.programming.kicks-ass.net>
-References: <20141110124111.GN3337@twins.programming.kicks-ass.net>
- <5460D5EF.2000805@linaro.org>
- <20141110152803.GX10501@worktop.programming.kicks-ass.net>
- <5460E0A5.9040508@linaro.org>
- <20141110161530.GB10501@worktop.programming.kicks-ass.net>
- <5460F386.1050109@linaro.org>
- <20141110194820.GD10501@worktop.programming.kicks-ass.net>
- <54613A5F.7060107@linaro.org>
- <20141111102058.GI10501@worktop.programming.kicks-ass.net>
- <54636646.6080709@linaro.org>
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18pdnYAQL25mhIkKbHs6WpI
+Date: Wed, 12 Nov 2014 07:02:11 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Marek Belisko <marek@goldelico.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        bcousson@baylibre.com, linux@arm.linux.org.uk, plagnioj@jcrosoft.com,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        hns@goldelico.com
+Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
+ devconf1 register
+Message-ID: <20141112150210.GC26481@atomide.com>
+References: <1415051968-4878-1-git-send-email-marek@goldelico.com>
+ <1415051968-4878-5-git-send-email-marek@goldelico.com>
+ <5463585D.9070209@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54636646.6080709@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <5463585D.9070209@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 02:53:10PM +0100, Daniel Lezcano wrote:
-
-> >>The governors are just ignoring it, except for a small timer optimization in
-> >>menu.c (and I am still not convinced it is worth to have it). I don't see
-> >>the point to add a state we don't want to use.
-> >
-> >The ignoring it is _wrong_. Make that go away and you'll get rid of most
-> >of the STATE_START crap.
-> >
-> >The governors are the place where we combine the QoS constraints with
-> >idle predictors and pick an idle state, polling is a valid state to
-> >pick, and given QoS constraints it might be the only state to pick.
+* Tomi Valkeinen <tomi.valkeinen@ti.com> [141112 04:56]:
+> Hi,
 > 
-> Well, I understand your point of view but I still disagree. IMO, the poll
-> loop shouldn't be considered as a valid idle state for different reasons:
+> On 03/11/14 23:59, Marek Belisko wrote:
+> > gta04 board need for tvout enabled 2 bits in devconf1 register (tvbypass and acbias).
+> > Add single pinmux entry and enable it.
+> > 
+> > Signed-off-by: Marek Belisko <marek@goldelico.com>
+> > ---
+> >  arch/arm/boot/dts/omap3-gta04.dtsi | 22 ++++++++++++++++++++++
+> >  1 file changed, 22 insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/omap3-gta04.dtsi b/arch/arm/boot/dts/omap3-gta04.dtsi
+> > index e4d05f0..a456d37 100644
+> > --- a/arch/arm/boot/dts/omap3-gta04.dtsi
+> > +++ b/arch/arm/boot/dts/omap3-gta04.dtsi
+> > @@ -118,6 +118,17 @@
+> >  			};
+> >  		};
+> >  	};
+> > +
+> > +	/* pinmux for devconf1 */
+> > +	control_devconf1: pinmux@480022d8 {
+> > +		compatible = "pinctrl-single";
+> > +		reg = <0x480022d8 4>;	/* single register */
+> > +		#address-cells = <1>;
+> > +		#size-cells = <0>;
+> > +		pinctrl-single,bit-per-mux;
+> > +		pinctrl-single,register-width = <32>;
+> > +		pinctrl-single,function-mask = <0xfc0bd5>;
+> > +	};
+> >  };
+> >  
+> >  &omap3_pmx_core {
+> > @@ -497,3 +508,14 @@
+> >  		};
+> >  	};
+> >  };
+> > +
+> > +&control_devconf1 {
+> > +	pinctrl-name = "default";
+> > +	pinctrl-0 = < &tv_acbias_pins>;
+> > +
+> > +	tv_acbias_pins: pinmux_tv_acbias_pins {
+> > +		pinctrl-single,bits = <
+> > +			0 0x40800 0x40800
 > 
-> 0. thermal issue if wrongly selected from any of the governor
-
-That seems like a QoS issue and should be fixed there, no?
-
-> 1. a polling loop does not have a valid time measurements even if the
-> TIME_VALID flag has been added
-
-Ah, right you are. It does not. We _could_ fix that, not sure its worth
-the hassle but see below.
-
-> 2. entering the idle governors is not free, especially the menu governor,
-> which is contradictory with zero latency req
-
-Well, you could add this 'fast' path to the cpuidle code (before calling
-into the actual governors) too. Also, since the governors actually use
-this state it makes sense for it to be available.
-
-> 3. what is the meaning of having a zero latency (target + exit) idle state ?
-> We know it will always succeed if the other fails
-
-Not quite sure I follow; you seem to have answered your own question?
-
-> 4. IIUC, you are suggesting to add the poll loop for all the cpuidle
-> drivers. This is a *lot* of changes, I am not afraid about the work to do
-> but there is a significant code impact and the entire behavior of the
-> cpuidle framework for all the arch will be changed.
-
-I'm not sure it would be a lot of work, add it in the common cpuidle
-code before calling the driver init?
-
-> So given the points above, why not have one poll function, generic, and if
-> we fail to find an idle state or if the req is zero, then fallback to the
-> poll loop ?
-
-I could agree but only if we keep the poll loop generic, we cannot go
-add yet more arch hooks there.
-
-> >Because the latter is actually arch specific, whereas the idle
-> >polling thing is not.  You can _always_ poll idle, its generic, its
-> >valid, and its guaranteed the most responsive method.
+> I think it would be good to have a comment in the .dts above, mentioning
+> that TVOUTBYPASS and TVACEN bits are being set.
 > 
-> I agree with this point but this kind of loop is hardware optimized for x86.
+> > +		>;
+> > +	};
+> > +};
+> > 
+> 
+> OMAP3630 seems to have CONTROL_AVDAC1 and CONTROL_AVDAC2 registers. Did
+> you check if the SoC you use have those? It looks like they need
+> configuration also, if the exist.
 
-well 'optimized' is a strong word there, the rep nop, or pause
-instruction isn't really much at all and is mostly a SMT hint afaik.
-ia64, sparc64 and ppc64 have similar magic and s390 and hexagon use a vm
-yield like construct.
-
-> On the other arch, where today this loop is never used, if we change the
-> behavior of the cpuidle framework and introduces this loop, it may be
-> selected and stay on this state for a long time (resulting from a bad
-> prediction), I am afraid that can lead to some thermal issues.
-
-Because of 1), right? Yes that's a problem.
-
-
----
- kernel/sched/idle.c | 6 +++++-
- kernel/softirq.c    | 7 +++++++
- 2 files changed, 12 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index c47fce75e666..9c76ae92650f 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -42,12 +42,16 @@ static int __init cpu_idle_nopoll_setup(char *__unused)
- __setup("hlt", cpu_idle_nopoll_setup);
- #endif
+Those look like AVDAC specific control registers that are not mux
+registers. So those should be accessed the existing SCM (System Control
+Mmodule) syscon area by the DSS code. For examples, see what
+pbias-regulator.c is doing for some other registers in the syscon area.
  
-+DEFINE_PER_CPU(unsigned int, int_seq);
-+
- static inline int cpu_idle_poll(void)
- {
-+	unsigned int seq = this_cpu_read(int_seq);
-+
- 	rcu_idle_enter();
- 	trace_cpu_idle_rcuidle(0, smp_processor_id());
- 	local_irq_enable();
--	while (!tif_need_resched())
-+	while (!tif_need_resched() && seq == this_cpu_read(int_seq))
- 		cpu_relax();
- 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
- 	rcu_idle_exit();
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 0699add19164..bc8d43545964 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -370,6 +370,8 @@ static inline void tick_irq_exit(void)
- #endif
- }
+> So, I don't think tvbypass and acbias are really pinmux stuff, but it
+> does seem like an easy way to handle the devconf1 register, and I don't
+> see any issues with the setting being fixed.
+
+The CONTROL_DEVCONF registers seem to be all related to muxing signals
+and configuring ping signal levels. So I think the pinctrl-single is
+OK to use with these.
  
-+DECLARE_PER_CPU(unsigned int, int_seq);
-+
- /*
-  * Exit an interrupt context. Process softirqs if needed and possible:
-  */
-@@ -386,6 +388,11 @@ void irq_exit(void)
- 	if (!in_interrupt() && local_softirq_pending())
- 		invoke_softirq();
+> However, devconf1 register seems to have bits for many devices,
+> including mcbsp, mmc, and even some "Force MPU writes to be nonposted" bit.
+
+Yes the"Force MPU writes to be nonposted" debug bit is an odd one
+there :) But we're not using that luckily anywhere..
  
-+#ifdef TIG_POLLING_NRFLAG
-+	if (test_thread_flag(TIF_POLLING_NRFLAG))
-+#endif
-+		this_cpu_inc(int_seq);
-+
- 	tick_irq_exit();
- 	rcu_irq_exit();
- 	trace_hardirq_exit(); /* must be last! */
+> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
+> places in the kernel. I wonder if adding a pinmux entry for it could
+> cause some rather odd problems.
+
+They can all use pinctrl-single no problem.
+ 
+> Tony, any idea about this? How should CONTROL_DEVCONFx registers be
+> accessed?
+
+If they are pinctrl related like the CONTROL_DEVCONF registers, then
+pincatrl-single is OK. However, for any registers in the SCM that are
+not just routing signals, then the syscon mapping should be used. And
+we should have a separate driver implementing some standard Linux
+generic framework driver. For example a regulator or clock driver.
+
+Anyways, I'll drop this $subject patch for now and set up a new branch
+for the .dts changes.
+
+Regards,
+
+Tony
