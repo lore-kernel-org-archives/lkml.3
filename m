@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaKLBC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:02:29 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:42782 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105AbaKLBC1 (ORCPT
+	id S1752681AbaKLBDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:03:52 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:44876 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaKLBDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:02:27 -0500
-Message-ID: <5462B1A3.9020401@gmail.com>
-Date: Tue, 11 Nov 2014 20:02:27 -0500
-From: Mathy Vanhoef <vanhoefm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: brudley@broadcom.com, Arend van Spriel <arend@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
-        John Linville <linville@tuxdriver.com>, pieterpg@broadcom.com,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] brcmfmac: unlink URB when request timed out
-References: <545FAE05.2030701@gmail.com> <1415610506.16488.20.camel@linux-0dmf.site>
-In-Reply-To: <1415610506.16488.20.camel@linux-0dmf.site>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Nov 2014 20:03:50 -0500
+Message-ID: <1415754212.12188.12.camel@debian>
+Subject: Re: [PATCH v3 1/2] x86, mce, severity: extend the the mce_severity
+ mechanism to handle UCNA/DEFERRED error
+From: Chen Yucong <slaoub@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 Nov 2014 09:03:32 +0800
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F329293DE@ORSMSX114.amr.corp.intel.com>
+References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
+	 <1415410821-15063-2-git-send-email-slaoub@gmail.com>
+	 <546136C8.5060104@amd.com> <20141110221728.GA23419@pd.tnic>
+	 <3908561D78D1C84285E8C5FCA982C28F329282FA@ORSMSX114.amr.corp.intel.com>
+	 <20141111085612.GA31490@pd.tnic>
+	 <3908561D78D1C84285E8C5FCA982C28F329293DE@ORSMSX114.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 04:08 AM, Oliver Neukum wrote:
-> On Sun, 2014-11-09 at 13:10 -0500, Mathy Vanhoef wrote:
->> From: Mathy Vanhoef <vanhoefm@gmail.com>
->>
->> Unlink the submitted URB in brcmf_usb_dl_cmd if the request timed out. This
->> assures the URB is never submitted twice, preventing a driver crash.
->
-> Hi,
->
-> I am afrad this patch is no good. The diagnosis is good,
-> but the fix introduces serious problems.
->
->> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/usb.c b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
->> index 5265aa7..1bc7858 100644
->> --- a/drivers/net/wireless/brcm80211/brcmfmac/usb.c
->> +++ b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
->> @@ -738,10 +738,12 @@ static int brcmf_usb_dl_cmd(struct brcmf_usbdev_info *devinfo, u8 cmd,
->>   goto finalize;
->>   }
->>  
->> - if (!brcmf_usb_ioctl_resp_wait(devinfo))
->> + if (!brcmf_usb_ioctl_resp_wait(devinfo)) {
->> + usb_unlink_urb(devinfo->ctl_urb);
->
-> This is the asynchronous unlink. You have no guarantee it is finished
-> after this point.
->
->>   ret = -ETIMEDOUT;
->> - else
->> + } else {
->>   memcpy(buffer, tmpbuf, buflen);
->> + }
->>  
->>  finalize:
->>   kfree(tmpbuf);
->
-> Which means that you are freeing memory that may still be used by DMA
-> at this time.
-> In addition you have no guarantee that the unlink is indeed finished
-> by the time the URB is reused.
-> If you wish to take this approach you better forget about this URB
-> and allocate a new one and free the buffer from the callback.
+On Tue, 2014-11-11 at 18:44 +0000, Luck, Tony wrote:
+> >> The bank 7 error reported as severity 0 because EN=0 ... so we took no action for it.
+> >
+> > How come EN is 0? Bank7 error reporting is not enabled? Why? Or the
+> > error injection thing doesn't do it?
+> 
+> The "EN" bit is poorly named, and not well documented.  Here's a clip from the SDM:
+> 
+> One of bullets in 15.10.4.1 Machine-Check Exception Handler for Error Recovery
+> 
+>  When the EN flag is zero but the VAL and UC flags are one in the
+>  IA32_MCi_STATUS register, the reported uncorrected error in this bank
+>  is not enabled. As uncorrected errors with the EN flag = 0 are not the
+>  source of machine check exceptions, the MCE handler should log and clear
+>  non-enabled errors when the S bit is set and should continue searching
+>  for enabled errors from the other IA32_MCi_STATUS registers. Note that
+>  when IA32_MCG_CAP [24] is 0, any uncorrected error condition (VAL =1
+>  and UC=1) including the one with the EN flag cleared are fatal and the
+>  handler must signal the operating system to reset the system. For the
+>  errors that do not generate machine check exceptions, the EN flag has
+>  no meaning. See Chapter 19: Table 19-15 to find the errors that do not
+>  generate machine check exceptions.
+> 
+> Unfortunately the reference to chapter 19 is stale (that is now all about
+> performance monitoring - I'll log a bug with the SDM editor to find the
+> right reference and fix this).
+> 
+> What this is trying to say is that the "EN" bit is to enable signaling
+> of machine checks - so it only has meaning when checking banks from the
+> machine check handler.  Errors that are logged, but not signaled, or signaled
+> as CMCI will have MCi_STATUS.EN=0
+> 
+> 
+> >> The bank 3 error got past that hurdle, then through the next BIT(8) set indicates a
+> >> cache error. Fell at the last check because ADDRV=0.
+> >
+> > I guess you could tweak the injection path to write in a default address
+> > so that that check gets bypassed...
+> 
+> I don't think this is an injection artifact. I think on this processor the mid-level-cache
+> just isn't providing an address in this case.  It doesn't help to make one up - our whole
+> game plan is to offline a page with a UC error - and we must have an address to know
+> which page to offline.
+> 
+> Perhaps the severity table entries for UCNA and DEFERRED errors should look to see
+> if ADDRV is set - if not, don't report this as UCNA/DEFERRED?
+> 
+We can also find the following snippet from AMD APM Volume 2:
 
-Hi Oliver,
+9.3.2 Error-Reporting Register Banks - MCi_STATUS
 
-Good catch. I think the DMA issue is also present in the current driver: it
-frees the buffer without unlinking/killing the URB at all. Can a malicious USB
-device force a timeout to occur (i.e. delay the call to the completion
-handler)? If so this might be a use-after-free vulnerability.
+EN—Bit 60. When set to 1, this bit indicates that the error condition is
+enabled in the corresponding error-reporting control register (MCi_CTL).
+Errors disabled by MCi_CTL do not cause a `machine-check exception'.
 
-It seems using usb_kill_urb instead of usb_unlink_urb in the patch prevents any
-possible use-after-free. Can someone double check?
+Just as what you said, the severity table entry for the "EN" check
+should have been skipped when calling from the CMCI/Poll handler.
+As shown below:
 
-Kind regards,
-Mathy
+        MCESEV(
+                NO, "Not enabled",
+                EXCP, BITCLR(MCI_STATUS_EN)
+                ),
 
->
-> Regards
-> Oliver
->
+thx!
+cyc
+
