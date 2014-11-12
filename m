@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965967AbaKLBux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:50:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32781 "EHLO
+	id S966001AbaKLBvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:51:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32792 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965863AbaKLBuv (ORCPT
+	with ESMTP id S964829AbaKLBvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:51 -0500
+	Tue, 11 Nov 2014 20:51:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shivnandan Kumar <shivnandan.k@samsung.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.10 034/123] selinux: fix inode security list corruption
-Date: Wed, 12 Nov 2014 10:16:40 +0900
-Message-Id: <20141112011720.571891758@linuxfoundation.org>
+        Michel Lespinasse <walken@google.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.10 037/123] drbd: compute the end before rb_insert_augmented()
+Date: Wed, 12 Nov 2014 10:16:43 +0900
+Message-Id: <20141112011720.703911875@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,59 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Smalley <sds@tycho.nsa.gov>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 923190d32de4428afbea5e5773be86bea60a9925 upstream.
+commit 82cfb90bc99d7b7e0ec62d0505b9d4f06805d5db upstream.
 
-sb_finish_set_opts() can race with inode_free_security()
-when initializing inode security structures for inodes
-created prior to initial policy load or by the filesystem
-during ->mount().   This appears to have always been
-a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
-NULL pointer dereference in selinux_inode_permission()")
-made it more evident by immediately reusing the unioned
-list/rcu element  of the inode security structure for call_rcu()
-upon an inode_free_security().  But the underlying issue
-was already present before that commit as a possible use-after-free
-of isec.
+Commit 98683650 "Merge branch 'drbd-8.4_ed6' into
+for-3.8-drivers-drbd-8.4_ed6" switches to the new augment API, but the
+new API requires that the tree is augmented before rb_insert_augmented()
+is called, which is missing.
 
-Shivnandan Kumar reported the list corruption and proposed
-a patch to split the list and rcu elements out of the union
-as separate fields of the inode_security_struct so that setting
-the rcu element would not affect the list element.  However,
-this would merely hide the issue and not truly fix the code.
+So we add the augment-code to drbd_insert_interval() when it travels the
+tree up to down before rb_insert_augmented().  See the example in
+include/linux/interval_tree_generic.h or Documentation/rbtree.txt.
 
-This patch instead moves up the deletion of the list entry
-prior to dropping the sbsec->isec_lock initially.  Then,
-if the inode is dropped subsequently, there will be no further
-references to the isec.
+drbd_insert_interval() may cancel the insertion when traveling, in this
+case, the just added augment-code does nothing before cancel since the
+@this node is already in the subtrees in this case.
 
-Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
-Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+CC: Michel Lespinasse <walken@google.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/drbd/drbd_interval.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -437,6 +437,7 @@ next_inode:
- 				list_entry(sbsec->isec_head.next,
- 					   struct inode_security_struct, list);
- 		struct inode *inode = isec->inode;
-+		list_del_init(&isec->list);
- 		spin_unlock(&sbsec->isec_lock);
- 		inode = igrab(inode);
- 		if (inode) {
-@@ -445,7 +446,6 @@ next_inode:
- 			iput(inode);
- 		}
- 		spin_lock(&sbsec->isec_lock);
--		list_del_init(&isec->list);
- 		goto next_inode;
+--- a/drivers/block/drbd/drbd_interval.c
++++ b/drivers/block/drbd/drbd_interval.c
+@@ -79,6 +79,7 @@ bool
+ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ {
+ 	struct rb_node **new = &root->rb_node, *parent = NULL;
++	sector_t this_end = this->sector + (this->size >> 9);
+ 
+ 	BUG_ON(!IS_ALIGNED(this->size, 512));
+ 
+@@ -87,6 +88,8 @@ drbd_insert_interval(struct rb_root *roo
+ 			rb_entry(*new, struct drbd_interval, rb);
+ 
+ 		parent = *new;
++		if (here->end < this_end)
++			here->end = this_end;
+ 		if (this->sector < here->sector)
+ 			new = &(*new)->rb_left;
+ 		else if (this->sector > here->sector)
+@@ -99,6 +102,7 @@ drbd_insert_interval(struct rb_root *roo
+ 			return false;
  	}
- 	spin_unlock(&sbsec->isec_lock);
+ 
++	this->end = this_end;
+ 	rb_link_node(&this->rb, parent, new);
+ 	rb_insert_augmented(&this->rb, root, &augment_callbacks);
+ 	return true;
 
 
