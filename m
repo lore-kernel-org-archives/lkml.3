@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaKLJaf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:30:35 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:50295 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaKLJ3z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:29:55 -0500
-Date: Wed, 12 Nov 2014 10:29:52 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Johan Hovold <johan@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 8/9] net: phy: micrel: clean up led-mode setup
-Message-ID: <20141112092952.GD15215@localhost>
-References: <1415732415-10363-1-git-send-email-johan@kernel.org>
- <1415732415-10363-9-git-send-email-johan@kernel.org>
- <5462828B.8090303@cogentembedded.com>
- <546282EA.7040508@gmail.com>
+	id S1752804AbaKLJbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:31:08 -0500
+Received: from mga11.intel.com ([192.55.52.93]:33326 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751845AbaKLJbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 04:31:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,367,1413270000"; 
+   d="scan'208";a="630667639"
+Date: Wed, 12 Nov 2014 15:01:58 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Jon Medhurst <tixy@linaro.org>
+Cc: Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/2] dma: pl330: Fixes for DMA memcpy
+Message-ID: <20141112093158.GB24582@intel.com>
+References: <1415383518-29327-1-git-send-email-tixy@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <546282EA.7040508@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1415383518-29327-1-git-send-email-tixy@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 01:43:06PM -0800, Florian Fainelli wrote:
-> On 11/11/2014 01:41 PM, Sergei Shtylyov wrote:
-> > Hello.
-> > 
-> > On 11/11/2014 10:00 PM, Johan Hovold wrote:
-> > 
-> >> Clean up led-mode setup by introducing proper defines for PHY Control
-> >> registers 1 and 2 and only passing the register to the setup function.
-> > 
-> >    Not sure that's really better that it was before (modulo naming).
-> 
-> We do have proper error handling in kszphy_setup_led() which is already
-> an improvement.
+On Fri, Nov 07, 2014 at 06:05:16PM +0000, Jon Medhurst wrote:
+> This is a couple of patches I produced when trying to get dmatest to run
+> with the pl330 driver. The second one is actually a theoretical fix
+> because the FIFO on the platform I was using is too large for the tests
+> to hit the limit, but the datasheet says the device can lockup if all
+> the FIFO entries are exhausted, so it seems like a sensible precaution.
+>
+Applied, thanks
 
-This also means handling the led mode in one place rather than spreading
-it all over the driver, with multiple config functions providing one of
-the same two combinations of register and shift.
+Please ensure you use the right subsystem name for the patch header
 
-It's usefulness will perhaps become more apparent if you look at the
-follow up patches, which does further refactoring and store the led-mode
-register in the type data.
-
-Johan
+-- 
+~Vinod
