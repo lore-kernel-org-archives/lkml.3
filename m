@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaKLBZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:25:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58849 "EHLO
+	id S932161AbaKLBZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:25:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251AbaKLBZo (ORCPT
+	with ESMTP id S1754251AbaKLBZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:25:44 -0500
+	Tue, 11 Nov 2014 20:25:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.17 123/319] media: vmalloc_sg: off by one in error handling
-Date: Wed, 12 Nov 2014 10:14:21 +0900
-Message-Id: <20141112011012.955397041@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jacek Danecki <jacek.danecki@intel.com>,
+        "Gong, Zhipeng" <zhipeng.gong@intel.com>,
+        "Ursulin, Tvrtko" <tvrtko.ursulin@intel.com>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Subject: [PATCH 3.17 106/319] drm/i915: Do not store the error pointer for a failed userptr registration
+Date: Wed, 12 Nov 2014 10:14:04 +0900
+Message-Id: <20141112011010.110224702@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,40 +32,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 23d3090f8b44ab42162e99e8584445bc25b8922f upstream.
+commit e9681366ea9e76ab8f75e84351f2f3ca63ee542c upstream.
 
-The "i--" needs to happen at the start of the loop or it will try to
-release something bogus (probably it will crash) and it won't release
-the first ->vaddr_page[].
+If we fail to create our mmu notification, we report the error back and
+currently store the error inside the i915_mm_struct. This not only causes
+subsequent registerations of the same mm to fail (an issue if the first
+was interrupted by a signal and needed to be restarted) but also causes
+us to eventually try and free the error pointer.
 
-Fixes: 7b4eeed174b7 ('[media] vmalloc_sg: make sure all pages in vmalloc area are really DMA-ready')
+[   73.419599] BUG: unable to handle kernel NULL pointer dereference at 000000000000004c
+[   73.419831] IP: [<ffffffff8114af33>] mmu_notifier_unregister+0x23/0x130
+[   73.420065] PGD 8650c067 PUD 870bb067 PMD 0
+[   73.420319] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[   73.420580] CPU: 0 PID: 42 Comm: kworker/0:1 Tainted: G        W      3.17.0-rc6+ #1561
+[   73.420837] Hardware name: Intel Corporation SandyBridge Platform/LosLunas CRB, BIOS ASNBCPT1.86C.0075.P00.1106281639 06/28/2011
+[   73.421405] Workqueue: events __i915_mm_struct_free__worker
+[   73.421724] task: ffff880088a81220 ti: ffff880088168000 task.ti: ffff880088168000
+[   73.422051] RIP: 0010:[<ffffffff8114af33>]  [<ffffffff8114af33>] mmu_notifier_unregister+0x23/0x130
+[   73.422410] RSP: 0018:ffff88008816bd50  EFLAGS: 00010286
+[   73.422765] RAX: 0000000000000003 RBX: ffff880086485400 RCX: 0000000000000000
+[   73.423137] RDX: ffff88016d80ee90 RSI: ffff880086485400 RDI: 0000000000000044
+[   73.423513] RBP: ffff88008816bd70 R08: 0000000000000001 R09: 0000000000000000
+[   73.423895] R10: 0000000000000320 R11: 0000000000000001 R12: 0000000000000044
+[   73.424282] R13: ffff880166e5f008 R14: ffff88016d815200 R15: ffff880166e5f040
+[   73.424682] FS:  0000000000000000(0000) GS:ffff88016d800000(0000) knlGS:0000000000000000
+[   73.425099] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   73.425537] CR2: 000000000000004c CR3: 0000000087f5f000 CR4: 00000000000407f0
+[   73.426157] Stack:
+[   73.426597]  ffff880088a81248 ffff880166e5f038 fffffffffffffffc ffff880166e5f008
+[   73.427096]  ffff88008816bd98 ffffffff814a75f2 ffff880166e5f038 ffff8800880f8a28
+[   73.427603]  ffff88016d812ac0 ffff88008816be00 ffffffff8106321a ffffffff810631af
+[   73.428119] Call Trace:
+[   73.428606]  [<ffffffff814a75f2>] __i915_mm_struct_free__worker+0x42/0x80
+[   73.429116]  [<ffffffff8106321a>] process_one_work+0x1ba/0x610
+[   73.429632]  [<ffffffff810631af>] ? process_one_work+0x14f/0x610
+[   73.430153]  [<ffffffff810636db>] worker_thread+0x6b/0x4a0
+[   73.430671]  [<ffffffff8108d67d>] ? trace_hardirqs_on+0xd/0x10
+[   73.431501]  [<ffffffff81063670>] ? process_one_work+0x610/0x610
+[   73.432030]  [<ffffffff8106a206>] kthread+0xf6/0x110
+[   73.432561]  [<ffffffff8106a110>] ? __kthread_parkme+0x80/0x80
+[   73.433100]  [<ffffffff8169c22c>] ret_from_fork+0x7c/0xb0
+[   73.433644]  [<ffffffff8106a110>] ? __kthread_parkme+0x80/0x80
+[   73.434194] Code: 0f 1f 84 00 00 00 00 00 66 66 66 66 90 8b 46 4c 85 c0 0f 8e 10 01 00 00 55 48 89 e5 41 55 41 54 53 48 89 f3 49 89 fc 48 83 ec 08 <48> 83 7f 08 00 0f 84 b1 00 00 00 48 c7 c7 40 e6 ac 82 e8 26 65
+[   73.435942] RIP  [<ffffffff8114af33>] mmu_notifier_unregister+0x23/0x130
+[   73.437017]  RSP <ffff88008816bd50>
+[   73.437704] CR2: 000000000000004c
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes regression from commit ad46cb533d586fdb256855437af876617c6cf609
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Aug 7 14:20:40 2014 +0100
+
+    drm/i915: Prevent recursive deadlock on releasing a busy userptr
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=84207
+Testcase: igt/gem_render_copy_redux
+Testcase: igt/gem_userptr_blits/create-destroy-sync
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jacek Danecki <jacek.danecki@intel.com>
+Cc: "Gong, Zhipeng" <zhipeng.gong@intel.com>
+Cc: Jacek Danecki <jacek.danecki@intel.com>
+Cc: "Ursulin, Tvrtko" <tvrtko.ursulin@intel.com>
+Reviewed-by: Tvrtko Ursulin <tvrtko.ursulin@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/videobuf-dma-sg.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_userptr.c |   24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
---- a/drivers/media/v4l2-core/videobuf-dma-sg.c
-+++ b/drivers/media/v4l2-core/videobuf-dma-sg.c
-@@ -253,9 +253,11 @@ int videobuf_dma_init_kernel(struct vide
- 	return 0;
- out_free_pages:
- 	while (i > 0) {
--		void *addr = page_address(dma->vaddr_pages[i]);
--		dma_free_coherent(dma->dev, PAGE_SIZE, addr, dma->dma_addr[i]);
-+		void *addr;
+--- a/drivers/gpu/drm/i915/i915_gem_userptr.c
++++ b/drivers/gpu/drm/i915/i915_gem_userptr.c
+@@ -293,15 +293,23 @@ i915_gem_userptr_release__mmu_notifier(s
+ static struct i915_mmu_notifier *
+ i915_mmu_notifier_find(struct i915_mm_struct *mm)
+ {
+-	if (mm->mn == NULL) {
+-		down_write(&mm->mm->mmap_sem);
+-		mutex_lock(&to_i915(mm->dev)->mm_lock);
+-		if (mm->mn == NULL)
+-			mm->mn = i915_mmu_notifier_create(mm->mm);
+-		mutex_unlock(&to_i915(mm->dev)->mm_lock);
+-		up_write(&mm->mm->mmap_sem);
++	struct i915_mmu_notifier *mn = mm->mn;
 +
- 		i--;
-+		addr = page_address(dma->vaddr_pages[i]);
-+		dma_free_coherent(dma->dev, PAGE_SIZE, addr, dma->dma_addr[i]);
++	mn = mm->mn;
++	if (mn)
++		return mn;
++
++	down_write(&mm->mm->mmap_sem);
++	mutex_lock(&to_i915(mm->dev)->mm_lock);
++	if ((mn = mm->mn) == NULL) {
++		mn = i915_mmu_notifier_create(mm->mm);
++		if (!IS_ERR(mn))
++			mm->mn = mn;
  	}
- 	kfree(dma->dma_addr);
- 	dma->dma_addr = NULL;
+-	return mm->mn;
++	mutex_unlock(&to_i915(mm->dev)->mm_lock);
++	up_write(&mm->mm->mmap_sem);
++
++	return mn;
+ }
+ 
+ static int
 
 
