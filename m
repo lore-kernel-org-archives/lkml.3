@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaKLLUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:20:20 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:51301 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070AbaKLLUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:20:18 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-kernel@lists.linaro.org
-Cc: Will Deacon <will.deacon@arm.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "roland@hack.frob.com" <roland@hack.frob.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
-Date: Wed, 12 Nov 2014 12:19:26 +0100
-Message-ID: <6358312.yt5WU3kBm9@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141112111352.GC26437@arm.com>
-References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org> <54633F53.8020507@linaro.org> <20141112111352.GC26437@arm.com>
+	id S1752208AbaKLLYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:24:42 -0500
+Received: from mga14.intel.com ([192.55.52.115]:23382 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412AbaKLLYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 06:24:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="415336481"
+Date: Wed, 12 Nov 2014 16:55:29 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v4 00/58] dmaengine: Implement generic slave
+ capabilities retrieval
+Message-ID: <20141112112529.GK24582@intel.com>
+References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141106143349.GL2989@lukather>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:2K745KOIfs1V7svF3zE0cSeOZRxce34AF3Pgneqg4Rg
- o4cJf8HcGs3Fp8gFN8+WstGxOTwjddH0Z6H5YCno7NMM0n7PGF
- amRv5rMrInXpnhzVQ+VyfNe3qBLbCbrPgYMD3aoxEDfxl6+rPM
- 5iur9YFX2GrZKgQFMheV0zqIHkwRGobLaNc+bBQAoKUjta6EV3
- 8l7ZKa6LflSqBH+TJdYWcuwaK9cxsZpPpdetr2A7yuXbnvHmrN
- RFvWq3jhmzdJTVwM4AMMzQCAbzAL7JVttkXjIEwCBhNQQYDJwl
- Z51Vx8JH+WjJ2+kEOaqHpOYq2T/lPsZtQt2uQEiE5el3qcjtMl
- HgGFgZXP8/TC96WrioC8=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Disposition: inline
+In-Reply-To: <20141106143349.GL2989@lukather>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 November 2014 11:13:52 Will Deacon wrote:
-> On Wed, Nov 12, 2014 at 11:06:59AM +0000, AKASHI Takahiro wrote:
-> > On 11/12/2014 08:00 PM, Will Deacon wrote:
-> > > On Wed, Nov 12, 2014 at 10:46:01AM +0000, AKASHI Takahiro wrote:
-> > >> On 11/07/2014 11:04 PM, Oleg Nesterov wrote:
-> > >>> To me the fact that PTRACE_SET_SYSCALL can be undefined and syscall_set_nr()
-> > >>> is very much arch-dependant (but most probably trivial) means that this  code
-> > >>> should live in arch_ptrace().
-> > >>
-> > >> Thinking of Oleg's comment above, it doesn't make sense neither to define generic
-> > >> NT_SYSTEM_CALL (user_regset) in uapi/linux/elf.h and implement it in ptrace_regset()
-> > >> in kernel/ptrace.c with arch-defined syscall_(g)set_nr().
-> > >>
-> > >> Since we should have the same interface on arm and arm64, we'd better implement
-> > >> ptrace(PTRACE_SET_SYSCALL) locally on arm64 for now (as I originally submitted).
-> > >
-> > > I think the regset approach is cleaner. We already do something similar for
-> > > TLS. That would be implemented under arch/arm64/ with it's own NT type.
-> > 
-> > Okey, so arm64 goes its own way 
-> > Or do you want to have a similar regset on arm, too?
-> > (In this case, NT_ARM_SYSTEM_CALL can be shared in uapi/linux/elf.h)
-> 
-> Just do arm64. We already have the dedicated request for arch/arm/.
 
-I wonder if we should define NT_ARM64_SYSTEM_CALL to the same value
-as NT_S390_SYSTEM_CALL (0x307), or even define it as an architecture-
-independent NT_SYSTEM_CALL number with that value, so other architectures
-don't have to introduce new types when they also want to implement it.
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Arnd
+On Thu, Nov 06, 2014 at 03:33:49PM +0100, Maxime Ripard wrote:
+> Hi Vinod,
+>=20
+> On Tue, Oct 28, 2014 at 10:25:15PM +0100, Maxime Ripard wrote:
+> > Hi,
+> >=20
+> > As we discussed a couple of weeks ago, this is the third attempt at
+> > creating a generic behaviour for slave capabilities retrieval so that
+> > generic layers using dmaengine can actually rely on that.
+> >=20
+> > That has been done mostly through two steps: by moving out the
+> > sub-commands of the device_control callback, so that the dmaengine
+> > core can then infer from that wether a sub-command is implemented, and
+> > then by moving the slave properties, such as the supported buswidth,
+> > to the structure dma_device itself.
+> >=20
+> > Comments are as usual appreciated!
+>=20
+> How can we move forward on this?
+>=20
+> I didn't have any comments on this version, and gathered quite a lot
+> of Acked-by already.
+>=20
+> Do you want me to rebase on top of your current next branch and send
+> you a pull request?
+
+Hi Maxime,
+
+Thanks for the huge cleanup work
+
+I quickly looked thru the series and looks okay. I will do a detailed review
+in next couple of days and then host it on a topic branch so that Feng's
+robot can test it before merging it.
+
+Thanks
+
+--=20
+~Vinod
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUY0OpAAoJEHwUBw8lI4NHp84P/RmTcm0zR9v7VQHIa0Ui6Sws
+QnnIqqCGflEvEyWcW0ldaLABRNtA/kNI0q8nqWVB8nb4IMtmkFkUa5P+6i0bk+96
+Me633n5hRdbB09S+17I1kqwjn/7tB9sWfdHhfNyJiscuZl2FxYOX/tWzgX80sN5P
+dyY1q/pHAjcsLl9f4+iX9ZakFA1f+VwYPdh5j3JoyC0/3Odi7MgL9iZaMe+l+NcQ
+ypk6xpu7LmvoTnNwyrf8CDPw4RLWkeH1nSRcXQ5i5cTEIIBgfKUwSduXWQierVa4
+vYXazSdBqOYhO40yoDekVZ9ZAAb8AajhmetN4q7EWQW5JYDc1j3AonbKLiDRnN31
+XC0I6t+ipg02WIlKvEMjXuxOPUmwps43p2aD0cheGWqkt1Y10c2P3NbCZ2Vo1Puj
+tf6r1cj+PJrUVAUEseEcMGEnC27ilBfszOtRXBhnkgEPKQmJE2ofPiWGqA8HQVP7
+SfpyxXzJhEQQBvBNEbPWdY+A40FRcn7C4F4PGtUrWJTjKafwaD4XEOfFrWPH3uI/
+Ik7WuWSLJiGuHXouNhRkEkNuQBlqV8BEHIEjAtYdgWzsuA4/uEND/9uLZsLf5n3I
+NgSYLcvlu882yfraZgqo7MXXD3IBTyehmeeXH37wjI3zG1jbIGLcBosI++ZNbMyq
+G4jo4f6A05YG1g9N1dRc
+=NMdE
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
