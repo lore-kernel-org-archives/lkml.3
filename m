@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaKLCLb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:11:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32986 "EHLO
+	id S1755163AbaKLCL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:11:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32976 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966521AbaKLByD (ORCPT
+	with ESMTP id S965507AbaKLBx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:54:03 -0500
+	Tue, 11 Nov 2014 20:53:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 079/123] staging:iio:ade7758: Fix check if channels are enabled in prenable
-Date: Wed, 12 Nov 2014 10:17:25 +0900
-Message-Id: <20141112011722.590030567@linuxfoundation.org>
+        Quentin Casasnovas <quentin.casasnovas@oracle.com>,
+        Vegard Nossum <vegard.nossum@oracle.com>,
+        Jamie Iles <jamie.iles@oracle.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 051/123] kvm: fix excessive pages un-pinning in kvm_iommu_map error path.
+Date: Wed, 12 Nov 2014 10:16:57 +0900
+Message-Id: <20141112011721.353500841@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,31 +32,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
 
-commit 79fa64eb2ee8ccb4bcad7f54caa2699730b10b22 upstream.
+commit 3d32e4dbe71374a6780eaf51d719d76f9a9bf22f upstream.
 
-We should check if a channel is enabled, not if no channels are enabled.
+The third parameter of kvm_unpin_pages() when called from
+kvm_iommu_map_pages() is wrong, it should be the number of pages to un-pin
+and not the page size.
 
-Fixes: 550268ca1111 ("staging:iio: scrap scan_count and ensure all drivers use active_scan_mask")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This error was facilitated with an inconsistent API: kvm_pin_pages() takes
+a size, but kvn_unpin_pages() takes a number of pages, so fix the problem
+by matching the two.
+
+This was introduced by commit 350b8bd ("kvm: iommu: fix the third parameter
+of kvm_iommu_put_pages (CVE-2014-3601)"), which fixes the lack of
+un-pinning for pages intended to be un-pinned (i.e. memory leak) but
+unfortunately potentially aggravated the number of pages we un-pin that
+should have stayed pinned. As far as I understand though, the same
+practical mitigations apply.
+
+This issue was found during review of Red Hat 6.6 patches to prepare
+Ksplice rebootless updates.
+
+Thanks to Vegard for his time on a late Friday evening to help me in
+understanding this code.
+
+Fixes: 350b8bd ("kvm: iommu: fix the third parameter of... (CVE-2014-3601)")
+Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
+Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
+Reviewed-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/meter/ade7758_ring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ virt/kvm/iommu.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/iio/meter/ade7758_ring.c
-+++ b/drivers/staging/iio/meter/ade7758_ring.c
-@@ -92,7 +92,7 @@ static int ade7758_ring_preenable(struct
- 	unsigned channel;
- 	int ret;
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -43,13 +43,13 @@ static void kvm_iommu_put_pages(struct k
+ 				gfn_t base_gfn, unsigned long npages);
  
--	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
-+	if (bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
- 		return -EINVAL;
+ static pfn_t kvm_pin_pages(struct kvm_memory_slot *slot, gfn_t gfn,
+-			   unsigned long size)
++			   unsigned long npages)
+ {
+ 	gfn_t end_gfn;
+ 	pfn_t pfn;
  
- 	ret = iio_sw_buffer_preenable(indio_dev);
+ 	pfn     = gfn_to_pfn_memslot(slot, gfn);
+-	end_gfn = gfn + (size >> PAGE_SHIFT);
++	end_gfn = gfn + npages;
+ 	gfn    += 1;
+ 
+ 	if (is_error_noslot_pfn(pfn))
+@@ -119,7 +119,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 		 * Pin all pages we are about to map in memory. This is
+ 		 * important because we unmap and unpin in 4kb steps later.
+ 		 */
+-		pfn = kvm_pin_pages(slot, gfn, page_size);
++		pfn = kvm_pin_pages(slot, gfn, page_size >> PAGE_SHIFT);
+ 		if (is_error_noslot_pfn(pfn)) {
+ 			gfn += 1;
+ 			continue;
+@@ -131,7 +131,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 		if (r) {
+ 			printk(KERN_ERR "kvm_iommu_map_address:"
+ 			       "iommu failed to map pfn=%llx\n", pfn);
+-			kvm_unpin_pages(kvm, pfn, page_size);
++			kvm_unpin_pages(kvm, pfn, page_size >> PAGE_SHIFT);
+ 			goto unmap_pages;
+ 		}
+ 
 
 
