@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627AbaKLB2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:28:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59105 "EHLO
+	id S932644AbaKLB2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:28:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932580AbaKLB2q (ORCPT
+	with ESMTP id S932626AbaKLB2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:28:46 -0500
+	Tue, 11 Nov 2014 20:28:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
+        David Daney <david.daney@cavium.com>, Huacai Chen <chenhc@lemote.com>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.17 147/319] MIPS: ftrace: Fix a microMIPS build problem
-Date: Wed, 12 Nov 2014 10:14:45 +0900
-Message-Id: <20141112011016.830115878@linuxfoundation.org>
+Subject: [PATCH 3.17 148/319] MIPS: tlbex: Properly fix HUGE TLB Refill exception handler
+Date: Wed, 12 Nov 2014 10:14:46 +0900
+Message-Id: <20141112011017.019968926@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,52 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: David Daney <david.daney@cavium.com>
 
-commit aedd153f5bb5b1f1d6d9142014f521ae2ec294cc upstream.
+commit 9e0f162a36914937a937358fcb45e0609ef2bfc4 upstream.
 
-Code before the .fixup section needs to have the .insn directive.
-This has no side effects on MIPS32/64 but it affects the way microMIPS
-loads the address for the return label.
+In commit 8393c524a25609 (MIPS: tlbex: Fix a missing statement for
+HUGETLB), the TLB Refill handler was fixed so that non-OCTEON targets
+would work properly with huge pages.  The change was incorrect in that
+it broke the OCTEON case.
 
-Fixes the following build problem:
-mips-linux-gnu-ld: arch/mips/built-in.o: .fixup+0x4a0: Unsupported jump between
-ISA modes; consider recompiling with interlinking enabled.
-mips-linux-gnu-ld: final link failed: Bad value
-Makefile:819: recipe for target 'vmlinux' failed
+The problem is shown here:
 
-The fix is similar to 1658f914ff91c3bf ("MIPS: microMIPS:
-Disable LL/SC and fix linker bug.")
+    xxx0:	df7a0000 	ld	k0,0(k1)
+    .
+    .
+    .
+    xxxc0:	df610000 	ld	at,0(k1)
+    xxxc4:	335a0ff0 	andi	k0,k0,0xff0
+    xxxc8:	e825ffcd 	bbit1	at,0x5,0x0
+    xxxcc:	003ad82d 	daddu	k1,at,k0
+    .
+    .
+    .
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+In the non-octeon case there is a destructive test for the huge PTE
+bit, and then at 0, $k0 is reloaded (that is what the 8393c524a25609
+patch added).
+
+In the octeon case, we modify k1 in the branch delay slot, but we
+never need k0 again, so the new load is not needed, but since k1 is
+modified, if we do the load, we load from a garbage location and then
+get a nested TLB Refill, which is seen in userspace as either SIGBUS
+or SIGSEGV (depending on the garbage).
+
+The real fix is to only do this reloading if it is needed, and never
+where it is harmful.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
 Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/8117/
+Patchwork: https://patchwork.linux-mips.org/patch/8151/
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/include/asm/ftrace.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/mips/mm/tlbex.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/mips/include/asm/ftrace.h
-+++ b/arch/mips/include/asm/ftrace.h
-@@ -24,7 +24,7 @@ do {							\
- 	asm volatile (					\
- 		"1: " load " %[tmp_dst], 0(%[tmp_src])\n"	\
- 		"   li %[tmp_err], 0\n"			\
--		"2:\n"					\
-+		"2: .insn\n"				\
- 							\
- 		".section .fixup, \"ax\"\n"		\
- 		"3: li %[tmp_err], 1\n"			\
-@@ -46,7 +46,7 @@ do {						\
- 	asm volatile (				\
- 		"1: " store " %[tmp_src], 0(%[tmp_dst])\n"\
- 		"   li %[tmp_err], 0\n"		\
--		"2:\n"				\
-+		"2: .insn\n"			\
- 						\
- 		".section .fixup, \"ax\"\n"	\
- 		"3: li %[tmp_err], 1\n"		\
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -1062,6 +1062,7 @@ static void build_update_entries(u32 **p
+ struct mips_huge_tlb_info {
+ 	int huge_pte;
+ 	int restore_scratch;
++	bool need_reload_pte;
+ };
+ 
+ static struct mips_huge_tlb_info
+@@ -1076,6 +1077,7 @@ build_fast_tlb_refill_handler (u32 **p,
+ 
+ 	rv.huge_pte = scratch;
+ 	rv.restore_scratch = 0;
++	rv.need_reload_pte = false;
+ 
+ 	if (check_for_high_segbits) {
+ 		UASM_i_MFC0(p, tmp, C0_BADVADDR);
+@@ -1264,6 +1266,7 @@ static void build_r4000_tlb_refill_handl
+ 	} else {
+ 		htlb_info.huge_pte = K0;
+ 		htlb_info.restore_scratch = 0;
++		htlb_info.need_reload_pte = true;
+ 		vmalloc_mode = refill_noscratch;
+ 		/*
+ 		 * create the plain linear handler
+@@ -1300,7 +1303,8 @@ static void build_r4000_tlb_refill_handl
+ 	}
+ #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
+ 	uasm_l_tlb_huge_update(&l, p);
+-	UASM_i_LW(&p, K0, 0, K1);
++	if (htlb_info.need_reload_pte)
++		UASM_i_LW(&p, htlb_info.huge_pte, 0, K1);
+ 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
+ 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
+ 				   htlb_info.restore_scratch);
 
 
