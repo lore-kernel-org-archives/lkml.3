@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965950AbaKLBuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:50:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32769 "EHLO
+	id S965984AbaKLBu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:50:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965863AbaKLBup (ORCPT
+	with ESMTP id S965863AbaKLBuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:45 -0500
+	Tue, 11 Nov 2014 20:50:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "D. Jared Dominguez" <Jared_Dominguez@Dell.com>,
-        Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.10 032/123] mfd: rtsx_pcr: Fix MSI enable error handling
-Date: Wed, 12 Nov 2014 10:16:38 +0900
-Message-Id: <20141112011720.488008671@linuxfoundation.org>
+        Amit Shah <amit.shah@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.10 035/123] virtio_pci: fix virtio spec compliance on restore
+Date: Wed, 12 Nov 2014 10:16:41 +0900
+Message-Id: <20141112011720.611950568@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,37 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <chris@printf.net>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 5152970538a5e16c03bbcb9f1c780489a795ed40 upstream.
+commit 6fbc198cf623944ab60a1db6d306a4d55cdd820d upstream.
 
-pci_enable_msi() can return failure with both positive and negative
-integers -- it returns 0 for success -- but is only tested here for
-"if (ret < 0)".  This causes us to try to use MSI on the RTS5249 SD
-reader in the Dell XPS 11 when enabling MSI failed, causing:
+On restore, virtio pci does the following:
++ set features
++ init vqs etc - device can be used at this point!
++ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
 
-[    1.737110] rtsx_pci: probe of 0000:05:00.0 failed with error -110
+This is in violation of the virtio spec, which
+requires the following order:
+- ACKNOWLEDGE
+- DRIVER
+- init vqs
+- DRIVER_OK
 
-Reported-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
-Tested-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
-Signed-off-by: Chris Ball <chris@printf.net>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+This behaviour will break with hypervisors that assume spec compliant
+behaviour.  It seems like a good idea to have this patch applied to
+stable branches to reduce the support butden for the hypervisors.
+
+Cc: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/rtsx_pcr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/virtio/virtio_pci.c |   33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1137,7 +1137,7 @@ static int rtsx_pci_probe(struct pci_dev
- 	pcr->msi_en = msi_en;
- 	if (pcr->msi_en) {
- 		ret = pci_enable_msi(pcidev);
--		if (ret < 0)
-+		if (ret)
- 			pcr->msi_en = false;
- 	}
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -791,6 +791,7 @@ static int virtio_pci_restore(struct dev
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+ 	struct virtio_driver *drv;
++	unsigned status = 0;
+ 	int ret;
  
+ 	drv = container_of(vp_dev->vdev.dev.driver,
+@@ -801,14 +802,40 @@ static int virtio_pci_restore(struct dev
+ 		return ret;
+ 
+ 	pci_set_master(pci_dev);
++	/* We always start by resetting the device, in case a previous
++	 * driver messed it up. */
++	vp_reset(&vp_dev->vdev);
++
++	/* Acknowledge that we've seen the device. */
++	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
++	vp_set_status(&vp_dev->vdev, status);
++
++	/* Maybe driver failed before freeze.
++	 * Restore the failed status, for debugging. */
++	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
++	vp_set_status(&vp_dev->vdev, status);
++
++	if (!drv)
++		return 0;
++
++	/* We have a driver! */
++	status |= VIRTIO_CONFIG_S_DRIVER;
++	vp_set_status(&vp_dev->vdev, status);
++
+ 	vp_finalize_features(&vp_dev->vdev);
+ 
+-	if (drv && drv->restore)
++	if (drv->restore) {
+ 		ret = drv->restore(&vp_dev->vdev);
++		if (ret) {
++			status |= VIRTIO_CONFIG_S_FAILED;
++			vp_set_status(&vp_dev->vdev, status);
++			return ret;
++		}
++	}
+ 
+ 	/* Finally, tell the device we're all set */
+-	if (!ret)
+-		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
++	status |= VIRTIO_CONFIG_S_DRIVER_OK;
++	vp_set_status(&vp_dev->vdev, status);
+ 
+ 	return ret;
+ }
 
 
