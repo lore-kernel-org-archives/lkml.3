@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965447AbaKLBsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:48:19 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10087 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935056AbaKLBsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,365,1413270000"; 
-   d="scan'208";a="630482949"
-Message-ID: <5462BC5A.7070407@intel.com>
-Date: Wed, 12 Nov 2014 09:48:10 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S934104AbaKLCbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:31:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60797 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935101AbaKLBsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:48:11 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andriy Skulysh <askulysh@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 163/203] sh: fix sh770x SCIF memory regions
+Date: Wed, 12 Nov 2014 10:17:13 +0900
+Message-Id: <20141112011550.155948966@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
+References: <20141112011542.686743533@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lee Jones <lee.jones@linaro.org>
-CC: linux-acpi@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and
- XPower
-References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com> <54616E55.80204@intel.com> <20141111111152.GX24004@x1> <3052882.EdcZmghHR3@vostro.rjw.lan>
-In-Reply-To: <3052882.EdcZmghHR3@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2014 07:35 AM, Rafael J. Wysocki wrote:
-> On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
->> On Tue, 11 Nov 2014, Aaron Lu wrote:
->>
->>> On 10/31/2014 02:08 PM, Aaron Lu wrote:
->>>> On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
->>>> ACPI operation regions defined for the Power Management Integrated Circuit
->>>> device, one is for power resource handling and one is for thermal: sensor
->>>> temperature reporting, trip point setting, etc. There are different PMIC
->>>> chips used on those platforms and though each has the same two operation
->>>> regions and functionality, their implementation is different so every PMIC
->>>> will need a driver. But since their functionality is similar, some common
->>>> code is abstracted into the intel_soc_pmic_opregion.c.
->>>>
->>>> The last version is posted here:
->>>> https://lkml.org/lkml/2014/9/8/801
->>>>
->>>> Changes since then:
->>>> 1 Move to drivers/acpi as discussed on the above thread;
->>>> 2 Added support for XPower AXP288 PMIC operation region support;
->>>> 3 Since operation region handler can not be removed(at the moment at least),
->>>>   use bool for the two operation region driver configs instead of tristate;
->>>>   Another reason to do this is that, with Mika's MFD ACPI support patch, all
->>>>   those MFD cell devices created will have the same modalias as their parent's
->>>>   so it doesn't make much sense to compile these drivers into modules.
->>>>
->>>> Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
->>>> patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
->>>> driver XPower AXP288 and iio driver axp288_adc is located.
->>>
->>> Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
->>> would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
->>>
->>> Rafael,
->>> Can I get your ACK for the three patches?
->>>
->>> Lee,
->>> Can you please take the series if Rafael gives it ack?
->>
->> Yes, no problem.
-> 
-> Well, since the code is going to reside mostly in drivers/acpi, I think I should
-> be applying the patches and from your response it looks like you are fine with
-> them.  Is that correct?
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Oh I thought you may not want to merge another branch into your next
-branch so I asked this question. If you can handle the whole thing in your
-tree, that's of course not a problem :-)
+------------------
 
-Thanks,
-Aaron
+From: Andriy Skulysh <askulysh@gmail.com>
+
+commit 5417421b270229bfce0795ccc99a4b481e4954ca upstream.
+
+Resources scif1_resources & scif2_resources overlap.  Actual SCIF region
+size is 0x10.
+
+This is regression from commit d850acf975be ("sh: Declare SCIF register
+base and IRQ as resources")
+
+Signed-off-by: Andriy Skulysh <askulysh@gmail.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/sh/kernel/cpu/sh3/setup-sh770x.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/sh/kernel/cpu/sh3/setup-sh770x.c
++++ b/arch/sh/kernel/cpu/sh3/setup-sh770x.c
+@@ -118,7 +118,7 @@ static struct plat_sci_port scif0_platfo
+ };
+ 
+ static struct resource scif0_resources[] = {
+-	DEFINE_RES_MEM(0xfffffe80, 0x100),
++	DEFINE_RES_MEM(0xfffffe80, 0x10),
+ 	DEFINE_RES_IRQ(evt2irq(0x4e0)),
+ };
+ 
+@@ -143,7 +143,7 @@ static struct plat_sci_port scif1_platfo
+ };
+ 
+ static struct resource scif1_resources[] = {
+-	DEFINE_RES_MEM(0xa4000150, 0x100),
++	DEFINE_RES_MEM(0xa4000150, 0x10),
+ 	DEFINE_RES_IRQ(evt2irq(0x900)),
+ };
+ 
+@@ -169,7 +169,7 @@ static struct plat_sci_port scif2_platfo
+ };
+ 
+ static struct resource scif2_resources[] = {
+-	DEFINE_RES_MEM(0xa4000140, 0x100),
++	DEFINE_RES_MEM(0xa4000140, 0x10),
+ 	DEFINE_RES_IRQ(evt2irq(0x880)),
+ };
+ 
+
+
