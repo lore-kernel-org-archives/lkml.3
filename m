@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaKLUIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:08:32 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:46119 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190AbaKLUIb (ORCPT
+	id S1753488AbaKLUJr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:09:47 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63130 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaKLUJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:08:31 -0500
-Date: Wed, 12 Nov 2014 15:08:28 -0500 (EST)
-Message-Id: <20141112.150828.421966825872572028.davem@davemloft.net>
-To: mkubecek@suse.cz
-Cc: vfalico@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        j.vosburgh@gmail.com, andy@greyhouse.net, jiri@resnulli.us
-Subject: Re: [PATCH net-next 0/3] dev_disable_lro() improvements for
- stacked devices
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141112131546.GA8745@unicorn.suse.cz>
-References: <20141111093457.GA30178@unicorn.suse.cz>
-	<20141111.214752.266800170368088905.davem@davemloft.net>
-	<20141112131546.GA8745@unicorn.suse.cz>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Nov 2014 12:08:30 -0800 (PST)
+	Wed, 12 Nov 2014 15:09:45 -0500
+Date: Wed, 12 Nov 2014 15:09:14 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        joro@8bytes.org, Mel Gorman <mgorman@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>, linux-fsdevel@vger.kernel.org,
+        Linda Wang <lwang@redhat.com>, Kevin E Martin <kem@redhat.com>,
+        Jerome Glisse <jglisse@redhat.com>, Jeff Law <law@redhat.com>,
+        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Sagi Grimberg <sagig@mellanox.com>
+Subject: Re: HMM (heterogeneous memory management) v6
+Message-ID: <20141112200911.GA7720@gmail.com>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+ <alpine.DEB.2.11.1411111259560.6657@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.11.1411111259560.6657@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Kubecek <mkubecek@suse.cz>
-Date: Wed, 12 Nov 2014 14:15:46 +0100
-
-> On Tue, Nov 11, 2014 at 09:47:52PM -0500, David Miller wrote:
->> 
->> Please do it generically.
->> 
->> Having a special stanza for each layered device type in
->> dev_disable_lro() is beyond stupid.  Especially when it
->> can in fact be done cleanly.
+On Tue, Nov 11, 2014 at 01:00:56PM -0600, Christoph Lameter wrote:
+> On Mon, 10 Nov 2014, j.glisse@gmail.com wrote:
 > 
-> I gave it some thought and I would like ask one question first:
+> > In a nutshell HMM is a subsystem that provide an easy to use api to mirror a
+> > process address on a device with minimal hardware requirement (mainly device
+> > page fault and read only page mapping). This does not rely on ATS and PASID
+> > PCIE extensions. It intends to supersede those extensions by allowing to move
+> > system memory to device memory in a transparent fashion for core kernel mm
+> > code (ie cpu page fault on page residing in device memory will trigger
+> > migration back to system memory).
 > 
-> Does the upper-lower relationship always mean that upper device receives
-> packets through its lower device(s) so that LRO should always be
-> disabled for lower devices whenever there are some? Or should it be
-> limited only to an explicit list of device types (vlan, macvlan, bond,
-> team)?
+> Could we define a new NUMA node that maps memory from the GPU and
+> then simply use the existing NUMA features to move a process over there.
 
-This should be the case, anyone else?
+Sorry for late reply, i am traveling and working on an updated patchset to
+change the device page table design to something simpler and easier to grasp.
+
+So GPU process will never run on CPU nor will they have a kernel task struct
+associated with them. From core kernel point of view they do not exist. I
+hope that at one point down the line the hw will allow for better integration
+with kernel core but it's not there yet.
+
+So the NUMA idea was considered early on but was discarded as it's not really
+appropriate. You can have several CPU thread working with several GPU thread
+at the same time and they can either access disjoint memory or some share
+memory. Usual case will be few kbytes of share memory for synchronization
+btw CPU and GPU threads.
+
+But when a GPU job is launch we want most of the memory it will use to be
+migrated to device memory. Issue is that the device memory is not accessible
+from the CPU (PCIE bar are too small). So there is no way to keep the memory
+mapped for the CPU. We do need to mark the memory as unaccessible to the CPU
+and then migrate it to the GPU memory.
+
+Now when there is a CPU page fault on some migrated memory we need to migrate
+memory back to system memory. Hence why i need to tie HMM with some core MM
+code so that on this kind of fault core kernel knows it needs to call into
+HMM which will perform housekeeping and starts migration back to system
+memory.
+
+
+So technicaly there is no task migration only memory migration.
+
+
+Is there something i missing inside NUMA or some NUMA work in progress that
+change NUMA sufficiently that it might somehow address the use case i am
+describing above ?
+
+
+Cheers,
+Jérôme
