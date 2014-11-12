@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965694AbaKLDAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:00:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60114 "EHLO
+	id S933917AbaKLDB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:01:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60097 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933502AbaKLBkm (ORCPT
+	with ESMTP id S964963AbaKLBk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:40:42 -0500
+	Tue, 11 Nov 2014 20:40:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>, Scot Doyle <lkml14@scotdoyle.com>
-Subject: [PATCH 3.14 069/203] drm/i915: dont warn if backlight unexpectedly enabled
-Date: Wed, 12 Nov 2014 10:15:39 +0900
-Message-Id: <20141112011545.867755777@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 065/203] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
+Date: Wed, 12 Nov 2014 10:15:35 +0900
+Message-Id: <20141112011545.694989052@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,61 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scot Doyle <lkml14@scotdoyle.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 813008cd3e93ea8a571b2b7d5b9360a3105b50f7 upstream.
+commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
 
-BIOS or firmware can modify hardware state during suspend/resume,
-for example on the Toshiba CB35 or Lenovo T400, so log a debug message
-instead of a warning if the backlight is unexpectedly enabled.
+These models need i8042.notimeout, otherwise the touchpad will not work.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=80930
-Cc: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -645,7 +645,7 @@ static void pch_enable_backlight(struct
- 
- 	cpu_ctl2 = I915_READ(BLC_PWM_CPU_CTL2);
- 	if (cpu_ctl2 & BLM_PWM_ENABLE) {
--		WARN(1, "cpu backlight already enabled\n");
-+		DRM_DEBUG_KMS("cpu backlight already enabled\n");
- 		cpu_ctl2 &= ~BLM_PWM_ENABLE;
- 		I915_WRITE(BLC_PWM_CPU_CTL2, cpu_ctl2);
- 	}
-@@ -693,7 +693,7 @@ static void i9xx_enable_backlight(struct
- 
- 	ctl = I915_READ(BLC_PWM_CTL);
- 	if (ctl & BACKLIGHT_DUTY_CYCLE_MASK_PNV) {
--		WARN(1, "backlight already enabled\n");
-+		DRM_DEBUG_KMS("backlight already enabled\n");
- 		I915_WRITE(BLC_PWM_CTL, 0);
- 	}
- 
-@@ -724,7 +724,7 @@ static void i965_enable_backlight(struct
- 
- 	ctl2 = I915_READ(BLC_PWM_CTL2);
- 	if (ctl2 & BLM_PWM_ENABLE) {
--		WARN(1, "backlight already enabled\n");
-+		DRM_DEBUG_KMS("backlight already enabled\n");
- 		ctl2 &= ~BLM_PWM_ENABLE;
- 		I915_WRITE(BLC_PWM_CTL2, ctl2);
- 	}
-@@ -758,7 +758,7 @@ static void vlv_enable_backlight(struct
- 
- 	ctl2 = I915_READ(VLV_BLC_PWM_CTL2(pipe));
- 	if (ctl2 & BLM_PWM_ENABLE) {
--		WARN(1, "backlight already enabled\n");
-+		DRM_DEBUG_KMS("backlight already enabled\n");
- 		ctl2 &= ~BLM_PWM_ENABLE;
- 		I915_WRITE(VLV_BLC_PWM_CTL2(pipe), ctl2);
- 	}
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -615,6 +615,22 @@ static const struct dmi_system_id __init
+ 		},
+ 	},
+ 	{
++		/* Fujitsu A544 laptop */
++		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
++		},
++	},
++	{
++		/* Fujitsu AH544 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
++		},
++	},
++	{
+ 		/* Fujitsu U574 laptop */
+ 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
+ 		.matches = {
 
 
