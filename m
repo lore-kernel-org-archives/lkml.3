@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935040AbaKLBru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:47:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60766 "EHLO
+	id S935055AbaKLBr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:47:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60772 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934921AbaKLBrp (ORCPT
+	with ESMTP id S934921AbaKLBrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:47:45 -0500
+	Tue, 11 Nov 2014 20:47:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 187/203] usb: gadget: function: acm: make f_acm pass USB20CV Chapter9
-Date: Wed, 12 Nov 2014 10:17:37 +0900
-Message-Id: <20141112011551.256954696@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 162/203] USB: kobil_sct: fix non-atomic allocation in write path
+Date: Wed, 12 Nov 2014 10:17:12 +0900
+Message-Id: <20141112011550.106851435@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,41 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Johan Hovold <johan@kernel.org>
 
-[ Upstream commit 52ec49a5e56a27c5b6f8217708783eff39f24c16 ]
+commit 191252837626fca0de694c18bb2aa64c118eda89 upstream.
 
-During Halt Endpoint Test, our interrupt endpoint
-will be disabled, which will clear out ep->desc
-to NULL. Unless we call config_ep_by_speed() again,
-we will not be able to enable this endpoint which
-will make us fail that test.
+Write may be called from interrupt context so make sure to use
+GFP_ATOMIC for all allocations in write.
 
-Fixes: f9c56cd (usb: gadget: Clear usb_endpoint_descriptor
-	inside the struct usb_ep on disable)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/usb/gadget/f_acm.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/gadget/f_acm.c
-+++ b/drivers/usb/gadget/f_acm.c
-@@ -430,11 +430,12 @@ static int acm_set_alt(struct usb_functi
- 		if (acm->notify->driver_data) {
- 			VDBG(cdev, "reset acm control interface %d\n", intf);
- 			usb_ep_disable(acm->notify);
--		} else {
--			VDBG(cdev, "init acm ctrl interface %d\n", intf);
-+		}
-+
-+		if (!acm->notify->desc)
- 			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
- 				return -EINVAL;
--		}
-+
- 		usb_ep_enable(acm->notify);
- 		acm->notify->driver_data = acm;
+---
+ drivers/usb/serial/kobil_sct.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/serial/kobil_sct.c
++++ b/drivers/usb/serial/kobil_sct.c
+@@ -335,7 +335,8 @@ static int kobil_write(struct tty_struct
+ 			port->interrupt_out_urb->transfer_buffer_length = length;
  
+ 			priv->cur_pos = priv->cur_pos + length;
+-			result = usb_submit_urb(port->interrupt_out_urb, GFP_NOIO);
++			result = usb_submit_urb(port->interrupt_out_urb,
++					GFP_ATOMIC);
+ 			dev_dbg(&port->dev, "%s - Send write URB returns: %i\n", __func__, result);
+ 			todo = priv->filled - priv->cur_pos;
+ 
+@@ -350,7 +351,7 @@ static int kobil_write(struct tty_struct
+ 		if (priv->device_type == KOBIL_ADAPTER_B_PRODUCT_ID ||
+ 			priv->device_type == KOBIL_ADAPTER_K_PRODUCT_ID) {
+ 			result = usb_submit_urb(port->interrupt_in_urb,
+-								GFP_NOIO);
++					GFP_ATOMIC);
+ 			dev_dbg(&port->dev, "%s - Send read URB returns: %i\n", __func__, result);
+ 		}
+ 	}
 
 
