@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaKLS4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 13:56:12 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:45324 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbaKLS4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 13:56:10 -0500
-Date: Wed, 12 Nov 2014 13:56:07 -0500 (EST)
-Message-Id: <20141112.135607.970670076636942787.davem@davemloft.net>
-To: johan@kernel.org
-Cc: f.fainelli@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 0/9] net: phy: micrel: refactoring and KSZ8081/KSZ8091
- features
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1415732415-10363-1-git-send-email-johan@kernel.org>
-References: <1415732415-10363-1-git-send-email-johan@kernel.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Nov 2014 10:56:10 -0800 (PST)
+	id S1753459AbaKLS6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 13:58:25 -0500
+Received: from mx02.posteo.de ([89.146.194.165]:51376 "EHLO mx02.posteo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753250AbaKLS6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 13:58:24 -0500
+From: Martin Kepplinger <martink@posteo.de>
+To: giedriuswork@gmail.com
+Cc: miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
+        thierry.reding@gmail.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH] fuse: Don't check for file->private_data on open(). It is set by the core.
+Date: Wed, 12 Nov 2014 19:56:21 +0100
+Message-Id: <1415818581-27476-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <5463979C.6090600@gmail.com>
+References: <5463979C.6090600@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
-Date: Tue, 11 Nov 2014 20:00:06 +0100
+The miscdevice core now sets file->private_data to the struct miscdevice
+so don't fail when this is not NULL.
 
-> This series cleans up and refactors parts of the micrel PHY driver, and
-> adds support for broadcast-address-disable and led-mode configuration
-> for KSZ8081 and KSZ8091 PHYs.
-> 
-> Specifically, this enables dual KSZ8081 setups (which are limited to
-> using address 0 and 3).
-> 
-> A follow up series will add device-type abstraction which will allow for
-> further refactoring and shared initialisation code.
+Reported-by: Giedrius Statkevicius <giedriuswork@gmail.com>
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+sorry, I can't read ;) Is this a fix for your problem (instead of the first
+patch)?
 
-Series applied, thanks Johan.
+in case of fuse_ctl_add_conn(fc) failing things should proceed as before.
+
+ fs/fuse/inode.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 03246cd..a97a475 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -1092,9 +1092,6 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 
+ 	mutex_lock(&fuse_mutex);
+-	err = -EINVAL;
+-	if (file->private_data)
+-		goto err_unlock;
+ 
+ 	err = fuse_ctl_add_conn(fc);
+ 	if (err)
+@@ -1117,6 +1114,7 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
+ 	return 0;
+ 
+  err_unlock:
++	file->private_data = NULL;
+ 	mutex_unlock(&fuse_mutex);
+  err_free_init_req:
+ 	fuse_request_free(init_req);
+-- 
+1.7.10.4
+
