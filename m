@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaKLCiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:38:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60667 "EHLO
+	id S1755075AbaKLCin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:38:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60655 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965420AbaKLBqR (ORCPT
+	with ESMTP id S934827AbaKLBqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:46:17 -0500
+	Tue, 11 Nov 2014 20:46:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 129/203] staging:iio:ade7758: Fix NULL pointer deref when enabling buffer
-Date: Wed, 12 Nov 2014 10:16:39 +0900
-Message-Id: <20141112011548.590266801@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 158/203] ALSA: usb-audio: Fix device_del() sysfs warnings at disconnect
+Date: Wed, 12 Nov 2014 10:17:08 +0900
+Message-Id: <20141112011549.935854789@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,256 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit e10554738cab4224e097c2f9d975ea781a4fcde4 upstream.
+commit 0725dda207e95ff25f1aa01432250323e0ec49d6 upstream.
 
-In older versions of the IIO framework it was possible to pass a completely
-different set of channels to iio_buffer_register() as the one that is
-assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
-iio_sw_buffer_preenable much more general.") introduced a restriction that
-requires that the set of channels that is passed to iio_buffer_register() is
-a subset of the channels assigned to the IIO device as the IIO core will use
-the list of channels that is assigned to the device to lookup a channel by
-scan index in iio_compute_scan_bytes(). If it can not find the channel the
-function will crash. This patch fixes the issue by making sure that the same
-set of channels is assigned to the IIO device and passed to
-iio_buffer_register().
+Some USB-audio devices show weird sysfs warnings at disconnecting the
+devices, e.g.
+ usb 1-3: USB disconnect, device number 3
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 973 at fs/sysfs/group.c:216 device_del+0x39/0x180()
+ sysfs group ffffffff8183df40 not found for kobject 'midiC1D0'
+ Call Trace:
+  [<ffffffff814a3e38>] ? dump_stack+0x49/0x71
+  [<ffffffff8103cb72>] ? warn_slowpath_common+0x82/0xb0
+  [<ffffffff8103cc55>] ? warn_slowpath_fmt+0x45/0x50
+  [<ffffffff813521e9>] ? device_del+0x39/0x180
+  [<ffffffff81352339>] ? device_unregister+0x9/0x20
+  [<ffffffff81352384>] ? device_destroy+0x34/0x40
+  [<ffffffffa00ba29f>] ? snd_unregister_device+0x7f/0xd0 [snd]
+  [<ffffffffa025124e>] ? snd_rawmidi_dev_disconnect+0xce/0x100 [snd_rawmidi]
+  [<ffffffffa00c0192>] ? snd_device_disconnect+0x62/0x90 [snd]
+  [<ffffffffa00c025c>] ? snd_device_disconnect_all+0x3c/0x60 [snd]
+  [<ffffffffa00bb574>] ? snd_card_disconnect+0x124/0x1a0 [snd]
+  [<ffffffffa02e54e8>] ? usb_audio_disconnect+0x88/0x1c0 [snd_usb_audio]
+  [<ffffffffa015260e>] ? usb_unbind_interface+0x5e/0x1b0 [usbcore]
+  [<ffffffff813553e9>] ? __device_release_driver+0x79/0xf0
+  [<ffffffff81355485>] ? device_release_driver+0x25/0x40
+  [<ffffffff81354e11>] ? bus_remove_device+0xf1/0x130
+  [<ffffffff813522b9>] ? device_del+0x109/0x180
+  [<ffffffffa01501d5>] ? usb_disable_device+0x95/0x1f0 [usbcore]
+  [<ffffffffa014634f>] ? usb_disconnect+0x8f/0x190 [usbcore]
+  [<ffffffffa0149179>] ? hub_thread+0x539/0x13a0 [usbcore]
+  [<ffffffff810669f5>] ? sched_clock_local+0x15/0x80
+  [<ffffffff81066c98>] ? sched_clock_cpu+0xb8/0xd0
+  [<ffffffff81070730>] ? bit_waitqueue+0xb0/0xb0
+  [<ffffffffa0148c40>] ? usb_port_resume+0x430/0x430 [usbcore]
+  [<ffffffffa0148c40>] ? usb_port_resume+0x430/0x430 [usbcore]
+  [<ffffffff8105973e>] ? kthread+0xce/0xf0
+  [<ffffffff81059670>] ? kthread_create_on_node+0x1c0/0x1c0
+  [<ffffffff814a8b7c>] ? ret_from_fork+0x7c/0xb0
+  [<ffffffff81059670>] ? kthread_create_on_node+0x1c0/0x1c0
+ ---[ end trace 40b1928d1136b91e ]---
 
-Note that we need to remove the IIO_CHAN_INFO_RAW and IIO_CHAN_INFO_SCALE
-info attributes from the channels since we don't actually want those to be
-registered.
+This comes from the fact that usb-audio driver may receive the
+disconnect callback multiple times, per each usb interface.  When a
+device has both audio and midi interfaces, it gets called twice, and
+currently the driver tries to release resources at the last call.
+At this point, the first parent interface has been already deleted,
+thus deleting a child of the first parent hits such a warning.
 
-Fixes the following crash:
-	Unable to handle kernel NULL pointer dereference at virtual address 00000016
-	pgd = d2094000
-	[00000016] *pgd=16e39831, *pte=00000000, *ppte=00000000
-	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-	Modules linked in:
-	CPU: 1 PID: 1695 Comm: bash Not tainted 3.17.0-06329-g29461ee #9686
-	task: d7768040 ti: d5bd4000 task.ti: d5bd4000
-	PC is at iio_compute_scan_bytes+0x38/0xc0
-	LR is at iio_compute_scan_bytes+0x34/0xc0
-	pc : [<c0316de8>]    lr : [<c0316de4>]    psr: 60070013
-	sp : d5bd5ec0  ip : 00000000  fp : 00000000
-	r10: d769f934  r9 : 00000000  r8 : 00000001
-	r7 : 00000000  r6 : c8fc6240  r5 : d769f800  r4 : 00000000
-	r3 : d769f800  r2 : 00000000  r1 : ffffffff  r0 : 00000000
-	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-	Control: 18c5387d  Table: 1209404a  DAC: 00000015
-	Process bash (pid: 1695, stack limit = 0xd5bd4240)
-	Stack: (0xd5bd5ec0 to 0xd5bd6000)
-	5ec0: d769f800 d7435640 c8fc6240 d769f984 00000000 c03175a4 d7435690 d7435640
-	5ee0: d769f990 00000002 00000000 d769f800 d5bd4000 00000000 000b43a8 c03177f4
-	5f00: d769f810 0162b8c8 00000002 c8fc7e00 d77f1d08 d77f1da8 c8fc7e00 c01faf1c
-	5f20: 00000002 c010694c c010690c d5bd5f88 00000002 c8fc6840 c8fc684c c0105e08
-	5f40: 00000000 00000000 d20d1580 00000002 000af408 d5bd5f88 c000de84 c00b76d4
-	5f60: d20d1580 000af408 00000002 d20d1580 d20d1580 00000002 000af408 c000de84
-	5f80: 00000000 c00b7a44 00000000 00000000 00000002 b6ebea78 00000002 000af408
-	5fa0: 00000004 c000dd00 b6ebea78 00000002 00000001 000af408 00000002 00000000
-	5fc0: b6ebea78 00000002 000af408 00000004 bee96a4c 000a6094 00000000 000b43a8
-	5fe0: 00000000 bee969cc b6e2eb77 b6e6525c 40070010 00000001 00000000 00000000
-	[<c0316de8>] (iio_compute_scan_bytes) from [<c03175a4>] (__iio_update_buffers+0x248/0x438)
-	[<c03175a4>] (__iio_update_buffers) from [<c03177f4>] (iio_buffer_store_enable+0x60/0x7c)
-	[<c03177f4>] (iio_buffer_store_enable) from [<c01faf1c>] (dev_attr_store+0x18/0x24)
-	[<c01faf1c>] (dev_attr_store) from [<c010694c>] (sysfs_kf_write+0x40/0x4c)
-	[<c010694c>] (sysfs_kf_write) from [<c0105e08>] (kernfs_fop_write+0x110/0x154)
-	[<c0105e08>] (kernfs_fop_write) from [<c00b76d4>] (vfs_write+0xbc/0x170)
-	[<c00b76d4>] (vfs_write) from [<c00b7a44>] (SyS_write+0x40/0x78)
-	[<c00b7a44>] (SyS_write) from [<c000dd00>] (ret_fast_syscall+0x0/0x30)
+For fixing this problem, we need to call snd_card_disconnect() and
+cancel pending operations at the very first disconnect while the
+release of the whole objects waits until the last disconnect call.
 
-Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80931
+Reported-and-tested-by: Tomas Gayoso <tgayoso@gmail.com>
+Reported-and-tested-by: Chris J Arges <chris.j.arges@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/meter/ade7758.h      |    1 
- drivers/staging/iio/meter/ade7758_core.c |   33 +------------------------------
- drivers/staging/iio/meter/ade7758_ring.c |    3 --
- 3 files changed, 3 insertions(+), 34 deletions(-)
+ sound/usb/card.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/iio/meter/ade7758.h
-+++ b/drivers/staging/iio/meter/ade7758.h
-@@ -119,7 +119,6 @@ struct ade7758_state {
- 	u8			*tx;
- 	u8			*rx;
- 	struct mutex		buf_lock;
--	const struct iio_chan_spec *ade7758_ring_channels;
- 	struct spi_transfer	ring_xfer[4];
- 	struct spi_message	ring_msg;
- 	/*
---- a/drivers/staging/iio/meter/ade7758_core.c
-+++ b/drivers/staging/iio/meter/ade7758_core.c
-@@ -631,8 +631,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
- 		.scan_index = 0,
- 		.scan_type = {
-@@ -645,8 +643,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
- 		.scan_index = 1,
- 		.scan_type = {
-@@ -659,8 +655,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "apparent_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
- 		.scan_index = 2,
- 		.scan_type = {
-@@ -673,8 +667,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "active_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
- 		.scan_index = 3,
- 		.scan_type = {
-@@ -687,8 +679,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "reactive_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
- 		.scan_index = 4,
- 		.scan_type = {
-@@ -701,8 +691,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
- 		.scan_index = 5,
- 		.scan_type = {
-@@ -715,8 +703,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
- 		.scan_index = 6,
- 		.scan_type = {
-@@ -729,8 +715,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "apparent_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
- 		.scan_index = 7,
- 		.scan_type = {
-@@ -743,8 +727,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "active_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
- 		.scan_index = 8,
- 		.scan_type = {
-@@ -757,8 +739,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "reactive_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
- 		.scan_index = 9,
- 		.scan_type = {
-@@ -771,8 +751,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
- 		.scan_index = 10,
- 		.scan_type = {
-@@ -785,8 +763,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
- 		.scan_index = 11,
- 		.scan_type = {
-@@ -799,8 +775,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "apparent_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
- 		.scan_index = 12,
- 		.scan_type = {
-@@ -813,8 +787,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "active_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
- 		.scan_index = 13,
- 		.scan_type = {
-@@ -827,8 +799,6 @@ static const struct iio_chan_spec ade775
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "reactive_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
- 		.scan_index = 14,
- 		.scan_type = {
-@@ -869,13 +839,14 @@ static int ade7758_probe(struct spi_devi
- 		goto error_free_rx;
- 	}
- 	st->us = spi;
--	st->ade7758_ring_channels = &ade7758_channels[0];
- 	mutex_init(&st->buf_lock);
- 
- 	indio_dev->name = spi->dev.driver->name;
- 	indio_dev->dev.parent = &spi->dev;
- 	indio_dev->info = &ade7758_info;
- 	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->channels = ade7758_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(ade7758_channels);
- 
- 	ret = ade7758_configure_ring(indio_dev);
- 	if (ret)
---- a/drivers/staging/iio/meter/ade7758_ring.c
-+++ b/drivers/staging/iio/meter/ade7758_ring.c
-@@ -85,7 +85,6 @@ static irqreturn_t ade7758_trigger_handl
-  **/
- static int ade7758_ring_preenable(struct iio_dev *indio_dev)
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -586,18 +586,19 @@ static void snd_usb_audio_disconnect(str
  {
--	struct ade7758_state *st = iio_priv(indio_dev);
- 	unsigned channel;
+ 	struct snd_card *card;
+ 	struct list_head *p;
++	bool was_shutdown;
  
- 	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
-@@ -95,7 +94,7 @@ static int ade7758_ring_preenable(struct
- 				 indio_dev->masklength);
+ 	if (chip == (void *)-1L)
+ 		return;
  
- 	ade7758_write_waveform_type(&indio_dev->dev,
--		st->ade7758_ring_channels[channel].address);
-+		indio_dev->channels[channel].address);
+ 	card = chip->card;
+ 	down_write(&chip->shutdown_rwsem);
++	was_shutdown = chip->shutdown;
+ 	chip->shutdown = 1;
+ 	up_write(&chip->shutdown_rwsem);
  
- 	return 0;
- }
+ 	mutex_lock(&register_mutex);
+-	chip->num_interfaces--;
+-	if (chip->num_interfaces <= 0) {
++	if (!was_shutdown) {
+ 		struct snd_usb_endpoint *ep;
+ 
+ 		snd_card_disconnect(card);
+@@ -617,6 +618,10 @@ static void snd_usb_audio_disconnect(str
+ 		list_for_each(p, &chip->mixer_list) {
+ 			snd_usb_mixer_disconnect(p);
+ 		}
++	}
++
++	chip->num_interfaces--;
++	if (chip->num_interfaces <= 0) {
+ 		usb_chip[chip->index] = NULL;
+ 		mutex_unlock(&register_mutex);
+ 		snd_card_free_when_closed(card);
 
 
