@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933810AbaKLEc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:32:29 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54391 "EHLO mail.eperm.de"
+	id S933841AbaKLEce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:32:34 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54401 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933654AbaKLEcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 23:32:23 -0500
+	id S933662AbaKLEc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 23:32:28 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -16,9 +16,9 @@ Cc: Marek Vasut <marex@denx.de>, "David S. Miller" <davem@davemloft.net>,
         "Joy M. Latten" <jmlatten@linux.vnet.ibm.com>,
         Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org
-Subject: [PATCH v3 08/13] crypto: Documentation - cipher data structures
-Date: Wed, 12 Nov 2014 05:27:49 +0100
-Message-ID: <3358305.5Vc9d54oXu@tachyon.chronox.de>
+Subject: [PATCH v3 07/13] crypto: Documentation - SHASH API documentation
+Date: Wed, 12 Nov 2014 05:27:16 +0100
+Message-ID: <1532314.JEsKM3iTVa@tachyon.chronox.de>
 User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
 In-Reply-To: <1800066.efQ8hkST4U@tachyon.chronox.de>
 References: <1800066.efQ8hkST4U@tachyon.chronox.de>
@@ -29,315 +29,247 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The data structure of struct crypto_alg together with various other
-data structures needed by cipher developers is documented wit all
-parameters that can be set by a developer of a transformation. All
-parameters that are internal to the crypto API are marked as such.
+The API function calls exported by the kernel crypto API for SHASHes
+to be used by consumers are documented.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- include/linux/crypto.h | 246 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 243 insertions(+), 3 deletions(-)
+ include/crypto/hash.h | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 164 insertions(+)
 
-diff --git a/include/linux/crypto.h b/include/linux/crypto.h
-index d45e949..752360e 100644
---- a/include/linux/crypto.h
-+++ b/include/linux/crypto.h
-@@ -127,6 +127,13 @@ struct skcipher_givcrypt_request;
- 
- typedef void (*crypto_completion_t)(struct crypto_async_request *req, int err);
+diff --git a/include/crypto/hash.h b/include/crypto/hash.h
+index b2c193a..3d66e8b 100644
+--- a/include/crypto/hash.h
++++ b/include/crypto/hash.h
+@@ -583,6 +583,33 @@ static inline void ahash_request_set_crypt(struct ahash_request *req,
+ 	req->result = result;
+ }
  
 +/**
-+ * DOC: Block Cipher Context Data Structures
++ * DOC: Synchronous Message Digest API
 + *
-+ * These data structures define the operating context for each block cipher
-+ * type.
-+ */
-+
- struct crypto_async_request {
- 	struct list_head list;
- 	crypto_completion_t complete;
-@@ -194,9 +201,63 @@ struct hash_desc {
- 	u32 flags;
- };
- 
--/*
-- * Algorithms: modular crypto algorithm implementations, managed
-- * via crypto_register_alg() and crypto_unregister_alg().
-+/**
-+ * DOC: Block Cipher Algorithm Definitions
++ * The synchronous message digest API is used with the ciphers of type
++ * CRYPTO_ALG_TYPE_SHASH (listed as type "shash" in /proc/crypto)
 + *
-+ * These data structures define modular crypto algorithm implementations,
-+ * managed via crypto_register_alg() and crypto_unregister_alg().
++ * The message digest API is able to maintain state information for the
++ * caller.
++ *
++ * The synchronous message digest API can store user-related context in in its
++ * shash_desc request data structure.
 + */
 +
 +/**
-+ * struct ablkcipher_alg - asynchronous block cipher definition
-+ * @min_keysize: Minimum key size supported by the transformation. This is the
-+ *		 smallest key length supported by this transformation algorithm.
-+ *		 This must be set to one of the pre-defined values as this is
-+ *		 not hardware specific. Possible values for this field can be
-+ *		 found via git grep "_MIN_KEY_SIZE" include/crypto/
-+ * @max_keysize: Maximum key size supported by the transformation. This is the
-+ *		 largest key length supported by this transformation algorithm.
-+ *		 This must be set to one of the pre-defined values as this is
-+ *		 not hardware specific. Possible values for this field can be
-+ *		 found via git grep "_MAX_KEY_SIZE" include/crypto/
-+ * @setkey: Set key for the transformation. This function is used to either
-+ *	    program a supplied key into the hardware or store the key in the
-+ *	    transformation context for programming it later. Note that this
-+ *	    function does modify the transformation context. This function can
-+ *	    be called multiple times during the existence of the transformation
-+ *	    object, so one must make sure the key is properly reprogrammed into
-+ *	    the hardware. This function is also responsible for checking the key
-+ *	    length for validity. In case a software fallback was put in place in
-+ *	    the @cra_init call, this function might need to use the fallback if
-+ *	    the algorithm doesn't support all of the key sizes.
-+ * @encrypt: Encrypt a scatterlist of blocks. This function is used to encrypt
-+ *	     the supplied scatterlist containing the blocks of data. The crypto
-+ *	     API consumer is responsible for aligning the entries of the
-+ *	     scatterlist properly and making sure the chunks are correctly
-+ *	     sized. In case a software fallback was put in place in the
-+ *	     @cra_init call, this function might need to use the fallback if
-+ *	     the algorithm doesn't support all of the key sizes. In case the
-+ *	     key was stored in transformation context, the key might need to be
-+ *	     re-programmed into the hardware in this function. This function
-+ *	     shall not modify the transformation context, as this function may
-+ *	     be called in parallel with the same transformation object.
-+ * @decrypt: Decrypt a single block. This is a reverse counterpart to @encrypt
-+ *	     and the conditions are exactly the same.
-+ * @givencrypt: Update the IV for encryption. With this function, a cipher
-+ *	        implementation may provide the function on how to update the IV
-+ *	        for encryption.
-+ * @givdecrypt: Update the IV for decryption. This is the reverse of
-+ *	        @givencrypt .
-+ * @geniv: The transformation implementation may use an "IV generator" provided
-+ *	   by the kernel crypto API. Several use cases have a predefined
-+ *	   approach how IVs are to be updated. For such use cases, the kernel
-+ *	   crypto API provides ready-to-use implementations that can be
-+ *	   referenced with this variable.
-+ * @ivsize: IV size applicable for transformation. The consumer must provide an
-+ *	    IV of exactly that size to perform the encrypt or decrypt operation.
++ * crypto_alloc_shash() - allocate message digest handle
++ * @alg_name: is the cra_name / name or cra_driver_name / driver name of the
++ *	      message digest cipher
++ * @type: specifies the type of the cipher
++ * @mask: specifies the mask for the cipher
 + *
-+ * All fields except @givencrypt , @givdecrypt , @geniv and @ivsize are
-+ * mandatory and must be filled.
-  */
- struct ablkcipher_alg {
- 	int (*setkey)(struct crypto_ablkcipher *tfm, const u8 *key,
-@@ -213,6 +274,32 @@ struct ablkcipher_alg {
- 	unsigned int ivsize;
- };
++ * Allocate a cipher handle for a message digest. The returned &struct
++ * crypto_shash is the cipher handle that is required for any subsequent
++ * API invocation for that message digest.
++ *
++ * Return: allocated cipher handle in case of success; IS_ERR() is true in case
++ *	   of an error, PTR_ERR() returns the error code.
++ */
+ struct crypto_shash *crypto_alloc_shash(const char *alg_name, u32 type,
+ 					u32 mask);
+ 
+@@ -591,6 +618,10 @@ static inline struct crypto_tfm *crypto_shash_tfm(struct crypto_shash *tfm)
+ 	return &tfm->base;
+ }
  
 +/**
-+ * struct aead_alg - AEAD cipher definition
-+ * @maxauthsize: Set the maximum authentication tag size supported by the
-+ *		 transformation. A transformation may support smaller tag sizes.
-+ *		 As the authentication tag is a message digest to ensure the
-+ *		 integrity of the encrypted data, a consumer typically wants the
-+ *		 largest authentication tag possible as defined by this
-+ *		 variable.
-+ * @setauthsize: Set authentication size for the AEAD transformation. This
-+ *		 function is used to specify the consumer requested size of the
-+ * 		 authentication tag to be either generated by the transformation
-+ *		 during encryption or the size of the authentication tag to be
-+ *		 supplied during the decryption operation. This function is also
-+ *		 responsible for checking the authentication tag size for
-+ *		 validity.
-+ * @setkey: see struct ablkcipher_alg
-+ * @encrypt: see struct ablkcipher_alg
-+ * @decrypt: see struct ablkcipher_alg
-+ * @givencrypt: see struct ablkcipher_alg
-+ * @givdecrypt: see struct ablkcipher_alg
-+ * @geniv: see struct ablkcipher_alg
-+ * @ivsize: see struct ablkcipher_alg
-+ *
-+ * All fields except @givencrypt , @givdecrypt , @geniv and @ivsize are
-+ * mandatory and must be filled.
++ * crypto_free_shash() - zeroize and free the message digest handle
++ * @tfm: cipher handle to be freed
 + */
- struct aead_alg {
- 	int (*setkey)(struct crypto_aead *tfm, const u8 *key,
- 	              unsigned int keylen);
-@@ -228,6 +315,18 @@ struct aead_alg {
- 	unsigned int maxauthsize;
- };
+ static inline void crypto_free_shash(struct crypto_shash *tfm)
+ {
+ 	crypto_destroy_tfm(tfm, crypto_shash_tfm(tfm));
+@@ -602,6 +633,15 @@ static inline unsigned int crypto_shash_alignmask(
+ 	return crypto_tfm_alg_alignmask(crypto_shash_tfm(tfm));
+ }
  
 +/**
-+ * struct blkcipher_alg - synchronous block cipher definition
-+ * @min_keysize: see struct ablkcipher_alg
-+ * @max_keysize: see struct ablkcipher_alg
-+ * @setkey: see struct ablkcipher_alg
-+ * @encrypt: see struct ablkcipher_alg
-+ * @decrypt: see struct ablkcipher_alg
-+ * @geniv: see struct ablkcipher_alg
-+ * @ivsize: see struct ablkcipher_alg
++ * crypto_shash_blocksize() - obtain block size for cipher
++ * @tfm: cipher handle
 + *
-+ * All fields except @geniv and @ivsize are mandatory and must be filled.
++ * The block size for the message digest cipher referenced with the cipher
++ * handle is returned.
++ *
++ * Return: block size of cipher
 + */
- struct blkcipher_alg {
- 	int (*setkey)(struct crypto_tfm *tfm, const u8 *key,
- 	              unsigned int keylen);
-@@ -245,6 +344,53 @@ struct blkcipher_alg {
- 	unsigned int ivsize;
- };
+ static inline unsigned int crypto_shash_blocksize(struct crypto_shash *tfm)
+ {
+ 	return crypto_tfm_alg_blocksize(crypto_shash_tfm(tfm));
+@@ -617,6 +657,15 @@ static inline struct shash_alg *crypto_shash_alg(struct crypto_shash *tfm)
+ 	return __crypto_shash_alg(crypto_shash_tfm(tfm)->__crt_alg);
+ }
  
 +/**
-+ * struct cipher_alg - single-block symmetric ciphers definition
-+ * @cia_min_keysize: Minimum key size supported by the transformation. This is
-+ *		     the smallest key length supported by this transformation
-+ *		     algorithm. This must be set to one of the pre-defined
-+ *		     values as this is not hardware specific. Possible values
-+ *		     for this field can be found via git grep "_MIN_KEY_SIZE"
-+ *		     include/crypto/
-+ * @cia_max_keysize: Maximum key size supported by the transformation. This is
-+ *		    the largest key length supported by this transformation
-+ *		    algorithm. This must be set to one of the pre-defined values
-+ *		    as this is not hardware specific. Possible values for this
-+ *		    field can be found via git grep "_MAX_KEY_SIZE"
-+ *		    include/crypto/
-+ * @cia_setkey: Set key for the transformation. This function is used to either
-+ *	        program a supplied key into the hardware or store the key in the
-+ *	        transformation context for programming it later. Note that this
-+ *	        function does modify the transformation context. This function
-+ *	        can be called multiple times during the existence of the
-+ *	        transformation object, so one must make sure the key is properly
-+ *	        reprogrammed into the hardware. This function is also
-+ *	        responsible for checking the key length for validity.
-+ * @cia_encrypt: Encrypt a single block. This function is used to encrypt a
-+ *		 single block of data, which must be @cra_blocksize big. This
-+ *		 always operates on a full @cra_blocksize and it is not possible
-+ *		 to encrypt a block of smaller size. The supplied buffers must
-+ *		 therefore also be at least of @cra_blocksize size. Both the
-+ *		 input and output buffers are always aligned to @cra_alignmask.
-+ *		 In case either of the input or output buffer supplied by user
-+ *		 of the crypto API is not aligned to @cra_alignmask, the crypto
-+ *		 API will re-align the buffers. The re-alignment means that a
-+ *		 new buffer will be allocated, the data will be copied into the
-+ *		 new buffer, then the processing will happen on the new buffer,
-+ *		 then the data will be copied back into the original buffer and
-+ *		 finally the new buffer will be freed. In case a software
-+ *		 fallback was put in place in the @cra_init call, this function
-+ *		 might need to use the fallback if the algorithm doesn't support
-+ *		 all of the key sizes. In case the key was stored in
-+ *		 transformation context, the key might need to be re-programmed
-+ *		 into the hardware in this function. This function shall not
-+ *		 modify the transformation context, as this function may be
-+ *		 called in parallel with the same transformation object.
-+ * @cia_decrypt: Decrypt a single block. This is a reverse counterpart to
-+ *		 @cia_encrypt, and the conditions are exactly the same.
++ * crypto_shash_digestsize() - obtain message digest size
++ * @tfm: cipher handle
 + *
-+ * All fields are mandatory and must be filled.
++ * The size for the message digest created by the message digest cipher
++ * referenced with the cipher handle is returned.
++ *
++ * Return: digest size of cipher
 + */
- struct cipher_alg {
- 	unsigned int cia_min_keysize;
- 	unsigned int cia_max_keysize;
-@@ -261,6 +407,25 @@ struct compress_alg {
- 			      unsigned int slen, u8 *dst, unsigned int *dlen);
- };
+ static inline unsigned int crypto_shash_digestsize(struct crypto_shash *tfm)
+ {
+ 	return crypto_shash_alg(tfm)->digestsize;
+@@ -642,6 +691,21 @@ static inline void crypto_shash_clear_flags(struct crypto_shash *tfm, u32 flags)
+ 	crypto_tfm_clear_flags(crypto_shash_tfm(tfm), flags);
+ }
  
 +/**
-+ * struct rng_alg - random number generator definition
-+ * @rng_make_random: The function defined by this variable obtains a random
-+ *		     number. The random number generator transform must generate
-+ *		     the random number out of the context provided with this
-+ *		     call.
-+ * @rng_reset: Reset of the random number generator by clearing the entire state.
-+ *	       With the invocation of this function call, the random number
-+ *             generator shall completely reinitialize its state. If the random
-+ *	       number generator requires a seed for setting up a new state,
-+ *	       the seed must be provided by the consumer while invoking this
-+ *	       function. The required size of the seed is defined with
-+ *	       @seedsize .
-+ * @seedsize: The seed size required for a random number generator
-+ *	      initialization defined with this variable. Some random number
-+ *	      generators like the SP800-90A DRBG does not require a seed as the
-+ *	      seeding is implemented internally without the need of support by
-+ *	      the consumer. In this case, the seed size is set to zero.
++ * crypto_shash_descsize() - obtain the operational state size
++ * @tfm: cipher handle
++ *
++ * The size of the operational state the cipher needs during operation is
++ * returned for the hash referenced with the cipher handle. This size is
++ * required to calculate the memory requirements to allow the caller allocating
++ * sufficient memory for operational state.
++ *
++ * The operational state is defined with struct shash_desc where the size of
++ * that data structure is to be calculated as
++ * sizeof(struct shash_desc) + crypto_shash_descsize(alg)
++ *
++ * Return: size of the operational state
 + */
- struct rng_alg {
- 	int (*rng_make_random)(struct crypto_rng *tfm, u8 *rdata,
- 			       unsigned int dlen);
-@@ -277,6 +442,81 @@ struct rng_alg {
- #define cra_compress	cra_u.compress
- #define cra_rng		cra_u.rng
+ static inline unsigned int crypto_shash_descsize(struct crypto_shash *tfm)
+ {
+ 	return tfm->descsize;
+@@ -652,29 +716,129 @@ static inline void *shash_desc_ctx(struct shash_desc *desc)
+ 	return desc->__ctx;
+ }
  
 +/**
-+ * struct crypto_alg - definition of a cryptograpic cipher algorithm
-+ * @cra_flags: Flags describing this transformation. See include/linux/crypto.h
-+ *	       CRYPTO_ALG_* flags for the flags which go in here. Those are
-+ *	       used for fine-tuning the description of the transformation
-+ *	       algorithm.
-+ * @cra_blocksize: Minimum block size of this transformation. The size in bytes
-+ *		   of the smallest possible unit which can be transformed with
-+ *		   this algorithm. The users must respect this value.
-+ *		   In case of HASH transformation, it is possible for a smaller
-+ *		   block than @cra_blocksize to be passed to the crypto API for
-+ *		   transformation, in case of any other transformation type, an
-+ * 		   error will be returned upon any attempt to transform smaller
-+ *		   than @cra_blocksize chunks.
-+ * @cra_ctxsize: Size of the operational context of the transformation. This
-+ *		 value informs the kernel crypto API about the memory size
-+ *		 needed to be allocated for the transformation context.
-+ * @cra_alignmask: Alignment mask for the input and output data buffer. The data
-+ *		   buffer containing the input data for the algorithm must be
-+ *		   aligned to this alignment mask. The data buffer for the
-+ *		   output data must be aligned to this alignment mask. Note that
-+ *		   the Crypto API will do the re-alignment in software, but
-+ *		   only under special conditions and there is a performance hit.
-+ *		   The re-alignment happens at these occasions for different
-+ *		   @cra_u types: cipher -- For both input data and output data
-+ *		   buffer; ahash -- For output hash destination buf; shash --
-+ *		   For output hash destination buf.
-+ *		   This is needed on hardware which is flawed by design and
-+ *		   cannot pick data from arbitrary addresses.
-+ * @cra_priority: Priority of this transformation implementation. In case
-+ *		  multiple transformations with same @cra_name are available to
-+ *		  the Crypto API, the kernel will use the one with highest
-+ *		  @cra_priority.
-+ * @cra_name: Generic name (usable by multiple implementations) of the
-+ *	      transformation algorithm. This is the name of the transformation
-+ *	      itself. This field is used by the kernel when looking up the
-+ *	      providers of particular transformation.
-+ * @cra_driver_name: Unique name of the transformation provider. This is the
-+ *		     name of the provider of the transformation. This can be any
-+ *		     arbitrary value, but in the usual case, this contains the
-+ *		     name of the chip or provider and the name of the
-+ *		     transformation algorithm.
-+ * @cra_type: Type of the cryptographic transformation. This is a pointer to
-+ *	      struct crypto_type, which implements callbacks common for all
-+ *	      trasnformation types. There are multiple options:
-+ *	      &crypto_blkcipher_type, &crypto_ablkcipher_type,
-+ *	      &crypto_ahash_type, &crypto_aead_type, &crypto_rng_type.
-+ *	      This field might be empty. In that case, there are no common
-+ *	      callbacks. This is the case for: cipher, compress, shash.
-+ * @cra_u: Callbacks implementing the transformation. This is a union of
-+ *	   multiple structures. Depending on the type of transformation selected
-+ *	   by @cra_type and @cra_flags above, the associated structure must be
-+ *	   filled with callbacks. This field might be empty. This is the case
-+ *	   for ahash, shash.
-+ * @cra_init: Initialize the cryptographic transformation object. This function
-+ *	      is used to initialize the cryptographic transformation object.
-+ *	      This function is called only once at the instantiation time, right
-+ *	      after the transformation context was allocated. In case the
-+ *	      cryptographic hardware has some special requirements which need to
-+ *	      be handled by software, this function shall check for the precise
-+ *	      requirement of the transformation and put any software fallbacks
-+ *	      in place.
-+ * @cra_exit: Deinitialize the cryptographic transformation object. This is a
-+ *	      counterpart to @cra_init, used to remove various changes set in
-+ *	      @cra_init.
-+ * @cra_module: Owner of this transformation implementation. Set to THIS_MODULE
-+ * @cra_list: internally used
-+ * @cra_users: internally used
-+ * @cra_refcnt: internally used
-+ * @cra_destroy: internally used
++ * crypto_shash_setkey() - set key for message digest
++ * @tfm: cipher handle
++ * @key: buffer holding the key
++ * @keylen: length of the key in bytes
 + *
-+ * The struct crypto_alg describes a generic Crypto API algorithm and is common
-+ * for all of the transformations. Any variable not documented here shall not
-+ * be used by a cipher implementation as it is internal to the Crypto API.
++ * The caller provided key is set for the keyed message digest cipher. The
++ * cipher handle must point to a keyed message digest cipher in order for this
++ * function to succeed.
++ *
++ * Return: 0 if the setting of the key was successful; < 0 if an error occurred
 + */
- struct crypto_alg {
- 	struct list_head cra_list;
- 	struct list_head cra_users;
+ int crypto_shash_setkey(struct crypto_shash *tfm, const u8 *key,
+ 			unsigned int keylen);
++
++/**
++ * crypto_shash_digest() - calculate message digest for buffer
++ * @desc: see crypto_shash_final()
++ * @data: see crypto_shash_update()
++ * @len: see crypto_shash_update()
++ * @out: see crypto_shash_final()
++ *
++ * This function is a "short-hand" for the function calls of crypto_shash_init,
++ * crypto_shash_update and crypto_shash_final. The parameters have the same
++ * meaning as discussed for those separate three functions.
++ *
++ * Return: 0 if the message digest creation was successful; < 0 if an error
++ *	   occurred
++ */
+ int crypto_shash_digest(struct shash_desc *desc, const u8 *data,
+ 			unsigned int len, u8 *out);
+ 
++/**
++ * crypto_shash_export() - extract operational state for message digest
++ * @desc: reference to the operational state handle whose state is exported
++ * @out: output buffer of sufficient size that can hold the hash state
++ *
++ * This function exports the hash state of the operational state handle into the
++ * caller-allocated output buffer out which must have sufficient size (e.g. by
++ * calling crypto_shash_descsize).
++ *
++ * Return: 0 if the export creation was successful; < 0 if an error occurred
++ */
+ static inline int crypto_shash_export(struct shash_desc *desc, void *out)
+ {
+ 	return crypto_shash_alg(desc->tfm)->export(desc, out);
+ }
+ 
++/**
++ * crypto_shash_import() - import operational state
++ * @desc: reference to the operational state handle the state imported into
++ * @in: buffer holding the state
++ *
++ * This function imports the hash state into the operational state handle from
++ * the input buffer. That buffer should have been generated with the
++ * crypto_ahash_export function.
++ *
++ * Return: 0 if the import was successful; < 0 if an error occurred
++ */
+ static inline int crypto_shash_import(struct shash_desc *desc, const void *in)
+ {
+ 	return crypto_shash_alg(desc->tfm)->import(desc, in);
+ }
+ 
++/**
++ * crypto_shash_init() - (re)initialize message digest
++ * @desc: operational state handle that is already filled
++ *
++ * The call (re-)initializes the message digest referenced by the
++ * operational state handle. Any potentially existing state created by
++ * previous operations is discarded.
++ *
++ * Return: 0 if the message digest initialization was successful; < 0 if an
++ *	   error occurred
++ */
+ static inline int crypto_shash_init(struct shash_desc *desc)
+ {
+ 	return crypto_shash_alg(desc->tfm)->init(desc);
+ }
+ 
++/**
++ * crypto_shash_update() - add data to message digest for processing
++ * @desc: operational state handle that is already initialized
++ * @data: input data to be added to the message digest
++ * @len: length of the input data
++ *
++ * Updates the message digest state of the operational state handle.
++ *
++ * Return: 0 if the message digest update was successful; < 0 if an error
++ *	   occurred
++ */
+ int crypto_shash_update(struct shash_desc *desc, const u8 *data,
+ 			unsigned int len);
++
++/**
++ * crypto_shash_final() - calculate message digest
++ * @desc: operational state handle that is already filled with data
++ * @out: output buffer filled with the message digest
++ *
++ * Finalize the message digest operation and create the message digest
++ * based on all data added to the cipher handle. The message digest is placed
++ * into the output buffer. The caller must ensure that the output buffer is
++ * large enough by using crypto_shash_digestsize.
++ *
++ * Return: 0 if the message digest creation was successful; < 0 if an error
++ *	   occurred
++ */
+ int crypto_shash_final(struct shash_desc *desc, u8 *out);
++
++/**
++ * crypto_shash_finup() - calculate message digest of buffer
++ * @desc: see crypto_shash_final()
++ * @data: see crypto_shash_update()
++ * @len: see crypto_shash_update()
++ * @out: see crypto_shash_final()
++ *
++ * This function is a "short-hand" for the function calls of
++ * crypto_shash_update and crypto_shash_final. The parameters have the same
++ * meaning as discussed for those separate functions.
++ *
++ * Return: 0 if the message digest creation was successful; < 0 if an error
++ *	   occurred
++ */
+ int crypto_shash_finup(struct shash_desc *desc, const u8 *data,
+ 		       unsigned int len, u8 *out);
+ 
 -- 
 2.1.0
 
