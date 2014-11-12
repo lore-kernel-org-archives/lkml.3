@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631AbaKLBWs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58609 "EHLO
+	id S1753605AbaKLBWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58606 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607AbaKLBWq (ORCPT
+	with ESMTP id S1753492AbaKLBWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:46 -0500
+	Tue, 11 Nov 2014 20:22:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <idryomov@redhat.com>, Micha Krause <micha@krausam.de>,
-        Sage Weil <sage@redhat.com>
-Subject: [PATCH 3.17 066/319] rbd: rbd workqueues need a resque worker
-Date: Wed, 12 Nov 2014 10:13:24 +0900
-Message-Id: <20141112011003.554135655@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.17 065/319] fix misuses of f_count() in ppp and netlink
+Date: Wed, 12 Nov 2014 10:13:23 +0900
+Message-Id: <20141112011003.390171681@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,33 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <idryomov@redhat.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 792c3a914910bd34302c5345578f85cfcb5e2c01 upstream.
+commit 24dff96a37a2ca319e75a74d3929b2de22447ca6 upstream.
 
-Need to use WQ_MEM_RECLAIM for our workqueues to prevent I/O lockups
-under memory pressure - we sit on the memory reclaim path.
+we used to check for "nobody else could start doing anything with
+that opened file" by checking that refcount was 2 or less - one
+for descriptor table and one we'd acquired in fget() on the way to
+wherever we are.  That was race-prone (somebody else might have
+had a reference to descriptor table and do fget() just as we'd
+been checking) and it had become flat-out incorrect back when
+we switched to fget_light() on those codepaths - unlike fget(),
+it doesn't grab an extra reference unless the descriptor table
+is shared.  The same change allowed a race-free check, though -
+we are safe exactly when refcount is less than 2.
 
-Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
-Tested-by: Micha Krause <micha@krausam.de>
-Reviewed-by: Sage Weil <sage@redhat.com>
+It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
+to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
+netlink hadn't grown that check until 3.9 and ppp used to live
+in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
+well before that, though, and the same fix used to apply in old
+location of file.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ppp/ppp_generic.c |    2 +-
+ net/netlink/af_netlink.c      |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -5087,7 +5087,8 @@ static int rbd_dev_device_setup(struct r
- 	set_capacity(rbd_dev->disk, rbd_dev->mapping.size / SECTOR_SIZE);
- 	set_disk_ro(rbd_dev->disk, rbd_dev->mapping.read_only);
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -594,7 +594,7 @@ static long ppp_ioctl(struct file *file,
+ 			if (file == ppp->owner)
+ 				ppp_shutdown_interface(ppp);
+ 		}
+-		if (atomic_long_read(&file->f_count) <= 2) {
++		if (atomic_long_read(&file->f_count) < 2) {
+ 			ppp_release(NULL, file);
+ 			err = 0;
+ 		} else
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -723,7 +723,7 @@ static int netlink_mmap_sendmsg(struct s
+ 	 * after validation, the socket and the ring may only be used by a
+ 	 * single process, otherwise we fall back to copying.
+ 	 */
+-	if (atomic_long_read(&sk->sk_socket->file->f_count) > 2 ||
++	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
+ 	    atomic_read(&nlk->mapped) > 1)
+ 		excl = false;
  
--	rbd_dev->rq_wq = alloc_workqueue("%s", 0, 0, rbd_dev->disk->disk_name);
-+	rbd_dev->rq_wq = alloc_workqueue("%s", WQ_MEM_RECLAIM, 0,
-+					 rbd_dev->disk->disk_name);
- 	if (!rbd_dev->rq_wq) {
- 		ret = -ENOMEM;
- 		goto err_out_mapping;
 
 
