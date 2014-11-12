@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaKLBUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58402 "EHLO
+	id S1752952AbaKLBUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58388 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980AbaKLBUa (ORCPT
+	with ESMTP id S1752624AbaKLBUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:30 -0500
+	Tue, 11 Nov 2014 20:20:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 023/319] drivers/net: Disable UFO through virtio
-Date: Wed, 12 Nov 2014 10:12:41 +0900
-Message-Id: <20141112010956.540146480@linuxfoundation.org>
+Subject: [PATCH 3.17 020/319] net/mlx4_en: Dont attempt to TX offload the outer UDP checksum for VXLAN
+Date: Wed, 12 Nov 2014 10:12:38 +0900
+Message-Id: <20141112010956.063479743@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,217 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-[ Upstream commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 ]
+[ Upstream commit a4f2dacbf2a5045e34b98a35d9a3857800f25a7b ]
 
-IPv6 does not allow fragmentation by routers, so there is no
-fragmentation ID in the fixed header.  UFO for IPv6 requires the ID to
-be passed separately, but there is no provision for this in the virtio
-net protocol.
+For VXLAN/NVGRE encapsulation, the current HW doesn't support offloading
+both the outer UDP TX checksum and the inner TCP/UDP TX checksum.
 
-Until recently our software implementation of UFO/IPv6 generated a new
-ID, but this was a bug.  Now we will use ID=0 for any UFO/IPv6 packet
-passed through a tap, which is even worse.
+The driver doesn't advertize SKB_GSO_UDP_TUNNEL_CSUM, however we are wrongly
+telling the HW to offload the outer UDP checksum for encapsulated packets,
+fix that.
 
-Unfortunately there is no distinction between UFO/IPv4 and v6
-features, so disable UFO on taps and virtio_net completely until we
-have a proper solution.
-
-We cannot depend on VM managers respecting the tap feature flags, so
-keep accepting UFO packets but log a warning the first time we do
-this.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: 916e4cf46d02 ("ipv6: reuse ip6_frag_id from ip6_ufo_append_data")
+Fixes: 837052d0ccc5 ('net/mlx4_en: Add netdev support for TCP/IP
+		     offloads of vxlan tunneling')
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvtap.c    |   13 +++++--------
- drivers/net/tun.c        |   19 +++++++++++--------
- drivers/net/virtio_net.c |   24 ++++++++++++++----------
- 3 files changed, 30 insertions(+), 26 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -65,7 +65,7 @@ static struct cdev macvtap_cdev;
- static const struct proto_ops macvtap_socket_ops;
- 
- #define TUN_OFFLOADS (NETIF_F_HW_CSUM | NETIF_F_TSO_ECN | NETIF_F_TSO | \
--		      NETIF_F_TSO6 | NETIF_F_UFO)
-+		      NETIF_F_TSO6)
- #define RX_OFFLOADS (NETIF_F_GRO | NETIF_F_LRO)
- #define TAP_FEATURES (NETIF_F_GSO | NETIF_F_SG)
- 
-@@ -569,6 +569,8 @@ static int macvtap_skb_from_vnet_hdr(str
- 			gso_type = SKB_GSO_TCPV6;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
-+			pr_warn_once("macvtap: %s: using disabled UFO feature; please fix this program\n",
-+				     current->comm);
- 			gso_type = SKB_GSO_UDP;
- 			break;
- 		default:
-@@ -614,8 +616,6 @@ static void macvtap_skb_to_vnet_hdr(cons
- 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 		else if (sinfo->gso_type & SKB_GSO_TCPV6)
- 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
--		else if (sinfo->gso_type & SKB_GSO_UDP)
--			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 		else
- 			BUG();
- 		if (sinfo->gso_type & SKB_GSO_TCP_ECN)
-@@ -950,9 +950,6 @@ static int set_offload(struct macvtap_qu
- 			if (arg & TUN_F_TSO6)
- 				feature_mask |= NETIF_F_TSO6;
- 		}
--
--		if (arg & TUN_F_UFO)
--			feature_mask |= NETIF_F_UFO;
+--- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
+@@ -808,8 +808,11 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff
+ 	tx_desc->ctrl.fence_size = (real_size / 16) & 0x3f;
+ 	tx_desc->ctrl.srcrb_flags = priv->ctrl_flags;
+ 	if (likely(skb->ip_summed == CHECKSUM_PARTIAL)) {
+-		tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM |
+-							 MLX4_WQE_CTRL_TCP_UDP_CSUM);
++		if (!skb->encapsulation)
++			tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM |
++								 MLX4_WQE_CTRL_TCP_UDP_CSUM);
++		else
++			tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM);
+ 		ring->tx_csum++;
  	}
  
- 	/* tun/tap driver inverts the usage for TSO offloads, where
-@@ -963,7 +960,7 @@ static int set_offload(struct macvtap_qu
- 	 * When user space turns off TSO, we turn off GSO/LRO so that
- 	 * user-space will not receive TSO frames.
- 	 */
--	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_UFO))
-+	if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6))
- 		features |= RX_OFFLOADS;
- 	else
- 		features &= ~RX_OFFLOADS;
-@@ -1064,7 +1061,7 @@ static long macvtap_ioctl(struct file *f
- 	case TUNSETOFFLOAD:
- 		/* let the user check for future flags */
- 		if (arg & ~(TUN_F_CSUM | TUN_F_TSO4 | TUN_F_TSO6 |
--			    TUN_F_TSO_ECN | TUN_F_UFO))
-+			    TUN_F_TSO_ECN))
- 			return -EINVAL;
- 
- 		rtnl_lock();
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -174,7 +174,7 @@ struct tun_struct {
- 	struct net_device	*dev;
- 	netdev_features_t	set_features;
- #define TUN_USER_FEATURES (NETIF_F_HW_CSUM|NETIF_F_TSO_ECN|NETIF_F_TSO| \
--			  NETIF_F_TSO6|NETIF_F_UFO)
-+			  NETIF_F_TSO6)
- 
- 	int			vnet_hdr_sz;
- 	int			sndbuf;
-@@ -1149,8 +1149,18 @@ static ssize_t tun_get_user(struct tun_s
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
-+		{
-+			static bool warned;
-+
-+			if (!warned) {
-+				warned = true;
-+				netdev_warn(tun->dev,
-+					    "%s: using disabled UFO feature; please fix this program\n",
-+					    current->comm);
-+			}
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
- 			break;
-+		}
- 		default:
- 			tun->dev->stats.rx_frame_errors++;
- 			kfree_skb(skb);
-@@ -1251,8 +1261,6 @@ static ssize_t tun_put_user(struct tun_s
- 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 			else if (sinfo->gso_type & SKB_GSO_TCPV6)
- 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
--			else if (sinfo->gso_type & SKB_GSO_UDP)
--				gso.gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 			else {
- 				pr_err("unexpected GSO type: "
- 				       "0x%x, gso_size %d, hdr_len %d\n",
-@@ -1762,11 +1770,6 @@ static int set_offload(struct tun_struct
- 				features |= NETIF_F_TSO6;
- 			arg &= ~(TUN_F_TSO4|TUN_F_TSO6);
- 		}
--
--		if (arg & TUN_F_UFO) {
--			features |= NETIF_F_UFO;
--			arg &= ~TUN_F_UFO;
--		}
- 	}
- 
- 	/* This gives the user a way to test for new features in future by
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -497,8 +497,17 @@ static void receive_buf(struct receive_q
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
-+		{
-+			static bool warned;
-+
-+			if (!warned) {
-+				warned = true;
-+				netdev_warn(dev,
-+					    "host using disabled UFO feature; please fix it\n");
-+			}
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
- 			break;
-+		}
- 		case VIRTIO_NET_HDR_GSO_TCPV6:
- 			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
- 			break;
-@@ -885,8 +894,6 @@ static int xmit_skb(struct send_queue *s
- 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 		else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
- 			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
--		else if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP)
--			hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_UDP;
- 		else
- 			BUG();
- 		if (skb_shinfo(skb)->gso_type & SKB_GSO_TCP_ECN)
-@@ -1710,7 +1717,7 @@ static int virtnet_probe(struct virtio_d
- 			dev->features |= NETIF_F_HW_CSUM|NETIF_F_SG|NETIF_F_FRAGLIST;
- 
- 		if (virtio_has_feature(vdev, VIRTIO_NET_F_GSO)) {
--			dev->hw_features |= NETIF_F_TSO | NETIF_F_UFO
-+			dev->hw_features |= NETIF_F_TSO
- 				| NETIF_F_TSO_ECN | NETIF_F_TSO6;
- 		}
- 		/* Individual feature bits: what can host handle? */
-@@ -1720,11 +1727,9 @@ static int virtnet_probe(struct virtio_d
- 			dev->hw_features |= NETIF_F_TSO6;
- 		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_ECN))
- 			dev->hw_features |= NETIF_F_TSO_ECN;
--		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_UFO))
--			dev->hw_features |= NETIF_F_UFO;
- 
- 		if (gso)
--			dev->features |= dev->hw_features & (NETIF_F_ALL_TSO|NETIF_F_UFO);
-+			dev->features |= dev->hw_features & NETIF_F_ALL_TSO;
- 		/* (!csum && gso) case will be fixed by register_netdev() */
- 	}
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_CSUM))
-@@ -1764,8 +1769,7 @@ static int virtnet_probe(struct virtio_d
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
- 		vi->big_packets = true;
- 
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
-@@ -1965,9 +1969,9 @@ static struct virtio_device_id id_table[
- static unsigned int features[] = {
- 	VIRTIO_NET_F_CSUM, VIRTIO_NET_F_GUEST_CSUM,
- 	VIRTIO_NET_F_GSO, VIRTIO_NET_F_MAC,
--	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_UFO, VIRTIO_NET_F_HOST_TSO6,
-+	VIRTIO_NET_F_HOST_TSO4, VIRTIO_NET_F_HOST_TSO6,
- 	VIRTIO_NET_F_HOST_ECN, VIRTIO_NET_F_GUEST_TSO4, VIRTIO_NET_F_GUEST_TSO6,
--	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
-+	VIRTIO_NET_F_GUEST_ECN,
- 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
- 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
- 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
 
 
