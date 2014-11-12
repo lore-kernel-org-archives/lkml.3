@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaKLBWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58540 "EHLO
+	id S1753444AbaKLBWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58545 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbaKLBWF (ORCPT
+	with ESMTP id S1753424AbaKLBWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:05 -0500
+	Tue, 11 Nov 2014 20:22:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bean Anderson <bean@azulsystems.com>, Oleg Nesterov <oleg@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.17 053/319] x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
-Date: Wed, 12 Nov 2014 10:13:11 +0900
-Message-Id: <20141112011001.406790941@linuxfoundation.org>
+        Anish Bhatt <anish@chelsio.com>, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.17 054/319] x86_64, entry: Filter RFLAGS.NT on entry from userspace
+Date: Wed, 12 Nov 2014 10:13:12 +0900
+Message-Id: <20141112011001.556871658@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,118 +29,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 66463db4fc5605d51c7bb81d009d5bf30a783a2c upstream.
+commit 8c7aa698baca5e8f1ba9edb68081f1e7a1abf455 upstream.
 
-save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
-can fail after that, in this case the next setup_rt_frame() triggered
-by SIGSEGV won't save fpu simply because the old state was lost. This
-obviously mean that fpu won't be restored after sys_rt_sigreturn() from
-SIGSEGV handler.
+The NT flag doesn't do anything in long mode other than causing IRET
+to #GP.  Oddly, CPL3 code can still set NT using popf.
 
-Shift drop_init_fpu() into !failed branch in handle_signal().
+Entry via hardware or software interrupt clears NT automatically, so
+the only relevant entries are fast syscalls.
 
-Test-case (needs -O2):
+If user code causes kernel code to run with NT set, then there's at
+least some (small) chance that it could cause trouble.  For example,
+user code could cause a call to EFI code with NT set, and who knows
+what would happen?  Apparently some games on Wine sometimes do
+this (!), and, if an IRET return happens, they will segfault.  That
+segfault cannot be handled, because signal delivery fails, too.
 
-	#include <stdio.h>
-	#include <signal.h>
-	#include <unistd.h>
-	#include <sys/syscall.h>
-	#include <sys/mman.h>
-	#include <pthread.h>
-	#include <assert.h>
+This patch programs the CPU to clear NT on entry via SYSCALL (both
+32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
+in software on entry via SYSENTER.
 
-	volatile double D;
+To save a few cycles, this borrows a trick from Jan Beulich in Xen:
+it checks whether NT is set before trying to clear it.  As a result,
+it seems to have very little effect on SYSENTER performance on my
+machine.
 
-	void test(double d)
-	{
-		int pid = getpid();
+There's another minor bug fix in here: it looks like the CFI
+annotations were wrong if CONFIG_AUDITSYSCALL=n.
 
-		for (D = d; D == d; ) {
-			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
-			 * fp regs around "C" call */
-			asm ("" : : "a"(200), "D"(pid), "S"(1));
-			asm ("syscall" : : : "ax");
-		}
+Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
 
-		printf("ERR!!\n");
-	}
+I haven't touched anything on 32-bit kernels.
 
-	void sigh(int sig)
-	{
-	}
+The syscall mask change comes from a variant of this patch by Anish
+Bhatt.
 
-	char altstack[4096 * 10] __attribute__((aligned(4096)));
+Note to stable maintainers: there is no known security issue here.
+A misguided program can set NT and cause the kernel to try and fail
+to deliver SIGSEGV, crashing the program.  This patch fixes Far Cry
+on Wine: https://bugs.winehq.org/show_bug.cgi?id=33275
 
-	void *tfunc(void *arg)
-	{
-		for (;;) {
-			mprotect(altstack, sizeof(altstack), PROT_READ);
-			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
-		}
-	}
-
-	int main(void)
-	{
-		stack_t st = {
-			.ss_sp = altstack,
-			.ss_size = sizeof(altstack),
-			.ss_flags = SS_ONSTACK,
-		};
-
-		struct sigaction sa = {
-			.sa_handler = sigh,
-		};
-
-		pthread_t pt;
-
-		sigaction(SIGSEGV, &sa, NULL);
-		sigaltstack(&st, NULL);
-		sa.sa_flags = SA_ONSTACK;
-		sigaction(SIGHUP, &sa, NULL);
-
-		pthread_create(&pt, NULL, tfunc, NULL);
-
-		test(123.456);
-		return 0;
-	}
-
-Reported-by: Bean Anderson <bean@azulsystems.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Anish Bhatt <anish@chelsio.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/signal.c |    5 +++++
- arch/x86/kernel/xsave.c  |    2 --
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/ia32/ia32entry.S    |   18 +++++++++++++++++-
+ arch/x86/kernel/cpu/common.c |    2 +-
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -675,6 +675,11 @@ handle_signal(struct ksignal *ksig, stru
- 		 * handler too.
- 		 */
- 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
-+		/*
-+		 * Ensure the signal handler starts with the new fpu state.
-+		 */
-+		if (used_math())
-+			drop_init_fpu(current);
- 	}
- 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
- }
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -271,8 +271,6 @@ int save_xstate_sig(void __user *buf, vo
- 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
- 		return -1;
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -151,6 +151,16 @@ ENTRY(ia32_sysenter_target)
+ 1:	movl	(%rbp),%ebp
+ 	_ASM_EXTABLE(1b,ia32_badarg)
+ 	ASM_CLAC
++
++	/*
++	 * Sysenter doesn't filter flags, so we need to clear NT
++	 * ourselves.  To save a few cycles, we can check whether
++	 * NT was set instead of doing an unconditional popfq.
++	 */
++	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
++	jnz sysenter_fix_flags
++sysenter_flags_fixed:
++
+ 	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	CFI_REMEMBER_STATE
+@@ -184,6 +194,8 @@ sysexit_from_sys_call:
+ 	TRACE_IRQS_ON
+ 	ENABLE_INTERRUPTS_SYSEXIT32
  
--	drop_init_fpu(tsk);	/* trigger finit */
--
- 	return 0;
++	CFI_RESTORE_STATE
++
+ #ifdef CONFIG_AUDITSYSCALL
+ 	.macro auditsys_entry_common
+ 	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
+@@ -226,7 +238,6 @@ sysexit_from_sys_call:
+ 	.endm
+ 
+ sysenter_auditsys:
+-	CFI_RESTORE_STATE
+ 	auditsys_entry_common
+ 	movl %ebp,%r9d			/* reload 6th syscall arg */
+ 	jmp sysenter_dispatch
+@@ -235,6 +246,11 @@ sysexit_audit:
+ 	auditsys_exit sysexit_from_sys_call
+ #endif
+ 
++sysenter_fix_flags:
++	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
++	popfq_cfi
++	jmp sysenter_flags_fixed
++
+ sysenter_tracesys:
+ #ifdef CONFIG_AUDITSYSCALL
+ 	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1184,7 +1184,7 @@ void syscall_init(void)
+ 	/* Flags to clear on syscall */
+ 	wrmsrl(MSR_SYSCALL_MASK,
+ 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
+-	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
++	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
  }
  
+ /*
 
 
