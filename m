@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaKLBT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:19:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58351 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaKLBT4 (ORCPT
+	id S1756215AbaKLEZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:25:05 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:35963 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754615AbaKLEZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:19:56 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Karl Beldan <karl.beldan@rivierawaves.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 013/319] net: tso: fix unaligned access to crafted TCP header in helper API
-Date: Wed, 12 Nov 2014 10:12:31 +0900
-Message-Id: <20141112010954.866824591@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-References: <20141112010952.553519040@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 23:25:01 -0500
+Date: Tue, 11 Nov 2014 21:24:54 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 10/10] PCI/MSI: Remove useless bus->msi assignment
+Message-ID: <20141112042454.GL28161@google.com>
+References: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
+ <1414396127-30023-11-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414396127-30023-11-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Oct 27, 2014 at 03:48:47PM +0800, Yijing Wang wrote:
+> Thierry introduced MSI chip(now renamed to MSI controller)
+> framework to associate MSI chip and PCI bus in arm.
+> Other platforms still use its own arch MSI functions to
+> support MSI capability. Thierry introduced the bus->msi
+> assignment to make child bus can inherit bus->msi from the parent.
+> But in fact, drivers which used MSI chip always associate
+> MSI chip and PCI bus by add .add_bus() in arm PCI host bridge
+> drivers. Now we have saved MSI chip in pci_sys_data.
+> We can remove this bus->msi assignment safely.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> CC: Thierry Reding <thierry.reding@gmail.com>
+> CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> ---
+>  drivers/pci/msi.c   |    5 -----
+>  drivers/pci/probe.c |    1 -
+>  2 files changed, 0 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index f085f7f..27b6a54 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -37,11 +37,6 @@ struct msi_controller * __weak pcibios_msi_controller(struct pci_bus *bus)
+>  
+>  struct msi_controller *pci_msi_controller(struct pci_bus *bus)
+>  {
+> -	struct msi_controller *ctrl = bus->msi;
+> -
+> -	if (ctrl)
+> -		return ctrl;
+> -
+>  	return pcibios_msi_controller(bus);
+>  }
+>  
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 5ed9930..4b18bf2 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -682,7 +682,6 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  
+>  	child->parent = parent;
+>  	child->ops = parent->ops;
+> -	child->msi = parent->msi;
 
-------------------
+Does this mean that struct pci_bus.msi is now unused?  If not, where is it
+still used?
 
-From: Karl Beldan <karl.beldan@rivierawaves.com>
-
-[ Upstream commit a63ba13eec092b70d4e5522d692eaeb2f9747387 ]
-
-The crafted header start address is from a driver supplied buffer, which
-one can reasonably expect to be aligned on a 4-bytes boundary.
-However ATM the TSO helper API is only used by ethernet drivers and
-the tcp header will then be aligned to a 2-bytes only boundary from the
-header start address.
-
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/tso.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/net/core/tso.c
-+++ b/net/core/tso.c
-@@ -1,6 +1,7 @@
- #include <linux/export.h>
- #include <net/ip.h>
- #include <net/tso.h>
-+#include <asm/unaligned.h>
- 
- /* Calculate expected number of TX descriptors */
- int tso_count_descs(struct sk_buff *skb)
-@@ -23,7 +24,7 @@ void tso_build_hdr(struct sk_buff *skb,
- 	iph->id = htons(tso->ip_id);
- 	iph->tot_len = htons(size + hdr_len - mac_hdr_len);
- 	tcph = (struct tcphdr *)(hdr + skb_transport_offset(skb));
--	tcph->seq = htonl(tso->tcp_seq);
-+	put_unaligned_be32(tso->tcp_seq, &tcph->seq);
- 	tso->ip_id++;
- 
- 	if (!is_last) {
-
-
+>  	child->sysdata = parent->sysdata;
+>  	child->bus_flags = parent->bus_flags;
+>  
+> -- 
+> 1.7.1
+> 
