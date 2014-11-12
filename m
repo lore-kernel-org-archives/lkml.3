@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360AbaKLB0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:26:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58935 "EHLO
+	id S932372AbaKLB1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:27:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaKLB0v (ORCPT
+	with ESMTP id S932349AbaKLB1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:26:51 -0500
+	Tue, 11 Nov 2014 20:27:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Darren Etheridge <detheridge@ti.com>,
-        Johannes Pointner <johannes.pointner@br-automation.com>,
-        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
-        Dave Airlie <airlied@redhat.com>,
-        "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-Subject: [PATCH 3.17 109/319] drm/tilcdc: Fix the error path in tilcdc_load()
-Date: Wed, 12 Nov 2014 10:14:07 +0900
-Message-Id: <20141112011010.590141291@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Theodore Tso <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>
+Subject: [PATCH 3.17 150/319] jbd2: free bh when descriptor block checksum fails
+Date: Wed, 12 Nov 2014 10:14:48 +0900
+Message-Id: <20141112011017.353482151@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -32,165 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit b478e336b3e75505707a11e78ef8b964ef0a03af upstream.
+commit 064d83892e9ba547f7d4eae22cbca066d95210ce upstream.
 
-The current error path calls tilcdc_unload() in case of an error to release
-the resources. However, this is wrong because not all resources have been
-allocated by the time an error occurs in tilcdc_load().
+Free the buffer head if the journal descriptor block fails checksum
+verification.
 
-To fix it, this commit adds proper labels to bail out at the different
-stages in the load function, and release only the resources actually allocated.
+This is the jbd2 port of the e2fsprogs patch "e2fsck: free bh on csum
+verify error in do_one_pass".
 
-Tested-by: Darren Etheridge <detheridge@ti.com>
-Tested-by: Johannes Pointner <johannes.pointner@br-automation.com>
-Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Fixes: 3a49012224ca ("drm/tilcdc: panel: fix leak when unloading the module")
-Signed-off-by: Matwey V. Kornilov <matwey.kornilov@gmail.com>
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/tilcdc/tilcdc_drv.c |   60 ++++++++++++++++++++++++++++++------
- 1 file changed, 50 insertions(+), 10 deletions(-)
+ fs/jbd2/recovery.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -84,6 +84,7 @@ static int modeset_init(struct drm_devic
- 	if ((priv->num_encoders == 0) || (priv->num_connectors == 0)) {
- 		/* oh nos! */
- 		dev_err(dev->dev, "no encoders/connectors found\n");
-+		drm_mode_config_cleanup(dev);
- 		return -ENXIO;
- 	}
- 
-@@ -172,33 +173,37 @@ static int tilcdc_load(struct drm_device
- 	dev->dev_private = priv;
- 
- 	priv->wq = alloc_ordered_workqueue("tilcdc", 0);
-+	if (!priv->wq) {
-+		ret = -ENOMEM;
-+		goto fail_free_priv;
-+	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(dev->dev, "failed to get memory resource\n");
- 		ret = -EINVAL;
--		goto fail;
-+		goto fail_free_wq;
- 	}
- 
- 	priv->mmio = ioremap_nocache(res->start, resource_size(res));
- 	if (!priv->mmio) {
- 		dev_err(dev->dev, "failed to ioremap\n");
- 		ret = -ENOMEM;
--		goto fail;
-+		goto fail_free_wq;
- 	}
- 
- 	priv->clk = clk_get(dev->dev, "fck");
- 	if (IS_ERR(priv->clk)) {
- 		dev_err(dev->dev, "failed to get functional clock\n");
- 		ret = -ENODEV;
--		goto fail;
-+		goto fail_iounmap;
- 	}
- 
- 	priv->disp_clk = clk_get(dev->dev, "dpll_disp_ck");
- 	if (IS_ERR(priv->clk)) {
- 		dev_err(dev->dev, "failed to get display clock\n");
- 		ret = -ENODEV;
--		goto fail;
-+		goto fail_put_clk;
- 	}
- 
- #ifdef CONFIG_CPU_FREQ
-@@ -208,7 +213,7 @@ static int tilcdc_load(struct drm_device
- 			CPUFREQ_TRANSITION_NOTIFIER);
- 	if (ret) {
- 		dev_err(dev->dev, "failed to register cpufreq notifier\n");
--		goto fail;
-+		goto fail_put_disp_clk;
- 	}
- #endif
- 
-@@ -253,13 +258,13 @@ static int tilcdc_load(struct drm_device
- 	ret = modeset_init(dev);
- 	if (ret < 0) {
- 		dev_err(dev->dev, "failed to initialize mode setting\n");
--		goto fail;
-+		goto fail_cpufreq_unregister;
- 	}
- 
- 	ret = drm_vblank_init(dev, 1);
- 	if (ret < 0) {
- 		dev_err(dev->dev, "failed to initialize vblank\n");
--		goto fail;
-+		goto fail_mode_config_cleanup;
- 	}
- 
- 	pm_runtime_get_sync(dev->dev);
-@@ -267,7 +272,7 @@ static int tilcdc_load(struct drm_device
- 	pm_runtime_put_sync(dev->dev);
- 	if (ret < 0) {
- 		dev_err(dev->dev, "failed to install IRQ handler\n");
--		goto fail;
-+		goto fail_vblank_cleanup;
- 	}
- 
- 	platform_set_drvdata(pdev, dev);
-@@ -283,13 +288,48 @@ static int tilcdc_load(struct drm_device
- 	priv->fbdev = drm_fbdev_cma_init(dev, bpp,
- 			dev->mode_config.num_crtc,
- 			dev->mode_config.num_connector);
-+	if (IS_ERR(priv->fbdev)) {
-+		ret = PTR_ERR(priv->fbdev);
-+		goto fail_irq_uninstall;
-+	}
- 
- 	drm_kms_helper_poll_init(dev);
- 
- 	return 0;
- 
--fail:
--	tilcdc_unload(dev);
-+fail_irq_uninstall:
-+	pm_runtime_get_sync(dev->dev);
-+	drm_irq_uninstall(dev);
-+	pm_runtime_put_sync(dev->dev);
-+
-+fail_vblank_cleanup:
-+	drm_vblank_cleanup(dev);
-+
-+fail_mode_config_cleanup:
-+	drm_mode_config_cleanup(dev);
-+
-+fail_cpufreq_unregister:
-+	pm_runtime_disable(dev->dev);
-+#ifdef CONFIG_CPU_FREQ
-+	cpufreq_unregister_notifier(&priv->freq_transition,
-+			CPUFREQ_TRANSITION_NOTIFIER);
-+fail_put_disp_clk:
-+	clk_put(priv->disp_clk);
-+#endif
-+
-+fail_put_clk:
-+	clk_put(priv->clk);
-+
-+fail_iounmap:
-+	iounmap(priv->mmio);
-+
-+fail_free_wq:
-+	flush_workqueue(priv->wq);
-+	destroy_workqueue(priv->wq);
-+
-+fail_free_priv:
-+	dev->dev_private = NULL;
-+	kfree(priv);
- 	return ret;
- }
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -525,6 +525,7 @@ static int do_one_pass(journal_t *journa
+ 			    !jbd2_descr_block_csum_verify(journal,
+ 							  bh->b_data)) {
+ 				err = -EIO;
++				brelse(bh);
+ 				goto failed;
+ 			}
  
 
 
