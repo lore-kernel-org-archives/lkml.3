@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964792AbaKLENA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:13:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58591 "EHLO
+	id S964836AbaKLENq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:13:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58566 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630AbaKLBWb (ORCPT
+	with ESMTP id S1753446AbaKLBWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:31 -0500
+	Tue, 11 Nov 2014 20:22:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 035/319] ASoC: soc-pcm: fix sig_bits determination in soc_pcm_apply_msb()
-Date: Wed, 12 Nov 2014 10:12:53 +0900
-Message-Id: <20141112010958.483493797@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Cong Wang <cwang@twopensource.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.17 057/319] perf: Fix unclone_ctx() vs. locking
+Date: Wed, 12 Nov 2014 10:13:15 +0900
+Message-Id: <20141112011002.010156164@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,33 +34,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <daniel@zonque.org>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 5e63dfccf34d4dbf21429c4919f33c028ff49991 upstream.
+commit 211de6eba8960521e2be450a7d07db85fba4604c upstream.
 
-In the SNDRV_PCM_STREAM_CAPTURE branch in soc_pcm_apply_msb(), look at
-sig_bits of the capture stream, not the playback one.
+The idiot who did 4a1c0f262f88 ("perf: Fix lockdep warning on process exit")
+forgot to pay attention and fix all similar cases. Do so now.
 
-Spotted by coverity.
+In particular, unclone_ctx() must be called while holding ctx->lock,
+therefore all such sites are broken for the same reason. Pull the
+put_ctx() call out from under ctx->lock.
 
-Signed-off-by: Daniel Mack <daniel@zonque.org>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Probably-also-reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Fixes: 4a1c0f262f88 ("perf: Fix lockdep warning on process exit")
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Cong Wang <cwang@twopensource.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140930172308.GI4241@worktop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-pcm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c |   54 +++++++++++++++++++++++++++++----------------------
+ 1 file changed, 31 insertions(+), 23 deletions(-)
 
---- a/sound/soc/soc-pcm.c
-+++ b/sound/soc/soc-pcm.c
-@@ -352,7 +352,7 @@ static void soc_pcm_apply_msb(struct snd
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -902,13 +902,23 @@ static void put_ctx(struct perf_event_co
+ 	}
+ }
+ 
+-static void unclone_ctx(struct perf_event_context *ctx)
++/*
++ * This must be done under the ctx->lock, such as to serialize against
++ * context_equiv(), therefore we cannot call put_ctx() since that might end up
++ * calling scheduler related locks and ctx->lock nests inside those.
++ */
++static __must_check struct perf_event_context *
++unclone_ctx(struct perf_event_context *ctx)
+ {
+-	if (ctx->parent_ctx) {
+-		put_ctx(ctx->parent_ctx);
++	struct perf_event_context *parent_ctx = ctx->parent_ctx;
++
++	lockdep_assert_held(&ctx->lock);
++
++	if (parent_ctx)
+ 		ctx->parent_ctx = NULL;
+-	}
+ 	ctx->generation++;
++
++	return parent_ctx;
+ }
+ 
+ static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
+@@ -2210,6 +2220,9 @@ static void ctx_sched_out(struct perf_ev
+ static int context_equiv(struct perf_event_context *ctx1,
+ 			 struct perf_event_context *ctx2)
+ {
++	lockdep_assert_held(&ctx1->lock);
++	lockdep_assert_held(&ctx2->lock);
++
+ 	/* Pinning disables the swap optimization */
+ 	if (ctx1->pin_count || ctx2->pin_count)
+ 		return 0;
+@@ -2943,6 +2956,7 @@ static int event_enable_on_exec(struct p
+  */
+ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
+ {
++	struct perf_event_context *clone_ctx = NULL;
+ 	struct perf_event *event;
+ 	unsigned long flags;
+ 	int enabled = 0;
+@@ -2974,7 +2988,7 @@ static void perf_event_enable_on_exec(st
+ 	 * Unclone this context if we enabled any event.
+ 	 */
+ 	if (enabled)
+-		unclone_ctx(ctx);
++		clone_ctx = unclone_ctx(ctx);
+ 
+ 	raw_spin_unlock(&ctx->lock);
+ 
+@@ -2984,6 +2998,9 @@ static void perf_event_enable_on_exec(st
+ 	perf_event_context_sched_in(ctx, ctx->task);
+ out:
+ 	local_irq_restore(flags);
++
++	if (clone_ctx)
++		put_ctx(clone_ctx);
+ }
+ 
+ void perf_event_exec(void)
+@@ -3135,7 +3152,7 @@ errout:
+ static struct perf_event_context *
+ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
+ {
+-	struct perf_event_context *ctx;
++	struct perf_event_context *ctx, *clone_ctx = NULL;
+ 	struct perf_cpu_context *cpuctx;
+ 	unsigned long flags;
+ 	int ctxn, err;
+@@ -3169,9 +3186,12 @@ find_get_context(struct pmu *pmu, struct
+ retry:
+ 	ctx = perf_lock_task_context(task, ctxn, &flags);
+ 	if (ctx) {
+-		unclone_ctx(ctx);
++		clone_ctx = unclone_ctx(ctx);
+ 		++ctx->pin_count;
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
++
++		if (clone_ctx)
++			put_ctx(clone_ctx);
  	} else {
- 		for (i = 0; i < rtd->num_codecs; i++) {
- 			codec_dai = rtd->codec_dais[i];
--			if (codec_dai->driver->playback.sig_bits == 0) {
-+			if (codec_dai->driver->capture.sig_bits == 0) {
- 				bits = 0;
- 				break;
- 			}
+ 		ctx = alloc_perf_context(pmu, task);
+ 		err = -ENOMEM;
+@@ -7523,7 +7543,7 @@ __perf_event_exit_task(struct perf_event
+ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
+ {
+ 	struct perf_event *child_event, *next;
+-	struct perf_event_context *child_ctx, *parent_ctx;
++	struct perf_event_context *child_ctx, *clone_ctx = NULL;
+ 	unsigned long flags;
+ 
+ 	if (likely(!child->perf_event_ctxp[ctxn])) {
+@@ -7550,28 +7570,16 @@ static void perf_event_exit_task_context
+ 	child->perf_event_ctxp[ctxn] = NULL;
+ 
+ 	/*
+-	 * In order to avoid freeing: child_ctx->parent_ctx->task
+-	 * under perf_event_context::lock, grab another reference.
+-	 */
+-	parent_ctx = child_ctx->parent_ctx;
+-	if (parent_ctx)
+-		get_ctx(parent_ctx);
+-
+-	/*
+ 	 * If this context is a clone; unclone it so it can't get
+ 	 * swapped to another process while we're removing all
+ 	 * the events from it.
+ 	 */
+-	unclone_ctx(child_ctx);
++	clone_ctx = unclone_ctx(child_ctx);
+ 	update_context_time(child_ctx);
+ 	raw_spin_unlock_irqrestore(&child_ctx->lock, flags);
+ 
+-	/*
+-	 * Now that we no longer hold perf_event_context::lock, drop
+-	 * our extra child_ctx->parent_ctx reference.
+-	 */
+-	if (parent_ctx)
+-		put_ctx(parent_ctx);
++	if (clone_ctx)
++		put_ctx(clone_ctx);
+ 
+ 	/*
+ 	 * Report the task dead after unscheduling the events so that we
 
 
