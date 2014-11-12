@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965143AbaKLDqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:46:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59096 "EHLO
+	id S932539AbaKLB20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:28:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59066 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556AbaKLB2l (ORCPT
+	with ESMTP id S932533AbaKLB2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:28:41 -0500
+	Tue, 11 Nov 2014 20:28:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.17 145/319] MIPS: loongson2_cpufreq: Fix CPU clock rate setting mismerge
-Date: Wed, 12 Nov 2014 10:14:43 +0900
-Message-Id: <20141112011016.476993126@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        Alexander Fyodorov <halcy@yandex.ru>
+Subject: [PATCH 3.17 170/319] drm/radeon: use gart memory for DMA ring tests
+Date: Wed, 12 Nov 2014 10:15:08 +0900
+Message-Id: <20141112011020.881748869@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,49 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit aa08ed55442ac6f9810c055e1474be34e785e556 upstream.
+commit adfed2b0587289013f8143c54913ddfd44ac1fd3 upstream.
 
-During 3.16 merge window, parts of the commit 8e8acb32960f
-(MIPS/loongson2_cpufreq: Fix CPU clock rate setting) seem to have
-been deleted probably due to a mismerge, and as a result cpufreq
-is broken again on Loongson2 boards in 3.16 and newer kernels.
-Fix by repeating the fix.
+Avoids HDP cache flush issues when using vram which can
+cause ring test failures on certain boards.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
-Patchwork: https://patchwork.linux-mips.org/patch/7835/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Alexander Fyodorov <halcy@yandex.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/loongson/lemote-2f/clock.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/cik_sdma.c |   21 ++++++++++++---------
+ drivers/gpu/drm/radeon/r600_dma.c |   21 ++++++++++++---------
+ drivers/gpu/drm/radeon/radeon.h   |    2 ++
+ 3 files changed, 26 insertions(+), 18 deletions(-)
 
---- a/arch/mips/loongson/lemote-2f/clock.c
-+++ b/arch/mips/loongson/lemote-2f/clock.c
-@@ -91,6 +91,7 @@ EXPORT_SYMBOL(clk_put);
- 
- int clk_set_rate(struct clk *clk, unsigned long rate)
+--- a/drivers/gpu/drm/radeon/cik_sdma.c
++++ b/drivers/gpu/drm/radeon/cik_sdma.c
+@@ -610,16 +610,19 @@ int cik_sdma_ring_test(struct radeon_dev
  {
-+	unsigned int rate_khz = rate / 1000;
- 	struct cpufreq_frequency_table *pos;
- 	int ret = 0;
- 	int regval;
-@@ -107,9 +108,9 @@ int clk_set_rate(struct clk *clk, unsign
- 		propagate_rate(clk);
+ 	unsigned i;
+ 	int r;
+-	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
++	unsigned index;
+ 	u32 tmp;
++	u64 gpu_addr;
  
- 	cpufreq_for_each_valid_entry(pos, loongson2_clockmod_table)
--		if (rate == pos->frequency)
-+		if (rate_khz == pos->frequency)
+-	if (!ptr) {
+-		DRM_ERROR("invalid vram scratch pointer\n");
+-		return -EINVAL;
+-	}
++	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
++		index = R600_WB_DMA_RING_TEST_OFFSET;
++	else
++		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
++
++	gpu_addr = rdev->wb.gpu_addr + index;
+ 
+ 	tmp = 0xCAFEDEAD;
+-	writel(tmp, ptr);
++	rdev->wb.wb[index/4] = cpu_to_le32(tmp);
+ 
+ 	r = radeon_ring_lock(rdev, ring, 5);
+ 	if (r) {
+@@ -627,14 +630,14 @@ int cik_sdma_ring_test(struct radeon_dev
+ 		return r;
+ 	}
+ 	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_WRITE, SDMA_WRITE_SUB_OPCODE_LINEAR, 0));
+-	radeon_ring_write(ring, rdev->vram_scratch.gpu_addr & 0xfffffffc);
+-	radeon_ring_write(ring, upper_32_bits(rdev->vram_scratch.gpu_addr));
++	radeon_ring_write(ring, lower_32_bits(gpu_addr));
++	radeon_ring_write(ring, upper_32_bits(gpu_addr));
+ 	radeon_ring_write(ring, 1); /* number of DWs to follow */
+ 	radeon_ring_write(ring, 0xDEADBEEF);
+ 	radeon_ring_unlock_commit(rdev, ring, false);
+ 
+ 	for (i = 0; i < rdev->usec_timeout; i++) {
+-		tmp = readl(ptr);
++		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
+ 		if (tmp == 0xDEADBEEF)
  			break;
--	if (rate != pos->frequency)
-+	if (rate_khz != pos->frequency)
- 		return -ENOTSUPP;
+ 		DRM_UDELAY(1);
+--- a/drivers/gpu/drm/radeon/r600_dma.c
++++ b/drivers/gpu/drm/radeon/r600_dma.c
+@@ -232,16 +232,19 @@ int r600_dma_ring_test(struct radeon_dev
+ {
+ 	unsigned i;
+ 	int r;
+-	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
++	unsigned index;
+ 	u32 tmp;
++	u64 gpu_addr;
  
- 	clk->rate = rate;
+-	if (!ptr) {
+-		DRM_ERROR("invalid vram scratch pointer\n");
+-		return -EINVAL;
+-	}
++	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
++		index = R600_WB_DMA_RING_TEST_OFFSET;
++	else
++		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
++
++	gpu_addr = rdev->wb.gpu_addr + index;
+ 
+ 	tmp = 0xCAFEDEAD;
+-	writel(tmp, ptr);
++	rdev->wb.wb[index/4] = cpu_to_le32(tmp);
+ 
+ 	r = radeon_ring_lock(rdev, ring, 4);
+ 	if (r) {
+@@ -249,13 +252,13 @@ int r600_dma_ring_test(struct radeon_dev
+ 		return r;
+ 	}
+ 	radeon_ring_write(ring, DMA_PACKET(DMA_PACKET_WRITE, 0, 0, 1));
+-	radeon_ring_write(ring, rdev->vram_scratch.gpu_addr & 0xfffffffc);
+-	radeon_ring_write(ring, upper_32_bits(rdev->vram_scratch.gpu_addr) & 0xff);
++	radeon_ring_write(ring, lower_32_bits(gpu_addr));
++	radeon_ring_write(ring, upper_32_bits(gpu_addr) & 0xff);
+ 	radeon_ring_write(ring, 0xDEADBEEF);
+ 	radeon_ring_unlock_commit(rdev, ring, false);
+ 
+ 	for (i = 0; i < rdev->usec_timeout; i++) {
+-		tmp = readl(ptr);
++		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
+ 		if (tmp == 0xDEADBEEF)
+ 			break;
+ 		DRM_UDELAY(1);
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -1120,6 +1120,8 @@ struct radeon_wb {
+ #define R600_WB_EVENT_OFFSET     3072
+ #define CIK_WB_CP1_WPTR_OFFSET     3328
+ #define CIK_WB_CP2_WPTR_OFFSET     3584
++#define R600_WB_DMA_RING_TEST_OFFSET 3588
++#define CAYMAN_WB_DMA1_RING_TEST_OFFSET 3592
+ 
+ /**
+  * struct radeon_pm - power management datas
 
 
