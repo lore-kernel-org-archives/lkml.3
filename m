@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaKLBY5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:24:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58783 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169AbaKLBYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754177AbaKLBYx (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:24:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58781 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127AbaKLBYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:24:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH 3.17 075/319] UBI: add missing kmem_cache_free() in process_pool_aeb error path
-Date: Wed, 12 Nov 2014 10:13:33 +0900
-Message-Id: <20141112011004.997890500@linuxfoundation.org>
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.17 074/319] UBI: Dispatch update notification if the volume is updated
+Date: Wed, 12 Nov 2014 10:13:32 +0900
+Message-Id: <20141112011004.833588310@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,47 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Genoud <richard.genoud@gmail.com>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-commit 1bf1890e86869032099b539bc83b098be12fc5a7 upstream.
+commit fda322a1b3b9e8ee231913c500f73c6988b1aff5 upstream.
 
-I ran into this error after a ubiupdatevol, because I forgot to backport
-e9110361a9a4 UBI: fix the volumes tree sorting criteria.
+The UBI_IOCVOLUP ioctl is used to start an update and also to
+truncate a volume. In the first case, a "volume updated" notification
+is dispatched when the update is done.
 
-UBI error: process_pool_aeb: orphaned volume in fastmap pool
-UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
-kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
-[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
-[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
-[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
-[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
-[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
-[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
-[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
-[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
-[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
-UBI: scanning is finished
+This commit adds the "volume updated" notification to be also sent when
+the volume is truncated. This is required for UBI block and gluebi to get
+notified about the new volume size.
 
-Freeing the cache in the error path fixes the Slab error.
-
-Tested on at91sam9g35 (3.14.18+fastmap backports)
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/fastmap.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/ubi/cdev.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_d
- 		av = tmp_av;
- 	else {
- 		ubi_err("orphaned volume in fastmap pool!");
-+		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
- 		return UBI_BAD_FASTMAP;
+--- a/drivers/mtd/ubi/cdev.c
++++ b/drivers/mtd/ubi/cdev.c
+@@ -425,8 +425,10 @@ static long vol_cdev_ioctl(struct file *
+ 			break;
+ 
+ 		err = ubi_start_update(ubi, vol, bytes);
+-		if (bytes == 0)
++		if (bytes == 0) {
++			ubi_volume_notify(ubi, vol, UBI_VOLUME_UPDATED);
+ 			revoke_exclusive(desc, UBI_READWRITE);
++		}
+ 		break;
  	}
  
 
