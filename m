@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaKLSUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 13:20:40 -0500
-Received: from mout.gmx.com ([74.208.4.200]:57709 "EHLO mout.gmx.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086AbaKLSUi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 13:20:38 -0500
+	id S1753302AbaKLS03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 13:26:29 -0500
+Received: from mail-bn1bon0076.outbound.protection.outlook.com ([157.56.111.76]:25052
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751685AbaKLS01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 13:26:27 -0500
+X-Greylist: delayed 7971 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 13:26:26 EST
+Date: Wed, 12 Nov 2014 10:26:03 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
+CC: Vinod Koul <vinod.koul@intel.com>, <dmaengine@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikanth Thokala <sthokal@xilinx.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH RESEND] Documentation: devicetree: Fix Xilinx VDMA
+ specification
+References: <1415800277-6817-1-git-send-email-afaerber@suse.de>
+ <6067bede14b9421fa87db96bdc66dc66@BN1AFFO11FD040.protection.gbl>
+ <5463A0F4.6060300@suse.de>
 MIME-Version: 1.0
-Message-ID: <trinity-7003675b-f8b2-4f2f-ab95-d7a0c323a5c3-1415816436334@3capp-mailcom-lxa12>
-From: "Castle OfWhite" <castleofwhite@mail.com>
-To: linux-kernel@vger.kernel.org
-Subject: SystemD fanboi claims others have done no contributions to
- opensource software. (information within)
-Content-Type: text/plain; charset=UTF-8
-Date: Wed, 12 Nov 2014 19:20:36 +0100
-Importance: normal
-Sensitivity: Normal
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-X-Provags-ID: V03:K0:dwjGdyMNiYg2QVHgq6SNzVYkThO6NT2sYSNh7r5y020
- NsfNklgHIoG0CsoNdAhemjtmLjvuNwXNAjVLFlegfIWuNYDJop
- fanKIuLFkA84xoN4QbWiLv5/HTDnjjyRJ20A6OTR93ar2WKKhB
- YOpegOkNqYdTTmxGc3gFW8C7IExsaDyM8yYTtYj2iVyqDcUdNt
- +xF2b/nfQ/bDpV4w72ZE/qYxFXgTHap+j/rwh+rtaVH2Nk1uId
- 1yS3Kb44YQ4rdU0HhfZ5TOnti+m99In96GIxUvj11a+qa2jgqv
- zVI7k7G0aNqvsm1Y9tWXk1F1w5t
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5463A0F4.6060300@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21096.001
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <bd47278216b64375b32cdc9ed66fe907@BN1BFFO11FD024.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(24454002)(189002)(199003)(51704005)(164054003)(377424004)(23676002)(53416004)(46102003)(86362001)(31966008)(120916001)(20776003)(47776003)(64706001)(106466001)(110136001)(21056001)(99396003)(108616004)(33646002)(107046002)(44976005)(19580405001)(77156002)(6806004)(95666004)(92566001)(50466002)(102836001)(50986999)(83506001)(76176999)(85202003)(19580395003)(74316001)(4396001)(15975445006)(54356999)(87936001)(62966003)(85182001)(104016003)(77096003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB050;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB050;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB050;
+X-Forefront-PRVS: 03932714EB
+Authentication-Results: spf=temperror (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB050;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr Schubert;
+On Wed, 2014-11-12 at 07:03PM +0100, Andreas Färber wrote:
+> Am 12.11.2014 um 16:57 schrieb Sören Brinkmann:
+> > On Wed, 2014-11-12 at 02:51PM +0100, Andreas Färber wrote:
+> >> The specification requires xlnx,data-width, but example and driver use
+> >> xlnx,datawidth. Change the specification to match the implementation.
+> > 
+> > Isn't this the wrong way around? The bindings are considered API, so
+> > shouldn't the driver be fixed to match the spec?
+> 
+> In theory, patch review should've never let the two differ... ;)
+> 
+> It's not my driver, so I fixed the perceived inconsistency the least
+> invasive way; Michal and Srikanth seemed to concur at the time.
+> 
+> https://patchwork.kernel.org/patch/4620261/
+> 
+> > Are there already dts files out there using either of these options?
+> 
+> In upstream, no. microblaze and virtex440 use a
+> xlnx,include-datawidth-matching-0 property as precedence for the
+> spelling, whereas there is an fsl,data-width and an unused msix-data-width.
+> 
+> Downstream, yes: Beyond my own patch derived from the Parallella tree,
+> there's some in the ADI tree. None in the Xilinx tree on quick check.
+> 
+> I haven't encountered any using the documented xlnx,data-width - but
+> this patch was authored pre 3.17, haven't ran a full Web search again.
 
-"He has not contributed anything to the open source community."
-This is a complete lie. I've contributed gigabytes of media alone.
-I've done years and years of programming work.
-I have done far more than you ever will.
+grepping through linux-next shows some usage of xlnx,datawidth, but
+only the single hit in  Documentation for xlnx,data-width.
+Other than VDMA the other hit seems to be just some DT
+documentation which I can't find a driver for...
+Anyhow, this patch is probably the best way of fixing this.
 
-"His songs and "games" are not worth looking at,"
-Your subjective view. Coloured by your social views and your
-disdain for those who oppose you in that.
+Reviewed-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-"and I'm not aware of any project that has accepted any of his "contributions"."
-The only objectively true thing you've said: you're not aware.
-I'm glad you're unaware, I hope that trend continues.
-
-I expect this post to be censored, it is par for the course for people like you.
-
-Sincerely;
---MikeeUSA--
-
----------------------
-(Erich Schubert put forth false claims about lack of involvement of mine in free/opensource software)
-(When corrected he first engaged, then deleted all the posts, keeping only his false statements visible)
-http://www.vitavonni.de/blog/201411/2014110901-gr-vote-on-init-coupling.html
-
-About Erich_Schubert:
-
-http://www.dbs.ifi.lmu.de/cms/Erich_Schubert
-
-Ludwig-Maximilians-Universität München
-Lehr- und Forschungseinheit für Datenbanksysteme
-Oettingenstraße 67
-80538 München
-Germany
-Room: 	F 109
-Phone:	+49-89-2180-9325
-Fax: 	+49-89-2180-9192
-Email:	schube@dbs.ifi.lmu.de
-
-Sprechstunde: jeden Donnerstag 15-16 Uhr, Zimmer F 109 
-
-What is he all about? Data-Mining an der Hochschule Rosenheim
-(also seen on his most recent projects)
-
+	Thanks,
+	Sören
