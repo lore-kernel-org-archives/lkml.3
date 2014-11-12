@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaKLHYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 02:24:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35388 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaKLHYB (ORCPT
+	id S1751837AbaKLH3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 02:29:00 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34993 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaKLH26 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 02:24:01 -0500
-Date: Wed, 12 Nov 2014 15:36:00 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.14 000/203] 3.14.24-stable review
-Message-ID: <20141112063600.GA7367@kroah.com>
-References: <20141112011542.686743533@linuxfoundation.org>
- <5462FE3A.7060601@roeck-us.net>
+	Wed, 12 Nov 2014 02:28:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5462FE3A.7060601@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <yw1x4mu5j3c3.fsf@unicorn.mansr.com>
+References: <a2e126c9-3001-4255-91c9-6311b54988c5@EXC02-ATKLA.omicron.at>
+	<yw1x4mu5j3c3.fsf@unicorn.mansr.com>
+Date: Wed, 12 Nov 2014 08:28:56 +0100
+X-Google-Sender-Auth: VyB46Ud0ykbKPpVTKsiT5ZvNEcc
+Message-ID: <CABkLObqGP2488XYCATKE_U-uDjo=tWgEAaU2+YkwstDTnoeetA@mail.gmail.com>
+Subject: Re: [PATCH v2] n_tty: Fix read_buf race condition, increment
+ read_head after pushing data
+From: Christian Riesch <christian.riesch@omicron.at>
+To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 10:29:14PM -0800, Guenter Roeck wrote:
-> On 11/11/2014 05:14 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.14.24 release.
-> >There are 203 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Fri Nov 14 01:15:14 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 137 pass: 134 fail: 3
-> Failed builds:
-> 	powerpc:allmodconfig (binutils 2.23)
-> 	powerpc:allmodconfig (binutils 2.24)
-> 	xtensa:allmodconfig
-> 
-> Qemu tests:
-> 	total: 30 pass: 30 fail: 0
-> 
-> Builds fail due to
-> 
-> drivers/of/selftest.c: In function 'of_selftest':
-> drivers/of/selftest.c:436:2: error: implicit declaration of function 'of_selftest_property_match_string' [-Werror=implicit-function-declaration]
->   of_selftest_property_match_string();
->   ^
-> drivers/of/selftest.c: At top level:
-> drivers/of/selftest.c:135:20: warning: 'of_selftest_property_string' defined but not used [-Wunused-function]
->  static void __init of_selftest_property_string(void)
->                     ^
-> 
-> as mentioned earlier.
+On Tue, Nov 11, 2014 at 2:04 PM, Måns Rullgård <mans@mansr.com> wrote:
+> Christian Riesch <christian.riesch@omicron.at> writes:
+[...]>> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+>> index 2e900a9..b09f326 100644
+>> --- a/drivers/tty/n_tty.c
+>> +++ b/drivers/tty/n_tty.c
+>> @@ -321,7 +321,9 @@ static void n_tty_check_unthrottle(struct tty_struct *tty)
+>>
+>>  static inline void put_tty_queue(unsigned char c, struct n_tty_data *ldata)
+>>  {
+>> -     *read_buf_addr(ldata, ldata->read_head++) = c;
+>> +     *read_buf_addr(ldata, ldata->read_head) = c;
+>> +     /* increment read_head _after_ placing the character in the buffer */
+>> +     ldata->read_head++;
+>>  }
+>
+> Is that comment really necessary?
 
-I've now fixed this one, if you want to pull the latest stable-git tree.
+No, I am pretty sure that removing the comment would not break the code ;-)
 
-thanks,
+I just thought it would be good to have some kind of reminder here.
+Otherwise someone may think: Hey, it would be a good idea to do the
+increment right in the first line. And submit a patch for it.
+But I am also ok with removing the comment. So if you like me to post
+a v3 without the comment, I'll be happy to do that.
 
-greg k-h
+Christian
