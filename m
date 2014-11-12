@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698AbaKLBW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58617 "EHLO
+	id S1753747AbaKLBXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:23:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58630 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653AbaKLBWx (ORCPT
+	with ESMTP id S1753704AbaKLBXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:53 -0500
+	Tue, 11 Nov 2014 20:23:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 036/319] ASoC: tlv320aic3x: fix PLL D configuration
-Date: Wed, 12 Nov 2014 10:12:54 +0900
-Message-Id: <20141112010958.636899172@linuxfoundation.org>
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Fu Zhonghui <zhonghui.fu@linux.intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.17 039/319] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
+Date: Wed, 12 Nov 2014 10:12:57 +0900
+Message-Id: <20141112010959.148205706@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,63 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
 
-commit 31d9f8faf9a54c851e835af489c82f45105a442f upstream.
+commit dea67c4ec8218b301d7cac7ee6e63dac0bc566cb upstream.
 
-Current caching implementation during regcache_sync() call bypasses
-all register writes of values that are already known as default
-(regmap reg_defaults). Same time in TLV320AIC3x codecs register 5
-(AIC3X_PLL_PROGC_REG) write should be immediately followed by register
-6 write (AIC3X_PLL_PROGD_REG) even if it was not changed. Otherwise
-both registers will not be written.
+781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+the use of our own custom threaded IRQ handler, but left in an
+unconditional wake_up_process() on that handler at resume-time.
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
 
-This brings to issue that appears particulary in case of 44.1kHz
-playback with 19.2MHz master clock. In this case AIC3X_PLL_PROGC_REG
-is 0x6e while AIC3X_PLL_PROGD_REG is 0x0 (same as register
-default). Thus AIC3X_PLL_PROGC_REG also remains not written and we get
-wrong playback speed.
+In addition, the check for MMC_CAP_SDIO_IRQ capability is added
+before enable sdio IRQ.
 
-In this patch snd_soc_read() is used to get cached pll values and
-snd_soc_write() (unlike regcache_sync() this function doesn't bypasses
-hardware default values) to write them to registers.
-
-Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/tlv320aic3x.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/mmc/core/sdio.c     |   12 ++++++++++--
+ drivers/mmc/core/sdio_irq.c |    4 ++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -1121,6 +1121,7 @@ static int aic3x_regulator_event(struct
- static int aic3x_set_power(struct snd_soc_codec *codec, int power)
- {
- 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
-+	unsigned int pll_c, pll_d;
- 	int ret;
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -992,8 +992,16 @@ static int mmc_sdio_resume(struct mmc_ho
+ 		}
+ 	}
  
- 	if (power) {
-@@ -1138,6 +1139,18 @@ static int aic3x_set_power(struct snd_so
- 		/* Sync reg_cache with the hardware */
- 		regcache_cache_only(aic3x->regmap, false);
- 		regcache_sync(aic3x->regmap);
-+
-+		/* Rewrite paired PLL D registers in case cached sync skipped
-+		 * writing one of them and thus caused other one also not
-+		 * being written
-+		 */
-+		pll_c = snd_soc_read(codec, AIC3X_PLL_PROGC_REG);
-+		pll_d = snd_soc_read(codec, AIC3X_PLL_PROGD_REG);
-+		if (pll_c == aic3x_reg[AIC3X_PLL_PROGC_REG].def ||
-+			pll_d == aic3x_reg[AIC3X_PLL_PROGD_REG].def) {
-+			snd_soc_write(codec, AIC3X_PLL_PROGC_REG, pll_c);
-+			snd_soc_write(codec, AIC3X_PLL_PROGD_REG, pll_d);
+-	if (!err && host->sdio_irqs)
+-		wake_up_process(host->sdio_irq_thread);
++	if (!err && host->sdio_irqs) {
++		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
++			wake_up_process(host->sdio_irq_thread);
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
++			mmc_host_clk_hold(host);
++			host->ops->enable_sdio_irq(host, 1);
++			mmc_host_clk_release(host);
 +		}
- 	} else {
- 		/*
- 		 * Do soft reset to this codec instance in order to clear
++	}
++
+ 	mmc_release_host(host);
+ 
+ 	host->pm_flags &= ~MMC_PM_KEEP_POWER;
+--- a/drivers/mmc/core/sdio_irq.c
++++ b/drivers/mmc/core/sdio_irq.c
+@@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_
+ 				host->sdio_irqs--;
+ 				return err;
+ 			}
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 1);
+ 			mmc_host_clk_release(host);
+@@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_
+ 		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
+ 			atomic_set(&host->sdio_irq_thread_abort, 1);
+ 			kthread_stop(host->sdio_irq_thread);
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 0);
+ 			mmc_host_clk_release(host);
 
 
