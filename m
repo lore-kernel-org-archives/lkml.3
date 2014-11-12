@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935113AbaKLCEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:04:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33103 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161064AbaKLBzr (ORCPT
+	id S935127AbaKLCFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:05:23 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:48540 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaKLCFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:55:47 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 103/123] nfsd4: fix crash on unknown operation number
-Date: Wed, 12 Nov 2014 10:17:49 +0900
-Message-Id: <20141112011723.682721403@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
-References: <20141112011718.985171261@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 21:05:20 -0500
+Message-ID: <5462C1D3.3010504@gmail.com>
+Date: Wed, 12 Nov 2014 10:11:31 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+To: cmetcalf@tilera.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: tile: kernel: kgdb.c: Use memcpy() instead of pointer
+ copy one by one
+References: <5454DD70.6060004@gmail.com>
+In-Reply-To: <5454DD70.6060004@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hello maintainer:
 
-------------------
+Please help check this patch, when you have time (sorry for my original
+typo for your email address, so maybe you did not notice about the
+original mail).
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+Thanks.
 
-commit 51904b08072a8bf2b9ed74d1bd7a5300a614471d upstream.
+On 11/1/14 21:17, Chen Gang wrote:
+> Not only memcpy() is faster than pointer copy, but also let code more
+> clearer and simple, which can avoid compiling warning (the original
+> implementation copy registers by exceeding member array border).
+> 
+> The related warning (with allmodconfig under tile):
+> 
+>     CC      arch/tile/kernel/kgdb.o
+>   arch/tile/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
+>   arch/tile/kernel/kgdb.c:140:31: warning: iteration 53u invokes undefined behavior [-Waggressive-loop-optimizations]
+>      *(ptr++) = thread_regs->regs[reg];
+>                                  ^
+>   arch/tile/kernel/kgdb.c:139:2: note: containing loop
+>     for (reg = 0; reg <= TREG_LAST_GPR; reg++)
+>     ^
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  arch/tile/kernel/kgdb.c | 6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+> 
+> diff --git a/arch/tile/kernel/kgdb.c b/arch/tile/kernel/kgdb.c
+> index 4cd8838..ff5335a 100644
+> --- a/arch/tile/kernel/kgdb.c
+> +++ b/arch/tile/kernel/kgdb.c
+> @@ -125,9 +125,7 @@ int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
+>  void
+>  sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *task)
+>  {
+> -	int reg;
+>  	struct pt_regs *thread_regs;
+> -	unsigned long *ptr = gdb_regs;
+>  
+>  	if (task == NULL)
+>  		return;
+> @@ -136,9 +134,7 @@ sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *task)
+>  	memset(gdb_regs, 0, NUMREGBYTES);
+>  
+>  	thread_regs = task_pt_regs(task);
+> -	for (reg = 0; reg <= TREG_LAST_GPR; reg++)
+> -		*(ptr++) = thread_regs->regs[reg];
+> -
+> +	memcpy(gdb_regs, thread_regs, TREG_LAST_GPR * sizeof(unsigned long));
+>  	gdb_regs[TILEGX_PC_REGNUM] = thread_regs->pc;
+>  	gdb_regs[TILEGX_FAULTNUM_REGNUM] = thread_regs->faultnum;
+>  }
+> 
 
-Unknown operation numbers are caught in nfsd4_decode_compound() which
-sets op->opnum to OP_ILLEGAL and op->status to nfserr_op_illegal.  The
-error causes the main loop in nfsd4_proc_compound() to skip most
-processing.  But nfsd4_proc_compound also peeks ahead at the next
-operation in one case and doesn't take similar precautions there.
+-- 
+Chen Gang
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfsd/nfs4proc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1191,7 +1191,8 @@ static bool need_wrongsec_check(struct s
- 	 */
- 	if (argp->opcnt == resp->opcnt)
- 		return false;
--
-+	if (next->opnum == OP_ILLEGAL)
-+		return false;
- 	nextd = OPDESC(next);
- 	/*
- 	 * Rest of 2.6.3.1.1: certain operations will return WRONGSEC
-
-
+Open, share, and attitude like air, water, and life which God blessed
