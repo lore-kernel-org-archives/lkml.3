@@ -1,190 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaKLQyd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 11:54:33 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54526 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753190AbaKLQya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 11:54:30 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        ABI/API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] crypto: AF_ALG: add random number generator support
-Date: Wed, 12 Nov 2014 17:54:23 +0100
-Message-ID: <9137675.ZTbqvCU5Bi@tachyon.chronox.de>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <546387B8.9050601@redhat.com>
-References: <4738444.A2vZX1nNCo@tachyon.chronox.de> <1914037.Wy7EiDNG7B@tachyon.chronox.de> <546387B8.9050601@redhat.com>
+	id S1753068AbaKLQ4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 11:56:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45177 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaKLQ4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 11:56:17 -0500
+Date: Wed, 12 Nov 2014 17:56:10 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2] sched/cputime: fix clock_nanosleep/clock_gettime
+ inconsistency
+Message-ID: <20141112165610.GO29390@twins.programming.kicks-ass.net>
+References: <1415788168-3165-1-git-send-email-sgruszka@redhat.com>
+ <20141112111553.GA21343@twins.programming.kicks-ass.net>
+ <20141112122155.GA3250@redhat.com>
+ <20141112125158.GB21343@twins.programming.kicks-ass.net>
+ <20141112155843.GA24803@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141112155843.GA24803@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 12. November 2014, 17:15:52 schrieb Daniel Borkmann:
-
-Hi Daniel,
-
-thanks for the comments.
-
-> On 11/12/2014 08:05 AM, Stephan Mueller wrote:
-> > This patch adds the random number generator support for AF_ALG.
-> > 
-> > A random number generator's purpose is to generate data without
-> > requiring the caller to provide any data. Therefore, the AF_ALG
-> > interface handler for RNGs only implements a callback handler for
-> > recvmsg.
+On Wed, Nov 12, 2014 at 04:58:44PM +0100, Stanislaw Gruszka wrote:
+> Commit d670ec13178d0 "posix-cpu-timers: Cure SMP wobbles" fixes one glibc
+> test case in cost of breaking another one. After that commit, calling
+> clock_nanosleep(TIMER_ABSTIME, X) and then clock_gettime(&Y) can result
+> of Y time being smaller than X time.
 > 
-> ...
+> Below is full reproducer (tst-cpuclock2.c) :
 > 
-> > +static int rng_recvmsg(struct kiocb *unused, struct socket *sock,
-> > +		       struct msghdr *msg, size_t len, int flags)
-> > +{
-> > +	struct sock *sk = sock->sk;
-> > +	struct alg_sock *ask = alg_sk(sk);
-> > +	struct rng_ctx *ctx = ask->private;
-> > +	int err = -EFAULT;
-> > +
-> > +	if (0 == len)
+> /* Parameters for the Linux kernel ABI for CPU clocks.  */
+>         ((~(clockid_t) (pid) << 3) | (clockid_t) (clock))
 > 
-> if (len == 0)
-> 	...
-> 
-> [And also other places.]
-> 
-> We don't use Yoda condition style in the kernel.
 
-Well, there is a very good reason for using the approach I have: we all have 
-done the error of forgetting the second = sign.
-
-In my case, the compiler will complain and we fix the error right away.
-
-In your case, nobody is complaining but we introduced a nasty, potentially 
-hard to debug error. Thus, I very much like to keep my version just to be on 
-the safe side.
-
-Note, there was even a backdoor I have seen where the missing 2nd equal sign 
-introduced a privilege escalation.
-
-Therefore, my standard coding practice is to have a fixed value on the left 
-side and the variable on the right side of any comparison.
-> 
-> > +		return 0;
-> > +	if (MAXSIZE < len)
-> > +		len = MAXSIZE;
-> > +
-> > +	lock_sock(sk);
-> > +	len = crypto_rng_get_bytes(ctx->drng, ctx->result, len);
-> > +	if (0 > len)
-> > +		goto unlock;
-> > +
-> > +	err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
-> > +	memset(ctx->result, 0, err);
-> > +
-> 
-> This looks buggy.
-> 
-> If copy_to_user() fails from within memcpy_toiovec(), we call memset()
-> with a negative return value which is interpreted as size_t and thus
-> causes a buffer overflow writing beyond ctx->result, no?
-> 
-> If it succeeds, we call memset(ctx->result, 0, 0) .....
-
-Right, good catch, I have to add a catch for negative error here.
-
-> 
-> > +unlock:
-> > +	release_sock(sk);
-> > +
-> > +	return err ? err : len;
-> > +}
-> > +
-> > +static struct proto_ops algif_rng_ops = {
-> > +	.family		=	PF_ALG,
-> > +
-> > +	.connect	=	sock_no_connect,
-> > +	.socketpair	=	sock_no_socketpair,
-> > +	.getname	=	sock_no_getname,
-> > +	.ioctl		=	sock_no_ioctl,
-> > +	.listen		=	sock_no_listen,
-> > +	.shutdown	=	sock_no_shutdown,
-> > +	.getsockopt	=	sock_no_getsockopt,
-> > +	.mmap		=	sock_no_mmap,
-> > +	.bind		=	sock_no_bind,
-> > +	.accept		=	sock_no_accept,
-> > +	.setsockopt	=	sock_no_setsockopt,
-> > +	.poll		=	sock_no_poll,
-> > +	.sendmsg	=	sock_no_sendmsg,
-> > +	.sendpage	=	sock_no_sendpage,
-> > +
-> > +	.release	=	af_alg_release,
-> > +	.recvmsg	=	rng_recvmsg,
-> > +};
-> > +
-> > +static void *rng_bind(const char *name, u32 type, u32 mask)
-> > +{
-> > +	return crypto_alloc_rng(name, type, mask);
-> > +}
-> > +
-> > +static void rng_release(void *private)
-> > +{
-> > +	crypto_free_rng(private);
-> > +}
-> > +
-> > +static void rng_sock_destruct(struct sock *sk)
-> > +{
-> > +	struct alg_sock *ask = alg_sk(sk);
-> > +	struct rng_ctx *ctx = ask->private;
-> > +
-> > +	memset(ctx->result, 0, MAXSIZE);
-> 
-> memset(ctx->result, 0, sizeof(ctx->result));
-
-Ok, if this is desired, fine with me.
-> 
-> > +	sock_kfree_s(sk, ctx, ctx->len);
-> > +	af_alg_release_parent(sk);
-> > +}
-> > +
-> > +static int rng_accept_parent(void *private, struct sock *sk)
-> > +{
-> > +	struct rng_ctx *ctx;
-> > +	struct alg_sock *ask = alg_sk(sk);
-> > +	unsigned int len = sizeof(*ctx);
-> > +	int seedsize = crypto_rng_seedsize(private);
-> > +	int ret = -ENOMEM;
-> > +
-> > +	ctx = sock_kmalloc(sk, len, GFP_KERNEL);
-> > +	if (!ctx)
-> > +		return -ENOMEM;
-> > +	memset(ctx->result, 0, MAXSIZE);
-> 
-> Ditto...
-
-Will do.
-
-> 
-> > +	ctx->len = len;
-> > +
-> > +	if (seedsize) {
-> > +		u8 *buf = kmalloc(seedsize, GFP_KERNEL);
-> > +		if (!buf)
-> > +			goto err;
-> > +		get_random_bytes(buf, seedsize);
-> > +		ret = crypto_rng_reset(private, buf, len);
-> > +		kzfree(buf);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
--- 
-Ciao
-Stephan
+You lost all the #include and #define stmts there, restored them from
+the previous posting.
