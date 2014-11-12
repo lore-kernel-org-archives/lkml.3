@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279AbaKLCrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:47:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60514 "EHLO
+	id S1755298AbaKLCrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:47:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60496 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933862AbaKLBoH (ORCPT
+	with ESMTP id S965205AbaKLBny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:44:07 -0500
+	Tue, 11 Nov 2014 20:43:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Daney <david.daney@cavium.com>, Huacai Chen <chenhc@lemote.com>,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.14 095/203] MIPS: tlbex: Properly fix HUGE TLB Refill exception handler
-Date: Wed, 12 Nov 2014 10:16:05 +0900
-Message-Id: <20141112011547.057644131@linuxfoundation.org>
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 122/203] intel_pstate: Fix BYT frequency reporting
+Date: Wed, 12 Nov 2014 10:16:32 +0900
+Message-Id: <20141112011548.268734626@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -30,90 +29,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Daney <david.daney@cavium.com>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit 9e0f162a36914937a937358fcb45e0609ef2bfc4 upstream.
+commit b27580b05e6f5253228debc60b8ff4a786ff573a upstream.
 
-In commit 8393c524a25609 (MIPS: tlbex: Fix a missing statement for
-HUGETLB), the TLB Refill handler was fixed so that non-OCTEON targets
-would work properly with huge pages.  The change was incorrect in that
-it broke the OCTEON case.
+BYT has a different conversion from P state to frequency than the core
+processors.  This causes the min/max and current frequency to be
+misreported on some BYT SKUs. Tested on BYT N2820, Ivybridge and
+Haswell processors.
 
-The problem is shown here:
-
-    xxx0:	df7a0000 	ld	k0,0(k1)
-    .
-    .
-    .
-    xxxc0:	df610000 	ld	at,0(k1)
-    xxxc4:	335a0ff0 	andi	k0,k0,0xff0
-    xxxc8:	e825ffcd 	bbit1	at,0x5,0x0
-    xxxcc:	003ad82d 	daddu	k1,at,k0
-    .
-    .
-    .
-
-In the non-octeon case there is a destructive test for the huge PTE
-bit, and then at 0, $k0 is reloaded (that is what the 8393c524a25609
-patch added).
-
-In the octeon case, we modify k1 in the branch delay slot, but we
-never need k0 again, so the new load is not needed, but since k1 is
-modified, if we do the load, we load from a garbage location and then
-get a nested TLB Refill, which is seen in userspace as either SIGBUS
-or SIGSEGV (depending on the garbage).
-
-The real fix is to only do this reloading if it is needed, and never
-where it is harmful.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: Huacai Chen <chenhc@lemote.com>
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/8151/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Link: https://bugzilla.yoctoproject.org/show_bug.cgi?id=6663
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/mm/tlbex.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/cpufreq/intel_pstate.c |   42 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 36 insertions(+), 6 deletions(-)
 
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -1057,6 +1057,7 @@ static void build_update_entries(u32 **p
- struct mips_huge_tlb_info {
- 	int huge_pte;
- 	int restore_scratch;
-+	bool need_reload_pte;
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -67,6 +67,7 @@ struct pstate_data {
+ 	int	current_pstate;
+ 	int	min_pstate;
+ 	int	max_pstate;
++	int	scaling;
+ 	int	turbo_pstate;
  };
  
- static struct mips_huge_tlb_info
-@@ -1071,6 +1072,7 @@ build_fast_tlb_refill_handler (u32 **p,
+@@ -118,6 +119,7 @@ struct pstate_funcs {
+ 	int (*get_max)(void);
+ 	int (*get_min)(void);
+ 	int (*get_turbo)(void);
++	int (*get_scaling)(void);
+ 	void (*set)(struct cpudata*, int pstate);
+ 	void (*get_vid)(struct cpudata *);
+ };
+@@ -407,6 +409,22 @@ static void byt_set_pstate(struct cpudat
+ 	wrmsrl(MSR_IA32_PERF_CTL, val);
+ }
  
- 	rv.huge_pte = scratch;
- 	rv.restore_scratch = 0;
-+	rv.need_reload_pte = false;
++#define BYT_BCLK_FREQS 5
++static int byt_freq_table[BYT_BCLK_FREQS] = { 833, 1000, 1333, 1167, 800};
++
++static int byt_get_scaling(void)
++{
++	u64 value;
++	int i;
++
++	rdmsrl(MSR_FSB_FREQ, value);
++	i = value & 0x3;
++
++	BUG_ON(i > BYT_BCLK_FREQS);
++
++	return byt_freq_table[i] * 100;
++}
++
+ static void byt_get_vid(struct cpudata *cpudata)
+ {
+ 	u64 value;
+@@ -451,6 +469,11 @@ static int core_get_turbo_pstate(void)
+ 	return ret;
+ }
  
- 	if (check_for_high_segbits) {
- 		UASM_i_MFC0(p, tmp, C0_BADVADDR);
-@@ -1259,6 +1261,7 @@ static void build_r4000_tlb_refill_handl
- 	} else {
- 		htlb_info.huge_pte = K0;
- 		htlb_info.restore_scratch = 0;
-+		htlb_info.need_reload_pte = true;
- 		vmalloc_mode = refill_noscratch;
- 		/*
- 		 * create the plain linear handler
-@@ -1295,7 +1298,8 @@ static void build_r4000_tlb_refill_handl
- 	}
- #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
- 	uasm_l_tlb_huge_update(&l, p);
--	UASM_i_LW(&p, K0, 0, K1);
-+	if (htlb_info.need_reload_pte)
-+		UASM_i_LW(&p, htlb_info.huge_pte, 0, K1);
- 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
- 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
- 				   htlb_info.restore_scratch);
++static inline int core_get_scaling(void)
++{
++	return 100000;
++}
++
+ static void core_set_pstate(struct cpudata *cpudata, int pstate)
+ {
+ 	u64 val;
+@@ -475,6 +498,7 @@ static struct cpu_defaults core_params =
+ 		.get_max = core_get_max_pstate,
+ 		.get_min = core_get_min_pstate,
+ 		.get_turbo = core_get_turbo_pstate,
++		.get_scaling = core_get_scaling,
+ 		.set = core_set_pstate,
+ 	},
+ };
+@@ -493,6 +517,7 @@ static struct cpu_defaults byt_params =
+ 		.get_min = byt_get_min_pstate,
+ 		.get_turbo = byt_get_turbo_pstate,
+ 		.set = byt_set_pstate,
++		.get_scaling = byt_get_scaling,
+ 		.get_vid = byt_get_vid,
+ 	},
+ };
+@@ -526,7 +551,7 @@ static void intel_pstate_set_pstate(stru
+ 	if (pstate == cpu->pstate.current_pstate)
+ 		return;
+ 
+-	trace_cpu_frequency(pstate * 100000, cpu->cpu);
++	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
+ 
+ 	cpu->pstate.current_pstate = pstate;
+ 
+@@ -555,6 +580,7 @@ static void intel_pstate_get_cpu_pstates
+ 	cpu->pstate.min_pstate = pstate_funcs.get_min();
+ 	cpu->pstate.max_pstate = pstate_funcs.get_max();
+ 	cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
++	cpu->pstate.scaling = pstate_funcs.get_scaling();
+ 
+ 	if (pstate_funcs.get_vid)
+ 		pstate_funcs.get_vid(cpu);
+@@ -574,7 +600,9 @@ static inline void intel_pstate_calc_bus
+ 		core_pct += 1;
+ 
+ 	sample->freq = fp_toint(
+-		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
++		mul_fp(int_tofp(
++			cpu->pstate.max_pstate * cpu->pstate.scaling / 100),
++			core_pct));
+ 
+ 	sample->core_pct_busy = (int32_t)core_pct;
+ }
+@@ -817,12 +845,13 @@ static int intel_pstate_cpu_init(struct
+ 	else
+ 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
+ 
+-	policy->min = cpu->pstate.min_pstate * 100000;
+-	policy->max = cpu->pstate.turbo_pstate * 100000;
++	policy->min = cpu->pstate.min_pstate * cpu->pstate.scaling;
++	policy->max = cpu->pstate.turbo_pstate * cpu->pstate.scaling;
+ 
+ 	/* cpuinfo and default policy values */
+-	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * 100000;
+-	policy->cpuinfo.max_freq = cpu->pstate.turbo_pstate * 100000;
++	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * cpu->pstate.scaling;
++	policy->cpuinfo.max_freq =
++		cpu->pstate.turbo_pstate * cpu->pstate.scaling;
+ 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+ 	cpumask_set_cpu(policy->cpu, policy->cpus);
+ 
+@@ -880,6 +909,7 @@ static void copy_cpu_funcs(struct pstate
+ 	pstate_funcs.get_max   = funcs->get_max;
+ 	pstate_funcs.get_min   = funcs->get_min;
+ 	pstate_funcs.get_turbo = funcs->get_turbo;
++	pstate_funcs.get_scaling = funcs->get_scaling;
+ 	pstate_funcs.set       = funcs->set;
+ 	pstate_funcs.get_vid   = funcs->get_vid;
+ }
 
 
