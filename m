@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933712AbaKLBfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:35:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59722 "EHLO
+	id S933729AbaKLBfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:35:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59730 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933692AbaKLBfc (ORCPT
+	with ESMTP id S1754212AbaKLBfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:35:32 -0500
+	Tue, 11 Nov 2014 20:35:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        TieFu Chen <tienfu.chen@canonical.com>,
-        Kailang Yang <kailang@realtek.com>, Hui Wang <hui.wang@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 302/319] ALSA: hda - fix mute led problem for three HP laptops
-Date: Wed, 12 Nov 2014 10:17:20 +0900
-Message-Id: <20141112011042.803453644@linuxfoundation.org>
+        Grzegorz Jaszczyk <jaz@semihalf.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.17 304/319] irqchip: armada-370-xp: Fix MSI interrupt handling
+Date: Wed, 12 Nov 2014 10:17:22 +0900
+Message-Id: <20141112011043.163427376@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,42 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
 
-commit c922c4e87b9b5a3b50d4d17b96f189121430f511 upstream.
+commit 298dcb2dd0267d51e4f7c94a628cd0765a50ad75 upstream.
 
-Without the fix, the mute led can't work on these three machines.
+The MSI interrupts use the 16 high doorbells, which are notified by using IRQ1
+of the main interrupt controller.
 
-After apply this fix, these three machines will fall back on the led
-control quirk as below, and through testing, the mute led works very
-well.
-PIN_QUIRK(0x10ec0282, 0x103c, "HP", ALC269_FIXUP_HP_LINE1_MIC1_LED,
-            ALC282_STANDARD_PINS,
-            {0x12, 0x90a60140},
-            ...
+The MSI interrupts were handled correctly for Armada-XP and Armada-370 but not
+for Armada-375 and Armada-38x, which use chained handler for the MPIC.
 
-BugLink: https://bugs.launchpad.net/bugs/1389497
-Tested-by: TieFu Chen <tienfu.chen@canonical.com>
-Cc: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This commit fixes that by checking proper interrupt number in chained handler
+for the MPIC.
+
+Signed-off-by: Grzegorz Jaszczyk <jaz@semihalf.com>
+Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Fixes: bc69b8adfe22 ("irqchip: armada-370-xp: Setup a chained handler for the MPIC")
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Link: https://lkml.kernel.org/r/1411643839-64925-2-git-send-email-jaz@semihalf.com
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/irqchip/irq-armada-370-xp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5008,9 +5008,6 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x103c, 0x2224, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2225, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2246, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
--	SND_PCI_QUIRK(0x103c, 0x2247, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
--	SND_PCI_QUIRK(0x103c, 0x2248, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
--	SND_PCI_QUIRK(0x103c, 0x2249, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2253, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2254, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2255, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+--- a/drivers/irqchip/irq-armada-370-xp.c
++++ b/drivers/irqchip/irq-armada-370-xp.c
+@@ -417,9 +417,9 @@ static void armada_370_xp_mpic_handle_ca
+ 
+ 	irqmap = readl_relaxed(per_cpu_int_base + ARMADA_375_PPI_CAUSE);
+ 
+-	if (irqmap & BIT(0)) {
++	if (irqmap & BIT(1)) {
+ 		armada_370_xp_handle_msi_irq(NULL, true);
+-		irqmap &= ~BIT(0);
++		irqmap &= ~BIT(1);
+ 	}
+ 
+ 	for_each_set_bit(irqn, &irqmap, BITS_PER_LONG) {
 
 
