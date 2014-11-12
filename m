@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaKLJmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:42:13 -0500
-Received: from mga03.intel.com ([134.134.136.65]:51962 "EHLO mga03.intel.com"
+	id S1752551AbaKLJmC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:42:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59296 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273AbaKLJmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:42:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,367,1413270000"; 
-   d="scan'208";a="606473521"
-Date: Wed, 12 Nov 2014 15:13:00 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>, Dave Jiang <dave.jiang@intel.com>
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
-Subject: Re: [RESEND PATCH] ioatdma, fix dma mapping errors
-Message-ID: <20141112094300.GE24582@intel.com>
-References: <1414064309-22232-1-git-send-email-prarit@redhat.com>
- <CAPcyv4jR9taV+uL8yDM_gFAMSTpVk7U_4K5NFA6LEj+TRmi_Bw@mail.gmail.com>
+	id S1752361AbaKLJlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 04:41:20 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com,
+        haiyangz@microsoft.com
+Subject: Re: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer failure
+References: <1415768606-28538-1-git-send-email-decui@microsoft.com>
+Date: Wed, 12 Nov 2014 10:41:03 +0100
+In-Reply-To: <1415768606-28538-1-git-send-email-decui@microsoft.com> (Dexuan
+	Cui's message of "Tue, 11 Nov 2014 21:03:26 -0800")
+Message-ID: <87oasc69jk.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPcyv4jR9taV+uL8yDM_gFAMSTpVk7U_4K5NFA6LEj+TRmi_Bw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 06:36:58AM -0700, Dan Williams wrote:
-> On Thu, Oct 23, 2014 at 4:38 AM, Prarit Bhargava <prarit@redhat.com> wrote:
-> > No response from anyone the first time ...
-> >
-> 
-> Sorry about that, thanks for re-posting.
-> 
-> 
-> Dave, can you check this out / ack so Vinod can take this?
+Dexuan Cui <decui@microsoft.com> writes:
 
-I dont think I saw a response from Dave on this??
+> In the case the user-space daemon crashes, hangs or is killed, we
+> need to down the semaphore, otherwise, after the daemon starts next
+> time, the obsolete data in fcopy_transaction.message or
+> fcopy_transaction.fcopy_msg will be used immediately.
+>
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+
+Reviewed-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+
+> ---
+>  drivers/hv/hv_fcopy.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+>
+> diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+> index 23b2ce2..177122a 100644
+> --- a/drivers/hv/hv_fcopy.c
+> +++ b/drivers/hv/hv_fcopy.c
+> @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct *dummy)
+>  	 * process the pending transaction.
+>  	 */
+>  	fcopy_respond_to_host(HV_E_FAIL);
+> +
+> +	/* In the case the user-space daemon crashes, hangs or is killed, we
+> +	 * need to down the semaphore, otherwise, after the daemon starts next
+> +	 * time, the obsolete data in fcopy_transaction.message or
+> +	 * fcopy_transaction.fcopy_msg will be used immediately.
+> +	 */
+> +	if (down_trylock(&fcopy_transaction.read_sema))
+> +		pr_debug("FCP: failed to acquire the semaphore\n");
+> +
+>  }
+>
+>  static int fcopy_handle_handshake(u32 version)
 
 -- 
-~Vinod
+  Vitaly
