@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaKLBYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:24:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58762 "EHLO
+	id S1754160AbaKLBYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:24:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58777 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932AbaKLBYi (ORCPT
+	with ESMTP id S1754127AbaKLBYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:24:38 -0500
+	Tue, 11 Nov 2014 20:24:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.17 102/319] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
-Date: Wed, 12 Nov 2014 10:14:00 +0900
-Message-Id: <20141112011009.430140709@linuxfoundation.org>
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.17 073/319] UBI: block: Add support for the UBI_VOLUME_UPDATED notification
+Date: Wed, 12 Nov 2014 10:13:31 +0900
+Message-Id: <20141112011004.656413377@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,46 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
+commit 06d9c2905f745c8b1920a335cbb366ba6b0fc754 upstream.
 
-These models need i8042.notimeout, otherwise the touchpad will not work.
+Static volumes can change its 'used_bytes' when they get updated,
+and so the block interface must listen to the UBI_VOLUME_UPDATED
+notification to resize the block device accordingly.
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/mtd/ubi/block.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -629,6 +629,22 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Fujitsu A544 laptop */
-+		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
-+		},
-+	},
-+	{
-+		/* Fujitsu AH544 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
-+		},
-+	},
-+	{
- 		/* Fujitsu U574 laptop */
- 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
- 		.matches = {
+--- a/drivers/mtd/ubi/block.c
++++ b/drivers/mtd/ubi/block.c
+@@ -523,8 +523,12 @@ static int ubiblock_resize(struct ubi_vo
+ 	}
+ 
+ 	mutex_lock(&dev->dev_mutex);
+-	set_capacity(dev->gd, disk_capacity);
+-	ubi_msg("%s resized to %lld bytes", dev->gd->disk_name, vi->used_bytes);
++
++	if (get_capacity(dev->gd) != disk_capacity) {
++		set_capacity(dev->gd, disk_capacity);
++		ubi_msg("%s resized to %lld bytes", dev->gd->disk_name,
++			vi->used_bytes);
++	}
+ 	mutex_unlock(&dev->dev_mutex);
+ 	mutex_unlock(&devices_mutex);
+ 	return 0;
+@@ -548,6 +552,14 @@ static int ubiblock_notify(struct notifi
+ 	case UBI_VOLUME_RESIZED:
+ 		ubiblock_resize(&nt->vi);
+ 		break;
++	case UBI_VOLUME_UPDATED:
++		/*
++		 * If the volume is static, a content update might mean the
++		 * size (i.e. used_bytes) was also changed.
++		 */
++		if (nt->vi.vol_type == UBI_STATIC_VOLUME)
++			ubiblock_resize(&nt->vi);
++		break;
+ 	default:
+ 		break;
+ 	}
 
 
