@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525AbaKLBWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58585 "EHLO
+	id S964792AbaKLENA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:13:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58591 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473AbaKLBW2 (ORCPT
+	with ESMTP id S1752630AbaKLBWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:28 -0500
+	Tue, 11 Nov 2014 20:22:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Vogel <vogelchr@vogel.cx>,
-        Takashi Sakamoto <o-takashi@sakamocchi.jp>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 061/319] ALSA: bebob: Uninitialized id returned by saffirepro_both_clk_src_get
-Date: Wed, 12 Nov 2014 10:13:19 +0900
-Message-Id: <20141112011002.606684067@linuxfoundation.org>
+        Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 035/319] ASoC: soc-pcm: fix sig_bits determination in soc_pcm_apply_msb()
+Date: Wed, 12 Nov 2014 10:12:53 +0900
+Message-Id: <20141112010958.483493797@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,159 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Vogel <vogelchr@vogel.cx>
+From: Daniel Mack <daniel@zonque.org>
 
-commit d1d0b6b668818571122d30d68a0b3f768bd83a52 upstream.
+commit 5e63dfccf34d4dbf21429c4919f33c028ff49991 upstream.
 
-snd_bebob_stream_check_internal_clock() may get an id from
-saffirepro_both_clk_src_get (via clk_src->get()) that was uninitialized.
+In the SNDRV_PCM_STREAM_CAPTURE branch in soc_pcm_apply_msb(), look at
+sig_bits of the capture stream, not the playback one.
 
-a) make logic in saffirepro_both_clk_src_get explicit
-b) test if id used in snd_bebob_stream_check_internal_clock matches array size
+Spotted by coverity.
 
-[fixed missing signed prefix to *_maps[] by tiwai]
-
-Signed-off-by: Christian Vogel <vogelchr@vogel.cx>
-Reviewed-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Mack <daniel@zonque.org>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/firewire/bebob/bebob_focusrite.c |   62 +++++++++++++++++++++++++--------
- sound/firewire/bebob/bebob_stream.c    |   18 +++++++--
- 2 files changed, 63 insertions(+), 17 deletions(-)
+ sound/soc/soc-pcm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/firewire/bebob/bebob_focusrite.c
-+++ b/sound/firewire/bebob/bebob_focusrite.c
-@@ -27,12 +27,14 @@
- #define SAFFIRE_CLOCK_SOURCE_INTERNAL		0
- #define SAFFIRE_CLOCK_SOURCE_SPDIF		1
- 
--/* '1' is absent, why... */
-+/* clock sources as returned from register of Saffire Pro 10 and 26 */
- #define SAFFIREPRO_CLOCK_SOURCE_INTERNAL	0
-+#define SAFFIREPRO_CLOCK_SOURCE_SKIP		1 /* never used on hardware */
- #define SAFFIREPRO_CLOCK_SOURCE_SPDIF		2
--#define SAFFIREPRO_CLOCK_SOURCE_ADAT1		3
--#define SAFFIREPRO_CLOCK_SOURCE_ADAT2		4
-+#define SAFFIREPRO_CLOCK_SOURCE_ADAT1		3 /* not used on s.pro. 10 */
-+#define SAFFIREPRO_CLOCK_SOURCE_ADAT2		4 /* not used on s.pro. 10 */
- #define SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK	5
-+#define SAFFIREPRO_CLOCK_SOURCE_COUNT		6
- 
- /* S/PDIF, ADAT1, ADAT2 is enabled or not. three quadlets */
- #define SAFFIREPRO_ENABLE_DIG_IFACES		0x01a4
-@@ -101,13 +103,34 @@ saffire_write_quad(struct snd_bebob *beb
- 				  &data, sizeof(__be32), 0);
- }
- 
-+static char *const saffirepro_10_clk_src_labels[] = {
-+	SND_BEBOB_CLOCK_INTERNAL, "S/PDIF", "Word Clock"
-+};
- static char *const saffirepro_26_clk_src_labels[] = {
- 	SND_BEBOB_CLOCK_INTERNAL, "S/PDIF", "ADAT1", "ADAT2", "Word Clock"
- };
--
--static char *const saffirepro_10_clk_src_labels[] = {
--	SND_BEBOB_CLOCK_INTERNAL, "S/PDIF", "Word Clock"
-+/* Value maps between registers and labels for SaffirePro 10/26. */
-+static const signed char saffirepro_clk_maps[][SAFFIREPRO_CLOCK_SOURCE_COUNT] = {
-+	/* SaffirePro 10 */
-+	[0] = {
-+		[SAFFIREPRO_CLOCK_SOURCE_INTERNAL]  =  0,
-+		[SAFFIREPRO_CLOCK_SOURCE_SKIP]      = -1, /* not supported */
-+		[SAFFIREPRO_CLOCK_SOURCE_SPDIF]     =  1,
-+		[SAFFIREPRO_CLOCK_SOURCE_ADAT1]     = -1, /* not supported */
-+		[SAFFIREPRO_CLOCK_SOURCE_ADAT2]     = -1, /* not supported */
-+		[SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK] =  2,
-+	},
-+	/* SaffirePro 26 */
-+	[1] = {
-+		[SAFFIREPRO_CLOCK_SOURCE_INTERNAL]  =  0,
-+		[SAFFIREPRO_CLOCK_SOURCE_SKIP]      = -1, /* not supported */
-+		[SAFFIREPRO_CLOCK_SOURCE_SPDIF]     =  1,
-+		[SAFFIREPRO_CLOCK_SOURCE_ADAT1]     =  2,
-+		[SAFFIREPRO_CLOCK_SOURCE_ADAT2]     =  3,
-+		[SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK] =  4,
-+	}
- };
-+
- static int
- saffirepro_both_clk_freq_get(struct snd_bebob *bebob, unsigned int *rate)
- {
-@@ -138,24 +161,35 @@ saffirepro_both_clk_freq_set(struct snd_
- 
- 	return saffire_write_quad(bebob, SAFFIREPRO_RATE_NOREBOOT, id);
- }
-+
-+/*
-+ * query hardware for current clock source, return our internally
-+ * used clock index in *id, depending on hardware.
-+ */
- static int
- saffirepro_both_clk_src_get(struct snd_bebob *bebob, unsigned int *id)
- {
- 	int err;
--	u32 value;
-+	u32 value;       /* clock source read from hw register */
-+	const signed char *map;
- 
- 	err = saffire_read_quad(bebob, SAFFIREPRO_OFFSET_CLOCK_SOURCE, &value);
- 	if (err < 0)
- 		goto end;
- 
--	if (bebob->spec->clock->labels == saffirepro_10_clk_src_labels) {
--		if (value == SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK)
--			*id = 2;
--		else if (value == SAFFIREPRO_CLOCK_SOURCE_SPDIF)
--			*id = 1;
--	} else if (value > 1) {
--		*id = value - 1;
-+	/* depending on hardware, use a different mapping */
-+	if (bebob->spec->clock->labels == saffirepro_10_clk_src_labels)
-+		map = saffirepro_clk_maps[0];
-+	else
-+		map = saffirepro_clk_maps[1];
-+
-+	/* In a case that this driver cannot handle the value of register. */
-+	if (value >= SAFFIREPRO_CLOCK_SOURCE_COUNT || map[value] < 0) {
-+		err = -EIO;
-+		goto end;
- 	}
-+
-+	*id = (unsigned int)map[value];
- end:
- 	return err;
- }
---- a/sound/firewire/bebob/bebob_stream.c
-+++ b/sound/firewire/bebob/bebob_stream.c
-@@ -129,12 +129,24 @@ snd_bebob_stream_check_internal_clock(st
- 	/* 1.The device has its own operation to switch source of clock */
- 	if (clk_spec) {
- 		err = clk_spec->get(bebob, &id);
--		if (err < 0)
-+		if (err < 0) {
- 			dev_err(&bebob->unit->device,
- 				"fail to get clock source: %d\n", err);
--		else if (strncmp(clk_spec->labels[id], SND_BEBOB_CLOCK_INTERNAL,
--				 strlen(SND_BEBOB_CLOCK_INTERNAL)) == 0)
-+			goto end;
-+		}
-+
-+		if (id >= clk_spec->num) {
-+			dev_err(&bebob->unit->device,
-+				"clock source %d out of range 0..%d\n",
-+				id, clk_spec->num - 1);
-+			err = -EIO;
-+			goto end;
-+		}
-+
-+		if (strncmp(clk_spec->labels[id], SND_BEBOB_CLOCK_INTERNAL,
-+			    strlen(SND_BEBOB_CLOCK_INTERNAL)) == 0)
- 			*internal = true;
-+
- 		goto end;
- 	}
- 
+--- a/sound/soc/soc-pcm.c
++++ b/sound/soc/soc-pcm.c
+@@ -352,7 +352,7 @@ static void soc_pcm_apply_msb(struct snd
+ 	} else {
+ 		for (i = 0; i < rtd->num_codecs; i++) {
+ 			codec_dai = rtd->codec_dais[i];
+-			if (codec_dai->driver->playback.sig_bits == 0) {
++			if (codec_dai->driver->capture.sig_bits == 0) {
+ 				bits = 0;
+ 				break;
+ 			}
 
 
