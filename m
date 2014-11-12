@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776AbaKLKMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:12:43 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:35136 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679AbaKLKMl (ORCPT
+	id S1752462AbaKLKPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:15:52 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43072 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954AbaKLKPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 05:12:41 -0500
-Date: Wed, 12 Nov 2014 15:42:34 +0530
-From: Balavasu Kuppusammyprathaban <kp.balavasu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: andreas.dilger@intel.com, oleg.drokin@intel.com, greg@kroah.com
-Subject: [PATCH] staging: lustre: lustre: ptlrpc: Remove unnecessary braces
-Message-ID: <20141112101234.GA4355@hema-Inspiron-3520>
+	Wed, 12 Nov 2014 05:15:49 -0500
+Date: Wed, 12 Nov 2014 11:15:32 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Neuling <mikey@neuling.org>, Tony Luck <tony.luck@intel.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] arch: Introduce read_acquire()
+Message-ID: <20141112101532.GJ29390@twins.programming.kicks-ass.net>
+References: <20141111185510.2181.75347.stgit@ahduyck-workstation.home>
+ <20141111194734.GL16265@arm.com>
+ <54627BC0.4020705@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54627BC0.4020705@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following checkpatch warning:
-WARNING: braces {} are not necessary for single statement blocks
+On Tue, Nov 11, 2014 at 01:12:32PM -0800, Alexander Duyck wrote:
+> >Minor nit on naming, but load_acquire would match what we do with barriers,
+> >where you simply drop the smp_ prefix if you want the thing to work on UP
+> >systems too.
+> 
+> The problem is this is slightly different, load_acquire in my mind would use
+> a mb() call, I only use a rmb().  That is why I chose read_acquire as the
+> name.
 
-Signed-off-by: Balavasu Kuppusammyprathaban <kp.balavasu@gmail.com>
----
- drivers/staging/lustre/lustre/ptlrpc/client.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+acquire is not about rmb vs mb, do read up on
+Documentation/memory-barriers.txt. Its a distinctly different semantic.
+Some archs simply lack the means of implementing this semantics and have
+to revert to mb (stronger is always allowed).
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/client.c b/drivers/staging/lustre/lustre/ptlrpc/client.c
-index 38cc931..6c8815f 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/client.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/client.c
-@@ -2215,10 +2215,8 @@ EXPORT_SYMBOL(ptlrpc_set_wait);
-  */
- static void __ptlrpc_free_req(struct ptlrpc_request *request, int locked)
- {
--	if (request == NULL) {
-+	if (request == NULL)
- 		return;
--	}
--
- 	LASSERTF(!request->rq_receiving_reply, "req %p\n", request);
- 	LASSERTF(request->rq_rqbd == NULL, "req %p\n", request);/* client-side */
- 	LASSERTF(list_empty(&request->rq_list), "req %p\n", request);
--- 
-1.9.1
-
+Using the read vs load to wreck the acquire semantics is just insane.
