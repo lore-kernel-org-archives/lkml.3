@@ -1,119 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaKLOdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:33:24 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:61207 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033AbaKLOdU (ORCPT
+	id S1752799AbaKLOcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:32:39 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:60986 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaKLOch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:33:20 -0500
-Date: Wed, 12 Nov 2014 08:33:14 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, seth.forshee@canonical.com
-Subject: Re: [PATCH v5 1/4] fuse: Add support for pid namespaces
-Message-ID: <20141112143314.GA31775@ubuntu-hedt>
-Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Michael j Theall <mtheall@us.ibm.com>,
-	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
- <1414013060-137148-2-git-send-email-seth.forshee@canonical.com>
- <20141111132734.GC333@tucsk>
- <20141111152429.GA7906@ubuntu-hedt>
- <20141112120742.GF333@tucsk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141112120742.GF333@tucsk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Nov 2014 09:32:37 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-1d-54636f81f25b
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Cc: Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v11 0/6] amba/dmaengine: pl330: add Power Management support
+Date: Wed, 12 Nov 2014 15:32:22 +0100
+Message-id: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xq7qN+ckhBm/uS1lsnLGe1WL61AuM
+	Fqun/mW1eP3C0OLp5sdMFmeb3rBbdE5cwm4xa8peJovLu+awWXzuPcJocfsyr8XaI3fZLe6e
+	Ospmceb0JVaLCb8vsFkcXxtu8bJvP4uDoEdLcw+bx+yOmawei/e8ZPLYtKqTzePOtT1sHluu
+	trN4zL77g9Gjb8sqRo8Vq7+ze3zeJBfAFcVlk5Kak1mWWqRvl8CV0bP7AlvBSeWKrTN2Mzcw
+	TpXpYuTkkBAwkXj5aCEzhC0mceHeerYuRi4OIYGljBJfTjUwQzh9TBIPHq9jAaliEzCW2Lx8
+	CViViEA7s0TfuqlsIAlmgUVMEk1TFUFsYQEfiRtzzoKNZRFQleh6/JcVxOYVcJdo7mlnhVgn
+	J3Hy2GTWCYzcCxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBO7XHYxLj1kdYhTgYFTi
+	4f2glRwixJpYVlyZe4hRgoNZSYR3Vw5QiDclsbIqtSg/vqg0J7X4ECMTB6dUA6O/TqLDOt1m
+	69Cw/+/+Rn3awfJgCVPfin0u+oXS/7PL89gq5b4ppfz/lT3Rsqx47dzrv/aFvdPek1PKq7Wj
+	9qlx5Om5B2cXm6TITI6qEO4O8140Y/mmh8ymmW0/sl32PHgUwPN3w8EXAnWhPiLfjFgsV1wT
+	e/zXqn3C3Kv6ATc6VAR9w657RSqxFGckGmoxFxUnAgCEgNbaOgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 01:07:42PM +0100, Miklos Szeredi wrote:
-> On Tue, Nov 11, 2014 at 09:24:29AM -0600, Seth Forshee wrote:
-> > > What happens when the server does indeed change pid namespace after mounting?
-> > > Will just receive bogus pid values?  Shouldn't it receive an error instead?
-> > 
-> > Yeah, I suppose it does receive bogus pids and userid values. About all
-> > we could do to prevent this is make the /dev/fuse read/write paths
-> > return an error if the current namespace isn't the same as the one at
-> > mount time. But then requests could get stuck in the queue forever, so
-> > maybe we should also fail all requests in the queue when this happens.
-> > Unless you have a better idea?
-> 
-> In fuse_dev_do_read() just after dequeuing the request check if the namespaces
-> match, and if not, reject with EIO.
+Hi,
 
-Okay, I'll do that.
+Changes since v10:
+==================
+1. Bring back wrapper pm_runtime_is_irq_safe() (patch 1/6). This
+   replaces patch 1/5 from v9 (moving dev->power.irq_safe out of
+   CONFIG_PM_RUNTIME).
+2. Patch 3/6 amba: Don't store current irq_safe during runtime suspend
+   (suggested by Rafael J. Wysocki).
+   Because of this change I dropped reviewed-by tags from this patch.
+3. Patch 4/6 pl330: Add only runtime PM, without system PM (minor
+   changes to the patch so I retained the revewed/acked tags).
+   Add ack from Vinod.
+4. Add patch 5/6 pl330: Add system PM to the pl330 which *does not*
+   depends on runtime PM. I followed the discusions on LKML trying to
+   reach consensus.
+   Reasons tosplit previous patch into two patches (1st: runtime,
+   2nd: system PM):
+    - easier review,
+    - the first part (runtime PM) could be applied independently to
+      system PM support.
+6. Patch 6/6 amba: reworked the amba_pclk_* macros into inlines. Previously
+   they were not used but now patch 5/6 depends on them.
+7. Rebase on next-20141112.
 
-> > > > @@ -2146,7 +2147,11 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
-> > > >  
-> > > >  		fl->fl_start = ffl->start;
-> > > >  		fl->fl_end = ffl->end;
-> > > > -		fl->fl_pid = ffl->pid;
-> > > > +		rcu_read_lock();
-> > > > +		fl->fl_pid = pid_vnr(find_pid_ns(ffl->pid, fc->pid_ns));
-> > > > +		rcu_read_unlock();
-> > > > +		if (ffl->pid != 0 && fl->fl_pid == 0)
-> > > > +			return -EIO;
-> > > 
-> > > This needs some comments: is this trying to translate the pid backwards?
-> > > Why is it not checking the return of find_pid_ns() then?  The man page
-> > > documents l_pid value of -1 but not of 0, so why are we checking for
-> > > "ffl->pid != 0"?  Or is the man page incomplete and in practice we get l_pid
-> > > == 0 values?
-> > 
-> > I'll add comments. It's converting the pid in the fuse_file_lock into
-> > the current pid namespace. pid_vnr calls pid_nr_ns, which returns 0 if
-> > the pid can't be translated into the namespace, thus we return the
-> > error.
-> > 
-> > pid_vnr's return values don't necessarily conform to the expectations of
-> > the fcntl syscall in all cases, and as far as I can tell it should never
-> > return <0. But if fcntl doesn't expect l_pid == 0 and pid_vnr could
-> > return that value then doesn't it makes sense for fuse to return an
-> > error in cases where this would happen?
-> 
-> Not necessarily.  The conflicting lock might be held by a process whose pid is
-> not visible from the client's namespace.  That doesn't mean that the GETLK
-> should fail, it just means that l_pid can't be filled in (same as in NFS when a
-> lock held on a different client).  AFAICS, NFS fills l_pid with zero in that
-> case.  Makes sense, not sure why the man page doesn't document that.
+Changes since v9:
+=================
+1. Add patch 1/5: Move dev->power.irq_safe out of CONFIG_PM_RUNTIME.
+   If CONFIG_PM_RUNTIME is not set, amba bus driver must still know
+   whether child driver set irq_safe or not. Suggested by Ulf Hansson.
 
-Seems reasonable to follow the precedence set by NFS then.
+Changes since v8:
+=================
+1. Remove the pm_runtime_is_irq_safe() wrapper (patch 1).
+2. Patch 2/4 (amba): Store current irq_safe during runtime suspend.
+   Resume will mirror suspend's work. Add a macro for
+   safe access of irq_safe if CONFIG_PM_RUNTIME is unset.
+   Dropped reviewed-by Ulf Hansson (major changes in patch).
 
-> 
-> > > > @@ -2170,7 +2175,9 @@ static void fuse_lk_fill(struct fuse_req *req, struct file *file,
-> > > >  	arg->lk.start = fl->fl_start;
-> > > >  	arg->lk.end = fl->fl_end;
-> > > >  	arg->lk.type = fl->fl_type;
-> > > > -	arg->lk.pid = pid;
-> > > > +	arg->lk.pid = pid_nr_ns(pid, fc->pid_ns);
-> > > > +	if (pid && arg->lk.pid == 0)
-> > > > +		return -EOVERFLOW;
-> > > 
-> > > Could have done the conversion immediately after getting 'pid' with task_tgid(),
-> > > then the changes would have been smaller and more localized.
-> > 
-> > The changes would be very marginally smaller since currently only one
-> > caller of fuse_lk_fill which passes a non-zero pid. If additional
-> > callers were ever added with non-zero pids then there would be
-> > duplication of this code. But I'll do it whichever way you prefer, just
-> > let me know.
-> 
-> I prefer the simpler (even if only marginally) one.
+Changes since v7:
+=================
+1. Add reviewed-by Ulf Hansson (patches 3, 4 and 5).
+2. Patch 2/5: Fix missing return in amba_pclk_prepare() (suggested by
+   Ulf Hansson).
+3. Rebased on next-20141020.
 
-I'll change it then.
+Changes since v6:
+=================
+1. Add patch 5 removing the amba_pclk_*able macros.
+2. Patch 2/5: Remove IS_ERR, use static inline functions instead
+   of macros.
+3. Patch 4/5: Force runtime suspend/resume in system sleep
+   callbacks. Put with autosuspend at end of probe instead of no_idle.
+   Suggested by Ulf Hansson.
 
-Thanks,
-Seth
+Changes since v5:
+=================
+1. Patch 1/4: Add Ulf Hansson's reviewed-by.
+2. Patch 4/4: Use PM runtime autosuspend (suggested by Ulf Hansson).
+3. Rebase on next-20140922. 
+
+Changes since v4:
+1. Patch 3/4: Explicitly initialize amba_device.irq_safe field after
+   probing driver (suggested by Russell King).
+
+Changes since v3:
+1. Patch 1/4: Document new API in Documentation/power/runtime_pm.txt
+   (pointed by Alan Stern).
+
+Changes since v2:
+1. Add patch 1 (PM / Runtime: Add getter for querying the IRQ safe option)
+2. Add patch 2 (amba: Add helper macros for (un)preparing AMBA clock)
+3. Patch 3/4: Rewrite the idea. If IRQ safe runtime PM is set then
+   do not unprepare/prepare the clocks. Suggested by Russell King.
+4. Patch 4/4: During system sleep unprepare the clock.
+
+Changes since v1:
+1. Add patch 1 (amba: Allow AMBA drivers to use their own runtime PM).
+2. Patch 2/2: Apply Michal Simek's suggestions.
+3. Patch 2/2: Fix atomic context safeness in pl330_issue_pending().
+
+
+Description:
+============
+This patchset adds runtime and system PM to the pl330 driver.
+
+The runtime PM of pl330 driver requires interrupt safe suspend/resume
+callbacks which is in conflict with current amba bus driver.
+The latter also unprepares and prepares the AMBA bus clock which
+is not safe for atomic context.
+
+The patchset solves this in patch 3/6 by handling clocks in different
+way if device driver set interrupt safe runtime PM.
+
+Comments are welcome.
+
+
+Tested on board with pl330 DMA driver:
+ - Trats2 (Exynos4212)
+
+
+Best regards,
+Krzysztof Kozlowski
+
+Krzysztof Kozlowski (6):
+  PM / Runtime: Add getter for querying the IRQ safe option
+  amba: Add helpers for (un)preparing AMBA clock
+  amba: Don't unprepare the clocks if device driver wants IRQ safe
+    runtime PM
+  dmaengine: pl330: Add runtime Power Management support
+  dmaengine: pl330: Add PM sleep support
+  amba: Use inlines instead of macros for amba_pclk_enable/disable
+
+ Documentation/power/runtime_pm.txt |  4 ++
+ drivers/amba/bus.c                 | 15 ++++--
+ drivers/dma/pl330.c                | 95 ++++++++++++++++++++++++++++++++++++--
+ include/linux/amba/bus.h           | 22 +++++++--
+ include/linux/pm_runtime.h         |  6 +++
+ 5 files changed, 130 insertions(+), 12 deletions(-)
+
+-- 
+1.9.1
+
