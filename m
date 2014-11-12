@@ -1,152 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaKLWRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:17:11 -0500
-Received: from gproxy5-pub.mail.unifiedlayer.com ([67.222.38.55]:54512 "HELO
-	gproxy5-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752373AbaKLWRJ (ORCPT
+	id S1753420AbaKLWSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:18:36 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23131 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865AbaKLWSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:17:09 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 17:17:09 EST
-X-Authority-Analysis: v=2.1 cv=W5+rC3mk c=1 sm=1 tr=0
- a=9W6Fsu4pMcyimqnCr1W0/w==:117 a=9W6Fsu4pMcyimqnCr1W0/w==:17 a=cNaOj0WVAAAA:8
- a=f5113yIGAAAA:8 a=TBVoxVdAAAAA:8 a=QyXUC8HyAAAA:8 a=GhZ5P8ky69gA:10
- a=noBwr2J6l1kA:10 a=zd2uoN0lAAAA:8 a=ycLgAQKt713kvb0xNp4A:9
- a=onaNvmAnuPziQSMH:21 a=kUEfzhHZ6vsTahBm:21
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: linux-kernel@vger.kernel.org
-Cc: jroedel@suse.de, akpm@linux-foundation.org
-Subject: [PATCH 2/2] iommu/amd: use handle_mm_fault directly v2
-Date: Wed, 12 Nov 2014 14:10:28 -0800
-Message-Id: <1415830228-7844-2-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415830228-7844-1-git-send-email-jbarnes@virtuousgeek.org>
-References: <1415830228-7844-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Wed, 12 Nov 2014 17:18:35 -0500
+Date: Wed, 12 Nov 2014 17:18:13 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 6/8] xen: Hide get_phys_to_machine() to be able to
+ tune common path
+Message-ID: <20141112221813.GE7549@laptop.dumpdata.com>
+References: <1415684626-18590-1-git-send-email-jgross@suse.com>
+ <1415684626-18590-7-git-send-email-jgross@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415684626-18590-7-git-send-email-jgross@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This could be useful for debug in the future if we want to track
-major/minor faults more closely, and also avoids the put_page trick we
-used with gup.
+On Tue, Nov 11, 2014 at 06:43:44AM +0100, Juergen Gross wrote:
+> Today get_phys_to_machine() is always called when the mfn for a pfn
+> is to be obtained. Add a wrapper __pfn_to_mfn() as inline function
+> to be able to avoid calling get_phys_to_machine() when possible as
 
-In order to do this, we also track the task struct in the PASID state
-structure.  This lets us update the appropriate task stats after the
-fault has been handled, and may aid with debug in the future as well.
+s/when/where/
+> soon as the switch to a linear mapped p2m list has been done.
 
-v2: drop task accounting; GPU activity may have been submitted by a
-    different thread than the one binding the PASID (Joerg)
+But your inline function still calls get_phys_to_machine?
 
-Tested-by: Oded Gabbay <oded.gabbay@amd.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/iommu/amd_iommu_v2.c | 84 ++++++++++++++++++++++++++++----------------
- 1 file changed, 53 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
-index 90d734b..9c0d6e2 100644
---- a/drivers/iommu/amd_iommu_v2.c
-+++ b/drivers/iommu/amd_iommu_v2.c
-@@ -513,45 +513,67 @@ static void finish_pri_tag(struct device_state *dev_state,
- 	spin_unlock_irqrestore(&pasid_state->lock, flags);
- }
- 
-+static void handle_fault_error(struct fault *fault)
-+{
-+	int status;
-+
-+	if (!fault->dev_state->inv_ppr_cb) {
-+		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
-+		return;
-+	}
-+
-+	status = fault->dev_state->inv_ppr_cb(fault->dev_state->pdev,
-+					      fault->pasid,
-+					      fault->address,
-+					      fault->flags);
-+	switch (status) {
-+	case AMD_IOMMU_INV_PRI_RSP_SUCCESS:
-+		set_pri_tag_status(fault->state, fault->tag, PPR_SUCCESS);
-+		break;
-+	case AMD_IOMMU_INV_PRI_RSP_INVALID:
-+		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
-+		break;
-+	case AMD_IOMMU_INV_PRI_RSP_FAIL:
-+		set_pri_tag_status(fault->state, fault->tag, PPR_FAILURE);
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
- static void do_fault(struct work_struct *work)
- {
- 	struct fault *fault = container_of(work, struct fault, work);
--	int npages, write;
--	struct page *page;
-+	struct mm_struct *mm;
-+	struct vm_area_struct *vma;
-+	u64 address;
-+	int ret, write;
- 
- 	write = !!(fault->flags & PPR_FAULT_WRITE);
- 
--	down_read(&fault->state->mm->mmap_sem);
--	npages = get_user_pages(NULL, fault->state->mm,
--				fault->address, 1, write, 0, &page, NULL);
--	up_read(&fault->state->mm->mmap_sem);
--
--	if (npages == 1) {
--		put_page(page);
--	} else if (fault->dev_state->inv_ppr_cb) {
--		int status;
--
--		status = fault->dev_state->inv_ppr_cb(fault->dev_state->pdev,
--						      fault->pasid,
--						      fault->address,
--						      fault->flags);
--		switch (status) {
--		case AMD_IOMMU_INV_PRI_RSP_SUCCESS:
--			set_pri_tag_status(fault->state, fault->tag, PPR_SUCCESS);
--			break;
--		case AMD_IOMMU_INV_PRI_RSP_INVALID:
--			set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
--			break;
--		case AMD_IOMMU_INV_PRI_RSP_FAIL:
--			set_pri_tag_status(fault->state, fault->tag, PPR_FAILURE);
--			break;
--		default:
--			BUG();
--		}
--	} else {
--		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
-+	mm = fault->state->mm;
-+	address = fault->address;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_extend_vma(mm, address);
-+	if (!vma || address < vma->vm_start) {
-+		/* failed to get a vma in the right range */
-+		up_read(&mm->mmap_sem);
-+		handle_fault_error(fault);
-+		goto out;
-+	}
-+
-+	ret = handle_mm_fault(mm, vma, address, write);
-+	if (ret & VM_FAULT_ERROR) {
-+		/* failed to service fault */
-+		up_read(&mm->mmap_sem);
-+		handle_fault_error(fault);
-+		goto out;
- 	}
- 
-+	up_read(&mm->mmap_sem);
-+
-+out:
- 	finish_pri_tag(fault->dev_state, fault->state, fault->tag);
- 
- 	put_pasid_state(fault->state);
--- 
-1.9.1
+> 
+> Signed-off-by: Juergen Gross <jgross@suse.com>
+> ---
+>  arch/x86/include/asm/xen/page.h | 27 +++++++++++++++++++++------
+>  arch/x86/xen/mmu.c              |  2 +-
+>  arch/x86/xen/p2m.c              |  6 +++---
+>  3 files changed, 25 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> index 28fa795..07d8a7b 100644
+> --- a/arch/x86/include/asm/xen/page.h
+> +++ b/arch/x86/include/asm/xen/page.h
+> @@ -59,6 +59,22 @@ extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
+>  				     struct page **pages, unsigned int count);
+>  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+>  
+> +/*
+> + * When to use pfn_to_mfn(), __pfn_to_mfn() or get_phys_to_machine():
+> + * - pfn_to_mfn() returns either INVALID_P2M_ENTRY or the mfn. In case of an
+> + *   identity entry the identity indicator will be cleared.
 
+Why don't you say : In case of identity PFN the same PFN is returned.
+
+But you did miss that also the FOREIGN_FRAME_BIT is cleared.
+
+> + * - __pfn_to_mfn() returns the found entry of the p2m table. A possibly set
+
+s/of the/in the/
+> + *   identity indicator will be still set. __pfn_to_mfn() is encapsulating
+.. be still set if the PFN is an identity one.
+> + *   get_phys_to_machine() and might skip that function if possible to speed
+> + *   up the common path.
+
+How is is skipping that function? The patch below does no such thing?
+
+> + * - get_phys_to_machine() is basically the same as __pfn_to_mfn(), but
+> + *   without any short cuts for the common fast path.
+
+Right. Perhpas we should call it 'slow_p2m' instead of the 'get_phys_to_machine'.
+
+> + */
+> +static inline unsigned long __pfn_to_mfn(unsigned long pfn)
+> +{
+> +	return get_phys_to_machine(pfn);
+> +}
+> +
