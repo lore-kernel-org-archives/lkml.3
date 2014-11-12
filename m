@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750850AbaKLCpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:45:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60555 "EHLO
+	id S1752177AbaKLCqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:46:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60536 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965278AbaKLBoo (ORCPT
+	with ESMTP id S934671AbaKLBoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:44:44 -0500
+	Tue, 11 Nov 2014 20:44:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arjun Sreedharan <arjun024@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 138/203] usb: phy: return -ENODEV on failure of try_module_get
-Date: Wed, 12 Nov 2014 10:16:48 +0900
-Message-Id: <20141112011549.016744025@linuxfoundation.org>
+        Nathaniel Ting <nathaniel.ting@silabs.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 133/203] USB: serial: cp210x: add Silicon Labs 358x VID and PID
+Date: Wed, 12 Nov 2014 10:16:43 +0900
+Message-Id: <20141112011548.804645483@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,33 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arjun Sreedharan <arjun024@gmail.com>
+From: Nathaniel Ting <nathaniel.ting@silabs.com>
 
-commit 2c4e3dbf63b39d44a291db70016c718f45d9cd46 upstream.
+commit 35cc83eab097e5720a9cc0ec12bdc3a726f58381 upstream.
 
-When __usb_find_phy_dev() does not return error and
-try_module_get() fails, return -ENODEV.
+Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
+driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
+connect to host PCs over a USB serial link.
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/phy/phy.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -229,6 +229,9 @@ struct usb_phy *usb_get_phy_dev(struct d
- 	phy = __usb_find_phy_dev(dev, &phy_bind_list, index);
- 	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
- 		dev_dbg(dev, "unable to find transceiver\n");
-+		if (!IS_ERR(phy))
-+			phy = ERR_PTR(-ENODEV);
-+
- 		goto err0;
- 	}
- 
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -155,6 +155,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
++	{ USB_DEVICE(0x1BA4, 0x0002) },	/* Silicon Labs 358x factory default */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
 
 
