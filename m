@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965039AbaKLBlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:41:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60144 "EHLO
+	id S934274AbaKLBk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:40:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60133 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934276AbaKLBlB (ORCPT
+	with ESMTP id S965023AbaKLBky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:41:01 -0500
+	Tue, 11 Nov 2014 20:40:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nibble Max <nibble.max@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 074/203] media: m88ts2022: fix 32bit overflow on filter calc
-Date: Wed, 12 Nov 2014 10:15:44 +0900
-Message-Id: <20141112011546.092298033@linuxfoundation.org>
+        Paul Fertser <fercerpav@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.14 072/203] media: usb: uvc: add a quirk for Dell XPS M1330 webcam
+Date: Wed, 12 Nov 2014 10:15:42 +0900
+Message-Id: <20141112011546.002028115@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,38 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Paul Fertser <fercerpav@gmail.com>
 
-commit f538e085138e519e25ae0828bd6c6e7492ce8ca4 upstream.
+commit 62ea864f84fed6e04dd033d500d4c9183a83d590 upstream.
 
-Maximum satellite symbol rate used is 45000000Sps which overflows
-when multiplied by 135. As final calculation result is fraction,
-we could use mult_frac macro in order to keep calculation inside
-32 bit number limits and prevent overflow.
+As reported on [1], this device needs this quirk to be able to
+reliably initialise the webcam.
 
-Original bug and fix was provided by Nibble Max. I decided to
-implement it differently as it is now.
+[1] http://ubuntuforums.org/showthread.php?t=2145996
 
-Reported-by: Nibble Max <nibble.max@gmail.com>
-Tested-by: Nibble Max <nibble.max@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Paul Fertser <fercerpav@gmail.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/tuners/m88ts2022.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/media/tuners/m88ts2022.c
-+++ b/drivers/media/tuners/m88ts2022.c
-@@ -314,7 +314,7 @@ static int m88ts2022_set_params(struct d
- 	div_min = gdiv28 * 78 / 100;
- 	div_max = clamp_val(div_max, 0U, 63U);
- 
--	f_3db_hz = c->symbol_rate * 135UL / 200UL;
-+	f_3db_hz = mult_frac(c->symbol_rate, 135, 200);
- 	f_3db_hz +=  2000000U + (frequency_offset_khz * 1000U);
- 	f_3db_hz = clamp(f_3db_hz, 7000000U, 40000000U);
- 
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -2210,6 +2210,15 @@ static struct usb_device_id uvc_ids[] =
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_QUIRK_PROBE_DEF },
++	/* Dell XPS M1330 (OmniVision OV7670 webcam) */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x05a9,
++	  .idProduct		= 0x7670,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_PROBE_DEF },
+ 	/* Apple Built-In iSight */
+ 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+ 				| USB_DEVICE_ID_MATCH_INT_INFO,
 
 
