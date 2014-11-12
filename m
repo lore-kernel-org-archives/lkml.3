@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254AbaKLB0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:26:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58918 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232AbaKLB0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932236AbaKLB0d (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:26:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58914 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbaKLB0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:26:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Petr Matousek <pmatouse@redhat.com>,
+        Nadav Amit <namit@cs.technion.ac.il>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.17 136/319] kvm: vmx: handle invvpid vm exit gracefully
-Date: Wed, 12 Nov 2014 10:14:34 +0900
-Message-Id: <20141112011015.053550580@linuxfoundation.org>
+Subject: [PATCH 3.17 135/319] KVM: x86: Handle errors when RIP is set during far jumps
+Date: Wed, 12 Nov 2014 10:14:33 +0900
+Message-Id: <20141112011014.876850418@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,77 +29,250 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Petr Matousek <pmatouse@redhat.com>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit a642fc305053cc1c6e47e4f4df327895747ab485 upstream.
+commit d1442d85cc30ea75f7d399474ca738e0bc96f715 upstream.
 
-On systems with invvpid instruction support (corresponding bit in
-IA32_VMX_EPT_VPID_CAP MSR is set) guest invocation of invvpid
-causes vm exit, which is currently not handled and results in
-propagation of unknown exit to userspace.
+Far jmp/call/ret may fault while loading a new RIP.  Currently KVM does not
+handle this case, and may result in failed vm-entry once the assignment is
+done.  The tricky part of doing so is that loading the new CS affects the
+VMCS/VMCB state, so if we fail during loading the new RIP, we are left in
+unconsistent state.  Therefore, this patch saves on 64-bit the old CS
+descriptor and restores it if loading RIP failed.
 
-Fix this by installing an invvpid vm exit handler.
+This fixes CVE-2014-3647.
 
-This is CVE-2014-3646.
-
-Signed-off-by: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/uapi/asm/vmx.h |    2 ++
- arch/x86/kvm/vmx.c              |    9 ++++++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/kvm/emulate.c |  118 ++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 88 insertions(+), 30 deletions(-)
 
---- a/arch/x86/include/uapi/asm/vmx.h
-+++ b/arch/x86/include/uapi/asm/vmx.h
-@@ -67,6 +67,7 @@
- #define EXIT_REASON_EPT_MISCONFIG       49
- #define EXIT_REASON_INVEPT              50
- #define EXIT_REASON_PREEMPTION_TIMER    52
-+#define EXIT_REASON_INVVPID             53
- #define EXIT_REASON_WBINVD              54
- #define EXIT_REASON_XSETBV              55
- #define EXIT_REASON_APIC_WRITE          56
-@@ -114,6 +115,7 @@
- 	{ EXIT_REASON_EOI_INDUCED,           "EOI_INDUCED" }, \
- 	{ EXIT_REASON_INVALID_STATE,         "INVALID_STATE" }, \
- 	{ EXIT_REASON_INVD,                  "INVD" }, \
-+	{ EXIT_REASON_INVVPID,               "INVVPID" }, \
- 	{ EXIT_REASON_INVPCID,               "INVPCID" }
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1467,7 +1467,9 @@ static int write_segment_descriptor(stru
  
- #endif /* _UAPIVMX_H */
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6639,6 +6639,12 @@ static int handle_invept(struct kvm_vcpu
- 	return 1;
+ /* Does not support long mode */
+ static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+-				     u16 selector, int seg, u8 cpl, bool in_task_switch)
++				     u16 selector, int seg, u8 cpl,
++				     bool in_task_switch,
++				     struct desc_struct *desc)
+ {
+ 	struct desc_struct seg_desc, old_desc;
+ 	u8 dpl, rpl;
+@@ -1599,6 +1601,8 @@ static int __load_segment_descriptor(str
+ 	}
+ load:
+ 	ctxt->ops->set_segment(ctxt, selector, &seg_desc, base3, seg);
++	if (desc)
++		*desc = seg_desc;
+ 	return X86EMUL_CONTINUE;
+ exception:
+ 	emulate_exception(ctxt, err_vec, err_code, true);
+@@ -1609,7 +1613,7 @@ static int load_segment_descriptor(struc
+ 				   u16 selector, int seg)
+ {
+ 	u8 cpl = ctxt->ops->cpl(ctxt);
+-	return __load_segment_descriptor(ctxt, selector, seg, cpl, false);
++	return __load_segment_descriptor(ctxt, selector, seg, cpl, false, NULL);
  }
  
-+static int handle_invvpid(struct kvm_vcpu *vcpu)
-+{
-+	kvm_queue_exception(vcpu, UD_VECTOR);
-+	return 1;
-+}
+ static void write_register_operand(struct operand *op)
+@@ -2003,17 +2007,31 @@ static int em_iret(struct x86_emulate_ct
+ static int em_jmp_far(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
+-	unsigned short sel;
++	unsigned short sel, old_sel;
++	struct desc_struct old_desc, new_desc;
++	const struct x86_emulate_ops *ops = ctxt->ops;
++	u8 cpl = ctxt->ops->cpl(ctxt);
 +
- /*
-  * The exit handlers return 1 if the exit was handled fully and guest execution
-  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
-@@ -6684,6 +6690,7 @@ static int (*const kvm_vmx_exit_handlers
- 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_mwait,
- 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_monitor,
- 	[EXIT_REASON_INVEPT]                  = handle_invept,
-+	[EXIT_REASON_INVVPID]                 = handle_invvpid,
- };
++	/* Assignment of RIP may only fail in 64-bit mode */
++	if (ctxt->mode == X86EMUL_MODE_PROT64)
++		ops->get_segment(ctxt, &old_sel, &old_desc, NULL,
++				 VCPU_SREG_CS);
  
- static const int kvm_vmx_max_exit_handlers =
-@@ -6917,7 +6924,7 @@ static bool nested_vmx_exit_handled(stru
- 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
- 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
- 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
--	case EXIT_REASON_INVEPT:
-+	case EXIT_REASON_INVEPT: case EXIT_REASON_INVVPID:
- 		/*
- 		 * VMX instructions trap unconditionally. This allows L1 to
- 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
+ 	memcpy(&sel, ctxt->src.valptr + ctxt->op_bytes, 2);
+ 
+-	rc = load_segment_descriptor(ctxt, sel, VCPU_SREG_CS);
++	rc = __load_segment_descriptor(ctxt, sel, VCPU_SREG_CS, cpl, false,
++				       &new_desc);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 
+-	ctxt->_eip = 0;
+-	memcpy(&ctxt->_eip, ctxt->src.valptr, ctxt->op_bytes);
+-	return X86EMUL_CONTINUE;
++	rc = assign_eip_far(ctxt, ctxt->src.val, new_desc.l);
++	if (rc != X86EMUL_CONTINUE) {
++		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
++		/* assigning eip failed; restore the old cs */
++		ops->set_segment(ctxt, old_sel, &old_desc, 0, VCPU_SREG_CS);
++		return rc;
++	}
++	return rc;
+ }
+ 
+ static int em_grp45(struct x86_emulate_ctxt *ctxt)
+@@ -2080,21 +2098,34 @@ static int em_ret(struct x86_emulate_ctx
+ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
+-	unsigned long cs;
++	unsigned long eip, cs;
++	u16 old_cs;
+ 	int cpl = ctxt->ops->cpl(ctxt);
++	struct desc_struct old_desc, new_desc;
++	const struct x86_emulate_ops *ops = ctxt->ops;
++
++	if (ctxt->mode == X86EMUL_MODE_PROT64)
++		ops->get_segment(ctxt, &old_cs, &old_desc, NULL,
++				 VCPU_SREG_CS);
+ 
+-	rc = emulate_pop(ctxt, &ctxt->_eip, ctxt->op_bytes);
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+-	if (ctxt->op_bytes == 4)
+-		ctxt->_eip = (u32)ctxt->_eip;
+ 	rc = emulate_pop(ctxt, &cs, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	/* Outer-privilege level return is not implemented */
+ 	if (ctxt->mode >= X86EMUL_MODE_PROT16 && (cs & 3) > cpl)
+ 		return X86EMUL_UNHANDLEABLE;
+-	rc = load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS);
++	rc = __load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS, 0, false,
++				       &new_desc);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++	rc = assign_eip_far(ctxt, eip, new_desc.l);
++	if (rc != X86EMUL_CONTINUE) {
++		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
++		ops->set_segment(ctxt, old_cs, &old_desc, 0, VCPU_SREG_CS);
++	}
+ 	return rc;
+ }
+ 
+@@ -2521,19 +2552,24 @@ static int load_state_from_tss16(struct
+ 	 * Now load segment descriptors. If fault happens at this stage
+ 	 * it is handled in a context of new task
+ 	 */
+-	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+ 
+@@ -2658,25 +2694,32 @@ static int load_state_from_tss32(struct
+ 	 * Now load segment descriptors. If fault happenes at this stage
+ 	 * it is handled in a context of new task
+ 	 */
+-	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR,
++					cpl, true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl, true);
++	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl,
++					true, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+ 
+@@ -2959,24 +3002,39 @@ static int em_call_far(struct x86_emulat
+ 	u16 sel, old_cs;
+ 	ulong old_eip;
+ 	int rc;
++	struct desc_struct old_desc, new_desc;
++	const struct x86_emulate_ops *ops = ctxt->ops;
++	int cpl = ctxt->ops->cpl(ctxt);
+ 
+-	old_cs = get_segment_selector(ctxt, VCPU_SREG_CS);
+ 	old_eip = ctxt->_eip;
++	ops->get_segment(ctxt, &old_cs, &old_desc, NULL, VCPU_SREG_CS);
+ 
+ 	memcpy(&sel, ctxt->src.valptr + ctxt->op_bytes, 2);
+-	if (load_segment_descriptor(ctxt, sel, VCPU_SREG_CS))
++	rc = __load_segment_descriptor(ctxt, sel, VCPU_SREG_CS, cpl, false,
++				       &new_desc);
++	if (rc != X86EMUL_CONTINUE)
+ 		return X86EMUL_CONTINUE;
+ 
+-	ctxt->_eip = 0;
+-	memcpy(&ctxt->_eip, ctxt->src.valptr, ctxt->op_bytes);
++	rc = assign_eip_far(ctxt, ctxt->src.val, new_desc.l);
++	if (rc != X86EMUL_CONTINUE)
++		goto fail;
+ 
+ 	ctxt->src.val = old_cs;
+ 	rc = em_push(ctxt);
+ 	if (rc != X86EMUL_CONTINUE)
+-		return rc;
++		goto fail;
+ 
+ 	ctxt->src.val = old_eip;
+-	return em_push(ctxt);
++	rc = em_push(ctxt);
++	/* If we failed, we tainted the memory, but the very least we should
++	   restore cs */
++	if (rc != X86EMUL_CONTINUE)
++		goto fail;
++	return rc;
++fail:
++	ops->set_segment(ctxt, old_cs, &old_desc, 0, VCPU_SREG_CS);
++	return rc;
++
+ }
+ 
+ static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
 
 
