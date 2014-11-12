@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935090AbaKLBsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:48:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60780 "EHLO
+	id S965462AbaKLBsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:48:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935056AbaKLBsB (ORCPT
+	with ESMTP id S935109AbaKLBsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:01 -0500
+	Tue, 11 Nov 2014 20:48:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <ktkhai@parallels.com>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 190/203] sched: Use rq->rd in sched_setaffinity() under RCU read lock
-Date: Wed, 12 Nov 2014 10:17:40 +0900
-Message-Id: <20141112011551.408450371@linuxfoundation.org>
+        Yu Zhao <yuzhao@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        David Rientjes <rientjes@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 164/203] mm: free compound page with correct order
+Date: Wed, 12 Nov 2014 10:17:14 +0900
+Message-Id: <20141112011550.207051116@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -32,44 +33,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <ktkhai@parallels.com>
+From: Yu Zhao <yuzhao@google.com>
 
-commit f1e3a0932f3a9554371792a7daaf1e0eb19f66d5 upstream.
+commit 5ddacbe92b806cd5b4f8f154e8e46ac267fff55c upstream.
 
-Probability of use-after-free isn't zero in this place.
+Compound page should be freed by put_page() or free_pages() with correct
+order.  Not doing so will cause tail pages leaked.
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140922183636.11015.83611.stgit@localhost
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+The compound order can be obtained by compound_order() or use
+HPAGE_PMD_ORDER in our case.  Some people would argue the latter is
+faster but I prefer the former which is more general.
+
+This bug was observed not just on our servers (the worst case we saw is
+11G leaked on a 48G machine) but also on our workstations running Ubuntu
+based distro.
+
+  $ cat /proc/vmstat  | grep thp_zero_page_alloc
+  thp_zero_page_alloc 55
+  thp_zero_page_alloc_failed 0
+
+This means there is (thp_zero_page_alloc - 1) * (2M - 4K) memory leaked.
+
+Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
+Signed-off-by: Yu Zhao <yuzhao@google.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ mm/huge_memory.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3941,13 +3941,14 @@ long sched_setaffinity(pid_t pid, const
- 	 * root_domain.
- 	 */
- #ifdef CONFIG_SMP
--	if (task_has_dl_policy(p)) {
--		const struct cpumask *span = task_rq(p)->rd->span;
--
--		if (dl_bandwidth_enabled() && !cpumask_subset(span, new_mask)) {
-+	if (task_has_dl_policy(p) && dl_bandwidth_enabled()) {
-+		rcu_read_lock();
-+		if (!cpumask_subset(task_rq(p)->rd->span, new_mask)) {
- 			retval = -EBUSY;
-+			rcu_read_unlock();
- 			goto out_unlock;
- 		}
-+		rcu_read_unlock();
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -199,7 +199,7 @@ retry:
+ 	preempt_disable();
+ 	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
+ 		preempt_enable();
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		goto retry;
  	}
- #endif
- again:
+ 
+@@ -231,7 +231,7 @@ static unsigned long shrink_huge_zero_pa
+ 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
+ 		struct page *zero_page = xchg(&huge_zero_page, NULL);
+ 		BUG_ON(zero_page == NULL);
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		return HPAGE_PMD_NR;
+ 	}
+ 
 
 
