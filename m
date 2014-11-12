@@ -1,148 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaKLQQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 11:16:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944AbaKLQQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 11:16:04 -0500
-Message-ID: <546387B8.9050601@redhat.com>
-Date: Wed, 12 Nov 2014 17:15:52 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753312AbaKLQRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 11:17:39 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51709 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377AbaKLQRh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 11:17:37 -0500
+Date: Wed, 12 Nov 2014 08:17:31 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 000/203] 3.14.24-stable review
+Message-ID: <20141112161731.GA25697@roeck-us.net>
+References: <20141112011542.686743533@linuxfoundation.org>
+ <5462FE3A.7060601@roeck-us.net>
+ <20141112063600.GA7367@kroah.com>
 MIME-Version: 1.0
-To: Stephan Mueller <smueller@chronox.de>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        ABI/API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] crypto: AF_ALG: add random number generator support
-References: <4738444.A2vZX1nNCo@tachyon.chronox.de> <1914037.Wy7EiDNG7B@tachyon.chronox.de>
-In-Reply-To: <1914037.Wy7EiDNG7B@tachyon.chronox.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141112063600.GA7367@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54638821.0017,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2014 08:05 AM, Stephan Mueller wrote:
-> This patch adds the random number generator support for AF_ALG.
->
-> A random number generator's purpose is to generate data without
-> requiring the caller to provide any data. Therefore, the AF_ALG
-> interface handler for RNGs only implements a callback handler for
-> recvmsg.
-...
-> +static int rng_recvmsg(struct kiocb *unused, struct socket *sock,
-> +		       struct msghdr *msg, size_t len, int flags)
-> +{
-> +	struct sock *sk = sock->sk;
-> +	struct alg_sock *ask = alg_sk(sk);
-> +	struct rng_ctx *ctx = ask->private;
-> +	int err = -EFAULT;
-> +
-> +	if (0 == len)
+On Wed, Nov 12, 2014 at 03:36:00PM +0900, Greg Kroah-Hartman wrote:
+> On Tue, Nov 11, 2014 at 10:29:14PM -0800, Guenter Roeck wrote:
+> > On 11/11/2014 05:14 PM, Greg Kroah-Hartman wrote:
+> > >This is the start of the stable review cycle for the 3.14.24 release.
+> > >There are 203 patches in this series, all will be posted as a response
+> > >to this one.  If anyone has any issues with these being applied, please
+> > >let me know.
+> > >
+> > >Responses should be made by Fri Nov 14 01:15:14 UTC 2014.
+> > >Anything received after that time might be too late.
+> > >
+> > 
+> > Build results:
+> > 	total: 137 pass: 134 fail: 3
+> > Failed builds:
+> > 	powerpc:allmodconfig (binutils 2.23)
+> > 	powerpc:allmodconfig (binutils 2.24)
+> > 	xtensa:allmodconfig
+> > 
+> > Qemu tests:
+> > 	total: 30 pass: 30 fail: 0
+> > 
+> > Builds fail due to
+> > 
+> > drivers/of/selftest.c: In function 'of_selftest':
+> > drivers/of/selftest.c:436:2: error: implicit declaration of function 'of_selftest_property_match_string' [-Werror=implicit-function-declaration]
+> >   of_selftest_property_match_string();
+> >   ^
+> > drivers/of/selftest.c: At top level:
+> > drivers/of/selftest.c:135:20: warning: 'of_selftest_property_string' defined but not used [-Wunused-function]
+> >  static void __init of_selftest_property_string(void)
+> >                     ^
+> > 
+> > as mentioned earlier.
+> 
+> I've now fixed this one, if you want to pull the latest stable-git tree.
+> 
+Confirmed.
 
-if (len == 0)
-	...
-
-[And also other places.]
-
-We don't use Yoda condition style in the kernel.
-
-> +		return 0;
-> +	if (MAXSIZE < len)
-> +		len = MAXSIZE;
-> +
-> +	lock_sock(sk);
-> +	len = crypto_rng_get_bytes(ctx->drng, ctx->result, len);
-> +	if (0 > len)
-> +		goto unlock;
-> +
-> +	err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
-> +	memset(ctx->result, 0, err);
-> +
-
-This looks buggy.
-
-If copy_to_user() fails from within memcpy_toiovec(), we call memset()
-with a negative return value which is interpreted as size_t and thus
-causes a buffer overflow writing beyond ctx->result, no?
-
-If it succeeds, we call memset(ctx->result, 0, 0) .....
-
-> +unlock:
-> +	release_sock(sk);
-> +
-> +	return err ? err : len;
-> +}
-> +
-> +static struct proto_ops algif_rng_ops = {
-> +	.family		=	PF_ALG,
-> +
-> +	.connect	=	sock_no_connect,
-> +	.socketpair	=	sock_no_socketpair,
-> +	.getname	=	sock_no_getname,
-> +	.ioctl		=	sock_no_ioctl,
-> +	.listen		=	sock_no_listen,
-> +	.shutdown	=	sock_no_shutdown,
-> +	.getsockopt	=	sock_no_getsockopt,
-> +	.mmap		=	sock_no_mmap,
-> +	.bind		=	sock_no_bind,
-> +	.accept		=	sock_no_accept,
-> +	.setsockopt	=	sock_no_setsockopt,
-> +	.poll		=	sock_no_poll,
-> +	.sendmsg	=	sock_no_sendmsg,
-> +	.sendpage	=	sock_no_sendpage,
-> +
-> +	.release	=	af_alg_release,
-> +	.recvmsg	=	rng_recvmsg,
-> +};
-> +
-> +static void *rng_bind(const char *name, u32 type, u32 mask)
-> +{
-> +	return crypto_alloc_rng(name, type, mask);
-> +}
-> +
-> +static void rng_release(void *private)
-> +{
-> +	crypto_free_rng(private);
-> +}
-> +
-> +static void rng_sock_destruct(struct sock *sk)
-> +{
-> +	struct alg_sock *ask = alg_sk(sk);
-> +	struct rng_ctx *ctx = ask->private;
-> +
-> +	memset(ctx->result, 0, MAXSIZE);
-
-memset(ctx->result, 0, sizeof(ctx->result));
-
-> +	sock_kfree_s(sk, ctx, ctx->len);
-> +	af_alg_release_parent(sk);
-> +}
-> +
-> +static int rng_accept_parent(void *private, struct sock *sk)
-> +{
-> +	struct rng_ctx *ctx;
-> +	struct alg_sock *ask = alg_sk(sk);
-> +	unsigned int len = sizeof(*ctx);
-> +	int seedsize = crypto_rng_seedsize(private);
-> +	int ret = -ENOMEM;
-> +
-> +	ctx = sock_kmalloc(sk, len, GFP_KERNEL);
-> +	if (!ctx)
-> +		return -ENOMEM;
-> +	memset(ctx->result, 0, MAXSIZE);
-
-Ditto...
-
-> +	ctx->len = len;
-> +
-> +	if (seedsize) {
-> +		u8 *buf = kmalloc(seedsize, GFP_KERNEL);
-> +		if (!buf)
-> +			goto err;
-> +		get_random_bytes(buf, seedsize);
-> +		ret = crypto_rng_reset(private, buf, len);
-> +		kzfree(buf);
-
+Thanks,
+Guenter
