@@ -1,138 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbaKLT0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:26:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46779 "EHLO mx1.redhat.com"
+	id S1753411AbaKLT2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 14:28:34 -0500
+Received: from mga09.intel.com ([134.134.136.24]:3367 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753151AbaKLT0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:26:05 -0500
-Message-ID: <5463B408.4000102@redhat.com>
-Date: Wed, 12 Nov 2014 11:24:56 -0800
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753151AbaKLT2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 14:28:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,370,1413270000"; 
+   d="scan'208";a="606803084"
+Date: Wed, 12 Nov 2014 11:28:19 -0800
+From: "Sean O. Stalley" <sean.stalley@intel.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Stephanie Wallick <stephanie.s.wallick@intel.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [V2 PATCH 02/10] added media agnostic (MA) USB HCD roothubs
+Message-ID: <20141112192819.GB2651@sean.stalley.intel.com>
+References: <1415671781-11351-1-git-send-email-stephanie.s.wallick@intel.com>
+ <1415671781-11351-2-git-send-email-stephanie.s.wallick@intel.com>
+ <1415781342.1761.10.camel@linux-0dmf.site>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Will Deacon <will.deacon@arm.com>,
-        "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Tony Luck <tony.luck@intel.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] arch: Introduce read_acquire()
-References: <20141111185510.2181.75347.stgit@ahduyck-workstation.home> <20141111194734.GL16265@arm.com> <54627BC0.4020705@redhat.com> <20141112101532.GJ29390@twins.programming.kicks-ass.net> <54637B6A.9070204@redhat.com> <20141112153740.GK29390@twins.programming.kicks-ass.net>
-In-Reply-To: <20141112153740.GK29390@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415781342.1761.10.camel@linux-0dmf.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thank you for your review. My responses are inline.
 
-
-On 11/12/2014 07:37 AM, Peter Zijlstra wrote:
-> On Wed, Nov 12, 2014 at 07:23:22AM -0800, Alexander Duyck wrote:
->>
->> On 11/12/2014 02:15 AM, Peter Zijlstra wrote:
->>> On Tue, Nov 11, 2014 at 01:12:32PM -0800, Alexander Duyck wrote:
->>>>> Minor nit on naming, but load_acquire would match what we do with barriers,
->>>>> where you simply drop the smp_ prefix if you want the thing to work on UP
->>>>> systems too.
->>>> The problem is this is slightly different, load_acquire in my mind would use
->>>> a mb() call, I only use a rmb().  That is why I chose read_acquire as the
->>>> name.
->>> acquire is not about rmb vs mb, do read up on
->>> Documentation/memory-barriers.txt. Its a distinctly different semantic.
->>> Some archs simply lack the means of implementing this semantics and have
->>> to revert to mb (stronger is always allowed).
->>>
->>> Using the read vs load to wreck the acquire semantics is just insane.
->>
->> Actually I have been reading up on it as I wasn't familiar with C11.
->
-> C11 is _different_ although somewhat related.
-
-Honestly I find this quite confusing.  If you have some sort of other 
-documentation you can point me at it would be useful in terms of what 
-you are expecting for behaviour and names.
-
->> Most
->> of what I was doing was actually based on the documentation in barriers.txt
->> which was referring to memory operations not loads/stores when referring to
->> the acquire/release so I assumed the full memory barrier was required.  I
->> wasn't aware that smp_load_acquire was only supposed to be ordering loads,
->> or that smp_ store_release only applied to stores.
->
-> It does not.. an ACQUIRE is a semi-permeable barrier that doesn't allow
-> LOADs nor STOREs that are issued _after_ it to appear to happen _before_.
-> The RELEASE is the opposite number, it ensures LOADs and STOREs that are
-> issued _before_ cannot happen _after_.
->
-> This typically matches locking, where a lock (mutex_lock, spin_lock
-> etc..) have ACQUIRE semantics and the unlock RELEASE. Such that:
->
-> 	spin_lock();
-> 	a = 1;
-> 	b = x;
-> 	spin_unlock();
->
-> guarantees all LOADs (x) and STORESs (a,b) happen _inside_ the lock
-> region. What they do not guarantee is:
->
->
-> 	y = 1;
-> 	spin_lock()
-> 	a = 1;
-> 	b = x;
-> 	spin_unlock()
-> 	z = 4;
->
-> An order between y and z, both are allowed _into_ the region and can
-> cross there like:
->
-> 	spin_lock();
-> 	...
-> 	z = 4;
-> 	y = 1;
-> 	...
-> 	spin_unlock();
->
->
-> The only 'open' issue at the moment is if RELEASE+ACQUIRE := MB.
-> Currently we say this is not so, but Will (and me) would very much like
-> this to be so -- PPC64 being the only arch that actually makes this
-> distinction.
-
-In the grand scheme of things I suppose it doesn't matter too much.  I 
-actually found a documentation that kind of explains subtle nuances of 
-things a bit.  Specifically Acquire represents the first row in the 
-table below, and Release represents the second column:
-
-Acquire -> 	LoadLoad	LoadStore
-		StoreLoad	StoreStore
-				^
-				|
-				Release
-
-The LoadStore bit was in question in a few different discussions I read, 
-however as it turns out on x86, sparc, s390, PowerPC, arm64, and ia64 
-they would give you that as a free benefit anyway.  I think that covers 
-a wide enough gamut that I don't really care if I take a performance hit 
-on the other architectures for implementing a full mb() versus a rmb().
+Greg has requested that we clean up the driver internally before
+we resubmit another patchset to the mailing list. I will make
+sure the changes you requested make it in, but it may be a while
+before you see a patchset with the fixes included.
 
 Thanks,
+Sean O. Stalley
 
-Alex
+On Wed, Nov 12, 2014 at 09:35:42AM +0100, Oliver Neukum wrote:
+> On Mon, 2014-11-10 at 18:09 -0800, Stephanie Wallick wrote:
+> > diff --git a/drivers/staging/mausb/drivers/mausb_hub.c b/drivers/staging/mausb/drivers/mausb_hub.c
+> > new file mode 100644
+> > index 0000000..63c0fe4
+> > --- /dev/null
+> > +++ b/drivers/staging/mausb/drivers/mausb_hub.c
+> 
+> > +/**
+> > + * Returns true if the given is the superspeed HCD. Note: The primary HCD is
+> > + * High Speed and the shared HCD is SuperSpeed.
+> > + */
+> 
+> Why in that order?
+> 
 
+We should probably switch this & make the superspeed hub primary.
+That way we match the xhci driver.
 
+> > +bool mausb_is_ss_hcd(struct usb_hcd *hcd)
+> > +{
+> > +	if (usb_hcd_is_primary_hcd(hcd))
+> > +		return false;
+> > +	else
+> > +		return true;
+> > +}
+> 
+> 
+> 
+> > +
+> > +/**
+> > + * Called by usb core when polling for a port status change.
+> > + *
+> > + * @hcd:	USB HCD being polled.
+> > + * @buf:	Holds port status changes (if any).
+> > + *
+> > + * Returns zero if there is no status change, otherwise returns number of
+> > + * bytes in buf. When there is a status change on a port, the bit indexed
+> > + * at the port number + 1 (e.g. bit 2 for port 1) is set in the buffer.
+> > + */
+> > +int mausb_hub_status_data(struct usb_hcd *hcd, char *buf)
+> > +{
+> > +	int                      i;
+> > +	u16                      port_change = 0;
+> > +	u32                      status = 0;
+> > +	int                      ret = 1;
+> > +	struct mausb_hcd	 *mhcd = usb_hcd_to_mausb_hcd(hcd);
+> > +	struct mausb_root_hub	 *roothub = usb_hcd_to_roothub(hcd);
+> > +
+> > +	/*
+> > +	 * Buf should never be more that 2 bytes. USB 3.0 hubs cannot have
+> > +	 * more than 15 downstream ports.
+> > +	 */
+> > +	buf[0] = 0;
+> > +	if (MAUSB_ROOTHUB_NUM_PORTS > 7) {
+> > +		buf[1] = 0;
+> > +		ret++;
+> > +	}
+> 
+> Endianness bug.
+> 
 
+Could you elaborate?
+It was my understanding that this buffer was host-endian.
+Is this an unacceptable way to clear the buffer?
+
+> > +
+> > +	for (i = 0; i < MAUSB_ROOTHUB_NUM_PORTS; i++) {
+> > +		port_change = roothub->port_status[i].wPortChange;
+> > +		if (port_change)
+> > +			status |= (1 << (i + 1));
+> > +	}
+> > +
+> > +	mausb_dbg(mhcd, "%s: hub status is 0x%x\n", __func__, status);
+> > +
+> > +	/* hcd might be suspended, resume if there is a status change */
+> > +	if (mhcd->disabled == 0) {
+> > +		if ((hcd->state == HC_STATE_SUSPENDED) && status)
+> > +			usb_hcd_resume_root_hub(hcd);
+> > +	}
+> > +
+> > +	memcpy(buf, (char *)&status, ret);
+> > +
+> > +	return status ? ret : 0;
+> > +}
+> > +
+> > +/**
+> > + * Sets the bitfields in the hub descriptor of the 2.0 root hub. Always
+> > + * returns zero.
+> > + */
+> > +int mausb_set_hub_descriptor(struct usb_hub_descriptor *hub_des)
+> > +{
+> > +	/* set the values to the default */
+> > +	hub_des->bDescLength          = sizeof(struct usb_hub_descriptor);
+> > +	hub_des->bDescriptorType      = USB_DT_HUB;
+> > +	hub_des->bNbrPorts            = MAUSB_ROOTHUB_NUM_PORTS;
+> > +	hub_des->wHubCharacteristics  = MAUSB_ROOTHUB_CHAR;
+> > +	hub_des->bPwrOn2PwrGood       = MAUSB_ROOTHUB_PWR_ON_2_PWR_GOOD;
+> > +	hub_des->bHubContrCurrent     = MAUSB_ROOTHUB_CONTR_CURRENT;
+> 
+> Is that descriptor in bus or host endianness?
+> 
+
+All of the fields are little-endian. We should be using cpu_to_le16()
+when setting wHubCharacteristics.
+
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +/**
+> > + * Sets the bitfields in the hub descriptor of the 3.0 root hub. Always
+> > + * returns zero.
+> 
+> Then why return anything?
+> 
+
+Good point. I will change this (and mausb_set_hub_descriptor()) to be void.
+
+> > + */
+> > +int mausb_set_ss_hub_descriptor(struct usb_hub_descriptor *hub_des)
+> > +{
+> > +	/* set the values to the default */
+> > +	hub_des->bDescLength          = sizeof(struct usb_hub_descriptor);
+> > +	hub_des->bDescriptorType      = USB_DT_SS_HUB;
+> > +	hub_des->bNbrPorts            = MAUSB_ROOTHUB_NUM_PORTS;
+> > +	hub_des->wHubCharacteristics  = MAUSB_ROOTHUB_CHAR;
+> > +	hub_des->bPwrOn2PwrGood       = MAUSB_ROOTHUB_PWR_ON_2_PWR_GOOD;
+> > +	hub_des->bHubContrCurrent     = MAUSB_ROOTHUB_CONTR_CURRENT;
+> > +
+> > +	/* USB3-specific parameters */
+> > +	hub_des->u.ss.bHubHdrDecLat   = MAUSB_ROOTHUB_HDR_DEC_LAT;
+> > +	hub_des->u.ss.wHubDelay       = MAUSB_ROOTHUB_DELAY;
+> > +	hub_des->u.ss.DeviceRemovable = MAUSB_ALL_DEV_REMOVABLE;
+> > +
+> > +	return 0;
+> > +}
+> 
+> 
+> > +/**
+> > + * Contains all the structures required to emulate a root hub. One instance
+> > + * exists per root hub.
+> > + */
+> > +struct __attribute__((__packed__)) mausb_root_hub {
+> 
+> Why __packed__ ?
+
+Doesn't need to be. I will remove.
+
+> > +
+> > +	/* hub parameters */
+> > +	struct usb_hub_descriptor descriptor;
+> > +	struct usb_hub_status     status;
+> > +
+> > +	/* port parameters*/
+> > +	struct usb_port_status    port_status[MAUSB_ROOTHUB_NUM_PORTS];
+> > +
+> > +	/* root hub state */
+> > +	enum   mausb_rh_state     rh_state;
+> > +
+> > +};
+> 
+> 	HTH
+> 		Oliver
+> 
+> -- 
+> Oliver Neukum <oneukum@suse.de>
+> 
