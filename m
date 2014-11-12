@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964903AbaKLBjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:39:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60037 "EHLO
+	id S964897AbaKLBje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:39:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291AbaKLBjg (ORCPT
+	with ESMTP id S934155AbaKLBj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:39:36 -0500
+	Tue, 11 Nov 2014 20:39:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.14 049/203] mfd: ti_am335x_tscadc: Fix TSC resume
-Date: Wed, 12 Nov 2014 10:15:19 +0900
-Message-Id: <20141112011544.953342436@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.14 047/203] mnt: Prevent pivot_root from creating a loop in the mount tree
+Date: Wed, 12 Nov 2014 10:15:17 +0900
+Message-Id: <20141112011544.861607947@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,38 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 6a71f38dd87f255a0586104ce2a14d5a3ddf3401 upstream.
+commit 0d0826019e529f21c84687521d03f60cd241ca7d upstream.
 
-In the resume path, the ADC invokes am335x_tsc_se_set_cache() with 0 as
-the steps argument if continous mode is not in use. This in turn disables
-all steps and so the TSC is not working until one ADC sampling is
-performed.
+Andy Lutomirski recently demonstrated that when chroot is used to set
+the root path below the path for the new ``root'' passed to pivot_root
+the pivot_root system call succeeds and leaks mounts.
 
-This patch fixes it by writing the current cached mask instead of the
-passed steps.
+In examining the code I see that starting with a new root that is
+below the current root in the mount tree will result in a loop in the
+mount tree after the mounts are detached and then reattached to one
+another.  Resulting in all kinds of ugliness including a leak of that
+mounts involved in the leak of the mount loop.
 
-Fixes: 7ca6740cd1cd ("mfd: input: iio: ti_amm335x: Rework TSC/ADCA
-synchronization")
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Prevent this problem by ensuring that the new mount is reachable from
+the current root of the mount tree.
+
+[Added stable cc.  Fixes CVE-2014-7970.  --Andy]
+
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/87bnpmihks.fsf@x220.int.ebiederm.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/ti_am335x_tscadc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/namespace.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -58,7 +58,7 @@ void am335x_tsc_se_set_cache(struct ti_t
- 	if (tsadc->adc_waiting)
- 		wake_up(&tsadc->reg_se_wait);
- 	else if (!tsadc->adc_in_use)
--		tscadc_writel(tsadc, REG_SE, val);
-+		tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
- 
- 	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
- }
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2831,6 +2831,9 @@ SYSCALL_DEFINE2(pivot_root, const char _
+ 	/* make sure we can reach put_old from new_root */
+ 	if (!is_path_reachable(old_mnt, old.dentry, &new))
+ 		goto out4;
++	/* make certain new is below the root */
++	if (!is_path_reachable(new_mnt, new.dentry, &root))
++		goto out4;
+ 	root_mp->m_count++; /* pin it so it won't go away */
+ 	lock_mount_hash();
+ 	detach_mnt(new_mnt, &parent_path);
 
 
