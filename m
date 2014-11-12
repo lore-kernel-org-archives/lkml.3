@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaKLUJr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:09:47 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63130 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151AbaKLUJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:09:45 -0500
-Date: Wed, 12 Nov 2014 15:09:14 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        joro@8bytes.org, Mel Gorman <mgorman@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
-        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
-        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Michael Mantor <Michael.Mantor@amd.com>,
-        Paul Blinzer <Paul.Blinzer@amd.com>,
-        Laurent Morichetti <Laurent.Morichetti@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>, linux-fsdevel@vger.kernel.org,
-        Linda Wang <lwang@redhat.com>, Kevin E Martin <kem@redhat.com>,
-        Jerome Glisse <jglisse@redhat.com>, Jeff Law <law@redhat.com>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Sagi Grimberg <sagig@mellanox.com>
-Subject: Re: HMM (heterogeneous memory management) v6
-Message-ID: <20141112200911.GA7720@gmail.com>
-References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
- <alpine.DEB.2.11.1411111259560.6657@gentwo.org>
+	id S1753412AbaKLUPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:15:45 -0500
+Received: from ezexch.ezchip.com ([212.179.42.101]:39751 "EHLO ezchip.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753302AbaKLUPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 15:15:43 -0500
+Message-ID: <5463BFE2.4000404@ezchip.com>
+Date: Wed, 12 Nov 2014 15:15:30 -0500
+From: Chris Metcalf <cmetcalf@ezchip.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.11.1411111259560.6657@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <jepler@unpythonic.net>
+Subject: Re: [PATCH] arch: tile: kernel: kgdb.c: Use memcpy() instead of pointer
+ copy one by one
+References: <5454DD70.6060004@gmail.com> <5462C1D3.3010504@gmail.com>
+In-Reply-To: <5462C1D3.3010504@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [12.216.194.146]
+X-ClientProxiedBy: BLUPR07CA0040.namprd07.prod.outlook.com (10.255.223.153) To
+ DB3PR02MB0539.eurprd02.prod.outlook.com (25.160.51.150)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0539;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0539;
+X-Forefront-PRVS: 03932714EB
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(199003)(24454002)(189002)(479174003)(51704005)(41574002)(46102003)(47776003)(50986999)(54356999)(15202345003)(92726001)(92566001)(23676002)(97736003)(87976001)(87266999)(65816999)(66066001)(65806001)(76176999)(4396001)(21056001)(64706001)(20776003)(42186005)(15975445006)(83506001)(101416001)(102836001)(33656002)(19580405001)(80316001)(19580395003)(86362001)(110136001)(64126003)(36756003)(107046002)(31966008)(105586002)(59896002)(95666004)(122386002)(106356001)(50466002)(62966003)(40100003)(120916001)(77096003)(99396003)(77156002)(18886065003);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR02MB0539;H:[10.7.0.239];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0539;
+X-OriginatorOrg: ezchip.com
+X-TM-AS-Product-Ver: SMEX-11.0.0.1191-7.500.1018-21096.002
+X-TM-AS-Result: No--9.537700-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 01:00:56PM -0600, Christoph Lameter wrote:
-> On Mon, 10 Nov 2014, j.glisse@gmail.com wrote:
-> 
-> > In a nutshell HMM is a subsystem that provide an easy to use api to mirror a
-> > process address on a device with minimal hardware requirement (mainly device
-> > page fault and read only page mapping). This does not rely on ATS and PASID
-> > PCIE extensions. It intends to supersede those extensions by allowing to move
-> > system memory to device memory in a transparent fashion for core kernel mm
-> > code (ie cpu page fault on page residing in device memory will trigger
-> > migration back to system memory).
-> 
-> Could we define a new NUMA node that maps memory from the GPU and
-> then simply use the existing NUMA features to move a process over there.
+On 11/1/14 21:17, Chen Gang wrote:
+> >Not only memcpy() is faster than pointer copy, but also let code more
+> >clearer and simple, which can avoid compiling warning (the original
+> >implementation copy registers by exceeding member array border).
+> >
+> >The related warning (with allmodconfig under tile):
+> >
+> >     CC      arch/tile/kernel/kgdb.o
+> >   arch/tile/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
+> >   arch/tile/kernel/kgdb.c:140:31: warning: iteration 53u invokes undefined behavior [-Waggressive-loop-optimizations]
+> >      *(ptr++) = thread_regs->regs[reg];
+> >                                  ^
+> >   arch/tile/kernel/kgdb.c:139:2: note: containing loop
+> >     for (reg = 0; reg <= TREG_LAST_GPR; reg++)
+> >     ^
+> >
+> >Signed-off-by: Chen Gang<gang.chen.5i5j@gmail.com>
+> >---
+> >  arch/tile/kernel/kgdb.c | 6 +-----
+> >  1 file changed, 1 insertion(+), 5 deletions(-)
+> >
 
-Sorry for late reply, i am traveling and working on an updated patchset to
-change the device page table design to something simpler and easier to grasp.
+Taken into the tile tree - thanks!
 
-So GPU process will never run on CPU nor will they have a kernel task struct
-associated with them. From core kernel point of view they do not exist. I
-hope that at one point down the line the hw will allow for better integration
-with kernel core but it's not there yet.
+See my recent email about changing the shape of the pt_regs and sigcontext
+structures to make the regs[] usage explicit.  But even with that, I
+think your change makes sense to simplify the code in this location.
 
-So the NUMA idea was considered early on but was discarded as it's not really
-appropriate. You can have several CPU thread working with several GPU thread
-at the same time and they can either access disjoint memory or some share
-memory. Usual case will be few kbytes of share memory for synchronization
-btw CPU and GPU threads.
+-- 
+Chris Metcalf, EZChip Semiconductor
+http://www.ezchip.com
 
-But when a GPU job is launch we want most of the memory it will use to be
-migrated to device memory. Issue is that the device memory is not accessible
-from the CPU (PCIE bar are too small). So there is no way to keep the memory
-mapped for the CPU. We do need to mark the memory as unaccessible to the CPU
-and then migrate it to the GPU memory.
-
-Now when there is a CPU page fault on some migrated memory we need to migrate
-memory back to system memory. Hence why i need to tie HMM with some core MM
-code so that on this kind of fault core kernel knows it needs to call into
-HMM which will perform housekeeping and starts migration back to system
-memory.
-
-
-So technicaly there is no task migration only memory migration.
-
-
-Is there something i missing inside NUMA or some NUMA work in progress that
-change NUMA sufficiently that it might somehow address the use case i am
-describing above ?
-
-
-Cheers,
-Jérôme
