@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965307AbaKLBxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:53:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32925 "EHLO
+	id S966416AbaKLBx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:53:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32939 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966355AbaKLBxJ (ORCPT
+	with ESMTP id S965507AbaKLBx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:53:09 -0500
+	Tue, 11 Nov 2014 20:53:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 050/123] media: tda7432: Fix setting TDA7432_MUTE bit for TDA7432_RF register
-Date: Wed, 12 Nov 2014 10:16:56 +0900
-Message-Id: <20141112011721.299690750@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Theodore Tso <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH 3.10 070/123] ext4: check s_chksum_driver when looking for bg csum presence
+Date: Wed, 12 Nov 2014 10:17:16 +0900
+Message-Id: <20141112011722.193223410@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,32 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 91ba0e59babdb3c7aca836a65f1095b3eaff7b06 upstream.
+commit 813d32f91333e4c33d5a19b67167c4bae42dae75 upstream.
 
-Fix a copy-paste bug when converting to the control framework.
+Convert the ext4_has_group_desc_csum predicate to look for a checksum
+driver instead of the metadata_csum flag and change the bg checksum
+calculation function to look for GDT_CSUM before taking the crc16
+path.
 
-Fixes: commit 5d478e0de871 ("[media] tda7432: convert to the control framework")
+Without this patch, if we mount with ^uninit_bg,^metadata_csum and
+later metadata_csum gets turned on by accident, the block group
+checksum functions will incorrectly assume that checksumming is
+enabled (metadata_csum) but that crc16 should be used
+(!s_chksum_driver).  This is totally wrong, so fix the predicate
+and the checksum formula selection.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+(Granted, if the metadata_csum feature bit gets enabled on a live FS
+then something underhanded is going on, but we could at least avoid
+writing garbage into the on-disk fields.)
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/tda7432.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ext4.h  |    4 ++--
+ fs/ext4/super.c |    4 ++++
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/media/i2c/tda7432.c
-+++ b/drivers/media/i2c/tda7432.c
-@@ -293,7 +293,7 @@ static int tda7432_s_ctrl(struct v4l2_ct
- 		if (t->mute->val) {
- 			lf |= TDA7432_MUTE;
- 			lr |= TDA7432_MUTE;
--			lf |= TDA7432_MUTE;
-+			rf |= TDA7432_MUTE;
- 			rr |= TDA7432_MUTE;
- 		}
- 		/* Mute & update balance*/
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2261,8 +2261,8 @@ extern int ext4_register_li_request(stru
+ static inline int ext4_has_group_desc_csum(struct super_block *sb)
+ {
+ 	return EXT4_HAS_RO_COMPAT_FEATURE(sb,
+-					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM |
+-					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM);
++					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM) ||
++	       (EXT4_SB(sb)->s_chksum_driver != NULL);
+ }
+ 
+ static inline ext4_fsblk_t ext4_blocks_count(struct ext4_super_block *es)
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1950,6 +1950,10 @@ static __le16 ext4_group_desc_csum(struc
+ 	}
+ 
+ 	/* old crc16 code */
++	if (!(sbi->s_es->s_feature_ro_compat &
++	      cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)))
++		return 0;
++
+ 	offset = offsetof(struct ext4_group_desc, bg_checksum);
+ 
+ 	crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
 
 
