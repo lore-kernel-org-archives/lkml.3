@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033AbaKLCHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:07:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33089 "EHLO
+	id S1755084AbaKLCIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:08:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33057 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966715AbaKLBzd (ORCPT
+	with ESMTP id S966690AbaKLBzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:55:33 -0500
+	Tue, 11 Nov 2014 20:55:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Baron <jbaron@akamai.com>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.10 101/123] e7xxx_edac: Report CE events properly
-Date: Wed, 12 Nov 2014 10:17:47 +0900
-Message-Id: <20141112011723.578588350@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 097/123] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
+Date: Wed, 12 Nov 2014 10:17:43 +0900
+Message-Id: <20141112011723.398722021@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,31 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Baron <jbaron@akamai.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 8030122a9ccf939186f8db96c318dbb99b5463f6 upstream.
+commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
 
-Fix CE event being reported as HW_EVENT_ERR_UNCORRECTED.
+If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
+a multiple of BITS_PER_LONG, they will try to shift a long value by
+BITS_PER_LONG bits which is undefined.  Change the functions to avoid
+the undefined shift.
 
-Signed-off-by: Jason Baron <jbaron@akamai.com>
-Link: http://lkml.kernel.org/r/e6dd616f2cd51583a7e77af6f639b86313c74144.1413405053.git.jbaron@akamai.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Coverity id: 1192175
+Coverity id: 1192174
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/e7xxx_edac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/bitmap.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/edac/e7xxx_edac.c
-+++ b/drivers/edac/e7xxx_edac.c
-@@ -226,7 +226,7 @@ static void process_ce(struct mem_ctl_in
- static void process_ce_no_info(struct mem_ctl_info *mci)
- {
- 	edac_dbg(3, "\n");
--	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1, 0, 0, 0, -1, -1, -1,
-+	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 1, 0, 0, 0, -1, -1, -1,
- 			     "e7xxx CE log register overflow", "");
- }
- 
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long
+ 		lower = src[off + k];
+ 		if (left && off + k == lim - 1)
+ 			lower &= mask;
+-		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
++		dst[k] = lower >> rem;
++		if (rem)
++			dst[k] |= upper << (BITS_PER_LONG - rem);
+ 		if (left && k == lim - 1)
+ 			dst[k] &= mask;
+ 	}
+@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *
+ 		upper = src[k];
+ 		if (left && k == lim - 1)
+ 			upper &= (1UL << left) - 1;
+-		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
++		dst[k + off] = upper << rem;
++		if (rem)
++			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
+ 		if (left && k + off == lim - 1)
+ 			dst[k + off] &= (1UL << left) - 1;
+ 	}
 
 
