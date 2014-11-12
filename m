@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964796AbaKLBit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:38:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59974 "EHLO
+	id S934141AbaKLBjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:39:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932661AbaKLBiq (ORCPT
+	with ESMTP id S964812AbaKLBjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:38:46 -0500
+	Tue, 11 Nov 2014 20:39:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3.14 036/203] evm: properly handle INTEGRITY_NOXATTRS EVM status
-Date: Wed, 12 Nov 2014 10:15:06 +0900
-Message-Id: <20141112011544.371799546@linuxfoundation.org>
+        Jeff Harris <jefftharris@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.14 040/203] [jffs2] kill wbuf_queued/wbuf_dwork_lock
+Date: Wed, 12 Nov 2014 10:15:10 +0900
+Message-Id: <20141112011544.544123290@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,54 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 3dcbad52cf18c3c379e96b992d22815439ebbe53 upstream.
+commit 99358a1ca53e8e6ce09423500191396f0e6584d2 upstream.
 
-Unless an LSM labels a file during d_instantiate(), newly created
-files are not labeled with an initial security.evm xattr, until
-the file closes.  EVM, before allowing a protected, security xattr
-to be written, verifies the existing 'security.evm' value is good.
-For newly created files without a security.evm label, this
-verification prevents writing any protected, security xattrs,
-until the file closes.
+schedule_delayed_work() happening when the work is already pending is
+a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
+broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
+and pointless.  It's cheaper to let schedule_delayed_work() handle that
+case.
 
-Following is the example when this happens:
-fd = open("foo", O_CREAT | O_WRONLY, 0644);
-setxattr("foo", "security.SMACK64", value, sizeof(value), 0);
-close(fd);
-
-While INTEGRITY_NOXATTRS status is handled in other places, such
-as evm_inode_setattr(), it does not handle it in all cases in
-evm_protect_xattr().  By limiting the use of INTEGRITY_NOXATTRS to
-newly created files, we can now allow setting "protected" xattrs.
-
-Changelog:
-- limit the use of INTEGRITY_NOXATTRS to IMA identified new files
-
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Reported-by: Jeff Harris <jefftharris@gmail.com>
+Tested-by: Jeff Harris <jefftharris@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/integrity/evm/evm_main.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/jffs2/jffs2_fs_sb.h |    2 --
+ fs/jffs2/wbuf.c        |   17 ++---------------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -269,6 +269,13 @@ static int evm_protect_xattr(struct dent
- 		goto out;
- 	}
- 	evm_status = evm_verify_current_integrity(dentry);
-+	if (evm_status == INTEGRITY_NOXATTRS) {
-+		struct integrity_iint_cache *iint;
-+
-+		iint = integrity_iint_find(dentry->d_inode);
-+		if (iint && (iint->flags & IMA_NEW_FILE))
-+			return 0;
-+	}
- out:
- 	if (evm_status != INTEGRITY_PASS)
- 		integrity_audit_msg(AUDIT_INTEGRITY_METADATA, dentry->d_inode,
+--- a/fs/jffs2/jffs2_fs_sb.h
++++ b/fs/jffs2/jffs2_fs_sb.h
+@@ -134,8 +134,6 @@ struct jffs2_sb_info {
+ 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
+ 
+ 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
+-	int wbuf_queued;                /* non-zero delayed work is queued */
+-	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
+ 
+ 	unsigned char *oobbuf;
+ 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
+--- a/fs/jffs2/wbuf.c
++++ b/fs/jffs2/wbuf.c
+@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct wor
+ 	struct jffs2_sb_info *c = work_to_sb(work);
+ 	struct super_block *sb = OFNI_BS_2SFFJ(c);
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	c->wbuf_queued = 0;
+-	spin_unlock(&c->wbuf_dwork_lock);
+-
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		jffs2_dbg(1, "%s()\n", __func__);
+ 		jffs2_flush_wbuf_gc(c, 0);
+@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return;
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	if (!c->wbuf_queued) {
++	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
++	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
+ 		jffs2_dbg(1, "%s()\n", __func__);
+-		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
+-		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
+-		c->wbuf_queued = 1;
+-	}
+-	spin_unlock(&c->wbuf_dwork_lock);
+ }
+ 
+ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
+@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_
+ 
+ 	/* Initialise write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize = c->mtd->writesize;
+ 	c->wbuf_ofs = 0xFFFFFFFF;
+@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_s
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize =  c->mtd->erasesize;
+ 
+@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jf
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize = c->mtd->writesize;
+@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_i
+ 		return 0;
+ 
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize =  c->mtd->writesize;
 
 
