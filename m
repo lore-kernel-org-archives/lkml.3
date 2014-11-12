@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaKLQ7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 11:59:20 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:13633 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaKLQ7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 11:59:18 -0500
-X-IronPort-AV: E=Sophos;i="5.07,370,1413244800"; 
-   d="scan'208";a="192042410"
-Message-ID: <546391DE.7040508@citrix.com>
-Date: Wed, 12 Nov 2014 16:59:10 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1753332AbaKLQ7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 11:59:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38907 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753280AbaKLQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 11:59:31 -0500
+Date: Wed, 12 Nov 2014 17:59:25 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: shawn.guo@linaro.org, kernel@pengutronix.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, dbaryshkov@gmail.com, dwmw2@infradead.org,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, smoch@web.de
+Subject: Re: [PATCH 2/3] power: reset: imx-snvs-poweroff: add power off
+ driver for i.mx6
+Message-ID: <20141112165925.GA27681@earth.universe>
+References: <1415780439-29728-1-git-send-email-b38343@freescale.com>
+ <1415780439-29728-3-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH 3/3] x86/xen: use the maximum MFN to calculate
- the required DMA mask
-References: <1415805906-27316-1-git-send-email-david.vrabel@citrix.com> <1415805906-27316-4-git-send-email-david.vrabel@citrix.com> <546390FC0200007800046E50@mail.emea.novell.com>
-In-Reply-To: <546390FC0200007800046E50@mail.emea.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
+Content-Disposition: inline
+In-Reply-To: <1415780439-29728-3-git-send-email-b38343@freescale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/14 15:55, Jan Beulich wrote:
->>>> On 12.11.14 at 16:25, <david.vrabel@citrix.com> wrote:
->> +u64
->> +xen_swiotlb_get_required_mask(struct device *dev)
->> +{
->> +	u64 max_mfn;
->> +
->> +	max_mfn = HYPERVISOR_memory_op(XENMEM_maximum_ram_page, NULL);
->> +
->> +	return DMA_BIT_MASK(fls64(max_mfn << PAGE_SHIFT) + 1);
->> +}
-> 
-> The value the hypercall returns is exclusive and an unsigned long.
 
-The docs in include/public/memory.h say:
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-"Returns the maximum machine frame number of mapped RAM in this system."
+Hi,
 
-Which sounds inclusive to me...  Do we need a doc update here?
+On Wed, Nov 12, 2014 at 04:20:38PM +0800, Robin Gong wrote:
+> This driver register pm_power_off with snvs power off function. If
+> your boards NOT use PMIC_ON_REQ to turn on/off external pmic, or use
+> other pin to do, please disable the driver in dts, otherwise, your
+> pm_power_off maybe overwrote by this driver.
+>=20
+> Signed-off-by: Robin Gong <b38343@freescale.com>
 
-> Hence I'd suggest
-> 
-> u64
-> xen_swiotlb_get_required_mask(struct device *dev)
-> {
-> 	unsigned long max_mfn;
-> 
-> 	max_mfn = HYPERVISOR_memory_op(XENMEM_maximum_ram_page, NULL);
-> 
-> 	return DMA_BIT_MASK(__fls(max_mfn - 1) + 1 + PAGE_SHIFT);
-> }
-> 
-> Jan
-> 
+Acked-By: Sebastian Reichel <sre@kernel.org>
 
+-- Sebastian
+
+--VbJkn9YxBvnuCH5J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUY5HtAAoJENju1/PIO/qaYdkP/AgVUwvCivqytBuQLaByw3lg
+hfpEc+62UTzBHWwhqI5QJ9Ni7Z5ap/116EKGRUPGESvwzwEgvfTedKtvAC6HHE+v
+AdVnlciWj5SeqsY8n0madYp07vZrYSCvic/HGAv16ubJmzQCejYXx8L3Vc0/eKsY
+8fZNEa2EyX9roH8USYJ7Klozko7a7mGeN28cWVA5EMscxbSJOR2FT88MuEduYg3B
+M+MCjU+YpVY7u1VtWIHzXbJRLDtziLjUEudLIjcfzQpsc7W21HBA2Cw88R2iZ2Yo
+A4NOU7rt9JQb5rX0gdcz1nIK/5LEAQMpHhwIiLfueDRTpS/fQKlOEgbxZgLKn2pw
+rkJpzBAhMrGa8zzby2sBhPGhWQ0J61anVxm15m/cC9RoePpwgTfR/nhV3kQPJTYe
+njrNNRh8JFsWXP/97kc+icr7twucW38kApJUVtPAskP7MwP745JGfse/XS/1C0MZ
+aGNe75x5i83BO+bElkoAKYLSQKQ+vdvPsgYKCh4S9BgsBMy9EqpmID1l6xvJKQce
+u18l/W2QeuzyZQN0VnUg6NZ9IhS1rUm/FuLEuDIXyHIJf+HyC2KFDZLd1COv/oxX
+GQNT4mpTs8wQWT3fzU4GKM+x9G4Lqyue+a4E0GWZPBp4KteQvKKWWqxLhEx8uNDC
+t+lJau0RoLV8NRW3NxWp
+=dB4J
+-----END PGP SIGNATURE-----
+
+--VbJkn9YxBvnuCH5J--
