@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234AbaKLD2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:28:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59455 "EHLO
+	id S934212AbaKLD3b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:29:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59437 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628AbaKLBdE (ORCPT
+	with ESMTP id S933246AbaKLBcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:04 -0500
+	Tue, 11 Nov 2014 20:32:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.17 257/319] nfsd4: fix crash on unknown operation number
-Date: Wed, 12 Nov 2014 10:16:35 +0900
-Message-Id: <20141112011035.297536390@linuxfoundation.org>
+        Robert Baldyga <r.baldyga@samsung.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.17 219/319] usb: gadget: f_fs: remove redundant ffs_data_get()
+Date: Wed, 12 Nov 2014 10:15:57 +0900
+Message-Id: <20141112011028.996991020@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,34 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Robert Baldyga <r.baldyga@samsung.com>
 
-commit 51904b08072a8bf2b9ed74d1bd7a5300a614471d upstream.
+commit a3058a5d82e296daaca07411c3738a9ddd79f302 upstream.
 
-Unknown operation numbers are caught in nfsd4_decode_compound() which
-sets op->opnum to OP_ILLEGAL and op->status to nfserr_op_illegal.  The
-error causes the main loop in nfsd4_proc_compound() to skip most
-processing.  But nfsd4_proc_compound also peeks ahead at the next
-operation in one case and doesn't take similar precautions there.
+During FunctionFS bind, ffs_data_get() function was called twice
+(in functionfs_bind() and in ffs_do_functionfs_bind()), while on unbind
+ffs_data_put() was called once (in functionfs_unbind() function).
+In result refcount never reached value 0, and ffs memory resources has
+been never released.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Since ffs_data_get() call in ffs_do_functionfs_bind() is redundant
+and not neccessary, we remove it to have equal number of gets ans puts,
+and free allocated memory after refcount reach 0.
+
+Fixes: 5920cda (usb: gadget: FunctionFS: convert to new function
+	interface with backward compatibility)
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4proc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/function/f_fs.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1229,7 +1229,8 @@ static bool need_wrongsec_check(struct s
- 	 */
- 	if (argp->opcnt == resp->opcnt)
- 		return false;
+--- a/drivers/usb/gadget/function/f_fs.c
++++ b/drivers/usb/gadget/function/f_fs.c
+@@ -2626,8 +2626,6 @@ static inline struct f_fs_opts *ffs_do_f
+ 	func->conf = c;
+ 	func->gadget = c->cdev->gadget;
+ 
+-	ffs_data_get(func->ffs);
 -
-+	if (next->opnum == OP_ILLEGAL)
-+		return false;
- 	nextd = OPDESC(next);
  	/*
- 	 * Rest of 2.6.3.1.1: certain operations will return WRONGSEC
+ 	 * in drivers/usb/gadget/configfs.c:configfs_composite_bind()
+ 	 * configurations are bound in sequence with list_for_each_entry,
 
 
