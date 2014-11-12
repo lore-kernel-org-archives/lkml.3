@@ -1,122 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaKLNAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 08:00:36 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:53678 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369AbaKLNAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 08:00:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <545B2651.4090905@ti.com>
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
-	<20141103180920.GA20779@localhost.localdomain>
-	<545B2651.4090905@ti.com>
-Date: Wed, 12 Nov 2014 14:00:32 +0100
-Message-ID: <CAJKbBDDyShaJkzzfdFs07EK5gDUfwqWiv39Qi4FVSvRrfc6_fA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
-From: Johannes Pointner <johannes.pointner@gmail.com>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        devicetree@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
-        linux-omap@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Brad Griffis <bgriffis@ti.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752713AbaKLNC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 08:02:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38637 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227AbaKLNC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 08:02:56 -0500
+From: Petr Mladek <pmladek@suse.cz>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v2] virtio_balloon: Convert "vballon" kthread into a workqueue
+Date: Wed, 12 Nov 2014 14:02:48 +0100
+Message-Id: <1415797368-22660-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vignesh,
+Workqueues have clean and rich API for all basic operations. The code is usually
+easier and better readable. It can be easily tuned for the given purpose.
 
-I tried your patch version 3 on a customized board and had some
-behavior I couldn't explain.
-If I only use the touchscreen it works fine but if I also read values
-from the ADCs then I get a lot of pen_up events even if I am still
-touching the screen.
-For the test I read via
-# cat /sys/bus/iio/devices/iio\:device0/in_voltage5_raw
-values from the ADC in an busy loop as you explained in an email
-before. Did you also experience such behavior or do you know what
-causes it?
+In many cases, it allows to avoid an extra kernel thread. It helps to stop the
+growing number of them.  Also there will be less thread-specific hacks all over
+the kernel code.
 
-Without the patches the touchscreen works fine during the iio test.
+It forces making the task selfcontained. There is no longer an unclear infinite
+loop. This helps to avoid problems with suspend. Also it will be very helpful
+for kGraft (kernel live patching).
 
-Thanks,
-Hannes
+The conversion is pretty straightforward. The main change is that there is not
+longer an "infinite" loop in the balloon() handler. Instead, another work item
+has to be scheduled from fill_balloon() and leak_balloon() when they do not
+do all requested changes in a single call.
 
-2014-11-06 8:42 GMT+01:00 Vignesh R <vigneshr@ti.com>:
->
->
-> On Monday 03 November 2014 11:39 PM, Richard Cochran wrote:
->> On Mon, Oct 27, 2014 at 04:38:27PM +0530, Vignesh R wrote:
->>> This series of patches fix TSC defects related to lag in touchscreen
->>> performance and cursor jump at touch release. The lag was result of
->>> udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
->>> The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
->>> to avoid false pen-up events and remove udelay.
->>
->> That advisory has two workarounds. You have chosen the second one?
->
-> Work around one. Hence 5 wire design is not broken.
->
->>
->> The text of the second workaround says it only works on 4 wire setups,
->> so I wonder how 5 wire designs will be affected.
->>
->>> The advisory says to use
->>> steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
->>> ADC).
->>
->> No, it doesn't say that. (sprz360f.pdf)
->
-> The pen up event detection happens immediately after charge step. Hence,
-> interchanging ADC and TSC steps makes sure that sampling of touch
-> co-ordinates and pen events are done one after the other. This
-> workaround was suggested by internal hardware folks. Earlier ADC steps
-> intervened between sampling of co-ordinates and pen event detection
-> which is not desirable.
->
->>
->>> Further the X co-ordinate must be the last one to be sampled just
->>> before charge step. The first two patches implement the required changes.
->>
->> FWIW, I implemented the first workaround and removed the udelay not
->> too long ago. Like Sebastian, I saw the TSC unit hang after about
->> 50000 interrupts when running with the workaround.
->>
->> Did you test you patch for very long?
->
-> Yes, I tested for about 200000 interrupts and I didn't see any hang.
-> This patch series does not just implement workaround but also does some
-> minor changes, such as interchanging ADC and TSC steps etc, which makes
-> TSC driver more robust. Let me know if you encounter any issues with my
-> patch series.
->
-> Regards
-> Vignesh
->
->>
->> Thanks,
->> Richard
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Changes in v2:
+
+	+ More elegant detection of the pending work in fill_balloon() and
+	  leak_ballon(). It still needs to keep the original requested number
+	  of pages but it does not add any extra boolean variable.
+
+	+ Remove WQ_MEM_RECLAIM workqueue parameter. If I get it correctly,
+	  this is possible because the code manipulates memory but it is not
+	  used in the memory reclaim path.
+
+	+ initialize the work item before allocation the workqueue
+
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+---
+ drivers/virtio/virtio_balloon.c | 86 +++++++++++++++++++----------------------
+ 1 file changed, 39 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index c9703d4d6f67..5532d1222417 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -22,8 +22,7 @@
+ #include <linux/virtio.h>
+ #include <linux/virtio_balloon.h>
+ #include <linux/swap.h>
+-#include <linux/kthread.h>
+-#include <linux/freezer.h>
++#include <linux/workqueue.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+@@ -42,11 +41,9 @@ struct virtio_balloon
+ 	struct virtio_device *vdev;
+ 	struct virtqueue *inflate_vq, *deflate_vq, *stats_vq;
+ 
+-	/* Where the ballooning thread waits for config to change. */
+-	wait_queue_head_t config_change;
+-
+-	/* The thread servicing the balloon. */
+-	struct task_struct *thread;
++	/* The workqueue servicing the balloon. */
++	struct workqueue_struct *wq;
++	struct work_struct wq_work;
+ 
+ 	/* Waiting for host to ack the pages we released. */
+ 	wait_queue_head_t acked;
+@@ -128,12 +125,13 @@ static void set_page_pfns(u32 pfns[], struct page *page)
+ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ {
+ 	struct balloon_dev_info *vb_dev_info = &vb->vb_dev_info;
++	size_t limit;
+ 
+ 	/* We can only do one array worth at a time. */
+-	num = min(num, ARRAY_SIZE(vb->pfns));
++	limit = min(num, ARRAY_SIZE(vb->pfns));
+ 
+ 	mutex_lock(&vb->balloon_lock);
+-	for (vb->num_pfns = 0; vb->num_pfns < num;
++	for (vb->num_pfns = 0; vb->num_pfns < limit;
+ 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+ 		struct page *page = balloon_page_enqueue(vb_dev_info);
+ 
+@@ -153,6 +151,9 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ 	/* Did we get any? */
+ 	if (vb->num_pfns != 0)
+ 		tell_host(vb, vb->inflate_vq);
++	/* Do we need to get more? */
++	if (vb->num_pfns < num)
++		queue_work(vb->wq, &vb->wq_work);
+ 	mutex_unlock(&vb->balloon_lock);
+ }
+ 
+@@ -172,12 +173,13 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+ {
+ 	struct page *page;
+ 	struct balloon_dev_info *vb_dev_info = &vb->vb_dev_info;
++	size_t limit;
+ 
+ 	/* We can only do one array worth at a time. */
+-	num = min(num, ARRAY_SIZE(vb->pfns));
++	limit = min(num, ARRAY_SIZE(vb->pfns));
+ 
+ 	mutex_lock(&vb->balloon_lock);
+-	for (vb->num_pfns = 0; vb->num_pfns < num;
++	for (vb->num_pfns = 0; vb->num_pfns < limit;
+ 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+ 		page = balloon_page_dequeue(vb_dev_info);
+ 		if (!page)
+@@ -193,6 +195,9 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+ 	 */
+ 	if (vb->num_pfns != 0)
+ 		tell_host(vb, vb->deflate_vq);
++	/* Schedule another call if a bigger change is requested */
++	if (vb->num_pfns < num)
++		queue_work(vb->wq, &vb->wq_work);
+ 	mutex_unlock(&vb->balloon_lock);
+ 	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+ }
+@@ -234,14 +239,14 @@ static void update_balloon_stats(struct virtio_balloon *vb)
+  * with a single buffer.  From that point forward, all conversations consist of
+  * a hypervisor request (a call to this function) which directs us to refill
+  * the virtqueue with a fresh stats buffer.  Since stats collection can sleep,
+- * we notify our kthread which does the actual work via stats_handle_request().
++ * we queue a work that will do the actual work via stats_handle_request().
+  */
+ static void stats_request(struct virtqueue *vq)
+ {
+ 	struct virtio_balloon *vb = vq->vdev->priv;
+ 
+ 	vb->need_stats_update = 1;
+-	wake_up(&vb->config_change);
++	queue_work(vb->wq, &vb->wq_work);
+ }
+ 
+ static void stats_handle_request(struct virtio_balloon *vb)
+@@ -265,7 +270,7 @@ static void virtballoon_changed(struct virtio_device *vdev)
+ {
+ 	struct virtio_balloon *vb = vdev->priv;
+ 
+-	wake_up(&vb->config_change);
++	queue_work(vb->wq, &vb->wq_work);
+ }
+ 
+ static inline s64 towards_target(struct virtio_balloon *vb)
+@@ -287,35 +292,22 @@ static void update_balloon_size(struct virtio_balloon *vb)
+ 		      &actual);
+ }
+ 
+-static int balloon(void *_vballoon)
++static void balloon(struct work_struct *work)
+ {
+-	struct virtio_balloon *vb = _vballoon;
+-
+-	set_freezable();
+-	while (!kthread_should_stop()) {
+-		s64 diff;
+-
+-		try_to_freeze();
+-		wait_event_interruptible(vb->config_change,
+-					 (diff = towards_target(vb)) != 0
+-					 || vb->need_stats_update
+-					 || kthread_should_stop()
+-					 || freezing(current));
+-		if (vb->need_stats_update)
+-			stats_handle_request(vb);
+-		if (diff > 0)
+-			fill_balloon(vb, diff);
+-		else if (diff < 0)
+-			leak_balloon(vb, -diff);
+-		update_balloon_size(vb);
++	struct virtio_balloon *vb;
++	s64 diff;
+ 
+-		/*
+-		 * For large balloon changes, we could spend a lot of time
+-		 * and always have work to do.  Be nice if preempt disabled.
+-		 */
+-		cond_resched();
+-	}
+-	return 0;
++	vb = container_of(work, struct virtio_balloon, wq_work);
++	diff = towards_target(vb);
++
++	if (vb->need_stats_update)
++		stats_handle_request(vb);
++
++	if (diff > 0)
++		fill_balloon(vb, diff);
++	else if (diff < 0)
++		leak_balloon(vb, -diff);
++	update_balloon_size(vb);
+ }
+ 
+ static int init_vqs(struct virtio_balloon *vb)
+@@ -429,7 +421,6 @@ static int virtballoon_probe(struct virtio_device *vdev)
+ 
+ 	vb->num_pages = 0;
+ 	mutex_init(&vb->balloon_lock);
+-	init_waitqueue_head(&vb->config_change);
+ 	init_waitqueue_head(&vb->acked);
+ 	vb->vdev = vdev;
+ 	vb->need_stats_update = 0;
+@@ -443,9 +434,10 @@ static int virtballoon_probe(struct virtio_device *vdev)
+ 	if (err)
+ 		goto out_free_vb;
+ 
+-	vb->thread = kthread_run(balloon, vb, "vballoon");
+-	if (IS_ERR(vb->thread)) {
+-		err = PTR_ERR(vb->thread);
++	INIT_WORK(&vb->wq_work, balloon);
++	vb->wq = alloc_workqueue("vballoon_wq", WQ_FREEZABLE, 0);
++	if (!vb->wq) {
++		err = -ENOMEM;
+ 		goto out_del_vqs;
+ 	}
+ 
+@@ -476,7 +468,7 @@ static void virtballoon_remove(struct virtio_device *vdev)
+ {
+ 	struct virtio_balloon *vb = vdev->priv;
+ 
+-	kthread_stop(vb->thread);
++	destroy_workqueue(vb->wq);
+ 	remove_common(vb);
+ 	kfree(vb);
+ }
+@@ -487,7 +479,7 @@ static int virtballoon_freeze(struct virtio_device *vdev)
+ 	struct virtio_balloon *vb = vdev->priv;
+ 
+ 	/*
+-	 * The kthread is already frozen by the PM core before this
++	 * The workqueue is already frozen by the PM core before this
+ 	 * function is called.
+ 	 */
+ 
+-- 
+1.8.5.2
+
