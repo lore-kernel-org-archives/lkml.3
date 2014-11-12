@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966782AbaKLB4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:56:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33172 "EHLO
+	id S966814AbaKLB5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:57:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966137AbaKLB4v (ORCPT
+	with ESMTP id S966800AbaKLB44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:56:51 -0500
+	Tue, 11 Nov 2014 20:56:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dcbw@redhat.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 088/123] USB: option: add Haier CE81B CDMA modem
-Date: Wed, 12 Nov 2014 10:17:34 +0900
-Message-Id: <20141112011723.005523653@linuxfoundation.org>
+        Jack Pham <jackp@codeaurora.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.10 090/123] usb: dwc3: gadget: Properly initialize LINK TRB
+Date: Wed, 12 Nov 2014 10:17:36 +0900
+Message-Id: <20141112011723.088922972@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,42 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Jack Pham <jackp@codeaurora.org>
 
-commit 012eee1522318b5ccd64d277d50ac32f7e9974fe upstream.
+commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
 
-Port layout:
+On ISOC endpoints the last trb_pool entry used as a
+LINK TRB is not getting zeroed out correctly due to
+memset being called incorrectly and in the wrong place.
+If pool allocated from DMA was not zero-initialized
+to begin with this will result in the size and ctrl
+values being random garbage. Call memset correctly after
+assignment of the trb_link pointer.
 
-0: QCDM/DIAG
-1: NMEA
-2: AT
-3: AT/PPP
-
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
+Signed-off-by: Jack Pham <jackp@codeaurora.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/dwc3/gadget.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -362,6 +362,7 @@ static void option_instat_callback(struc
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -550,12 +550,11 @@ static int __dwc3_gadget_ep_enable(struc
+ 		if (!usb_endpoint_xfer_isoc(desc))
+ 			return 0;
  
- /* Haier products */
- #define HAIER_VENDOR_ID				0x201e
-+#define HAIER_PRODUCT_CE81B			0x10f8
- #define HAIER_PRODUCT_CE100			0x2009
+-		memset(&trb_link, 0, sizeof(trb_link));
+-
+ 		/* Link TRB for ISOC. The HWO bit is never reset */
+ 		trb_st_hw = &dep->trb_pool[0];
  
- /* Cinterion (formerly Siemens) products */
-@@ -1620,6 +1621,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
- 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HAIER_VENDOR_ID, HAIER_PRODUCT_CE81B, 0xff, 0xff, 0xff) },
- 	/* Pirelli  */
- 	{ USB_DEVICE_INTERFACE_CLASS(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_C100_1, 0xff) },
- 	{ USB_DEVICE_INTERFACE_CLASS(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_C100_2, 0xff) },
+ 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
++		memset(trb_link, 0, sizeof(*trb_link));
+ 
+ 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
+ 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
 
 
