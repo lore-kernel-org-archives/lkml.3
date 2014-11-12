@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaKLTzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 14:55:35 -0500
-Received: from gate.crashing.org ([63.228.1.57]:33663 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234AbaKLTzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 14:55:33 -0500
-Message-ID: <1415822107.5124.45.camel@kernel.crashing.org>
-Subject: Re: [PATCH] of/base: Fix PowerPC address parsing hack
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1753337AbaKLUC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:02:29 -0500
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.26]:9886 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753151AbaKLUC1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 15:02:27 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>
-Date: Thu, 13 Nov 2014 06:55:07 +1100
-In-Reply-To: <CAL_JsqKfBGdpFV_XuE4DEhFrkhN33kOMkiZE_TOnAZDm2qjwMw@mail.gmail.com>
-References: <1415771461.5124.33.camel@kernel.crashing.org>
-	 <CAL_JsqKfBGdpFV_XuE4DEhFrkhN33kOMkiZE_TOnAZDm2qjwMw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] hyperv: Add processing of MTU reduced by the
+ host
+Thread-Topic: [PATCH net-next] hyperv: Add processing of MTU reduced by the
+ host
+Thread-Index: AQHP/f2e9z8vhEln9EShH6jS5e5RMpxd7OIA//977iA=
+Date: Wed, 12 Nov 2014 20:02:11 +0000
+Message-ID: <ecc2fd8e646147fabb30d3120c889431@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1415748472-27463-1-git-send-email-haiyangz@microsoft.com>
+ <20141112.144640.703336197189868183.davem@davemloft.net>
+In-Reply-To: <20141112.144640.703336197189868183.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 131.107.159.99)
+ smtp.mailfrom=haiyangz@microsoft.com; aepfle.de; dkim=none (message not
+ signed) header.d=none;aepfle.de; dmarc=pass action=none
+ header.from=microsoft.com;
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(51704005)(189002)(13464003)(199003)(377454003)(164054003)(19580395003)(87936001)(19580405001)(6806004)(20776003)(47776003)(44976005)(68736004)(4396001)(46102003)(84676001)(76176999)(50986999)(46406003)(54356999)(23726002)(106116001)(97756001)(107046002)(86612001)(92566001)(106466001)(31966008)(120916001)(97736003)(584604001)(21056001)(66066001)(99396003)(77096003)(77156002)(62966003)(2656002)(50466002)(64706001)(108616004)(33646002)(110136001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2SR01MB594;H:hybrid.exchange.microsoft.com;FPR:;SPF:Pass;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2SR01MB594;
+X-DmarcAction: None
+X-DmarcStatus: Passed
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03932714EB
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-12 at 08:39 -0600, Rob Herring wrote:
-> On Tue, Nov 11, 2014 at 11:51 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> > We have a historical hack that treats missing ranges properties as the
-> > equivalent of an empty one. This is needed for ancient PowerMac "bad"
-> > device-trees, and shouldn't be enabled for any other PowerPC platform,
-> > otherwise we get some nasty layout of devices in sysfs or even
-> > duplication when a set of otherwise identically named devices is
-> > created multiple times under a different parent node with no ranges
-> > property.
-> >
-> > This fix is needed for the PowerNV i2c busses to be exposed properly
-> > and will fix a number of other embedded cases.
-> >
-> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > CC: <stable@vger.kernel.org>
-> > ---
-> >
-> > diff --git a/drivers/of/address.c b/drivers/of/address.c
-> > index e371825..e37f017 100644
-> > --- a/drivers/of/address.c
-> > +++ b/drivers/of/address.c
-> > @@ -7,6 +7,10 @@
-> >  #include <linux/pci_regs.h>
-> >  #include <linux/string.h>
-> >
-> > +#ifdef CONFIG_PPC
-> > +#include <asm/machdep.h>
-> > +#endif
-> > +
-> >  /* Max address size we deal with */
-> >  #define OF_MAX_ADDR_CELLS      4
-> >  #define OF_CHECK_ADDR_COUNT(na)        ((na) > 0 && (na) <= OF_MAX_ADDR_CELLS)
-> > @@ -428,12 +432,13 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
-> >          * This code is only enabled on powerpc. --gcl
-> >          */
-> >         ranges = of_get_property(parent, rprop, &rlen);
-> > -#if !defined(CONFIG_PPC)
-> > +#if defined(CONFIG_PPC)
-> > +       if (!machine_is(powermac))
+
+
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Wednesday, November 12, 2014 2:47 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] hyperv: Add processing of MTU reduced by
+> the host
 > 
-> Can we use a machine compatible here or something not PPC specific?
-> Then we can use IS_ENABLED(CONFIG_PPC) instead of ifdefs.
-
-We could, we'd have to use a pair of machine compatible, I'll spin a new
-patch later today.
-
-Ben.
- 
-> Rob
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Tue, 11 Nov 2014 15:27:52 -0800
 > 
-> > +#endif /* defined(CONFIG_PPC) */
-> >         if (ranges == NULL) {
-> > -               pr_err("OF: no ranges; cannot translate\n");
-> > +               pr_debug("OF: no ranges; cannot translate\n");
-> >                 return 1;
-> >         }
-> > -#endif /* !defined(CONFIG_PPC) */
-> >         if (ranges == NULL || rlen == 0) {
-> >                 offset = of_read_number(addr, na);
-> >                 memset(addr, 0, pna * 4);
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> > -	if (mtu < 68 || mtu > limit)
+> > +	if (mtu < ETH_DATA_LEN || mtu > limit)
+> >  		return -EINVAL;
+> 
+> This is not correct.
+> 
+> The test is against the minimally supported MTU, which should
+> be 68 not ETH_DATA_LEN which is 1500.
 
+The Hyper-V host doesn't support MTU below 1500. If we try setting MTU to a 
+value < 1500, the host will use 1500 automatically and return 1500 in the 
+RNDIS_OID_GEN_MAXIMUM_FRAME_SIZE query and guest will also use it. That's 
+why I set the lower limit to ETH_DATA_LEN.
+
+Are you suggesting that we keep the 68 as the lower limit, and let the host 
+auto-reset it to 1500 when we trying to set an MTU < 1500?
+
+Thanks,
+- Haiyang
 
