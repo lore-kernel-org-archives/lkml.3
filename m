@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965862AbaKLBuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:50:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60945 "EHLO
+	id S965896AbaKLBuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:50:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60972 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965814AbaKLBuI (ORCPT
+	with ESMTP id S965863AbaKLBuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:08 -0500
+	Tue, 11 Nov 2014 20:50:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.10 013/123] UBIFS: remove mst_mutex
-Date: Wed, 12 Nov 2014 10:16:19 +0900
-Message-Id: <20141112011719.594920095@linuxfoundation.org>
+        Jeff Harris <jefftharris@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.10 026/123] [jffs2] kill wbuf_queued/wbuf_dwork_lock
+Date: Wed, 12 Nov 2014 10:16:32 +0900
+Message-Id: <20141112011720.217572132@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,86 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 07e19dff63e3d5d6500d831e36554ac9b1b0560e upstream.
+commit 99358a1ca53e8e6ce09423500191396f0e6584d2 upstream.
 
-The 'mst_mutex' is not needed since because 'ubifs_write_master()' is only
-called on the mount path and commit path. The mount path is sequential and
-there is no parallelism, and the commit path is also serialized - there is only
-one commit going on at a time.
+schedule_delayed_work() happening when the work is already pending is
+a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
+broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
+and pointless.  It's cheaper to let schedule_delayed_work() handle that
+case.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reported-by: Jeff Harris <jefftharris@gmail.com>
+Tested-by: Jeff Harris <jefftharris@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/commit.c |    2 --
- fs/ubifs/master.c |    7 +++----
- fs/ubifs/super.c  |    1 -
- fs/ubifs/ubifs.h  |    2 --
- 4 files changed, 3 insertions(+), 9 deletions(-)
+ fs/jffs2/jffs2_fs_sb.h |    2 --
+ fs/jffs2/wbuf.c        |   17 ++---------------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
---- a/fs/ubifs/commit.c
-+++ b/fs/ubifs/commit.c
-@@ -174,7 +174,6 @@ static int do_commit(struct ubifs_info *
- 	if (err)
- 		goto out;
+--- a/fs/jffs2/jffs2_fs_sb.h
++++ b/fs/jffs2/jffs2_fs_sb.h
+@@ -134,8 +134,6 @@ struct jffs2_sb_info {
+ 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
  
--	mutex_lock(&c->mst_mutex);
- 	c->mst_node->cmt_no      = cpu_to_le64(c->cmt_no);
- 	c->mst_node->log_lnum    = cpu_to_le32(new_ltail_lnum);
- 	c->mst_node->root_lnum   = cpu_to_le32(zroot.lnum);
-@@ -204,7 +203,6 @@ static int do_commit(struct ubifs_info *
- 	else
- 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
- 	err = ubifs_write_master(c);
--	mutex_unlock(&c->mst_mutex);
- 	if (err)
- 		goto out;
+ 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
+-	int wbuf_queued;                /* non-zero delayed work is queued */
+-	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
  
---- a/fs/ubifs/master.c
-+++ b/fs/ubifs/master.c
-@@ -352,10 +352,9 @@ int ubifs_read_master(struct ubifs_info
-  * ubifs_write_master - write master node.
-  * @c: UBIFS file-system description object
-  *
-- * This function writes the master node. The caller has to take the
-- * @c->mst_mutex lock before calling this function. Returns zero in case of
-- * success and a negative error code in case of failure. The master node is
-- * written twice to enable recovery.
-+ * This function writes the master node. Returns zero in case of success and a
-+ * negative error code in case of failure. The master node is written twice to
-+ * enable recovery.
-  */
- int ubifs_write_master(struct ubifs_info *c)
- {
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1970,7 +1970,6 @@ static struct ubifs_info *alloc_ubifs_in
- 		mutex_init(&c->lp_mutex);
- 		mutex_init(&c->tnc_mutex);
- 		mutex_init(&c->log_mutex);
--		mutex_init(&c->mst_mutex);
- 		mutex_init(&c->umount_mutex);
- 		mutex_init(&c->bu_mutex);
- 		mutex_init(&c->write_reserve_mutex);
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -1042,7 +1042,6 @@ struct ubifs_debug_info;
-  *
-  * @mst_node: master node
-  * @mst_offs: offset of valid master node
-- * @mst_mutex: protects the master node area, @mst_node, and @mst_offs
-  *
-  * @max_bu_buf_len: maximum bulk-read buffer length
-  * @bu_mutex: protects the pre-allocated bulk-read buffer and @c->bu
-@@ -1282,7 +1281,6 @@ struct ubifs_info {
+ 	unsigned char *oobbuf;
+ 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
+--- a/fs/jffs2/wbuf.c
++++ b/fs/jffs2/wbuf.c
+@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct wor
+ 	struct jffs2_sb_info *c = work_to_sb(work);
+ 	struct super_block *sb = OFNI_BS_2SFFJ(c);
  
- 	struct ubifs_mst_node *mst_node;
- 	int mst_offs;
--	struct mutex mst_mutex;
+-	spin_lock(&c->wbuf_dwork_lock);
+-	c->wbuf_queued = 0;
+-	spin_unlock(&c->wbuf_dwork_lock);
+-
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		jffs2_dbg(1, "%s()\n", __func__);
+ 		jffs2_flush_wbuf_gc(c, 0);
+@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return;
  
- 	int max_bu_buf_len;
- 	struct mutex bu_mutex;
+-	spin_lock(&c->wbuf_dwork_lock);
+-	if (!c->wbuf_queued) {
++	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
++	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
+ 		jffs2_dbg(1, "%s()\n", __func__);
+-		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
+-		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
+-		c->wbuf_queued = 1;
+-	}
+-	spin_unlock(&c->wbuf_dwork_lock);
+ }
+ 
+ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
+@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_
+ 
+ 	/* Initialise write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize = c->mtd->writesize;
+ 	c->wbuf_ofs = 0xFFFFFFFF;
+@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_s
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize =  c->mtd->erasesize;
+ 
+@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jf
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize = c->mtd->writesize;
+@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_i
+ 		return 0;
+ 
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize =  c->mtd->writesize;
 
 
