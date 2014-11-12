@@ -1,78 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaKLO6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:58:25 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49615 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409AbaKLO6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:58:22 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>
-CC: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH] usb: dwc3: gadget: Fix broken gadget on system suspend/resume
-Date: Wed, 12 Nov 2014 16:58:16 +0200
-Message-ID: <1415804296-28980-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753007AbaKLO6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:58:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45913 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752725AbaKLO6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 09:58:43 -0500
+Date: Wed, 12 Nov 2014 08:59:00 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Chen <peter.chen@freescale.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 0/7] usb: add support for the generic PHY framework
+Message-ID: <20141112145900.GC641@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+ <07c7cfed25af4bdb9e34b6ad1aaed0c7@BN1PR0301MB0772.namprd03.prod.outlook.com>
+ <20141107180820.GO15036@saruman>
+ <20141107180852.GP15036@saruman>
+ <20141112013308.GB15348@shlinux2>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KdquIMZPjGJQvRdI"
+Content-Disposition: inline
+In-Reply-To: <20141112013308.GB15348@shlinux2>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On TI SoCs (e.g. DRA7) we don't support the DWC3 hibernation feature.
-We need to stop the gadget controller while system suspend
-else it results in L3 Bus errors on resume with broken
-USB gadget on J6-evm.
+--KdquIMZPjGJQvRdI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[   55.718226] WARNING: CPU: 0 PID: 0 at drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler+0x224/0x31c()
-[   55.718232] 44000000.ocp:L3 Custom Error: MASTER USB3 TARGET GPMC (Idle): Data Access in User mode during Functional access
-[   55.718263] Modules linked in: usb_f_ss_lb g_zero libcomposite configfs xhci_hcd btwilink bluetooth dwc3 6lowpan_iphc m25p80 dwc3_omap omap_remoteproc
-[   55.718271] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.19-02011-g3ece3ca-dirty #658
-[   55.718290] [<c0016090>] (unwind_backtrace) from [<c0012060>] (show_stack+0x10/0x14)
-[   55.718302] [<c0012060>] (show_stack) from [<c062a2e4>] (dump_stack+0x78/0x94)
-[   55.718315] [<c062a2e4>] (dump_stack) from [<c0043bc4>] (warn_slowpath_common+0x6c/0x90)
-[   55.718325] [<c0043bc4>] (warn_slowpath_common) from [<c0043c7c>] (warn_slowpath_fmt+0x30/0x40)
-[   55.718336] [<c0043c7c>] (warn_slowpath_fmt) from [<c030fb24>] (l3_interrupt_handler+0x224/0x31c)
-[   55.718348] [<c030fb24>] (l3_interrupt_handler) from [<c0093010>] (handle_irq_event_percpu+0x5c/0x23c)
-[   55.718358] [<c0093010>] (handle_irq_event_percpu) from [<c009322c>] (handle_irq_event+0x3c/0x5c)
-[   55.718367] [<c009322c>] (handle_irq_event) from [<c0096160>] (handle_fasteoi_irq+0x98/0x158)
-[   55.718377] [<c0096160>] (handle_fasteoi_irq) from [<c00929dc>] (generic_handle_irq+0x20/0x30)
-[   55.718385] [<c00929dc>] (generic_handle_irq) from [<c000eea8>] (handle_IRQ+0x4c/0xb0)
-[   55.718393] [<c000eea8>] (handle_IRQ) from [<c0008638>] (gic_handle_irq+0x28/0x5c)
-[   55.718402] [<c0008638>] (gic_handle_irq) from [<c0630964>] (__irq_svc+0x44/0x5c)
-[   55.718406] Exception stack(0xc09c1f68 to 0xc09c1fb0)
-[   55.718412] 1f60:                   00000001 00000001 00000000 00000000 c09c0000 00000000
-[   55.718418] 1f80: c09c0000 c09c0000 c0a7a1e4 c09c8938 c09c89b4 00000000 60000093 c09c1fb0
-[   55.718423] 1fa0: c008a2e4 c00926cc 60000013 ffffffff
-[   55.718433] [<c0630964>] (__irq_svc) from [<c00926cc>] (cpu_startup_entry+0x100/0x1f4)
-[   55.718444] [<c00926cc>] (cpu_startup_entry) from [<c0901ac4>] (start_kernel+0x324/0x388)
+On Wed, Nov 12, 2014 at 09:33:09AM +0800, Peter Chen wrote:
+> On Fri, Nov 07, 2014 at 12:08:52PM -0600, Felipe Balbi wrote:
+> > On Fri, Nov 07, 2014 at 12:08:20PM -0600, Felipe Balbi wrote:
+> > > Hi,
+> > >=20
+> > > On Fri, Nov 07, 2014 at 01:33:25PM +0000, Peter Chen wrote:
+> > > >=20
+> > > >=20
+> > > > =20
+> > > > >=20
+> > > > > Antoine Tenart (7):
+> > > > >   usb: move the OTG state from the USB PHY to the OTG structure
+> > > > >   usb: rename phy to usb_phy in OTG
+> > > > >   usb: add support to the generic PHY framework in OTG
+> > > > >   usb: allow to supply the PHY in the drivers when using HCD
+> > > > >   usb: chipidea: rename transceiver and phy to usb_phy
+> > > > >   usb: chipidea: move usb_otg into struct ci_hdrc
+> > > > >   usb: chipidea: add support to the generic PHY framework
+> > > > >=20
+> > > >=20
+> > > > Hi Felipe,
+> > > >=20
+> > > > I find you queue the patch 1st-4th and 7th in your next tree, how y=
+ou queue
+> > > > the 7th without queueing 5th and 6th, they have some relationships.
+> > > >=20
+> > > > Will you queue 5th and 6th, or I queue them (5th- 7th) through my c=
+hipidea patch set?
+> > >=20
+> > > argh, somehow I missed them. I'll add both to my testing/next. Sorry =
+for
+> > > the confusion. I thought I had them all.
+> >=20
+> > oh, they don't apply.
+> >=20
+>=20
+> Oh, I know the reason why you can apply 7th, without apply 5th and 6th.
+> At your next tree, the 4th, 5th, and 6th patches were squashed, and
+> it becomes "4th" patches in this series.
+> The shortlog is:=20
+> usb: allow to supply the PHY in the drivers when using HCD
+> commit id is:
+> "ef44cb4226d132146e44f8ea562a16b27ff61126"
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/usb/dwc3/gadget.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+hmmm... not sure how I did that. Probably squashed them to avoid some
+build failures...
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 3818b26..bc15b54 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -2741,7 +2741,13 @@ int dwc3_gadget_prepare(struct dwc3 *dwc)
- {
- 	if (dwc->pullups_connected) {
- 		dwc3_gadget_disable_irq(dwc);
--		dwc3_gadget_run_stop(dwc, true, true);
-+		if (dwc->has_hibernation) {
-+			dwc3_gadget_run_stop(dwc, true, true);
-+		} else {
-+			dwc3_gadget_run_stop(dwc, false, true);
-+			/* remember to connect back on resume */
-+			dwc->pullups_connected = true;
-+		}
- 	}
- 
- 	return 0;
--- 
-1.8.3.2
+--=20
+balbi
 
+--KdquIMZPjGJQvRdI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUY3W0AAoJEIaOsuA1yqRE6SAQAKEP68W9V7yKPtgtGgJe6C1f
+GlA/6P5NUT0hB2YXD8O+56qRVbtmsRD108qCfrhMiKbyI0AMxmuOzhpzULTUl5fW
+j6YWP1R6f6YSqv7mLg+JUC69Klyd8PtkXRRQp9AstZhZaScL+3++o8ktEGsVOyzt
+xRI6IFOZi3eHzi44GyfbjtCmZm5/JVTmsu8htpO7wvtXTmbk/Kprt3Ks7QcZmQhh
+g3XEV+RXVQtnrm/e6dhbraG987ef5ObL1TOWHk+yP9qZ80k36gv7oGpKyYEU/xfz
+Ys4utZzEnZXYg8JgbUI5sTBVhhW8EflnwW5sMrJlxC3OcfW5abJVrwcNIPtgw/Ne
+IzLCqMzC/MiuMrhqb5HQkNXAaFowf9VA+/9dCu6kUFBMSiVsUdVx5WofAVhjOYqa
+jxzuOGNRJcCkQ75VYMcfnyY6iQNbDXloi82hfvHsyoSKidxWp3wmIv8aCMuPATzZ
+NVRphUjobu/XcEMuOIry4qx3WSqx0Qd9Bo3ePEQdPwQlpJ4l4RP66gVXqZ5B6Kvj
+954roPskyQoTPmBBKVMS8zpQMrJz9w4nfo2eWOBEcZiG2TIqTIjiXbZyXMxuGaK4
+DR1dN9sZ0q/I41X0SYWFHedTgLNWDeKO9ecWgMyOzhiUU8u5Y5R1LqFd8Ct0CQwO
+urVwhCVEXPvyfjshfFkp
+=g7kp
+-----END PGP SIGNATURE-----
+
+--KdquIMZPjGJQvRdI--
