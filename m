@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965915AbaKLBuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:50:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60987 "EHLO
+	id S965933AbaKLBun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:50:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60993 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965863AbaKLBud (ORCPT
+	with ESMTP id S965863AbaKLBuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:33 -0500
+	Tue, 11 Nov 2014 20:50:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        zatimend@hotmail.co.uk, Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.10 029/123] random: add and use memzero_explicit() for clearing data
-Date: Wed, 12 Nov 2014 10:16:35 +0900
-Message-Id: <20141112011720.352330284@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.10 031/123] mnt: Prevent pivot_root from creating a loop in the mount tree
+Date: Wed, 12 Nov 2014 10:16:37 +0900
+Message-Id: <20141112011720.439436859@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -30,120 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
+commit 0d0826019e529f21c84687521d03f60cd241ca7d upstream.
 
-zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
-memset() calls which clear out sensitive data in extract_{buf,entropy,
-entropy_user}() in random driver are being optimized away by gcc.
+Andy Lutomirski recently demonstrated that when chroot is used to set
+the root path below the path for the new ``root'' passed to pivot_root
+the pivot_root system call succeeds and leaks mounts.
 
-Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
-that can be used in such cases where a variable with sensitive data is
-being cleared out in the end. Other use cases might also be in crypto
-code. [ I have put this into lib/string.c though, as it's always built-in
-and doesn't need any dependencies then. ]
+In examining the code I see that starting with a new root that is
+below the current root in the mount tree will result in a loop in the
+mount tree after the mounts are detached and then reattached to one
+another.  Resulting in all kinds of ugliness including a leak of that
+mounts involved in the leak of the mount loop.
 
-Fixes kernel bugzilla: 82041
+Prevent this problem by ensuring that the new mount is reachable from
+the current root of the mount tree.
 
-Reported-by: zatimend@hotmail.co.uk
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[Added stable cc.  Fixes CVE-2014-7970.  --Andy]
+
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/87bnpmihks.fsf@x220.int.ebiederm.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c  |   10 +++++-----
- include/linux/string.h |    5 +++--
- lib/string.c           |   16 ++++++++++++++++
- 3 files changed, 24 insertions(+), 7 deletions(-)
+ fs/namespace.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -933,8 +933,8 @@ static void extract_buf(struct entropy_s
- 	 * pool while mixing, and hash one final time.
- 	 */
- 	sha_transform(hash.w, extract, workspace);
--	memset(extract, 0, sizeof(extract));
--	memset(workspace, 0, sizeof(workspace));
-+	memzero_explicit(extract, sizeof(extract));
-+	memzero_explicit(workspace, sizeof(workspace));
- 
- 	/*
- 	 * In case the hash function has some recognizable output
-@@ -957,7 +957,7 @@ static void extract_buf(struct entropy_s
- 	}
- 
- 	memcpy(out, &hash, EXTRACT_SIZE);
--	memset(&hash, 0, sizeof(hash));
-+	memzero_explicit(&hash, sizeof(hash));
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
-@@ -1005,7 +1005,7 @@ static ssize_t extract_entropy(struct en
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-@@ -1043,7 +1043,7 @@ static ssize_t extract_entropy_user(stru
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -129,7 +129,7 @@ int bprintf(u32 *bin_buf, size_t size, c
- #endif
- 
- extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
--			const void *from, size_t available);
-+				       const void *from, size_t available);
- 
- /**
-  * strstarts - does @str start with @prefix?
-@@ -141,7 +141,8 @@ static inline bool strstarts(const char
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
- 
--extern size_t memweight(const void *ptr, size_t bytes);
-+size_t memweight(const void *ptr, size_t bytes);
-+void memzero_explicit(void *s, size_t count);
- 
- /**
-  * kbasename - return the last part of a pathname.
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -586,6 +586,22 @@ void *memset(void *s, int c, size_t coun
- EXPORT_SYMBOL(memset);
- #endif
- 
-+/**
-+ * memzero_explicit - Fill a region of memory (e.g. sensitive
-+ *		      keying data) with 0s.
-+ * @s: Pointer to the start of the area.
-+ * @count: The size of the area.
-+ *
-+ * memzero_explicit() doesn't need an arch-specific version as
-+ * it just invokes the one of memset() implicitly.
-+ */
-+void memzero_explicit(void *s, size_t count)
-+{
-+	memset(s, 0, count);
-+	OPTIMIZER_HIDE_VAR(s);
-+}
-+EXPORT_SYMBOL(memzero_explicit);
-+
- #ifndef __HAVE_ARCH_MEMCPY
- /**
-  * memcpy - Copy one area of memory to another
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2696,6 +2696,9 @@ SYSCALL_DEFINE2(pivot_root, const char _
+ 	/* make sure we can reach put_old from new_root */
+ 	if (!is_path_reachable(old_mnt, old.dentry, &new))
+ 		goto out4;
++	/* make certain new is below the root */
++	if (!is_path_reachable(new_mnt, new.dentry, &root))
++		goto out4;
+ 	root_mp->m_count++; /* pin it so it won't go away */
+ 	br_write_lock(&vfsmount_lock);
+ 	detach_mnt(new_mnt, &parent_path);
 
 
