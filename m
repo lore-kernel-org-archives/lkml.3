@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaKLB1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:27:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58987 "EHLO
+	id S932361AbaKLB1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:27:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58997 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361AbaKLB11 (ORCPT
+	with ESMTP id S1754382AbaKLB1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:27 -0500
+	Tue, 11 Nov 2014 20:27:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sami Liedes <sami.liedes@iki.fi>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.17 155/319] ext4: add ext4_iget_normal() which is to be used for dir tree lookups
-Date: Wed, 12 Nov 2014 10:14:53 +0900
-Message-Id: <20141112011018.336811233@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: [PATCH 3.17 157/319] ext4: fix reservation overflow in ext4_da_write_begin
+Date: Wed, 12 Nov 2014 10:14:55 +0900
+Message-Id: <20141112011018.636812109@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,87 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit f4bb2981024fc91b23b4d09a8817c415396dbabb upstream.
+commit 0ff8947fc5f700172b37cbca811a38eb9cb81e08 upstream.
 
-If there is a corrupted file system which has directory entries that
-point at reserved, metadata inodes, prohibit them from being used by
-treating them the same way we treat Boot Loader inodes --- that is,
-mark them to be bad inodes.  This prohibits them from being opened,
-deleted, or modified via chmod, chown, utimes, etc.
+Delalloc write journal reservations only reserve 1 credit,
+to update the inode if necessary.  However, it may happen
+once in a filesystem's lifetime that a file will cross
+the 2G threshold, and require the LARGE_FILE feature to
+be set in the superblock as well, if it was not set already.
 
-In particular, this prevents a corrupted file system which has a
-directory entry which points at the journal inode from being deleted
-and its blocks released, after which point Much Hilarity Ensues.
+This overruns the transaction reservation, and can be
+demonstrated simply on any ext4 filesystem without the LARGE_FILE
+feature already set:
 
-Reported-by: Sami Liedes <sami.liedes@iki.fi>
+dd if=/dev/zero of=testfile bs=1 seek=2147483646 count=1 \
+	conv=notrunc of=testfile
+sync
+dd if=/dev/zero of=testfile bs=1 seek=2147483647 count=1 \
+	conv=notrunc of=testfile
+
+leads to:
+
+EXT4-fs: ext4_do_update_inode:4296: aborting transaction: error 28 in __ext4_handle_dirty_super
+EXT4-fs error (device loop0) in ext4_do_update_inode:4301: error 28
+EXT4-fs error (device loop0) in ext4_reserve_inode_write:4757: Readonly filesystem
+EXT4-fs error (device loop0) in ext4_dirty_inode:4876: error 28
+EXT4-fs error (device loop0) in ext4_da_write_end:2685: error 28
+
+Adjust the number of credits based on whether the flag is
+already set, and whether the current write may extend past the
+LARGE_FILE limit.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h  |    1 +
- fs/ext4/inode.c |    7 +++++++
- fs/ext4/namei.c |    4 ++--
- fs/ext4/super.c |    2 +-
- 4 files changed, 11 insertions(+), 3 deletions(-)
+ fs/ext4/inode.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2109,6 +2109,7 @@ int do_journal_get_write_access(handle_t
- #define CONVERT_INLINE_DATA	 2
- 
- extern struct inode *ext4_iget(struct super_block *, unsigned long);
-+extern struct inode *ext4_iget_normal(struct super_block *, unsigned long);
- extern int  ext4_write_inode(struct inode *, struct writeback_control *);
- extern int  ext4_setattr(struct dentry *, struct iattr *);
- extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
 --- a/fs/ext4/inode.c
 +++ b/fs/ext4/inode.c
-@@ -4127,6 +4127,13 @@ bad_inode:
- 	return ERR_PTR(ret);
+@@ -2514,6 +2514,20 @@ static int ext4_nonda_switch(struct supe
+ 	return 0;
  }
  
-+struct inode *ext4_iget_normal(struct super_block *sb, unsigned long ino)
++/* We always reserve for an inode update; the superblock could be there too */
++static int ext4_da_write_credits(struct inode *inode, loff_t pos, unsigned len)
 +{
-+	if (ino < EXT4_FIRST_INO(sb) && ino != EXT4_ROOT_INO)
-+		return ERR_PTR(-EIO);
-+	return ext4_iget(sb, ino);
++	if (likely(EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++				EXT4_FEATURE_RO_COMPAT_LARGE_FILE)))
++		return 1;
++
++	if (pos + len <= 0x7fffffffULL)
++		return 1;
++
++	/* We might need to update the superblock to set LARGE_FILE */
++	return 2;
 +}
 +
- static int ext4_inode_blocks_set(handle_t *handle,
- 				struct ext4_inode *raw_inode,
- 				struct ext4_inode_info *ei)
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1441,7 +1441,7 @@ static struct dentry *ext4_lookup(struct
- 					 dentry);
- 			return ERR_PTR(-EIO);
- 		}
--		inode = ext4_iget(dir->i_sb, ino);
-+		inode = ext4_iget_normal(dir->i_sb, ino);
- 		if (inode == ERR_PTR(-ESTALE)) {
- 			EXT4_ERROR_INODE(dir,
- 					 "deleted inode referenced: %u",
-@@ -1474,7 +1474,7 @@ struct dentry *ext4_get_parent(struct de
- 		return ERR_PTR(-EIO);
- 	}
- 
--	return d_obtain_alias(ext4_iget(child->d_inode->i_sb, ino));
-+	return d_obtain_alias(ext4_iget_normal(child->d_inode->i_sb, ino));
- }
- 
- /*
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1002,7 +1002,7 @@ static struct inode *ext4_nfs_get_inode(
- 	 * Currently we don't know the generation for parent directory, so
- 	 * a generation of 0 means "accept any"
+ static int ext4_da_write_begin(struct file *file, struct address_space *mapping,
+ 			       loff_t pos, unsigned len, unsigned flags,
+ 			       struct page **pagep, void **fsdata)
+@@ -2564,7 +2578,8 @@ retry_grab:
+ 	 * of file which has an already mapped buffer.
  	 */
--	inode = ext4_iget(sb, ino);
-+	inode = ext4_iget_normal(sb, ino);
- 	if (IS_ERR(inode))
- 		return ERR_CAST(inode);
- 	if (generation && inode->i_generation != generation) {
+ retry_journal:
+-	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE, 1);
++	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE,
++				ext4_da_write_credits(inode, pos, len));
+ 	if (IS_ERR(handle)) {
+ 		page_cache_release(page);
+ 		return PTR_ERR(handle);
 
 
