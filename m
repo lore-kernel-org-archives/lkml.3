@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965812AbaKLBuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:50:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60933 "EHLO
+	id S965862AbaKLBuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:50:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964953AbaKLBt6 (ORCPT
+	with ESMTP id S965814AbaKLBuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:58 -0500
+	Tue, 11 Nov 2014 20:50:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ondrej Zary <linux@rainbow-software.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 009/123] libata-sff: Fix controllers with no ctl port
-Date: Wed, 12 Nov 2014 10:16:15 +0900
-Message-Id: <20141112011719.407947734@linuxfoundation.org>
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.10 013/123] UBIFS: remove mst_mutex
+Date: Wed, 12 Nov 2014 10:16:19 +0900
+Message-Id: <20141112011719.594920095@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,110 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 6d8ca28fa688a9354bc9fbc935bdaeb3651b6677 upstream.
+commit 07e19dff63e3d5d6500d831e36554ac9b1b0560e upstream.
 
-Currently, ata_sff_softreset is skipped for controllers with no ctl port.
-But that also skips ata_sff_dev_classify required for device detection.
-This means that libata is currently broken on controllers with no ctl port.
+The 'mst_mutex' is not needed since because 'ubifs_write_master()' is only
+called on the mount path and commit path. The mount path is sequential and
+there is no parallelism, and the commit path is also serialized - there is only
+one commit going on at a time.
 
-No device connected:
-[    1.872480] pata_isapnp 01:01.02: activated
-[    1.889823] scsi2 : pata_isapnp
-[    1.890109] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    6.888110] ata3.01: qc timeout (cmd 0xec)
-[    6.888179] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   16.888085] ata3.01: qc timeout (cmd 0xec)
-[   16.888147] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.888086] ata3.01: qc timeout (cmd 0xec)
-[   46.888148] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   51.888100] ata3.00: qc timeout (cmd 0xec)
-[   51.888160] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   61.888079] ata3.00: qc timeout (cmd 0xec)
-[   61.888141] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   91.888089] ata3.00: qc timeout (cmd 0xec)
-[   91.888152] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-
-ATAPI device connected:
-[    1.882061] pata_isapnp 01:01.02: activated
-[    1.893430] scsi2 : pata_isapnp
-[    1.893719] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    6.892107] ata3.01: qc timeout (cmd 0xec)
-[    6.892171] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   16.892079] ata3.01: qc timeout (cmd 0xec)
-[   16.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.892079] ata3.01: qc timeout (cmd 0xec)
-[   46.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.908586] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
-[   46.924570] ata3.00: configured for PIO0 (device error ignored)
-[   46.926295] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
-[   46.984519] sr0: scsi3-mmc drive: 6x/6x xa/form2 tray
-[   46.984592] cdrom: Uniform CD-ROM driver Revision: 3.20
-
-So don't skip ata_sff_softreset, just skip the reset part of ata_bus_softreset
-if the ctl port is not available.
-
-This makes IDE port on ES968 behave correctly:
-
-No device connected:
-[    4.670888] pata_isapnp 01:01.02: activated
-[    4.673207] scsi host2: pata_isapnp
-[    4.673675] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    7.081840] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
-
-ATAPI device connected:
-[    4.704362] pata_isapnp 01:01.02: activated
-[    4.706620] scsi host2: pata_isapnp
-[    4.706877] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    4.872782] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
-[    4.888673] ata3.00: configured for PIO0 (device error ignored)
-[    4.893984] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
-[    7.015578] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-sff.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ fs/ubifs/commit.c |    2 --
+ fs/ubifs/master.c |    7 +++----
+ fs/ubifs/super.c  |    1 -
+ fs/ubifs/ubifs.h  |    2 --
+ 4 files changed, 3 insertions(+), 9 deletions(-)
 
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2008,13 +2008,15 @@ static int ata_bus_softreset(struct ata_
+--- a/fs/ubifs/commit.c
++++ b/fs/ubifs/commit.c
+@@ -174,7 +174,6 @@ static int do_commit(struct ubifs_info *
+ 	if (err)
+ 		goto out;
  
- 	DPRINTK("ata%u: bus reset via SRST\n", ap->print_id);
+-	mutex_lock(&c->mst_mutex);
+ 	c->mst_node->cmt_no      = cpu_to_le64(c->cmt_no);
+ 	c->mst_node->log_lnum    = cpu_to_le32(new_ltail_lnum);
+ 	c->mst_node->root_lnum   = cpu_to_le32(zroot.lnum);
+@@ -204,7 +203,6 @@ static int do_commit(struct ubifs_info *
+ 	else
+ 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
+ 	err = ubifs_write_master(c);
+-	mutex_unlock(&c->mst_mutex);
+ 	if (err)
+ 		goto out;
  
--	/* software reset.  causes dev0 to be selected */
--	iowrite8(ap->ctl, ioaddr->ctl_addr);
--	udelay(20);	/* FIXME: flush */
--	iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
--	udelay(20);	/* FIXME: flush */
--	iowrite8(ap->ctl, ioaddr->ctl_addr);
--	ap->last_ctl = ap->ctl;
-+	if (ap->ioaddr.ctl_addr) {
-+		/* software reset.  causes dev0 to be selected */
-+		iowrite8(ap->ctl, ioaddr->ctl_addr);
-+		udelay(20);	/* FIXME: flush */
-+		iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
-+		udelay(20);	/* FIXME: flush */
-+		iowrite8(ap->ctl, ioaddr->ctl_addr);
-+		ap->last_ctl = ap->ctl;
-+	}
+--- a/fs/ubifs/master.c
++++ b/fs/ubifs/master.c
+@@ -352,10 +352,9 @@ int ubifs_read_master(struct ubifs_info
+  * ubifs_write_master - write master node.
+  * @c: UBIFS file-system description object
+  *
+- * This function writes the master node. The caller has to take the
+- * @c->mst_mutex lock before calling this function. Returns zero in case of
+- * success and a negative error code in case of failure. The master node is
+- * written twice to enable recovery.
++ * This function writes the master node. Returns zero in case of success and a
++ * negative error code in case of failure. The master node is written twice to
++ * enable recovery.
+  */
+ int ubifs_write_master(struct ubifs_info *c)
+ {
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1970,7 +1970,6 @@ static struct ubifs_info *alloc_ubifs_in
+ 		mutex_init(&c->lp_mutex);
+ 		mutex_init(&c->tnc_mutex);
+ 		mutex_init(&c->log_mutex);
+-		mutex_init(&c->mst_mutex);
+ 		mutex_init(&c->umount_mutex);
+ 		mutex_init(&c->bu_mutex);
+ 		mutex_init(&c->write_reserve_mutex);
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1042,7 +1042,6 @@ struct ubifs_debug_info;
+  *
+  * @mst_node: master node
+  * @mst_offs: offset of valid master node
+- * @mst_mutex: protects the master node area, @mst_node, and @mst_offs
+  *
+  * @max_bu_buf_len: maximum bulk-read buffer length
+  * @bu_mutex: protects the pre-allocated bulk-read buffer and @c->bu
+@@ -1282,7 +1281,6 @@ struct ubifs_info {
  
- 	/* wait the port to become ready */
- 	return ata_sff_wait_after_reset(&ap->link, devmask, deadline);
-@@ -2215,10 +2217,6 @@ void ata_sff_error_handler(struct ata_po
+ 	struct ubifs_mst_node *mst_node;
+ 	int mst_offs;
+-	struct mutex mst_mutex;
  
- 	spin_unlock_irqrestore(ap->lock, flags);
- 
--	/* ignore ata_sff_softreset if ctl isn't accessible */
--	if (softreset == ata_sff_softreset && !ap->ioaddr.ctl_addr)
--		softreset = NULL;
--
- 	/* ignore built-in hardresets if SCR access is not available */
- 	if ((hardreset == sata_std_hardreset ||
- 	     hardreset == sata_sff_hardreset) && !sata_scr_valid(&ap->link))
+ 	int max_bu_buf_len;
+ 	struct mutex bu_mutex;
 
 
