@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaKLDIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:08:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59949 "EHLO
+	id S1755542AbaKLDJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:09:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934096AbaKLBic (ORCPT
+	with ESMTP id S933177AbaKLBiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:38:32 -0500
+	Tue, 11 Nov 2014 20:38:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anish Bhatt <anish@chelsio.com>, Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.14 033/203] x86_64, entry: Filter RFLAGS.NT on entry from userspace
-Date: Wed, 12 Nov 2014 10:15:03 +0900
-Message-Id: <20141112011544.243388158@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 029/203] vfs: fix data corruption when blocksize < pagesize for mmaped data
+Date: Wed, 12 Nov 2014 10:14:59 +0900
+Message-Id: <20141112011544.078056200@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,116 +28,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Jan Kara <jack@suse.cz>
 
-commit 8c7aa698baca5e8f1ba9edb68081f1e7a1abf455 upstream.
+commit 90a8020278c1598fafd071736a0846b38510309c upstream.
 
-The NT flag doesn't do anything in long mode other than causing IRET
-to #GP.  Oddly, CPL3 code can still set NT using popf.
+->page_mkwrite() is used by filesystems to allocate blocks under a page
+which is becoming writeably mmapped in some process' address space. This
+allows a filesystem to return a page fault if there is not enough space
+available, user exceeds quota or similar problem happens, rather than
+silently discarding data later when writepage is called.
 
-Entry via hardware or software interrupt clears NT automatically, so
-the only relevant entries are fast syscalls.
+However VFS fails to call ->page_mkwrite() in all the cases where
+filesystems need it when blocksize < pagesize. For example when
+blocksize = 1024, pagesize = 4096 the following is problematic:
+  ftruncate(fd, 0);
+  pwrite(fd, buf, 1024, 0);
+  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
+  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
+  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
+  mremap(map, 1024, 10000, 0);
+  map[4095] = 'a';    ----> no page_mkwrite() called
 
-If user code causes kernel code to run with NT set, then there's at
-least some (small) chance that it could cause trouble.  For example,
-user code could cause a call to EFI code with NT set, and who knows
-what would happen?  Apparently some games on Wine sometimes do
-this (!), and, if an IRET return happens, they will segfault.  That
-segfault cannot be handled, because signal delivery fails, too.
+At the moment ->page_mkwrite() is called, filesystem can allocate only
+one block for the page because i_size == 1024. Otherwise it would create
+blocks beyond i_size which is generally undesirable. But later at
+->writepage() time, we also need to store data at offset 4095 but we
+don't have block allocated for it.
 
-This patch programs the CPU to clear NT on entry via SYSCALL (both
-32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
-in software on entry via SYSENTER.
+This patch introduces a helper function filesystems can use to have
+->page_mkwrite() called at all the necessary moments.
 
-To save a few cycles, this borrows a trick from Jan Beulich in Xen:
-it checks whether NT is set before trying to clear it.  As a result,
-it seems to have very little effect on SYSENTER performance on my
-machine.
-
-There's another minor bug fix in here: it looks like the CFI
-annotations were wrong if CONFIG_AUDITSYSCALL=n.
-
-Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
-
-I haven't touched anything on 32-bit kernels.
-
-The syscall mask change comes from a variant of this patch by Anish
-Bhatt.
-
-Note to stable maintainers: there is no known security issue here.
-A misguided program can set NT and cause the kernel to try and fail
-to deliver SIGSEGV, crashing the program.  This patch fixes Far Cry
-on Wine: https://bugs.winehq.org/show_bug.cgi?id=33275
-
-Reported-by: Anish Bhatt <anish@chelsio.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/ia32/ia32entry.S    |   18 +++++++++++++++++-
- arch/x86/kernel/cpu/common.c |    2 +-
- 2 files changed, 18 insertions(+), 2 deletions(-)
+ fs/buffer.c        |    3 ++
+ include/linux/mm.h |    1 
+ mm/truncate.c      |   57 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 61 insertions(+)
 
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -151,6 +151,16 @@ ENTRY(ia32_sysenter_target)
- 1:	movl	(%rbp),%ebp
- 	_ASM_EXTABLE(1b,ia32_badarg)
- 	ASM_CLAC
-+
-+	/*
-+	 * Sysenter doesn't filter flags, so we need to clear NT
-+	 * ourselves.  To save a few cycles, we can check whether
-+	 * NT was set instead of doing an unconditional popfq.
-+	 */
-+	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
-+	jnz sysenter_fix_flags
-+sysenter_flags_fixed:
-+
- 	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	CFI_REMEMBER_STATE
-@@ -184,6 +194,8 @@ sysexit_from_sys_call:
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS_SYSEXIT32
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2077,6 +2077,7 @@ int generic_write_end(struct file *file,
+ 			struct page *page, void *fsdata)
+ {
+ 	struct inode *inode = mapping->host;
++	loff_t old_size = inode->i_size;
+ 	int i_size_changed = 0;
  
-+	CFI_RESTORE_STATE
-+
- #ifdef CONFIG_AUDITSYSCALL
- 	.macro auditsys_entry_common
- 	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
-@@ -226,7 +238,6 @@ sysexit_from_sys_call:
- 	.endm
+ 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
+@@ -2096,6 +2097,8 @@ int generic_write_end(struct file *file,
+ 	unlock_page(page);
+ 	page_cache_release(page);
  
- sysenter_auditsys:
--	CFI_RESTORE_STATE
- 	auditsys_entry_common
- 	movl %ebp,%r9d			/* reload 6th syscall arg */
- 	jmp sysenter_dispatch
-@@ -235,6 +246,11 @@ sysexit_audit:
- 	auditsys_exit sysexit_from_sys_call
- #endif
++	if (old_size < pos)
++		pagecache_isize_extended(inode, old_size, pos);
+ 	/*
+ 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
+ 	 * makes the holding time of page lock longer. Second, it forces lock
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1123,6 +1123,7 @@ static inline void unmap_shared_mapping_
  
-+sysenter_fix_flags:
-+	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
-+	popfq_cfi
-+	jmp sysenter_flags_fixed
+ extern void truncate_pagecache(struct inode *inode, loff_t new);
+ extern void truncate_setsize(struct inode *inode, loff_t newsize);
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
+ void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
+ int truncate_inode_page(struct address_space *mapping, struct page *page);
+ int generic_error_remove_page(struct address_space *mapping, struct page *page);
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -20,6 +20,7 @@
+ #include <linux/buffer_head.h>	/* grr. try_to_release_page,
+ 				   do_invalidatepage */
+ #include <linux/cleancache.h>
++#include <linux/rmap.h>
+ #include "internal.h"
+ 
+ 
+@@ -613,12 +614,68 @@ EXPORT_SYMBOL(truncate_pagecache);
+  */
+ void truncate_setsize(struct inode *inode, loff_t newsize)
+ {
++	loff_t oldsize = inode->i_size;
 +
- sysenter_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
- 	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1141,7 +1141,7 @@ void syscall_init(void)
- 	/* Flags to clear on syscall */
- 	wrmsrl(MSR_SYSCALL_MASK,
- 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
--	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
-+	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
+ 	i_size_write(inode, newsize);
++	if (newsize > oldsize)
++		pagecache_isize_extended(inode, oldsize, newsize);
+ 	truncate_pagecache(inode, newsize);
  }
+ EXPORT_SYMBOL(truncate_setsize);
  
- /*
+ /**
++ * pagecache_isize_extended - update pagecache after extension of i_size
++ * @inode:	inode for which i_size was extended
++ * @from:	original inode size
++ * @to:		new inode size
++ *
++ * Handle extension of inode size either caused by extending truncate or by
++ * write starting after current i_size. We mark the page straddling current
++ * i_size RO so that page_mkwrite() is called on the nearest write access to
++ * the page.  This way filesystem can be sure that page_mkwrite() is called on
++ * the page before user writes to the page via mmap after the i_size has been
++ * changed.
++ *
++ * The function must be called after i_size is updated so that page fault
++ * coming after we unlock the page will already see the new i_size.
++ * The function must be called while we still hold i_mutex - this not only
++ * makes sure i_size is stable but also that userspace cannot observe new
++ * i_size value before we are prepared to store mmap writes at new inode size.
++ */
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
++{
++	int bsize = 1 << inode->i_blkbits;
++	loff_t rounded_from;
++	struct page *page;
++	pgoff_t index;
++
++	WARN_ON(!mutex_is_locked(&inode->i_mutex));
++	WARN_ON(to > inode->i_size);
++
++	if (from >= to || bsize == PAGE_CACHE_SIZE)
++		return;
++	/* Page straddling @from will not have any hole block created? */
++	rounded_from = round_up(from, bsize);
++	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
++		return;
++
++	index = from >> PAGE_CACHE_SHIFT;
++	page = find_lock_page(inode->i_mapping, index);
++	/* Page not cached? Nothing to do */
++	if (!page)
++		return;
++	/*
++	 * See clear_page_dirty_for_io() for details why set_page_dirty()
++	 * is needed.
++	 */
++	if (page_mkclean(page))
++		set_page_dirty(page);
++	unlock_page(page);
++	page_cache_release(page);
++}
++EXPORT_SYMBOL(pagecache_isize_extended);
++
++/**
+  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
+  * @inode: inode
+  * @lstart: offset of beginning of hole
 
 
