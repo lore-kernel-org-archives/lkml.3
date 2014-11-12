@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556AbaKLBey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59658 "EHLO
+	id S933593AbaKLBfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:35:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59675 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933542AbaKLBew (ORCPT
+	with ESMTP id S933575AbaKLBe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:52 -0500
+	Tue, 11 Nov 2014 20:34:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH 3.17 247/319] xhci: no switching back on non-ULT Haswell
-Date: Wed, 12 Nov 2014 10:16:25 +0900
-Message-Id: <20141112011033.676641041@linuxfoundation.org>
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 3.17 292/319] mm: cma: Dont crash on allocation if CMA area cant be activated
+Date: Wed, 12 Nov 2014 10:17:10 +0900
+Message-Id: <20141112011041.156811215@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,43 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-commit b45abacde3d551c6696c6738bef4a1805d0bf27a upstream.
+commit f022d8cb7ec70fe8edd56383d876001317ee76b1 upstream.
 
-The switch back is limited to ULT even on HP. The contrary
-finding arose by bad luck in BIOS versions for testing.
-This fixes spontaneous resume from S3 on some HP laptops.
+If activation of the CMA area fails its mutex won't be initialized,
+leading to an oops at allocation time when trying to lock the mutex. Fix
+this by setting the cma area count field to 0 when activation fails,
+leading to allocation returning NULL immediately.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |   14 --------------
- 1 file changed, 14 deletions(-)
+ mm/cma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -126,20 +126,6 @@ static void xhci_pci_quirks(struct devic
- 		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
--	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
--	     pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI)) {
--		/* Workaround for occasional spurious wakeups from S5 (or
--		 * any other sleep) on Haswell machines with LPT and LPT-LP
--		 * with the new Intel BIOS
--		 */
--		/* Limit the quirk to only known vendors, as this triggers
--		 * yet another BIOS bug on some other machines
--		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
--		 */
--		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
--			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
--	}
--	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
- 		pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI) {
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 	}
+--- a/mm/cma.c
++++ b/mm/cma.c
+@@ -123,6 +123,7 @@ static int __init cma_activate_area(stru
+ 
+ err:
+ 	kfree(cma->bitmap);
++	cma->count = 0;
+ 	return -EINVAL;
+ }
+ 
 
 
