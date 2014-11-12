@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaKLC1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:27:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60878 "EHLO
+	id S965602AbaKLBtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:49:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965610AbaKLBtG (ORCPT
+	with ESMTP id S965560AbaKLBsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:06 -0500
+	Tue, 11 Nov 2014 20:48:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <darren.hart@intel.com>
-Subject: [PATCH 3.14 201/203] of: Fix overflow bug in string property parsing functions
-Date: Wed, 12 Nov 2014 10:17:51 +0900
-Message-Id: <20141112011551.915206247@linuxfoundation.org>
+        Dan Streetman <ddstreet@ieee.org>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.14 197/203] powerpc: use device_online/offline() instead of cpu_up/down()
+Date: Wed, 12 Nov 2014 10:17:47 +0900
+Message-Id: <20141112011551.733243142@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -32,373 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Dan Streetman <ddstreet@ieee.org>
 
-commit a87fa1d81a9fb5e9adca9820e16008c40ad09f33 upstream.
+commit 10ccaf178b2b961d8bca252d647ed7ed8aae2a20 upstream.
 
-The string property read helpers will run off the end of the buffer if
-it is handed a malformed string property. Rework the parsers to make
-sure that doesn't happen. At the same time add new test cases to make
-sure the functions behave themselves.
+In powerpc pseries platform dlpar operations, use device_online() and
+device_offline() instead of cpu_up() and cpu_down().
 
-The original implementations of of_property_read_string_index() and
-of_property_count_strings() both open-coded the same block of parsing
-code, each with it's own subtly different bugs. The fix here merges
-functions into a single helper and makes the original functions static
-inline wrappers around the helper.
+Calling cpu_up/down() directly does not update the cpu device offline
+field, which is used to online/offline a cpu from sysfs. Calling
+device_online/offline() instead keeps the sysfs cpu online value
+correct. The hotplug lock, which is required to be held when calling
+device_online/offline(), is already held when dlpar_online/offline_cpu()
+are called, since they are called only from cpu_probe|release_store().
 
-One non-bugfix aspect of this patch is the addition of a new wrapper,
-of_property_read_string_array(). The new wrapper is needed by the
-device_properties feature that Rafael is working on and planning to
-merge for v3.19. The implementation is identical both with and without
-the new static inline wrapper, so it just got left in to reduce the
-churn on the header file.
+This patch fixes errors on phyp (PowerVM) systems that have cpu(s)
+added/removed using dlpar operations; without this patch, the
+/sys/devices/system/cpu/cpuN/online nodes do not correctly show the
+online state of added/removed cpus.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Darren Hart <darren.hart@intel.com>
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Fixes: 0902a9044fa5 ("Driver core: Use generic offline/online for CPU offline/online")
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/base.c                           |   88 +++++++---------------------
- drivers/of/selftest.c                       |   64 ++++++++++++++++++--
- drivers/of/testcase-data/tests-phandle.dtsi |    2 
- include/linux/of.h                          |   84 ++++++++++++++++++++++----
- 4 files changed, 153 insertions(+), 85 deletions(-)
+ arch/powerpc/platforms/pseries/dlpar.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1117,52 +1117,6 @@ int of_property_read_string(struct devic
- EXPORT_SYMBOL_GPL(of_property_read_string);
- 
- /**
-- * of_property_read_string_index - Find and read a string from a multiple
-- * strings property.
-- * @np:		device node from which the property value is to be read.
-- * @propname:	name of the property to be searched.
-- * @index:	index of the string in the list of strings
-- * @out_string:	pointer to null terminated return string, modified only if
-- *		return value is 0.
-- *
-- * Search for a property in a device tree node and retrieve a null
-- * terminated string value (pointer to data, not a copy) in the list of strings
-- * contained in that property.
-- * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
-- * property does not have a value, and -EILSEQ if the string is not
-- * null-terminated within the length of the property data.
-- *
-- * The out_string pointer is modified only if a valid string can be decoded.
-- */
--int of_property_read_string_index(struct device_node *np, const char *propname,
--				  int index, const char **output)
--{
--	struct property *prop = of_find_property(np, propname, NULL);
--	int i = 0;
--	size_t l = 0, total = 0;
--	const char *p;
--
--	if (!prop)
--		return -EINVAL;
--	if (!prop->value)
--		return -ENODATA;
--	if (strnlen(prop->value, prop->length) >= prop->length)
--		return -EILSEQ;
--
--	p = prop->value;
--
--	for (i = 0; total < prop->length; total += l, p += l) {
--		l = strlen(p) + 1;
--		if (i++ == index) {
--			*output = p;
--			return 0;
--		}
--	}
--	return -ENODATA;
--}
--EXPORT_SYMBOL_GPL(of_property_read_string_index);
--
--/**
-  * of_property_match_string() - Find string in a list and return index
-  * @np: pointer to node containing string list property
-  * @propname: string list property name
-@@ -1188,7 +1142,7 @@ int of_property_match_string(struct devi
- 	end = p + prop->length;
- 
- 	for (i = 0; p < end; i++, p += l) {
--		l = strlen(p) + 1;
-+		l = strnlen(p, end - p) + 1;
- 		if (p + l > end)
- 			return -EILSEQ;
- 		pr_debug("comparing %s with %s\n", string, p);
-@@ -1200,39 +1154,41 @@ int of_property_match_string(struct devi
- EXPORT_SYMBOL_GPL(of_property_match_string);
- 
- /**
-- * of_property_count_strings - Find and return the number of strings from a
-- * multiple strings property.
-+ * of_property_read_string_util() - Utility helper for parsing string properties
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
-+ * @out_strs:	output array of string pointers.
-+ * @sz:		number of array elements to read.
-+ * @skip:	Number of strings to skip over at beginning of list.
-  *
-- * Search for a property in a device tree node and retrieve the number of null
-- * terminated string contain in it. Returns the number of strings on
-- * success, -EINVAL if the property does not exist, -ENODATA if property
-- * does not have a value, and -EILSEQ if the string is not null-terminated
-- * within the length of the property data.
-+ * Don't call this function directly. It is a utility helper for the
-+ * of_property_read_string*() family of functions.
-  */
--int of_property_count_strings(struct device_node *np, const char *propname)
-+int of_property_read_string_helper(struct device_node *np, const char *propname,
-+				   const char **out_strs, size_t sz, int skip)
- {
- 	struct property *prop = of_find_property(np, propname, NULL);
--	int i = 0;
--	size_t l = 0, total = 0;
--	const char *p;
-+	int l = 0, i = 0;
-+	const char *p, *end;
- 
- 	if (!prop)
- 		return -EINVAL;
- 	if (!prop->value)
- 		return -ENODATA;
--	if (strnlen(prop->value, prop->length) >= prop->length)
--		return -EILSEQ;
--
- 	p = prop->value;
-+	end = p + prop->length;
- 
--	for (i = 0; total < prop->length; total += l, p += l, i++)
--		l = strlen(p) + 1;
--
--	return i;
-+	for (i = 0; p < end && (!out_strs || i < skip + sz); i++, p += l) {
-+		l = strnlen(p, end - p) + 1;
-+		if (p + l > end)
-+			return -EILSEQ;
-+		if (out_strs && i >= skip)
-+			*out_strs++ = p;
-+	}
-+	i -= skip;
-+	return i <= 0 ? -ENODATA : i;
- }
--EXPORT_SYMBOL_GPL(of_property_count_strings);
-+EXPORT_SYMBOL_GPL(of_property_read_string_helper);
- 
- void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
- {
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -132,8 +132,9 @@ static void __init of_selftest_parse_pha
- 	selftest(rc == -EINVAL, "expected:%i got:%i\n", -EINVAL, rc);
- }
- 
--static void __init of_selftest_property_match_string(void)
-+static void __init of_selftest_property_string(void)
- {
-+	const char *strings[4];
- 	struct device_node *np;
- 	int rc;
- 
-@@ -150,13 +151,66 @@ static void __init of_selftest_property_
- 	rc = of_property_match_string(np, "phandle-list-names", "third");
- 	selftest(rc == 2, "third expected:0 got:%i\n", rc);
- 	rc = of_property_match_string(np, "phandle-list-names", "fourth");
--	selftest(rc == -ENODATA, "unmatched string; rc=%i", rc);
-+	selftest(rc == -ENODATA, "unmatched string; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "missing-property", "blah");
--	selftest(rc == -EINVAL, "missing property; rc=%i", rc);
-+	selftest(rc == -EINVAL, "missing property; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "empty-property", "blah");
--	selftest(rc == -ENODATA, "empty property; rc=%i", rc);
-+	selftest(rc == -ENODATA, "empty property; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "unterminated-string", "blah");
--	selftest(rc == -EILSEQ, "unterminated string; rc=%i", rc);
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+
-+	/* of_property_count_strings() tests */
-+	rc = of_property_count_strings(np, "string-property");
-+	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "phandle-list-names");
-+	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "unterminated-string");
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "unterminated-string-list");
-+	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
-+
-+	/* of_property_read_string_index() tests */
-+	rc = of_property_read_string_index(np, "string-property", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "foobar"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "string-property", 1, strings);
-+	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 1, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "second"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 2, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "third"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "phandle-list-names", 3, strings);
-+	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "unterminated-string", 0, strings);
-+	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "unterminated-string-list", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "unterminated-string-list", 2, strings); /* should fail */
-+	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[1] = NULL;
-+
-+	/* of_property_read_string_array() tests */
-+	rc = of_property_read_string_array(np, "string-property", strings, 4);
-+	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_read_string_array(np, "phandle-list-names", strings, 4);
-+	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_read_string_array(np, "unterminated-string", strings, 4);
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+	/* -- An incorrectly formed string should cause a failure */
-+	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 4);
-+	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
-+	/* -- parsing the correctly formed strings should still work: */
-+	strings[2] = NULL;
-+	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 2);
-+	selftest(rc == 2 && strings[2] == NULL, "of_property_read_string_array() failure; rc=%i\n", rc);
-+	strings[1] = NULL;
-+	rc = of_property_read_string_array(np, "phandle-list-names", strings, 1);
-+	selftest(rc == 1 && strings[1] == NULL, "Overwrote end of string array; rc=%i, str='%s'\n", rc, strings[1]);
- }
- 
- static void __init of_selftest_parse_interrupts(void)
---- a/drivers/of/testcase-data/tests-phandle.dtsi
-+++ b/drivers/of/testcase-data/tests-phandle.dtsi
-@@ -32,7 +32,9 @@
- 				phandle-list-bad-args = <&provider2 1 0>,
- 							<&provider3 0>;
- 				empty-property;
-+				string-property = "foobar";
- 				unterminated-string = [40 41 42 43];
-+				unterminated-string-list = "first", "second", [40 41 42 43];
- 			};
- 		};
- 	};
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -215,14 +215,12 @@ extern int of_property_read_u64(const st
- extern int of_property_read_string(struct device_node *np,
- 				   const char *propname,
- 				   const char **out_string);
--extern int of_property_read_string_index(struct device_node *np,
--					 const char *propname,
--					 int index, const char **output);
- extern int of_property_match_string(struct device_node *np,
- 				    const char *propname,
- 				    const char *string);
--extern int of_property_count_strings(struct device_node *np,
--				     const char *propname);
-+extern int of_property_read_string_helper(struct device_node *np,
-+					      const char *propname,
-+					      const char **out_strs, size_t sz, int index);
- extern int of_device_is_compatible(const struct device_node *device,
- 				   const char *);
- extern int of_device_is_available(const struct device_node *device);
-@@ -422,15 +420,9 @@ static inline int of_property_read_strin
- 	return -ENOSYS;
- }
- 
--static inline int of_property_read_string_index(struct device_node *np,
--						const char *propname, int index,
--						const char **out_string)
--{
--	return -ENOSYS;
--}
--
--static inline int of_property_count_strings(struct device_node *np,
--					    const char *propname)
-+static inline int of_property_read_string_helper(struct device_node *np,
-+						 const char *propname,
-+						 const char **out_strs, size_t sz, int index)
- {
- 	return -ENOSYS;
- }
-@@ -536,6 +528,70 @@ static inline struct device_node *of_fin
- }
- 
- /**
-+ * of_property_read_string_array() - Read an array of strings from a multiple
-+ * strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @out_strs:	output array of string pointers.
-+ * @sz:		number of array elements to read.
-+ *
-+ * Search for a property in a device tree node and retrieve a list of
-+ * terminated string values (pointer to data, not a copy) in that property.
-+ *
-+ * If @out_strs is NULL, the number of strings in the property is returned.
-+ */
-+static inline int of_property_read_string_array(struct device_node *np,
-+						const char *propname, const char **out_strs,
-+						size_t sz)
-+{
-+	return of_property_read_string_helper(np, propname, out_strs, sz, 0);
-+}
-+
-+/**
-+ * of_property_count_strings() - Find and return the number of strings from a
-+ * multiple strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ *
-+ * Search for a property in a device tree node and retrieve the number of null
-+ * terminated string contain in it. Returns the number of strings on
-+ * success, -EINVAL if the property does not exist, -ENODATA if property
-+ * does not have a value, and -EILSEQ if the string is not null-terminated
-+ * within the length of the property data.
-+ */
-+static inline int of_property_count_strings(struct device_node *np,
-+					    const char *propname)
-+{
-+	return of_property_read_string_helper(np, propname, NULL, 0, 0);
-+}
-+
-+/**
-+ * of_property_read_string_index() - Find and read a string from a multiple
-+ * strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @index:	index of the string in the list of strings
-+ * @out_string:	pointer to null terminated return string, modified only if
-+ *		return value is 0.
-+ *
-+ * Search for a property in a device tree node and retrieve a null
-+ * terminated string value (pointer to data, not a copy) in the list of strings
-+ * contained in that property.
-+ * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
-+ * property does not have a value, and -EILSEQ if the string is not
-+ * null-terminated within the length of the property data.
-+ *
-+ * The out_string pointer is modified only if a valid string can be decoded.
-+ */
-+static inline int of_property_read_string_index(struct device_node *np,
-+						const char *propname,
-+						int index, const char **output)
-+{
-+	int rc = of_property_read_string_helper(np, propname, output, 1, index);
-+	return rc < 0 ? rc : 0;
-+}
-+
-+/**
-  * of_property_read_bool - Findfrom a property
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
+--- a/arch/powerpc/platforms/pseries/dlpar.c
++++ b/arch/powerpc/platforms/pseries/dlpar.c
+@@ -380,7 +380,7 @@ static int dlpar_online_cpu(struct devic
+ 			BUG_ON(get_cpu_current_state(cpu)
+ 					!= CPU_STATE_OFFLINE);
+ 			cpu_maps_update_done();
+-			rc = cpu_up(cpu);
++			rc = device_online(get_cpu_device(cpu));
+ 			if (rc)
+ 				goto out;
+ 			cpu_maps_update_begin();
+@@ -463,7 +463,7 @@ static int dlpar_offline_cpu(struct devi
+ 			if (get_cpu_current_state(cpu) == CPU_STATE_ONLINE) {
+ 				set_preferred_offline_state(cpu, CPU_STATE_OFFLINE);
+ 				cpu_maps_update_done();
+-				rc = cpu_down(cpu);
++				rc = device_offline(get_cpu_device(cpu));
+ 				if (rc)
+ 					goto out;
+ 				cpu_maps_update_begin();
 
 
