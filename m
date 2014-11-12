@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaKLBUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58415 "EHLO
+	id S1753073AbaKLBUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58423 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024AbaKLBUi (ORCPT
+	with ESMTP id S1753026AbaKLBUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:38 -0500
+	Tue, 11 Nov 2014 20:20:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 026/319] stmmac: pci: set default of the filter bins
-Date: Wed, 12 Nov 2014 10:12:44 +0900
-Message-Id: <20141112010957.016758254@linuxfoundation.org>
+        Benjamin Coddington <bcodding@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.17 028/319] SUNRPC: Dont wake tasks during connection abort
+Date: Wed, 12 Nov 2014 10:12:46 +0900
+Message-Id: <20141112010957.307432028@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,45 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Benjamin Coddington <bcodding@redhat.com>
 
-[ Upstream commit 1e19e084eae727654052339757ab7f1eaff58bad ]
+commit a743419f420a64d442280845c0377a915b76644f upstream.
 
-The commit 3b57de958e2a brought the support for a different amount of the
-filter bins, but didn't update the PCI driver accordingly. This patch appends
-the default values when the device is enumerated via PCI bus.
+When aborting a connection to preserve source ports, don't wake the task in
+xs_error_report.  This allows tasks with RPC_TASK_SOFTCONN to succeed if the
+connection needs to be re-established since it preserves the task's status
+instead of setting it to the status of the aborting kernel_connect().
 
-Fixes: 3b57de958e2a (net: stmmac: Support devicetree configs for mcast and ucast filter entries)
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This may also avoid a potential conflict on the socket's lock.
+
+Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |    7 +++++++
- 1 file changed, 7 insertions(+)
 
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-@@ -33,6 +33,7 @@ static struct stmmac_dma_cfg dma_cfg;
- static void stmmac_default_data(void)
- {
- 	memset(&plat_dat, 0, sizeof(struct plat_stmmacenet_data));
-+
- 	plat_dat.bus_id = 1;
- 	plat_dat.phy_addr = 0;
- 	plat_dat.interface = PHY_INTERFACE_MODE_GMII;
-@@ -47,6 +48,12 @@ static void stmmac_default_data(void)
- 	dma_cfg.pbl = 32;
- 	dma_cfg.burst_len = DMA_AXI_BLEN_256;
- 	plat_dat.dma_cfg = &dma_cfg;
-+
-+	/* Set default value for multicast hash bins */
-+	plat_dat.multicast_filter_bins = HASH_TABLE_SIZE;
-+
-+	/* Set default value for unicast filter entries */
-+	plat_dat.unicast_filter_entries = 1;
- }
+---
+ include/linux/sunrpc/xprt.h |    1 +
+ net/sunrpc/xprtsock.c       |    4 ++++
+ 2 files changed, 5 insertions(+)
+
+--- a/include/linux/sunrpc/xprt.h
++++ b/include/linux/sunrpc/xprt.h
+@@ -357,6 +357,7 @@ int			xs_swapper(struct rpc_xprt *xprt,
+ #define XPRT_CONNECTION_ABORT	(7)
+ #define XPRT_CONNECTION_CLOSE	(8)
+ #define XPRT_CONGESTED		(9)
++#define XPRT_CONNECTION_REUSE	(10)
  
- /**
+ static inline void xprt_set_connected(struct rpc_xprt *xprt)
+ {
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -845,6 +845,8 @@ static void xs_error_report(struct sock
+ 	dprintk("RPC:       xs_error_report client %p, error=%d...\n",
+ 			xprt, -err);
+ 	trace_rpc_socket_error(xprt, sk->sk_socket, err);
++	if (test_bit(XPRT_CONNECTION_REUSE, &xprt->state))
++		goto out;
+ 	xprt_wake_pending_tasks(xprt, err);
+  out:
+ 	read_unlock_bh(&sk->sk_callback_lock);
+@@ -2245,7 +2247,9 @@ static void xs_tcp_setup_socket(struct w
+ 		abort_and_exit = test_and_clear_bit(XPRT_CONNECTION_ABORT,
+ 				&xprt->state);
+ 		/* "close" the socket, preserving the local port */
++		set_bit(XPRT_CONNECTION_REUSE, &xprt->state);
+ 		xs_tcp_reuse_connection(transport);
++		clear_bit(XPRT_CONNECTION_REUSE, &xprt->state);
+ 
+ 		if (abort_and_exit)
+ 			goto out_eagain;
 
 
