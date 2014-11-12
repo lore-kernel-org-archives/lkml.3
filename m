@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966629AbaKLBy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:54:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33032 "EHLO
+	id S966646AbaKLBzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:55:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965435AbaKLByz (ORCPT
+	with ESMTP id S965435AbaKLBy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:54:55 -0500
+	Tue, 11 Nov 2014 20:54:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Perry Hung <iperry@gmail.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 084/123] usb: serial: ftdi_sio: add "bricked" FTDI device PID
-Date: Wed, 12 Nov 2014 10:17:30 +0900
-Message-Id: <20141112011722.817886204@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Paul Osmialowski <newchief@king.net.pl>
+Subject: [PATCH 3.10 093/123] usb-storage: handle a skipped data phase
+Date: Wed, 12 Nov 2014 10:17:39 +0900
+Message-Id: <20141112011723.220671863@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,54 +30,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Perry Hung <iperry@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 7f2719f0003da1ad13124ef00f48d7514c79e30d upstream.
+commit 93c9bf4d1838d5851a18ca398b0ad66397f05056 upstream.
 
-An official recent Windows driver from FTDI detects counterfeit devices
-and reprograms the internal EEPROM containing the USB PID to 0, effectively
-bricking the device.
+Sometimes mass-storage devices using the Bulk-only transport will
+mistakenly skip the data phase of a command.  Rather than sending the
+data expected by the host or sending a zero-length packet, they go
+directly to the status phase and send the CSW.
 
-Add support for this VID/PID pair to correctly bind the driver on these
-devices.
+This causes problems for usb-storage, for obvious reasons.  The driver
+will interpret the CSW as a short data transfer and will wait to
+receive a CSW.  The device won't have anything left to send, so the
+command eventually times out.
 
-See:
-http://hackaday.com/2014/10/22/watch-that-windows-update-ftdi-drivers-are-killing-fake-chips/
+The SCSI layer doesn't retry commands after they time out (this is a
+relatively recent change).  Therefore we should do our best to detect
+a skipped data phase and handle it promptly.
 
-Signed-off-by: Perry Hung <iperry@gmail.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+This patch adds code to do that.  If usb-storage receives a short
+13-byte data transfer from the device, and if the first four bytes of
+the data match the CSW signature, the driver will set the residue to
+the full transfer length and interpret the data as a CSW.
+
+This fixes Bugzilla #86611.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Tested-by: Paul Osmialowski <newchief@king.net.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/storage/transport.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -148,6 +148,7 @@ static struct ftdi_sio_quirk ftdi_8u2232
-  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
-  */
- static struct usb_device_id id_table_combined [] = {
-+	{ USB_DEVICE(FTDI_VID, FTDI_BRICK_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ZEITCONTROL_TAGTRACE_MIFARE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -30,6 +30,12 @@
- 
- /*** third-party PIDs (using FTDI_VID) ***/
- 
-+/*
-+ * Certain versions of the official Windows FTDI driver reprogrammed
-+ * counterfeit FTDI devices to PID 0. Support these devices anyway.
-+ */
-+#define FTDI_BRICK_PID		0x0000
+--- a/drivers/usb/storage/transport.c
++++ b/drivers/usb/storage/transport.c
+@@ -1118,6 +1118,31 @@ int usb_stor_Bulk_transport(struct scsi_
+ 		 */
+ 		if (result == USB_STOR_XFER_LONG)
+ 			fake_sense = 1;
 +
- #define FTDI_LUMEL_PD12_PID	0x6002
++		/*
++		 * Sometimes a device will mistakenly skip the data phase
++		 * and go directly to the status phase without sending a
++		 * zero-length packet.  If we get a 13-byte response here,
++		 * check whether it really is a CSW.
++		 */
++		if (result == USB_STOR_XFER_SHORT &&
++				srb->sc_data_direction == DMA_FROM_DEVICE &&
++				transfer_length - scsi_get_resid(srb) ==
++					US_BULK_CS_WRAP_LEN) {
++			struct scatterlist *sg = NULL;
++			unsigned int offset = 0;
++
++			if (usb_stor_access_xfer_buf((unsigned char *) bcs,
++					US_BULK_CS_WRAP_LEN, srb, &sg,
++					&offset, FROM_XFER_BUF) ==
++						US_BULK_CS_WRAP_LEN &&
++					bcs->Signature ==
++						cpu_to_le32(US_BULK_CS_SIGN)) {
++				usb_stor_dbg(us, "Device skipped data phase\n");
++				scsi_set_resid(srb, transfer_length);
++				goto skipped_data_phase;
++			}
++		}
+ 	}
  
- /*
+ 	/* See flow chart on pg 15 of the Bulk Only Transport spec for
+@@ -1153,6 +1178,7 @@ int usb_stor_Bulk_transport(struct scsi_
+ 	if (result != USB_STOR_XFER_GOOD)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 
++ skipped_data_phase:
+ 	/* check bulk status */
+ 	residue = le32_to_cpu(bcs->Residue);
+ 	usb_stor_dbg(us, "Bulk Status S 0x%x T 0x%x R %u Stat 0x%x\n",
 
 
