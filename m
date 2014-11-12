@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933657AbaKLBfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:35:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59706 "EHLO
+	id S933694AbaKLBfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:35:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933637AbaKLBfT (ORCPT
+	with ESMTP id S933678AbaKLBf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:35:19 -0500
+	Tue, 11 Nov 2014 20:35:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Streetman <ddstreet@ieee.org>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.17 299/319] powerpc: use device_online/offline() instead of cpu_up/down()
-Date: Wed, 12 Nov 2014 10:17:17 +0900
-Message-Id: <20141112011042.310226848@linuxfoundation.org>
+        Sinclair Yeh <syeh@vmware.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>
+Subject: [PATCH 3.17 284/319] drm/vmwgfx: Filter out modes those cannot be supported by the current VRAM size.
+Date: Wed, 12 Nov 2014 10:17:02 +0900
+Message-Id: <20141112011039.813476427@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,54 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Streetman <ddstreet@ieee.org>
+From: Sinclair Yeh <syeh@vmware.com>
 
-commit 10ccaf178b2b961d8bca252d647ed7ed8aae2a20 upstream.
+commit 9a72384d86b26cb8a2b25106677e1197f606668f upstream.
 
-In powerpc pseries platform dlpar operations, use device_online() and
-device_offline() instead of cpu_up() and cpu_down().
+When screen objects are enabled, the bpp is assumed to be 32, otherwise
+it is set to 16.
 
-Calling cpu_up/down() directly does not update the cpu device offline
-field, which is used to online/offline a cpu from sysfs. Calling
-device_online/offline() instead keeps the sysfs cpu online value
-correct. The hotplug lock, which is required to be held when calling
-device_online/offline(), is already held when dlpar_online/offline_cpu()
-are called, since they are called only from cpu_probe|release_store().
+v2:
+* Use u32 instead of u64 for assumed_bpp.
+* Fixed mechanism to check for screen objects
+* Limit the back buffer size to VRAM.
 
-This patch fixes errors on phyp (PowerVM) systems that have cpu(s)
-added/removed using dlpar operations; without this patch, the
-/sys/devices/system/cpu/cpuN/online nodes do not correctly show the
-online state of added/removed cpus.
-
-Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Fixes: 0902a9044fa5 ("Driver core: Use generic offline/online for CPU offline/online")
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Sinclair Yeh <syeh@vmware.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/dlpar.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    6 +++++-
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |   16 +++++++++++++---
+ 2 files changed, 18 insertions(+), 4 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/dlpar.c
-+++ b/arch/powerpc/platforms/pseries/dlpar.c
-@@ -379,7 +379,7 @@ static int dlpar_online_cpu(struct devic
- 			BUG_ON(get_cpu_current_state(cpu)
- 					!= CPU_STATE_OFFLINE);
- 			cpu_maps_update_done();
--			rc = cpu_up(cpu);
-+			rc = device_online(get_cpu_device(cpu));
- 			if (rc)
- 				goto out;
- 			cpu_maps_update_begin();
-@@ -462,7 +462,7 @@ static int dlpar_offline_cpu(struct devi
- 			if (get_cpu_current_state(cpu) == CPU_STATE_ONLINE) {
- 				set_preferred_offline_state(cpu, CPU_STATE_OFFLINE);
- 				cpu_maps_update_done();
--				rc = cpu_down(cpu);
-+				rc = device_offline(get_cpu_device(cpu));
- 				if (rc)
- 					goto out;
- 				cpu_maps_update_begin();
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -688,7 +688,11 @@ static int vmw_driver_load(struct drm_de
+ 		goto out_err0;
+ 	}
+ 
+-	if (unlikely(dev_priv->prim_bb_mem < dev_priv->vram_size))
++	/*
++	 * Limit back buffer size to VRAM size.  Remove this once
++	 * screen targets are implemented.
++	 */
++	if (dev_priv->prim_bb_mem > dev_priv->vram_size)
+ 		dev_priv->prim_bb_mem = dev_priv->vram_size;
+ 
+ 	mutex_unlock(&dev_priv->hw_mutex);
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -1950,6 +1950,14 @@ int vmw_du_connector_fill_modes(struct d
+ 		DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC)
+ 	};
+ 	int i;
++	u32 assumed_bpp = 2;
++
++	/*
++	 * If using screen objects, then assume 32-bpp because that's what the
++	 * SVGA device is assuming
++	 */
++	if (dev_priv->sou_priv)
++		assumed_bpp = 4;
+ 
+ 	/* Add preferred mode */
+ 	{
+@@ -1960,8 +1968,9 @@ int vmw_du_connector_fill_modes(struct d
+ 		mode->vdisplay = du->pref_height;
+ 		vmw_guess_mode_timing(mode);
+ 
+-		if (vmw_kms_validate_mode_vram(dev_priv, mode->hdisplay * 2,
+-					       mode->vdisplay)) {
++		if (vmw_kms_validate_mode_vram(dev_priv,
++						mode->hdisplay * assumed_bpp,
++						mode->vdisplay)) {
+ 			drm_mode_probed_add(connector, mode);
+ 		} else {
+ 			drm_mode_destroy(dev, mode);
+@@ -1983,7 +1992,8 @@ int vmw_du_connector_fill_modes(struct d
+ 		    bmode->vdisplay > max_height)
+ 			continue;
+ 
+-		if (!vmw_kms_validate_mode_vram(dev_priv, bmode->hdisplay * 2,
++		if (!vmw_kms_validate_mode_vram(dev_priv,
++						bmode->hdisplay * assumed_bpp,
+ 						bmode->vdisplay))
+ 			continue;
+ 
 
 
