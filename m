@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968AbaKLBh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:37:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59864 "EHLO
+	id S933984AbaKLBhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:37:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59873 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933052AbaKLBhX (ORCPT
+	with ESMTP id S932921AbaKLBhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:37:23 -0500
+	Tue, 11 Nov 2014 20:37:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 014/203] lockd: Try to reconnect if statd has moved
-Date: Wed, 12 Nov 2014 10:14:44 +0900
-Message-Id: <20141112011543.363924933@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 002/203] ipv4: fix nexthop attlen check in fib_nh_match
+Date: Wed, 12 Nov 2014 10:14:32 +0900
+Message-Id: <20141112011542.797340133@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,36 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit 173b3afceebe76fa2205b2c8808682d5b541fe3c upstream.
+[ Upstream commit f76936d07c4eeb36d8dbb64ebd30ab46ff85d9f7 ]
 
-If rpc.statd is restarted, upcalls to monitor hosts can fail with
-ECONNREFUSED.  In that case force a lookup of statd's new port and retry the
-upcall.
+fib_nh_match does not match nexthops correctly. Example:
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+ip route add 172.16.10/24 nexthop via 192.168.122.12 dev eth0 \
+                          nexthop via 192.168.122.13 dev eth0
+ip route del 172.16.10/24 nexthop via 192.168.122.14 dev eth0 \
+                          nexthop via 192.168.122.15 dev eth0
+
+Del command is successful and route is removed. After this patch
+applied, the route is correctly matched and result is:
+RTNETLINK answers: No such process
+
+Please consider this for stable trees as well.
+
+Fixes: 4e902c57417c4 ("[IPv4]: FIB configuration using struct fib_config")
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/lockd/mon.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv4/fib_semantics.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -159,6 +159,12 @@ static int nsm_mon_unmon(struct nsm_hand
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -535,7 +535,7 @@ int fib_nh_match(struct fib_config *cfg,
+ 			return 1;
  
- 	msg.rpc_proc = &clnt->cl_procinfo[proc];
- 	status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	if (status == -ECONNREFUSED) {
-+		dprintk("lockd:	NSM upcall RPC failed, status=%d, forcing rebind\n",
-+				status);
-+		rpc_force_rebind(clnt);
-+		status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	}
- 	if (status < 0)
- 		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
- 				status);
+ 		attrlen = rtnh_attrlen(rtnh);
+-		if (attrlen < 0) {
++		if (attrlen > 0) {
+ 			struct nlattr *nla, *attrs = rtnh_attrs(rtnh);
+ 
+ 			nla = nla_find(attrs, attrlen, RTA_GATEWAY);
 
 
