@@ -1,103 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaKLJtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:49:43 -0500
-Received: from relay.parallels.com ([195.214.232.42]:46895 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564AbaKLJtk (ORCPT
+	id S1751956AbaKLJuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:50:03 -0500
+Received: from smtp.eu2.fugro.com ([46.34.88.152]:50222 "EHLO
+	smtp.eu2.fugro.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904AbaKLJtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:49:40 -0500
-Message-ID: <1415785772.15631.23.camel@tkhai>
-Subject: Re: [PATCH v4] sched/numa: fix unsafe get_task_struct() in
- task_numa_assign()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, "Ingo Molnar" <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "Kirill Tkhai" <tkhai@yandex.ru>
-Date: Wed, 12 Nov 2014 12:49:32 +0300
-In-Reply-To: <2477901415649681@web30o.yandex.ru>
-References: <1413962231.19914.130.camel@tkhai> <545D928B.2070508@oracle.com>
-		 <20141110160320.GA10501@worktop.programming.kicks-ass.net>
-		 <1415635836.474.24.camel@tkhai> <1415637390.474.34.camel@tkhai>
-	 <5460EB78.8040201@oracle.com> <2477901415649681@web30o.yandex.ru>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Wed, 12 Nov 2014 04:49:41 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuAHACUsY1QKCmUW/2dsb2JhbABchDuDBtB3AhyBFwEBAQEBAXyEAgEBAQEDIwQJBEUMBAIBCA0EBAEBAQICBgYFEgECAgIBAR0nCQgBAQQBEgi/YJZKAQEBAQEBAQEBAQEBAQEBAQEBAQEBF4EtjBmDHTEHBgSCbTaBHgWFIgONFQOTWUGEYYwWgUdsgksBAQE
+X-IPAS-Result: AuAHACUsY1QKCmUW/2dsb2JhbABchDuDBtB3AhyBFwEBAQEBAXyEAgEBAQEDIwQJBEUMBAIBCA0EBAEBAQICBgYFEgECAgIBAR0nCQgBAQQBEgi/YJZKAQEBAQEBAQEBAQEBAQEBAQEBAQEBF4EtjBmDHTEHBgSCbTaBHgWFIgONFQOTWUGEYYwWgUdsgksBAQE
+X-IronPort-AV: E=Sophos;i="5.07,367,1413244800"; 
+   d="scan'208";a="20552457"
+X-IRP-Internal: 1
+X-IRP-FugroSender: 200661
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: RE: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on arndale platform
+Date: Wed, 12 Nov 2014 10:49:36 +0100
+Message-ID: <C89EFD3CD56F64468D3D206D683A8D2203A003FE@ldam-msx2.fugro-nl.local>
+In-Reply-To: <1415751802.3398.107.camel@decadent.org.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on arndale platform
+Thread-Index: Ac/+DuePpetd3trPToiCSXLHCtBKqQAS/igA
+References: <20141104072236.GA559@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local> <20141104094336.GA3145@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local> <20141104200914.GN23178@opensource.wolfsonmicro.com> <1415751802.3398.107.camel@decadent.org.uk>
+From: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
+To: "Ben Hutchings" <ben@decadent.org.uk>,
+        "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>
+Cc: "Riku Voipio" <riku.voipio@iki.fi>, <davem@davemloft.net>,
+        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC9oDt5016208
 
-–í –ü–Ω, 10/11/2014 –≤ 23:01 +0300, Kirill Tkhai –ø–∏—à–µ—Ç:
-> 
-> 10.11.2014, 19:45, "Sasha Levin" <sasha.levin@oracle.com>:
-> > On 11/10/2014 11:36 AM, Kirill Tkhai wrote:
-> >>  I mean task_numa_find_cpu(). If a garbage is in cpumask_of_node(env->dst_nid)
-> >>  and cpu is bigger than mask, the check
-> >>
-> >>  cpumask_test_cpu(cpu, tsk_cpus_allowed(env->p)
-> >>
-> >>  may be true.
-> >>
-> >>  So, we dereference wrong rq in task_numa_compare(). It's not rq at all.
-> >>  Strange cpu may be from here. It's just a int number in a wrong memory.
-> >
-> > But the odds of the spinlock magic and owner pointer matching up are slim
-> > to none in that case. The memory is also likely to be valid since KASAN didn't
-> > complain about the access, so I don't believe it to be an access to freed memory.
-> 
-> I'm not good with lockdep checks, so I can't judge right now...
-> Just a hypothesis.
-> 
-> >>  A hypothesis that below may help:
-> >>
-> >>  diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> >>  index 826fdf3..a2b4a8a 100644
-> >>  --- a/kernel/sched/fair.c
-> >>  +++ b/kernel/sched/fair.c
-> >>  @@ -1376,6 +1376,9 @@ static void task_numa_find_cpu(struct task_numa_env *env,
-> >>   {
-> >>           int cpu;
-> >>
-> >>  + if (!node_online(env->dst_nid))
-> >>  + return;
-> >
-> > I've changed that to BUG_ON(!node_online(env->dst_nid)) and will run it for a
-> > bit.
-> 
-> I've looked one more time, and it looks like it's better to check for
-> BUG_ON(env->dst_nid > MAX_NUMNODES). node_online() may do not work for
-> insane nids.
-> 
-> Anyway, even if it's not connected, we need to initialize numa_preferred_nid
-> of init_task, because it's inherited by kernel_init() (and /sbin/init too).
-> I'll send the patch tomorrow.
+Hello Ben,
 
-Also we can check for cpu. A problem may be in how nodes are built etc..
+Regarding the code snippet;
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 826fdf3..8f5c316 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1381,6 +1381,14 @@ static void task_numa_find_cpu(struct task_numa_env *env,
- 		if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(env->p)))
- 			continue;
- 
-+		/*
-+		 * Is cpumask_of_node() broken? In sched_init() we
-+		 * initialize only possible RQs (their rq->lock etc).
-+		 */
-+		BUG_ON(cpu >= NR_CPUS || !cpu_possible(cpu));
-+		/* Insane node id? */
-+		BUG_ON(env->dst_nid >= MAX_NUMNODES || !node_online(env->dst_nid));
-+
- 		env->dst_cpu = cpu;
- 		task_numa_compare(env, taskimp, groupimp);
- 	}
+Good question, The original code didn't do this either, which is why I left it as it is. It could cause undesirable behaviour, agreed.
 
+After a quick driver examination: I do see that asix_set_sw_mii and asix_set_hw_mii are called prior to the actual write (asix_mdio_write), it may be that this takes care of ensuring data is written to the chip, as asix_write_cmd waits for usbnet_write_cmd to send (and acknowledge) a USB CONTROL MSG. A lock to the phy is held during this time.
 
+If I recall my USB knowledge, control messages are acknowledged, which would ensure data is written to the chip. Whether the ASIX requires further delay I would not know. I would have to dive deeper into the timings of the ASIX chip and the driver behaviour to see if that would be the case.
+
+Kind regards,
+
+Michel Stam
+-----Original Message-----
+From: Ben Hutchings [mailto:ben@decadent.org.uk] 
+Sent: Wednesday, November 12, 2014 1:23 AM
+To: Charles Keepax
+Cc: Stam, Michel [FINT]; Riku Voipio; davem@davemloft.net; linux-usb@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; linux-samsung-soc@vger.kernel.org
+Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on arndale platform
+
+On Tue, 2014-11-04 at 20:09 +0000, Charles Keepax wrote:
+> On Tue, Nov 04, 2014 at 11:23:06AM +0100, Stam, Michel [FINT] wrote:
+> > Hello Riku,
+> > 
+> > >Fixing a bug (ethtool support) must not cause breakage elsewhere 
+> > >(in
+> > this case on arndale). This is now a regression of functionality 
+> > from 3.17.
+> > >
+> > >I think it would better to revert the change now and with less 
+> > >hurry
+> > introduce a ethtool fix that doesn't break arndale.
+> > 
+> > I don't fully agree here;
+> > I would like to point out that this commit is a revert itself. 
+> > Fixing the armdale will then cause breakage in other 
+> > implementations, such as ours. Blankly reverting breaks other peoples' implementations.
+> > 
+> > The PHY reset is the thing that breaks ethtool support, so any fix 
+> > that appeases all would have to take existing PHY state into account.
+[...]
+> --- a/drivers/net/usb/asix_devices.c
+> +++ b/drivers/net/usb/asix_devices.c
+> @@ -299,6 +299,7 @@ static int ax88772_reset(struct usbnet *dev)  {
+>         struct asix_data *data = (struct asix_data *)&dev->data;
+>         int ret, embd_phy;
+> +       int reg;
+>         u16 rx_ctl;
+> 
+>         ret = asix_write_gpio(dev,
+> @@ -359,8 +360,10 @@ static int ax88772_reset(struct usbnet *dev)
+>         msleep(150);
+> 
+>         asix_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
+> -       asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE,
+> -                       ADVERTISE_ALL | ADVERTISE_CSMA);
+> +       reg = asix_mdio_read(dev->net, dev->mii.phy_id, MII_ADVERTISE);
+> +       if (!reg)
+> +               reg = ADVERTISE_ALL | ADVERTISE_CSMA;
+> +       asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE, 
+> + reg);
+[...]
+
+Why is there no sleep after setting the RESET bit?  Doesn't that make the following register writes unreliable?
+
+Ben.
+
+--
+Ben Hutchings
+Experience is directly proportional to the value of equipment destroyed.
+                                                         - Carolyn Scheppner
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
