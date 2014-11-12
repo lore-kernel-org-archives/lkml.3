@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642AbaKLCPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:15:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32892 "EHLO
+	id S1755199AbaKLCPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:15:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32884 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966271AbaKLBwj (ORCPT
+	with ESMTP id S966253AbaKLBwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:52:39 -0500
+	Tue, 11 Nov 2014 20:52:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Quinn Tran <quinn.tran@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 061/123] target: Fix queue full status NULL pointer for SCF_TRANSPORT_TASK_SENSE
-Date: Wed, 12 Nov 2014 10:17:07 +0900
-Message-Id: <20141112011721.793631268@linuxfoundation.org>
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.10 059/123] ARC: Update order of registers in KGDB to match GDB 7.5
+Date: Wed, 12 Nov 2014 10:17:05 +0900
+Message-Id: <20141112011721.708314409@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -30,45 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Quinn Tran <quinn.tran@qlogic.com>
+From: Anton Kolesov <Anton.Kolesov@synopsys.com>
 
-commit 082f58ac4a48d3f5cb4597232cb2ac6823a96f43 upstream.
+commit ebc0c74e76cec9c4dd860eb0ca1c0b39dc63c482 upstream.
 
-During temporary resource starvation at lower transport layer, command
-is placed on queue full retry path, which expose this problem.  The TCM
-queue full handling of SCF_TRANSPORT_TASK_SENSE currently sends the same
-cmd twice to lower layer.  The 1st time led to cmd normal free path.
-The 2nd time cause Null pointer access.
+Order of registers has changed in GDB moving from 6.8 to 7.5. This patch
+updates KGDB to work properly with GDB 7.5, though makes it incompatible
+with 6.8.
 
-This regression bug was originally introduced v3.1-rc code in the
-following commit:
-
-commit e057f53308a5f071556ee80586b99ee755bf07f5
-Author: Christoph Hellwig <hch@infradead.org>
-Date:   Mon Oct 17 13:56:41 2011 -0400
-
-    target: remove the transport_qf_callback se_cmd callback
-
-Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arc/include/asm/kgdb.h |   32 ++++++++++++++++++--------------
+ 1 file changed, 18 insertions(+), 14 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1788,8 +1788,7 @@ static void transport_complete_qf(struct
+--- a/arch/arc/include/asm/kgdb.h
++++ b/arch/arc/include/asm/kgdb.h
+@@ -19,7 +19,7 @@
+  * register API yet */
+ #undef DBG_MAX_REG_NUM
  
- 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
- 		ret = cmd->se_tfo->queue_status(cmd);
--		if (ret)
--			goto out;
-+		goto out;
- 	}
+-#define GDB_MAX_REGS		39
++#define GDB_MAX_REGS		87
  
- 	switch (cmd->data_direction) {
+ #define BREAK_INSTR_SIZE	2
+ #define CACHE_FLUSH_IS_SAFE	1
+@@ -33,23 +33,27 @@ static inline void arch_kgdb_breakpoint(
+ 
+ extern void kgdb_trap(struct pt_regs *regs, int param);
+ 
+-enum arc700_linux_regnums {
++/* This is the numbering of registers according to the GDB. See GDB's
++ * arc-tdep.h for details.
++ *
++ * Registers are ordered for GDB 7.5. It is incompatible with GDB 6.8. */
++enum arc_linux_regnums {
+ 	_R0		= 0,
+ 	_R1, _R2, _R3, _R4, _R5, _R6, _R7, _R8, _R9, _R10, _R11, _R12, _R13,
+ 	_R14, _R15, _R16, _R17, _R18, _R19, _R20, _R21, _R22, _R23, _R24,
+ 	_R25, _R26,
+-	_BTA		= 27,
+-	_LP_START	= 28,
+-	_LP_END		= 29,
+-	_LP_COUNT	= 30,
+-	_STATUS32	= 31,
+-	_BLINK		= 32,
+-	_FP		= 33,
+-	__SP		= 34,
+-	_EFA		= 35,
+-	_RET		= 36,
+-	_ORIG_R8	= 37,
+-	_STOP_PC	= 38
++	_FP		= 27,
++	__SP		= 28,
++	_R30		= 30,
++	_BLINK		= 31,
++	_LP_COUNT	= 60,
++	_STOP_PC	= 64,
++	_RET		= 64,
++	_LP_START	= 65,
++	_LP_END		= 66,
++	_STATUS32	= 67,
++	_ECR		= 76,
++	_BTA		= 82,
+ };
+ 
+ #else
 
 
