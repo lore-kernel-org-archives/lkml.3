@@ -1,47 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934196AbaKLCT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:19:56 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36377 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933914AbaKLCTx (ORCPT
+	id S934362AbaKLCVT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:21:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32773 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965937AbaKLBus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:19:53 -0500
-Date: Tue, 11 Nov 2014 21:19:39 -0500 (EST)
-Message-Id: <20141111.211939.1875418281655170486.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2ECE337@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-90-Taiwan-albertk@realtek.com>
-	<20141107.113522.837502028522211960.davem@davemloft.net>
-	<0835B3720019904CB8F7AA43166CEEB2ECE337@RTITMBSV03.realtek.com.tw>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 18:19:52 -0800 (PST)
+	Tue, 11 Nov 2014 20:50:48 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 3.10 033/123] pstore: Fix duplicate {console,ftrace}-efi entries
+Date: Wed, 12 Nov 2014 10:16:39 +0900
+Message-Id: <20141112011720.529829245@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
+References: <20141112011718.985171261@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Wed, 12 Nov 2014 01:45:08 +0000
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> David Miller [mailto:davem@davemloft.net] 
->> Sent: Saturday, November 08, 2014 12:35 AM
-> [...]
->> Does this even work?
->> 
->> If you leave a hole in the ring, the device is going to stop there
->> anyways.
->> 
->> So better to replenish the next time you call into this function
->> rather than leaving gaps in your receive ring.
-> 
-> Excuse me. Is this still unacceptable?
-> Should I remove this patch for keeping the original flow?
+------------------
 
-I haven't had time to process your original reply, please be patient.
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+
+commit d4bf205da618bbd0b038e404d646f14e76915718 upstream.
+
+The pstore filesystem still creates duplicate filename/inode pairs for
+some pstore types.  Add the id to the filename to prevent that.
+
+Before patch:
+
+[/sys/fs/pstore] ls -li
+total 0
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+
+After:
+
+[/sys/fs/pstore] ls -li
+total 0
+1232 -r--r--r--. 1 root root 148 Sep 29 17:09 console-efi-141202499100000
+1231 -r--r--r--. 1 root root  67 Sep 29 17:09 console-efi-141202499200000
+1230 -r--r--r--. 1 root root 148 Sep 29 17:44 console-efi-141202705400000
+1229 -r--r--r--. 1 root root  67 Sep 29 17:44 console-efi-141202705500000
+1228 -r--r--r--. 1 root root  67 Sep 29 20:42 console-efi-141203772600000
+1227 -r--r--r--. 1 root root 148 Sep 29 23:42 console-efi-141204854900000
+1226 -r--r--r--. 1 root root  67 Sep 29 23:42 console-efi-141204855000000
+1225 -r--r--r--. 1 root root 148 Sep 29 23:59 console-efi-141204954200000
+1224 -r--r--r--. 1 root root  67 Sep 29 23:59 console-efi-141204954400000
+
+Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/pstore/inode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -316,10 +316,10 @@ int pstore_mkfile(enum pstore_type_id ty
+ 		sprintf(name, "dmesg-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_CONSOLE:
+-		sprintf(name, "console-%s", psname);
++		sprintf(name, "console-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_FTRACE:
+-		sprintf(name, "ftrace-%s", psname);
++		sprintf(name, "ftrace-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+ 		sprintf(name, "mce-%s-%lld", psname, id);
+
+
