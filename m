@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaKLOLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:11:12 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:36455 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaKLOLK (ORCPT
+	id S1752871AbaKLOLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:11:20 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:62941 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686AbaKLOLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:11:10 -0500
+	Wed, 12 Nov 2014 09:11:15 -0500
+Date: Wed, 12 Nov 2014 15:11:31 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: David Airlie <airlied@linux.ie>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH v2 v3.18-rc4 2/4] drm: prime: Document gem_prime_mmap
+Message-ID: <20141112141131.GU25711@phenom.ffwll.local>
+Mail-Followup-To: Daniel Thompson <daniel.thompson@linaro.org>,
+	David Airlie <airlied@linux.ie>, linaro-kernel@lists.linaro.org,
+	patches@linaro.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org,
+	Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+	Joonyoung Shim <jy0922.shim@samsung.com>
+References: <1415639805-17477-1-git-send-email-daniel.thompson@linaro.org>
+ <1415792295-2466-1-git-send-email-daniel.thompson@linaro.org>
+ <1415792295-2466-3-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1409307891-16523-1-git-send-email-alim.akhtar@samsung.com>
-References: <1409307891-16523-1-git-send-email-alim.akhtar@samsung.com>
-Date: Wed, 12 Nov 2014 15:11:09 +0100
-Message-ID: <CAPDyKFp_XZ=93wisFScezHLqDWDz5XjqxHV1w13zmU3nzQrZww@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: add support for ARM64
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Alim Akhtar <alim.akhtar@samsung.com>
-Cc: Chris Ball <chris@printf.net>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415792295-2466-3-git-send-email-daniel.thompson@linaro.org>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 August 2014 12:24, Alim Akhtar <alim.akhtar@samsung.com> wrote:
-> There are upcoming ARM64 SoCs with dw_mmc host controller.
->
-> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
+On Wed, Nov 12, 2014 at 11:38:13AM +0000, Daniel Thompson wrote:
+> gem_prime_map is not currently described in the DRM manual, lets document
+> it.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 
-Thanks! Applied for next.
+Patches 1&2 are Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-Kind regards
-Uffe
+Nit: Since this fixes an oversight in an earlier patch I usally cc the
+people of the offending patch:
 
-> ---
->  drivers/mmc/host/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index a43295c..72dd6c2 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -580,7 +580,7 @@ config SDH_BFIN_MISSING_CMD_PULLUP_WORKAROUND
->  config MMC_DW
->         tristate "Synopsys DesignWare Memory Card Interface"
->         depends on HAS_DMA
-> -       depends on ARC || ARM || MIPS || COMPILE_TEST
-> +       depends on ARC || ARM || ARM64 || MIPS || COMPILE_TEST
->         help
->           This selects support for the Synopsys DesignWare Mobile Storage IP
->           block, this provides host support for SD and MMC interfaces, in both
-> --
-> 1.7.10.4
->
+commit 7c397cd97b8f46659698396b420bd48c3e6703e6
+Author: Joonyoung Shim <jy0922.shim@samsung.com>
+Date:   Fri Jun 28 14:24:53 2013 +0900
+
+    drm: add mmap function to prime helpers
+
+Cheers, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
