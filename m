@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaKLORI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:17:08 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:39055 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357AbaKLORG (ORCPT
+	id S1752975AbaKLORm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:17:42 -0500
+Received: from mailout.micron.com ([137.201.242.129]:32312 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409AbaKLORj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:17:06 -0500
-Date: Wed, 12 Nov 2014 22:17:00 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: "'Sandy Harris'" <sandyinchina@gmail.com>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] crypto: zeroization of buffers
-Message-ID: <20141112141700.GA28442@gondor.apana.org.au>
-References: <1503070.D5VR9iy8Cm@tachyon.chronox.de>
+	Wed, 12 Nov 2014 09:17:39 -0500
+From: bpqw <bpqw@micron.com>
+To: Thierry Reding <treding@nvidia.com>, Rob Herring <robh+dt@kernel.org>
+CC: Pawel Moll <pawel.moll@arm.com>, "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
+        Mark Brown <broonie@kernel.org>, Heiko Stuebner <heiko@sntech.de>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1 V2] devicetree: bindings: Add vendor prefix for
+ Micron Technology Co., Ltd.
+Thread-Topic: [PATCH 1/1 V2] devicetree: bindings: Add vendor prefix for
+ Micron Technology Co., Ltd.
+Thread-Index: AQHP/lgZ/S1IY6Jj8UuGdDmpij/ftZxdCX/w
+Date: Wed, 12 Nov 2014 14:16:55 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315EB8F2@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315EB0ED@NTXXIAMBX02.xacn.micron.com>
+ <20141112090215.GA29664@ulmo.nvidia.com>
+In-Reply-To: <20141112090215.GA29664@ulmo.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21094.007
+X-TM-AS-Result: No--4.204500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1503070.D5VR9iy8Cm@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 05:36:16AM +0100, Stephan Mueller wrote:
-> Hi Herbert,
-> 
-> as discussed, these patches use the memzero_explicit function that is
-> yet to be integrated into the cryptodev-2.6 tree.
-> 
-> Stephan Mueller (2):
->   crypto: AF_ALG - zeroize message digest buffer
->   crypto: AF_ALG - zeroize IV buffer
-> 
->  crypto/algif_hash.c     | 2 ++
->  crypto/algif_skcipher.c | 1 +
->  2 files changed, 3 insertions(+)
+>Patch looks okay to me content-wise, but you might want to use proper names and 
+>capitalization for the From: and Signed-off-by: lines. bpqw doesn't look like a real name to me, and "bean huo" should probably be "Bean Huo".
 
-All applied.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+>Thierry
+
+Thanks,will modify it and submit V3.
