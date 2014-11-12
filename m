@@ -1,252 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631AbaKLXhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 18:37:11 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:55257 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583AbaKLXhJ (ORCPT
+	id S1753661AbaKLXi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 18:38:27 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:51954 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaKLXiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 18:37:09 -0500
-From: mathieu.poirier@linaro.org
-To: gregkh@linuxfoundation.org
-Cc: robherring2@gmail.com, robh+dt@kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mathieu.poirier@linaro.org
-Subject: [PATCH v2] coresight: bindings for coresight drivers
-Date: Wed, 12 Nov 2014 16:36:59 -0700
-Message-Id: <1415835419-5565-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Wed, 12 Nov 2014 18:38:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <cover.1414190806.git.luto@amacapital.net>
+References: <cover.1414190806.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Nov 2014 15:38:03 -0800
+Message-ID: <CALCETrXVNeb5W+G4Y-PJ_R_yoUpJdbcHkL2=_Gv34oOvKnRzLQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/8] CR4 handling improvements
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On Fri, Oct 24, 2014 at 3:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> This little series tightens up rdpmc permissions.  With it applied,
+> rdpmc can only be used if a perf_event is actually mmapped.  For now,
+> this is only really useful for seccomp.
+>
+> At some point this could be further tightened up to only allow rdpmc
+> if an actual self-monitoring perf event that is compatible with
+> rdpmc is mapped.
+>
+> This should add <50ns to context switches between rdpmc-capable and
+> rdpmc-non-capable mms.  I suspect that this is well under 10%
+> overhead, given that perf already adds some context switch latency.
+>
+> I think that patches 1-3 are a good idea regardless of any rdpmc changes.
+>
+> AMD Uncore userspace rdpmc is broken by these patches (cap_user_rdpmc
+> will be zero), but it was broken anyway.
+>
+> Changes from v1 (aka RFC):
+>  - Rebased on top of the KVM CR4 fix.  This applies to a very recent -linus.
+>  - Renamed the cr4 helpers (Peter, Borislav)
+>  - Fixed buggy cr4 helpers (Hilf)
+>  - Improved lots of comments (everyone)
+>  - Renamed read_cr4 and write_cr4 to make sure I didn't miss anything.
+>    (NB: This will introduce conflicts with Andi's FSGSBASE work.  This is
+>     a good thing.)
+>
+> Andy Lutomirski (7):
+>   x86: Clean up cr4 manipulation
+>   x86: Store a per-cpu shadow copy of CR4
+>   x86: Add a comment clarifying LDT context switching
+>   perf: Add pmu callbacks to track event mapping and unmapping
+>   perf: Pass the event to arch_perf_update_userpage
+>   x86, perf: Only allow rdpmc if a perf_event is mapped
+>   x86, perf: Add /sys/devices/cpu/rdpmc=2 to allow rdpmc for all tasks
+>
+> Peter Zijlstra (1):
+>   perf: Clean up pmu::event_idx
+>
 
-Coresight IP blocks allow for the support of HW assisted tracing
-on ARM SoCs.  Bindings for the currently available blocks are
-presented herein.
 
-Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-Acked-by: Rob Herring <robh@kernel.org>
----
-Change for v2:
-  - Added ack by Rob Herring
----
- .../devicetree/bindings/arm/coresight.txt          | 204 +++++++++++++++++++++
- 1 file changed, 204 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
+What's the status of these?  I think that "perf: Clean up
+pmu::event_idx" and "x86: Add a comment clarifying LDT context
+switching" are in -tip, the two cr4 cleanups ("x86: Clean up cr4
+manipulation" and "x86: Store a per-cpu shadow copy of CR4") are
+reviewed but will conflict with Andi's fsgsbase work, and the rest are
+waiting for review.
 
-diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
-new file mode 100644
-index 0000000..d790f49
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/coresight.txt
-@@ -0,0 +1,204 @@
-+* CoreSight Components:
-+
-+CoreSight components are compliant with the ARM CoreSight architecture
-+specification and can be connected in various topologies to suit a particular
-+SoCs tracing needs. These trace components can generally be classified as
-+sinks, links and sources. Trace data produced by one or more sources flows
-+through the intermediate links connecting the source to the currently selected
-+sink. Each CoreSight component device should use these properties to describe
-+its hardware characteristcs.
-+
-+* Required properties for all components *except* non-configurable replicators:
-+
-+	* compatible: These have to be supplemented with "arm,primecell" as
-+	  drivers are using the AMBA bus interface.  Possible values include:
-+		- "arm,coresight-etb10", "arm,primecell";
-+		- "arm,coresight-tpiu", "arm,primecell";
-+		- "arm,coresight-tmc", "arm,primecell";
-+		- "arm,coresight-funnel", "arm,primecell";
-+		- "arm,coresight-etm3x", "arm,primecell";
-+
-+	* reg: physical base address and length of the register
-+	  set(s) of the component.
-+
-+	* clocks: the clock associated to this component.
-+
-+	* clock-names: the name of the clock as referenced by the code.
-+	  Since we are using the AMBA framework, the name should be
-+	  "apb_pclk".
-+
-+	* port or ports: The representation of the component's port
-+	  layout using the generic DT graph presentation found in
-+	  "bindings/graph.txt".
-+
-+* Required properties for devices that don't show up on the AMBA bus, such as
-+  non-configurable replicators:
-+
-+	* compatible: Currently supported value is (note the absence of the
-+	  AMBA markee):
-+		- "arm,coresight-replicator"
-+
-+	* id: a unique number that will identify this replicator.
-+
-+	* port or ports: same as above.
-+
-+* Optional properties for ETM/PTMs:
-+
-+	* arm,cp14: must be present if the system accesses ETM/PTM management
-+	  registers via co-processor 14.
-+
-+	* cpu: the cpu phandle this ETM/PTM is affined to. When omitted the
-+	  source is considered to belong to CPU0.
-+
-+* Optional property for TMC:
-+
-+	* arm,buffer-size: size of contiguous buffer space for TMC ETR
-+	 (embedded trace router)
-+
-+
-+Example:
-+
-+1. Sinks
-+	etb@20010000 {
-+		compatible = "arm,coresight-etb10", "arm,primecell";
-+		reg = <0 0x20010000 0 0x1000>;
-+
-+		coresight-default-sink;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etb_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port0>;
-+			};
-+		};
-+	};
-+
-+	tpiu@20030000 {
-+		compatible = "arm,coresight-tpiu", "arm,primecell";
-+		reg = <0 0x20030000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			tpiu_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port1>;
-+			};
-+		};
-+	};
-+
-+2. Links
-+	replicator {
-+		/* non-configurable replicators don't show up on the
-+		 * AMBA bus.  As such no need to add "arm,primecell".
-+		 */
-+		compatible = "arm,coresight-replicator";
-+		/* this will show up in debugfs as "0.replicator" */
-+		id = <0>;
-+
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* replicator output ports */
-+			port@0 {
-+				reg = <0>;
-+				replicator_out_port0: endpoint {
-+					remote-endpoint = <&etb_in_port>;
-+				};
-+			};
-+
-+			port@1 {
-+				reg = <1>;
-+				replicator_out_port1: endpoint {
-+					remote-endpoint = <&tpiu_in_port>;
-+				};
-+			};
-+
-+			/* replicator input port */
-+			port@2 {
-+				reg = <0>;
-+				replicator_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&funnel_out_port0>;
-+				};
-+			};
-+		};
-+	};
-+
-+	funnel@20040000 {
-+		compatible = "arm,coresight-funnel", "arm,primecell";
-+		reg = <0 0x20040000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* funnel output port */
-+			port@0 {
-+				reg = <0>;
-+				funnel_out_port0: endpoint {
-+					remote-endpoint =
-+							<&replicator_in_port0>;
-+				};
-+			};
-+
-+			/* funnel input ports */
-+			port@1 {
-+				reg = <0>;
-+				funnel_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm0_out_port>;
-+				};
-+			};
-+
-+			port@2 {
-+				reg = <1>;
-+				funnel_in_port1: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm1_out_port>;
-+				};
-+			};
-+
-+			port@3 {
-+				reg = <2>;
-+				funnel_in_port2: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&etm0_out_port>;
-+				};
-+			};
-+
-+		};
-+	};
-+
-+3. Sources
-+	ptm@2201c000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201c000 0 0x1000>;
-+
-+		cpu = <&cpu0>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm0_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port0>;
-+			};
-+		};
-+	};
-+
-+	ptm@2201d000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201d000 0 0x1000>;
-+
-+		cpu = <&cpu1>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm1_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port1>;
-+			};
-+		};
-+	};
+Thanks,
+Andy
+
+
+>  arch/powerpc/perf/hv-24x7.c          |  6 ---
+>  arch/powerpc/perf/hv-gpci.c          |  6 ---
+>  arch/s390/kernel/perf_cpum_sf.c      |  6 ---
+>  arch/x86/include/asm/mmu.h           |  2 +
+>  arch/x86/include/asm/mmu_context.h   | 32 ++++++++++++++-
+>  arch/x86/include/asm/paravirt.h      |  6 +--
+>  arch/x86/include/asm/processor.h     | 33 ----------------
+>  arch/x86/include/asm/special_insns.h |  6 +--
+>  arch/x86/include/asm/tlbflush.h      | 77 ++++++++++++++++++++++++++++++++----
+>  arch/x86/include/asm/virtext.h       |  5 ++-
+>  arch/x86/kernel/acpi/sleep.c         |  2 +-
+>  arch/x86/kernel/cpu/common.c         | 17 +++++---
+>  arch/x86/kernel/cpu/mcheck/mce.c     |  3 +-
+>  arch/x86/kernel/cpu/mcheck/p5.c      |  3 +-
+>  arch/x86/kernel/cpu/mcheck/winchip.c |  3 +-
+>  arch/x86/kernel/cpu/mtrr/cyrix.c     |  6 +--
+>  arch/x86/kernel/cpu/mtrr/generic.c   |  6 +--
+>  arch/x86/kernel/cpu/perf_event.c     | 76 ++++++++++++++++++++++++++---------
+>  arch/x86/kernel/cpu/perf_event.h     |  2 +
+>  arch/x86/kernel/head32.c             |  1 +
+>  arch/x86/kernel/head64.c             |  2 +
+>  arch/x86/kernel/i387.c               |  3 +-
+>  arch/x86/kernel/process.c            |  5 ++-
+>  arch/x86/kernel/process_32.c         |  2 +-
+>  arch/x86/kernel/process_64.c         |  2 +-
+>  arch/x86/kernel/setup.c              |  2 +-
+>  arch/x86/kernel/xsave.c              |  3 +-
+>  arch/x86/kvm/svm.c                   |  2 +-
+>  arch/x86/kvm/vmx.c                   | 10 ++---
+>  arch/x86/mm/fault.c                  |  2 +-
+>  arch/x86/mm/init.c                   | 12 +++++-
+>  arch/x86/mm/tlb.c                    |  3 --
+>  arch/x86/power/cpu.c                 | 11 ++----
+>  arch/x86/realmode/init.c             |  2 +-
+>  arch/x86/xen/enlighten.c             |  4 +-
+>  drivers/lguest/x86/core.c            |  4 +-
+>  include/linux/perf_event.h           |  7 ++++
+>  kernel/events/core.c                 | 29 ++++++--------
+>  kernel/events/hw_breakpoint.c        |  7 ----
+>  39 files changed, 256 insertions(+), 154 deletions(-)
+>
+> --
+> 1.9.3
+>
+
+
+
 -- 
-1.9.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
