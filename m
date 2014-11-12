@@ -1,121 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaKLU1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:27:07 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.162]:62345 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753295AbaKLU1F convert rfc822-to-8bit (ORCPT
+	id S1753440AbaKLUaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:30:06 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33927 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753190AbaKLUaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:27:05 -0500
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat+g9Pnyo0=
-X-RZG-CLASS-ID: mo00
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration enabled
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
-Date: Wed, 12 Nov 2014 21:26:54 +0100
-Cc: Igor Grinberg <grinberg@compulab.co.il>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        List for communicating with real GTA04 owners 
-	<gta04-owner@goldelico.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <515E660B-B65D-41EF-97F5-74E4DE8FDD13@goldelico.com>
-References: <20141102180756.GH31454@atomide.com> <5458D29E.50908@compulab.co.il> <20141104154231.GP31454@atomide.com> <CANOLnOP8JmROaCruC8NEwh+Nzq_-fFit-+5d_W9vU9KtNTphoA@mail.gmail.com>
-To: Grazvydas Ignotas <notasas@gmail.com>, Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Wed, 12 Nov 2014 15:30:04 -0500
+Date: Wed, 12 Nov 2014 21:29:27 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Roman Byshko <rbyshko@gmail.com>
+Cc: linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH v2 1/5] phy: sun4i: add support for USB phy0
+Message-ID: <20141112202927.GB20972@lukather>
+References: <cover.1415645258.git.rbyshko@gmail.com>
+ <997f1e2744504f3461f9e94e2171180b5ce87aa2.1415645258.git.rbyshko@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oLBj+sq0vYjzfsbl"
+Content-Disposition: inline
+In-Reply-To: <997f1e2744504f3461f9e94e2171180b5ce87aa2.1415645258.git.rbyshko@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Am 12.11.2014 um 16:45 schrieb Grazvydas Ignotas <notasas@gmail.com>:
+--oLBj+sq0vYjzfsbl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, Nov 4, 2014 at 5:42 PM, Tony Lindgren <tony@atomide.com> wrote:
->> * Igor Grinberg <grinberg@compulab.co.il> [141104 05:22]:
->>> Hi Tony,
->>> 
->>> On 11/02/14 20:07, Tony Lindgren wrote:
->>>> Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
->>>> configuration") enabled configuring the PM features for twl4030.
->>>> 
->>>> This caused poweroff command to fail on devices that have the
->>>> BCI charger on twl4030 wired, or have power wired for VBUS.
->>>> Instead of powering off, the device reboots. This is because
->>>> voltage is detected on charger or VBUS with the default bits
->>>> enabled for the power transition registers.
->>>> 
->>>> To fix the issue, let's just clear VBUS and CHG bits as we want
->>>> poweroff command to keep the system powered off.
->>> 
->>> What about devices that really need to start once VBUS or CHG is connected?
->> 
->> More handling can be added for some cases. With this patch the
->> poweron bits will clear to defaults if power is completely removed.
->> So start-up with VBUS and CHG works in that case.
->> 
->> However, if you have a battery connected, and you poweroff, with
->> this patch the device won't power up with VBUS or CHG connected.
->> 
->> Note that most battery operated devices are not using the charger
->> on twl4030 because it has issues charging a completely empty
->> battery AFAIK. So most battery powered devices have been using an
->> external USB charger chip that's not affected by this patch.
-> 
-> Pandora does, as well as GTA04 AFAIK,
+On Mon, Nov 10, 2014 at 07:55:06PM +0100, Roman Byshko wrote:
+> The driver for sun4i USB phys currently supports
+> only phy1 and phy2 which are used for USB host
+> controllers. This patch adds support for USB phy0,
+> which is used by the musb hdrc USB controller.
+>=20
+> Signed-off-by: Roman Byshko <rbyshko@gmail.com>
 
-Yes. The trick is that the power level that turns on the device is a little higher
-and the battery provides enough energy for approx. 30 seconds until it drained
-to a level where it turns off. Depending on general setup (WIFI must remain
-powered off after boot) this is enough to boot into Linux and start full charging.
-Another trick is to modify MLO and U-Boot to raise the charging current.
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-> but that's not "most devices“ I
+Thanks!
+Maxime
 
-Indeed.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-> guess.. At least pandora was booting up on charger connect up until
-> now.
+--oLBj+sq0vYjzfsbl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Same for GTA04.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> I don't know why shutdown used to work for Russell in legacy boot
-> and it changed for DT, the device would always start up when there was
-> AC power here.
-> 
-> 
-> Grazvydas
-> 
->> 
->> We could consider exporting a function for the charger driver to
->> configure the poweron mask. And we could also consider passing a
->> mask in ti,use_poweroff = 0xff.
+iQIcBAEBAgAGBQJUY8MnAAoJEBx+YmzsjxAg0xsP/3tyScQX+ROwSlyxFeY8ERCC
+nZ2yJIv6OCJ7qovOeR9SrfLsbsBGtrjXLvVk0lRaqCp6neIWHCmRM7E848jzSV0z
+GBSRW6uAJpilzlg/HOsgsGkVdvtCTB9ZEzQNHt7013oT9PO/NRptBSXSdTpGvHhx
+WQqxE56PWU+En45OEvjQXTOIf3cw0iHOfgp9Xby6azFy12wnThUak/jIwu6Zdiqy
+9yohFOoDq1vj4pac5R/c5y2UDDS1M+UrhF2nJ9wlIJJXiIGllu7xi794TlpQmfJO
+GxqD2xHZgKsHwVRd7Yp7HpDQelVJ1HC3po1UVx0MmPTx8hXsAQr5LBcH6UIsN1Wp
+Rxmh6RM0jJsmXfLPDcEqY9UizuvgNFnfDjj/q4wQwWNVhtrQ8Qnsi+tSnyGgUOSe
+WRRw2mF0FbUCxCsIf+v+xdSkk7HTwgPd3PHp2qo5QC/s0Ise2z4A+POBEd6Ij0qM
+EA0TXtMtxDXlXq1h0KxF7vvLWaBoZ38G9aF4Ow9cg4fyG3slE/KpKolQOpLlYngo
+P25ZVZL34V3QwpXWkizHOVU+1IL8ldRPlH7nzU4wu/QjAIA0l+oM4o8NDoMIpmw9
+80ZyyiZLEknPhQky1VtrkH3RMPXkEfsbssHTD4SpDDHw/3MEKTNrwlHdC8K8eNFJ
+w3LYMYssdI+UqF3SM+8j
+=Hifw
+-----END PGP SIGNATURE-----
 
-Yes, exporting these masks would be fine - if a board needs a non-default
-setup.
-
->> 
->>> It seems to me that forcing these bits on power off can break that kind of
->>> devices and these settings should really be board specific.
->>> What do you think?
->> 
->> There's a patch series for "[RFC,01/16] kernel: Add support for
->> poweroff handler call chain" that should help with that. For sure
->> the poweroff handling needs to be board specific as some systems
->> may need to use a GPIO to shut off a regulator powering something
->> before powering off the SoC.
->> 
->> Regards,
->> 
->> Tony
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-BR,
-Nikolaus
-
+--oLBj+sq0vYjzfsbl--
