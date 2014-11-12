@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965145AbaKLBmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:42:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60390 "EHLO
+	id S965163AbaKLBmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:42:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933830AbaKLBmm (ORCPT
+	with ESMTP id S965147AbaKLBmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:42:42 -0500
+	Tue, 11 Nov 2014 20:42:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>, Theodore Tso <tytso@mit.edu>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: [PATCH 3.14 103/203] ext4: fix reservation overflow in ext4_da_write_begin
-Date: Wed, 12 Nov 2014 10:16:13 +0900
-Message-Id: <20141112011547.411346725@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH 3.14 106/203] ext4: fix overflow when updating superblock backups after resize
+Date: Wed, 12 Nov 2014 10:16:16 +0900
+Message-Id: <20141112011547.550756955@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,79 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 0ff8947fc5f700172b37cbca811a38eb9cb81e08 upstream.
+commit 9378c6768e4fca48971e7b6a9075bc006eda981d upstream.
 
-Delalloc write journal reservations only reserve 1 credit,
-to update the inode if necessary.  However, it may happen
-once in a filesystem's lifetime that a file will cross
-the 2G threshold, and require the LARGE_FILE feature to
-be set in the superblock as well, if it was not set already.
+When there are no meta block groups update_backups() will compute the
+backup block in 32-bit arithmetics thus possibly overflowing the block
+number and corrupting the filesystem. OTOH filesystems without meta
+block groups larger than 16 TB should be rare. Fix the problem by doing
+the counting in 64-bit arithmetics.
 
-This overruns the transaction reservation, and can be
-demonstrated simply on any ext4 filesystem without the LARGE_FILE
-feature already set:
-
-dd if=/dev/zero of=testfile bs=1 seek=2147483646 count=1 \
-	conv=notrunc of=testfile
-sync
-dd if=/dev/zero of=testfile bs=1 seek=2147483647 count=1 \
-	conv=notrunc of=testfile
-
-leads to:
-
-EXT4-fs: ext4_do_update_inode:4296: aborting transaction: error 28 in __ext4_handle_dirty_super
-EXT4-fs error (device loop0) in ext4_do_update_inode:4301: error 28
-EXT4-fs error (device loop0) in ext4_reserve_inode_write:4757: Readonly filesystem
-EXT4-fs error (device loop0) in ext4_dirty_inode:4876: error 28
-EXT4-fs error (device loop0) in ext4_da_write_end:2685: error 28
-
-Adjust the number of credits based on whether the flag is
-already set, and whether the current write may extend past the
-LARGE_FILE limit.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Coverity-id: 741252
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ fs/ext4/resize.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2633,6 +2633,20 @@ static int ext4_nonda_switch(struct supe
- 	return 0;
- }
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1071,7 +1071,7 @@ static void update_backups(struct super_
+ 			break;
  
-+/* We always reserve for an inode update; the superblock could be there too */
-+static int ext4_da_write_credits(struct inode *inode, loff_t pos, unsigned len)
-+{
-+	if (likely(EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+				EXT4_FEATURE_RO_COMPAT_LARGE_FILE)))
-+		return 1;
-+
-+	if (pos + len <= 0x7fffffffULL)
-+		return 1;
-+
-+	/* We might need to update the superblock to set LARGE_FILE */
-+	return 2;
-+}
-+
- static int ext4_da_write_begin(struct file *file, struct address_space *mapping,
- 			       loff_t pos, unsigned len, unsigned flags,
- 			       struct page **pagep, void **fsdata)
-@@ -2683,7 +2697,8 @@ retry_grab:
- 	 * of file which has an already mapped buffer.
- 	 */
- retry_journal:
--	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE, 1);
-+	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE,
-+				ext4_da_write_credits(inode, pos, len));
- 	if (IS_ERR(handle)) {
- 		page_cache_release(page);
- 		return PTR_ERR(handle);
+ 		if (meta_bg == 0)
+-			backup_block = group * bpg + blk_off;
++			backup_block = ((ext4_fsblk_t)group) * bpg + blk_off;
+ 		else
+ 			backup_block = (ext4_group_first_block_no(sb, group) +
+ 					ext4_bg_has_super(sb, group));
 
 
