@@ -1,151 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059AbaKLPIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:08:32 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52476 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaKLPIa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:08:30 -0500
-Message-ID: <546377FC.4090408@arm.com>
-Date: Wed, 12 Nov 2014 15:08:44 +0000
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753034AbaKLPLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:11:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42663 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377AbaKLPLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 10:11:14 -0500
+Date: Wed, 12 Nov 2014 16:11:06 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
+Message-ID: <20141112151106.GB17793@pd.tnic>
+References: <5462999A.7090706@intel.com>
+ <1415784298.14686.323.camel@mfleming-mobl1.ger.corp.intel.com>
+ <54637576.7030004@intel.com>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
- hotplug
-References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
-X-OriginalArrivalTime: 12 Nov 2014 15:08:24.0849 (UTC) FILETIME=[817DF010:01CFFE8A]
-X-MC-Unique: 114111215082702601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54637576.7030004@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Nov 12, 2014 at 06:57:58AM -0800, Dave Hansen wrote:
 
-On 12/11/14 01:06, Wanpeng Li wrote:
-> I observe that dl task can't be migrated to other cpus during cpu hotplug, 
-> in addition, task may/may not be running again if cpu is added back. The 
-> root cause which I found is that dl task will be throtted and removed from 
-> dl rq after comsuming all budget, which leads to stop task can't pick it up 
-> from dl rq and migrate to other cpus during hotplug.
+> It's actually tripping over this in __phys_addr:
 > 
-> The method to reproduce:
-> schedtool -E -t 50000:100000 -e ./test
-> Actually test is just a simple for loop. Then observe which cpu the test
-> task is on.
-> echo 0 > /sys/devices/system/cpu/cpuN/online
+>      VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
 > 
-> This patch adds the dl task migration during cpu hotplug by finding a most 
-> suitable later deadline rq after dl timer fire if current rq is offline, 
-> if fail to find a suitable later deadline rq then fallback to any eligible 
-> online cpu in order that the deadline task will come back to us, and the 
-> push/pull mechanism should then move it around properly.
+> I dumped out a few of the variables too:
 > 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v4 -> v5:
->  * remove raw_spin_unlock(&rq->lock)
->  * cleanup codes, spotted by Peterz
->  * cleanup patch description
-> v3 -> v4:
->  * use tsk_cpus_allowed wrapper
->  * fix compile error
-> v2 -> v3:
->  * don't get_task_struct
->  * if cannot preempt any rq, fallback to pick any online cpus
->  * use cpu_active_mask as original later_mask if cpu is offline
-> v1 -> v2:
->  * push the task to another cpu in dl_task_timer() if rq is offline.
+> [    1.161406] __phys_addr() x: 0x000078009d3c6000
+> [    1.166567] __phys_addr() origx: 0x000000009d3c6000
+> [    1.171832] __phys_addr() y: 0x000000011d3c6000
+> [    1.176999] __phys_addr() __START_KERNEL_map: 0xffffffff80000000
+> [    1.183841] __phys_addr() PAGE_OFFSET: 0xffff880000000000
+> [    1.189993] __phys_addr() x valid: 0
 > 
->  kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 41 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index f3d7776..7c31906 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
->  	return hrtimer_active(&dl_se->dl_timer);
->  }
->  
-> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
->  /*
->   * This is the bandwidth enforcement timer callback. If here, we know
->   * a task is not on its dl_rq, since the fact that the timer was running
-> @@ -538,6 +539,43 @@ again:
->  	update_rq_clock(rq);
->  	dl_se->dl_throttled = 0;
->  	dl_se->dl_yielded = 0;
-> +
-> +	/*
-> +	 * So if we find that the rq the task was on is no longer
-> +	 * available, we need to select a new rq.
-> +	 */
-> +	if (unlikely(!rq->online)) {
-> +		struct rq *later_rq = NULL;
-> +
-> +		later_rq = find_lock_later_rq(p, rq);
-> +
-> +		if (!later_rq) {
-> +			int cpu;
-> +
-> +			/*
-> +			 * If cannot preempt any rq, fallback to pick any
-> +			 * online cpu.
-> +			 */
-> +			cpu = cpumask_any_and(cpu_active_mask,
-> +					tsk_cpus_allowed(p));
-> +			if (cpu >= nr_cpu_ids) {
-> +				pr_warn("fail to find any online cpu and task will never come back\n");
-> +				goto unlock;
-> +			}
-> +			later_rq = cpu_rq(cpu);
-> +		}
-> +
-> +		deactivate_task(rq, p, 0);
-> +		set_task_cpu(p, later_rq->cpu);
-> +		activate_task(later_rq, p, 0);
-> +
-> +		resched_curr(later_rq);
-> +
-> +		double_unlock_balance(rq, later_rq);
-> +
-> +		goto unlock;
-> +	}
-> +
->  	if (task_on_rq_queued(p)) {
->  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
->  		if (dl_task(rq->curr))
-> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
->  	 * We have to consider system topology and task affinity
->  	 * first, then we can look for a suitable cpu.
->  	 */
-> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
-> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
-> +	cpumask_copy(later_mask, cpu_active_mask);
-> +	if (likely(task_rq(task)->online))
-> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
+> So it looks like the root cause is a physical address getting pass in in
+> the first place instead of a virtual.
 
-So, here you consider the span only when the task_rq is online,
-but there might be others cpus still online belonging to the same
-rd->span. And you have to consider them when migrating. Actually,
-migration must still be restricted to the online cpus of task's
-original rd->span, or I fear you can break clustered scheduling.
+I'd say that's on purpose as we're mapping kernel text 1:1 in the EFI
+page table.
 
-Thanks,
+Maybe we want this:
 
-- Juri
+---
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index 35aecb6042fb..8262d534080d 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -182,7 +182,7 @@ int __init efi_setup_page_tables(unsigned long pa_memmap, unsigned num_pages)
+ 	efi_scratch.phys_stack += PAGE_SIZE; /* stack grows down */
+ 
+ 	npages = (_end - _text) >> PAGE_SHIFT;
+-	text = __pa(_text);
++	text = __pa_nodebug(_text);
+ 
+ 	if (kernel_map_pages_in_pgd(pgd, text >> PAGE_SHIFT, text, npages, 0)) {
+ 		pr_err("Failed to map kernel text 1:1\n");
 
->  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->  			task, later_mask);
-> 
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
