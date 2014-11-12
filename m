@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272AbaKLB0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:26:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58920 "EHLO
+	id S1753499AbaKLB0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:26:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58928 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaKLB0g (ORCPT
+	with ESMTP id S932253AbaKLB0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:26:36 -0500
+	Tue, 11 Nov 2014 20:26:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <akolesov@synopsys.com>,
         Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 3.17 137/319] ARC: [nsimosci] Allow "headless" models to boot
-Date: Wed, 12 Nov 2014 10:14:35 +0900
-Message-Id: <20141112011015.200103834@linuxfoundation.org>
+Subject: [PATCH 3.17 139/319] ARC: unbork FPU save/restore
+Date: Wed, 12 Nov 2014 10:14:37 +0900
+Message-Id: <20141112011015.510166898@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -31,33 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 5c05483e2db91890faa9a7be0a831701a3f442d6 upstream.
+commit 52e9bae93802bd29c33be11e9e758ad7daac805f upstream.
 
-There are certain test configuration of virtual platform which don't
-have any real console device (uart/pgu). So add tty0 as a fallback console
-device to allow system to boot and be accessible via telnet
-
-Otherwise with ttyS0 as only console, but 8250 disabled in kernel build,
-init chokes.
-
-Reported-by: Anton Kolesov <akolesov@synopsys.com>
+Fixes: 2ab402dfd65d15a4b2 "ARC: make start_thread() out-of-line"
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/boot/dts/nsimosci.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arc/include/asm/arcregs.h   |    8 --------
+ arch/arc/include/asm/processor.h |    9 +++++++++
+ 2 files changed, 9 insertions(+), 8 deletions(-)
 
---- a/arch/arc/boot/dts/nsimosci.dts
-+++ b/arch/arc/boot/dts/nsimosci.dts
-@@ -20,7 +20,7 @@
- 		/* this is for console on PGU */
- 		/* bootargs = "console=tty0 consoleblank=0"; */
- 		/* this is for console on serial */
--		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=ttyS0,115200n8 consoleblank=0 debug";
-+		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=tty0 console=ttyS0,115200n8 consoleblank=0 debug";
- 	};
+--- a/arch/arc/include/asm/arcregs.h
++++ b/arch/arc/include/asm/arcregs.h
+@@ -191,14 +191,6 @@
+ #define PAGES_TO_KB(n_pages)	((n_pages) << (PAGE_SHIFT - 10))
+ #define PAGES_TO_MB(n_pages)	(PAGES_TO_KB(n_pages) >> 10)
  
- 	aliases {
+-#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
+-/* These DPFP regs need to be saved/restored across ctx-sw */
+-struct arc_fpu {
+-	struct {
+-		unsigned int l, h;
+-	} aux_dpfp[2];
+-};
+-#endif
+ 
+ /*
+  ***************************************************************
+--- a/arch/arc/include/asm/processor.h
++++ b/arch/arc/include/asm/processor.h
+@@ -20,6 +20,15 @@
+ 
+ #include <asm/ptrace.h>
+ 
++#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
++/* These DPFP regs need to be saved/restored across ctx-sw */
++struct arc_fpu {
++	struct {
++		unsigned int l, h;
++	} aux_dpfp[2];
++};
++#endif
++
+ /* Arch specific stuff which needs to be saved per task.
+  * However these items are not so important so as to earn a place in
+  * struct thread_info
 
 
