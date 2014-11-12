@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797AbaKLBaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:30:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59203 "EHLO
+	id S1755287AbaKLDkC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:40:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932760AbaKLBaF (ORCPT
+	with ESMTP id S932788AbaKLBaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:05 -0500
+	Tue, 11 Nov 2014 20:30:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nix <nix@esperi.org.uk>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.17 203/319] USB: cdc-acm: add quirk for control-line state requests
-Date: Wed, 12 Nov 2014 10:15:41 +0900
-Message-Id: <20141112011026.413437085@linuxfoundation.org>
+        Oussama Ghorbel <ghorbel@pivasoftware.com>,
+        Rabin Vincent <rabin@rab.in>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH 3.17 204/319] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
+Date: Wed, 12 Nov 2014 10:15:42 +0900
+Message-Id: <20141112011026.577117151@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,84 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Oussama Ghorbel <ghorbel@pivasoftware.com>
 
-commit 2a8cdfde9237c4e1bd7c2e68c415b006491d23cc upstream.
+commit f20531a9aae0c7378d9fa75b4b5d99b7eecab066 upstream.
 
-Add new quirk for devices that cannot handle control-line state
-requests.
+The USB OTG port does not work since v3.16 on omap platform.
+This is a regression introduced by the commit
+eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
+ and remove).
+This because the call to pm_runtime_enable() function is moved after the
+call to devm_phy_create() function, which has side effect since later in
+the subsequent calls of devm_phy_create() there is a check with
+pm_runtime_enabled() to configure few things.
 
-Note that we currently send these requests to all devices, regardless of
-whether they claim to support it, but that errors are only logged if
-support is claimed.
-
-Since commit 0943d8ead30e ("USB: cdc-acm: use tty-port dtr_rts"), which
-only changed the timings for these requests slightly, this has been
-reported to cause occasional firmware crashes on Simtec Electronics
-Entropy Key devices after re-enumeration. Enable the quirk for this
-device.
-
-Reported-by: Nix <nix@esperi.org.uk>
-Tested-by: Nix <nix@esperi.org.uk>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Fixes: eb82a3d846fa
+Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
+Tested-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   14 ++++++++++++--
- drivers/usb/class/cdc-acm.h |    2 ++
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ drivers/phy/phy-omap-usb2.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -145,8 +145,15 @@ static int acm_ctrl_msg(struct acm *acm,
- /* devices aren't required to support these requests.
-  * the cdc acm descriptor tells whether they do...
-  */
--#define acm_set_control(acm, control) \
--	acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE, control, NULL, 0)
-+static inline int acm_set_control(struct acm *acm, int control)
-+{
-+	if (acm->quirks & QUIRK_CONTROL_LINE_STATE)
-+		return -EOPNOTSUPP;
-+
-+	return acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE,
-+			control, NULL, 0);
-+}
-+
- #define acm_set_line(acm, line) \
- 	acm_ctrl_msg(acm, USB_CDC_REQ_SET_LINE_CODING, 0, line, sizeof *(line))
- #define acm_send_break(acm, ms) \
-@@ -1315,6 +1322,7 @@ made_compressed_probe:
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
- 	init_usb_anchor(&acm->delayed);
-+	acm->quirks = quirks;
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platfo
+ 	otg->phy		= &phy->phy;
  
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1682,6 +1690,8 @@ static const struct usb_device_id acm_id
- 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
- 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
- 	},
-+	{ USB_DEVICE(0x20df, 0x0001), /* Simtec Electronics Entropy Key */
-+	.driver_info = QUIRK_CONTROL_LINE_STATE, },
- 	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
- 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
- 	},
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -121,6 +121,7 @@ struct acm {
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
- 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
-+	unsigned long quirks;
- };
+ 	platform_set_drvdata(pdev, phy);
++	pm_runtime_enable(phy->dev);
  
- #define CDC_DATA_INTERFACE_TYPE	0x0a
-@@ -132,3 +133,4 @@ struct acm {
- #define NOT_A_MODEM			BIT(3)
- #define NO_DATA_INTERFACE		BIT(4)
- #define IGNORE_DEVICE			BIT(5)
-+#define QUIRK_CONTROL_LINE_STATE	BIT(6)
+ 	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
+-	if (IS_ERR(generic_phy))
++	if (IS_ERR(generic_phy)) {
++		pm_runtime_disable(phy->dev);
+ 		return PTR_ERR(generic_phy);
++	}
+ 
+ 	phy_set_drvdata(generic_phy, phy);
+ 
+-	pm_runtime_enable(phy->dev);
+ 	phy_provider = devm_of_phy_provider_register(phy->dev,
+ 			of_phy_simple_xlate);
+ 	if (IS_ERR(phy_provider)) {
 
 
