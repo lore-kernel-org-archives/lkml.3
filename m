@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460AbaKLWdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:33:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862AbaKLWdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:33:44 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        andi@firstfloor.org, rientjes@google.com, riel@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, davidlohr@hp.com
-Subject: [PATCH 1/3] hugetlb: fix hugepages= entry in kernel-parameters.txt
-Date: Wed, 12 Nov 2014 17:33:11 -0500
-Message-Id: <1415831593-9020-2-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1415831593-9020-1-git-send-email-lcapitulino@redhat.com>
-References: <1415831593-9020-1-git-send-email-lcapitulino@redhat.com>
+	id S1753076AbaKLWoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:44:00 -0500
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:56791 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbaKLWn6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 17:43:58 -0500
+From: George McCollister <george.mccollister@gmail.com>
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Brown <broonie@kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>, Jason Cooper <jason@lakedaemon.net>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Hayato Suzuki <hytszk@gmail.com>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/2] of: Add vendor prefix for NovaTech LLC
+Date: Wed, 12 Nov 2014 16:41:32 -0600
+Message-Id: <1415832094-20991-1-git-send-email-george.mccollister@gmail.com>
+X-Mailer: git-send-email 2.1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hugepages= entry in kernel-parameters.txt states that
-1GB pages can only be allocated at boot time and not
-freed afterwards. This is not true since commit
-944d9fec8d7aee, at least for x86_64.
+For company details see:
+http://www.novatechweb.com
 
-Instead of adding arch-specifc observations to the
-hugepages= entry, this commit just drops the out of date
-information. Further information about arch-specific
-support and available features can be obtained in the
-hugetlb documentation.
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
 ---
- Documentation/kernel-parameters.txt | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 479f332..d919af0 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1228,9 +1228,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			multiple times interleaved with hugepages= to reserve
- 			huge pages of different sizes. Valid pages sizes on
- 			x86-64 are 2M (when the CPU supports "pse") and 1G
--			(when the CPU supports the "pdpe1gb" cpuinfo flag)
--			Note that 1GB pages can only be allocated at boot time
--			using hugepages= and not freed afterwards.
-+			(when the CPU supports the "pdpe1gb" cpuinfo flag).
- 
- 	hvc_iucv=	[S390] Number of z/VM IUCV hypervisor console (HVC)
- 			       terminal devices. Valid values: 0..8
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 723999d..8f1462e 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -105,6 +105,7 @@ netgear	NETGEAR
+ newhaven	Newhaven Display International
+ nintendo	Nintendo
+ nokia	Nokia
++novatech	NovaTech LLC
+ nvidia	NVIDIA
+ nxp	NXP Semiconductors
+ onnn	ON Semiconductor Corp.
 -- 
-1.9.3
+2.1.0
 
