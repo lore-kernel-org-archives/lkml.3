@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542AbaKLDJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:09:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59931 "EHLO
+	id S1755564AbaKLDKL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:10:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59924 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933177AbaKLBiU (ORCPT
+	with ESMTP id S1754800AbaKLBiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:38:20 -0500
+	Tue, 11 Nov 2014 20:38:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.14 029/203] vfs: fix data corruption when blocksize < pagesize for mmaped data
-Date: Wed, 12 Nov 2014 10:14:59 +0900
-Message-Id: <20141112011544.078056200@linuxfoundation.org>
+        hujianyang <hujianyang@huawei.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.14 027/203] UBIFS: fix a race condition
+Date: Wed, 12 Nov 2014 10:14:57 +0900
+Message-Id: <20141112011543.986918183@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -28,153 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 90a8020278c1598fafd071736a0846b38510309c upstream.
+commit 052c28073ff26f771d44ef33952a41d18dadd255 upstream.
 
-->page_mkwrite() is used by filesystems to allocate blocks under a page
-which is becoming writeably mmapped in some process' address space. This
-allows a filesystem to return a page fault if there is not enough space
-available, user exceeds quota or similar problem happens, rather than
-silently discarding data later when writepage is called.
+Hu (hujianyang@huawei.com) discovered a race condition which may lead to a
+situation when UBIFS is unable to mount the file-system after an unclean
+reboot. The problem is theoretical, though.
 
-However VFS fails to call ->page_mkwrite() in all the cases where
-filesystems need it when blocksize < pagesize. For example when
-blocksize = 1024, pagesize = 4096 the following is problematic:
-  ftruncate(fd, 0);
-  pwrite(fd, buf, 1024, 0);
-  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
-  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
-  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
-  mremap(map, 1024, 10000, 0);
-  map[4095] = 'a';    ----> no page_mkwrite() called
+In UBIFS, we have the log, which basically a set of LEBs in a certain area. The
+log has the tail and the head.
 
-At the moment ->page_mkwrite() is called, filesystem can allocate only
-one block for the page because i_size == 1024. Otherwise it would create
-blocks beyond i_size which is generally undesirable. But later at
-->writepage() time, we also need to store data at offset 4095 but we
-don't have block allocated for it.
+Every time user writes data to the file-system, the UBIFS journal grows, and
+the log grows as well, because we append new reference nodes to the head of the
+log. So the head moves forward all the time, while the log tail stays at the
+same position.
 
-This patch introduces a helper function filesystems can use to have
-->page_mkwrite() called at all the necessary moments.
+At any time, the UBIFS master node points to the tail of the log. When we mount
+the file-system, we scan the log, and we always start from its tail, because
+this is where the master node points to. The only occasion when the tail of the
+log changes is the commit operation.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+The commit operation has 2 phases - "commit start" and "commit end". The former
+is relatively short, and does not involve much I/O. During this phase we mostly
+just build various in-memory lists of the things which have to be written to
+the flash media during "commit end" phase.
+
+During the commit start phase, what we do is we "clean" the log. Indeed, the
+commit operation will index all the data in the journal, so the entire journal
+"disappears", and therefore the data in the log become unneeded. So we just
+move the head of the log to the next LEB, and write the CS node there. This LEB
+will be the tail of the new log when the commit operation finishes.
+
+When the "commit start" phase finishes, users may write more data to the
+file-system, in parallel with the ongoing "commit end" operation. At this point
+the log tail was not changed yet, it is the same as it had been before we
+started the commit. The log head keeps moving forward, though.
+
+The commit operation now needs to write the new master node, and the new master
+node should point to the new log tail. After this the LEBs between the old log
+tail and the new log tail can be unmapped and re-used again.
+
+And here is the possible problem. We do 2 operations: (a) We first update the
+log tail position in memory (see 'ubifs_log_end_commit()'). (b) And then we
+write the master node (see the big lock of code in 'do_commit()').
+
+But nothing prevents the log head from moving forward between (a) and (b), and
+the log head may "wrap" now to the old log tail. And when the "wrap" happens,
+the contends of the log tail gets erased. Now a power cut happens and we are in
+trouble. We end up with the old master node pointing to the old tail, which was
+erased. And replay fails because it expects the master node to point to the
+correct log tail at all times.
+
+This patch merges the abovementioned (a) and (b) operations by moving the master
+node change code to the 'ubifs_log_end_commit()' function, so that it runs with
+the log mutex locked, which will prevent the log from being changed benween
+operations (a) and (b).
+
+Reported-by: hujianyang <hujianyang@huawei.com>
+Tested-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/buffer.c        |    3 ++
- include/linux/mm.h |    1 
- mm/truncate.c      |   57 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+)
+ fs/ubifs/commit.c |    8 +++-----
+ fs/ubifs/log.c    |   11 ++++++++---
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2077,6 +2077,7 @@ int generic_write_end(struct file *file,
- 			struct page *page, void *fsdata)
- {
- 	struct inode *inode = mapping->host;
-+	loff_t old_size = inode->i_size;
- 	int i_size_changed = 0;
+--- a/fs/ubifs/commit.c
++++ b/fs/ubifs/commit.c
+@@ -166,10 +166,6 @@ static int do_commit(struct ubifs_info *
+ 	err = ubifs_orphan_end_commit(c);
+ 	if (err)
+ 		goto out;
+-	old_ltail_lnum = c->ltail_lnum;
+-	err = ubifs_log_end_commit(c, new_ltail_lnum);
+-	if (err)
+-		goto out;
+ 	err = dbg_check_old_index(c, &zroot);
+ 	if (err)
+ 		goto out;
+@@ -202,7 +198,9 @@ static int do_commit(struct ubifs_info *
+ 		c->mst_node->flags |= cpu_to_le32(UBIFS_MST_NO_ORPHS);
+ 	else
+ 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
+-	err = ubifs_write_master(c);
++
++	old_ltail_lnum = c->ltail_lnum;
++	err = ubifs_log_end_commit(c, new_ltail_lnum);
+ 	if (err)
+ 		goto out;
  
- 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
-@@ -2096,6 +2097,8 @@ int generic_write_end(struct file *file,
- 	unlock_page(page);
- 	page_cache_release(page);
- 
-+	if (old_size < pos)
-+		pagecache_isize_extended(inode, old_size, pos);
- 	/*
- 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
- 	 * makes the holding time of page lock longer. Second, it forces lock
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1123,6 +1123,7 @@ static inline void unmap_shared_mapping_
- 
- extern void truncate_pagecache(struct inode *inode, loff_t new);
- extern void truncate_setsize(struct inode *inode, loff_t newsize);
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
- void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
- int truncate_inode_page(struct address_space *mapping, struct page *page);
- int generic_error_remove_page(struct address_space *mapping, struct page *page);
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -20,6 +20,7 @@
- #include <linux/buffer_head.h>	/* grr. try_to_release_page,
- 				   do_invalidatepage */
- #include <linux/cleancache.h>
-+#include <linux/rmap.h>
- #include "internal.h"
- 
- 
-@@ -613,12 +614,68 @@ EXPORT_SYMBOL(truncate_pagecache);
+--- a/fs/ubifs/log.c
++++ b/fs/ubifs/log.c
+@@ -447,9 +447,9 @@ out:
+  * @ltail_lnum: new log tail LEB number
+  *
+  * This function is called on when the commit operation was finished. It
+- * moves log tail to new position and unmaps LEBs which contain obsolete data.
+- * Returns zero in case of success and a negative error code in case of
+- * failure.
++ * moves log tail to new position and updates the master node so that it stores
++ * the new log tail LEB number. Returns zero in case of success and a negative
++ * error code in case of failure.
   */
- void truncate_setsize(struct inode *inode, loff_t newsize)
+ int ubifs_log_end_commit(struct ubifs_info *c, int ltail_lnum)
  {
-+	loff_t oldsize = inode->i_size;
-+
- 	i_size_write(inode, newsize);
-+	if (newsize > oldsize)
-+		pagecache_isize_extended(inode, oldsize, newsize);
- 	truncate_pagecache(inode, newsize);
- }
- EXPORT_SYMBOL(truncate_setsize);
+@@ -477,7 +477,12 @@ int ubifs_log_end_commit(struct ubifs_in
+ 	spin_unlock(&c->buds_lock);
  
- /**
-+ * pagecache_isize_extended - update pagecache after extension of i_size
-+ * @inode:	inode for which i_size was extended
-+ * @from:	original inode size
-+ * @to:		new inode size
-+ *
-+ * Handle extension of inode size either caused by extending truncate or by
-+ * write starting after current i_size. We mark the page straddling current
-+ * i_size RO so that page_mkwrite() is called on the nearest write access to
-+ * the page.  This way filesystem can be sure that page_mkwrite() is called on
-+ * the page before user writes to the page via mmap after the i_size has been
-+ * changed.
-+ *
-+ * The function must be called after i_size is updated so that page fault
-+ * coming after we unlock the page will already see the new i_size.
-+ * The function must be called while we still hold i_mutex - this not only
-+ * makes sure i_size is stable but also that userspace cannot observe new
-+ * i_size value before we are prepared to store mmap writes at new inode size.
-+ */
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
-+{
-+	int bsize = 1 << inode->i_blkbits;
-+	loff_t rounded_from;
-+	struct page *page;
-+	pgoff_t index;
+ 	err = dbg_check_bud_bytes(c);
++	if (err)
++		goto out;
+ 
++	err = ubifs_write_master(c);
 +
-+	WARN_ON(!mutex_is_locked(&inode->i_mutex));
-+	WARN_ON(to > inode->i_size);
-+
-+	if (from >= to || bsize == PAGE_CACHE_SIZE)
-+		return;
-+	/* Page straddling @from will not have any hole block created? */
-+	rounded_from = round_up(from, bsize);
-+	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
-+		return;
-+
-+	index = from >> PAGE_CACHE_SHIFT;
-+	page = find_lock_page(inode->i_mapping, index);
-+	/* Page not cached? Nothing to do */
-+	if (!page)
-+		return;
-+	/*
-+	 * See clear_page_dirty_for_io() for details why set_page_dirty()
-+	 * is needed.
-+	 */
-+	if (page_mkclean(page))
-+		set_page_dirty(page);
-+	unlock_page(page);
-+	page_cache_release(page);
-+}
-+EXPORT_SYMBOL(pagecache_isize_extended);
-+
-+/**
-  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
-  * @inode: inode
-  * @lstart: offset of beginning of hole
++out:
+ 	mutex_unlock(&c->log_mutex);
+ 	return err;
+ }
 
 
