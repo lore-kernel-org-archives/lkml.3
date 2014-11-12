@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934729AbaKLDp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:45:27 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29635 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932706AbaKLDpV convert rfc822-to-8bit (ORCPT
+	id S934733AbaKLDqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:46:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59100 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932597AbaKLB2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 22:45:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,366,1413270000"; 
-   d="scan'208";a="630526058"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: "jonghwa3.lee@samsung.com" <jonghwa3.lee@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "sre@kernel.org" <sre@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "anton@enomsg.org" <anton@enomsg.org>
-Subject: RE: [PATCH 2/3] power: core: Add variables related temperature to
- power_supply_info.
-Thread-Topic: [PATCH 2/3] power: core: Add variables related temperature to
- power_supply_info.
-Thread-Index: AQHP4h28WS6Qmn8eW0+W+Bid+M8/ppxZ6CGAgACEzQCAAJeRcIAAuwqAgADMxpA=
-Date: Wed, 12 Nov 2014 03:45:03 +0000
-Message-ID: <20ADAB092842284E95860F279283C5642EDCE099@BGSMSX104.gar.corp.intel.com>
-References: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
- <1412679518-21499-3-git-send-email-jonghwa3.lee@samsung.com>
- <20ADAB092842284E95860F279283C5642ED9EDE3@BGSMSX104.gar.corp.intel.com>
- <546158A0.5000707@samsung.com>
- <20ADAB092842284E95860F279283C5642EDB8431@BGSMSX104.gar.corp.intel.com>
- <20141111204219.GA1347@amd>
-In-Reply-To: <20141111204219.GA1347@amd>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Nov 2014 20:28:44 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.17 146/319] MIPS: cp1emu: Fix ISA restrictions for cop1x_op instructions
+Date: Wed, 12 Nov 2014 10:14:44 +0900
+Message-Id: <20141112011016.690196934@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The CC/CV for each battery temperature zone is defined as part of battery spec.
-> This is
-> > as per the JEITA/PSE standards. So IMO, this is a battery charging information
-> > (charging object) rather than a thermal throttling information.
-> >
-> > Also the battery information may not fit into a standard format. Different standards
-> have
-> > different format for charging object. So I would suggest to make it flexible enough to
-> > support different charging object format. For example MIPI BIF charging object
-> format
-> > (https://members.mipi.org/wg/BIF/document/11518) and MIPI BIF Rule based
-> charging algorithm
-> > (http://mipi.org/sites/default/files/mipi_BIF_rule-based-charging_white-paper_1.pdf)
-> > has different charging object format. This is why the patch
-> https://lkml.org/lkml/2014/8/13/355
-> > has option to support different charging objects and different charging algorithms.
-> 
-> Yes, and this is also why your patches are not being
-> merged. Overengineered, too complex. Citing standards will not improve
-> the patches.
-> 
-> And yes, adding cc/cv to the thermal interface seems like a good idea
-> to me.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Sorry to disagree with you. IMHO it's a charging profile and not a thermal profile. The
-cc/cv information is defined as part of battery spec. If the intention here is to provide a
-place for battery info, then cc/cv should be part of battery info. The latest charger chips
-allows to configure CC/CV for different temperature zone. IMHO adding these information
-to thermal profile doesn't seems to be the right approach since the thermal subsystem
-need to be aware of the charging subsystem constraints.
+------------------
 
-The standards were cited to point where the industry is moving. Anyway let the maintainer
-take a final call -  should we align with industry standards or stick to legacy charging
-methodologies?
+From: Markos Chandras <markos.chandras@imgtec.com>
 
--Jenny
+commit a5466d7bba9af83a82cc7c081b2a7d557cde3204 upstream.
+
+Commit 08a07904e1828 ("MIPS: math-emu: Remove most ifdefery") removed
+the #ifdef ISA conditions and switched to runtime detection. However,
+according to the instruction set manual, the cop1x_op instructions are
+available in >=MIPS32r2 as well. This fixes a problem on MIPS32r2
+with the ntpd package which failed to execute with a SIGILL exit code due
+to the fact that a madd.d instruction was not being emulated.
+
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Fixes: 08a07904e1828 ("MIPS: math-emu: Remove most ifdefery")
+Cc: linux-mips@linux-mips.org
+Reviewed-by: Paul Burton <paul.burton@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Cc: Markos Chandras <markos.chandras@imgtec.com>
+Patchwork: https://patchwork.linux-mips.org/patch/8173/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/mips/math-emu/cp1emu.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/mips/math-emu/cp1emu.c
++++ b/arch/mips/math-emu/cp1emu.c
+@@ -1023,7 +1023,7 @@ emul:
+ 					goto emul;
+ 
+ 				case cop1x_op:
+-					if (cpu_has_mips_4_5 || cpu_has_mips64)
++					if (cpu_has_mips_4_5 || cpu_has_mips64 || cpu_has_mips32r2)
+ 						/* its one of ours */
+ 						goto emul;
+ 
+@@ -1068,7 +1068,7 @@ emul:
+ 		break;
+ 
+ 	case cop1x_op:
+-		if (!cpu_has_mips_4_5 && !cpu_has_mips64)
++		if (!cpu_has_mips_4_5 && !cpu_has_mips64 && !cpu_has_mips32r2)
+ 			return SIGILL;
+ 
+ 		sig = fpux_emu(xcp, ctx, ir, fault_addr);
+
+
