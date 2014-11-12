@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439AbaKLCvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:51:00 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36725 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755383AbaKLCu6 (ORCPT
+	id S965117AbaKLCvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:51:32 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:55320 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaKLCud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:50:58 -0500
-Date: Tue, 11 Nov 2014 21:50:56 -0500 (EST)
-Message-Id: <20141111.215056.2165761189796303933.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2ECE0A3@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-90-Taiwan-albertk@realtek.com>
-	<20141107.113522.837502028522211960.davem@davemloft.net>
-	<0835B3720019904CB8F7AA43166CEEB2ECE0A3@RTITMBSV03.realtek.com.tw>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 18:50:58 -0800 (PST)
+	Tue, 11 Nov 2014 21:50:33 -0500
+X-AuditID: cbfee68f-f791c6d000004834-35-5462caf6c1cf
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: kgene.kim@samsung.com
+Cc: ben-linux@fluff.org, kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv2 1/2] ARM: dts: Fix the number of DMA channels for Exynos3250
+Date: Wed, 12 Nov 2014 11:50:28 +0900
+Message-id: <1415760629-1531-2-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+In-reply-to: <1415760629-1531-1-git-send-email-cw00.choi@samsung.com>
+References: <1415760629-1531-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsWyRsSkWPfbqaQQg++POC0mrTvAZHH9y3NW
+	i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38fkwO7xd9ULZo/NS+o9+rasYvT4vEkugCWKyyYl
+	NSezLLVI3y6BK+PsrEfsBVPZKz4u+MTYwHictYuRg0NCwETi8trKLkZOIFNM4sK99WxdjFwc
+	QgJLGSWWPFrDCpEwkTjxaSkrRGIRo8SN742MEE4Tk8SZfX3MIFVsAloS+1/cYAOxRQQkJZoa
+	/jCDFDELbGGU+L7/MDtIQljAT+LE/6NgRSwCqhJ7VnSD2bwCLhLrH85gglinILFs+Uyw1ZwC
+	rhLdKycxgthCQDUXj69gARkqIdDPLrHrdwcLxCABiW+TD7FA/CMrsekAM8QcSYmDK26wTGAU
+	XsDIsIpRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjMLhP/3vWv4Px7gHrQ4wCHIxKPLwZm5NC
+	hFgTy4orcw8xmgJtmMgsJZqcD4yhvJJ4Q2MzIwtTE1NjI3NLMyVx3oVSP4OFBNITS1KzU1ML
+	Uovii0pzUosPMTJxcEo1MLb9bhDjvvx3wo9lkw9Oe/626Y5T2oI/2yed6ure5eP8WJs98xbz
+	myMf9Ksc74frvV/78YE4W8Tkf3u8lr40EVt/ZolujmaP02yfwpURMbwPkk+K2e81i/Q4asPx
+	xuAV700lx1xXj5h1V/lzv+5x/yQy8bHBpa92U+8/l3iQ0WS09vXTwCXb/m9WYinOSDTUYi4q
+	TgQAMVj9UmkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd1vp5JCDNY/Z7KYtO4Ak8X1L89Z
+	LXoXXGWzONv0ht1i0+NrrBaXd81hs5hxfh+TA7vH31UvmD02L6n36NuyitHj8ya5AJaoBkab
+	jNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKALlBTKEnNK
+	gUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZZ2c9Yi+Yyl7xccEnxgbG46xdjJwc
+	EgImEic+LYWyxSQu3FvP1sXIxSEksIhR4sb3RkYIp4lJ4sy+PmaQKjYBLYn9L26wgdgiApIS
+	TQ1/mEGKmAW2MEp833+YHSQhLOAnceL/UbAiFgFViT0rusFsXgEXifUPZzBBrFOQWLZ8Jthq
+	TgFXie6VkxhBbCGgmovHV7BMYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4ep5J
+	72Bc1WBxiFGAg1GJhzdjc1KIEGtiWXFl7iFGCQ5mJRHeB0uBQrwpiZVVqUX58UWlOanFhxhN
+	ga6ayCwlmpwPjOy8knhDYxMzI0sjc0MLI2NzJXHeg63WgUIC6YklqdmpqQWpRTB9TBycUg2M
+	2jPOe1jLVJ9bf/B2qsnlhgtRxyeUL3zU8LH862bmKbnmfHryq9+mpk6aJL915eTfn8+e3rG7
+	jSHRuv5IpGiFfN3BHw+U7nQ1emRHN2guuLdSIvrqpu2sXvw7spyszCXNVqZom3l/nPp+e31y
+	ftftkqTyayaGzC/ZuT593bVEfNvr+MMh99IvK7EUZyQaajEXFScCAB5lpnO0AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Mon, 10 Nov 2014 03:29:27 +0000
+This patch fix the numer for DMA channels for Exynos3250 because DMA controller
+of Exynos3250 can support 16 channels simultaneously.
 
-> The behavior is different for PCI(e) and USB ethernet device.
-> The PCI nic could know the ring buffer by certain way, so
-> the device could fill the data into the buffer one by one
-> automatically. However, for usb nic, the driver has to
-> indicate (i.e. submit) each buffer for each data. The device
-> doesn't know what is the next buffer by itself. That is,
-> the driver determines the order by which the data would be
-> filled.
-> 
-> Therefore, when I try to submit 10 rx buffers and some of
-> them fail, I could get the data depending on the order of
-> the successful ones. Besides, the driver has to submit the
-> buffer for next data continually, so the previous unsuccessful
-> ones could be tried again for the same time.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Ok, but if we are looping here in rtl_start_rx() and r8152_submit_rx()
-fails due to a memory allocation failure, there is nothing which is
-going to make such a memory allocation succeed in the next iteration
-of the loop.
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index 242ddda..5c14e3e 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -292,7 +292,7 @@
+ 				clocks = <&cmu CLK_PDMA0>;
+ 				clock-names = "apb_pclk";
+ 				#dma-cells = <1>;
+-				#dma-channels = <8>;
++				#dma-channels = <16>;
+ 				#dma-requests = <32>;
+ 			};
+ 
+@@ -303,7 +303,7 @@
+ 				clocks = <&cmu CLK_PDMA1>;
+ 				clock-names = "apb_pclk";
+ 				#dma-cells = <1>;
+-				#dma-channels = <8>;
++				#dma-channels = <16;
+ 				#dma-requests = <32>;
+ 			};
+ 		};
+-- 
+1.8.5.5
 
-Unless you can prove that often it can succeed after an initial
-failure, this is just wasted work and in fact making it take longer
-for the system to reclaim memory when under pressure because these
-extra iterations are completely wasted cpu work.
