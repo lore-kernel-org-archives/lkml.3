@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965249AbaKLBoE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:44:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60504 "EHLO
+	id S934664AbaKLBoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:44:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965233AbaKLBoA (ORCPT
+	with ESMTP id S933477AbaKLBoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:44:00 -0500
+	Tue, 11 Nov 2014 20:44:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 093/203] target: Fix APTPL metadata handling for dynamic MappedLUNs
-Date: Wed, 12 Nov 2014 10:16:03 +0900
-Message-Id: <20141112011546.965457669@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Theodore Tso <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>
+Subject: [PATCH 3.14 097/203] jbd2: free bh when descriptor block checksum fails
+Date: Wed, 12 Nov 2014 10:16:07 +0900
+Message-Id: <20141112011547.142000977@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,93 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit e24805637d2d270d7975502e9024d473de86afdb upstream.
+commit 064d83892e9ba547f7d4eae22cbca066d95210ce upstream.
 
-This patch fixes a bug in handling of SPC-3 PR Activate Persistence
-across Target Power Loss (APTPL) logic where re-creation of state for
-MappedLUNs from dynamically generated NodeACLs did not occur during
-I_T Nexus establishment.
+Free the buffer head if the journal descriptor block fails checksum
+verification.
 
-It adds the missing core_scsi3_check_aptpl_registration() call during
-core_tpg_check_initiator_node_acl() -> core_tpg_add_node_to_devs() in
-order to replay any pre-loaded APTPL metadata state associated with
-the newly connected SCSI Initiator Port.
+This is the jbd2 port of the e2fsprogs patch "e2fsck: free bh on csum
+verify error in do_one_pass".
 
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    3 ++-
- drivers/target/target_core_pr.c     |    6 +++---
- drivers/target/target_core_pr.h     |    2 +-
- drivers/target/target_core_tpg.c    |    8 ++++++++
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ fs/jbd2/recovery.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1409,7 +1409,8 @@ int core_dev_add_initiator_node_lun_acl(
- 	 * Check to see if there are any existing persistent reservation APTPL
- 	 * pre-registrations that need to be enabled for this LUN ACL..
- 	 */
--	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, lacl);
-+	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, nacl,
-+					    lacl->mapped_lun);
- 	return 0;
- }
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -525,6 +525,7 @@ static int do_one_pass(journal_t *journa
+ 			    !jbd2_descr_block_csum_verify(journal,
+ 							  bh->b_data)) {
+ 				err = -EIO;
++				brelse(bh);
+ 				goto failed;
+ 			}
  
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -944,10 +944,10 @@ int core_scsi3_check_aptpl_registration(
- 	struct se_device *dev,
- 	struct se_portal_group *tpg,
- 	struct se_lun *lun,
--	struct se_lun_acl *lun_acl)
-+	struct se_node_acl *nacl,
-+	u32 mapped_lun)
- {
--	struct se_node_acl *nacl = lun_acl->se_lun_nacl;
--	struct se_dev_entry *deve = nacl->device_list[lun_acl->mapped_lun];
-+	struct se_dev_entry *deve = nacl->device_list[mapped_lun];
- 
- 	if (dev->dev_reservation_flags & DRF_SPC2_RESERVATIONS)
- 		return 0;
---- a/drivers/target/target_core_pr.h
-+++ b/drivers/target/target_core_pr.h
-@@ -60,7 +60,7 @@ extern int core_scsi3_alloc_aptpl_regist
- 			unsigned char *, u16, u32, int, int, u8);
- extern int core_scsi3_check_aptpl_registration(struct se_device *,
- 			struct se_portal_group *, struct se_lun *,
--			struct se_lun_acl *);
-+			struct se_node_acl *, u32);
- extern void core_scsi3_free_pr_reg_from_nacl(struct se_device *,
- 					     struct se_node_acl *);
- extern void core_scsi3_free_all_registrations(struct se_device *);
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -40,6 +40,7 @@
- #include <target/target_core_fabric.h>
- 
- #include "target_core_internal.h"
-+#include "target_core_pr.h"
- 
- extern struct se_device *g_lun0_dev;
- 
-@@ -166,6 +167,13 @@ void core_tpg_add_node_to_devs(
- 
- 		core_enable_device_list_for_node(lun, NULL, lun->unpacked_lun,
- 				lun_access, acl, tpg);
-+		/*
-+		 * Check to see if there are any existing persistent reservation
-+		 * APTPL pre-registrations that need to be enabled for this dynamic
-+		 * LUN ACL now..
-+		 */
-+		core_scsi3_check_aptpl_registration(dev, tpg, lun, acl,
-+						    lun->unpacked_lun);
- 		spin_lock(&tpg->tpg_lun_lock);
- 	}
- 	spin_unlock(&tpg->tpg_lun_lock);
 
 
