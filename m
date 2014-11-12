@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741AbaKLB32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:29:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59151 "EHLO
+	id S1754470AbaKLB3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:29:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59153 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaKLB3X (ORCPT
+	with ESMTP id S932733AbaKLB31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:29:23 -0500
+	Tue, 11 Nov 2014 20:29:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.17 191/319] staging:iio:ad5933: Drop "raw" from channel names
-Date: Wed, 12 Nov 2014 10:15:29 +0900
-Message-Id: <20141112011024.327089103@linuxfoundation.org>
+        George McCollister <george.mccollister@gmail.com>,
+        Hartmut Knaack <knaack.h@gmx.de>, Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.17 192/319] iio: as3935: allocate correct iio_device size
+Date: Wed, 12 Nov 2014 10:15:30 +0900
+Message-Id: <20141112011024.516804460@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,40 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: George McCollister <george.mccollister@gmail.com>
 
-commit 6822ee34ad57b29a3b44df2c2829910f03c34fa4 upstream.
+commit f73cde600d410ad4b31362a9c348016e40a146ea upstream.
 
-"raw" is the name of a channel property, but should not be part of the
-channel name itself.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+Acked-by: Hartmut Knaack <knaack.h@gmx.de>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/impedance-analyzer/ad5933.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iio/proximity/as3935.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/iio/impedance-analyzer/ad5933.c
-+++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
-@@ -125,7 +125,7 @@ static const struct iio_chan_spec ad5933
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "real_raw",
-+		.extend_name = "real",
- 		.address = AD5933_REG_REAL_DATA,
- 		.scan_index = 0,
- 		.scan_type = {
-@@ -137,7 +137,7 @@ static const struct iio_chan_spec ad5933
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "imag_raw",
-+		.extend_name = "imag",
- 		.address = AD5933_REG_IMAG_DATA,
- 		.scan_index = 1,
- 		.scan_type = {
+--- a/drivers/iio/proximity/as3935.c
++++ b/drivers/iio/proximity/as3935.c
+@@ -330,7 +330,7 @@ static int as3935_probe(struct spi_devic
+ 		return -EINVAL;
+ 	}
+ 
+-	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(st));
++	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*st));
+ 	if (!indio_dev)
+ 		return -ENOMEM;
+ 
 
 
