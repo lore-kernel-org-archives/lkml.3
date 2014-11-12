@@ -1,83 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965197AbaKLDiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:38:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59242 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830AbaKLBac (ORCPT
+	id S965233AbaKLDi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:38:26 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:59906 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932830AbaKLDiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.17 180/319] intel_pstate: Correct BYT VID values.
-Date: Wed, 12 Nov 2014 10:15:18 +0900
-Message-Id: <20141112011022.510146798@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
-References: <20141112010952.553519040@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 22:38:23 -0500
+Message-ID: <5462D62C.50602@gmail.com>
+Date: Wed, 12 Nov 2014 11:38:20 +0800
+From: Charles Chiou <ch1102chiou@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+To: JBottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [V2 PATCH 3/4] scsi:stex.c Add reboot support
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+ From 5eac0f3209e0857c983c986786a68eac0d67247b Mon Sep 17 00:00:00 2001
+From: Charles Chiou <charles.chiou@tw.promise.com>
+Date: Wed, 5 Nov 2014 19:29:46 +0800
+Subject: [PATCH 3/4] scsi:stex.c Add reboot support
 
-------------------
+1. Add reboot support, Pegasus devices should be notified that
+    the host is going to shutdown/reboot. I register reboot callback
+    function to distinct host is going to shutdown or to reboot.
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+2. Pegasus FW shutdown flow is sensitive to host behavior
+    (host is going to S3/S4/shutdown/reboot). To this, I add one
+    argument in stex_hba_stop to support various stop command.
 
-commit d022a65ed2473fac4a600e3424503dc571160a3e upstream.
+3. For backward compatibility, I used ST_IGNORED
+    variable to specified shutdown should be the old flow.
 
-Using a VID value that is not high enough for the requested P state can
-cause machine checks. Add a ceiling function to ensure calulated VIDs
-with fractional values are set to the next highest integer VID value.
+4. Sometimes Pegasus need to more time to start. Expand
+    delay time from 120 to 240.
 
-The algorythm for calculating the non-trubo VID from the BIOS writers
-guide is:
- vid_ratio = (vid_max - vid_min) / (max_pstate - min_pstate)
- vid = ceiling(vid_min + (req_pstate - min_pstate) * vid_ratio)
-
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Charles Chiou <charles.chiou@tw.promise.com>
 
 ---
- drivers/cpufreq/intel_pstate.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+  drivers/scsi/stex.c | 48 +++++++++++++++++++++++++++++++++++++++++++-----
+  1 file changed, 43 insertions(+), 5 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -52,6 +52,17 @@ static inline int32_t div_fp(int32_t x,
- 	return div_s64((int64_t)x << FRAC_BITS, y);
- }
- 
-+static inline int ceiling_fp(int32_t x)
+diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
+index c0bbbbd..7a66a931 100644
+--- a/drivers/scsi/stex.c
++++ b/drivers/scsi/stex.c
+@@ -24,6 +24,7 @@
+  #include <linux/interrupt.h>
+  #include <linux/types.h>
+  #include <linux/module.h>
++#include <linux/reboot.h>
+  #include <linux/spinlock.h>
+  #include <asm/io.h>
+  #include <asm/irq.h>
+@@ -86,7 +87,7 @@ enum {
+  	MU_STATE_STOP				= 5,
+  	MU_STATE_NOCONNECT			= 6,
+
+-	MU_MAX_DELAY				= 120,
++	MU_MAX_DELAY				= 240,
+  	MU_HANDSHAKE_SIGNATURE			= 0x55aaaa55,
+  	MU_HANDSHAKE_SIGNATURE_HALF		= 0x5a5a0000,
+  	MU_HARD_RESET_WAIT			= 30000,
+@@ -166,6 +167,13 @@ enum {
+
+  	ST_ADDITIONAL_MEM			= 0x200000,
+  	ST_ADDITIONAL_MEM_MIN			= 0x80000,
++	PMIC_SHUTDOWN				= 0x0D,
++	PMIC_REUMSE					= 0x10,
++	ST_IGNORED					= -1,
++	ST_S3						= 3,
++	ST_S4						= 4,
++	ST_S5						= 5,
++	ST_S6						= 6,
+  };
+
+  struct st_sgitem {
+@@ -344,6 +352,7 @@ struct st_card_info {
+  	u16 sts_count;
+  };
+
++static int isRestart;
+  static int msi;
+  module_param(msi, int, 0);
+  MODULE_PARM_DESC(msi, "Enable Message Signaled Interrupts(0=off, 1=on)");
+@@ -364,6 +373,14 @@ MODULE_AUTHOR("Ed Lin");
+  MODULE_DESCRIPTION("Promise Technology SuperTrak EX Controllers");
+  MODULE_LICENSE("GPL");
+  MODULE_VERSION(ST_DRIVER_VERSION);
++static int stex_reboot_callback(struct notifier_block *self,
++							  unsigned long val,
++							  void *data)
 +{
-+	int mask, ret;
-+
-+	ret = fp_toint(x);
-+	mask = (1 << FRAC_BITS) - 1;
-+	if (x & mask)
-+		ret += 1;
-+	return ret;
++	if (val == SYS_RESTART)
++		isRestart = 1;
++	return NOTIFY_OK;
 +}
-+
- struct sample {
- 	int32_t core_pct_busy;
- 	u64 aperf;
-@@ -425,7 +436,7 @@ static void byt_set_pstate(struct cpudat
- 		cpudata->vid.ratio);
- 
- 	vid_fp = clamp_t(int32_t, vid_fp, cpudata->vid.min, cpudata->vid.max);
--	vid = fp_toint(vid_fp);
-+	vid = ceiling_fp(vid_fp);
- 
- 	if (pstate > cpudata->pstate.max_pstate)
- 		vid = cpudata->vid.turbo;
 
+  static void stex_gettime(__le64 *time)
+  {
+@@ -1563,6 +1580,7 @@ static int stex_probe(struct pci_dev *pdev, const 
+struct pci_device_id *id)
+  	u32 subID;
+  	int err;
+
++	isRestart = 0;
+  	err = pci_enable_device(pdev);
+  	if (err)
+  		return err;
+@@ -1749,7 +1767,7 @@ out_disable:
+  	return err;
+  }
+
+-static void stex_hba_stop(struct st_hba *hba)
++static void stex_hba_stop(struct st_hba *hba, int st_sleep_mic)
+  {
+  	struct req_msg *req;
+  	struct st_msg_header *msg_h;
+@@ -1765,11 +1783,18 @@ static void stex_hba_stop(struct st_hba *hba)
+  	} else
+  		memset(req, 0, hba->rq_size);
+
+-	if (hba->cardtype == st_yosemite || hba->cardtype == st_yel) {
++	if ((hba->cardtype == st_yosemite || hba->cardtype == st_yel)
++		&& st_sleep_mic == ST_IGNORED) {
+  		req->cdb[0] = MGT_CMD;
+  		req->cdb[1] = MGT_CMD_SIGNATURE;
+  		req->cdb[2] = CTLR_CONFIG_CMD;
+  		req->cdb[3] = CTLR_SHUTDOWN;
++	} else if (hba->cardtype == st_yel && st_sleep_mic != ST_IGNORED) {
++		req->cdb[0] = MGT_CMD;
++		req->cdb[1] = MGT_CMD_SIGNATURE;
++		req->cdb[2] = CTLR_CONFIG_CMD;
++		req->cdb[3] = PMIC_SHUTDOWN;
++		req->cdb[4] = st_sleep_mic;
+  	} else {
+  		req->cdb[0] = CONTROLLER_CMD;
+  		req->cdb[1] = CTLR_POWER_STATE_CHANGE;
+@@ -1789,10 +1814,12 @@ static void stex_hba_stop(struct st_hba *hba)
+  	while (hba->ccb[tag].req_type & PASSTHRU_REQ_TYPE) {
+  		if (time_after(jiffies, before + ST_INTERNAL_TIMEOUT * HZ)) {
+  			hba->ccb[tag].req_type = 0;
++			hba->mu_status = MU_STATE_STOP;
+  			return;
+  		}
+  		msleep(1);
+  	}
++	hba->mu_status = MU_STATE_STOP;
+  }
+
+  static void stex_hba_free(struct st_hba *hba)
+@@ -1832,7 +1859,14 @@ static void stex_shutdown(struct pci_dev *pdev)
+  {
+  	struct st_hba *hba = pci_get_drvdata(pdev);
+
+-	stex_hba_stop(hba);
++	if (hba->yellowstone == 1)
++		stex_hba_stop(hba, ST_IGNORED);
++	else {
++		if (isRestart)
++			stex_hba_stop(hba, ST_S6);
++		else
++			stex_hba_stop(hba, ST_S5);
++	}
+  }
+
+  MODULE_DEVICE_TABLE(pci, stex_pci_tbl);
+@@ -1845,18 +1879,22 @@ static struct pci_driver stex_pci_driver = {
+  	.shutdown	= stex_shutdown,
+  };
+
++static struct notifier_block stex_reboot_notifier = {
++	stex_reboot_callback, NULL, 0
++};
+  static int __init stex_init(void)
+  {
+  	printk(KERN_INFO DRV_NAME
+  		": Promise SuperTrak EX Driver version: %s\n",
+  		 ST_DRIVER_VERSION);
+-
++	register_reboot_notifier(&stex_reboot_notifier);
+  	return pci_register_driver(&stex_pci_driver);
+  }
+
+  static void __exit stex_exit(void)
+  {
+  	pci_unregister_driver(&stex_pci_driver);
++	unregister_reboot_notifier(&stex_reboot_notifier);
+  }
+
+  module_init(stex_init);
+-- 
+1.9.1
 
