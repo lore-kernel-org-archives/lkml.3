@@ -1,255 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaKLNC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 08:02:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38637 "EHLO mx2.suse.de"
+	id S1752764AbaKLNHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 08:07:40 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:56494 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752227AbaKLNC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 08:02:56 -0500
-From: Petr Mladek <pmladek@suse.cz>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v2] virtio_balloon: Convert "vballon" kthread into a workqueue
-Date: Wed, 12 Nov 2014 14:02:48 +0100
-Message-Id: <1415797368-22660-1-git-send-email-pmladek@suse.cz>
-X-Mailer: git-send-email 1.8.5.2
+	id S1752337AbaKLNHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 08:07:38 -0500
+Message-ID: <54635B97.3030701@kapsi.fi>
+Date: Wed, 12 Nov 2014 15:07:35 +0200
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Alexandre Courbot <acourbot@nvidia.com>, swarren@wwwdotorg.org,
+        gnurou@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        wni@nvidia.com, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH v4 REPOST 1/5] of: Add descriptions of thermtrip properties
+ to Tegra PMC bindings
+References: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi> <1415625137-4791-2-git-send-email-mikko.perttunen@kapsi.fi> <5461AEB7.70507@nvidia.com> <54634D97.9050500@kapsi.fi> <20141112122951.GD30821@ulmo.nvidia.com>
+In-Reply-To: <20141112122951.GD30821@ulmo.nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Workqueues have clean and rich API for all basic operations. The code is usually
-easier and better readable. It can be easily tuned for the given purpose.
+On 11/12/2014 02:29 PM, Thierry Reding wrote:
+> On Wed, Nov 12, 2014 at 02:07:51PM +0200, Mikko Perttunen wrote:
+>> On 11/11/2014 08:37 AM, Alexandre Courbot wrote:
+>>> On 11/10/2014 10:12 PM, Mikko Perttunen wrote:
+>>>> From: Mikko Perttunen <mperttunen@nvidia.com>
+>>>>
+>>>> Hardware-triggered thermal reset requires configuring the I2C
+>>>> reset procedure. This configuration is read from the device tree,
+>>>> so document the relevant properties in the binding documentation.
+>>>>
+>>>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>>>> Reviewed-by: Wei Ni <wni@nvidia.com>
+>>>> Tested-by: Wei Ni <wni@nvidia.com>
+>>>> ---
+>>>>   .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      | 24
+>>>> ++++++++++++++++++++++
+>>>>   1 file changed, 24 insertions(+)
+>>>>
+>>>> diff --git
+>>>> a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>>>> b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>>>> index 68ac65f..dc13fb0 100644
+>>>> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>>>> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>>>> @@ -47,6 +47,21 @@ Required properties when nvidia,suspend-mode=<0>:
+>>>>     sleep mode, the warm boot code will restore some PLLs, clocks and
+>>>> then
+>>>>     bring up CPU0 for resuming the system.
+>>>>
+>>>> +Hardware-triggered thermal reset:
+>>>> +On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode
+>>>> exists,
+>>>> +hardware-triggered thermal reset will be enabled.
+>>>> +
+>>>> +Required properties for hardware-triggered thermal reset (inside
+>>>> 'i2c-thermtrip'):
+>>>> +- nvidia,i2c-bus : Phandle to I2C bus containing the PMU
+>>>> +- nvidia,bus-addr : Bus address of the PMU on the I2C bus
+>>>> +- nvidia,reg-addr : I2C register address to write poweroff command to
+>>>> +- nvidia,reg-data : Poweroff command to write to PMU
+>>>
+>>> This binding is taking two different routes to provide values to the
+>>> driver:
+>>>
+>>> 1) It uses a phandle for i2c-bus (which must then be provided by another
+>>> binding implemented in the two following patches)
+>>>
+>>> 2) It uses direct values for bus-addr, reg-addr and reg-data.
+>>>
+>>> Do we need to use both approaches? bus-addr could just as well be
+>>> obtained through a phandle to the i2c device and reading its reg
+>>> property. From this phandle you could also go back up to the bus, making
+>>> the i2c-bus property unnecessary. reg-addr and reg-data cannot be
+>>> specified that way, obviously.
+>>
+>> This was in fact how I used to implement this, but Stephen or Thierry
+>> pointed out that the reg property actually might not contain the correct
+>> address (I think because the PMIC could have multiple addresses, and the one
+>> in DT might not be the one that accepts the reset command).
+>>
+>> The workaround for that was to either add this integer property for bus-addr
+>> or add a new PMIC API for querying. I went for this as it is much simpler.
+>>
+>>>
+>>> Actually I think I'd prefer to see i2c-bus become an integer property
+>>> instead of a phandle, because at the end of the day it is a value field
+>>> of a particular register and the reference is only used to retrieve that
+>>> value. It is not like we are actually going to call functions on the bus
+>>> instance or change its state. And for the single purpose of retrieving
+>>> that value, this binding requires the addition of a new property on the
+>>> bus node that will probably never be used for something else.
+>>
+>> And this was how I used to implement this even earlier, but Thierry objected
+>> to that since it was duplicating information :)
+>
+> If I remember correctly what I was asking for was to derive as much as
+> possible from simply a phandle. That is, what I was after is a phandle
+> to the PMU and ideally a way for the PMU to pass back information about
+> the register and value for the power off command.
+>
+> Given the lack of a PMU abstraction and how this is probably very Tegra
+> specific I was okay with leaving reg-addr and reg-data in the DT. But if
+> we can't derive even the slave address from a phandle along with the I2C
+> bus master, then I think there remains little point in doing it this way
+> at all.
+>
+> If we're going to duplicate three properties, adding a fourth isn't
+> going to make it much worse.
+>
+> Thierry
+>
 
-In many cases, it allows to avoid an extra kernel thread. It helps to stop the
-growing number of them.  Also there will be less thread-specific hacks all over
-the kernel code.
+Yeah, I guess that's sensible. I'll change the phandle to an integer if 
+that's preferred.
 
-It forces making the task selfcontained. There is no longer an unclear infinite
-loop. This helps to avoid problems with suspend. Also it will be very helpful
-for kGraft (kernel live patching).
-
-The conversion is pretty straightforward. The main change is that there is not
-longer an "infinite" loop in the balloon() handler. Instead, another work item
-has to be scheduled from fill_balloon() and leak_balloon() when they do not
-do all requested changes in a single call.
-
-Changes in v2:
-
-	+ More elegant detection of the pending work in fill_balloon() and
-	  leak_ballon(). It still needs to keep the original requested number
-	  of pages but it does not add any extra boolean variable.
-
-	+ Remove WQ_MEM_RECLAIM workqueue parameter. If I get it correctly,
-	  this is possible because the code manipulates memory but it is not
-	  used in the memory reclaim path.
-
-	+ initialize the work item before allocation the workqueue
-
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
----
- drivers/virtio/virtio_balloon.c | 86 +++++++++++++++++++----------------------
- 1 file changed, 39 insertions(+), 47 deletions(-)
-
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index c9703d4d6f67..5532d1222417 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -22,8 +22,7 @@
- #include <linux/virtio.h>
- #include <linux/virtio_balloon.h>
- #include <linux/swap.h>
--#include <linux/kthread.h>
--#include <linux/freezer.h>
-+#include <linux/workqueue.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-@@ -42,11 +41,9 @@ struct virtio_balloon
- 	struct virtio_device *vdev;
- 	struct virtqueue *inflate_vq, *deflate_vq, *stats_vq;
- 
--	/* Where the ballooning thread waits for config to change. */
--	wait_queue_head_t config_change;
--
--	/* The thread servicing the balloon. */
--	struct task_struct *thread;
-+	/* The workqueue servicing the balloon. */
-+	struct workqueue_struct *wq;
-+	struct work_struct wq_work;
- 
- 	/* Waiting for host to ack the pages we released. */
- 	wait_queue_head_t acked;
-@@ -128,12 +125,13 @@ static void set_page_pfns(u32 pfns[], struct page *page)
- static void fill_balloon(struct virtio_balloon *vb, size_t num)
- {
- 	struct balloon_dev_info *vb_dev_info = &vb->vb_dev_info;
-+	size_t limit;
- 
- 	/* We can only do one array worth at a time. */
--	num = min(num, ARRAY_SIZE(vb->pfns));
-+	limit = min(num, ARRAY_SIZE(vb->pfns));
- 
- 	mutex_lock(&vb->balloon_lock);
--	for (vb->num_pfns = 0; vb->num_pfns < num;
-+	for (vb->num_pfns = 0; vb->num_pfns < limit;
- 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
- 		struct page *page = balloon_page_enqueue(vb_dev_info);
- 
-@@ -153,6 +151,9 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
- 	/* Did we get any? */
- 	if (vb->num_pfns != 0)
- 		tell_host(vb, vb->inflate_vq);
-+	/* Do we need to get more? */
-+	if (vb->num_pfns < num)
-+		queue_work(vb->wq, &vb->wq_work);
- 	mutex_unlock(&vb->balloon_lock);
- }
- 
-@@ -172,12 +173,13 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
- {
- 	struct page *page;
- 	struct balloon_dev_info *vb_dev_info = &vb->vb_dev_info;
-+	size_t limit;
- 
- 	/* We can only do one array worth at a time. */
--	num = min(num, ARRAY_SIZE(vb->pfns));
-+	limit = min(num, ARRAY_SIZE(vb->pfns));
- 
- 	mutex_lock(&vb->balloon_lock);
--	for (vb->num_pfns = 0; vb->num_pfns < num;
-+	for (vb->num_pfns = 0; vb->num_pfns < limit;
- 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
- 		page = balloon_page_dequeue(vb_dev_info);
- 		if (!page)
-@@ -193,6 +195,9 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
- 	 */
- 	if (vb->num_pfns != 0)
- 		tell_host(vb, vb->deflate_vq);
-+	/* Schedule another call if a bigger change is requested */
-+	if (vb->num_pfns < num)
-+		queue_work(vb->wq, &vb->wq_work);
- 	mutex_unlock(&vb->balloon_lock);
- 	release_pages_by_pfn(vb->pfns, vb->num_pfns);
- }
-@@ -234,14 +239,14 @@ static void update_balloon_stats(struct virtio_balloon *vb)
-  * with a single buffer.  From that point forward, all conversations consist of
-  * a hypervisor request (a call to this function) which directs us to refill
-  * the virtqueue with a fresh stats buffer.  Since stats collection can sleep,
-- * we notify our kthread which does the actual work via stats_handle_request().
-+ * we queue a work that will do the actual work via stats_handle_request().
-  */
- static void stats_request(struct virtqueue *vq)
- {
- 	struct virtio_balloon *vb = vq->vdev->priv;
- 
- 	vb->need_stats_update = 1;
--	wake_up(&vb->config_change);
-+	queue_work(vb->wq, &vb->wq_work);
- }
- 
- static void stats_handle_request(struct virtio_balloon *vb)
-@@ -265,7 +270,7 @@ static void virtballoon_changed(struct virtio_device *vdev)
- {
- 	struct virtio_balloon *vb = vdev->priv;
- 
--	wake_up(&vb->config_change);
-+	queue_work(vb->wq, &vb->wq_work);
- }
- 
- static inline s64 towards_target(struct virtio_balloon *vb)
-@@ -287,35 +292,22 @@ static void update_balloon_size(struct virtio_balloon *vb)
- 		      &actual);
- }
- 
--static int balloon(void *_vballoon)
-+static void balloon(struct work_struct *work)
- {
--	struct virtio_balloon *vb = _vballoon;
--
--	set_freezable();
--	while (!kthread_should_stop()) {
--		s64 diff;
--
--		try_to_freeze();
--		wait_event_interruptible(vb->config_change,
--					 (diff = towards_target(vb)) != 0
--					 || vb->need_stats_update
--					 || kthread_should_stop()
--					 || freezing(current));
--		if (vb->need_stats_update)
--			stats_handle_request(vb);
--		if (diff > 0)
--			fill_balloon(vb, diff);
--		else if (diff < 0)
--			leak_balloon(vb, -diff);
--		update_balloon_size(vb);
-+	struct virtio_balloon *vb;
-+	s64 diff;
- 
--		/*
--		 * For large balloon changes, we could spend a lot of time
--		 * and always have work to do.  Be nice if preempt disabled.
--		 */
--		cond_resched();
--	}
--	return 0;
-+	vb = container_of(work, struct virtio_balloon, wq_work);
-+	diff = towards_target(vb);
-+
-+	if (vb->need_stats_update)
-+		stats_handle_request(vb);
-+
-+	if (diff > 0)
-+		fill_balloon(vb, diff);
-+	else if (diff < 0)
-+		leak_balloon(vb, -diff);
-+	update_balloon_size(vb);
- }
- 
- static int init_vqs(struct virtio_balloon *vb)
-@@ -429,7 +421,6 @@ static int virtballoon_probe(struct virtio_device *vdev)
- 
- 	vb->num_pages = 0;
- 	mutex_init(&vb->balloon_lock);
--	init_waitqueue_head(&vb->config_change);
- 	init_waitqueue_head(&vb->acked);
- 	vb->vdev = vdev;
- 	vb->need_stats_update = 0;
-@@ -443,9 +434,10 @@ static int virtballoon_probe(struct virtio_device *vdev)
- 	if (err)
- 		goto out_free_vb;
- 
--	vb->thread = kthread_run(balloon, vb, "vballoon");
--	if (IS_ERR(vb->thread)) {
--		err = PTR_ERR(vb->thread);
-+	INIT_WORK(&vb->wq_work, balloon);
-+	vb->wq = alloc_workqueue("vballoon_wq", WQ_FREEZABLE, 0);
-+	if (!vb->wq) {
-+		err = -ENOMEM;
- 		goto out_del_vqs;
- 	}
- 
-@@ -476,7 +468,7 @@ static void virtballoon_remove(struct virtio_device *vdev)
- {
- 	struct virtio_balloon *vb = vdev->priv;
- 
--	kthread_stop(vb->thread);
-+	destroy_workqueue(vb->wq);
- 	remove_common(vb);
- 	kfree(vb);
- }
-@@ -487,7 +479,7 @@ static int virtballoon_freeze(struct virtio_device *vdev)
- 	struct virtio_balloon *vb = vdev->priv;
- 
- 	/*
--	 * The kthread is already frozen by the PM core before this
-+	 * The workqueue is already frozen by the PM core before this
- 	 * function is called.
- 	 */
- 
--- 
-1.8.5.2
+Mikko
 
