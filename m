@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966759AbaKLB4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:56:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33131 "EHLO
+	id S1161159AbaKLB4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:56:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161050AbaKLB4N (ORCPT
+	with ESMTP id S966113AbaKLB4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:56:13 -0500
+	Tue, 11 Nov 2014 20:56:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, Bandan Das <bsd@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 110/123] x86, apic: Handle a bad TSC more gracefully
-Date: Wed, 12 Nov 2014 10:17:56 +0900
-Message-Id: <20141112011723.984967717@linuxfoundation.org>
+        Ondrej Kozina <okozina@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 112/123] crypto: algif - avoid excessive use of socket buffer in skcipher
+Date: Wed, 12 Nov 2014 10:17:58 +0900
+Message-Id: <20141112011724.073567647@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,74 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Ondrej Kozina <okozina@redhat.com>
 
-commit b47dcbdc5161d3d5756f430191e2840d9b855492 upstream.
+commit e2cffb5f493a8b431dc87124388ea59b79f0bccb upstream.
 
-If the TSC is unusable or disabled, then this patch fixes:
+On archs with PAGE_SIZE >= 64 KiB the function skcipher_alloc_sgl()
+fails with -ENOMEM no matter what user space actually requested.
+This is caused by the fact sock_kmalloc call inside the function tried
+to allocate more memory than allowed by the default kernel socket buffer
+size (kernel param net.core.optmem_max).
 
- - Confusion while trying to clear old APIC interrupts.
- - Division by zero and incorrect programming of the TSC deadline
-   timer.
-
-This fixes boot if the CPU has a TSC deadline timer but a missing or
-broken TSC.  The failure to boot can be observed with qemu using
--cpu qemu64,-tsc,+tsc-deadline
-
-This also happens to me in nested KVM for unknown reasons.
-With this patch, I can boot cleanly (although without a TSC).
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Bandan Das <bsd@redhat.com>
-Link: http://lkml.kernel.org/r/e2fa274e498c33988efac0ba8b7e3120f7f92d78.1413393027.git.luto@amacapital.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ondrej Kozina <okozina@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/apic.c |    4 ++--
- arch/x86/kernel/tsc.c       |    5 ++++-
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ crypto/algif_skcipher.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1263,7 +1263,7 @@ void __cpuinit setup_local_APIC(void)
- 	unsigned int value, queued;
- 	int i, j, acked = 0;
- 	unsigned long long tsc = 0, ntsc;
--	long long max_loops = cpu_khz;
-+	long long max_loops = cpu_khz ? cpu_khz : 1000000;
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -49,7 +49,7 @@ struct skcipher_ctx {
+ 	struct ablkcipher_request req;
+ };
  
- 	if (cpu_has_tsc)
- 		rdtscll(tsc);
-@@ -1360,7 +1360,7 @@ void __cpuinit setup_local_APIC(void)
- 			break;
- 		}
- 		if (queued) {
--			if (cpu_has_tsc) {
-+			if (cpu_has_tsc && cpu_khz) {
- 				rdtscll(ntsc);
- 				max_loops = (cpu_khz << 10) - (ntsc - tsc);
- 			} else
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -968,14 +968,17 @@ void __init tsc_init(void)
+-#define MAX_SGL_ENTS ((PAGE_SIZE - sizeof(struct skcipher_sg_list)) / \
++#define MAX_SGL_ENTS ((4096 - sizeof(struct skcipher_sg_list)) / \
+ 		      sizeof(struct scatterlist) - 1)
  
- 	x86_init.timers.tsc_pre_init();
- 
--	if (!cpu_has_tsc)
-+	if (!cpu_has_tsc) {
-+		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
- 		return;
-+	}
- 
- 	tsc_khz = x86_platform.calibrate_tsc();
- 	cpu_khz = tsc_khz;
- 
- 	if (!tsc_khz) {
- 		mark_tsc_unstable("could not calculate TSC khz");
-+		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
- 		return;
- 	}
- 
+ static inline int skcipher_sndbuf(struct sock *sk)
 
 
