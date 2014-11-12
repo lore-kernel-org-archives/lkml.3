@@ -1,110 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951AbaKLCaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:30:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60834 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965486AbaKLBse (ORCPT
+	id S1754401AbaKLCao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:30:44 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:58253 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933039AbaKLCal convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:34 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Paul Osmialowski <newchief@king.net.pl>
-Subject: [PATCH 3.14 159/203] usb-storage: handle a skipped data phase
-Date: Wed, 12 Nov 2014 10:17:09 +0900
-Message-Id: <20141112011549.978801995@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
-References: <20141112011542.686743533@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 11 Nov 2014 21:30:41 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAC2UZpx007596, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Topic: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Index: AQHP+nD06ZRj/kse50uRMFsgi72OwJxU1qgAgAdoTSD//4RFgIAAh89g
+Date: Wed, 12 Nov 2014 02:30:35 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2ECE394@RTITMBSV03.realtek.com.tw>
+References: <1394712342-15778-90-Taiwan-albertk@realtek.com>
+	<20141107.113522.837502028522211960.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2ECE337@RTITMBSV03.realtek.com.tw>
+ <20141111.211939.1875418281655170486.davem@davemloft.net>
+In-Reply-To: <20141111.211939.1875418281655170486.davem@davemloft.net>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+David Miller [mailto:davem@davemloft.net] 
+> Sent: Wednesday, November 12, 2014 10:20 AM
+[...]
+> I haven't had time to process your original reply, please be patient.
 
-------------------
-
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit 93c9bf4d1838d5851a18ca398b0ad66397f05056 upstream.
-
-Sometimes mass-storage devices using the Bulk-only transport will
-mistakenly skip the data phase of a command.  Rather than sending the
-data expected by the host or sending a zero-length packet, they go
-directly to the status phase and send the CSW.
-
-This causes problems for usb-storage, for obvious reasons.  The driver
-will interpret the CSW as a short data transfer and will wait to
-receive a CSW.  The device won't have anything left to send, so the
-command eventually times out.
-
-The SCSI layer doesn't retry commands after they time out (this is a
-relatively recent change).  Therefore we should do our best to detect
-a skipped data phase and handle it promptly.
-
-This patch adds code to do that.  If usb-storage receives a short
-13-byte data transfer from the device, and if the first four bytes of
-the data match the CSW signature, the driver will set the residue to
-the full transfer length and interpret the data as a CSW.
-
-This fixes Bugzilla #86611.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Tested-by: Paul Osmialowski <newchief@king.net.pl>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/storage/transport.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
-
---- a/drivers/usb/storage/transport.c
-+++ b/drivers/usb/storage/transport.c
-@@ -1118,6 +1118,31 @@ int usb_stor_Bulk_transport(struct scsi_
- 		 */
- 		if (result == USB_STOR_XFER_LONG)
- 			fake_sense = 1;
-+
-+		/*
-+		 * Sometimes a device will mistakenly skip the data phase
-+		 * and go directly to the status phase without sending a
-+		 * zero-length packet.  If we get a 13-byte response here,
-+		 * check whether it really is a CSW.
-+		 */
-+		if (result == USB_STOR_XFER_SHORT &&
-+				srb->sc_data_direction == DMA_FROM_DEVICE &&
-+				transfer_length - scsi_get_resid(srb) ==
-+					US_BULK_CS_WRAP_LEN) {
-+			struct scatterlist *sg = NULL;
-+			unsigned int offset = 0;
-+
-+			if (usb_stor_access_xfer_buf((unsigned char *) bcs,
-+					US_BULK_CS_WRAP_LEN, srb, &sg,
-+					&offset, FROM_XFER_BUF) ==
-+						US_BULK_CS_WRAP_LEN &&
-+					bcs->Signature ==
-+						cpu_to_le32(US_BULK_CS_SIGN)) {
-+				usb_stor_dbg(us, "Device skipped data phase\n");
-+				scsi_set_resid(srb, transfer_length);
-+				goto skipped_data_phase;
-+			}
-+		}
- 	}
+I am sorry for bothering you, and thanks for your reply.
  
- 	/* See flow chart on pg 15 of the Bulk Only Transport spec for
-@@ -1153,6 +1178,7 @@ int usb_stor_Bulk_transport(struct scsi_
- 	if (result != USB_STOR_XFER_GOOD)
- 		return USB_STOR_TRANSPORT_ERROR;
- 
-+ skipped_data_phase:
- 	/* check bulk status */
- 	residue = le32_to_cpu(bcs->Residue);
- 	usb_stor_dbg(us, "Bulk Status S 0x%x T 0x%x R %u Stat 0x%x\n",
-
-
+Best Regards,
+Hayes
