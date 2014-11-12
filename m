@@ -1,106 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaKLJT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:19:26 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:63344 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751AbaKLJTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:19:22 -0500
-Date: Wed, 12 Nov 2014 10:19:20 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Johan Hovold <johan@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 19/22] dt/bindings: add micrel,rmii_ref_clk_sel_25_mhz to
- eth-phy binding
-Message-ID: <20141112091920.GC15215@localhost>
-References: <1415727460-20417-1-git-send-email-johan@kernel.org>
- <1415727460-20417-20-git-send-email-johan@kernel.org>
- <20141111175741.GF25295@leverpostej>
- <20141111181825.GH29789@localhost>
- <20141112070127.GF30369@pengutronix.de>
+	id S1752377AbaKLJXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:23:32 -0500
+Received: from mga14.intel.com ([192.55.52.115]:54780 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752121AbaKLJX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 04:23:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="415286518"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLgAyIb0DAAAcBYA=
+Date: Wed, 12 Nov 2014 09:19:55 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00227680F@SHSMSX104.ccr.corp.intel.com>
+References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
+ <5461EC99.1000101@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
+ <546324F4.8010002@redhat.com>
+In-Reply-To: <546324F4.8010002@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141112070127.GF30369@pengutronix.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC9NePs016018
 
-On Wed, Nov 12, 2014 at 08:01:27AM +0100, Sascha Hauer wrote:
-> On Tue, Nov 11, 2014 at 07:18:25PM +0100, Johan Hovold wrote:
-> > On Tue, Nov 11, 2014 at 05:57:42PM +0000, Mark Rutland wrote:
-> > > On Tue, Nov 11, 2014 at 05:37:37PM +0000, Johan Hovold wrote:
-> > > > Add "micrel,rmii_ref_clk_sel_25_mhz" to Micrel ethernet PHY binding
-> > > > documentation.
-> > > > 
-> > > > Cc: devicetree@vger.kernel.org
-> > > > Signed-off-by: Johan Hovold <johan@kernel.org>
-> > > > ---
-> > > >  Documentation/devicetree/bindings/net/micrel.txt | 5 +++++
-> > > >  1 file changed, 5 insertions(+)
-> > > > 
-> > > > diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
-> > > > index a1bab5eaae02..9b08dd6551dd 100644
-> > > > --- a/Documentation/devicetree/bindings/net/micrel.txt
-> > > > +++ b/Documentation/devicetree/bindings/net/micrel.txt
-> > > > @@ -19,6 +19,11 @@ Optional properties:
-> > > >  
-> > > >                See the respective PHY datasheet for the mode values.
-> > > >  
-> > > > + - micrel,rmii_ref_clk_sel_25_mhz: rmii_ref_clk_sel bit selects 25 MHz mode
-> > > > +
-> > > > +		Whether 25 MHz (rather than 50 Mhz) clock mode is selected
-> > > > +		when the rmii_ref_clk_sel bit is set.
-> > > 
-> > > s/_/-/ in property names please.
-> > 
-> > Ouch, copied from variable name, sorry.
-> > 
-> > > That said, I don't follow the meaning. Does this cause the kernel to do
-> > > something different, or is is simply that a 25MHz ref clock is wired up?
-> > 
-> > Yes, the driver currently sets this configuration bit based on a common
-> > clock binding.
-> > 
-> > However, it turns out the meaning of the bit is reversed on some PHY
-> > variants. On most PHYs 50 MHz mode is selected by setting this bit,
-> > whereas on the PHYs that need this new property, setting it selects 25
-> > MHz mode instead.
+
+
+> -----Original Message-----
+> From: Paolo Bonzini [mailto:pbonzini@redhat.com]
+> Sent: Wednesday, November 12, 2014 5:14 PM
+> To: Zhang, Yang Z; Wu, Feng; Alex Williamson
+> Cc: gleb@kernel.org; dwmw2@infradead.org; joro@8bytes.org;
+> tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
+> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+> configuration changes
 > 
-> Maybe rename the property to something like rmii-ref-clk-25mhz-active-high
-> then? Also you should probably make it more explicit that this is a
-> hardware property and not for adjusting the clock.
+> 
+> 
+> On 12/11/2014 04:42, Zhang, Yang Z wrote:
+> > Personally, I think this feature will be helpful to the legacy device
+> > assignment. Agree, vfio is the right solution for future feature
+> > enabling. But the old kvm without the good vfio supporting is still
+> > used largely today. The user really looking for this feature but they
+> > will not upgrade their kernel. It's easy for us to backport this
+> > feature to old kvm with the legacy device assignment, but it is
+> > impossible to backport the whole vfio.
+> 
+> You can certainly backport these patches to distros that do not have
+> VFIO.  But upstream we should work on VFIO first.  VFIO has feature
+> parity with legacy device assignment, and adding a new feature that is
+> not in VFIO would be a bad idea.
+> 
+> By the way, do you have benchmark results for it?  We have not been able
+> to see any performance improvement for APICv on e.g. netperf.
 
-You're right, but how about calling it
-
-	micrel,rmii-reference-clock-select-inverted
-
-Then no one will set it believing it will change the clock mode and
-without reading the binding doc first.
-
-The description could then read something like
-
-	micrel,rmii-reference-clock-select-inverted: RMII Reference
-		Clock Select bit is inverted
-
-	The RMII Reference Clock Select bit is inverted so that setting
-	it selects 25 MHz rather than 50 MHz clock mode. 
-
-	Note that this is only needed for PHY variants that has this bit
-	inverted and that a clock reference ("rmii-ref" below) is always
-	needed to select the actual mode.
-
-> It's not very nice from Micrel to create Phys with exactly the same
-> device id but the meaning of this bit reversed.
-
-Not very nice at all.
+Do you mean benchmark results for APICv itself or VT-d Posted-Interrtups?
 
 Thanks,
-Johan
+Feng
+
+> 
+> Paolo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
