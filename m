@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaKLMbY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:31:24 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40015 "EHLO mail.skyhub.de"
+	id S1752878AbaKLMbf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:31:35 -0500
+Received: from mga01.intel.com ([192.55.52.88]:36273 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799AbaKLMbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:31:22 -0500
-Date: Wed, 12 Nov 2014 13:31:15 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 7/8] x86, microcode, intel: guard against misaligned
- microcode data
-Message-ID: <20141112123115.GC16807@pd.tnic>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-8-git-send-email-hmh@hmh.eng.br>
- <20141107195905.GE5180@pd.tnic>
- <20141107225425.GC18128@khazad-dum.debian.net>
- <20141107234806.GG5180@pd.tnic>
- <20141108215749.GC32023@khazad-dum.debian.net>
- <20141111104700.GC31490@pd.tnic>
- <20141111165731.GA2584@khazad-dum.debian.net>
- <20141111171357.GK31490@pd.tnic>
- <20141111195400.GG2584@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141111195400.GG2584@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752799AbaKLMbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 07:31:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,368,1413270000"; 
+   d="scan'208";a="621149112"
+Message-ID: <1415795489.22887.246.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 4/4] UBIFS: add ubifs_err() to print error reason
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ben Shelton <ben.shelton@ni.com>
+Cc: linux-mtd@lists.infradead.org, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Subodh Nijsure <snijsure@grid-net.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Date: Wed, 12 Nov 2014 14:31:29 +0200
+In-Reply-To: <20141111160809.GA11589@bshelton-desktop>
+References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+	 <1414781431-2911-5-git-send-email-ben.shelton@ni.com>
+	 <1415704235.22887.138.camel@sauron.fi.intel.com>
+	 <20141111160809.GA11589@bshelton-desktop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 05:54:00PM -0200, Henrique de Moraes Holschuh wrote:
-> void *intel_ucode_kmalloc(size_t size)
-> {
-> 	void *p = kmalloc(size, GFP_KERNEL);
+On Tue, 2014-11-11 at 10:08 -0600, Ben Shelton wrote:
+> On 11/11, Artem Bityutskiy wrote:
+> > Pushed this, but made some amendments.
+> > 
+> > Now all 4 are in the master branch. Would you please re-test them again
+> > and confirm that they are fine. Then I'll push them to the linux-next
+> > branch, unless you report that my amendments broke something.
+> > 
+> > Thank you!
+> > 
+> 
+> Hi Artem,
+> 
+> I pulled the four modified commits into my 3.18-rc3 branch and tested
+> with lockdep enabled.  Everything looks good.
 
-Actually I was thinking of this:
+OK, thank you!
 
- 	void *p = kmalloc(size + 16, GFP_KERNEL);
-	if (!p)
-		return -ENOMEM;
-
-	if (unlikely((unsigned long)p & 0xf))
-		p_a = ALIGN(p, 16);
-
-You'd need to stash the original *p somewhere for freeing later, of
-course.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
