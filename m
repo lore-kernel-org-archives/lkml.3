@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaKLUT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:19:27 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44939 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbaKLUT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:19:26 -0500
+	id S1753494AbaKLUUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:20:45 -0500
+Received: from mout.web.de ([212.227.15.4]:63418 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248AbaKLUUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 15:20:44 -0500
+Message-ID: <5463C10D.6020409@users.sourceforge.net>
+Date: Wed, 12 Nov 2014 21:20:29 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VcZ0XjcFxjrSgr5-XnWZZa-eZfPH_Fa1Hzb=f+qtE3z9w@mail.gmail.com>
-References: <1415847123-15558-1-git-send-email-michael.jamet@intel.com>
- <CAErSpo7Z5x=U3vSnxrFpwYUDrUrnrrBCe1F9_GQNYqWWQFWNpQ@mail.gmail.com> <CAHp75VcZ0XjcFxjrSgr5-XnWZZa-eZfPH_Fa1Hzb=f+qtE3z9w@mail.gmail.com>
-From: Andreas Noever <andreas.noever@gmail.com>
-Date: Wed, 12 Nov 2014 21:19:05 +0100
-Message-ID: <CAMxnaaXOa_GAFwK+tUrO8DBjENqdd9uaQHKqEMm+i4754Ch3gQ@mail.gmail.com>
-Subject: Re: [PATCH] pci: support Thunderbolt requirements for I/O resources.
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Jamet <michael.jamet@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        amir.jer.levy@intel.com, dan.alloun@intel.com,
-        Rafael Wysocki <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH v2 0/2] staging: rtl8188eu: Deletion of a few unnecessary
+ checks
+References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net> <alpine.DEB.2.10.1410311900201.2481@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1410311900201.2481@hadrien>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:9ydVCzMDuq7ZaEboEr3kmEpNaoM95oraZ6wAcuffiti8//4C2NF
+ fUfxuACzAazsEu8qNfN26iHLTk8A5dFOa+ZeeTxzOTUF+HS/3WG0NvZaeIsXGsuVVNXMcRz
+ GQtuz5VlH3DlkAJQD7ER+KZHdyHWQTn+hnxUWxF91WxvSBZMYTz3/l5BR0LEQBkWKuFQhv7
+ ey7fcdORHTS+czyGmcNCA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 7:30 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Wed, Nov 12, 2014 at 7:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->
-> []
->
->>> To prevent this, we detect a chain contains a Thunderbolt
->>> device by checking the Thunderbolt PCI device id.
->>
->> I'm really not happy about checking a list of device IDs to identify
->> Thunderbolt devices.  Surely there's a better way, because a list like
->> this has to be updated regularly.
->
-> I recently proposed internally to use quirks (pci_fixup_early) for
-> that, but apparently Michael didn't have time to answer. It might be
-> he can just comment here since the patch already public.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 12 Nov 2014 20:42:18 +0100
 
-In any case: this will interfere with thunderbolt hotplug on Apple
-systems, where we do not have BIOS support and have to handle hotplug
-events and assign resources ourselves. So please add a DMI check for
-Apple (the reverse of what we do in
-http://lxr.free-electrons.com/source/drivers/thunderbolt/nhi.c?v=3.17#L664
-).
+Another update suggestion was taken into account after patches were applied
+from static source code analysis.
 
-Thanks,
-Andreas
+Markus Elfring (2):
+  staging: rtl8188eu: Deletion of unnecessary checks before three
+    function calls
+  staging: rtl8188eu: Better memory clean-up in efuse_phymap_to_logical()
+
+ drivers/staging/rtl8188eu/core/rtw_efuse.c   | 13 ++++++++-----
+ drivers/staging/rtl8188eu/core/rtw_mlme.c    |  3 +--
+ drivers/staging/rtl8188eu/core/rtw_sta_mgt.c |  3 +--
+ drivers/staging/rtl8188eu/core/rtw_xmit.c    |  6 ++----
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c  |  6 +++---
+ 5 files changed, 15 insertions(+), 16 deletions(-)
+
+-- 
+2.1.3
+
+
