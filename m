@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaKLA7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 19:59:19 -0500
-Received: from mailout.micron.com ([137.201.242.129]:58444 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138AbaKLA7R convert rfc822-to-8bit (ORCPT
+	id S1752662AbaKLBC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:02:29 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:42782 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105AbaKLBC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 19:59:17 -0500
-From: bpqw <bpqw@micron.com>
-To: Graham Moore <grmoore@opensource.altera.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>, bpqw <bpqw@micron.com>
-Subject: RE: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Topic: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Index: AQHP+W8IEF9rxWxnKkG/zeWVIWCG6Zxb9qNUgAA3tsA=
-Date: Wed, 12 Nov 2014 00:58:31 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315EB0DA@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
- <54613259.4070903@opensource.altera.com>
- <alpine.DEB.2.02.1411111336010.1356@lava-test-server>
-In-Reply-To: <alpine.DEB.2.02.1411111336010.1356@lava-test-server>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21094.003
-x-tm-as-result: No--37.430400-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Nov 2014 20:02:27 -0500
+Message-ID: <5462B1A3.9020401@gmail.com>
+Date: Tue, 11 Nov 2014 20:02:27 -0500
+From: Mathy Vanhoef <vanhoefm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
+To: Oliver Neukum <oneukum@suse.de>
+CC: brudley@broadcom.com, Arend van Spriel <arend@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
+        John Linville <linville@tuxdriver.com>, pieterpg@broadcom.com,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] brcmfmac: unlink URB when request timed out
+References: <545FAE05.2030701@gmail.com> <1415610506.16488.20.camel@linux-0dmf.site>
+In-Reply-To: <1415610506.16488.20.camel@linux-0dmf.site>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Hi, I'm having trouble with this patch using a Cadence QSPI controller and Micron n25q00 part.
+On 11/10/2014 04:08 AM, Oliver Neukum wrote:
+> On Sun, 2014-11-09 at 13:10 -0500, Mathy Vanhoef wrote:
+>> From: Mathy Vanhoef <vanhoefm@gmail.com>
+>>
+>> Unlink the submitted URB in brcmf_usb_dl_cmd if the request timed out. This
+>> assures the URB is never submitted twice, preventing a driver crash.
+>
+> Hi,
+>
+> I am afrad this patch is no good. The diagnosis is good,
+> but the fix introduces serious problems.
+>
+>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/usb.c b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
+>> index 5265aa7..1bc7858 100644
+>> --- a/drivers/net/wireless/brcm80211/brcmfmac/usb.c
+>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
+>> @@ -738,10 +738,12 @@ static int brcmf_usb_dl_cmd(struct brcmf_usbdev_info *devinfo, u8 cmd,
+>>   goto finalize;
+>>   }
+>>  
+>> - if (!brcmf_usb_ioctl_resp_wait(devinfo))
+>> + if (!brcmf_usb_ioctl_resp_wait(devinfo)) {
+>> + usb_unlink_urb(devinfo->ctl_urb);
+>
+> This is the asynchronous unlink. You have no guarantee it is finished
+> after this point.
+>
+>>   ret = -ETIMEDOUT;
+>> - else
+>> + } else {
+>>   memcpy(buffer, tmpbuf, buflen);
+>> + }
+>>  
+>>  finalize:
+>>   kfree(tmpbuf);
+>
+> Which means that you are freeing memory that may still be used by DMA
+> at this time.
+> In addition you have no guarantee that the unlink is indeed finished
+> by the time the URB is reused.
+> If you wish to take this approach you better forget about this URB
+> and allocate a new one and free the buffer from the callback.
 
->I can use quad commands in Extended SPI mode, but I can't make this EVCR Quad mode work.
+Hi Oliver,
 
+Good catch. I think the DMA issue is also present in the current driver: it
+frees the buffer without unlinking/killing the URB at all. Can a malicious USB
+device force a timeout to occur (i.e. delay the call to the completion
+handler)? If so this might be a use-after-free vulnerability.
 
-Yes,but if you use quad commands in Extended spi mode,only for Quad commands,the command line is DQ0,
-Address/data line is DQ0,DQ1,DQ2 and DQ3(1-x-4). 
-But if in Quad I/O mode,for all the commands,the command/address/data line will be 4,they are DQ0,DQ1,DQ2 and DQ3(4-x-4).
+It seems using usb_kill_urb instead of usb_unlink_urb in the patch prevents any
+possible use-after-free. Can someone double check?
 
->The Cadence QSPI Controller has fields to configure the quad transfer, and can support quad opcode, 
->quad address, and quad data, or some combination.  There is a chart in the docs which shows the combinations for various read commands.
+Kind regards,
+Mathy
 
->Problem is, I've tried all of the combinations and all I get is FF with this EVCR patch.
-
-This maybe your spi controller is still extended mode, 
-Once EVCR bit 7 is set to 0, the spi nor device will operate in quad I/O.Command-address-data line is 4-x-4.
-So after send WRITE EVCR command , spi controller also  must transfer to quad I/O Mode,and set its Command-address-data line also
-Should be 4-x-4 .
-
->If I don't set the quad mode in the EVCR, then I can use quad read commands no problem.
-Yes,you don't set the quad mode in the EVCR,you can use quad read commands,but this patch is for enable Micron SPI nor Quad I/O mode,
-If you want to enable it ,you must set EVCR.
-
->Bottom line, with the Cadence QSPI controller, if I use quad commands in Extended SPI mode, then all good.  If I use this EVCR quad mode, then all bad.
-
->Anybody else have a Cadence QSPI controller and using EVCR quad mode successfully?
-
->Thanks,
->Graham Moore
-
-Hi,Brian
-
-Whether this patch can be merged?thanks.
+>
+> Regards
+> Oliver
+>
