@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459AbaKLB1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:27:50 -0500
-Received: from mailout.micron.com ([137.201.242.129]:13592 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932424AbaKLB1p convert rfc822-to-8bit (ORCPT
+	id S932480AbaKLB1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:27:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59019 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932455AbaKLB1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:45 -0500
-From: bpqw <bpqw@micron.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-CC: Jason Cooper <jason@lakedaemon.net>, Mark Brown <broonie@kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Thierry Reding <treding@nvidia.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
-        Hayato Suzuki <hytszk@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE:  [PATCH 1/1 V2] devicetree: bindings: Add vendor prefix for
- Micron Technology Co., Ltd.
-Thread-Topic: [PATCH 1/1 V2] devicetree: bindings: Add vendor prefix for
- Micron Technology Co., Ltd.
-Thread-Index: Ac/tDA2V70hMLzyhQH+xOy9U8dubsgBjfqCwACJUHlAAlaGE0AF90TiwAC+lVYABed64sA==
-Date: Wed, 12 Nov 2014 01:26:58 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315EB0ED@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21094.003
-X-TM-AS-Result: No--6.576400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Nov 2014 20:27:50 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.17 161/319] ext4: fix oops when loading block bitmap failed
+Date: Wed, 12 Nov 2014 10:14:59 +0900
+Message-Id: <20141112011019.300204303@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Signed-off-by: bean huo <beanhuo@micron.com>
->Signed-off-by: bpqw <bpqw@micron.com>
->---
->V2:
- > - Add signed-off-by
- > - Modify commit logs that wrapped to less than 80 columns
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Dear maintainers:
+------------------
 
-Please give some tips,if this patch is OK?thanks!
+From: Jan Kara <jack@suse.cz>
+
+commit 599a9b77ab289d85c2d5c8607624efbe1f552b0f upstream.
+
+When we fail to load block bitmap in __ext4_new_inode() we will
+dereference NULL pointer in ext4_journal_get_write_access(). So check
+for error from ext4_read_block_bitmap().
+
+Coverity-id: 989065
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/ialloc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -887,6 +887,10 @@ got:
+ 		struct buffer_head *block_bitmap_bh;
+ 
+ 		block_bitmap_bh = ext4_read_block_bitmap(sb, group);
++		if (!block_bitmap_bh) {
++			err = -EIO;
++			goto out;
++		}
+ 		BUFFER_TRACE(block_bitmap_bh, "get block bitmap access");
+ 		err = ext4_journal_get_write_access(handle, block_bitmap_bh);
+ 		if (err) {
+
+
