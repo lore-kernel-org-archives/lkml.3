@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964874AbaKLETN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:19:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58434 "EHLO
+	id S964876AbaKLETn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:19:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079AbaKLBUw (ORCPT
+	with ESMTP id S1753055AbaKLBUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:52 -0500
+	Tue, 11 Nov 2014 20:20:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Honggang Li <enjoymindful@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.17 030/319] Revert "percpu: free percpu allocation info for uniprocessor system"
-Date: Wed, 12 Nov 2014 10:12:48 +0900
-Message-Id: <20141112010957.660112906@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.17 029/319] SUNRPC: Add missing support for RPC_CLNT_CREATE_NO_RETRANS_TIMEOUT
+Date: Wed, 12 Nov 2014 10:12:47 +0900
+Message-Id: <20141112010957.485657402@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,38 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit bb2e226b3bef596dd56be97df655d857b4603923 upstream.
+commit 2aca5b869ace67a63aab895659e5dc14c33a4d6e upstream.
 
-This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
-uniprocessor system").
+The flag RPC_CLNT_CREATE_NO_RETRANS_TIMEOUT was intended introduced in
+order to allow NFSv4 clients to disable resend timeouts. Since those
+cause the RPC layer to break the connection, they mess up the duplicate
+reply caches that remain indexed on the port number in NFSv4..
 
-The commit causes a hang with a crisv32 image. This may be an architecture
-problem, but at least for now the revert is necessary to be able to boot a
-crisv32 image.
+This patch includes the code that was missing in the original to
+set the appropriate flag in struct rpc_clnt, when the caller of
+rpc_create() sets RPC_CLNT_CREATE_NO_RETRANS_TIMEOUT.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Honggang Li <enjoymindful@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
+Fixes: 8a19a0b6cb2e (SUNRPC: Add RPC task and client level options to...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/percpu.c |    2 --
- 1 file changed, 2 deletions(-)
+ net/sunrpc/clnt.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1932,8 +1932,6 @@ void __init setup_per_cpu_areas(void)
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -461,6 +461,8 @@ struct rpc_clnt *rpc_create_xprt(struct
  
- 	if (pcpu_setup_first_chunk(ai, fc) < 0)
- 		panic("Failed to initialize percpu areas.");
--
--	pcpu_free_alloc_info(ai);
- }
- 
- #endif	/* CONFIG_SMP */
+ 	if (args->flags & RPC_CLNT_CREATE_AUTOBIND)
+ 		clnt->cl_autobind = 1;
++	if (args->flags & RPC_CLNT_CREATE_NO_RETRANS_TIMEOUT)
++		clnt->cl_noretranstimeo = 1;
+ 	if (args->flags & RPC_CLNT_CREATE_DISCRTRY)
+ 		clnt->cl_discrtry = 1;
+ 	if (!(args->flags & RPC_CLNT_CREATE_QUIET))
+@@ -579,6 +581,7 @@ static struct rpc_clnt *__rpc_clone_clie
+ 	/* Turn off autobind on clones */
+ 	new->cl_autobind = 0;
+ 	new->cl_softrtry = clnt->cl_softrtry;
++	new->cl_noretranstimeo = clnt->cl_noretranstimeo;
+ 	new->cl_discrtry = clnt->cl_discrtry;
+ 	new->cl_chatty = clnt->cl_chatty;
+ 	return new;
 
 
