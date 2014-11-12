@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966018AbaKLBvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:51:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32788 "EHLO
+	id S966035AbaKLBvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:51:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965975AbaKLBu5 (ORCPT
+	with ESMTP id S965975AbaKLBvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:57 -0500
+	Tue, 11 Nov 2014 20:51:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Jonathan Brassow <jbrassow@redhat.com>,
         Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 036/123] dm bufio: update last_accessed when relinking a buffer
-Date: Wed, 12 Nov 2014 10:16:42 +0900
-Message-Id: <20141112011720.663094204@linuxfoundation.org>
+Subject: [PATCH 3.10 039/123] dm log userspace: fix memory leak in dm_ulog_tfr_init failure path
+Date: Wed, 12 Nov 2014 10:16:45 +0900
+Message-Id: <20141112011720.794192298@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,39 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit eb76faf53b1ff7a77ce3f78cc98ad392ac70c2a0 upstream.
+commit 56ec16cb1e1ce46354de8511eef962a417c32c92 upstream.
 
-The 'last_accessed' member of the dm_buffer structure was only set when
-the the buffer was created.  This led to each buffer being discarded
-after dm_bufio_max_age time even if it was used recently.  In practice
-this resulted in all thinp metadata being evicted soon after being read
--- this is particularly problematic for metadata intensive workloads
-like multithreaded small random IO.
+If cn_add_callback() fails in dm_ulog_tfr_init(), it does not
+deallocate prealloced memory but calls cn_del_callback().
 
-'last_accessed' is now updated each time the buffer is moved to the head
-of the LRU list, so the buffer is now properly discarded if it was not
-used in dm_bufio_max_age time.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Reviewed-by: Jonathan Brassow <jbrassow@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/dm-log-userspace-transfer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -462,6 +462,7 @@ static void __relink_lru(struct dm_buffe
- 	c->n_buffers[dirty]++;
- 	b->list_mode = dirty;
- 	list_move(&b->lru_list, &c->lru[dirty]);
-+	b->last_accessed = jiffies;
- }
+--- a/drivers/md/dm-log-userspace-transfer.c
++++ b/drivers/md/dm-log-userspace-transfer.c
+@@ -272,7 +272,7 @@ int dm_ulog_tfr_init(void)
  
- /*----------------------------------------------------------------
+ 	r = cn_add_callback(&ulog_cn_id, "dmlogusr", cn_ulog_callback);
+ 	if (r) {
+-		cn_del_callback(&ulog_cn_id);
++		kfree(prealloced_cn_msg);
+ 		return r;
+ 	}
+ 
 
 
