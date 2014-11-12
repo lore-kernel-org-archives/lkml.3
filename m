@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaKLEGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:06:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58704 "EHLO
+	id S1755470AbaKLEGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:06:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872AbaKLBX6 (ORCPT
+	with ESMTP id S1753883AbaKLBXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:58 -0500
+	Tue, 11 Nov 2014 20:23:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.17 089/319] blk-mq: fix potential hang if rolling wakeup depth is too high
-Date: Wed, 12 Nov 2014 10:13:47 +0900
-Message-Id: <20141112011007.296748779@linuxfoundation.org>
+        Amit Shah <amit.shah@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.17 085/319] virtio_pci: fix virtio spec compliance on restore
+Date: Wed, 12 Nov 2014 10:13:43 +0900
+Message-Id: <20141112011006.696816363@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,38 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit abab13b5c4fd1fec4f9a61622548012d93dc2831 upstream.
+commit 6fbc198cf623944ab60a1db6d306a4d55cdd820d upstream.
 
-We currently divide the queue depth by 4 as our batch wakeup
-count, but we split the wakeups over BT_WAIT_QUEUES number of
-wait queues. This defaults to 8. If the product of the resulting
-batch wake count and BT_WAIT_QUEUES is higher than the device
-queue depth, we can get into a situation where a task goes to
-sleep waiting for a request, but never gets woken up.
+On restore, virtio pci does the following:
++ set features
++ init vqs etc - device can be used at this point!
++ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
 
-Reported-by: Bart Van Assche <bvanassche@acm.org>
-Fixes: 4bb659b156996
-Signed-off-by: Jens Axboe <axboe@fb.com>
+This is in violation of the virtio spec, which
+requires the following order:
+- ACKNOWLEDGE
+- DRIVER
+- init vqs
+- DRIVER_OK
+
+This behaviour will break with hypervisors that assume spec compliant
+behaviour.  It seems like a good idea to have this patch applied to
+stable branches to reduce the support butden for the hypervisors.
+
+Cc: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-mq-tag.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/virtio/virtio_pci.c |   33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -463,8 +463,8 @@ static void bt_update_count(struct blk_m
- 	}
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -789,6 +789,7 @@ static int virtio_pci_restore(struct dev
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+ 	struct virtio_driver *drv;
++	unsigned status = 0;
+ 	int ret;
  
- 	bt->wake_cnt = BT_WAIT_BATCH;
--	if (bt->wake_cnt > depth / 4)
--		bt->wake_cnt = max(1U, depth / 4);
-+	if (bt->wake_cnt > depth / BT_WAIT_QUEUES)
-+		bt->wake_cnt = max(1U, depth / BT_WAIT_QUEUES);
+ 	drv = container_of(vp_dev->vdev.dev.driver,
+@@ -799,14 +800,40 @@ static int virtio_pci_restore(struct dev
+ 		return ret;
  
- 	bt->depth = depth;
+ 	pci_set_master(pci_dev);
++	/* We always start by resetting the device, in case a previous
++	 * driver messed it up. */
++	vp_reset(&vp_dev->vdev);
++
++	/* Acknowledge that we've seen the device. */
++	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
++	vp_set_status(&vp_dev->vdev, status);
++
++	/* Maybe driver failed before freeze.
++	 * Restore the failed status, for debugging. */
++	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
++	vp_set_status(&vp_dev->vdev, status);
++
++	if (!drv)
++		return 0;
++
++	/* We have a driver! */
++	status |= VIRTIO_CONFIG_S_DRIVER;
++	vp_set_status(&vp_dev->vdev, status);
++
+ 	vp_finalize_features(&vp_dev->vdev);
+ 
+-	if (drv && drv->restore)
++	if (drv->restore) {
+ 		ret = drv->restore(&vp_dev->vdev);
++		if (ret) {
++			status |= VIRTIO_CONFIG_S_FAILED;
++			vp_set_status(&vp_dev->vdev, status);
++			return ret;
++		}
++	}
+ 
+ 	/* Finally, tell the device we're all set */
+-	if (!ret)
+-		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
++	status |= VIRTIO_CONFIG_S_DRIVER_OK;
++	vp_set_status(&vp_dev->vdev, status);
+ 
+ 	return ret;
  }
 
 
