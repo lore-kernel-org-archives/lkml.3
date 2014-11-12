@@ -1,87 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964885AbaKLCQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:16:43 -0500
-Received: from mail-bn1on0116.outbound.protection.outlook.com ([157.56.110.116]:38592
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933213AbaKLCQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 21:16:40 -0500
-Date: Wed, 12 Nov 2014 09:10:03 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 0/7] usb: add support for the generic PHY framework
-Message-ID: <20141112010959.GA15348@shlinux2>
-References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
- <07c7cfed25af4bdb9e34b6ad1aaed0c7@BN1PR0301MB0772.namprd03.prod.outlook.com>
- <20141107180820.GO15036@saruman> <20141107180852.GP15036@saruman>
+	id S965061AbaKLCRt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:17:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32845 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966157AbaKLBwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:52:01 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.10 016/123] vfs: fix data corruption when blocksize < pagesize for mmaped data
+Date: Wed, 12 Nov 2014 10:16:22 +0900
+Message-Id: <20141112011719.748938847@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
+References: <20141112011718.985171261@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141107180852.GP15036@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51704005)(24454002)(84676001)(97756001)(102836001)(33716001)(50466002)(86362001)(93886004)(46406003)(47776003)(20776003)(68736004)(62966003)(106466001)(107046002)(46102003)(21056001)(33656002)(95666004)(77156002)(105606002)(64706001)(99396003)(120916001)(31966008)(104016003)(110136001)(23726002)(4396001)(54356999)(97736003)(76176999)(50986999)(87936001)(92566001)(92726001)(6806004)(44976005);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0628;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
-X-Forefront-PRVS: 03932714EB
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 12:08:52PM -0600, Felipe Balbi wrote:
-> On Fri, Nov 07, 2014 at 12:08:20PM -0600, Felipe Balbi wrote:
-> > Hi,
-> > 
-> > On Fri, Nov 07, 2014 at 01:33:25PM +0000, Peter Chen wrote:
-> > > 
-> > > 
-> > >  
-> > > > 
-> > > > Antoine Tenart (7):
-> > > >   usb: move the OTG state from the USB PHY to the OTG structure
-> > > >   usb: rename phy to usb_phy in OTG
-> > > >   usb: add support to the generic PHY framework in OTG
-> > > >   usb: allow to supply the PHY in the drivers when using HCD
-> > > >   usb: chipidea: rename transceiver and phy to usb_phy
-> > > >   usb: chipidea: move usb_otg into struct ci_hdrc
-> > > >   usb: chipidea: add support to the generic PHY framework
-> > > > 
-> > > 
-> > > Hi Felipe,
-> > > 
-> > > I find you queue the patch 1st-4th and 7th in your next tree, how you queue
-> > > the 7th without queueing 5th and 6th, they have some relationships.
-> > > 
-> > > Will you queue 5th and 6th, or I queue them (5th- 7th) through my chipidea patch set?
-> > 
-> > argh, somehow I missed them. I'll add both to my testing/next. Sorry for
-> > the confusion. I thought I had them all.
-> 
-> oh, they don't apply.
-> 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Felipe, I still not see Antoine's chipidea patch in your tree.
-I assume you will do it soon.
-And there are some coming chipidea patches (Antoine & me), I will do
-further work based on it.
+------------------
 
-Peter
+From: Jan Kara <jack@suse.cz>
+
+commit 90a8020278c1598fafd071736a0846b38510309c upstream.
+
+->page_mkwrite() is used by filesystems to allocate blocks under a page
+which is becoming writeably mmapped in some process' address space. This
+allows a filesystem to return a page fault if there is not enough space
+available, user exceeds quota or similar problem happens, rather than
+silently discarding data later when writepage is called.
+
+However VFS fails to call ->page_mkwrite() in all the cases where
+filesystems need it when blocksize < pagesize. For example when
+blocksize = 1024, pagesize = 4096 the following is problematic:
+  ftruncate(fd, 0);
+  pwrite(fd, buf, 1024, 0);
+  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
+  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
+  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
+  mremap(map, 1024, 10000, 0);
+  map[4095] = 'a';    ----> no page_mkwrite() called
+
+At the moment ->page_mkwrite() is called, filesystem can allocate only
+one block for the page because i_size == 1024. Otherwise it would create
+blocks beyond i_size which is generally undesirable. But later at
+->writepage() time, we also need to store data at offset 4095 but we
+don't have block allocated for it.
+
+This patch introduces a helper function filesystems can use to have
+->page_mkwrite() called at all the necessary moments.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/buffer.c        |    3 ++
+ include/linux/mm.h |    1 
+ mm/truncate.c      |   59 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 60 insertions(+), 3 deletions(-)
+
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2018,6 +2018,7 @@ int generic_write_end(struct file *file,
+ 			struct page *page, void *fsdata)
+ {
+ 	struct inode *inode = mapping->host;
++	loff_t old_size = inode->i_size;
+ 	int i_size_changed = 0;
+ 
+ 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
+@@ -2037,6 +2038,8 @@ int generic_write_end(struct file *file,
+ 	unlock_page(page);
+ 	page_cache_release(page);
+ 
++	if (old_size < pos)
++		pagecache_isize_extended(inode, old_size, pos);
+ 	/*
+ 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
+ 	 * makes the holding time of page lock longer. Second, it forces lock
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1004,6 +1004,7 @@ static inline void unmap_shared_mapping_
+ 
+ extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
+ extern void truncate_setsize(struct inode *inode, loff_t newsize);
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
+ void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
+ int truncate_inode_page(struct address_space *mapping, struct page *page);
+ int generic_error_remove_page(struct address_space *mapping, struct page *page);
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -20,6 +20,7 @@
+ #include <linux/buffer_head.h>	/* grr. try_to_release_page,
+ 				   do_invalidatepage */
+ #include <linux/cleancache.h>
++#include <linux/rmap.h>
+ #include "internal.h"
+ 
+ 
+@@ -567,16 +568,68 @@ EXPORT_SYMBOL(truncate_pagecache);
+  */
+ void truncate_setsize(struct inode *inode, loff_t newsize)
+ {
+-	loff_t oldsize;
++	loff_t oldsize = inode->i_size;
+ 
+-	oldsize = inode->i_size;
+ 	i_size_write(inode, newsize);
+-
++	if (newsize > oldsize)
++		pagecache_isize_extended(inode, oldsize, newsize);
+ 	truncate_pagecache(inode, oldsize, newsize);
+ }
+ EXPORT_SYMBOL(truncate_setsize);
+ 
+ /**
++ * pagecache_isize_extended - update pagecache after extension of i_size
++ * @inode:	inode for which i_size was extended
++ * @from:	original inode size
++ * @to:		new inode size
++ *
++ * Handle extension of inode size either caused by extending truncate or by
++ * write starting after current i_size. We mark the page straddling current
++ * i_size RO so that page_mkwrite() is called on the nearest write access to
++ * the page.  This way filesystem can be sure that page_mkwrite() is called on
++ * the page before user writes to the page via mmap after the i_size has been
++ * changed.
++ *
++ * The function must be called after i_size is updated so that page fault
++ * coming after we unlock the page will already see the new i_size.
++ * The function must be called while we still hold i_mutex - this not only
++ * makes sure i_size is stable but also that userspace cannot observe new
++ * i_size value before we are prepared to store mmap writes at new inode size.
++ */
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
++{
++	int bsize = 1 << inode->i_blkbits;
++	loff_t rounded_from;
++	struct page *page;
++	pgoff_t index;
++
++	WARN_ON(!mutex_is_locked(&inode->i_mutex));
++	WARN_ON(to > inode->i_size);
++
++	if (from >= to || bsize == PAGE_CACHE_SIZE)
++		return;
++	/* Page straddling @from will not have any hole block created? */
++	rounded_from = round_up(from, bsize);
++	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
++		return;
++
++	index = from >> PAGE_CACHE_SHIFT;
++	page = find_lock_page(inode->i_mapping, index);
++	/* Page not cached? Nothing to do */
++	if (!page)
++		return;
++	/*
++	 * See clear_page_dirty_for_io() for details why set_page_dirty()
++	 * is needed.
++	 */
++	if (page_mkclean(page))
++		set_page_dirty(page);
++	unlock_page(page);
++	page_cache_release(page);
++}
++EXPORT_SYMBOL(pagecache_isize_extended);
++
++/**
+  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
+  * @inode: inode
+  * @lstart: offset of beginning of hole
+
+
