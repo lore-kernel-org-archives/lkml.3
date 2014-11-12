@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaKLBVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:21:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58522 "EHLO
+	id S1753320AbaKLBVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:21:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaKLBVu (ORCPT
+	with ESMTP id S1753205AbaKLBVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:21:50 -0500
+	Tue, 11 Nov 2014 20:21:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.17 050/319] vfs: fix data corruption when blocksize < pagesize for mmaped data
-Date: Wed, 12 Nov 2014 10:13:08 +0900
-Message-Id: <20141112011000.886817234@linuxfoundation.org>
+        hujianyang <hujianyang@huawei.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.17 049/319] UBIFS: fix free log space calculation
+Date: Wed, 12 Nov 2014 10:13:07 +0900
+Message-Id: <20141112011000.684239839@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,153 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 90a8020278c1598fafd071736a0846b38510309c upstream.
+commit ba29e721eb2df6df8f33c1f248388bb037a47914 upstream.
 
-->page_mkwrite() is used by filesystems to allocate blocks under a page
-which is becoming writeably mmapped in some process' address space. This
-allows a filesystem to return a page fault if there is not enough space
-available, user exceeds quota or similar problem happens, rather than
-silently discarding data later when writepage is called.
+Hu (hujianyang <hujianyang@huawei.com>) discovered an issue in the
+'empty_log_bytes()' function, which calculates how many bytes are left in the
+log:
 
-However VFS fails to call ->page_mkwrite() in all the cases where
-filesystems need it when blocksize < pagesize. For example when
-blocksize = 1024, pagesize = 4096 the following is problematic:
-  ftruncate(fd, 0);
-  pwrite(fd, buf, 1024, 0);
-  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
-  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
-  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
-  mremap(map, 1024, 10000, 0);
-  map[4095] = 'a';    ----> no page_mkwrite() called
+"
+If 'c->lhead_lnum + 1 == c->ltail_lnum' and 'c->lhead_offs == c->leb_size', 'h'
+would equalent to 't' and 'empty_log_bytes()' would return 'c->log_bytes'
+instead of 0.
+"
 
-At the moment ->page_mkwrite() is called, filesystem can allocate only
-one block for the page because i_size == 1024. Otherwise it would create
-blocks beyond i_size which is generally undesirable. But later at
-->writepage() time, we also need to store data at offset 4095 but we
-don't have block allocated for it.
+At this point it is not clear what would be the consequences of this, and
+whether this may lead to any problems, but this patch addresses the issue just
+in case.
 
-This patch introduces a helper function filesystems can use to have
-->page_mkwrite() called at all the necessary moments.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Tested-by: hujianyang <hujianyang@huawei.com>
+Reported-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/buffer.c        |    3 ++
- include/linux/mm.h |    1 
- mm/truncate.c      |   57 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+)
+ fs/ubifs/log.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2082,6 +2082,7 @@ int generic_write_end(struct file *file,
- 			struct page *page, void *fsdata)
- {
- 	struct inode *inode = mapping->host;
-+	loff_t old_size = inode->i_size;
- 	int i_size_changed = 0;
+--- a/fs/ubifs/log.c
++++ b/fs/ubifs/log.c
+@@ -106,10 +106,14 @@ static inline long long empty_log_bytes(
+ 	h = (long long)c->lhead_lnum * c->leb_size + c->lhead_offs;
+ 	t = (long long)c->ltail_lnum * c->leb_size;
  
- 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
-@@ -2101,6 +2102,8 @@ int generic_write_end(struct file *file,
- 	unlock_page(page);
- 	page_cache_release(page);
- 
-+	if (old_size < pos)
-+		pagecache_isize_extended(inode, old_size, pos);
- 	/*
- 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
- 	 * makes the holding time of page lock longer. Second, it forces lock
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1174,6 +1174,7 @@ static inline void unmap_shared_mapping_
- 
- extern void truncate_pagecache(struct inode *inode, loff_t new);
- extern void truncate_setsize(struct inode *inode, loff_t newsize);
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
- void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
- int truncate_inode_page(struct address_space *mapping, struct page *page);
- int generic_error_remove_page(struct address_space *mapping, struct page *page);
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -20,6 +20,7 @@
- #include <linux/buffer_head.h>	/* grr. try_to_release_page,
- 				   do_invalidatepage */
- #include <linux/cleancache.h>
-+#include <linux/rmap.h>
- #include "internal.h"
- 
- static void clear_exceptional_entry(struct address_space *mapping,
-@@ -719,12 +720,68 @@ EXPORT_SYMBOL(truncate_pagecache);
-  */
- void truncate_setsize(struct inode *inode, loff_t newsize)
- {
-+	loff_t oldsize = inode->i_size;
-+
- 	i_size_write(inode, newsize);
-+	if (newsize > oldsize)
-+		pagecache_isize_extended(inode, oldsize, newsize);
- 	truncate_pagecache(inode, newsize);
+-	if (h >= t)
++	if (h > t)
+ 		return c->log_bytes - h + t;
+-	else
++	else if (h != t)
+ 		return t - h;
++	else if (c->lhead_lnum != c->ltail_lnum)
++		return 0;
++	else
++		return c->log_bytes;
  }
- EXPORT_SYMBOL(truncate_setsize);
  
  /**
-+ * pagecache_isize_extended - update pagecache after extension of i_size
-+ * @inode:	inode for which i_size was extended
-+ * @from:	original inode size
-+ * @to:		new inode size
-+ *
-+ * Handle extension of inode size either caused by extending truncate or by
-+ * write starting after current i_size. We mark the page straddling current
-+ * i_size RO so that page_mkwrite() is called on the nearest write access to
-+ * the page.  This way filesystem can be sure that page_mkwrite() is called on
-+ * the page before user writes to the page via mmap after the i_size has been
-+ * changed.
-+ *
-+ * The function must be called after i_size is updated so that page fault
-+ * coming after we unlock the page will already see the new i_size.
-+ * The function must be called while we still hold i_mutex - this not only
-+ * makes sure i_size is stable but also that userspace cannot observe new
-+ * i_size value before we are prepared to store mmap writes at new inode size.
-+ */
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
-+{
-+	int bsize = 1 << inode->i_blkbits;
-+	loff_t rounded_from;
-+	struct page *page;
-+	pgoff_t index;
-+
-+	WARN_ON(!mutex_is_locked(&inode->i_mutex));
-+	WARN_ON(to > inode->i_size);
-+
-+	if (from >= to || bsize == PAGE_CACHE_SIZE)
-+		return;
-+	/* Page straddling @from will not have any hole block created? */
-+	rounded_from = round_up(from, bsize);
-+	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
-+		return;
-+
-+	index = from >> PAGE_CACHE_SHIFT;
-+	page = find_lock_page(inode->i_mapping, index);
-+	/* Page not cached? Nothing to do */
-+	if (!page)
-+		return;
-+	/*
-+	 * See clear_page_dirty_for_io() for details why set_page_dirty()
-+	 * is needed.
-+	 */
-+	if (page_mkclean(page))
-+		set_page_dirty(page);
-+	unlock_page(page);
-+	page_cache_release(page);
-+}
-+EXPORT_SYMBOL(pagecache_isize_extended);
-+
-+/**
-  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
-  * @inode: inode
-  * @lstart: offset of beginning of hole
 
 
