@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964914AbaKLBjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:39:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60045 "EHLO
+	id S964936AbaKLBkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:40:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291AbaKLBjn (ORCPT
+	with ESMTP id S934213AbaKLBjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:39:43 -0500
+	Tue, 11 Nov 2014 20:39:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 3.14 051/203] pstore: Fix duplicate {console,ftrace}-efi entries
-Date: Wed, 12 Nov 2014 10:15:21 +0900
-Message-Id: <20141112011545.038673819@linuxfoundation.org>
+        Roger Tseng <rogerable@realtek.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.14 022/203] mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
+Date: Wed, 12 Nov 2014 10:14:52 +0900
+Message-Id: <20141112011543.725610154@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,64 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+From: Roger Tseng <rogerable@realtek.com>
 
-commit d4bf205da618bbd0b038e404d646f14e76915718 upstream.
+commit d1419d50c1bf711e9fd27b516a739c86b23f7cf9 upstream.
 
-The pstore filesystem still creates duplicate filename/inode pairs for
-some pstore types.  Add the id to the filename to prevent that.
+Current code erroneously fill the last byte of R2 response with an undefined
+value. In addition, the controller actually 'offloads' the last byte
+(CRC7, end bit) while receiving R2 response and thus it's impossible to get the
+actual value. This could cause mmc stack to obtain inconsistent CID from the
+same card after resume and misidentify it as a different card.
 
-Before patch:
+Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
 
-[/sys/fs/pstore] ls -li
-total 0
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-
-After:
-
-[/sys/fs/pstore] ls -li
-total 0
-1232 -r--r--r--. 1 root root 148 Sep 29 17:09 console-efi-141202499100000
-1231 -r--r--r--. 1 root root  67 Sep 29 17:09 console-efi-141202499200000
-1230 -r--r--r--. 1 root root 148 Sep 29 17:44 console-efi-141202705400000
-1229 -r--r--r--. 1 root root  67 Sep 29 17:44 console-efi-141202705500000
-1228 -r--r--r--. 1 root root  67 Sep 29 20:42 console-efi-141203772600000
-1227 -r--r--r--. 1 root root 148 Sep 29 23:42 console-efi-141204854900000
-1226 -r--r--r--. 1 root root  67 Sep 29 23:42 console-efi-141204855000000
-1225 -r--r--r--. 1 root root 148 Sep 29 23:59 console-efi-141204954200000
-1224 -r--r--r--. 1 root root  67 Sep 29 23:59 console-efi-141204954400000
-
-Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Fixes: ff984e57d36e ("mmc: Add realtek pcie sdmmc host driver")
+Signed-off-by: Roger Tseng <rogerable@realtek.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/pstore/inode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -319,10 +319,10 @@ int pstore_mkfile(enum pstore_type_id ty
- 						compressed ? ".enc.z" : "");
- 		break;
- 	case PSTORE_TYPE_CONSOLE:
--		sprintf(name, "console-%s", psname);
-+		sprintf(name, "console-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_FTRACE:
--		sprintf(name, "ftrace-%s", psname);
-+		sprintf(name, "ftrace-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_MCE:
- 		sprintf(name, "mce-%s-%lld", psname, id);
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -342,6 +342,13 @@ static void sd_send_cmd_get_rsp(struct r
+ 	}
+ 
+ 	if (rsp_type == SD_RSP_TYPE_R2) {
++		/*
++		 * The controller offloads the last byte {CRC-7, end bit 1'b1}
++		 * of response type R2. Assign dummy CRC, 0, and end bit to the
++		 * byte(ptr[16], goes into the LSB of resp[3] later).
++		 */
++		ptr[16] = 1;
++
+ 		for (i = 0; i < 4; i++) {
+ 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+ 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
 
 
