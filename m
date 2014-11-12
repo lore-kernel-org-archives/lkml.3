@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791AbaKLBgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:36:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59754 "EHLO
+	id S933766AbaKLBgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:36:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932496AbaKLBf4 (ORCPT
+	with ESMTP id S932496AbaKLBgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:35:56 -0500
+	Tue, 11 Nov 2014 20:36:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <darren.hart@intel.com>
-Subject: [PATCH 3.17 309/319] of: Fix overflow bug in string property parsing functions
-Date: Wed, 12 Nov 2014 10:17:27 +0900
-Message-Id: <20141112011043.993497947@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.17 311/319] xfs: bulkstat doesnt release AGI buffer on error
+Date: Wed, 12 Nov 2014 10:17:29 +0900
+Message-Id: <20141112011044.320167654@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -32,382 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit a87fa1d81a9fb5e9adca9820e16008c40ad09f33 upstream.
+commit a6bbce54efa9145dbcf3029c885549f7ebc40a3b upstream.
 
-The string property read helpers will run off the end of the buffer if
-it is handed a malformed string property. Rework the parsers to make
-sure that doesn't happen. At the same time add new test cases to make
-sure the functions behave themselves.
+The recent refactoring of the bulkstat code left a small landmine in
+the code. If a inobt read fails, then the tree walk is aborted and
+returns without releasing the AGI buffer or freeing the cursor. This
+can lead to a subsequent bulkstat call hanging trying to grab the
+AGI buffer again.
 
-The original implementations of of_property_read_string_index() and
-of_property_count_strings() both open-coded the same block of parsing
-code, each with it's own subtly different bugs. The fix here merges
-functions into a single helper and makes the original functions static
-inline wrappers around the helper.
-
-One non-bugfix aspect of this patch is the addition of a new wrapper,
-of_property_read_string_array(). The new wrapper is needed by the
-device_properties feature that Rafael is working on and planning to
-merge for v3.19. The implementation is identical both with and without
-the new static inline wrapper, so it just got left in to reduce the
-churn on the header file.
-
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Darren Hart <darren.hart@intel.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/base.c                           |   88 +++++++---------------------
- drivers/of/selftest.c                       |   66 +++++++++++++++++++--
- drivers/of/testcase-data/tests-phandle.dtsi |    2 
- include/linux/of.h                          |   84 ++++++++++++++++++++++----
- 4 files changed, 154 insertions(+), 86 deletions(-)
+ fs/xfs/xfs_itable.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1277,52 +1277,6 @@ int of_property_read_string(struct devic
- EXPORT_SYMBOL_GPL(of_property_read_string);
+--- a/fs/xfs/xfs_itable.c
++++ b/fs/xfs/xfs_itable.c
+@@ -427,7 +427,7 @@ xfs_bulkstat(
  
- /**
-- * of_property_read_string_index - Find and read a string from a multiple
-- * strings property.
-- * @np:		device node from which the property value is to be read.
-- * @propname:	name of the property to be searched.
-- * @index:	index of the string in the list of strings
-- * @out_string:	pointer to null terminated return string, modified only if
-- *		return value is 0.
-- *
-- * Search for a property in a device tree node and retrieve a null
-- * terminated string value (pointer to data, not a copy) in the list of strings
-- * contained in that property.
-- * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
-- * property does not have a value, and -EILSEQ if the string is not
-- * null-terminated within the length of the property data.
-- *
-- * The out_string pointer is modified only if a valid string can be decoded.
-- */
--int of_property_read_string_index(struct device_node *np, const char *propname,
--				  int index, const char **output)
--{
--	struct property *prop = of_find_property(np, propname, NULL);
--	int i = 0;
--	size_t l = 0, total = 0;
--	const char *p;
--
--	if (!prop)
--		return -EINVAL;
--	if (!prop->value)
--		return -ENODATA;
--	if (strnlen(prop->value, prop->length) >= prop->length)
--		return -EILSEQ;
--
--	p = prop->value;
--
--	for (i = 0; total < prop->length; total += l, p += l) {
--		l = strlen(p) + 1;
--		if (i++ == index) {
--			*output = p;
--			return 0;
--		}
--	}
--	return -ENODATA;
--}
--EXPORT_SYMBOL_GPL(of_property_read_string_index);
--
--/**
-  * of_property_match_string() - Find string in a list and return index
-  * @np: pointer to node containing string list property
-  * @propname: string list property name
-@@ -1348,7 +1302,7 @@ int of_property_match_string(struct devi
- 	end = p + prop->length;
+ 			error = xfs_bulkstat_grab_ichunk(cur, agino, &icount, &r);
+ 			if (error)
+-				break;
++				goto del_cursor;
+ 			if (icount) {
+ 				irbp->ir_startino = r.ir_startino;
+ 				irbp->ir_freecount = r.ir_freecount;
+@@ -442,7 +442,7 @@ xfs_bulkstat(
+ 			error = xfs_inobt_lookup(cur, 0, XFS_LOOKUP_GE, &tmp);
+ 		}
+ 		if (error)
+-			break;
++			goto del_cursor;
  
- 	for (i = 0; p < end; i++, p += l) {
--		l = strlen(p) + 1;
-+		l = strnlen(p, end - p) + 1;
- 		if (p + l > end)
- 			return -EILSEQ;
- 		pr_debug("comparing %s with %s\n", string, p);
-@@ -1360,39 +1314,41 @@ int of_property_match_string(struct devi
- EXPORT_SYMBOL_GPL(of_property_match_string);
+ 		/*
+ 		 * Loop through inode btree records in this ag,
+@@ -454,7 +454,7 @@ xfs_bulkstat(
+ 			error = xfs_inobt_get_rec(cur, &r, &i);
+ 			if (error || i == 0) {
+ 				end_of_ag = 1;
+-				break;
++				goto del_cursor;
+ 			}
  
- /**
-- * of_property_count_strings - Find and return the number of strings from a
-- * multiple strings property.
-+ * of_property_read_string_util() - Utility helper for parsing string properties
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
-+ * @out_strs:	output array of string pointers.
-+ * @sz:		number of array elements to read.
-+ * @skip:	Number of strings to skip over at beginning of list.
-  *
-- * Search for a property in a device tree node and retrieve the number of null
-- * terminated string contain in it. Returns the number of strings on
-- * success, -EINVAL if the property does not exist, -ENODATA if property
-- * does not have a value, and -EILSEQ if the string is not null-terminated
-- * within the length of the property data.
-+ * Don't call this function directly. It is a utility helper for the
-+ * of_property_read_string*() family of functions.
-  */
--int of_property_count_strings(struct device_node *np, const char *propname)
-+int of_property_read_string_helper(struct device_node *np, const char *propname,
-+				   const char **out_strs, size_t sz, int skip)
- {
- 	struct property *prop = of_find_property(np, propname, NULL);
--	int i = 0;
--	size_t l = 0, total = 0;
--	const char *p;
-+	int l = 0, i = 0;
-+	const char *p, *end;
- 
- 	if (!prop)
- 		return -EINVAL;
- 	if (!prop->value)
- 		return -ENODATA;
--	if (strnlen(prop->value, prop->length) >= prop->length)
--		return -EILSEQ;
--
- 	p = prop->value;
-+	end = p + prop->length;
- 
--	for (i = 0; total < prop->length; total += l, p += l, i++)
--		l = strlen(p) + 1;
--
--	return i;
-+	for (i = 0; p < end && (!out_strs || i < skip + sz); i++, p += l) {
-+		l = strnlen(p, end - p) + 1;
-+		if (p + l > end)
-+			return -EILSEQ;
-+		if (out_strs && i >= skip)
-+			*out_strs++ = p;
-+	}
-+	i -= skip;
-+	return i <= 0 ? -ENODATA : i;
- }
--EXPORT_SYMBOL_GPL(of_property_count_strings);
-+EXPORT_SYMBOL_GPL(of_property_read_string_helper);
- 
- void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
- {
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -247,8 +247,9 @@ static void __init of_selftest_parse_pha
- 	selftest(rc == -EINVAL, "expected:%i got:%i\n", -EINVAL, rc);
- }
- 
--static void __init of_selftest_property_match_string(void)
-+static void __init of_selftest_property_string(void)
- {
-+	const char *strings[4];
- 	struct device_node *np;
- 	int rc;
- 
-@@ -265,13 +266,66 @@ static void __init of_selftest_property_
- 	rc = of_property_match_string(np, "phandle-list-names", "third");
- 	selftest(rc == 2, "third expected:0 got:%i\n", rc);
- 	rc = of_property_match_string(np, "phandle-list-names", "fourth");
--	selftest(rc == -ENODATA, "unmatched string; rc=%i", rc);
-+	selftest(rc == -ENODATA, "unmatched string; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "missing-property", "blah");
--	selftest(rc == -EINVAL, "missing property; rc=%i", rc);
-+	selftest(rc == -EINVAL, "missing property; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "empty-property", "blah");
--	selftest(rc == -ENODATA, "empty property; rc=%i", rc);
-+	selftest(rc == -ENODATA, "empty property; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "unterminated-string", "blah");
--	selftest(rc == -EILSEQ, "unterminated string; rc=%i", rc);
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
+ 			/*
+@@ -476,13 +476,17 @@ xfs_bulkstat(
+ 			error = xfs_btree_increment(cur, 0, &tmp);
+ 			cond_resched();
+ 		}
 +
-+	/* of_property_count_strings() tests */
-+	rc = of_property_count_strings(np, "string-property");
-+	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "phandle-list-names");
-+	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "unterminated-string");
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "unterminated-string-list");
-+	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
-+
-+	/* of_property_read_string_index() tests */
-+	rc = of_property_read_string_index(np, "string-property", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "foobar"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "string-property", 1, strings);
-+	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 1, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "second"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 2, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "third"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "phandle-list-names", 3, strings);
-+	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "unterminated-string", 0, strings);
-+	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "unterminated-string-list", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "unterminated-string-list", 2, strings); /* should fail */
-+	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[1] = NULL;
-+
-+	/* of_property_read_string_array() tests */
-+	rc = of_property_read_string_array(np, "string-property", strings, 4);
-+	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_read_string_array(np, "phandle-list-names", strings, 4);
-+	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_read_string_array(np, "unterminated-string", strings, 4);
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+	/* -- An incorrectly formed string should cause a failure */
-+	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 4);
-+	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
-+	/* -- parsing the correctly formed strings should still work: */
-+	strings[2] = NULL;
-+	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 2);
-+	selftest(rc == 2 && strings[2] == NULL, "of_property_read_string_array() failure; rc=%i\n", rc);
-+	strings[1] = NULL;
-+	rc = of_property_read_string_array(np, "phandle-list-names", strings, 1);
-+	selftest(rc == 1 && strings[1] == NULL, "Overwrote end of string array; rc=%i, str='%s'\n", rc, strings[1]);
- }
- 
- #define propcmp(p1, p2) (((p1)->length == (p2)->length) && \
-@@ -783,7 +837,7 @@ static int __init of_selftest(void)
- 	of_selftest_find_node_by_name();
- 	of_selftest_dynamic();
- 	of_selftest_parse_phandle_with_args();
--	of_selftest_property_match_string();
-+	of_selftest_property_string();
- 	of_selftest_property_copy();
- 	of_selftest_changeset();
- 	of_selftest_parse_interrupts();
---- a/drivers/of/testcase-data/tests-phandle.dtsi
-+++ b/drivers/of/testcase-data/tests-phandle.dtsi
-@@ -39,7 +39,9 @@
- 				phandle-list-bad-args = <&provider2 1 0>,
- 							<&provider3 0>;
- 				empty-property;
-+				string-property = "foobar";
- 				unterminated-string = [40 41 42 43];
-+				unterminated-string-list = "first", "second", [40 41 42 43];
- 			};
- 		};
- 	};
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -267,14 +267,12 @@ extern int of_property_read_u64(const st
- extern int of_property_read_string(struct device_node *np,
- 				   const char *propname,
- 				   const char **out_string);
--extern int of_property_read_string_index(struct device_node *np,
--					 const char *propname,
--					 int index, const char **output);
- extern int of_property_match_string(struct device_node *np,
- 				    const char *propname,
- 				    const char *string);
--extern int of_property_count_strings(struct device_node *np,
--				     const char *propname);
-+extern int of_property_read_string_helper(struct device_node *np,
-+					      const char *propname,
-+					      const char **out_strs, size_t sz, int index);
- extern int of_device_is_compatible(const struct device_node *device,
- 				   const char *);
- extern int of_device_is_available(const struct device_node *device);
-@@ -486,15 +484,9 @@ static inline int of_property_read_strin
- 	return -ENOSYS;
- }
- 
--static inline int of_property_read_string_index(struct device_node *np,
--						const char *propname, int index,
--						const char **out_string)
--{
--	return -ENOSYS;
--}
--
--static inline int of_property_count_strings(struct device_node *np,
--					    const char *propname)
-+static inline int of_property_read_string_helper(struct device_node *np,
-+						 const char *propname,
-+						 const char **out_strs, size_t sz, int index)
- {
- 	return -ENOSYS;
- }
-@@ -668,6 +660,70 @@ static inline int of_property_count_u64_
- }
- 
- /**
-+ * of_property_read_string_array() - Read an array of strings from a multiple
-+ * strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @out_strs:	output array of string pointers.
-+ * @sz:		number of array elements to read.
-+ *
-+ * Search for a property in a device tree node and retrieve a list of
-+ * terminated string values (pointer to data, not a copy) in that property.
-+ *
-+ * If @out_strs is NULL, the number of strings in the property is returned.
-+ */
-+static inline int of_property_read_string_array(struct device_node *np,
-+						const char *propname, const char **out_strs,
-+						size_t sz)
-+{
-+	return of_property_read_string_helper(np, propname, out_strs, sz, 0);
-+}
-+
-+/**
-+ * of_property_count_strings() - Find and return the number of strings from a
-+ * multiple strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ *
-+ * Search for a property in a device tree node and retrieve the number of null
-+ * terminated string contain in it. Returns the number of strings on
-+ * success, -EINVAL if the property does not exist, -ENODATA if property
-+ * does not have a value, and -EILSEQ if the string is not null-terminated
-+ * within the length of the property data.
-+ */
-+static inline int of_property_count_strings(struct device_node *np,
-+					    const char *propname)
-+{
-+	return of_property_read_string_helper(np, propname, NULL, 0, 0);
-+}
-+
-+/**
-+ * of_property_read_string_index() - Find and read a string from a multiple
-+ * strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @index:	index of the string in the list of strings
-+ * @out_string:	pointer to null terminated return string, modified only if
-+ *		return value is 0.
-+ *
-+ * Search for a property in a device tree node and retrieve a null
-+ * terminated string value (pointer to data, not a copy) in the list of strings
-+ * contained in that property.
-+ * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
-+ * property does not have a value, and -EILSEQ if the string is not
-+ * null-terminated within the length of the property data.
-+ *
-+ * The out_string pointer is modified only if a valid string can be decoded.
-+ */
-+static inline int of_property_read_string_index(struct device_node *np,
-+						const char *propname,
-+						int index, const char **output)
-+{
-+	int rc = of_property_read_string_helper(np, propname, output, 1, index);
-+	return rc < 0 ? rc : 0;
-+}
-+
-+/**
-  * of_property_read_bool - Findfrom a property
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
+ 		/*
+-		 * Drop the btree buffers and the agi buffer.
+-		 * We can't hold any of the locks these represent
+-		 * when calling iget.
++		 * Drop the btree buffers and the agi buffer as we can't hold any
++		 * of the locks these represent when calling iget. If there is a
++		 * pending error, then we are done.
+ 		 */
++del_cursor:
+ 		xfs_btree_del_cursor(cur, XFS_BTREE_NOERROR);
+ 		xfs_buf_relse(agbp);
++		if (error)
++			break;
+ 		/*
+ 		 * Now format all the good inodes into the user's buffer.
+ 		 */
 
 
