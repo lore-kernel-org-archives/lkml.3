@@ -1,132 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaKLXi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 18:38:27 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:51954 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaKLXiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 18:38:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <cover.1414190806.git.luto@amacapital.net>
-References: <cover.1414190806.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 12 Nov 2014 15:38:03 -0800
-Message-ID: <CALCETrXVNeb5W+G4Y-PJ_R_yoUpJdbcHkL2=_Gv34oOvKnRzLQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] CR4 handling improvements
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+	id S1753764AbaKLXlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 18:41:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2579 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753727AbaKLXlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 18:41:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
+   d="scan'208";a="606931994"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>
+CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/s7+MsolZCiViEiCPzqCVeTRAJxdoOwA
+Date: Wed, 12 Nov 2014 23:41:14 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com>
+ <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+In-Reply-To: <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: multipart/mixed;
+	boundary="_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 3:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> This little series tightens up rdpmc permissions.  With it applied,
-> rdpmc can only be used if a perf_event is actually mmapped.  For now,
-> this is only really useful for seccomp.
->
-> At some point this could be further tightened up to only allow rdpmc
-> if an actual self-monitoring perf event that is compatible with
-> rdpmc is mapped.
->
-> This should add <50ns to context switches between rdpmc-capable and
-> rdpmc-non-capable mms.  I suspect that this is well under 10%
-> overhead, given that perf already adds some context switch latency.
->
-> I think that patches 1-3 are a good idea regardless of any rdpmc changes.
->
-> AMD Uncore userspace rdpmc is broken by these patches (cap_user_rdpmc
-> will be zero), but it was broken anyway.
->
-> Changes from v1 (aka RFC):
->  - Rebased on top of the KVM CR4 fix.  This applies to a very recent -linus.
->  - Renamed the cr4 helpers (Peter, Borislav)
->  - Fixed buggy cr4 helpers (Hilf)
->  - Improved lots of comments (everyone)
->  - Renamed read_cr4 and write_cr4 to make sure I didn't miss anything.
->    (NB: This will introduce conflicts with Andi's FSGSBASE work.  This is
->     a good thing.)
->
-> Andy Lutomirski (7):
->   x86: Clean up cr4 manipulation
->   x86: Store a per-cpu shadow copy of CR4
->   x86: Add a comment clarifying LDT context switching
->   perf: Add pmu callbacks to track event mapping and unmapping
->   perf: Pass the event to arch_perf_update_userpage
->   x86, perf: Only allow rdpmc if a perf_event is mapped
->   x86, perf: Add /sys/devices/cpu/rdpmc=2 to allow rdpmc for all tasks
->
-> Peter Zijlstra (1):
->   perf: Clean up pmu::event_idx
->
+--_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 
+PiB2MiBjb21pbmcgc29vbiB3aXRoIHRoZXNlIGNoYW5nZXMgYW5kIHNvbWUgYWRkaXRpb25hbCBj
+b21tZW50IGNsZWFudXBzLg0KDQpTbyB2MSArIGRvX21hY2hpbmVfY2hlY2sgY2hhbmdlIGlzIG5v
+dCBzdXJ2aXZpbmcgc29tZSByZWFsIHRlc3RpbmcuICBJJ20gaW5qZWN0aW5nIGFuZA0KY29uc3Vt
+aW5nIGVycm9ycyBzZXF1ZW50aWFsbHkgd2l0aCBhIHNtYWxsIGRlbGF5IGluIGJldHdlZW4gLSBz
+byBubyBmYW5jeSBjb3JuZXIgY2FzZXMgd2l0aA0KbXVsdGlwbGUgZXJyb3JzIGJlaW5nIHByb2Nl
+c3NlZCAuLi4gd2UgZ2V0IGFsbCB0aGUgd2F5IGRvbmUgd2l0aCBvbmUgZXJyb3IgYmVmb3JlIHdl
+IHN0YXJ0DQp0aGUgbmV4dC4gIFRlc3Qgb25seSBzdXJ2aXZlcyBhYm91dCA0MDBpc2ggcmVjb3Zl
+cmllcyBiZWZvcmUgTGludXggZGllcyBjb21wbGFpbmluZzoNCiAgICAiVGltZW91dCBzeW5jaHJv
+bml6aW5nIG1hY2hpbmUgY2hlY2sgb3ZlciBDUFVzIi4gDQpUaGlzIHByb2JhYmx5IG1lYW5zIHRo
+YXQgc29tZSBjcHUgd2FuZGVyZWQgaW50byB0aGUgd2VlZHMgYW5kIG5ldmVyIHNob3dlZCB1cCBp
+biB0aGUNCmhhbmRsZXIuDQoNCnBhdGNoIGp1c3QgbW92ZXMgdGhlIHJlY292ZXJ5IHRvIHRoZSBl
+bmQgb2YgZG9fbWFjaGluZV9jaGVjaygpIGluc3RlYWQgb2YNCmRvaW5nIHRoZSB3aG9sZSBUSUZf
+TUNFX05PVElGWSB0aGluZyAtIGFuZCBkZWxldGVzIGFsbCB0aGUgVElGX01DRV9OT1RJRlkNCmJp
+dHMgdGhhdCBhcmUgbm8gbG9uZ2VyIG5lZWRlZC4NCg0KLVRvbnkNCg0KDQo=
 
-What's the status of these?  I think that "perf: Clean up
-pmu::event_idx" and "x86: Add a comment clarifying LDT context
-switching" are in -tip, the two cr4 cleanups ("x86: Clean up cr4
-manipulation" and "x86: Store a per-cpu shadow copy of CR4") are
-reviewed but will conflict with Andi's fsgsbase work, and the rest are
-waiting for review.
+--_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_
+Content-Type: application/octet-stream; name="mce-stack.patch"
+Content-Description: mce-stack.patch
+Content-Disposition: attachment; filename="mce-stack.patch"; size=6556;
+	creation-date="Wed, 12 Nov 2014 23:25:20 GMT";
+	modification-date="Wed, 12 Nov 2014 23:25:04 GMT"
+Content-Transfer-Encoding: base64
 
-Thanks,
-Andy
+ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL21jZS5oIGIvYXJjaC94ODYvaW5jbHVk
+ZS9hc20vbWNlLmgKaW5kZXggOTU4YjkwZjc2MWU1Li5iZTVhNTFhNGEyMTkgMTAwNjQ0Ci0tLSBh
+L2FyY2gveDg2L2luY2x1ZGUvYXNtL21jZS5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL21j
+ZS5oCkBAIC0xODcsNyArMTg3LDYgQEAgZW51bSBtY3BfZmxhZ3Mgewogdm9pZCBtYWNoaW5lX2No
+ZWNrX3BvbGwoZW51bSBtY3BfZmxhZ3MgZmxhZ3MsIG1jZV9iYW5rc190ICpiKTsKIAogaW50IG1j
+ZV9ub3RpZnlfaXJxKHZvaWQpOwotdm9pZCBtY2Vfbm90aWZ5X3Byb2Nlc3Modm9pZCk7CiAKIERF
+Q0xBUkVfUEVSX0NQVShzdHJ1Y3QgbWNlLCBpbmplY3RtKTsKIApkaWZmIC0tZ2l0IGEvYXJjaC94
+ODYvaW5jbHVkZS9hc20vdGhyZWFkX2luZm8uaCBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3RocmVh
+ZF9pbmZvLmgKaW5kZXggODU0MDUzODg5ZDRkLi4xMTY5NzNmZTg4MTkgMTAwNjQ0Ci0tLSBhL2Fy
+Y2gveDg2L2luY2x1ZGUvYXNtL3RocmVhZF9pbmZvLmgKKysrIGIvYXJjaC94ODYvaW5jbHVkZS9h
+c20vdGhyZWFkX2luZm8uaApAQCAtNzUsNyArNzUsNiBAQCBzdHJ1Y3QgdGhyZWFkX2luZm8gewog
+I2RlZmluZSBUSUZfU1lTQ0FMTF9FTVUJCTYJLyogc3lzY2FsbCBlbXVsYXRpb24gYWN0aXZlICov
+CiAjZGVmaW5lIFRJRl9TWVNDQUxMX0FVRElUCTcJLyogc3lzY2FsbCBhdWRpdGluZyBhY3RpdmUg
+Ki8KICNkZWZpbmUgVElGX1NFQ0NPTVAJCTgJLyogc2VjdXJlIGNvbXB1dGluZyAqLwotI2RlZmlu
+ZSBUSUZfTUNFX05PVElGWQkJMTAJLyogbm90aWZ5IHVzZXJzcGFjZSBvZiBhbiBNQ0UgKi8KICNk
+ZWZpbmUgVElGX1VTRVJfUkVUVVJOX05PVElGWQkxMQkvKiBub3RpZnkga2VybmVsIG9mIHVzZXJz
+cGFjZSByZXR1cm4gKi8KICNkZWZpbmUgVElGX1VQUk9CRQkJMTIJLyogYnJlYWtwb2ludGVkIG9y
+IHNpbmdsZXN0ZXBwaW5nICovCiAjZGVmaW5lIFRJRl9OT1RTQwkJMTYJLyogVFNDIGlzIG5vdCBh
+Y2Nlc3NpYmxlIGluIHVzZXJsYW5kICovCkBAIC0xMDAsNyArOTksNiBAQCBzdHJ1Y3QgdGhyZWFk
+X2luZm8gewogI2RlZmluZSBfVElGX1NZU0NBTExfRU1VCSgxIDw8IFRJRl9TWVNDQUxMX0VNVSkK
+ICNkZWZpbmUgX1RJRl9TWVNDQUxMX0FVRElUCSgxIDw8IFRJRl9TWVNDQUxMX0FVRElUKQogI2Rl
+ZmluZSBfVElGX1NFQ0NPTVAJCSgxIDw8IFRJRl9TRUNDT01QKQotI2RlZmluZSBfVElGX01DRV9O
+T1RJRlkJCSgxIDw8IFRJRl9NQ0VfTk9USUZZKQogI2RlZmluZSBfVElGX1VTRVJfUkVUVVJOX05P
+VElGWQkoMSA8PCBUSUZfVVNFUl9SRVRVUk5fTk9USUZZKQogI2RlZmluZSBfVElGX1VQUk9CRQkJ
+KDEgPDwgVElGX1VQUk9CRSkKICNkZWZpbmUgX1RJRl9OT1RTQwkJKDEgPDwgVElGX05PVFNDKQpA
+QCAtMTQwLDggKzEzOCw3IEBAIHN0cnVjdCB0aHJlYWRfaW5mbyB7CiAKIC8qIE9ubHkgdXNlZCBm
+b3IgNjQgYml0ICovCiAjZGVmaW5lIF9USUZfRE9fTk9USUZZX01BU0sJCQkJCQlcCi0JKF9USUZf
+U0lHUEVORElORyB8IF9USUZfTUNFX05PVElGWSB8IF9USUZfTk9USUZZX1JFU1VNRSB8CVwKLQkg
+X1RJRl9VU0VSX1JFVFVSTl9OT1RJRlkpCisJKF9USUZfU0lHUEVORElORyB8IF9USUZfTk9USUZZ
+X1JFU1VNRSB8CV9USUZfVVNFUl9SRVRVUk5fTk9USUZZKQogCiAvKiBmbGFncyB0byBjaGVjayBp
+biBfX3N3aXRjaF90bygpICovCiAjZGVmaW5lIF9USUZfV09SS19DVFhTVwkJCQkJCQlcCmRpZmYg
+LS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvY3B1L21jaGVjay9tY2UuYyBiL2FyY2gveDg2L2tlcm5l
+bC9jcHUvbWNoZWNrL21jZS5jCmluZGV4IDYxYTk2NjhjZWJmZC4uZjczNzhhYWRhYTVkIDEwMDY0
+NAotLS0gYS9hcmNoL3g4Ni9rZXJuZWwvY3B1L21jaGVjay9tY2UuYworKysgYi9hcmNoL3g4Ni9r
+ZXJuZWwvY3B1L21jaGVjay9tY2UuYwpAQCAtOTU2LDUxICs5NTYsNiBAQCBzdGF0aWMgdm9pZCBt
+Y2VfY2xlYXJfc3RhdGUodW5zaWduZWQgbG9uZyAqdG9jbGVhcikKIH0KIAogLyoKLSAqIE5lZWQg
+dG8gc2F2ZSBmYXVsdGluZyBwaHlzaWNhbCBhZGRyZXNzIGFzc29jaWF0ZWQgd2l0aCBhIHByb2Nl
+c3MKLSAqIGluIHRoZSBtYWNoaW5lIGNoZWNrIGhhbmRsZXIgc29tZSBwbGFjZSB3aGVyZSB3ZSBj
+YW4gZ3JhYiBpdCBiYWNrCi0gKiBsYXRlciBpbiBtY2Vfbm90aWZ5X3Byb2Nlc3MoKQotICovCi0j
+ZGVmaW5lCU1DRV9JTkZPX01BWAkxNgotCi1zdHJ1Y3QgbWNlX2luZm8gewotCWF0b21pY190CQlp
+bnVzZTsKLQlzdHJ1Y3QgdGFza19zdHJ1Y3QJKnQ7Ci0JX191NjQJCQlwYWRkcjsKLQlpbnQJCQly
+ZXN0YXJ0YWJsZTsKLX0gbWNlX2luZm9bTUNFX0lORk9fTUFYXTsKLQotc3RhdGljIHZvaWQgbWNl
+X3NhdmVfaW5mbyhfX3U2NCBhZGRyLCBpbnQgYykKLXsKLQlzdHJ1Y3QgbWNlX2luZm8gKm1pOwot
+Ci0JZm9yIChtaSA9IG1jZV9pbmZvOyBtaSA8ICZtY2VfaW5mb1tNQ0VfSU5GT19NQVhdOyBtaSsr
+KSB7Ci0JCWlmIChhdG9taWNfY21weGNoZygmbWktPmludXNlLCAwLCAxKSA9PSAwKSB7Ci0JCQlt
+aS0+dCA9IGN1cnJlbnQ7Ci0JCQltaS0+cGFkZHIgPSBhZGRyOwotCQkJbWktPnJlc3RhcnRhYmxl
+ID0gYzsKLQkJCXJldHVybjsKLQkJfQotCX0KLQotCW1jZV9wYW5pYygiVG9vIG1hbnkgY29uY3Vy
+cmVudCByZWNvdmVyYWJsZSBlcnJvcnMiLCBOVUxMLCBOVUxMKTsKLX0KLQotc3RhdGljIHN0cnVj
+dCBtY2VfaW5mbyAqbWNlX2ZpbmRfaW5mbyh2b2lkKQotewotCXN0cnVjdCBtY2VfaW5mbyAqbWk7
+Ci0KLQlmb3IgKG1pID0gbWNlX2luZm87IG1pIDwgJm1jZV9pbmZvW01DRV9JTkZPX01BWF07IG1p
+KyspCi0JCWlmIChhdG9taWNfcmVhZCgmbWktPmludXNlKSAmJiBtaS0+dCA9PSBjdXJyZW50KQot
+CQkJcmV0dXJuIG1pOwotCXJldHVybiBOVUxMOwotfQotCi1zdGF0aWMgdm9pZCBtY2VfY2xlYXJf
+aW5mbyhzdHJ1Y3QgbWNlX2luZm8gKm1pKQotewotCWF0b21pY19zZXQoJm1pLT5pbnVzZSwgMCk7
+Ci19Ci0KLS8qCiAgKiBUaGUgYWN0dWFsIG1hY2hpbmUgY2hlY2sgaGFuZGxlci4gVGhpcyBvbmx5
+IGhhbmRsZXMgcmVhbAogICogZXhjZXB0aW9ucyB3aGVuIHNvbWV0aGluZyBnb3QgY29ycnVwdGVk
+IGNvbWluZyBpbiB0aHJvdWdoIGludCAxOC4KICAqCkBAIC0xMDM3LDYgKzk5Miw4IEBAIHZvaWQg
+ZG9fbWFjaGluZV9jaGVjayhzdHJ1Y3QgcHRfcmVncyAqcmVncywgbG9uZyBlcnJvcl9jb2RlKQog
+CURFQ0xBUkVfQklUTUFQKHRvY2xlYXIsIE1BWF9OUl9CQU5LUyk7CiAJREVDTEFSRV9CSVRNQVAo
+dmFsaWRfYmFua3MsIE1BWF9OUl9CQU5LUyk7CiAJY2hhciAqbXNnID0gIlVua25vd24iOworCXU2
+NCByZWNvdmVyX3BhZGRyID0gfjB1bGw7CisJaW50IGZsYWdzID0gTUZfQUNUSU9OX1JFUVVJUkVE
+OwogCiAJdGhpc19jcHVfaW5jKG1jZV9leGNlcHRpb25fY291bnQpOwogCkBAIC0xMTU1LDkgKzEx
+MTIsOSBAQCB2b2lkIGRvX21hY2hpbmVfY2hlY2soc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIGxvbmcg
+ZXJyb3JfY29kZSkKIAkJaWYgKG5vX3dheV9vdXQpCiAJCQltY2VfcGFuaWMoIkZhdGFsIG1hY2hp
+bmUgY2hlY2sgb24gY3VycmVudCBDUFUiLCAmbSwgbXNnKTsKIAkJaWYgKHdvcnN0ID09IE1DRV9B
+Ul9TRVZFUklUWSkgewotCQkJLyogc2NoZWR1bGUgYWN0aW9uIGJlZm9yZSByZXR1cm4gdG8gdXNl
+cmxhbmQgKi8KLQkJCW1jZV9zYXZlX2luZm8obS5hZGRyLCBtLm1jZ3N0YXR1cyAmIE1DR19TVEFU
+VVNfUklQVik7Ci0JCQlzZXRfdGhyZWFkX2ZsYWcoVElGX01DRV9OT1RJRlkpOworCQkJcmVjb3Zl
+cl9wYWRkciA9IG0uYWRkcjsKKwkJCWlmICghKG0ubWNnc3RhdHVzICYgTUNHX1NUQVRVU19SSVBW
+KSkKKwkJCQlmbGFncyB8PSBNRl9NVVNUX0tJTEw7CiAJCX0gZWxzZSBpZiAoa2lsbF9pdCkgewog
+CQkJZm9yY2Vfc2lnKFNJR0JVUywgY3VycmVudCk7CiAJCX0KQEAgLTExNjgsNiArMTEyNSwyMSBA
+QCB2b2lkIGRvX21hY2hpbmVfY2hlY2soc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIGxvbmcgZXJyb3Jf
+Y29kZSkKIAltY2Vfd3Jtc3JsKE1TUl9JQTMyX01DR19TVEFUVVMsIDApOwogb3V0OgogCXN5bmNf
+Y29yZSgpOworCisJaWYgKHJlY292ZXJfcGFkZHIgPT0gfjB1bGwpCisJCXJldHVybjsKKworCXBy
+X2VycigiVW5jb3JyZWN0ZWQgaGFyZHdhcmUgbWVtb3J5IGVycm9yIGluIHVzZXItYWNjZXNzIGF0
+ICVsbHgiLAorCQkgcmVjb3Zlcl9wYWRkcik7CisJLyoKKwkgKiBXZSBtdXN0IGNhbGwgbWVtb3J5
+X2ZhaWx1cmUoKSBoZXJlIGV2ZW4gaWYgdGhlIGN1cnJlbnQgcHJvY2VzcyBpcworCSAqIGRvb21l
+ZC4gV2Ugc3RpbGwgbmVlZCB0byBtYXJrIHRoZSBwYWdlIGFzIHBvaXNvbmVkIGFuZCBhbGVydCBh
+bnkKKwkgKiBvdGhlciB1c2VycyBvZiB0aGUgcGFnZS4KKwkgKi8KKwlpZiAobWVtb3J5X2ZhaWx1
+cmUocmVjb3Zlcl9wYWRkciA+PiBQQUdFX1NISUZULCBNQ0VfVkVDVE9SLCBmbGFncykgPCAwKSB7
+CisJCXByX2VycigiTWVtb3J5IGVycm9yIG5vdCByZWNvdmVyZWQiKTsKKwkJZm9yY2Vfc2lnKFNJ
+R0JVUywgY3VycmVudCk7CisJfQogfQogRVhQT1JUX1NZTUJPTF9HUEwoZG9fbWFjaGluZV9jaGVj
+ayk7CiAKQEAgLTExODUsNDIgKzExNTcsNiBAQCBpbnQgbWVtb3J5X2ZhaWx1cmUodW5zaWduZWQg
+bG9uZyBwZm4sIGludCB2ZWN0b3IsIGludCBmbGFncykKICNlbmRpZgogCiAvKgotICogQ2FsbGVk
+IGluIHByb2Nlc3MgY29udGV4dCB0aGF0IGludGVycnVwdGVkIGJ5IE1DRSBhbmQgbWFya2VkIHdp
+dGgKLSAqIFRJRl9NQ0VfTk9USUZZLCBqdXN0IGJlZm9yZSByZXR1cm5pbmcgdG8gZXJyb25lb3Vz
+IHVzZXJsYW5kLgotICogVGhpcyBjb2RlIGlzIGFsbG93ZWQgdG8gc2xlZXAuCi0gKiBBdHRlbXB0
+IHBvc3NpYmxlIHJlY292ZXJ5IHN1Y2ggYXMgY2FsbGluZyB0aGUgaGlnaCBsZXZlbCBWTSBoYW5k
+bGVyIHRvCi0gKiBwcm9jZXNzIGFueSBjb3JydXB0ZWQgcGFnZXMsIGFuZCBraWxsL3NpZ25hbCBj
+dXJyZW50IHByb2Nlc3MgaWYgcmVxdWlyZWQuCi0gKiBBY3Rpb24gcmVxdWlyZWQgZXJyb3JzIGFy
+ZSBoYW5kbGVkIGhlcmUuCi0gKi8KLXZvaWQgbWNlX25vdGlmeV9wcm9jZXNzKHZvaWQpCi17Ci0J
+dW5zaWduZWQgbG9uZyBwZm47Ci0Jc3RydWN0IG1jZV9pbmZvICptaSA9IG1jZV9maW5kX2luZm8o
+KTsKLQlpbnQgZmxhZ3MgPSBNRl9BQ1RJT05fUkVRVUlSRUQ7Ci0KLQlpZiAoIW1pKQotCQltY2Vf
+cGFuaWMoIkxvc3QgcGh5c2ljYWwgYWRkcmVzcyBmb3IgdW5jb25zdW1lZCB1bmNvcnJlY3RhYmxl
+IGVycm9yIiwgTlVMTCwgTlVMTCk7Ci0JcGZuID0gbWktPnBhZGRyID4+IFBBR0VfU0hJRlQ7Ci0K
+LQljbGVhcl90aHJlYWRfZmxhZyhUSUZfTUNFX05PVElGWSk7Ci0KLQlwcl9lcnIoIlVuY29ycmVj
+dGVkIGhhcmR3YXJlIG1lbW9yeSBlcnJvciBpbiB1c2VyLWFjY2VzcyBhdCAlbGx4IiwKLQkJIG1p
+LT5wYWRkcik7Ci0JLyoKLQkgKiBXZSBtdXN0IGNhbGwgbWVtb3J5X2ZhaWx1cmUoKSBoZXJlIGV2
+ZW4gaWYgdGhlIGN1cnJlbnQgcHJvY2VzcyBpcwotCSAqIGRvb21lZC4gV2Ugc3RpbGwgbmVlZCB0
+byBtYXJrIHRoZSBwYWdlIGFzIHBvaXNvbmVkIGFuZCBhbGVydCBhbnkKLQkgKiBvdGhlciB1c2Vy
+cyBvZiB0aGUgcGFnZS4KLQkgKi8KLQlpZiAoIW1pLT5yZXN0YXJ0YWJsZSkKLQkJZmxhZ3MgfD0g
+TUZfTVVTVF9LSUxMOwotCWlmIChtZW1vcnlfZmFpbHVyZShwZm4sIE1DRV9WRUNUT1IsIGZsYWdz
+KSA8IDApIHsKLQkJcHJfZXJyKCJNZW1vcnkgZXJyb3Igbm90IHJlY292ZXJlZCIpOwotCQlmb3Jj
+ZV9zaWcoU0lHQlVTLCBjdXJyZW50KTsKLQl9Ci0JbWNlX2NsZWFyX2luZm8obWkpOwotfQotCi0v
+KgogICogQWN0aW9uIG9wdGlvbmFsIHByb2Nlc3NpbmcgaGFwcGVucyBoZXJlIChwaWNraW5nIHVw
+CiAgKiBmcm9tIHRoZSBsaXN0IG9mIGZhdWx0aW5nIHBhZ2VzIHRoYXQgZG9fbWFjaGluZV9jaGVj
+aygpCiAgKiBwbGFjZWQgaW50byB0aGUgInJpbmciKS4KZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tl
+cm5lbC9zaWduYWwuYyBiL2FyY2gveDg2L2tlcm5lbC9zaWduYWwuYwppbmRleCBlZDM3YTc2OGQw
+ZmMuLjJhMzNjOGY2ODMxOSAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL3NpZ25hbC5jCisr
+KyBiL2FyY2gveDg2L2tlcm5lbC9zaWduYWwuYwpAQCAtNzQwLDEyICs3NDAsNiBAQCBkb19ub3Rp
+ZnlfcmVzdW1lKHN0cnVjdCBwdF9yZWdzICpyZWdzLCB2b2lkICp1bnVzZWQsIF9fdTMyIHRocmVh
+ZF9pbmZvX2ZsYWdzKQogewogCXVzZXJfZXhpdCgpOwogCi0jaWZkZWYgQ09ORklHX1g4Nl9NQ0UK
+LQkvKiBub3RpZnkgdXNlcnNwYWNlIG9mIHBlbmRpbmcgTUNFcyAqLwotCWlmICh0aHJlYWRfaW5m
+b19mbGFncyAmIF9USUZfTUNFX05PVElGWSkKLQkJbWNlX25vdGlmeV9wcm9jZXNzKCk7Ci0jZW5k
+aWYgLyogQ09ORklHX1g4Nl82NCAmJiBDT05GSUdfWDg2X01DRSAqLwotCiAJaWYgKHRocmVhZF9p
+bmZvX2ZsYWdzICYgX1RJRl9VUFJPQkUpCiAJCXVwcm9iZV9ub3RpZnlfcmVzdW1lKHJlZ3MpOwog
+Cg==
 
-
->  arch/powerpc/perf/hv-24x7.c          |  6 ---
->  arch/powerpc/perf/hv-gpci.c          |  6 ---
->  arch/s390/kernel/perf_cpum_sf.c      |  6 ---
->  arch/x86/include/asm/mmu.h           |  2 +
->  arch/x86/include/asm/mmu_context.h   | 32 ++++++++++++++-
->  arch/x86/include/asm/paravirt.h      |  6 +--
->  arch/x86/include/asm/processor.h     | 33 ----------------
->  arch/x86/include/asm/special_insns.h |  6 +--
->  arch/x86/include/asm/tlbflush.h      | 77 ++++++++++++++++++++++++++++++++----
->  arch/x86/include/asm/virtext.h       |  5 ++-
->  arch/x86/kernel/acpi/sleep.c         |  2 +-
->  arch/x86/kernel/cpu/common.c         | 17 +++++---
->  arch/x86/kernel/cpu/mcheck/mce.c     |  3 +-
->  arch/x86/kernel/cpu/mcheck/p5.c      |  3 +-
->  arch/x86/kernel/cpu/mcheck/winchip.c |  3 +-
->  arch/x86/kernel/cpu/mtrr/cyrix.c     |  6 +--
->  arch/x86/kernel/cpu/mtrr/generic.c   |  6 +--
->  arch/x86/kernel/cpu/perf_event.c     | 76 ++++++++++++++++++++++++++---------
->  arch/x86/kernel/cpu/perf_event.h     |  2 +
->  arch/x86/kernel/head32.c             |  1 +
->  arch/x86/kernel/head64.c             |  2 +
->  arch/x86/kernel/i387.c               |  3 +-
->  arch/x86/kernel/process.c            |  5 ++-
->  arch/x86/kernel/process_32.c         |  2 +-
->  arch/x86/kernel/process_64.c         |  2 +-
->  arch/x86/kernel/setup.c              |  2 +-
->  arch/x86/kernel/xsave.c              |  3 +-
->  arch/x86/kvm/svm.c                   |  2 +-
->  arch/x86/kvm/vmx.c                   | 10 ++---
->  arch/x86/mm/fault.c                  |  2 +-
->  arch/x86/mm/init.c                   | 12 +++++-
->  arch/x86/mm/tlb.c                    |  3 --
->  arch/x86/power/cpu.c                 | 11 ++----
->  arch/x86/realmode/init.c             |  2 +-
->  arch/x86/xen/enlighten.c             |  4 +-
->  drivers/lguest/x86/core.c            |  4 +-
->  include/linux/perf_event.h           |  7 ++++
->  kernel/events/core.c                 | 29 ++++++--------
->  kernel/events/hw_breakpoint.c        |  7 ----
->  39 files changed, 256 insertions(+), 154 deletions(-)
->
-> --
-> 1.9.3
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+--_002_3908561D78D1C84285E8C5FCA982C28F3292BAB4ORSMSX114amrcor_--
