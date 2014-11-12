@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965717AbaKLBtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:49:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60902 "EHLO
+	id S965686AbaKLBtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:49:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60893 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965246AbaKLBtb (ORCPT
+	with ESMTP id S965670AbaKLBtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:31 -0500
+	Tue, 11 Nov 2014 20:49:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 002/123] ipv4: fix nexthop attlen check in fib_nh_match
-Date: Wed, 12 Nov 2014 10:16:08 +0900
-Message-Id: <20141112011719.100314436@linuxfoundation.org>
+        Roger Tseng <rogerable@realtek.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.10 010/123] mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
+Date: Wed, 12 Nov 2014 10:16:16 +0900
+Message-Id: <20141112011719.450999925@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,42 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Roger Tseng <rogerable@realtek.com>
 
-[ Upstream commit f76936d07c4eeb36d8dbb64ebd30ab46ff85d9f7 ]
+commit d1419d50c1bf711e9fd27b516a739c86b23f7cf9 upstream.
 
-fib_nh_match does not match nexthops correctly. Example:
+Current code erroneously fill the last byte of R2 response with an undefined
+value. In addition, the controller actually 'offloads' the last byte
+(CRC7, end bit) while receiving R2 response and thus it's impossible to get the
+actual value. This could cause mmc stack to obtain inconsistent CID from the
+same card after resume and misidentify it as a different card.
 
-ip route add 172.16.10/24 nexthop via 192.168.122.12 dev eth0 \
-                          nexthop via 192.168.122.13 dev eth0
-ip route del 172.16.10/24 nexthop via 192.168.122.14 dev eth0 \
-                          nexthop via 192.168.122.15 dev eth0
+Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
 
-Del command is successful and route is removed. After this patch
-applied, the route is correctly matched and result is:
-RTNETLINK answers: No such process
-
-Please consider this for stable trees as well.
-
-Fixes: 4e902c57417c4 ("[IPv4]: FIB configuration using struct fib_config")
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: ff984e57d36e ("mmc: Add realtek pcie sdmmc host driver")
+Signed-off-by: Roger Tseng <rogerable@realtek.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/fib_semantics.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -533,7 +533,7 @@ int fib_nh_match(struct fib_config *cfg,
- 			return 1;
+---
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -341,6 +341,13 @@ static void sd_send_cmd_get_rsp(struct r
+ 	}
  
- 		attrlen = rtnh_attrlen(rtnh);
--		if (attrlen < 0) {
-+		if (attrlen > 0) {
- 			struct nlattr *nla, *attrs = rtnh_attrs(rtnh);
- 
- 			nla = nla_find(attrs, attrlen, RTA_GATEWAY);
+ 	if (rsp_type == SD_RSP_TYPE_R2) {
++		/*
++		 * The controller offloads the last byte {CRC-7, end bit 1'b1}
++		 * of response type R2. Assign dummy CRC, 0, and end bit to the
++		 * byte(ptr[16], goes into the LSB of resp[3] later).
++		 */
++		ptr[16] = 1;
++
+ 		for (i = 0; i < 4; i++) {
+ 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+ 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
 
 
