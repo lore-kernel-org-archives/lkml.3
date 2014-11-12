@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaKLJvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:51:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:30473 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaKLJvr (ORCPT
+	id S1752743AbaKLJwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:52:35 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:53916 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928AbaKLJwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:51:47 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-fb-54632db06886
-From: Weijie Yang <weijie.yang@samsung.com>
-To: "'Johannes Weiner'" <hannes@cmpxchg.org>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
-        "'Rik van Riel'" <riel@redhat.com>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] mm: mincore: use PAGE_SIZE instead of PAGE_CACHE_SIZE
-Date: Wed, 12 Nov 2014 17:50:37 +0800
-Message-id: <000001cffe5e$44893f60$cd9bbe20$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/+Xhwhj4CcbRi3RbmYb2dqqhbJ1A==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9jQd0NuskhBrOXWVnMWb+GzWL1Jl+L
-	y7vmsFncW/Of1WLyu2eMFn+vrGexeHLiP4sDu8fhN++ZPXbOusvusenTJHaPEzN+s3i833eV
-	zWPz6WqPz5vkAtijuGxSUnMyy1KL9O0SuDKmv+hmK5gqXDHlWTNTA+Mvvi5GTg4JAROJX+3n
-	WCFsMYkL99azdTFycQgJTGeUuPCrhxnC+cMocWr+VEaQKjYBbYm7/RvBOkQEtCTW3z3GCFLE
-	LPCAUeL8x99gCWEBL4lVn3qZuhg5OFgEVCX+r1ACCfMK2EmsvPWQDcIWlPgx+R4LSAmzgLrE
-	lCm5IGFmAXmJzWveMoOEJYDCj/7qQmzSk7jxcTobRIm4xMYjt1gmMArMQjJoFsKgWUgGzULS
-	sYCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcCQ8k97BuKrB4hCjAAejEg9vxuakECHW
-	xLLiytxDjBIczEoivJ++AoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1I
-	LYLJMnFwSjUwsp+7tWHz8vyTXDd7nl7fdfpz2qpMJ3GzNMYlb0qbfv1n5JHdXNL3+eA85UMW
-	b5vyPizN9Pj25Hvp8mTvx2Xmv1LVt4h9vsy1JEhgtYNl5lumsir+0ITsstksGgc1lwn8Fe/r
-	OeGwt9HLT1CO+YmS6G4LdoujjknrdnPfNPlnuE1QgHke29YtSizFGYmGWsxFxYkAUw5UkoAC	AAA=
+	Wed, 12 Nov 2014 04:52:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <1414433284-31719-4-git-send-email-a.motakis@virtualopensystems.com>
+References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
+	<1414433284-31719-4-git-send-email-a.motakis@virtualopensystems.com>
+Date: Wed, 12 Nov 2014 17:52:32 +0800
+Message-ID: <CAOhR-w1nARQqtUX3nLBZYNg3PufDJMkOYeiJmpaz4fzPSZAmaQ@mail.gmail.com>
+Subject: Re: [PATCH v9 03/19] vfio: platform: add the VFIO PLATFORM module to Kconfig
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        alex.williamson@redhat.com, will.deacon@arm.com,
+        tech@virtualopensystems.com,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Eric Auger <eric.auger@linaro.org>, kim.phillips@freescale.com,
+        marc.zyngier@arm.com, open list <linux-kernel@vger.kernel.org>,
+        "open list:VFIO DRIVER" <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a RFC patch, because current PAGE_SIZE is equal to PAGE_CACHE_SIZE,
-there isn't any difference and issue when running.
+On 28 October 2014 02:07, Antonios Motakis
+<a.motakis@virtualopensystems.com> wrote:
+>
+> Enable building the VFIO PLATFORM driver that allows to use Linux platform
+> devices with VFIO.
+>
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/Kconfig           | 1 +
+>  drivers/vfio/Makefile          | 1 +
+>  drivers/vfio/platform/Kconfig  | 9 +++++++++
+>  drivers/vfio/platform/Makefile | 4 ++++
+>  4 files changed, 15 insertions(+)
+>  create mode 100644 drivers/vfio/platform/Kconfig
+>  create mode 100644 drivers/vfio/platform/Makefile
+>
+> diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
+> index a0abe04..962fb80 100644
+> --- a/drivers/vfio/Kconfig
+> +++ b/drivers/vfio/Kconfig
+> @@ -27,3 +27,4 @@ menuconfig VFIO
+>           If you don't know what to do here, say N.
+>
+>  source "drivers/vfio/pci/Kconfig"
+> +source "drivers/vfio/platform/Kconfig"
+> diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
+> index 0b035b1..dadf0ca 100644
+> --- a/drivers/vfio/Makefile
+> +++ b/drivers/vfio/Makefile
+> @@ -3,3 +3,4 @@ obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
+>  obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
+>  obj-$(CONFIG_VFIO_SPAPR_EEH) += vfio_spapr_eeh.o
+>  obj-$(CONFIG_VFIO_PCI) += pci/
+> +obj-$(CONFIG_VFIO_PLATFORM) += platform/
+> diff --git a/drivers/vfio/platform/Kconfig b/drivers/vfio/platform/Kconfig
+> new file mode 100644
+> index 0000000..c51af17
+> --- /dev/null
+> +++ b/drivers/vfio/platform/Kconfig
+> @@ -0,0 +1,9 @@
+> +config VFIO_PLATFORM
+> +       tristate "VFIO support for platform devices"
+> +       depends on VFIO && EVENTFD && ARM
 
-However, the current code mixes these two aligned_size inconsistently, and if
-they are not equal in future mincore_unmapped_range() would check more file
-pages than wanted.
+Hi Antonios,
+Is this only for ARM? how about X86 and PowerPC?
+On Freescale's PowerPC platform, the IOMMU is called PAMU (Peripheral
+Access Management Unit), and I am trying to use this VFIO framework on
+it.
 
-According to man-page, mincore uses PAGE_SIZE as its size unit, so this patch
-uses PAGE_SIZE instead of PAGE_CACHE_SIZE.
-
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- mm/mincore.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/mm/mincore.c b/mm/mincore.c
-index 725c809..8c19bce 100644
---- a/mm/mincore.c
-+++ b/mm/mincore.c
-@@ -102,11 +102,18 @@ static void mincore_unmapped_range(struct vm_area_struct *vma,
- 	int i;
- 
- 	if (vma->vm_file) {
--		pgoff_t pgoff;
-+		pgoff_t pgoff, pgoff_end;
-+		int j, count;
-+		unsigned char res;
- 
-+		count = 1 << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 		pgoff = linear_page_index(vma, addr);
--		for (i = 0; i < nr; i++, pgoff++)
--			vec[i] = mincore_page(vma->vm_file->f_mapping, pgoff);
-+		pgoff_end = linear_page_index(vma, end);
-+		for (i = 0; pgoff < pgoff_end; pgoff++) {
-+			res = mincore_page(vma->vm_file->f_mapping, pgoff);
-+			for (j = 0; j < count; j++)
-+				vec[i++] = res;
-+		}
- 	} else {
- 		for (i = 0; i < nr; i++)
- 			vec[i] = 0;
-@@ -258,7 +265,7 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
-  * return values:
-  *  zero    - success
-  *  -EFAULT - vec points to an illegal address
-- *  -EINVAL - addr is not a multiple of PAGE_CACHE_SIZE
-+ *  -EINVAL - addr is not a multiple of PAGE_SIZE
-  *  -ENOMEM - Addresses in the range [addr, addr + len] are
-  *		invalid for the address space of this process, or
-  *		specify one or more pages which are not currently
-@@ -273,14 +280,14 @@ SYSCALL_DEFINE3(mincore, unsigned long, start, size_t, len,
- 	unsigned char *tmp;
- 
- 	/* Check the start address: needs to be page-aligned.. */
-- 	if (start & ~PAGE_CACHE_MASK)
-+	if (start & ~PAGE_MASK)
- 		return -EINVAL;
- 
- 	/* ..and we need to be passed a valid user-space range */
- 	if (!access_ok(VERIFY_READ, (void __user *) start, len))
- 		return -ENOMEM;
- 
--	/* This also avoids any overflows on PAGE_CACHE_ALIGN */
-+	/* This also avoids any overflows on PAGE_ALIGN */
- 	pages = len >> PAGE_SHIFT;
- 	pages += (len & ~PAGE_MASK) != 0;
- 
--- 
-1.7.0.4
-
-
+>
+> +       help
+> +         Support for platform devices with VFIO. This is required to make
+> +         use of platform devices present on the system using the VFIO
+> +         framework.
+> +
+> +         If you don't know what to do here, say N.
+> diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
+> new file mode 100644
+> index 0000000..279862b
+> --- /dev/null
+> +++ b/drivers/vfio/platform/Makefile
+> @@ -0,0 +1,4 @@
+> +
+> +vfio-platform-y := vfio_platform.o vfio_platform_common.o
+> +
+> +obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
+> --
+> 2.1.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
