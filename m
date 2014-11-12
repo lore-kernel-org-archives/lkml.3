@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaKLBiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:38:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59917 "EHLO
+	id S934073AbaKLBiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:38:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59928 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934046AbaKLBiG (ORCPT
+	with ESMTP id S933178AbaKLBiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:38:06 -0500
+	Tue, 11 Nov 2014 20:38:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Honggang Li <enjoymindful@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.14 017/203] Revert "percpu: free percpu allocation info for uniprocessor system"
-Date: Wed, 12 Nov 2014 10:14:47 +0900
-Message-Id: <20141112011543.495281215@linuxfoundation.org>
+        hujianyang <hujianyang@huawei.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.14 028/203] UBIFS: fix free log space calculation
+Date: Wed, 12 Nov 2014 10:14:58 +0900
+Message-Id: <20141112011544.035707917@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,38 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit bb2e226b3bef596dd56be97df655d857b4603923 upstream.
+commit ba29e721eb2df6df8f33c1f248388bb037a47914 upstream.
 
-This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
-uniprocessor system").
+Hu (hujianyang <hujianyang@huawei.com>) discovered an issue in the
+'empty_log_bytes()' function, which calculates how many bytes are left in the
+log:
 
-The commit causes a hang with a crisv32 image. This may be an architecture
-problem, but at least for now the revert is necessary to be able to boot a
-crisv32 image.
+"
+If 'c->lhead_lnum + 1 == c->ltail_lnum' and 'c->lhead_offs == c->leb_size', 'h'
+would equalent to 't' and 'empty_log_bytes()' would return 'c->log_bytes'
+instead of 0.
+"
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Honggang Li <enjoymindful@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
+At this point it is not clear what would be the consequences of this, and
+whether this may lead to any problems, but this patch addresses the issue just
+in case.
+
+Tested-by: hujianyang <hujianyang@huawei.com>
+Reported-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/percpu.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/ubifs/log.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1917,8 +1917,6 @@ void __init setup_per_cpu_areas(void)
+--- a/fs/ubifs/log.c
++++ b/fs/ubifs/log.c
+@@ -106,10 +106,14 @@ static inline long long empty_log_bytes(
+ 	h = (long long)c->lhead_lnum * c->leb_size + c->lhead_offs;
+ 	t = (long long)c->ltail_lnum * c->leb_size;
  
- 	if (pcpu_setup_first_chunk(ai, fc) < 0)
- 		panic("Failed to initialize percpu areas.");
--
--	pcpu_free_alloc_info(ai);
+-	if (h >= t)
++	if (h > t)
+ 		return c->log_bytes - h + t;
+-	else
++	else if (h != t)
+ 		return t - h;
++	else if (c->lhead_lnum != c->ltail_lnum)
++		return 0;
++	else
++		return c->log_bytes;
  }
  
- #endif	/* CONFIG_SMP */
+ /**
 
 
