@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaKLBWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58583 "EHLO
+	id S1753586AbaKLBWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58602 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492AbaKLBWZ (ORCPT
+	with ESMTP id S1753562AbaKLBWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:25 -0500
+	Tue, 11 Nov 2014 20:22:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 060/319] ALSA: hda - Add workaround for CMI8888 snoop behavior
-Date: Wed, 12 Nov 2014 10:13:18 +0900
-Message-Id: <20141112011002.446832514@linuxfoundation.org>
+        Jeff Harris <jefftharris@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.17 064/319] [jffs2] kill wbuf_queued/wbuf_dwork_lock
+Date: Wed, 12 Nov 2014 10:13:22 +0900
+Message-Id: <20141112011003.186930045@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,45 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 3b70bdba2fcb374a2235a56ab73334348d819579 upstream.
+commit 99358a1ca53e8e6ce09423500191396f0e6584d2 upstream.
 
-CMI8888 shows the stuttering playback when the snooping is disabled
-on the audio buffer.  Meanwhile, we've got reports that CORB/RIRB
-doesn't work in the snooped mode.  So, as a compromise, disable the
-snoop only for CORB/RIRB and enable the snoop for the stream buffers.
+schedule_delayed_work() happening when the work is already pending is
+a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
+broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
+and pointless.  It's cheaper to let schedule_delayed_work() handle that
+case.
 
-The resultant patch became a bit ugly, unfortunately, but we still can
-live with it.
-
-Reported-and-tested-by: Geoffrey McRae <geoff@spacevs.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Jeff Harris <jefftharris@gmail.com>
+Tested-by: Jeff Harris <jefftharris@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/jffs2/jffs2_fs_sb.h |    2 --
+ fs/jffs2/wbuf.c        |   17 ++---------------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -373,6 +373,8 @@ static void __mark_pages_wc(struct azx *
- #ifdef CONFIG_SND_DMA_SGBUF
- 	if (dmab->dev.type == SNDRV_DMA_TYPE_DEV_SG) {
- 		struct snd_sg_buf *sgbuf = dmab->private_data;
-+		if (chip->driver_type == AZX_DRIVER_CMEDIA)
-+			return; /* deal with only CORB/RIRB buffers */
- 		if (on)
- 			set_pages_array_wc(sgbuf->page_table, sgbuf->pages);
- 		else
-@@ -1768,7 +1770,7 @@ static void pcm_mmap_prepare(struct snd_
- #ifdef CONFIG_X86
- 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
- 	struct azx *chip = apcm->chip;
--	if (!azx_snoop(chip))
-+	if (!azx_snoop(chip) && chip->driver_type != AZX_DRIVER_CMEDIA)
- 		area->vm_page_prot = pgprot_writecombine(area->vm_page_prot);
- #endif
+--- a/fs/jffs2/jffs2_fs_sb.h
++++ b/fs/jffs2/jffs2_fs_sb.h
+@@ -134,8 +134,6 @@ struct jffs2_sb_info {
+ 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
+ 
+ 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
+-	int wbuf_queued;                /* non-zero delayed work is queued */
+-	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
+ 
+ 	unsigned char *oobbuf;
+ 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
+--- a/fs/jffs2/wbuf.c
++++ b/fs/jffs2/wbuf.c
+@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct wor
+ 	struct jffs2_sb_info *c = work_to_sb(work);
+ 	struct super_block *sb = OFNI_BS_2SFFJ(c);
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	c->wbuf_queued = 0;
+-	spin_unlock(&c->wbuf_dwork_lock);
+-
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		jffs2_dbg(1, "%s()\n", __func__);
+ 		jffs2_flush_wbuf_gc(c, 0);
+@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return;
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	if (!c->wbuf_queued) {
++	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
++	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
+ 		jffs2_dbg(1, "%s()\n", __func__);
+-		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
+-		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
+-		c->wbuf_queued = 1;
+-	}
+-	spin_unlock(&c->wbuf_dwork_lock);
  }
+ 
+ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
+@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_
+ 
+ 	/* Initialise write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize = c->mtd->writesize;
+ 	c->wbuf_ofs = 0xFFFFFFFF;
+@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_s
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize =  c->mtd->erasesize;
+ 
+@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jf
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize = c->mtd->writesize;
+@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_i
+ 		return 0;
+ 
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize =  c->mtd->writesize;
 
 
