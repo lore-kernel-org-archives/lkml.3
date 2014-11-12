@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523AbaKLB3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:29:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59183 "EHLO
+	id S1754536AbaKLB3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:29:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59187 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003AbaKLB3t (ORCPT
+	with ESMTP id S1754003AbaKLB3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:29:49 -0500
+	Tue, 11 Nov 2014 20:29:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathaniel Ting <nathaniel.ting@silabs.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.17 198/319] USB: serial: cp210x: add Silicon Labs 358x VID and PID
-Date: Wed, 12 Nov 2014 10:15:36 +0900
-Message-Id: <20141112011025.560055352@linuxfoundation.org>
+        Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.17 199/319] usb: serial: ftdi_sio: add Awinda Station and Dongle products
+Date: Wed, 12 Nov 2014 10:15:37 +0900
+Message-Id: <20141112011025.736784522@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,31 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathaniel Ting <nathaniel.ting@silabs.com>
+From: Frans Klaver <frans.klaver@xsens.com>
 
-commit 35cc83eab097e5720a9cc0ec12bdc3a726f58381 upstream.
+commit edd74ffab1f6909eee400c7de8ce621870aacac9 upstream.
 
-Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
-driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
-connect to host PCs over a USB serial link.
+Add new IDs for the Xsens Awinda Station and Awinda Dongle.
 
-Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
+While at it, order the definitions by PID and add a logical separation
+between devices using Xsens' VID and those using FTDI's VID.
+
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -155,6 +155,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
-+	{ USB_DEVICE(0x1BA4, 0x0002) },	/* Silicon Labs 358x factory default */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -661,6 +661,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -143,8 +143,12 @@
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
+ #define XSENS_VID		0x2639
+-#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_AWINDA_STATION_PID 0x0101
++#define XSENS_AWINDA_DONGLE_PID 0x0102
+ #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++
++/* Xsens devices using FTDI VID */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
 
 
