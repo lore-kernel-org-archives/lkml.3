@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaKLWKp (ORCPT <rfc822;w@1wt.eu>);
+	id S1753576AbaKLWK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:10:57 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:18415 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaKLWKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Nov 2014 17:10:45 -0500
-Received: from ozlabs.org ([103.22.144.67]:35491 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529AbaKLWKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:10:44 -0500
-Date: Thu, 13 Nov 2014 09:10:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH]  of/base: Fix PowerPC address parsing hack
-Message-ID: <20141113091036.4e9ec43d@canb.auug.org.au>
-In-Reply-To: <1415771461.5124.33.camel@kernel.crashing.org>
-References: <1415771461.5124.33.camel@kernel.crashing.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+Date: Wed, 12 Nov 2014 17:10:21 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 4/8] xen: Delay invalidating extra memory
+Message-ID: <20141112221021.GC7549@laptop.dumpdata.com>
+References: <1415684626-18590-1-git-send-email-jgross@suse.com>
+ <1415684626-18590-5-git-send-email-jgross@suse.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/YVBg/yUUqmVzB6hR1OqPj5B"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415684626-18590-5-git-send-email-jgross@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/YVBg/yUUqmVzB6hR1OqPj5B
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+> @@ -376,12 +374,14 @@ void __init xen_build_dynamic_phys_to_machine(void)
+>  	unsigned long max_pfn;
+>  	unsigned long pfn;
+>  
+> -	 if (xen_feature(XENFEAT_auto_translated_physmap))
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
 
-Hi Ben,
+Spurious change.
 
-Urk!  :-)
-
-How about:
-
-On Wed, 12 Nov 2014 16:51:01 +1100 Benjamin Herrenschmidt <benh@kernel.cras=
-hing.org> wrote:
->
-> diff --git a/drivers/of/address.c b/drivers/of/address.c
-> index e371825..e37f017 100644
-> --- a/drivers/of/address.c
-> +++ b/drivers/of/address.c
-> @@ -7,6 +7,10 @@
->  #include <linux/pci_regs.h>
->  #include <linux/string.h>
-> =20
-> +#ifdef CONFIG_PPC
-> +#include <asm/machdep.h>
-
-#define IS_PMAC	machine_is(pmac)
-#else
-#define IS_PMAC	(0)
-
-> +#endif
+.. snip..
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 0e5f9b6..8d5985b 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -75,7 +75,6 @@ static unsigned long xen_remap_mfn __initdata = INVALID_P2M_ENTRY;
+>  
+>  static void __init xen_add_extra_mem(u64 start, u64 size)
+>  {
+> -	unsigned long pfn;
+>  	int i;
+>  
+>  	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
+> @@ -95,17 +94,74 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
+>  		printk(KERN_WARNING "Warning: not enough extra memory regions\n");
+>  
+>  	memblock_reserve(start, size);
+> +}
+>  
+> -	xen_max_p2m_pfn = PFN_DOWN(start + size);
+> -	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
+> -		unsigned long mfn = pfn_to_mfn(pfn);
+> +static void __init xen_del_extra_mem(u64 start, u64 size)
+> +{
+> +	int i;
+> +	u64 start_r, size_r;
+>  
+> -		if (WARN_ONCE(mfn == pfn, "Trying to over-write 1-1 mapping (pfn: %lx)\n", pfn))
+> -			continue;
+> -		WARN_ONCE(mfn != INVALID_P2M_ENTRY, "Trying to remove %lx which has %lx mfn!\n",
+> -			  pfn, mfn);
+> +	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
+> +		start_r = xen_extra_mem[i].start;
+> +		size_r = xen_extra_mem[i].size;
 > +
->  /* Max address size we deal with */
->  #define OF_MAX_ADDR_CELLS	4
->  #define OF_CHECK_ADDR_COUNT(na)	((na) > 0 && (na) <=3D OF_MAX_ADDR_CELLS)
-> @@ -428,12 +432,13 @@ static int of_translate_one(struct device_node *par=
-ent, struct of_bus *bus,
->  	 * This code is only enabled on powerpc. --gcl
->  	 */
->  	ranges =3D of_get_property(parent, rprop, &rlen);
-> -#if !defined(CONFIG_PPC)
-> +#if defined(CONFIG_PPC)
-> +	if (!machine_is(powermac))
-> +#endif /* defined(CONFIG_PPC) */
->  	if (ranges =3D=3D NULL) {
+> +		/* Start of region. */
+> +		if (start_r == start) {
+> +			BUG_ON(size > size_r);
+> +			xen_extra_mem[i].start += size;
+> +			xen_extra_mem[i].size -= size;
+> +			break;
+> +		}
+> +		/* End of region. */
+> +		if (start_r + size_r == start + size) {
+> +			BUG_ON(size > size_r);
+> +			xen_extra_mem[i].size -= size;
+> +			break;
+> +		}
+> +		/* Mid of region. */
+> +		if (start > start_r && start < start_r + size_r) {
+> +			BUG_ON(start + size > start_r + size_r);
+> +			xen_extra_mem[i].size = start - start_r;
+> +			xen_add_extra_mem(start + size, start_r + size_r -
+> +					  (start + size));
 
-if ((!IS_PMAC) && (ranges =3D=3D NULL)) {
+Which ends up calling 'memblock_reserve' for an region it already has
+reserved. Should we call memblock_free(start_r, size_r - size) before calling this?
 
-> -		pr_err("OF: no ranges; cannot translate\n");
-> +		pr_debug("OF: no ranges; cannot translate\n");
->  		return 1;
->  	}
-> -#endif /* !defined(CONFIG_PPC) */
->  	if (ranges =3D=3D NULL || rlen =3D=3D 0) {
->  		offset =3D of_read_number(addr, na);
->  		memset(addr, 0, pna * 4);
+Or is that not neccessary as memblock_* is pretty smart about this sort of thing?
 
-There might be a better identifier than IS_PMAC ...
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/YVBg/yUUqmVzB6hR1OqPj5B
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUY9rhAAoJEMDTa8Ir7ZwVyfsP/1M0ZtuUeLMWMgKhzS6/A3If
-pye7dEoEUIRdBDpXuYg5UZZ3D2yFDHaIOH/zXvgl3c22kwAOJjQXlly4TnukC8uu
-aBrv0cZe4D0yLLfKVEUjKbfpOqm8A8Upw+C//WmC8HkPT2P8AlfvaKD46uCwSsLR
-qplNmMfiQMJnUMjeTJu0T4Gq4O12VoWhR9UVgMBjqDJDblhHh0P2iB6iQnVghZVd
-Y6Ch0ilsvAgcPWC6Or7lvOqNQkTtFSnOfT3E/cLWE6t20Su1mEXCAmDZQ5pBa9/E
-HIYbnuCnFOnIu9Jn3IFkT+H9Kfpr6+2cnAdiGLPAbFkMziJsNcARaiLtXZH9i4ue
-h/Hsg4ieHE7vor9MAVOLbNV0hYmjwzq6ahJ6nzF+5cRL3VOZnVDMzIURrU2K7t0j
-pze6Lu0JWjeLVJmXEyaJC1ylON9S19hMsg0Ki6AR+tvO+4S/SFKot7l/SdkBIIep
-+G0KBZHWF3M5ZlxsTBJ0XvKtdwgq0h/KKGbyaL2ByG31L6XIDFI2yM5lZ56kzdGL
-ivqpd1zVH5mcx/38twxQe/rwNVK8p7j0X4/YEqYED1WeqGbWowrY4ga9sm5XXS3T
-1CwZELExTkUowzexEnkYbXZQ8B3KbD09ePBIHnczDHHijXh/y9ZZkS7InqaLU0lL
-kmSWYQ6iLYdZGpYMZaoA
-=UoQz
------END PGP SIGNATURE-----
-
---Sig_/YVBg/yUUqmVzB6hR1OqPj5B--
+> +			break;
+> +		}
+> +	}
+> +	memblock_free(start, size);
+> +}
+> +
