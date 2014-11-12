@@ -1,138 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaKLFFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 00:05:09 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:42873 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaKLFDm (ORCPT
+	id S1752486AbaKLFHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 00:07:51 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:49782 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaKLFHt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 00:03:42 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <58fdd9207d42ca772e4204668aad9077>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, huangtao@rock-chips.com,
-        fzf@rock-chips.com, caesar.wang@rock-chips.com
-Subject: [PATCH v18 3/5] ARM: dts: add RK3288 Thermal data
-Date: Wed, 12 Nov 2014 13:02:40 +0800
-Message-Id: <1415768562-9155-4-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415768562-9155-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1415768562-9155-1-git-send-email-caesar.wang@rock-chips.com>
+	Wed, 12 Nov 2014 00:07:49 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAC57fWx020973, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Topic: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Index: AQHP+nD06ZRj/kse50uRMFsgi72OwJxU1qgAgARRxyCAAqOJAIAAqX9g
+Date: Wed, 12 Nov 2014 05:07:40 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2ECE429@RTITMBSV03.realtek.com.tw>
+References: <1394712342-15778-90-Taiwan-albertk@realtek.com>
+	<20141107.113522.837502028522211960.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2ECE0A3@RTITMBSV03.realtek.com.tw>
+ <20141111.215056.2165761189796303933.davem@davemloft.net>
+In-Reply-To: <20141111.215056.2165761189796303933.davem@davemloft.net>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes a dtsi file to contain the thermal data
-on RK3288 and later SoCs. This data will
-enable a thermal shutdown over 90C.
+David Miller [mailto:davem@davemloft.net] 
+> Sent: Wednesday, November 12, 2014 10:51 AM
+[...]
+> Ok, but if we are looping here in rtl_start_rx() and r8152_submit_rx()
+> fails due to a memory allocation failure, there is nothing which is
+> going to make such a memory allocation succeed in the next iteration
+> of the loop.
+> 
+> Unless you can prove that often it can succeed after an initial
+> failure, this is just wasted work and in fact making it take longer
+> for the system to reclaim memory when under pressure because these
+> extra iterations are completely wasted cpu work.
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- arch/arm/boot/dts/rk3288-thermal.dtsi | 78 +++++++++++++++++++++++++++++++++++
- 1 file changed, 78 insertions(+)
- create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
+How about that when a error occurs, add the remaining rx
+to the list without submission? Then, the remianing rx
+could be re-submitted later, and the rtl_start_rx() could
+be completed as soon as possible.
 
-diff --git a/arch/arm/boot/dts/rk3288-thermal.dtsi b/arch/arm/boot/dts/rk3288-thermal.dtsi
-new file mode 100644
-index 0000000..a8a5ea7
---- /dev/null
-+++ b/arch/arm/boot/dts/rk3288-thermal.dtsi
-@@ -0,0 +1,78 @@
-+/*
-+ * Device Tree Source for RK3288 SoC thermal
-+ *
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 0a30fd3..3273e3d 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -1991,14 +1991,35 @@ static void rxdy_gated_en(struct r8152 *tp, bool enable)
+ 
+ static int rtl_start_rx(struct r8152 *tp)
+ {
++	struct list_head rx_queue;
+ 	int i, ret = 0;
+ 
+ 	INIT_LIST_HEAD(&tp->rx_done);
+ 	for (i = 0; i < RTL8152_MAX_RX; i++) {
+ 		INIT_LIST_HEAD(&tp->rx_info[i].list);
+ 		ret = r8152_submit_rx(tp, &tp->rx_info[i], GFP_KERNEL);
+-		if (ret)
++		if (ret) {
++			i++;
+ 			break;
++		}
++	}
 +
-+#include <dt-bindings/thermal/thermal.h>
++	INIT_LIST_HEAD(&rx_queue);
++	for (; i < RTL8152_MAX_RX; i++) {
++		struct rx_agg *agg = &tp->rx_info[i];
++		struct urb *urb = agg->urb;
 +
-+reserve_thermal: reserve_thermal {
-+	polling-delay-passive = <1000>; /* milliseconds */
-+	polling-delay = <5000>; /* milliseconds */
++		INIT_LIST_HEAD(&agg->list);
++		urb->actual_length = 0;
++		list_add_tail(&agg->list, &rx_queue);
++	}
 +
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	0>;
++	if (!list_empty(&rx_queue)) {
++		unsigned long flags;
 +
-+};
-+
-+cpu_thermal: cpu_thermal {
-+	polling-delay-passive = <1000>; /* milliseconds */
-+	polling-delay = <5000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	1>;
-+
-+	trips {
-+		cpu_alert0: cpu_alert0 {
-+			temperature = <70000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "passive";
-+		};
-+		cpu_crit: cpu_crit {
-+			temperature = <90000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "critical";
-+		};
-+	};
-+
-+	cooling-maps {
-+		map0 {
-+			trip = <&cpu_alert0>;
-+			cooling-device =
-+				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-+		};
-+	};
-+};
-+
-+gpu_thermal: gpu_thermal {
-+	polling-delay-passive = <1000>; /* milliseconds */
-+	polling-delay = <5000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	2>;
-+
-+	trips {
-+		gpu_alert0: gpu_alert0 {
-+			temperature = <70000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "passive";
-+		};
-+		gpu_crit: gpu_crit {
-+			temperature = <90000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "critical";
-+		};
-+	};
-+
-+	cooling-maps {
-+		map0 {
-+			trip = <&gpu_alert0>;
-+			cooling-device =
-+				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-+		};
-+	};
-+};
--- 
-1.9.1
-
-
++		spin_lock_irqsave(&tp->rx_lock, flags);
++		list_splice_tail(&rx_queue, &tp->rx_done);
++		spin_unlock_irqrestore(&tp->rx_lock, flags);
+ 	}
+ 
+ 	return ret;
+ 
+Best Regards,
+Hayes
