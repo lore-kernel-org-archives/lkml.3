@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965881AbaKLBua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:50:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60976 "EHLO
+	id S935115AbaKLCXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:23:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965390AbaKLBu0 (ORCPT
+	with ESMTP id S965876AbaKLBua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:26 -0500
+	Tue, 11 Nov 2014 20:50:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.10 027/123] fix misuses of f_count() in ppp and netlink
-Date: Wed, 12 Nov 2014 10:16:33 +0900
-Message-Id: <20141112011720.269445923@linuxfoundation.org>
+        Cesar Eduardo Barros <cesarb@cesarb.eti.br>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 028/123] crypto: more robust crypto_memneq
+Date: Wed, 12 Nov 2014 10:16:34 +0900
+Message-Id: <20141112011720.311249316@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,57 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
 
-commit 24dff96a37a2ca319e75a74d3929b2de22447ca6 upstream.
+commit fe8c8a126806fea4465c43d62a1f9d273a572bf5 upstream.
 
-we used to check for "nobody else could start doing anything with
-that opened file" by checking that refcount was 2 or less - one
-for descriptor table and one we'd acquired in fget() on the way to
-wherever we are.  That was race-prone (somebody else might have
-had a reference to descriptor table and do fget() just as we'd
-been checking) and it had become flat-out incorrect back when
-we switched to fget_light() on those codepaths - unlike fget(),
-it doesn't grab an extra reference unless the descriptor table
-is shared.  The same change allowed a race-free check, though -
-we are safe exactly when refcount is less than 2.
+[Only use the compiler.h portion of this patch, to get the
+OPTIMIZER_HIDE_VAR() macro, which we need for other -stable patches
+- gregkh]
 
-It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
-to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
-netlink hadn't grown that check until 3.9 and ppp used to live
-in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
-well before that, though, and the same fix used to apply in old
-location of file.
+Disabling compiler optimizations can be fragile, since a new
+optimization could be added to -O0 or -Os that breaks the assumptions
+the code is making.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Instead of disabling compiler optimizations, use a dummy inline assembly
+(based on RELOC_HIDE) to block the problematic kinds of optimization,
+while still allowing other optimizations to be applied to the code.
+
+The dummy inline assembly is added after every OR, and has the
+accumulator variable as its input and output. The compiler is forced to
+assume that the dummy inline assembly could both depend on the
+accumulator variable and change the accumulator variable, so it is
+forced to compute the value correctly before the inline assembly, and
+cannot assume anything about its value after the inline assembly.
+
+This change should be enough to make crypto_memneq work correctly (with
+data-independent timing) even if it is inlined at its call sites. That
+can be done later in a followup patch.
+
+Compile-tested on x86_64.
+
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ppp/ppp_generic.c |    2 +-
- net/netlink/af_netlink.c      |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/compiler-gcc.h   |    3 +++
+ include/linux/compiler-intel.h |    7 +++++++
+ include/linux/compiler.h       |    4 ++++
+ 3 files changed, 14 insertions(+)
 
---- a/drivers/net/ppp/ppp_generic.c
-+++ b/drivers/net/ppp/ppp_generic.c
-@@ -601,7 +601,7 @@ static long ppp_ioctl(struct file *file,
- 			if (file == ppp->owner)
- 				ppp_shutdown_interface(ppp);
- 		}
--		if (atomic_long_read(&file->f_count) <= 2) {
-+		if (atomic_long_read(&file->f_count) < 2) {
- 			ppp_release(NULL, file);
- 			err = 0;
- 		} else
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -571,7 +571,7 @@ static int netlink_mmap_sendmsg(struct s
- 	 * after validation, the socket and the ring may only be used by a
- 	 * single process, otherwise we fall back to copying.
- 	 */
--	if (atomic_long_read(&sk->sk_socket->file->f_count) > 2 ||
-+	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
- 	    atomic_read(&nlk->mapped) > 1)
- 		excl = false;
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -37,6 +37,9 @@
+     __asm__ ("" : "=r"(__ptr) : "0"(ptr));		\
+     (typeof(ptr)) (__ptr + (off)); })
  
++/* Make the optimizer believe the variable can be manipulated arbitrarily. */
++#define OPTIMIZER_HIDE_VAR(var) __asm__ ("" : "=r" (var) : "0" (var))
++
+ #ifdef __CHECKER__
+ #define __must_be_array(arr) 0
+ #else
+--- a/include/linux/compiler-intel.h
++++ b/include/linux/compiler-intel.h
+@@ -15,6 +15,7 @@
+  */
+ #undef barrier
+ #undef RELOC_HIDE
++#undef OPTIMIZER_HIDE_VAR
+ 
+ #define barrier() __memory_barrier()
+ 
+@@ -23,6 +24,12 @@
+      __ptr = (unsigned long) (ptr);				\
+     (typeof(ptr)) (__ptr + (off)); })
+ 
++/* This should act as an optimization barrier on var.
++ * Given that this compiler does not have inline assembly, a compiler barrier
++ * is the best we can do.
++ */
++#define OPTIMIZER_HIDE_VAR(var) barrier()
++
+ /* Intel ECC compiler doesn't support __builtin_types_compatible_p() */
+ #define __must_be_array(a) 0
+ 
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -170,6 +170,10 @@ void ftrace_likely_update(struct ftrace_
+     (typeof(ptr)) (__ptr + (off)); })
+ #endif
+ 
++#ifndef OPTIMIZER_HIDE_VAR
++#define OPTIMIZER_HIDE_VAR(var) barrier()
++#endif
++
+ /* Not-quite-unique ID. */
+ #ifndef __UNIQUE_ID
+ # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
 
 
