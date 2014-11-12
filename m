@@ -1,103 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaKLMZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:25:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39360 "EHLO mx1.redhat.com"
+	id S1752709AbaKLM1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:27:13 -0500
+Received: from mail.us.es ([193.147.175.20]:37068 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014AbaKLMZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:25:27 -0500
-Date: Wed, 12 Nov 2014 13:21:56 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] sched/cputime: fix clock_nanosleep/clock_gettime
- inconsistency
-Message-ID: <20141112122155.GA3250@redhat.com>
-References: <1415788168-3165-1-git-send-email-sgruszka@redhat.com>
- <20141112111553.GA21343@twins.programming.kicks-ass.net>
+	id S1752611AbaKLM1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 07:27:07 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19617. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
+ Processed in 5.001428 secs); 12 Nov 2014 12:27:06 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Wed, 12 Nov 2014 13:29:00 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Joe Perches <joe@perches.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Corey Minyard <minyard@acm.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org
+Subject: Re: [PATCH -next 2/2] seq_putc: Convert to return void and convert
+ uses too.
+Message-ID: <20141112122900.GA1542@salvia>
+References: <cover.1415645476.git.joe@perches.com>
+ <56c4c0d5ec721134cff4913e5e3f8923169c35ef.1415645477.git.joe@perches.com>
+ <20141111134740.GB2567@pathway.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141112111553.GA21343@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141111134740.GB2567@pathway.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 12:15:53PM +0100, Peter Zijlstra wrote:
-> On Wed, Nov 12, 2014 at 11:29:28AM +0100, Stanislaw Gruszka wrote:
-> > Commit d670ec13178d "posix-cpu-timers: Cure SMP wobbles" fixes one glibc
-> > test case in cost of breaking another one. After that commit, calling
-> > clock_nanosleep(TIMER_ABSTIME, X) and then clock_gettime(&Y) can result
-> > of Y time being smaller than X time.
-> 
-> <snip>
-> 
-> > Issue happens because on start in thread_group_cputimer() we initialize
-> > sum_exec_runtime of cputimer with threads runtime not yet accounted and
-> > then add the threads runtime again on scheduler tick. When cputimer
-> > finish, it's sum_exec_runtime value is bigger than current sum counted
-> > by iterating over the threads in thread_group_cputime().
+On Tue, Nov 11, 2014 at 02:47:40PM +0100, Petr Mladek wrote:
+> On Mon 2014-11-10 10:58:57, Joe Perches wrote:
+> > Using the return value of seq_putc is error-prone, so
+> > make it return void instead.
 > > 
-> > KOSAKI Motohiro posted fix for this problem, but that patch was never
-> > applied: https://lkml.org/lkml/2013/5/26/191.
+> > Reverse the logic in seq_putc to make it like seq_puts.
 > > 
-> > This patch takes different approach. It revert change from d670ec13178d,
-> > but to assure process times are in sync with thread times, before
-> > accounting the times it calls update_curr() to update current thread
-> > sum_exec_runtime. This fixes the test case from commit d670ec13178d and
-> > also make things like they were before i.e. process cpu times can be
-> > (nr_threads - 1) * TICK_NSEC behind the clock (this is a drawback
-> > unfortunately). 
+> > Signed-off-by: Joe Perches <joe@perches.com>
 > 
-> > Good news is that patch improve performance of
-> > thread_group_cputime(), i.e. we do not need optimizations from commit
-> > 911b289 "sched: Optimize task_sched_runtime()"
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
 > 
-> You're inconsistent with your SHA1 lengths, use 12 chars.
-> 
-> So I'm not seeing how you've not reintroduced the issue from
-> d670ec13178d, afaict you simply do not take the delta of all the other
-> threads into account, which is why you're not taking as many locks.
-> 
-> Which also re-introduces the 32bit data race mentioned in that
-> changelog.
+> The changes are correct. The show() functions should return 0
+> even when there is an overflow. They are called by traverse()
+> from seq_read() that might increase the buffer size and try again.
 
-Right, I missed the 32 bit issue. On 64 bit's this patch really
-helps with d670ec13178d test case. Issue there was that thread accounted
-cpu time was bigger than cpu time of proccess which include that thread.
-It happened because on cpu_clock_sample() we return task sum_exec_runtime
-plus not yet accounted runtime, but on cpu_clock_sample_group() we count
-only sum_exec_runtime of that task. With this patch we count only the
-task sum_exec_runtime on both cpu_clock_sample() and
-cpu_clock_sample_group() (but sum_exec_runtime is updated for current
-task before we use it in those functions).
+Just in case you need this for the netfilter chunks:
 
-> > @@ -254,6 +256,7 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
-> >  		*sample = cputime_to_expires(cputime.utime);
-> >  		break;
-> >  	case CPUCLOCK_SCHED:
-> > +		scheduler_update_curr(p);
-> >  		thread_group_cputime(p, &cputime);
-> >  		*sample = cputime.sum_exec_runtime;
-> >  		break;
-> 
-> Why only these two thread_group_cputime() calls and not all others?
+Acked-by: Pablo Neira Ayuso <pablo@netfilter.org>
 
-On other cases here we do not utilize sum_exec_runtime, but only utime
-and stime, which are not updated by update_curr().
-
-I can fix 32 bit problem by introducing seq_lock around reading/writing 
-task sum_exec_runtime on 32 bits arches. And fix other issues you pointed.
-Though I'm not sure now, if this approach is better than KOSAKI Motohiro 
-patch: http://marc.info/?l=linux-kernel&m=136960420627094&w=2
-That patch can be furhter simplified - we do not have to pass bool value
-up to task_sched_runtime(), juts add it only to thread_group_cputime().
-What do you think ?
-
-Stanislaw
-
+Thanks.
