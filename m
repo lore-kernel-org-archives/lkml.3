@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaKLBUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58430 "EHLO
+	id S1753122AbaKLBU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58439 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075AbaKLBUt (ORCPT
+	with ESMTP id S1753077AbaKLBUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:49 -0500
+	Tue, 11 Nov 2014 20:20:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 003/319] x86: bpf_jit: fix two bugs in eBPF JIT compiler
-Date: Wed, 12 Nov 2014 10:12:21 +0900
-Message-Id: <20141112010953.153435820@linuxfoundation.org>
+        Scott Carter <ccscott@funsoft.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.17 031/319] pata_serverworks: disable 64-KB DMA transfers on Broadcom OSB4 IDE Controller
+Date: Wed, 12 Nov 2014 10:12:49 +0900
+Message-Id: <20141112010957.810098951@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,121 +28,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Scott Carter <ccscott@funsoft.com>
 
-[ Upstream commit e0ee9c12157dc74e49e4731e0d07512e7d1ceb95 ]
+commit 37017ac6849e772e67dd187ba2fbd056c4afa533 upstream.
 
-1.
-JIT compiler using multi-pass approach to converge to final image size,
-since x86 instructions are variable length. It starts with large
-gaps between instructions (so some jumps may use imm32 instead of imm8)
-and iterates until total program size is the same as in previous pass.
-This algorithm works only if program size is strictly decreasing.
-Programs that use LD_ABS insn need additional code in prologue, but it
-was not emitted during 1st pass, so there was a chance that 2nd pass would
-adjust imm32->imm8 jump offsets to the same number of bytes as increase in
-prologue, which may cause algorithm to erroneously decide that size converged.
-Fix it by always emitting largest prologue in the first pass which
-is detected by oldproglen==0 check.
-Also change error check condition 'proglen != oldproglen' to fail gracefully.
+The Broadcom OSB4 IDE Controller (vendor and device IDs: 1166:0211)
+does not support 64-KB DMA transfers.
+Whenever a 64-KB DMA transfer is attempted,
+the transfer fails and messages similar to the following
+are written to the console log:
 
-2.
-while staring at the code realized that 64-byte buffer may not be enough
-when 1st insn is large, so increase it to 128 to avoid buffer overflow
-(theoretical maximum size of prologue+div is 109) and add runtime check.
+   [ 2431.851125] sr 0:0:0:0: [sr0] Unhandled sense code
+   [ 2431.851139] sr 0:0:0:0: [sr0]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+   [ 2431.851152] sr 0:0:0:0: [sr0]  Sense Key : Hardware Error [current]
+   [ 2431.851166] sr 0:0:0:0: [sr0]  Add. Sense: Logical unit communication time-out
+   [ 2431.851182] sr 0:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 76 f4 00 00 40 00
+   [ 2431.851210] end_request: I/O error, dev sr0, sector 121808
 
-Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
-Reported-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Tested-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+When the libata and pata_serverworks modules
+are recompiled with ATA_DEBUG and ATA_VERBOSE_DEBUG defined in libata.h,
+the 64-KB transfer size in the scatter-gather list can be seen
+in the console log:
+
+   [ 2664.897267] sr 9:0:0:0: [sr0] Send:
+   [ 2664.897274] 0xf63d85e0
+   [ 2664.897283] sr 9:0:0:0: [sr0] CDB:
+   [ 2664.897288] Read(10): 28 00 00 00 7f b4 00 00 40 00
+   [ 2664.897319] buffer = 0xf6d6fbc0, bufflen = 131072, queuecommand 0xf81b7700
+   [ 2664.897331] ata_scsi_dump_cdb: CDB (1:0,0,0) 28 00 00 00 7f b4 00 00 40
+   [ 2664.897338] ata_scsi_translate: ENTER
+   [ 2664.897345] ata_sg_setup: ENTER, ata1
+   [ 2664.897356] ata_sg_setup: 3 sg elements mapped
+   [ 2664.897364] ata_bmdma_fill_sg: PRD[0] = (0x66FD2000, 0xE000)
+   [ 2664.897371] ata_bmdma_fill_sg: PRD[1] = (0x65000000, 0x10000)
+   ------------------------------------------------------> =======
+   [ 2664.897378] ata_bmdma_fill_sg: PRD[2] = (0x66A10000, 0x2000)
+   [ 2664.897386] ata1: ata_dev_select: ENTER, device 0, wait 1
+   [ 2664.897422] ata_sff_tf_load: feat 0x1 nsect 0x0 lba 0x0 0x0 0xFC
+   [ 2664.897428] ata_sff_tf_load: device 0xA0
+   [ 2664.897448] ata_sff_exec_command: ata1: cmd 0xA0
+   [ 2664.897457] ata_scsi_translate: EXIT
+   [ 2664.897462] leaving scsi_dispatch_cmnd()
+   [ 2664.897497] Doing sr request, dev = sr0, block = 0
+   [ 2664.897507] sr0 : reading 64/256 512 byte blocks.
+   [ 2664.897553] ata_sff_hsm_move: ata1: protocol 7 task_state 1 (dev_stat 0x58)
+   [ 2664.897560] atapi_send_cdb: send cdb
+   [ 2666.910058] ata_bmdma_port_intr: ata1: host_stat 0x64
+   [ 2666.910079] __ata_sff_port_intr: ata1: protocol 7 task_state 3
+   [ 2666.910093] ata_sff_hsm_move: ata1: protocol 7 task_state 3 (dev_stat 0x51)
+   [ 2666.910101] ata_sff_hsm_move: ata1: protocol 7 task_state 4 (dev_stat 0x51)
+   [ 2666.910129] sr 9:0:0:0: [sr0] Done:
+   [ 2666.910136] 0xf63d85e0 TIMEOUT
+
+lspci shows that the driver used for the Broadcom OSB4 IDE Controller is
+pata_serverworks:
+
+   00:0f.1 IDE interface: Broadcom OSB4 IDE Controller (prog-if 8e [Master SecP SecO PriP])
+           Flags: bus master, medium devsel, latency 64
+           [virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
+           [virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
+           I/O ports at 0170 [size=8]
+           I/O ports at 0374 [size=4]
+           I/O ports at 1440 [size=16]
+           Kernel driver in use: pata_serverworks
+
+The pata_serverworks driver supports five distinct device IDs,
+one being the OSB4 and the other four belonging to the CSB series.
+The CSB series appears to support 64-KB DMA transfers,
+as tests on a machine with an SAI2 motherboard
+containing a Broadcom CSB5 IDE Controller (vendor and device IDs: 1166:0212)
+showed no problems with 64-KB DMA transfers.
+
+This problem was first discovered when attempting to install openSUSE
+from a DVD on a machine with an STL2 motherboard.
+Using the pata_serverworks module,
+older releases of openSUSE will not install at all due to the timeouts.
+Releases of openSUSE prior to 11.3 can be installed by disabling
+the pata_serverworks module using the brokenmodules boot parameter,
+which causes the serverworks module to be used instead.
+Recent releases of openSUSE (12.2 and later) include better error recovery and
+will install, though very slowly.
+On all openSUSE releases, the problem can be recreated
+on a machine containing a Broadcom OSB4 IDE Controller
+by mounting an install DVD and running a command similar to the following:
+
+   find /mnt -type f -print | xargs cat > /dev/null
+
+The patch below corrects the problem.
+Similar to the other ATA drivers that do not support 64-KB DMA transfers,
+the patch changes the ata_port_operations qc_prep vector to point to a routine
+that breaks any 64-KB segment into two 32-KB segments and
+changes the scsi_host_template sg_tablesize element to reduce by half
+the number of scatter/gather elements allowed.
+These two changes affect only the OSB4.
+
+Signed-off-by: Scott Carter <ccscott@funsoft.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/x86/net/bpf_jit_comp.c |   25 +++++++++++++++++++------
- 1 file changed, 19 insertions(+), 6 deletions(-)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -211,12 +211,17 @@ struct jit_context {
- 	bool seen_ld_abs;
+---
+ drivers/ata/pata_serverworks.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+--- a/drivers/ata/pata_serverworks.c
++++ b/drivers/ata/pata_serverworks.c
+@@ -251,12 +251,18 @@ static void serverworks_set_dmamode(stru
+ 	pci_write_config_byte(pdev, 0x54, ultra_cfg);
+ }
+ 
+-static struct scsi_host_template serverworks_sht = {
++static struct scsi_host_template serverworks_osb4_sht = {
++	ATA_BMDMA_SHT(DRV_NAME),
++	.sg_tablesize	= LIBATA_DUMB_MAX_PRD,
++};
++
++static struct scsi_host_template serverworks_csb_sht = {
+ 	ATA_BMDMA_SHT(DRV_NAME),
  };
  
-+/* maximum number of bytes emitted while JITing one eBPF insn */
-+#define BPF_MAX_INSN_SIZE	128
-+#define BPF_INSN_SAFETY		64
-+
- static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
- 		  int oldproglen, struct jit_context *ctx)
- {
- 	struct bpf_insn *insn = bpf_prog->insnsi;
- 	int insn_cnt = bpf_prog->len;
--	u8 temp[64];
-+	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
-+	u8 temp[BPF_MAX_INSN_SIZE + BPF_INSN_SAFETY];
- 	int i;
- 	int proglen = 0;
- 	u8 *prog = temp;
-@@ -254,7 +259,7 @@ static int do_jit(struct bpf_prog *bpf_p
- 	EMIT2(0x31, 0xc0); /* xor eax, eax */
- 	EMIT3(0x4D, 0x31, 0xED); /* xor r13, r13 */
+ static struct ata_port_operations serverworks_osb4_port_ops = {
+ 	.inherits	= &ata_bmdma_port_ops,
++	.qc_prep	= ata_bmdma_dumb_qc_prep,
+ 	.cable_detect	= serverworks_cable_detect,
+ 	.mode_filter	= serverworks_osb4_filter,
+ 	.set_piomode	= serverworks_set_piomode,
+@@ -265,6 +271,7 @@ static struct ata_port_operations server
  
--	if (ctx->seen_ld_abs) {
-+	if (seen_ld_abs) {
- 		/* r9d : skb->len - skb->data_len (headlen)
- 		 * r10 : skb->data
- 		 */
-@@ -655,7 +660,7 @@ xadd:			if (is_imm8(insn->off))
- 		case BPF_JMP | BPF_CALL:
- 			func = (u8 *) __bpf_call_base + imm32;
- 			jmp_offset = func - (image + addrs[i]);
--			if (ctx->seen_ld_abs) {
-+			if (seen_ld_abs) {
- 				EMIT2(0x41, 0x52); /* push %r10 */
- 				EMIT2(0x41, 0x51); /* push %r9 */
- 				/* need to adjust jmp offset, since
-@@ -669,7 +674,7 @@ xadd:			if (is_imm8(insn->off))
- 				return -EINVAL;
- 			}
- 			EMIT1_off32(0xE8, jmp_offset);
--			if (ctx->seen_ld_abs) {
-+			if (seen_ld_abs) {
- 				EMIT2(0x41, 0x59); /* pop %r9 */
- 				EMIT2(0x41, 0x5A); /* pop %r10 */
- 			}
-@@ -774,7 +779,8 @@ emit_jmp:
- 			goto common_load;
- 		case BPF_LD | BPF_ABS | BPF_W:
- 			func = CHOOSE_LOAD_FUNC(imm32, sk_load_word);
--common_load:		ctx->seen_ld_abs = true;
-+common_load:
-+			ctx->seen_ld_abs = seen_ld_abs = true;
- 			jmp_offset = func - (image + addrs[i]);
- 			if (!func || !is_simm32(jmp_offset)) {
- 				pr_err("unsupported bpf func %d addr %p image %p\n",
-@@ -848,6 +854,11 @@ common_load:		ctx->seen_ld_abs = true;
- 		}
+ static struct ata_port_operations serverworks_csb_port_ops = {
+ 	.inherits	= &serverworks_osb4_port_ops,
++	.qc_prep	= ata_bmdma_qc_prep,
+ 	.mode_filter	= serverworks_csb_filter,
+ };
  
- 		ilen = prog - temp;
-+		if (ilen > BPF_MAX_INSN_SIZE) {
-+			pr_err("bpf_jit_compile fatal insn size error\n");
-+			return -EFAULT;
-+		}
-+
- 		if (image) {
- 			if (unlikely(proglen + ilen > oldproglen)) {
- 				pr_err("bpf_jit_compile fatal error\n");
-@@ -904,9 +915,11 @@ void bpf_int_jit_compile(struct bpf_prog
- 			goto out;
+@@ -404,6 +411,7 @@ static int serverworks_init_one(struct p
  		}
- 		if (image) {
--			if (proglen != oldproglen)
-+			if (proglen != oldproglen) {
- 				pr_err("bpf_jit: proglen=%d != oldproglen=%d\n",
- 				       proglen, oldproglen);
-+				goto out;
-+			}
- 			break;
- 		}
- 		if (proglen == oldproglen) {
+ 	};
+ 	const struct ata_port_info *ppi[] = { &info[id->driver_data], NULL };
++	struct scsi_host_template *sht = &serverworks_csb_sht;
+ 	int rc;
+ 
+ 	rc = pcim_enable_device(pdev);
+@@ -417,6 +425,7 @@ static int serverworks_init_one(struct p
+ 		/* Select non UDMA capable OSB4 if we can't do fixups */
+ 		if (rc < 0)
+ 			ppi[0] = &info[1];
++		sht = &serverworks_osb4_sht;
+ 	}
+ 	/* setup CSB5/CSB6 : South Bridge and IDE option RAID */
+ 	else if ((pdev->device == PCI_DEVICE_ID_SERVERWORKS_CSB5IDE) ||
+@@ -433,7 +442,7 @@ static int serverworks_init_one(struct p
+ 			ppi[1] = &ata_dummy_port_info;
+ 	}
+ 
+-	return ata_pci_bmdma_init_one(pdev, ppi, &serverworks_sht, NULL, 0);
++	return ata_pci_bmdma_init_one(pdev, ppi, sht, NULL, 0);
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
 
 
