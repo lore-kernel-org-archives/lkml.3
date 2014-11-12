@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaKLBVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:21:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58478 "EHLO
+	id S1753222AbaKLBV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:21:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaKLBVS (ORCPT
+	with ESMTP id S1753205AbaKLBVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:21:18 -0500
+	Tue, 11 Nov 2014 20:21:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 033/319] ASoC: core: fix use after free in snd_soc_remove_platform()
-Date: Wed, 12 Nov 2014 10:12:51 +0900
-Message-Id: <20141112010958.160221725@linuxfoundation.org>
+        Roger Tseng <rogerable@realtek.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.17 043/319] mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
+Date: Wed, 12 Nov 2014 10:13:01 +0900
+Message-Id: <20141112010959.826823996@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,36 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <daniel@zonque.org>
+From: Roger Tseng <rogerable@realtek.com>
 
-commit decc27b01d584c985c231e73d3b493de6ec07af8 upstream.
+commit d1419d50c1bf711e9fd27b516a739c86b23f7cf9 upstream.
 
-Coverity spotted an use-after-free condition in snd_soc_remove_platform().
-Fix this by moving snd_soc_component_cleanup() after the debug print
-statement which uses the component's string.
+Current code erroneously fill the last byte of R2 response with an undefined
+value. In addition, the controller actually 'offloads' the last byte
+(CRC7, end bit) while receiving R2 response and thus it's impossible to get the
+actual value. This could cause mmc stack to obtain inconsistent CID from the
+same card after resume and misidentify it as a different card.
 
-Signed-off-by: Daniel Mack <daniel@zonque.org>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
+
+Fixes: ff984e57d36e ("mmc: Add realtek pcie sdmmc host driver")
+Signed-off-by: Roger Tseng <rogerable@realtek.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -4315,10 +4315,10 @@ void snd_soc_remove_platform(struct snd_
- 	snd_soc_component_del_unlocked(&platform->component);
- 	mutex_unlock(&client_mutex);
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -412,6 +412,13 @@ static void sd_send_cmd_get_rsp(struct r
+ 	}
  
--	snd_soc_component_cleanup(&platform->component);
--
- 	dev_dbg(platform->dev, "ASoC: Unregistered platform '%s'\n",
- 		platform->component.name);
+ 	if (rsp_type == SD_RSP_TYPE_R2) {
++		/*
++		 * The controller offloads the last byte {CRC-7, end bit 1'b1}
++		 * of response type R2. Assign dummy CRC, 0, and end bit to the
++		 * byte(ptr[16], goes into the LSB of resp[3] later).
++		 */
++		ptr[16] = 1;
 +
-+	snd_soc_component_cleanup(&platform->component);
- }
- EXPORT_SYMBOL_GPL(snd_soc_remove_platform);
- 
+ 		for (i = 0; i < 4; i++) {
+ 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+ 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
 
 
