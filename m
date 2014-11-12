@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762AbaKLBeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59556 "EHLO
+	id S933403AbaKLBeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:34:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730AbaKLBd7 (ORCPT
+	with ESMTP id S1754209AbaKLBeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:59 -0500
+	Tue, 11 Nov 2014 20:34:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Karl Beldan <karl.beldan@rivierawaves.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.17 272/319] mac80211: fix typo in starting baserate for rts_cts_rate_idx
-Date: Wed, 12 Nov 2014 10:16:50 +0900
-Message-Id: <20141112011037.783338731@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>, Bandan Das <bsd@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.17 275/319] x86, apic: Handle a bad TSC more gracefully
+Date: Wed, 12 Nov 2014 10:16:53 +0900
+Message-Id: <20141112011038.333518097@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,45 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karl Beldan <karl.beldan@rivierawaves.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit c7abf25af0f41be4b50d44c5b185d52eea360cb8 upstream.
+commit b47dcbdc5161d3d5756f430191e2840d9b855492 upstream.
 
-It affects non-(V)HT rates and can lead to selecting an rts_cts rate
-that is not a basic rate or way superior to the reference rate (ATM
-rates[0] used for the 1st attempt of the protected frame data).
+If the TSC is unusable or disabled, then this patch fixes:
 
-E.g, assuming drivers register growing (bitrate) sorted tables of
-ieee80211_rate-s, having :
-- rates[0].idx == d'2 and basic_rates == b'10100
-will select rts_cts idx b'10011 & ~d'(BIT(2)-1), i.e. 1, likewise
-- rates[0].idx == d'2 and basic_rates == b'10001
-will select rts_cts idx b'10000
-The first is not a basic rate and the second is > rates[0].
+ - Confusion while trying to clear old APIC interrupts.
+ - Division by zero and incorrect programming of the TSC deadline
+   timer.
 
-Also, wrt severity of the addressed misbehavior, ATM we only have one
-rts_cts_rate_idx rather than one per rate table entry, so this idx might
-still point to bitrates > rates[1..MAX_RATES].
+This fixes boot if the CPU has a TSC deadline timer but a missing or
+broken TSC.  The failure to boot can be observed with qemu using
+-cpu qemu64,-tsc,+tsc-deadline
 
-Fixes: 5253ffb8c9e1 ("mac80211: always pick a basic rate to tx RTS/CTS for pre-HT rates")
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This also happens to me in nested KVM for unknown reasons.
+With this patch, I can boot cleanly (although without a TSC).
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Bandan Das <bsd@redhat.com>
+Link: http://lkml.kernel.org/r/e2fa274e498c33988efac0ba8b7e3120f7f92d78.1413393027.git.luto@amacapital.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/apic/apic.c |    4 ++--
+ arch/x86/kernel/tsc.c       |    5 ++++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/rate.c
-+++ b/net/mac80211/rate.c
-@@ -448,7 +448,7 @@ static void rate_fixup_ratelist(struct i
- 	 */
- 	if (!(rates[0].flags & IEEE80211_TX_RC_MCS)) {
- 		u32 basic_rates = vif->bss_conf.basic_rates;
--		s8 baserate = basic_rates ? ffs(basic_rates - 1) : 0;
-+		s8 baserate = basic_rates ? ffs(basic_rates) - 1 : 0;
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1297,7 +1297,7 @@ void setup_local_APIC(void)
+ 	unsigned int value, queued;
+ 	int i, j, acked = 0;
+ 	unsigned long long tsc = 0, ntsc;
+-	long long max_loops = cpu_khz;
++	long long max_loops = cpu_khz ? cpu_khz : 1000000;
  
- 		rate = &sband->bitrates[rates[0].idx];
+ 	if (cpu_has_tsc)
+ 		rdtscll(tsc);
+@@ -1383,7 +1383,7 @@ void setup_local_APIC(void)
+ 			break;
+ 		}
+ 		if (queued) {
+-			if (cpu_has_tsc) {
++			if (cpu_has_tsc && cpu_khz) {
+ 				rdtscll(ntsc);
+ 				max_loops = (cpu_khz << 10) - (ntsc - tsc);
+ 			} else
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -1166,14 +1166,17 @@ void __init tsc_init(void)
+ 
+ 	x86_init.timers.tsc_pre_init();
+ 
+-	if (!cpu_has_tsc)
++	if (!cpu_has_tsc) {
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
+ 		return;
++	}
+ 
+ 	tsc_khz = x86_platform.calibrate_tsc();
+ 	cpu_khz = tsc_khz;
+ 
+ 	if (!tsc_khz) {
+ 		mark_tsc_unstable("could not calculate TSC khz");
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
+ 		return;
+ 	}
  
 
 
