@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaKLWDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:03:21 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:44879 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752009AbaKLWDU (ORCPT
+	id S1753409AbaKLWGE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:06:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16678 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaKLWGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:03:20 -0500
-Date: Wed, 12 Nov 2014 17:03:18 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Sean O. Stalley" <sean.stalley@intel.com>
-cc: Stephanie Wallick <stephanie.s.wallick@intel.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <devel@driverdev.osuosl.org>
-Subject: Re: [V2 PATCH 01/10] added media agnostic (MA) USB HCD driver
-In-Reply-To: <20141112214021.GA3531@sean.stalley.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1411121656000.1676-100000@iolanthe.rowland.org>
+	Wed, 12 Nov 2014 17:06:01 -0500
+Date: Thu, 13 Nov 2014 01:05:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH v2 2/2] staging: rtl8188eu: Better memory clean-up in
+ efuse_phymap_to_logical()
+Message-ID: <20141112220540.GK5351@mwanda>
+References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <544954FD.8040607@users.sourceforge.net>
+ <20141029084702.GA18675@kroah.com>
+ <5453CD0D.9010206@users.sourceforge.net>
+ <alpine.DEB.2.10.1410311900201.2481@hadrien>
+ <5463C10D.6020409@users.sourceforge.net>
+ <5463C373.5050804@users.sourceforge.net>
+ <20141112211438.GI6749@mwanda>
+ <5463D62D.3010206@users.sourceforge.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5463D62D.3010206@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014, Sean O. Stalley wrote:
-
-> On Tue, Nov 11, 2014 at 10:54:30AM -0500, Alan Stern wrote:
-> > On Mon, 10 Nov 2014, Stephanie Wallick wrote:
+On Wed, Nov 12, 2014 at 10:50:37PM +0100, SF Markus Elfring wrote:
+> >> +		goto cleanup1;
 > > 
-> > > +static struct mausb_hcd mhcd;
+> > 1) Don't use GW-BASIC label names.  Label names should reflect what the
+> > label does such as free_fuse_word or free_fuse_tabel.
 > > 
-> > Only one statically-allocated structure?  What if somebody wants to 
-> > have more than one of these things in their system?
-> > 
+> > 2) Don't use do-nothing labels.  Just return directly.
 > 
-> Our plan to support multiple MA devices is to have them all connected
-> to the same virtual host controller, so only 1 would be needed.
-> 
-> Would you prefer we have 1 host controller instance per MA device?
-> We are definitely open to suggestions on how this should be architected.
+> Does the document "CodingStyle" need any extensions for special cases?
 
-I haven't read the MA USB spec, so I don't know how it's intended to 
-work.  Still, what happens if you create a virtual host controller 
-with, say, 16 ports, and then someone wants to connect a 17th MA 
-device?
+I don't understand.
 
-Also, I noticed that your patch adds a new bus type for these MA host 
-controllers.  It really seems like overkill to have a whole new bus 
-type if there's only going to be one device on it.
+> Are there any update candidates in the chapter "7: Centralized exiting of functions"?
 
-> If we get rid of these locks, endpoints can't run simultaneously.
-> MA USB IN endpoints have to copy data, which could take a while.
+CodingStyle says:
 
-I don't know what you mean by "run simultaneously".  Certainly multiple 
-network packets can be transmitted and received concurrently even if 
-you use a single spinlock, since your locking won't affect the 
-networking subsystem.
+"If there is no cleanup needed then just return directly."
 
-> Couldn't this cause a bottleneck?
+What is not clear about that?
 
-Probably not enough to matter.  After all, the other host controller
-drivers rely on a single spinlock.  And if it did matter, you could
-drop the spinlock while copying the data.
-
-Alan Stern
+regards,
+dan carpenter
 
