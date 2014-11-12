@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341AbaKLB1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:27:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58953 "EHLO
+	id S1754360AbaKLB0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:26:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58935 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325AbaKLB1C (ORCPT
+	with ESMTP id S932253AbaKLB0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:02 -0500
+	Tue, 11 Nov 2014 20:26:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Fertser <fercerpav@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.17 113/319] media: usb: uvc: add a quirk for Dell XPS M1330 webcam
-Date: Wed, 12 Nov 2014 10:14:11 +0900
-Message-Id: <20141112011011.304041596@linuxfoundation.org>
+        Darren Etheridge <detheridge@ti.com>,
+        Johannes Pointner <johannes.pointner@br-automation.com>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        Dave Airlie <airlied@redhat.com>,
+        "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+Subject: [PATCH 3.17 109/319] drm/tilcdc: Fix the error path in tilcdc_load()
+Date: Wed, 12 Nov 2014 10:14:07 +0900
+Message-Id: <20141112011010.590141291@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,42 +32,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Fertser <fercerpav@gmail.com>
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 
-commit 62ea864f84fed6e04dd033d500d4c9183a83d590 upstream.
+commit b478e336b3e75505707a11e78ef8b964ef0a03af upstream.
 
-As reported on [1], this device needs this quirk to be able to
-reliably initialise the webcam.
+The current error path calls tilcdc_unload() in case of an error to release
+the resources. However, this is wrong because not all resources have been
+allocated by the time an error occurs in tilcdc_load().
 
-[1] http://ubuntuforums.org/showthread.php?t=2145996
+To fix it, this commit adds proper labels to bail out at the different
+stages in the load function, and release only the resources actually allocated.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Paul Fertser <fercerpav@gmail.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Tested-by: Darren Etheridge <detheridge@ti.com>
+Tested-by: Johannes Pointner <johannes.pointner@br-automation.com>
+Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fixes: 3a49012224ca ("drm/tilcdc: panel: fix leak when unloading the module")
+Signed-off-by: Matwey V. Kornilov <matwey.kornilov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/gpu/drm/tilcdc/tilcdc_drv.c |   60 ++++++++++++++++++++++++++++++------
+ 1 file changed, 50 insertions(+), 10 deletions(-)
 
---- a/drivers/media/usb/uvc/uvc_driver.c
-+++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2229,6 +2229,15 @@ static struct usb_device_id uvc_ids[] =
- 	  .bInterfaceSubClass	= 1,
- 	  .bInterfaceProtocol	= 0,
- 	  .driver_info		= UVC_QUIRK_PROBE_DEF },
-+	/* Dell XPS M1330 (OmniVision OV7670 webcam) */
-+	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
-+				| USB_DEVICE_ID_MATCH_INT_INFO,
-+	  .idVendor		= 0x05a9,
-+	  .idProduct		= 0x7670,
-+	  .bInterfaceClass	= USB_CLASS_VIDEO,
-+	  .bInterfaceSubClass	= 1,
-+	  .bInterfaceProtocol	= 0,
-+	  .driver_info		= UVC_QUIRK_PROBE_DEF },
- 	/* Apple Built-In iSight */
- 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
- 				| USB_DEVICE_ID_MATCH_INT_INFO,
+--- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
++++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
+@@ -84,6 +84,7 @@ static int modeset_init(struct drm_devic
+ 	if ((priv->num_encoders == 0) || (priv->num_connectors == 0)) {
+ 		/* oh nos! */
+ 		dev_err(dev->dev, "no encoders/connectors found\n");
++		drm_mode_config_cleanup(dev);
+ 		return -ENXIO;
+ 	}
+ 
+@@ -172,33 +173,37 @@ static int tilcdc_load(struct drm_device
+ 	dev->dev_private = priv;
+ 
+ 	priv->wq = alloc_ordered_workqueue("tilcdc", 0);
++	if (!priv->wq) {
++		ret = -ENOMEM;
++		goto fail_free_priv;
++	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(dev->dev, "failed to get memory resource\n");
+ 		ret = -EINVAL;
+-		goto fail;
++		goto fail_free_wq;
+ 	}
+ 
+ 	priv->mmio = ioremap_nocache(res->start, resource_size(res));
+ 	if (!priv->mmio) {
+ 		dev_err(dev->dev, "failed to ioremap\n");
+ 		ret = -ENOMEM;
+-		goto fail;
++		goto fail_free_wq;
+ 	}
+ 
+ 	priv->clk = clk_get(dev->dev, "fck");
+ 	if (IS_ERR(priv->clk)) {
+ 		dev_err(dev->dev, "failed to get functional clock\n");
+ 		ret = -ENODEV;
+-		goto fail;
++		goto fail_iounmap;
+ 	}
+ 
+ 	priv->disp_clk = clk_get(dev->dev, "dpll_disp_ck");
+ 	if (IS_ERR(priv->clk)) {
+ 		dev_err(dev->dev, "failed to get display clock\n");
+ 		ret = -ENODEV;
+-		goto fail;
++		goto fail_put_clk;
+ 	}
+ 
+ #ifdef CONFIG_CPU_FREQ
+@@ -208,7 +213,7 @@ static int tilcdc_load(struct drm_device
+ 			CPUFREQ_TRANSITION_NOTIFIER);
+ 	if (ret) {
+ 		dev_err(dev->dev, "failed to register cpufreq notifier\n");
+-		goto fail;
++		goto fail_put_disp_clk;
+ 	}
+ #endif
+ 
+@@ -253,13 +258,13 @@ static int tilcdc_load(struct drm_device
+ 	ret = modeset_init(dev);
+ 	if (ret < 0) {
+ 		dev_err(dev->dev, "failed to initialize mode setting\n");
+-		goto fail;
++		goto fail_cpufreq_unregister;
+ 	}
+ 
+ 	ret = drm_vblank_init(dev, 1);
+ 	if (ret < 0) {
+ 		dev_err(dev->dev, "failed to initialize vblank\n");
+-		goto fail;
++		goto fail_mode_config_cleanup;
+ 	}
+ 
+ 	pm_runtime_get_sync(dev->dev);
+@@ -267,7 +272,7 @@ static int tilcdc_load(struct drm_device
+ 	pm_runtime_put_sync(dev->dev);
+ 	if (ret < 0) {
+ 		dev_err(dev->dev, "failed to install IRQ handler\n");
+-		goto fail;
++		goto fail_vblank_cleanup;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, dev);
+@@ -283,13 +288,48 @@ static int tilcdc_load(struct drm_device
+ 	priv->fbdev = drm_fbdev_cma_init(dev, bpp,
+ 			dev->mode_config.num_crtc,
+ 			dev->mode_config.num_connector);
++	if (IS_ERR(priv->fbdev)) {
++		ret = PTR_ERR(priv->fbdev);
++		goto fail_irq_uninstall;
++	}
+ 
+ 	drm_kms_helper_poll_init(dev);
+ 
+ 	return 0;
+ 
+-fail:
+-	tilcdc_unload(dev);
++fail_irq_uninstall:
++	pm_runtime_get_sync(dev->dev);
++	drm_irq_uninstall(dev);
++	pm_runtime_put_sync(dev->dev);
++
++fail_vblank_cleanup:
++	drm_vblank_cleanup(dev);
++
++fail_mode_config_cleanup:
++	drm_mode_config_cleanup(dev);
++
++fail_cpufreq_unregister:
++	pm_runtime_disable(dev->dev);
++#ifdef CONFIG_CPU_FREQ
++	cpufreq_unregister_notifier(&priv->freq_transition,
++			CPUFREQ_TRANSITION_NOTIFIER);
++fail_put_disp_clk:
++	clk_put(priv->disp_clk);
++#endif
++
++fail_put_clk:
++	clk_put(priv->clk);
++
++fail_iounmap:
++	iounmap(priv->mmio);
++
++fail_free_wq:
++	flush_workqueue(priv->wq);
++	destroy_workqueue(priv->wq);
++
++fail_free_priv:
++	dev->dev_private = NULL;
++	kfree(priv);
+ 	return ret;
+ }
+ 
 
 
