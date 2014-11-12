@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934744AbaKLDrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:47:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59070 "EHLO
+	id S965160AbaKLDr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:47:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59060 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332AbaKLB2Y (ORCPT
+	with ESMTP id S1754428AbaKLB2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:28:24 -0500
+	Tue, 11 Nov 2014 20:28:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.17 171/319] drm/radeon: fix vm page table block size calculation
-Date: Wed, 12 Nov 2014 10:15:09 +0900
-Message-Id: <20141112011021.043516818@linuxfoundation.org>
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.17 143/319] target: Fix APTPL metadata handling for dynamic MappedLUNs
+Date: Wed, 12 Nov 2014 10:14:41 +0900
+Message-Id: <20141112011016.153536696@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,34 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 8e66e134e20b936179ea1535dd4ed19ec4f99dba upstream.
+commit e24805637d2d270d7975502e9024d473de86afdb upstream.
 
-The page offset is 12 bits.  For example if we have an
-8 GB VM, we'd need 33 bits.  The number of bits needed
-for PD + PT is 21 (33 - 12 or log2(8) + 18), not 20
-(log2(8) + 17).
+This patch fixes a bug in handling of SPC-3 PR Activate Persistence
+across Target Power Loss (APTPL) logic where re-creation of state for
+MappedLUNs from dynamically generated NodeACLs did not occur during
+I_T Nexus establishment.
 
-Noticed by Alexey during code review.
+It adds the missing core_scsi3_check_aptpl_registration() call during
+core_tpg_check_initiator_node_acl() -> core_tpg_add_node_to_devs() in
+order to replay any pre-loaded APTPL metadata state associated with
+the newly connected SCSI Initiator Port.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_device.c |    3 ++-
+ drivers/target/target_core_pr.c     |    6 +++---
+ drivers/target/target_core_pr.h     |    2 +-
+ drivers/target/target_core_tpg.c    |    8 ++++++++
+ 4 files changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1130,7 +1130,7 @@ static void radeon_check_arguments(struc
- 	if (radeon_vm_block_size == -1) {
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1409,7 +1409,8 @@ int core_dev_add_initiator_node_lun_acl(
+ 	 * Check to see if there are any existing persistent reservation APTPL
+ 	 * pre-registrations that need to be enabled for this LUN ACL..
+ 	 */
+-	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, lacl);
++	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, nacl,
++					    lacl->mapped_lun);
+ 	return 0;
+ }
  
- 		/* Total bits covered by PD + PTs */
--		unsigned bits = ilog2(radeon_vm_size) + 17;
-+		unsigned bits = ilog2(radeon_vm_size) + 18;
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -944,10 +944,10 @@ int core_scsi3_check_aptpl_registration(
+ 	struct se_device *dev,
+ 	struct se_portal_group *tpg,
+ 	struct se_lun *lun,
+-	struct se_lun_acl *lun_acl)
++	struct se_node_acl *nacl,
++	u32 mapped_lun)
+ {
+-	struct se_node_acl *nacl = lun_acl->se_lun_nacl;
+-	struct se_dev_entry *deve = nacl->device_list[lun_acl->mapped_lun];
++	struct se_dev_entry *deve = nacl->device_list[mapped_lun];
  
- 		/* Make sure the PD is 4K in size up to 8GB address space.
- 		   Above that split equal between PD and PTs */
+ 	if (dev->dev_reservation_flags & DRF_SPC2_RESERVATIONS)
+ 		return 0;
+--- a/drivers/target/target_core_pr.h
++++ b/drivers/target/target_core_pr.h
+@@ -60,7 +60,7 @@ extern int core_scsi3_alloc_aptpl_regist
+ 			unsigned char *, u16, u32, int, int, u8);
+ extern int core_scsi3_check_aptpl_registration(struct se_device *,
+ 			struct se_portal_group *, struct se_lun *,
+-			struct se_lun_acl *);
++			struct se_node_acl *, u32);
+ extern void core_scsi3_free_pr_reg_from_nacl(struct se_device *,
+ 					     struct se_node_acl *);
+ extern void core_scsi3_free_all_registrations(struct se_device *);
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -40,6 +40,7 @@
+ #include <target/target_core_fabric.h>
+ 
+ #include "target_core_internal.h"
++#include "target_core_pr.h"
+ 
+ extern struct se_device *g_lun0_dev;
+ 
+@@ -166,6 +167,13 @@ void core_tpg_add_node_to_devs(
+ 
+ 		core_enable_device_list_for_node(lun, NULL, lun->unpacked_lun,
+ 				lun_access, acl, tpg);
++		/*
++		 * Check to see if there are any existing persistent reservation
++		 * APTPL pre-registrations that need to be enabled for this dynamic
++		 * LUN ACL now..
++		 */
++		core_scsi3_check_aptpl_registration(dev, tpg, lun, acl,
++						    lun->unpacked_lun);
+ 		spin_lock(&tpg->tpg_lun_lock);
+ 	}
+ 	spin_unlock(&tpg->tpg_lun_lock);
 
 
