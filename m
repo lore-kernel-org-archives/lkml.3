@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaKLGjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:39:09 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:50464 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510AbaKLGjI (ORCPT
+	id S1752828AbaKLGkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:40:01 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40124 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaKLGkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:39:08 -0500
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC v6 0/3] usb: phy: hold wakeupsource on usb phy events.
-Date: Wed, 12 Nov 2014 12:08:39 +0530
-Message-Id: <1415774319-21682-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 12 Nov 2014 01:40:00 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Date: Wed, 12 Nov 2014 15:40:42 +0900 (JST)
+Message-Id: <20141112.154042.59640143160036130.d.hatayama@jp.fujitsu.com>
+To: ebiederm@xmission.com, vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        kumagai-atsushi@mxc.nes.nec.co.jp, anderson@redhat.com
+Subject: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+X-Mailer: Mew version 6.6 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set aims to hold wakeupsource per-PHY on usb connect/disconnect
-events.
+Currently, VMCOREINFO note information reports the virtual address of
+phys_base that is assigned to symbol phys_base. But this doesn't make
+sense because to refer to value of the phys_base, it's necessary to
+get the value of phys_base itself we are now about to refer to.
 
-First patch introduces usb_phy_set_event  which just sets
-event to phy event.
-In second patch, phy drivers call usb_phy_set_event for each phy event.
-In third patch, wakeupsource is held when usb is enumerated in 
-peripheral mode and wakeupsource held temporarily on disconnect
-event(to allow other parts of the system react to disconnect event).
+Userland tools related to kdump such as makedumpfile and crash utility
+so far have made some efforts to calculate phys_base from memory
+mapping information on a variety of crash dump formats. But there's no
+guarantee to keep maintaining it in the future.
 
-v6:
-* Break the patch into three sub patches
-  patch 1: Introduce usb_phy_set_event
-  patch 2: Call usb_phy_set_event from phy drivers
-  patch 3: Hold wakeupsource for connect events and
-            temporarily hold wakeupsource for disconnect events.
-* Include usb_phy_wsource_init and usb_phy_wource_trash functionality
-  in usb_add_phy and usb_remove_phy respectively.
+This is also useful for crash dump mechanism running outside Linux
+kernel such as virtual machine hypervisor such as qemu dump, which
+ordinary users use via virsh dump, or ones implemented on vendor
+specific firmware. They cannot get phys_base without special mechanism
+because phys_base is kernel information.
 
-v5:
-* with the new approach,i was able to chnage only 5 phy drivers
-  as mentioned below to use the wakeupsource funtionality.
+To get VMCOREINFO in vmcore, it's easy to use strings and grep
+commands like this; VMCOREINFO consists of simple string:
 
-drivers/phy/phy-omap-control.c
-drivers/usb/phy/phy-ab8500-usb.c
-drivers/usb/phy/phy-tahvo.c
-drivers/usb/phy/phy-mv-usb.c
-drivers/usb/phy/phy-gpio-vbus-usb.c
+$ strings vmcore-3.10.0-121.el7.x86_64 | grep -E ".*VMCOREINFO.*" -A 100
+VMCOREINFO
+OSRELEASE=3.10.0-121.el7.x86_64
+PAGESIZE=4096
+...
 
-* Notification method not used any more.
-* introduced usb_phy_set_event in phy.c to hold wakeupsource
-* introduced usb_phy_wsource_init/usb_phy_wsource_trash in phy.c to
-  initialize/relese per-PHY wakeupsource.These interfaces called from
-  probe/remove functions of phy drivers.
-* usb_phy_set_event called from phy drivers where usb enumeration
-  event is handled.
-* usb_phy_set_event expects usb_phy handle where as phy-omap-control.c
-  provides its own type(omap_control_phy), so directly called __pm_stay_awake
-  and  __pm_awake_event from phy-omap-control.c instead of calling
-  usb_phy_set_event.
+Similarly, this is also useful to get value of phys_base in kdump 2nd
+kernel contained in vmcore using the above-mentioned external crash
+dump mechanism; kdump 2nd kernel is an inherently relocated kernel.
 
-v4:
-* Temporarily hold wakeupsource patch integrated into main patch.
-* As per feedback,dropped "enabled" module parameter.
-* Introduced otgws_otg_usb3_notifications function to handle event
-  notifications from usb3 phy.
-* Handled wakeupsource initialization,spinlock,registration of notifier block
-  per-PHY.
-* Updated usb_phy structure.
+This commit doesn't remove VMCOREINFO_SYMBOL(phys_base) line because
+makedumpfile refers to it and if removing it, old versions
+makedumpfile doesn't work well.
 
-v3:
-* As per the feedback,no global phy pointer used.
-* called the one-liner wakeupsource handling calls
-  directly instead of indirect functions implemented in v2.
-* Removed indirect function get_phy_hook and used usb_get_phy
-  to get the phy handle..
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
+ arch/x86/kernel/machine_kexec_64.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-v2:
-* wakeupsource handling implemeted per-PHY
-* Implemented wakeupsource handling calls in phy
-* included Todd's refactoring logic.
-
-v1:
-* changed to "disabled by default" from "enable by default".
-* Kconfig help text modified
-* Included better commit text
-* otgws_nb moved to otg_wakeupsource_init function
-* Introduced get_phy_hook to handle otgws_xceiv per-PHY
-
-Initial RFC:
-* Included build fix from Benoit Goby and Arve Hjønnevåg
-* Removed lock->held field in driver as this mechanism is
-  provided in wakeupsource driver.
-* wakelock(wl) terminology replaced with wakeup_source(ws).
-
-Todd Poynor (3):
-  usb: phy: introduce usb_phy_set_event interface
-  usb: phy: Handle per-PHY event for connect and disconnect events
-  usb: phy: Hold wakeupsource when USB is enumerated in peripheral mode
-
- drivers/usb/phy/phy-ab8500-usb.c    | 15 +++++++++++++++
- drivers/usb/phy/phy-gpio-vbus-usb.c |  2 ++
- drivers/usb/phy/phy-mv-usb.c        |  2 ++
- drivers/usb/phy/phy-tahvo.c         |  2 ++
- drivers/usb/phy/phy.c               | 37 +++++++++++++++++++++++++++++++++++++
- include/linux/usb/phy.h             | 10 ++++++++++
- 6 files changed, 68 insertions(+)
-
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 4859810..e6d00a4 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -334,6 +334,7 @@ void arch_crash_save_vmcoreinfo(void)
+ #endif
+ 	vmcoreinfo_append_str("KERNELOFFSET=%lx\n",
+ 			      (unsigned long)&_text - __START_KERNEL);
++	VMCOREINFO_LENGTH(phys_base, phys_base);
+ }
+ 
+ /* arch-dependent functionality related to kexec file-based syscall */
 -- 
-1.8.2.1
+1.9.3
 
