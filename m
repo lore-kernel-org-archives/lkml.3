@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaKLBT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:19:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58347 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaKLBTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752764AbaKLBTx (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:19:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58339 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaKLBTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:19:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
-        Thomas Graf <tgraf@suug.ch>
-Subject: [PATCH 3.17 012/319] netlink: Re-add locking to netlink_lookup() and seq walker
-Date: Wed, 12 Nov 2014 10:12:30 +0900
-Message-Id: <20141112010954.703530885@linuxfoundation.org>
+        Ian Morgan <imorgan@primordial.ca>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 011/319] ax88179_178a: fix bonding failure
+Date: Wed, 12 Nov 2014 10:12:29 +0900
+Message-Id: <20141112010954.533527932@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -31,153 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Ian Morgan <imorgan@primordial.ca>
 
-[ Upstream commit 78fd1d0ab072d4d9b5f0b7c14a1516665170b565 ]
+[ Upstream commit 95ff88688781db2f64042e69bd499e518bbb36e5 ]
 
-The synchronize_rcu() in netlink_release() introduces unacceptable
-latency. Reintroduce minimal lookup so we can drop the
-synchronize_rcu() until socket destruction has been RCUfied.
+The following patch fixes a bug which causes the ax88179_178a driver to be
+incapable of being added to a bond.
 
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
-Reported-and-tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
+When I brought up the issue with the bonding maintainers, they indicated
+that the real problem was with the NIC driver which must return zero for
+success (of setting the MAC address). I see that several other NIC drivers
+follow that pattern by either simply always returing zero, or by passing
+through a negative (error) result while rewriting any positive return code
+to zero. With that same philisophy applied to the ax88179_178a driver, it
+allows it to work correctly with the bonding driver.
+
+I believe this is suitable for queuing in -stable, as it's a small, simple,
+and obvious fix that corrects a defect with no other known workaround.
+
+This patch is against vanilla 3.17(.0).
+
+Signed-off-by: Ian Morgan <imorgan@primordial.ca>
+
+ drivers/net/usb/ax88179_178a.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlink/af_netlink.c |   37 +++++++++++++++++++++++++------------
- 1 file changed, 25 insertions(+), 12 deletions(-)
+ drivers/net/usb/ax88179_178a.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -96,6 +96,14 @@ static DECLARE_WAIT_QUEUE_HEAD(nl_table_
- static int netlink_dump(struct sock *sk);
- static void netlink_skb_destructor(struct sk_buff *skb);
- 
-+/* nl_table locking explained:
-+ * Lookup and traversal are protected with nl_sk_hash_lock or nl_table_lock
-+ * combined with an RCU read-side lock. Insertion and removal are protected
-+ * with nl_sk_hash_lock while using RCU list modification primitives and may
-+ * run in parallel to nl_table_lock protected lookups. Destruction of the
-+ * Netlink socket may only occur *after* nl_table_lock has been acquired
-+ * either during or after the socket has been removed from the list.
-+ */
- DEFINE_RWLOCK(nl_table_lock);
- EXPORT_SYMBOL_GPL(nl_table_lock);
- static atomic_t nl_table_users = ATOMIC_INIT(0);
-@@ -109,10 +117,10 @@ EXPORT_SYMBOL_GPL(nl_sk_hash_lock);
- static int lockdep_nl_sk_hash_is_held(void)
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -937,6 +937,7 @@ static int ax88179_set_mac_addr(struct n
  {
- #ifdef CONFIG_LOCKDEP
--	return (debug_locks) ? lockdep_is_held(&nl_sk_hash_lock) : 1;
--#else
--	return 1;
-+	if (debug_locks)
-+		return lockdep_is_held(&nl_sk_hash_lock) || lockdep_is_held(&nl_table_lock);
- #endif
-+	return 1;
+ 	struct usbnet *dev = netdev_priv(net);
+ 	struct sockaddr *addr = p;
++	int ret;
+ 
+ 	if (netif_running(net))
+ 		return -EBUSY;
+@@ -946,8 +947,12 @@ static int ax88179_set_mac_addr(struct n
+ 	memcpy(net->dev_addr, addr->sa_data, ETH_ALEN);
+ 
+ 	/* Set the MAC address */
+-	return ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
++	ret = ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
+ 				 ETH_ALEN, net->dev_addr);
++	if (ret < 0)
++		return ret;
++
++	return 0;
  }
  
- static ATOMIC_NOTIFIER_HEAD(netlink_chain);
-@@ -1028,11 +1036,13 @@ static struct sock *netlink_lookup(struc
- 	struct netlink_table *table = &nl_table[protocol];
- 	struct sock *sk;
- 
-+	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	sk = __netlink_lookup(table, portid, net);
- 	if (sk)
- 		sock_hold(sk);
- 	rcu_read_unlock();
-+	read_unlock(&nl_table_lock);
- 
- 	return sk;
- }
-@@ -1257,9 +1267,6 @@ static int netlink_release(struct socket
- 	}
- 	netlink_table_ungrab();
- 
--	/* Wait for readers to complete */
--	synchronize_net();
--
- 	kfree(nlk->groups);
- 	nlk->groups = NULL;
- 
-@@ -1281,6 +1288,7 @@ static int netlink_autobind(struct socke
- 
- retry:
- 	cond_resched();
-+	netlink_table_grab();
- 	rcu_read_lock();
- 	if (__netlink_lookup(table, portid, net)) {
- 		/* Bind collision, search negative portid values. */
-@@ -1288,9 +1296,11 @@ retry:
- 		if (rover > -4097)
- 			rover = -4097;
- 		rcu_read_unlock();
-+		netlink_table_ungrab();
- 		goto retry;
- 	}
- 	rcu_read_unlock();
-+	netlink_table_ungrab();
- 
- 	err = netlink_insert(sk, net, portid);
- 	if (err == -EADDRINUSE)
-@@ -2921,14 +2931,16 @@ static struct sock *netlink_seq_socket_i
- }
- 
- static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
--	__acquires(RCU)
-+	__acquires(nl_table_lock) __acquires(RCU)
- {
-+	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
- }
- 
- static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- {
-+	struct rhashtable *ht;
- 	struct netlink_sock *nlk;
- 	struct nl_seq_iter *iter;
- 	struct net *net;
-@@ -2943,19 +2955,19 @@ static void *netlink_seq_next(struct seq
- 	iter = seq->private;
- 	nlk = v;
- 
--	rht_for_each_entry_rcu(nlk, nlk->node.next, node)
-+	i = iter->link;
-+	ht = &nl_table[i].hash;
-+	rht_for_each_entry(nlk, nlk->node.next, ht, node)
- 		if (net_eq(sock_net((struct sock *)nlk), net))
- 			return nlk;
- 
--	i = iter->link;
- 	j = iter->hash_idx + 1;
- 
- 	do {
--		struct rhashtable *ht = &nl_table[i].hash;
- 		const struct bucket_table *tbl = rht_dereference_rcu(ht->tbl, ht);
- 
- 		for (; j < tbl->size; j++) {
--			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
-+			rht_for_each_entry(nlk, tbl->buckets[j], ht, node) {
- 				if (net_eq(sock_net((struct sock *)nlk), net)) {
- 					iter->link = i;
- 					iter->hash_idx = j;
-@@ -2971,9 +2983,10 @@ static void *netlink_seq_next(struct seq
- }
- 
- static void netlink_seq_stop(struct seq_file *seq, void *v)
--	__releases(RCU)
-+	__releases(RCU) __releases(nl_table_lock)
- {
- 	rcu_read_unlock();
-+	read_unlock(&nl_table_lock);
- }
- 
- 
+ static const struct net_device_ops ax88179_netdev_ops = {
 
 
