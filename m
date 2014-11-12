@@ -1,38 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaKLPWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:22:15 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47525 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620AbaKLPWN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:22:13 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+9fuGTFM1T+O6Plv8AwOj9
-Date: Wed, 12 Nov 2014 07:21:32 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP2+: clock: remove unused function prototype
-Message-ID: <20141112152132.GE26481@atomide.com>
-References: <1415721364-25749-1-git-send-email-johan@kernel.org>
+	id S1753164AbaKLPWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:22:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:53298 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753110AbaKLPWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 10:22:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,369,1413270000"; 
+   d="scan'208";a="630842304"
+Message-ID: <54637AD5.6060300@intel.com>
+Date: Wed, 12 Nov 2014 07:20:53 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415721364-25749-1-git-send-email-johan@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Borislav Petkov <bp@suse.de>
+CC: Matt Fleming <matt.fleming@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
+References: <5462999A.7090706@intel.com> <1415784298.14686.323.camel@mfleming-mobl1.ger.corp.intel.com> <54637576.7030004@intel.com> <20141112151106.GB17793@pd.tnic>
+In-Reply-To: <20141112151106.GB17793@pd.tnic>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Johan Hovold <johan@kernel.org> [141111 07:58]:
-> Remove unused function prototype that was left by commit 149c09d3a61d
-> ("ARM: AM33xx: remove old clock data and link in new clock init code")
-> which removed the definition.
+On 11/12/2014 07:11 AM, Borislav Petkov wrote:
+>> > [    1.161406] __phys_addr() x: 0x000078009d3c6000
+>> > [    1.166567] __phys_addr() origx: 0x000000009d3c6000
+>> > [    1.171832] __phys_addr() y: 0x000000011d3c6000
+>> > [    1.176999] __phys_addr() __START_KERNEL_map: 0xffffffff80000000
+>> > [    1.183841] __phys_addr() PAGE_OFFSET: 0xffff880000000000
+>> > [    1.189993] __phys_addr() x valid: 0
+>> > 
+>> > So it looks like the root cause is a physical address getting pass in in
+>> > the first place instead of a virtual.
+> I'd say that's on purpose as we're mapping kernel text 1:1 in the EFI
+> page table.
 
-Applying into omap-for-v3.19/fixes-not-urgent thanks.
+__pa and friends do their calculations *against* PAGE_OFFSET to do the
+virt<->phys translation.  If that's not what a caller wants, then
+they're calling the wrong function.
 
-Tony
+The path that we're actually hitting this from is:
+
+> __split_large_page(struct cpa_data *cpa, pte_t *kpte, unsigned long
+...
+>         if (pfn_range_is_mapped(PFN_DOWN(__pa(address)),
+>                                 PFN_DOWN(__pa(address)) + 1))
+>                 split_page_count(level);
+
+So perhaps efi_map_region() is handing an address from the EFI identity
+map down in here.  __pa() gets called on it, but that fails since __pa()
+only works on the *KERNEL* identity map.
+
+I think we might actually need to walk the page tables in there.  Even
+the pfn_range_is_mapped() code looks to be dealing with the kernel
+identity map.
