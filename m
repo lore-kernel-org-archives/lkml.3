@@ -1,121 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaKLMLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 07:11:31 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:64557 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaKLML3 (ORCPT
+	id S1752377AbaKLMU1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 07:20:27 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:59273 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaKLMU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 07:11:29 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-ee-54634e6fd800
-Message-id: <54634E6F.6050303@samsung.com>
-Date: Wed, 12 Nov 2014 21:11:27 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dan.j.williams@intel.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
-        chanho61.park@samsung.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: pl330: Fix bug to allocate resources on ARM 64bit SoC
-References: <1415790133-4206-1-git-send-email-cw00.choi@samsung.com>
- <20141112113010.GL24582@intel.com>
-In-reply-to: <20141112113010.GL24582@intel.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsWyRsSkRDffLznEYOYEaYvL+7Utpk+9wGix
-	eupfVos/E1rZLCbdn8BicXnXHDaLl337WRzYPRbvecnk0bdlFaPH501yAcxRXDYpqTmZZalF
-	+nYJXBnLnp1iL5ghWrFo0yK2BsZewS5GTg4JAROJ7ns/mCBsMYkL99azdTFycQgJLGWUmP93
-	OhNM0bKHm1ghEosYJR7/v88C4bxmlNj/bgcLSBWvgJbE96cT2EFsFgFViX3HzrCB2GxA8f0v
-	boDZogJhEiunX4GqF5T4MfkemC0CVL/lZwcjyFBmgcWMErNeTwNrEBbwl1iy+h4jiC0kkCmx
-	/EMT2AJOAX2Je6ubwGqYBXQk9rdOg7LlJTavecsMMkhCYBe7xKMbi5kgLhKQ+Db5ENA2DqCE
-	rMSmA8wQr0lKHFxxg2UCo9gsJDfNQjJ2FpKxCxiZVzGKphYkFxQnpReZ6BUn5haX5qXrJefn
-	bmIERtnpf88m7GC8d8D6EKMAB6MSD2/CmqQQIdbEsuLK3EOMpkBXTGSWEk3OB8ZyXkm8obGZ
-	kYWpiamxkbmlmZI472upn8FCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGPXMRTjLZ9++8/XX
-	3OQTNQ6ajbrRiySSpj2afOjHnfUm0w1nhCmdvLSveqNP/DfhM83TpzFvSdDmnKQ/Oz0mkKvg
-	QtD9N0VKtpW15UKZ9/if3baYNtNzseRnkxeZN/7Z1ouk2uedXlH48PjZ+G+urLvi9i9NrvwT
-	zrhL/WT2YeuLrw+5mn54eFWJpTgj0VCLuag4EQBgqvTirQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jAd18v+QQg++LhSwu79e2mD71AqPF
-	6ql/WS3+TGhls5h0fwKLxeVdc9gsXvbtZ3Fg91i85yWTR9+WVYwenzfJBTBHNTDaZKQmpqQW
-	KaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAtV1IoS8wpBQoFJBYX
-	K+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmLHt2ir1ghmjFok2L2BoYewW7GDk5JARMJJY9
-	3MQKYYtJXLi3nq2LkYtDSGARo8Tj//dZIJzXjBL73+1gAaniFdCS+P50AjuIzSKgKrHv2Bk2
-	EJsNKL7/xQ0wW1QgTGLl9CtQ9YISPybfA7NFgOq3/OxgBBnKLLCYUWLW62lgDcIC/hJLVt9j
-	BLGFBDIlln9oAlvAKaAvcW91E1gNs4COxP7WaVC2vMTmNW+ZJzAKzEKyYxaSsllIyhYwMq9i
-	FE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7hZ1I7GFc2WBxiFOBgVOLh5XRIDhFiTSwrrsw9
-	xCjBwawkwnvdFSjEm5JYWZValB9fVJqTWnyI0RQYBBOZpUST84HpJa8k3tDYxMzI0sjc0MLI
-	2FxJnPdAq3WgkEB6YklqdmpqQWoRTB8TB6dUAyP/41ZJi0WmHvd1Xs60KldccVuN6Q3r5v18
-	83eYC5Xv0HoxQ8FYeV5T0v4MJcvdt6VDnCo6shwqGCZlCC15EX00r3SlUM6BxVMreM59tTl7
-	SKn+zq1nz/iPdezqOL0pMPtU15sN9w5MXzirWG/l7swph96mnVmXzR8zK/HfpT264k/OlL0q
-	kPiqxFKckWioxVxUnAgAoGy9u/cCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 12 Nov 2014 07:20:26 -0500
+Date: Wed, 12 Nov 2014 13:20:20 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: swarren@wwwdotorg.org, gnurou@gmail.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@linux-foundation.org
+Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
+Message-ID: <20141112122017.GC30821@ulmo.nvidia.com>
+References: <1415738970-7963-1-git-send-email-olof@lixom.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
+Content-Disposition: inline
+In-Reply-To: <1415738970-7963-1-git-send-email-olof@lixom.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
 
-On 11/12/2014 08:30 PM, Vinod Koul wrote:
-> On Wed, Nov 12, 2014 at 08:02:13PM +0900, Chanwoo Choi wrote:
->> This patch fix following bug to allocate resources on ARM 64bit SoC.
->> The patch[1] adds to check wheter dev is NULL or not.
-> 
-> Fixed already by below in my tree
+--FsscpQKzF/jJk6ya
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for reply.
-Chanwoo Choi
+On Tue, Nov 11, 2014 at 12:49:30PM -0800, Olof Johansson wrote:
+> There are general changes pending to make the /aliases/serial* entries
+> number the serial ports on the system. On tegra, so far the ports have be=
+en
+> just numbered dynamically as they are configured so that makes them chang=
+e.
+>=20
+> To avoid this, add specific aliases per board to keep the old numbers. Th=
+is
+> allows us to change the numbering by default on future SoCs while keeping=
+ the
+> numbering on existing boards.
+>=20
+> Signed-off-by: Olof Johansson <olof@lixom.net>
+> ---
+>=20
+> Stephen/Thierry/Alex, as noticed this week we really should try to get
+> this in before the 3.19 merge window so that the global aliases change
+> can happen there without regression.
+>=20
+> If you have more fixes queued up, feel free to add this to the next pull
+> request. If not, a review and ack would be appreciated.
+>=20
+>  arch/arm/boot/dts/tegra114-dalmore.dts        |    1 +
+>  arch/arm/boot/dts/tegra114-roth.dts           |    4 ++++
+>  arch/arm/boot/dts/tegra114-tn7.dts            |    4 ++++
+>  arch/arm/boot/dts/tegra114.dtsi               |    7 -------
+>  arch/arm/boot/dts/tegra124-jetson-tk1.dts     |    1 +
+>  arch/arm/boot/dts/tegra124-nyan-big.dts       |    1 +
+>  arch/arm/boot/dts/tegra124-venice2.dts        |    1 +
+>  arch/arm/boot/dts/tegra124.dtsi               |    7 -------
+>  arch/arm/boot/dts/tegra20-harmony.dts         |    1 +
+>  arch/arm/boot/dts/tegra20-iris-512.dts        |    5 +++++
+>  arch/arm/boot/dts/tegra20-medcom-wide.dts     |    4 ++++
+>  arch/arm/boot/dts/tegra20-paz00.dts           |    2 ++
+>  arch/arm/boot/dts/tegra20-seaboard.dts        |    1 +
+>  arch/arm/boot/dts/tegra20-tamonten.dtsi       |    1 +
+>  arch/arm/boot/dts/tegra20-trimslice.dts       |    1 +
+>  arch/arm/boot/dts/tegra20-ventana.dts         |    1 +
+>  arch/arm/boot/dts/tegra20-whistler.dts        |    1 +
+>  arch/arm/boot/dts/tegra20.dtsi                |    8 --------
+>  arch/arm/boot/dts/tegra30-apalis-eval.dts     |    4 ++++
+>  arch/arm/boot/dts/tegra30-beaver.dts          |    1 +
+>  arch/arm/boot/dts/tegra30-cardhu.dtsi         |    2 ++
+>  arch/arm/boot/dts/tegra30-colibri-eval-v3.dts |    3 +++
+>  arch/arm/boot/dts/tegra30.dtsi                |    8 --------
+>  23 files changed, 39 insertions(+), 30 deletions(-)
 
-> 
-> commit 1d7e691f1b1793f8a9439b2e8eae069e5996a187
-> Author: Andrew Jackson <Andrew.Jackson@arm.com>
-> Date:   Thu Nov 6 11:39:47 2014 +0000
-> 
->     dmaengine: pl330: Correct device assignment.
-> 
->     Commit f6f2421c0a1c removed pl330_info structure by embedding it into
->     pl330_dmac structure, but did not ensure that the dmac->ddma.dev
->     pointer gets initialised before use. When dma_alloc_coherent() gets
->     called on arm64 a WARN() gets triggered due to dev being NULL.
-> 
->     ------------[ cut here ]------------
->     WARNING: CPU: 1 PID: 1 at arch/arm64/mm/dma-mapping.c:49
-> __dma_alloc_coherent+0xd0/0xe0()
->     Use an actual device structure for DMA allocation
->     Modules linked in:
->     CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.17.0+ #5
->     Call trace:
->     [<ffffffc000087f24>] dump_backtrace+0x0/0x130
->     [<ffffffc000088064>] show_stack+0x10/0x1c
->     [<ffffffc0004e8af8>] dump_stack+0x74/0xb8
->     [<ffffffc0000aa444>] warn_slowpath_common+0x8c/0xb4
->     [<ffffffc0000aa4b8>] warn_slowpath_fmt+0x4c/0x58
->     [<ffffffc000092580>] __dma_alloc_coherent+0xcc/0xe0
->     [<ffffffc000092734>] __dma_alloc_noncoherent+0x64/0x158
->     [<ffffffc000312cd8>] pl330_probe+0x650/0x8f0
->     [<ffffffc00030e1d4>] amba_probe+0xa0/0xc8
->     [<ffffffc000350240>] really_probe+0xc4/0x22c
->     [<ffffffc0003504b4>] __driver_attach+0xa0/0xa8
->     [<ffffffc00034e5fc>] bus_for_each_dev+0x54/0x98
->     [<ffffffc00034fd8c>] driver_attach+0x1c/0x28
->     [<ffffffc00034fa08>] bus_add_driver+0x14c/0x204
->     [<ffffffc000350b84>] driver_register+0x64/0x130
->     [<ffffffc00030dcf8>] amba_driver_register+0x50/0x5c
->     [<ffffffc0006a60d0>] pl330_driver_init+0x10/0x1c
->     [<ffffffc0000814ac>] do_one_initcall+0x88/0x19c
->     [<ffffffc00068dab8>] kernel_init_freeable+0x140/0x1e0
->     [<ffffffc0004e5e18>] kernel_init+0x10/0xd4
->     ---[ end trace 76f2d47a444e523e ]---
->     (NULL device *): dmac_alloc_resources:1821 Can't allocate memory!
->     (NULL device *): Unable to create channels for DMAC
-> 
->     This patch will also ensure that any dev_err messages are printed
->     with the appropriate device name.
-> 
->     Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
->     Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
->     Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> 
+I have applied this to the for-3.19/dt branch. So for anything that is
+post Tegra124 the new rule shall be to add aliases to the SoC .dtsi and
+then use consistent numbering of UART ports across boards?
 
+The alternative is to remain consistent with what this patch does, which
+would be to make the serial port numbering a property of the board. That
+doesn't sound too bad to me either since it'll hide all the unused ports
+on a given board.
+
+Thierry
+
+--FsscpQKzF/jJk6ya
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUY1CBAAoJEN0jrNd/PrOhm7kP/1JR2p/do2geWu2e++hAoUgr
+dUsBz2dPEfGusbytnZKm13Uu+jUAplEPqywZUpan4APvr+QzKW7FP3a6uoaSMm4x
+m/oJKCzIA4OGRJOi6NmJhBzJbPj0/UTMQta1cK/UQ+znVcW+YS5siqIsF5G59xZ6
+kEM60mRzvFx7UcEXYMjt7HfIOibom/EfmcGymaqeL6phbkQXOwuLMRJmJdJ+v7xP
+U5pMucWkhXqDdT/4oZQ821e+a3YyhgOxA0z0G4Rk2fLOlSJ9ByTw7PJwHPlS/eKp
+RHI6y1h6u7cfKaa8tA29296dCwlRtbvkzEXJVsbTn78j7XfGIBCd5gNvghHxc3ba
+CikblGDVWP732E77VrFUX10CbJClTXygXgGUGzVZOwkVomd/enh19Iuh4h4wwX6b
+5xVirCcO6GQpAGR46VqXtZIxyKRMgI+4tpxX3x03kSKkSiReYpDVewoRTBEphbbi
+yuWOeDYS9KFw9kGZWYB6QeqwOsS3gItH+TvjQBzu5n2gP8C2tyUB/A6Pno67OifJ
+cJbEAiehN3cM04TusYeAe6POGO/VtJN9IdtTEaPfPPeSzBpxWNPaMI0yIKc3m155
+AD9g8Fk+G6tc4yiqAmJ63cI61oLtlfWoo8joSZ2skmGXlb5O4XtlKtxp83Dbk3dC
+9e/mkGMxvx+/prEWXLAt
+=LiT5
+-----END PGP SIGNATURE-----
+
+--FsscpQKzF/jJk6ya--
