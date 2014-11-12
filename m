@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863AbaKLHmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 02:42:17 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55156 "EHLO gate.crashing.org"
+	id S1751762AbaKLHuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 02:50:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48741 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749AbaKLHmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 02:42:16 -0500
-Message-ID: <1415777029.5124.42.camel@kernel.crashing.org>
-Subject: Re: [PATCH RFC v2 1/2] drivers: pci: fix pci_mmap_fits()
- implementation for procfs mmap
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Date: Wed, 12 Nov 2014 18:23:49 +1100
-In-Reply-To: <20141110230454.GA21470@google.com>
-References: <1414168089-8130-1-git-send-email-lorenzo.pieralisi@arm.com>
-	 <1414168089-8130-2-git-send-email-lorenzo.pieralisi@arm.com>
-	 <20141110230454.GA21470@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751123AbaKLHuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 02:50:50 -0500
+Date: Wed, 12 Nov 2014 08:50:26 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: kan.liang@intel.com
+Cc: acme@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        ak@linux.intel.com
+Subject: Re: [PATCH 1/2] perf tools: enable LBR call stack support
+Message-ID: <20141112075026.GA22994@krava>
+References: <1415285886-16949-1-git-send-email-kan.liang@intel.com>
+ <1415285886-16949-2-git-send-email-kan.liang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415285886-16949-2-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 16:04 -0700, Bjorn Helgaas wrote:
-> But I'm not sure I have this right.  If the procfs offset is either
-> the
-> CPU physical address or the BAR value, then pci_resource_to_user()
-> should be (depending on the arch) either a no-op or use
-> pci_resource_to_bus().
-> 
-> But that's not how it's implemented.  Maybe it *could* be?  If
-> pci_resource_to_user() gives you something that's not a CPU physical
-> address and not a bus address, what *does* it give you, and why would
-> we
-> need this third kind of thing?
-> 
-> FWIW, I think the discussion leading up to pci_resource_to_user() is
-> here:
-> http://lkml.iu.edu/hypermail/linux/kernel/0504.3/0467.html
+On Thu, Nov 06, 2014 at 09:58:05AM -0500, kan.liang@intel.com wrote:
 
-Oh, man... I remember that was all a giant trainwreck and some stuff
-just couldn't be made completely right due to broken assumptions by
-the proc code and users of it... but I don't remember all the details.
+SNIP
 
-I think /proc users don't necessarily pass a BAR value but something
-they try to somewhat translates themselves via the "resources" file,
-which ends up working ... or not, depending on various factors such
-as 32 vs 64 bit etc...
+>  		    (sample_type & PERF_SAMPLE_STACK_USER))
+>  			callchain_param.record_mode = CALLCHAIN_DWARF;
+> +		else if (sample_type & PERF_SAMPLE_BRANCH_STACK)
+> +			callchain_param.record_mode = CALLCHAIN_LBR;
+>  		else
+>  			callchain_param.record_mode = CALLCHAIN_FP;
+>  	}
+> diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+> index 0022980..72ed39b 100644
+> --- a/tools/perf/util/callchain.c
+> +++ b/tools/perf/util/callchain.c
+> @@ -97,6 +97,14 @@ int parse_callchain_record_opt(const char *arg)
+>  				callchain_param.dump_size = size;
+>  			}
+>  #endif /* HAVE_DWARF_UNWIND_SUPPORT */
+> +		} else if (!strncmp(name, "lbr", sizeof("lbr"))) {
+> +			if (!strtok_r(NULL, ",", &saveptr)) {
+> +				callchain_param.record_mode = CALLCHAIN_LBR;
+> +				ret = 0;
+> +			} else
+> +				pr_err("callchain: No more arguments "
+> +					"needed for -g lbr\n");
 
-I wonder who still uses this interface....
+should it be 'needed for --call-graph' option?   ^^^^^^^^^^^
 
-Cheers,
-Ben.
-
-
+jirka
