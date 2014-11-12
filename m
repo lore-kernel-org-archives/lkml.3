@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827AbaKLBa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:30:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59230 "EHLO
+	id S1754554AbaKLBaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:30:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166AbaKLBaX (ORCPT
+	with ESMTP id S932777AbaKLBaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:23 -0500
+	Tue, 11 Nov 2014 20:30:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        Cyril Brulebois <kibi@debian.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.17 208/319] wireless: rt2x00: add new rt2800usb device
-Date: Wed, 12 Nov 2014 10:15:46 +0900
-Message-Id: <20141112011027.286814149@linuxfoundation.org>
+        Daniele Palmas <dnlplm@gmail.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.17 205/319] usb: option: add support for Telit LE910
+Date: Wed, 12 Nov 2014 10:15:43 +0900
+Message-Id: <20141112011026.754724323@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -31,32 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cyril Brulebois <kibi@debian.org>
+From: Daniele Palmas <dnlplm@gmail.com>
 
-commit 664d6a792785cc677c2091038ce10322c8d04ae1 upstream.
+commit 2d0eb862dd477c3c4f32b201254ca0b40e6f465c upstream.
 
-0x1b75 0xa200 AirLive WN-200USB wireless 11b/g/n dongle
+Add VID/PID for Telit LE910 modem. Interfaces description is almost the
+same than LE920, except that the qmi interface is number 2 (instead than
+5).
 
-References: https://bugs.debian.org/766802
-Reported-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Signed-off-by: Cyril Brulebois <kibi@debian.org>
-Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -1111,6 +1111,7 @@ static struct usb_device_id rt2800usb_de
- 	/* Ovislink */
- 	{ USB_DEVICE(0x1b75, 0x3071) },
- 	{ USB_DEVICE(0x1b75, 0x3072) },
-+	{ USB_DEVICE(0x1b75, 0xa200) },
- 	/* Para */
- 	{ USB_DEVICE(0x20b8, 0x8888) },
- 	/* Pegatron */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -269,6 +269,7 @@ static void option_instat_callback(struc
+ #define TELIT_PRODUCT_DE910_DUAL		0x1010
+ #define TELIT_PRODUCT_UE910_V2			0x1012
+ #define TELIT_PRODUCT_LE920			0x1200
++#define TELIT_PRODUCT_LE910			0x1201
+ 
+ /* ZTE PRODUCTS */
+ #define ZTE_VENDOR_ID				0x19d2
+@@ -588,6 +589,11 @@ static const struct option_blacklist_inf
+ 	.reserved = BIT(3) | BIT(4),
+ };
+ 
++static const struct option_blacklist_info telit_le910_blacklist = {
++	.sendsetup = BIT(0),
++	.reserved = BIT(1) | BIT(2),
++};
++
+ static const struct option_blacklist_info telit_le920_blacklist = {
+ 	.sendsetup = BIT(0),
+ 	.reserved = BIT(1) | BIT(5),
+@@ -1137,6 +1143,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UE910_V2) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE910),
++		.driver_info = (kernel_ulong_t)&telit_le910_blacklist },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
+ 		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
 
 
