@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084AbaKLCIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:08:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33057 "EHLO
+	id S1161008AbaKLByo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:54:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33015 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966690AbaKLBzQ (ORCPT
+	with ESMTP id S965469AbaKLByj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:55:16 -0500
+	Tue, 11 Nov 2014 20:54:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 097/123] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
-Date: Wed, 12 Nov 2014 10:17:43 +0900
-Message-Id: <20141112011723.398722021@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 055/123] kvm: x86: dont kill guest on unknown exit reason
+Date: Wed, 12 Nov 2014 10:17:01 +0900
+Message-Id: <20141112011721.519303121@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -30,50 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
+commit 2bc19dc3754fc066c43799659f0d848631c44cfe upstream.
 
-If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
-a multiple of BITS_PER_LONG, they will try to shift a long value by
-BITS_PER_LONG bits which is undefined.  Change the functions to avoid
-the undefined shift.
+KVM_EXIT_UNKNOWN is a kvm bug, we don't really know whether it was
+triggered by a priveledged application.  Let's not kill the guest: WARN
+and inject #UD instead.
 
-Coverity id: 1192175
-Coverity id: 1192174
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/bitmap.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kvm/svm.c |    6 +++---
+ arch/x86/kvm/vmx.c |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long
- 		lower = src[off + k];
- 		if (left && off + k == lim - 1)
- 			lower &= mask;
--		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
-+		dst[k] = lower >> rem;
-+		if (rem)
-+			dst[k] |= upper << (BITS_PER_LONG - rem);
- 		if (left && k == lim - 1)
- 			dst[k] &= mask;
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3478,9 +3478,9 @@ static int handle_exit(struct kvm_vcpu *
+ 
+ 	if (exit_code >= ARRAY_SIZE(svm_exit_handlers)
+ 	    || !svm_exit_handlers[exit_code]) {
+-		kvm_run->exit_reason = KVM_EXIT_UNKNOWN;
+-		kvm_run->hw.hardware_exit_reason = exit_code;
+-		return 0;
++		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_code);
++		kvm_queue_exception(vcpu, UD_VECTOR);
++		return 1;
  	}
-@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *
- 		upper = src[k];
- 		if (left && k == lim - 1)
- 			upper &= (1UL << left) - 1;
--		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
-+		dst[k + off] = upper << rem;
-+		if (rem)
-+			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
- 		if (left && k + off == lim - 1)
- 			dst[k + off] &= (1UL << left) - 1;
+ 
+ 	return svm_exit_handlers[exit_code](svm);
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6654,10 +6654,10 @@ static int vmx_handle_exit(struct kvm_vc
+ 	    && kvm_vmx_exit_handlers[exit_reason])
+ 		return kvm_vmx_exit_handlers[exit_reason](vcpu);
+ 	else {
+-		vcpu->run->exit_reason = KVM_EXIT_UNKNOWN;
+-		vcpu->run->hw.hardware_exit_reason = exit_reason;
++		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_reason);
++		kvm_queue_exception(vcpu, UD_VECTOR);
++		return 1;
  	}
+-	return 0;
+ }
+ 
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
 
 
