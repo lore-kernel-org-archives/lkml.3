@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440AbaKLUaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:30:06 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:33927 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753190AbaKLUaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:30:04 -0500
-Date: Wed, 12 Nov 2014 21:29:27 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Roman Byshko <rbyshko@gmail.com>
-Cc: linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH v2 1/5] phy: sun4i: add support for USB phy0
-Message-ID: <20141112202927.GB20972@lukather>
-References: <cover.1415645258.git.rbyshko@gmail.com>
- <997f1e2744504f3461f9e94e2171180b5ce87aa2.1415645258.git.rbyshko@gmail.com>
+	id S1753496AbaKLUbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 15:31:06 -0500
+Received: from mout.web.de ([212.227.17.11]:52273 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190AbaKLUbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 15:31:04 -0500
+Message-ID: <5463C373.5050804@users.sourceforge.net>
+Date: Wed, 12 Nov 2014 21:30:43 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oLBj+sq0vYjzfsbl"
-Content-Disposition: inline
-In-Reply-To: <997f1e2744504f3461f9e94e2171180b5ce87aa2.1415645258.git.rbyshko@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH v2 2/2] staging: rtl8188eu: Better memory clean-up in efuse_phymap_to_logical()
+References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net> <alpine.DEB.2.10.1410311900201.2481@hadrien> <5463C10D.6020409@users.sourceforge.net>
+In-Reply-To: <5463C10D.6020409@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:vF5iEhiMfN1nLYRQQ88HG8f5mqjp+Z/e5QZWZlTcZe6cESXpS56
+ 1BccZCE4CeFXkRC/USUezXlE+qsdL0UbIXwstMmNDycTDmcidLSKJ2YsebVGMHH/dJYk3Ix
+ iK1ZA12jcaPoHtFQsdgCgS0lURVeaHZ7j3Gk/hUE6f/2TdLZP5Vc6iJ5ENeHWLx9HlaR335
+ agX9sdxL1JMDr+exxfEug==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 12 Nov 2014 20:40:12 +0100
 
---oLBj+sq0vYjzfsbl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Memory releases were handled in an inefficient way by the implementation of
+the efuse_phymap_to_logical() function in case of an allocation failure.
+The corresponding clean-up was improved by reordering of kfree() calls
+and a few adjustments for jump labels.
 
-On Mon, Nov 10, 2014 at 07:55:06PM +0100, Roman Byshko wrote:
-> The driver for sun4i USB phys currently supports
-> only phy1 and phy2 which are used for USB host
-> controllers. This patch adds support for USB phy0,
-> which is used by the musb hdrc USB controller.
->=20
-> Signed-off-by: Roman Byshko <rbyshko@gmail.com>
+Reported-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/staging/rtl8188eu/core/rtw_efuse.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+index 697876b..359f169 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
++++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+@@ -112,7 +112,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16 _size_byte, u8  *pbuf)
+ 	eFuseWord = (u16 **)rtw_malloc2d(EFUSE_MAX_SECTION_88E, EFUSE_MAX_WORD_UNIT, sizeof(u16));
+ 	if (eFuseWord == NULL) {
+ 		DBG_88E("%s: alloc eFuseWord fail!\n", __func__);
+-		goto exit;
++		goto cleanup1;
+ 	}
+ 
+ 	/*  0. Refresh efuse init map as all oxFF. */
+@@ -130,7 +130,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16 _size_byte, u8  *pbuf)
+ 		eFuse_Addr++;
+ 	} else {
+ 		DBG_88E("EFUSE is empty efuse_Addr-%d efuse_data =%x\n", eFuse_Addr, rtemp8);
+-		goto exit;
++		goto cleanup2;
+ 	}
+ 
+ 	/*  */
+@@ -209,10 +209,14 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16 _size_byte, u8  *pbuf)
+ 	/*  5. Calculate Efuse utilization. */
+ 	/*  */
+ 
+-exit:
++cleanup2:
++	kfree(eFuseWord);
++
++cleanup1:
+ 	kfree(efuseTbl);
+ 
+-	kfree(eFuseWord);
++exit:
++	;
+ }
+ 
+ static void efuse_read_phymap_from_txpktbuf(
+-- 
+2.1.3
 
-Thanks!
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---oLBj+sq0vYjzfsbl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUY8MnAAoJEBx+YmzsjxAg0xsP/3tyScQX+ROwSlyxFeY8ERCC
-nZ2yJIv6OCJ7qovOeR9SrfLsbsBGtrjXLvVk0lRaqCp6neIWHCmRM7E848jzSV0z
-GBSRW6uAJpilzlg/HOsgsGkVdvtCTB9ZEzQNHt7013oT9PO/NRptBSXSdTpGvHhx
-WQqxE56PWU+En45OEvjQXTOIf3cw0iHOfgp9Xby6azFy12wnThUak/jIwu6Zdiqy
-9yohFOoDq1vj4pac5R/c5y2UDDS1M+UrhF2nJ9wlIJJXiIGllu7xi794TlpQmfJO
-GxqD2xHZgKsHwVRd7Yp7HpDQelVJ1HC3po1UVx0MmPTx8hXsAQr5LBcH6UIsN1Wp
-Rxmh6RM0jJsmXfLPDcEqY9UizuvgNFnfDjj/q4wQwWNVhtrQ8Qnsi+tSnyGgUOSe
-WRRw2mF0FbUCxCsIf+v+xdSkk7HTwgPd3PHp2qo5QC/s0Ise2z4A+POBEd6Ij0qM
-EA0TXtMtxDXlXq1h0KxF7vvLWaBoZ38G9aF4Ow9cg4fyG3slE/KpKolQOpLlYngo
-P25ZVZL34V3QwpXWkizHOVU+1IL8ldRPlH7nzU4wu/QjAIA0l+oM4o8NDoMIpmw9
-80ZyyiZLEknPhQky1VtrkH3RMPXkEfsbssHTD4SpDDHw/3MEKTNrwlHdC8K8eNFJ
-w3LYMYssdI+UqF3SM+8j
-=Hifw
------END PGP SIGNATURE-----
-
---oLBj+sq0vYjzfsbl--
