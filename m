@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933491AbaKLBen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59637 "EHLO
+	id S933556AbaKLBey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:34:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59658 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933447AbaKLBei (ORCPT
+	with ESMTP id S933542AbaKLBew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:38 -0500
+	Tue, 11 Nov 2014 20:34:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Baron <jbaron@akamai.com>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.17 252/319] i82860_edac: Report CE events properly
-Date: Wed, 12 Nov 2014 10:16:30 +0900
-Message-Id: <20141112011034.488410879@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [PATCH 3.17 247/319] xhci: no switching back on non-ULT Haswell
+Date: Wed, 12 Nov 2014 10:16:25 +0900
+Message-Id: <20141112011033.676641041@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,31 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Baron <jbaron@akamai.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit ab0543de6ff0877474f57a5aafbb51a61e88676f upstream.
+commit b45abacde3d551c6696c6738bef4a1805d0bf27a upstream.
 
-Fix CE event being reported as HW_EVENT_ERR_UNCORRECTED.
+The switch back is limited to ULT even on HP. The contrary
+finding arose by bad luck in BIOS versions for testing.
+This fixes spontaneous resume from S3 on some HP laptops.
 
-Signed-off-by: Jason Baron <jbaron@akamai.com>
-Link: http://lkml.kernel.org/r/7aee8e244a32ff86b399a8f966c4aae70296aae0.1413405053.git.jbaron@akamai.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/i82860_edac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c |   14 --------------
+ 1 file changed, 14 deletions(-)
 
---- a/drivers/edac/i82860_edac.c
-+++ b/drivers/edac/i82860_edac.c
-@@ -124,7 +124,7 @@ static int i82860_process_error_info(str
- 				     dimm->location[0], dimm->location[1], -1,
- 				     "i82860 UE", "");
- 	else
--		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1,
-+		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 1,
- 				     info->eap, 0, info->derrsyn,
- 				     dimm->location[0], dimm->location[1], -1,
- 				     "i82860 CE", "");
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -126,20 +126,6 @@ static void xhci_pci_quirks(struct devic
+ 		xhci->quirks |= XHCI_AVOID_BEI;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+-	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
+-	     pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI)) {
+-		/* Workaround for occasional spurious wakeups from S5 (or
+-		 * any other sleep) on Haswell machines with LPT and LPT-LP
+-		 * with the new Intel BIOS
+-		 */
+-		/* Limit the quirk to only known vendors, as this triggers
+-		 * yet another BIOS bug on some other machines
+-		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
+-		 */
+-		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
+-			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+-	}
+-	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 		pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI) {
+ 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
+ 	}
 
 
