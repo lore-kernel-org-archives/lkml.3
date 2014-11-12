@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965444AbaKLBqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:46:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60669 "EHLO
+	id S934860AbaKLBqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:46:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934334AbaKLBqU (ORCPT
+	with ESMTP id S965437AbaKLBqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:46:20 -0500
+	Tue, 11 Nov 2014 20:46:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>,
         Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 130/203] staging:iio:ade7758: Fix check if channels are enabled in prenable
-Date: Wed, 12 Nov 2014 10:16:40 +0900
-Message-Id: <20141112011548.634042137@linuxfoundation.org>
+Subject: [PATCH 3.14 131/203] staging:iio:ade7758: Remove "raw" from channel name
+Date: Wed, 12 Nov 2014 10:16:41 +0900
+Message-Id: <20141112011548.707858671@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -31,29 +31,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 79fa64eb2ee8ccb4bcad7f54caa2699730b10b22 upstream.
+commit b598aacc29331e7e638cd509108600e916c6331b upstream.
 
-We should check if a channel is enabled, not if no channels are enabled.
+"raw" is a property of a channel, but should not be part of the name of
+channel.
 
-Fixes: 550268ca1111 ("staging:iio: scrap scan_count and ensure all drivers use active_scan_mask")
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/meter/ade7758_ring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/iio/meter/ade7758_core.c |   24 +++++++++---------------
+ 1 file changed, 9 insertions(+), 15 deletions(-)
 
---- a/drivers/staging/iio/meter/ade7758_ring.c
-+++ b/drivers/staging/iio/meter/ade7758_ring.c
-@@ -87,7 +87,7 @@ static int ade7758_ring_preenable(struct
- {
- 	unsigned channel;
- 
--	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
-+	if (bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
- 		return -EINVAL;
- 
- 	channel = find_first_bit(indio_dev->active_scan_mask,
+--- a/drivers/staging/iio/meter/ade7758_core.c
++++ b/drivers/staging/iio/meter/ade7758_core.c
+@@ -630,7 +630,6 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -642,7 +641,6 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_CURRENT,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
+ 		.scan_index = 1,
+ 		.scan_type = {
+@@ -654,7 +652,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "apparent_raw",
++		.extend_name = "apparent",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
+ 		.scan_index = 2,
+ 		.scan_type = {
+@@ -666,7 +664,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "active_raw",
++		.extend_name = "active",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
+ 		.scan_index = 3,
+ 		.scan_type = {
+@@ -678,7 +676,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "reactive_raw",
++		.extend_name = "reactive",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
+ 		.scan_index = 4,
+ 		.scan_type = {
+@@ -690,7 +688,6 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
+ 		.scan_index = 5,
+ 		.scan_type = {
+@@ -702,7 +699,6 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_CURRENT,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
+ 		.scan_index = 6,
+ 		.scan_type = {
+@@ -714,7 +710,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "apparent_raw",
++		.extend_name = "apparent",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
+ 		.scan_index = 7,
+ 		.scan_type = {
+@@ -726,7 +722,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "active_raw",
++		.extend_name = "active",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
+ 		.scan_index = 8,
+ 		.scan_type = {
+@@ -738,7 +734,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "reactive_raw",
++		.extend_name = "reactive",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
+ 		.scan_index = 9,
+ 		.scan_type = {
+@@ -750,7 +746,6 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
+ 		.scan_index = 10,
+ 		.scan_type = {
+@@ -762,7 +757,6 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_CURRENT,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
+ 		.scan_index = 11,
+ 		.scan_type = {
+@@ -774,7 +768,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "apparent_raw",
++		.extend_name = "apparent",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
+ 		.scan_index = 12,
+ 		.scan_type = {
+@@ -786,7 +780,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "active_raw",
++		.extend_name = "active",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
+ 		.scan_index = 13,
+ 		.scan_type = {
+@@ -798,7 +792,7 @@ static const struct iio_chan_spec ade775
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "reactive_raw",
++		.extend_name = "reactive",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
+ 		.scan_index = 14,
+ 		.scan_type = {
 
 
