@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934934AbaKLDwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:52:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58974 "EHLO
+	id S965090AbaKLDw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:52:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58957 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349AbaKLB1T (ORCPT
+	with ESMTP id S1754368AbaKLB1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:19 -0500
+	Tue, 11 Nov 2014 20:27:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.17 152/319] ext4: dont check quota format when there are no quota files
-Date: Wed, 12 Nov 2014 10:14:50 +0900
-Message-Id: <20141112011017.763577882@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.17 104/319] drm/ast: Fix HW cursor image
+Date: Wed, 12 Nov 2014 10:14:02 +0900
+Message-Id: <20141112011009.800160245@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,38 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 279bf6d390933d5353ab298fcc306c391a961469 upstream.
+commit 1e99cfa8de0f0879091e33cd65fd60418d006ad9 upstream.
 
-The check whether quota format is set even though there are no
-quota files with journalled quota is pointless and it actually
-makes it impossible to turn off journalled quotas (as there's
-no way to unset journalled quota format). Just remove the check.
+The translation from the X driver to the KMS one typo'ed a couple
+of array indices, causing the HW cursor to look weird (blocky with
+leaking edge colors). This fixes it.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/gpu/drm/ast/ast_mode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1712,13 +1712,6 @@ static int parse_options(char *options,
- 					"not specified");
- 			return 0;
- 		}
--	} else {
--		if (sbi->s_jquota_fmt) {
--			ext4_msg(sb, KERN_ERR, "journaled quota format "
--					"specified with no journaling "
--					"enabled");
--			return 0;
--		}
- 	}
- #endif
- 	if (test_opt(sb, DIOREAD_NOLOCK)) {
+--- a/drivers/gpu/drm/ast/ast_mode.c
++++ b/drivers/gpu/drm/ast/ast_mode.c
+@@ -1080,8 +1080,8 @@ static u32 copy_cursor_image(u8 *src, u8
+ 			srcdata32[1].ul = *((u32 *)(srcxor + 4)) & 0xf0f0f0f0;
+ 			data32.b[0] = srcdata32[0].b[1] | (srcdata32[0].b[0] >> 4);
+ 			data32.b[1] = srcdata32[0].b[3] | (srcdata32[0].b[2] >> 4);
+-			data32.b[2] = srcdata32[0].b[1] | (srcdata32[1].b[0] >> 4);
+-			data32.b[3] = srcdata32[0].b[3] | (srcdata32[1].b[2] >> 4);
++			data32.b[2] = srcdata32[1].b[1] | (srcdata32[1].b[0] >> 4);
++			data32.b[3] = srcdata32[1].b[3] | (srcdata32[1].b[2] >> 4);
+ 
+ 			writel(data32.ul, dstxor);
+ 			csum += data32.ul;
 
 
