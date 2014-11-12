@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965984AbaKLBu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:50:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32785 "EHLO
+	id S965967AbaKLBux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:50:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32781 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965863AbaKLBuy (ORCPT
+	with ESMTP id S965863AbaKLBuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:50:54 -0500
+	Tue, 11 Nov 2014 20:50:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3.10 035/123] virtio_pci: fix virtio spec compliance on restore
-Date: Wed, 12 Nov 2014 10:16:41 +0900
-Message-Id: <20141112011720.611950568@linuxfoundation.org>
+        Shivnandan Kumar <shivnandan.k@samsung.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.10 034/123] selinux: fix inode security list corruption
+Date: Wed, 12 Nov 2014 10:16:40 +0900
+Message-Id: <20141112011720.571891758@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -30,88 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Stephen Smalley <sds@tycho.nsa.gov>
 
-commit 6fbc198cf623944ab60a1db6d306a4d55cdd820d upstream.
+commit 923190d32de4428afbea5e5773be86bea60a9925 upstream.
 
-On restore, virtio pci does the following:
-+ set features
-+ init vqs etc - device can be used at this point!
-+ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
+sb_finish_set_opts() can race with inode_free_security()
+when initializing inode security structures for inodes
+created prior to initial policy load or by the filesystem
+during ->mount().   This appears to have always been
+a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
+NULL pointer dereference in selinux_inode_permission()")
+made it more evident by immediately reusing the unioned
+list/rcu element  of the inode security structure for call_rcu()
+upon an inode_free_security().  But the underlying issue
+was already present before that commit as a possible use-after-free
+of isec.
 
-This is in violation of the virtio spec, which
-requires the following order:
-- ACKNOWLEDGE
-- DRIVER
-- init vqs
-- DRIVER_OK
+Shivnandan Kumar reported the list corruption and proposed
+a patch to split the list and rcu elements out of the union
+as separate fields of the inode_security_struct so that setting
+the rcu element would not affect the list element.  However,
+this would merely hide the issue and not truly fix the code.
 
-This behaviour will break with hypervisors that assume spec compliant
-behaviour.  It seems like a good idea to have this patch applied to
-stable branches to reduce the support butden for the hypervisors.
+This patch instead moves up the deletion of the list entry
+prior to dropping the sbsec->isec_lock initially.  Then,
+if the inode is dropped subsequently, there will be no further
+references to the isec.
 
-Cc: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
+Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/virtio/virtio_pci.c |   33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ security/selinux/hooks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -791,6 +791,7 @@ static int virtio_pci_restore(struct dev
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
- 	struct virtio_driver *drv;
-+	unsigned status = 0;
- 	int ret;
- 
- 	drv = container_of(vp_dev->vdev.dev.driver,
-@@ -801,14 +802,40 @@ static int virtio_pci_restore(struct dev
- 		return ret;
- 
- 	pci_set_master(pci_dev);
-+	/* We always start by resetting the device, in case a previous
-+	 * driver messed it up. */
-+	vp_reset(&vp_dev->vdev);
-+
-+	/* Acknowledge that we've seen the device. */
-+	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	/* Maybe driver failed before freeze.
-+	 * Restore the failed status, for debugging. */
-+	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	if (!drv)
-+		return 0;
-+
-+	/* We have a driver! */
-+	status |= VIRTIO_CONFIG_S_DRIVER;
-+	vp_set_status(&vp_dev->vdev, status);
-+
- 	vp_finalize_features(&vp_dev->vdev);
- 
--	if (drv && drv->restore)
-+	if (drv->restore) {
- 		ret = drv->restore(&vp_dev->vdev);
-+		if (ret) {
-+			status |= VIRTIO_CONFIG_S_FAILED;
-+			vp_set_status(&vp_dev->vdev, status);
-+			return ret;
-+		}
-+	}
- 
- 	/* Finally, tell the device we're all set */
--	if (!ret)
--		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
-+	status |= VIRTIO_CONFIG_S_DRIVER_OK;
-+	vp_set_status(&vp_dev->vdev, status);
- 
- 	return ret;
- }
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -437,6 +437,7 @@ next_inode:
+ 				list_entry(sbsec->isec_head.next,
+ 					   struct inode_security_struct, list);
+ 		struct inode *inode = isec->inode;
++		list_del_init(&isec->list);
+ 		spin_unlock(&sbsec->isec_lock);
+ 		inode = igrab(inode);
+ 		if (inode) {
+@@ -445,7 +446,6 @@ next_inode:
+ 			iput(inode);
+ 		}
+ 		spin_lock(&sbsec->isec_lock);
+-		list_del_init(&isec->list);
+ 		goto next_inode;
+ 	}
+ 	spin_unlock(&sbsec->isec_lock);
 
 
