@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaKLFDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 00:03:47 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:42846 "EHLO
+	id S1751685AbaKLFDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 00:03:46 -0500
+Received: from regular1.263xmail.com ([211.150.99.132]:43332 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbaKLFDl (ORCPT
+	with ESMTP id S1750699AbaKLFDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 00:03:41 -0500
+	Wed, 12 Nov 2014 00:03:40 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: wxt@rock-chips.com
 X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 58.22.7.114
 X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <095b717270529d633995f60e2293196a>
+X-UNIQUE-TAG: <ff7106486335a7bf5682d0e6d67af49d>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Caesar Wang <caesar.wang@rock-chips.com>
@@ -27,101 +27,161 @@ Cc: zyf@rock-chips.com, dianders@chromium.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         cf@rock-chips.com, dmitry.torokhov@gmail.com, huangtao@rock-chips.com,
         fzf@rock-chips.com, caesar.wang@rock-chips.com
-Subject: [PATCH v18 1/5] dt-bindings: document Rockchip thermal
-Date: Wed, 12 Nov 2014 13:02:38 +0800
-Message-Id: <1415768562-9155-2-git-send-email-caesar.wang@rock-chips.com>
+Subject: [PATCH v18 0/5] Rockchip soc thermal driver
+Date: Wed, 12 Nov 2014 13:02:37 +0800
+Message-Id: <1415768562-9155-1-git-send-email-caesar.wang@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415768562-9155-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1415768562-9155-1-git-send-email-caesar.wang@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the thermal
-found on Rockchip SoCs
+This series patchs tested on rk3288 SDK board and pinky-v1,v2 board.
+I believe the driver can be used on the rk3288-evb board.
 
-Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- .../bindings/thermal/rockchip-thermal.txt          | 68 ++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
+Add this driver, The system will shutdown when
+the thermal temperture over 100C.If for some reason we are unable to
+shut it down in orderly fashion (kernel is stuck holding a lock or similar)
+then hardware will reset it.
+
+This series patchs depend on patch by Mikko Perttunen adding support for
+hardware-supported trip points. It allows us to reduce polling frequency
+while still being able to react when we cross the tripping point.
+
+See https://lkml.org/lkml/2014/6/27/76
+
+
+otherwise thermal_zone_of_sensor_register() will compile error,
+e.g:
+
+CC [M]  drivers/thermal/rockchip_thermal.o
+  drivers/thermal/rockchip_thermal.c: In function
+  `rockchip_thermal_register_sensor':
+  drivers/thermal/rockchip_thermal.c:482:7: error: too many arguments to
+  function `thermal_zone_of_sensor_register'
+         rockchip_thermal_set_trips);
+
+Changes in v18:
+	* address comments from Eduardo Valentin and Dmitry Torokhov..
+	- we need reset tsadc-controller before enable tsadc auto mode,
+	  when we add the thermal function in coreboot,we always enable tsadc controller.
+	  So we need reset tsadc-controller to avoid the TSADC is abnormal.
+	- put the document behind the driver.
+	- Tested on pinky1,2,jeffy board,we will fix cooling-map temperature from 80C to 70C,
+	  critical temperature from 100C to 90C.
+
+Changes in v17:
+	* address comments from Heiko Stubner and .
+	- rename the tshut property
+	- the critiacal temperature only indeed 100C when add the cooling map,
+	  it's for the more secure,fix the temperature from 120C to 100C.
+
+Changes in v16:
+	* address comments from Dmitry Torokhov.
+	- add thermal->chip->control(thermal->regs, false) in remove()
+	- adjust TSHUT in resume().
+
+Changes in v15:
+	* address comments from Dmitry Torokhov.
+	- enable TSHUT move into rk_tsadcv2_tshut_temp().
+	- drop the id argument in rk_tsadcv2_control().
+
+Changes in v14:
+	* address comments from Dmitry Torokhov.
+	- adjust-alarm-rate-depending-on-clock.
+	- 0001-rockchip-thermal-do-not-register-cpufreq-cooling-dev.
+
+Changes in v13:
+	- add cooling-maps for cpu-thermal.
+	- put tshut polarity in device tree.
+
+Changes in v12:
+	* address comments from Dmitry Torokhov and Vladimir Zapolskiy.
+	- split-sensor-handling.
+	- rename-rockchip_tsadc_platform_data.
+
+Changes in v11:
+	* address comments from Vladimir Zapolskiy.
+	- fix cpufreq_cooling_unregister() to put in correct position.
+	- fix "data->chn",at least can get valid Tsensor temp.
+
+Changes in v10:
+	* address comments from Doug Anderson.
+	- fix TSHUT polarity,ensure support TSHUT.
+	- add the decription for rk_tsadcv2_initialize().
+
+Changes in v9:
+	* address comments from Dmitry Torokhov.
+	- fix some style be defined
+	- remove some unused code.
+	- clk_disable_unprepare->clk_disable in suspend()
+
+Changes in v8:
+	* address comments from Dmitry Torokhov and Doug Anderson.
+	- add three Teperture Sensors.
+	- support CRU and GPIO reset chip.
+	- rename rk3xxx-cpu-thermal.dtsi as rk3288-thermal.dtsi
+	- alarm-temp via set_trips() callback
+	- remove "reset-gpios"
+
+Changes in v7:
+	- fix get data->clk=0 when in probe() function.
+	- fix some style code.
+	- modify dts,main add rk3xxx-cpu-thermal.dtsi
+
+Changes in v6:
+	* address comments from Tomeu Vizoso.
+	- use thermal's generic framework.
+
+Changes in v5:
+	* address comments from Eduardo Valentin,rui.zhang and Heiko Stubner:
+	- with BIT() macro
+	- manage clocks in suspend/resume.
+	- license is fixed as GPLv2.
+	- #include "thermal_core.h"->#include <linux/thermal.h>
+	- use the generic trip-points.the hw-shut-temp isn't generic trip-points.
+	- The method of binding and unbinding be fixed.
+	- The pin-name tsadc->otp_out
+
+Changes in v4:
+	* address comments from Jonathan Cameron,huangtao and zhaoyifeng:
+	- this series thermal driver still be put in driver/thermal/
+	- modify the thermal driver description.
+
+Changes in v3:(add dts configure)
+	* address comments from Dmitry Torokhov and Arnd Bergmann:
+	- fix clock-names in rockchip-thermal.txt
+	- remove rockchip_thermal_control() in rockchip_set_mode()
+	- fix some code style.
+	- add dts configure.
+
+Changes in v2:
+	* address comments from Heiko Stubner:
+	- fix dt-bindings in rockchip-thermal.txt
+	- remove Author mark
+	- rename TSADC_XXX->TSADCV2_XXX,it eill ready to merge compatible other SoCs.
+	- fix a identation
+	- remove clk_set_rate(),it's no necessary.
+	- fix the SIMPLE_DEV_PM_OPS() function  style.
+
+Caesar Wang (5):
+  thermal: rockchip: add driver for thermal
+  dt-bindings: document Rockchip thermal
+  ARM: dts: add RK3288 Thermal data
+  ARM: dts: add main Thermal info to rk3288
+  ARM: dts: enable Thermal on rk3288-evb board
+
+ .../bindings/thermal/rockchip-thermal.txt          |  45 ++
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   5 +
+ arch/arm/boot/dts/rk3288-thermal.dtsi              |  58 ++
+ arch/arm/boot/dts/rk3288.dtsi                      |  23 +
+ drivers/thermal/Kconfig                            |   9 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/rockchip_thermal.c                 | 628 +++++++++++++++++++++
+ 7 files changed, 769 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+ create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
+ create mode 100644 drivers/thermal/rockchip_thermal.c
 
-diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-new file mode 100644
-index 0000000..ef802de
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-@@ -0,0 +1,68 @@
-+* Temperature Sensor ADC (TSADC) on rockchip SoCs
-+
-+Required properties:
-+- compatible : "rockchip,rk3288-tsadc"
-+- reg : physical base address of the controller and length of memory mapped
-+	region.
-+- interrupts : The interrupt number to the cpu. The interrupt specifier format
-+	       depends on the interrupt controller.
-+- clocks : Must contain an entry for each entry in clock-names.
-+- clock-names : Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-+		the peripheral clock.
-+- resets : Must contain an entry for each entry in reset-names.
-+	   See ../reset/reset.txt for details.
-+- reset-names : Must include the name "tsadc-apb".
-+- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description.
-+- rockchip,hw-tshut-temp : The hardware-controlled shutdown temperature value.
-+- rockchip,hw-tshut-mode : The hardware-controlled shutdown mode 0:CRU 1:GPIO.
-+- rockchip,hw-tshut-polarity : The hardware-controlled active polarity 0:LOW
-+			       1:HIGH.
-+
-+Exiample:
-+tsadc: tsadc@ff280000 {
-+	compatible = "rockchip,rk3288-tsadc";
-+	reg = <0xff280000 0x100>;
-+	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+	clock-names = "tsadc", "apb_pclk";
-+	resets = <&cru SRST_TSADC>;
-+	reset-names = "tsadc-apb";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&otp_out>;
-+	#thermal-sensor-cells = <1>;
-+	rockchip,hw-tshut-temp = <95000>;
-+	rockchip,hw-tshut-mode = <0>;
-+	rockchip,hw-tshut-polarity = <0>;
-+};
-+
-+Example: referring to thermal sensors:
-+thermal-zones {
-+	cpu_thermal: cpu_thermal {
-+		polling-delay-passive = <1000>; /* milliseconds */
-+		polling-delay = <5000>; /* milliseconds */
-+
-+		/* sensor	ID */
-+		thermal-sensors = <&tsadc	1>;
-+
-+		trips {
-+			cpu_alert0: cpu_alert {
-+				temperature = <70000>; /* millicelsius */
-+				hysteresis = <2000>; /* millicelsius */
-+				type = "passive";
-+			};
-+			cpu_crit: cpu_crit {
-+				temperature = <90000>; /* millicelsius */
-+				hysteresis = <2000>; /* millicelsius */
-+				type = "critical";
-+			};
-+		};
-+
-+		cooling-maps {
-+			map0 {
-+				trip = <&cpu_alert0>;
-+				cooling-device =
-+				    <&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-+			};
-+		};
-+	};
-+};
 -- 
 1.9.1
 
