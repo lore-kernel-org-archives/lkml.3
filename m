@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608AbaKLB2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:28:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932580AbaKLB2i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932590AbaKLB2i (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 20:28:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59086 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932556AbaKLB2f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:28:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Alex Smith <alex@alex-smith.me.uk>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.17 144/319] MIPS: ptrace.h: Add a missing include
-Date: Wed, 12 Nov 2014 10:14:42 +0900
-Message-Id: <20141112011016.330887734@linuxfoundation.org>
+        "David E. Box" <david.e.box@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Subject: [PATCH 3.17 175/319] x86/platform/intel/iosf: Add Braswell PCI ID
+Date: Wed, 12 Nov 2014 10:15:13 +0900
+Message-Id: <20141112011021.643477509@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,51 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-commit cdb685ad44996e9a113a10002cb42d40ff29db99 upstream.
+commit 849f5d894383d25c49132437aa289c9a9c98d5df upstream.
 
-Commit a79ebea62010 (MIPS: ptrace: Fix user pt_regs definition,
-use in ptrace_{get, set}regs()) converted struct pt_regs to use __u64.
-Some userspace applications (e.g. GDB) include this file directly,
-and fail to see this type. Fix by including <linux/types.h>.
+Add Braswell PCI ID to list of supported ID's for the IOSF driver.
 
-The patch fixes the following build failure with GDB 7.8 when using
-GLIBC headers created against Linux 3.17:
-
-In file included from /home/aaro/los/work/shared/gdb-7.8/gdb/mips-linux-nat.c:37:0:
-/home/aaro/los/work/mips/rootfs/mips-linux-gnu/usr/include/asm/ptrace.h:32:2: error: unknown type name '__u64'
-  __u64 regs[32];
-  ^
-/home/aaro/los/work/mips/rootfs/mips-linux-gnu/usr/include/asm/ptrace.h:35:2: error: unknown type name '__u64'
-  __u64 lo;
-  ^
-/home/aaro/los/work/mips/rootfs/mips-linux-gnu/usr/include/asm/ptrace.h:36:2: error: unknown type name '__u64'
-  __u64 hi;
-  ^
-
-Fixes: a79ebea62010 ("MIPS: ptrace: Fix user pt_regs definition, use in ptrace_{get, set}regs()")
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Alex Smith <alex@alex-smith.me.uk>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/8067/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Link: http://lkml.kernel.org/r/1411017231-20807-2-git-send-email-david.e.box@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/include/uapi/asm/ptrace.h |    2 ++
+ arch/x86/kernel/iosf_mbi.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/arch/mips/include/uapi/asm/ptrace.h
-+++ b/arch/mips/include/uapi/asm/ptrace.h
-@@ -9,6 +9,8 @@
- #ifndef _UAPI_ASM_PTRACE_H
- #define _UAPI_ASM_PTRACE_H
+--- a/arch/x86/kernel/iosf_mbi.c
++++ b/arch/x86/kernel/iosf_mbi.c
+@@ -26,6 +26,7 @@
+ #include <asm/iosf_mbi.h>
  
-+#include <linux/types.h>
-+
- /* 0 - 31 are integer registers, 32 - 63 are fp registers.  */
- #define FPR_BASE	32
- #define PC		64
+ #define PCI_DEVICE_ID_BAYTRAIL		0x0F00
++#define PCI_DEVICE_ID_BRASWELL		0x2280
+ #define PCI_DEVICE_ID_QUARK_X1000	0x0958
+ 
+ static DEFINE_SPINLOCK(iosf_mbi_lock);
+@@ -204,6 +205,7 @@ static int iosf_mbi_probe(struct pci_dev
+ 
+ static const struct pci_device_id iosf_mbi_pci_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BAYTRAIL) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BRASWELL) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_QUARK_X1000) },
+ 	{ 0, },
+ };
 
 
