@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694AbaKLBfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:35:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59718 "EHLO
+	id S933712AbaKLBfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:35:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933678AbaKLBf2 (ORCPT
+	with ESMTP id S933692AbaKLBfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:35:28 -0500
+	Tue, 11 Nov 2014 20:35:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sinclair Yeh <syeh@vmware.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>
-Subject: [PATCH 3.17 284/319] drm/vmwgfx: Filter out modes those cannot be supported by the current VRAM size.
-Date: Wed, 12 Nov 2014 10:17:02 +0900
-Message-Id: <20141112011039.813476427@linuxfoundation.org>
+        TieFu Chen <tienfu.chen@canonical.com>,
+        Kailang Yang <kailang@realtek.com>, Hui Wang <hui.wang@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.17 302/319] ALSA: hda - fix mute led problem for three HP laptops
+Date: Wed, 12 Nov 2014 10:17:20 +0900
+Message-Id: <20141112011042.803453644@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,80 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sinclair Yeh <syeh@vmware.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit 9a72384d86b26cb8a2b25106677e1197f606668f upstream.
+commit c922c4e87b9b5a3b50d4d17b96f189121430f511 upstream.
 
-When screen objects are enabled, the bpp is assumed to be 32, otherwise
-it is set to 16.
+Without the fix, the mute led can't work on these three machines.
 
-v2:
-* Use u32 instead of u64 for assumed_bpp.
-* Fixed mechanism to check for screen objects
-* Limit the back buffer size to VRAM.
+After apply this fix, these three machines will fall back on the led
+control quirk as below, and through testing, the mute led works very
+well.
+PIN_QUIRK(0x10ec0282, 0x103c, "HP", ALC269_FIXUP_HP_LINE1_MIC1_LED,
+            ALC282_STANDARD_PINS,
+            {0x12, 0x90a60140},
+            ...
 
-Signed-off-by: Sinclair Yeh <syeh@vmware.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+BugLink: https://bugs.launchpad.net/bugs/1389497
+Tested-by: TieFu Chen <tienfu.chen@canonical.com>
+Cc: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    6 +++++-
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |   16 +++++++++++++---
- 2 files changed, 18 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_realtek.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -688,7 +688,11 @@ static int vmw_driver_load(struct drm_de
- 		goto out_err0;
- 	}
- 
--	if (unlikely(dev_priv->prim_bb_mem < dev_priv->vram_size))
-+	/*
-+	 * Limit back buffer size to VRAM size.  Remove this once
-+	 * screen targets are implemented.
-+	 */
-+	if (dev_priv->prim_bb_mem > dev_priv->vram_size)
- 		dev_priv->prim_bb_mem = dev_priv->vram_size;
- 
- 	mutex_unlock(&dev_priv->hw_mutex);
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-@@ -1950,6 +1950,14 @@ int vmw_du_connector_fill_modes(struct d
- 		DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC)
- 	};
- 	int i;
-+	u32 assumed_bpp = 2;
-+
-+	/*
-+	 * If using screen objects, then assume 32-bpp because that's what the
-+	 * SVGA device is assuming
-+	 */
-+	if (dev_priv->sou_priv)
-+		assumed_bpp = 4;
- 
- 	/* Add preferred mode */
- 	{
-@@ -1960,8 +1968,9 @@ int vmw_du_connector_fill_modes(struct d
- 		mode->vdisplay = du->pref_height;
- 		vmw_guess_mode_timing(mode);
- 
--		if (vmw_kms_validate_mode_vram(dev_priv, mode->hdisplay * 2,
--					       mode->vdisplay)) {
-+		if (vmw_kms_validate_mode_vram(dev_priv,
-+						mode->hdisplay * assumed_bpp,
-+						mode->vdisplay)) {
- 			drm_mode_probed_add(connector, mode);
- 		} else {
- 			drm_mode_destroy(dev, mode);
-@@ -1983,7 +1992,8 @@ int vmw_du_connector_fill_modes(struct d
- 		    bmode->vdisplay > max_height)
- 			continue;
- 
--		if (!vmw_kms_validate_mode_vram(dev_priv, bmode->hdisplay * 2,
-+		if (!vmw_kms_validate_mode_vram(dev_priv,
-+						bmode->hdisplay * assumed_bpp,
- 						bmode->vdisplay))
- 			continue;
- 
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5008,9 +5008,6 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x103c, 0x2224, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+ 	SND_PCI_QUIRK(0x103c, 0x2225, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+ 	SND_PCI_QUIRK(0x103c, 0x2246, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+-	SND_PCI_QUIRK(0x103c, 0x2247, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+-	SND_PCI_QUIRK(0x103c, 0x2248, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+-	SND_PCI_QUIRK(0x103c, 0x2249, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+ 	SND_PCI_QUIRK(0x103c, 0x2253, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+ 	SND_PCI_QUIRK(0x103c, 0x2254, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+ 	SND_PCI_QUIRK(0x103c, 0x2255, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
 
 
