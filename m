@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaKLBYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:24:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58743 "EHLO
+	id S1754112AbaKLBYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:24:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056AbaKLBYZ (ORCPT
+	with ESMTP id S1754091AbaKLBYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:24:25 -0500
+	Tue, 11 Nov 2014 20:24:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.17 071/319] s390/topology: call set_sched_topology early
-Date: Wed, 12 Nov 2014 10:13:29 +0900
-Message-Id: <20141112011004.326675737@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.17 100/319] Input: i8042 - add noloop quirk for Asus X750LN
+Date: Wed, 12 Nov 2014 10:13:58 +0900
+Message-Id: <20141112011009.119970477@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,49 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 48e9a6c1f54695609b709bf674aac133794ada00 upstream.
+commit 9ff84a17302aeb8913ff244ecc0d8f9d219fecb5 upstream.
 
-The call to topology_init is too late for the set_sched_topology call.
-The initial scheduling domain structure has already been established
-with default topology array. Use the smp_cpus_done() call to get the
-s390 specific topology array registered early enough.
+Without this the aux port does not get detected, and consequently the
+touchpad will not work.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+https://bugzilla.redhat.com/show_bug.cgi?id=1110011
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/topology.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/s390/kernel/topology.c
-+++ b/arch/s390/kernel/topology.c
-@@ -464,15 +464,17 @@ static struct sched_domain_topology_leve
- 
- static int __init topology_init(void)
- {
--	if (!MACHINE_HAS_TOPOLOGY) {
-+	if (MACHINE_HAS_TOPOLOGY)
-+		set_topology_timer();
-+	else
- 		topology_update_polarization_simple();
--		goto out;
--	}
--	set_topology_timer();
--out:
--
--	set_sched_topology(s390_topology);
--
- 	return device_create_file(cpu_subsys.dev_root, &dev_attr_dispatching);
- }
- device_initcall(topology_init);
-+
-+static int __init early_topology_init(void)
-+{
-+	set_sched_topology(s390_topology);
-+	return 0;
-+}
-+early_initcall(early_topology_init);
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -101,6 +101,12 @@ static const struct dmi_system_id __init
+ 	},
+ 	{
+ 		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X750LN"),
++		},
++	},
++	{
++		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME , "ProLiant"),
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "8500"),
 
 
