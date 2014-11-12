@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934954AbaKLBrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:47:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60733 "EHLO
+	id S934970AbaKLBr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:47:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934921AbaKLBrP (ORCPT
+	with ESMTP id S934921AbaKLBrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:47:15 -0500
+	Tue, 11 Nov 2014 20:47:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 180/203] PM / Sleep: fix recovery during resuming from hibernation
-Date: Wed, 12 Nov 2014 10:17:30 +0900
-Message-Id: <20141112011550.942216322@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 182/203] posix-timers: Fix stack info leak in timer_create()
+Date: Wed, 12 Nov 2014 10:17:32 +0900
+Message-Id: <20141112011551.031497304@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,40 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 94fb823fcb4892614f57e59601bb9d4920f24711 upstream.
+commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
 
-If a device's dev_pm_ops::freeze callback fails during the QUIESCE
-phase, we don't rollback things correctly calling the thaw and complete
-callbacks. This could leave some devices in a suspended state in case of
-an error during resuming from hibernation.
+If userland creates a timer without specifying a sigevent info, we'll
+create one ourself, using a stack local variable. Particularly will we
+use the timer ID as sival_int. But as sigev_value is a union containing
+a pointer and an int, that assignment will only partially initialize
+sigev_value on systems where the size of a pointer is bigger than the
+size of an int. On such systems we'll copy the uninitialized stack bytes
+from the timer_create() call to userland when the timer actually fires
+and we're going to deliver the signal.
 
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Initialize sigev_value with 0 to plug the stack info leak.
+
+Found in the PaX patch, written by the PaX Team.
+
+Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/hibernate.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ kernel/posix-timers.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -492,8 +492,14 @@ int hibernation_restore(int platform_mod
- 	error = dpm_suspend_start(PMSG_QUIESCE);
- 	if (!error) {
- 		error = resume_target_kernel(platform_mode);
--		dpm_resume_end(PMSG_RECOVER);
-+		/*
-+		 * The above should either succeed and jump to the new kernel,
-+		 * or return with an error. Otherwise things are just
-+		 * undefined, so let's be paranoid.
-+		 */
-+		BUG_ON(!error);
- 	}
-+	dpm_resume_end(PMSG_RECOVER);
- 	pm_restore_gfp_mask();
- 	ftrace_start();
- 	resume_console();
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -634,6 +634,7 @@ SYSCALL_DEFINE3(timer_create, const cloc
+ 			goto out;
+ 		}
+ 	} else {
++		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
+ 		event.sigev_notify = SIGEV_SIGNAL;
+ 		event.sigev_signo = SIGALRM;
+ 		event.sigev_value.sival_int = new_timer->it_id;
 
 
