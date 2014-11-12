@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933317AbaKLBdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:33:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59488 "EHLO
+	id S933335AbaKLBdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:33:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59493 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933264AbaKLBdj (ORCPT
+	with ESMTP id S933264AbaKLBdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:39 -0500
+	Tue, 11 Nov 2014 20:33:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.17 249/319] scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND
-Date: Wed, 12 Nov 2014 10:16:27 +0900
-Message-Id: <20141112011033.976851074@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.17 267/319] tty: Fix high cpu load if tty is unreleaseable
+Date: Wed, 12 Nov 2014 10:16:45 +0900
+Message-Id: <20141112011036.940242773@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,47 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 84ce0f0e94ac97217398b3b69c21c7a62ebeed05 upstream.
+commit 37b164578826406a173ca7c20d9ba7430134d23e upstream.
 
-When sg_scsi_ioctl() fails to prepare request to submit in
-blk_rq_map_kern() we jump to a label where we just end up copying
-(luckily zeroed-out) kernel buffer to userspace instead of reporting
-error. Fix the problem by jumping to the right label.
+Kernel oops can cause the tty to be unreleaseable (for example, if
+n_tty_read() crashes while on the read_wait queue). This will cause
+tty_release() to endlessly loop without sleeping.
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: linux-scsi@vger.kernel.org
-Coverity-id: 1226871
-Signed-off-by: Jan Kara <jack@suse.cz>
+Use a killable sleep timeout which grows by 2n+1 jiffies over the interval
+[0, 120 secs.) and then jumps to forever (but still killable).
+
+NB: killable just allows for the task to be rewoken manually, not
+to be terminated.
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Fixed up the, now unused, out label.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
-
 ---
- block/scsi_ioctl.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/tty/tty_io.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -509,7 +509,7 @@ int sg_scsi_ioctl(struct request_queue *
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1686,6 +1686,7 @@ int tty_release(struct inode *inode, str
+ 	int	pty_master, tty_closing, o_tty_closing, do_sleep;
+ 	int	idx;
+ 	char	buf[64];
++	long	timeout = 0;
  
- 	if (bytes && blk_rq_map_kern(q, rq, buffer, bytes, __GFP_WAIT)) {
- 		err = DRIVER_ERROR << 24;
--		goto out;
-+		goto error;
+ 	if (tty_paranoia_check(tty, inode, __func__))
+ 		return 0;
+@@ -1770,7 +1771,11 @@ int tty_release(struct inode *inode, str
+ 				__func__, tty_name(tty, buf));
+ 		tty_unlock_pair(tty, o_tty);
+ 		mutex_unlock(&tty_mutex);
+-		schedule();
++		schedule_timeout_killable(timeout);
++		if (timeout < 120 * HZ)
++			timeout = 2 * timeout + 1;
++		else
++			timeout = MAX_SCHEDULE_TIMEOUT;
  	}
  
- 	memset(sense, 0, sizeof(sense));
-@@ -518,7 +518,6 @@ int sg_scsi_ioctl(struct request_queue *
- 
- 	blk_execute_rq(q, disk, rq, 0);
- 
--out:
- 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
- 	if (err) {
- 		if (rq->sense_len && rq->sense) {
+ 	/*
 
 
