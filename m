@@ -1,144 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933169AbaKLCQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:16:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32867 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966224AbaKLBwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:52:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anish Bhatt <anish@chelsio.com>, Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.10 021/123] x86_64, entry: Filter RFLAGS.NT on entry from userspace
-Date: Wed, 12 Nov 2014 10:16:27 +0900
-Message-Id: <20141112011719.974872431@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
-References: <20141112011718.985171261@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S964885AbaKLCQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:16:43 -0500
+Received: from mail-bn1on0116.outbound.protection.outlook.com ([157.56.110.116]:38592
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933213AbaKLCQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 21:16:40 -0500
+Date: Wed, 12 Nov 2014 09:10:03 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 0/7] usb: add support for the generic PHY framework
+Message-ID: <20141112010959.GA15348@shlinux2>
+References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+ <07c7cfed25af4bdb9e34b6ad1aaed0c7@BN1PR0301MB0772.namprd03.prod.outlook.com>
+ <20141107180820.GO15036@saruman> <20141107180852.GP15036@saruman>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141107180852.GP15036@saruman>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51704005)(24454002)(84676001)(97756001)(102836001)(33716001)(50466002)(86362001)(93886004)(46406003)(47776003)(20776003)(68736004)(62966003)(106466001)(107046002)(46102003)(21056001)(33656002)(95666004)(77156002)(105606002)(64706001)(99396003)(120916001)(31966008)(104016003)(110136001)(23726002)(4396001)(54356999)(97736003)(76176999)(50986999)(87936001)(92566001)(92726001)(6806004)(44976005);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0628;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
+X-Forefront-PRVS: 03932714EB
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Nov 07, 2014 at 12:08:52PM -0600, Felipe Balbi wrote:
+> On Fri, Nov 07, 2014 at 12:08:20PM -0600, Felipe Balbi wrote:
+> > Hi,
+> > 
+> > On Fri, Nov 07, 2014 at 01:33:25PM +0000, Peter Chen wrote:
+> > > 
+> > > 
+> > >  
+> > > > 
+> > > > Antoine Tenart (7):
+> > > >   usb: move the OTG state from the USB PHY to the OTG structure
+> > > >   usb: rename phy to usb_phy in OTG
+> > > >   usb: add support to the generic PHY framework in OTG
+> > > >   usb: allow to supply the PHY in the drivers when using HCD
+> > > >   usb: chipidea: rename transceiver and phy to usb_phy
+> > > >   usb: chipidea: move usb_otg into struct ci_hdrc
+> > > >   usb: chipidea: add support to the generic PHY framework
+> > > > 
+> > > 
+> > > Hi Felipe,
+> > > 
+> > > I find you queue the patch 1st-4th and 7th in your next tree, how you queue
+> > > the 7th without queueing 5th and 6th, they have some relationships.
+> > > 
+> > > Will you queue 5th and 6th, or I queue them (5th- 7th) through my chipidea patch set?
+> > 
+> > argh, somehow I missed them. I'll add both to my testing/next. Sorry for
+> > the confusion. I thought I had them all.
+> 
+> oh, they don't apply.
+> 
 
-------------------
+Hi Felipe, I still not see Antoine's chipidea patch in your tree.
+I assume you will do it soon.
+And there are some coming chipidea patches (Antoine & me), I will do
+further work based on it.
 
-From: Andy Lutomirski <luto@amacapital.net>
-
-commit 8c7aa698baca5e8f1ba9edb68081f1e7a1abf455 upstream.
-
-The NT flag doesn't do anything in long mode other than causing IRET
-to #GP.  Oddly, CPL3 code can still set NT using popf.
-
-Entry via hardware or software interrupt clears NT automatically, so
-the only relevant entries are fast syscalls.
-
-If user code causes kernel code to run with NT set, then there's at
-least some (small) chance that it could cause trouble.  For example,
-user code could cause a call to EFI code with NT set, and who knows
-what would happen?  Apparently some games on Wine sometimes do
-this (!), and, if an IRET return happens, they will segfault.  That
-segfault cannot be handled, because signal delivery fails, too.
-
-This patch programs the CPU to clear NT on entry via SYSCALL (both
-32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
-in software on entry via SYSENTER.
-
-To save a few cycles, this borrows a trick from Jan Beulich in Xen:
-it checks whether NT is set before trying to clear it.  As a result,
-it seems to have very little effect on SYSENTER performance on my
-machine.
-
-There's another minor bug fix in here: it looks like the CFI
-annotations were wrong if CONFIG_AUDITSYSCALL=n.
-
-Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
-
-I haven't touched anything on 32-bit kernels.
-
-The syscall mask change comes from a variant of this patch by Anish
-Bhatt.
-
-Note to stable maintainers: there is no known security issue here.
-A misguided program can set NT and cause the kernel to try and fail
-to deliver SIGSEGV, crashing the program.  This patch fixes Far Cry
-on Wine: https://bugs.winehq.org/show_bug.cgi?id=33275
-
-Reported-by: Anish Bhatt <anish@chelsio.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/ia32/ia32entry.S    |   18 +++++++++++++++++-
- arch/x86/kernel/cpu/common.c |    2 +-
- 2 files changed, 18 insertions(+), 2 deletions(-)
-
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -151,6 +151,16 @@ ENTRY(ia32_sysenter_target)
- 1:	movl	(%rbp),%ebp
- 	_ASM_EXTABLE(1b,ia32_badarg)
- 	ASM_CLAC
-+
-+	/*
-+	 * Sysenter doesn't filter flags, so we need to clear NT
-+	 * ourselves.  To save a few cycles, we can check whether
-+	 * NT was set instead of doing an unconditional popfq.
-+	 */
-+	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
-+	jnz sysenter_fix_flags
-+sysenter_flags_fixed:
-+
- 	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	CFI_REMEMBER_STATE
-@@ -184,6 +194,8 @@ sysexit_from_sys_call:
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS_SYSEXIT32
- 
-+	CFI_RESTORE_STATE
-+
- #ifdef CONFIG_AUDITSYSCALL
- 	.macro auditsys_entry_common
- 	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
-@@ -226,7 +238,6 @@ sysexit_from_sys_call:
- 	.endm
- 
- sysenter_auditsys:
--	CFI_RESTORE_STATE
- 	auditsys_entry_common
- 	movl %ebp,%r9d			/* reload 6th syscall arg */
- 	jmp sysenter_dispatch
-@@ -235,6 +246,11 @@ sysexit_audit:
- 	auditsys_exit sysexit_from_sys_call
- #endif
- 
-+sysenter_fix_flags:
-+	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
-+	popfq_cfi
-+	jmp sysenter_flags_fixed
-+
- sysenter_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
- 	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1134,7 +1134,7 @@ void syscall_init(void)
- 	/* Flags to clear on syscall */
- 	wrmsrl(MSR_SYSCALL_MASK,
- 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
--	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
-+	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
- }
- 
- /*
-
-
+Peter
