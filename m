@@ -1,99 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaKLJvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 04:51:38 -0500
-Received: from mout.gmx.com ([74.208.4.201]:49954 "EHLO mout.gmx.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411AbaKLJvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 04:51:35 -0500
-MIME-Version: 1.0
-Message-ID: <trinity-c968a14e-d2d2-4301-9bae-2cd4b9fa2514-1415785894140@3capp-mailcom-lxa15>
-From: "Castle OfWhite" <castleofwhite@mail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Erich Schubert you cannot Diminish me. (systemd fanboi /male
- feminist bans further discussion)
-Content-Type: text/plain; charset=UTF-8
-Date: Wed, 12 Nov 2014 10:51:34 +0100
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:gaiCdYOm6CSTfG5xybkxcATEQexX8WwqDjdWMWSq90I
- Kk+Ji3Vx/twWfv7OaCOz+sL/WQfXsZbtL4a1RmzWxaV95Qr++J
- zmOxzKCD7rNxqBhSC0lloQS6uQvs+XvqpvbonpBkvDu4Kq6+5u
- 6hh+ISr+B6hYrRx6XqDpB+yRE+rnt0RIvuwKggGgkPxZlAHhvq
- TbJjmY0uEIkRUNipiCHfom2oXDWSRV10jbGCYCRd3mSH3U8Lpw
- slwIwrtYmUpfAMIZBX9XeXQTYOWY0+Mk+QUnOqa1OIn3V7t5sE
- pluB0O9jNENOo7cKgZ1MyPq13vt
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752708AbaKLJvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 04:51:51 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:30473 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063AbaKLJvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 04:51:47 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-fb-54632db06886
+From: Weijie Yang <weijie.yang@samsung.com>
+To: "'Johannes Weiner'" <hannes@cmpxchg.org>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
+        "'Rik van Riel'" <riel@redhat.com>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        "'Linux-MM'" <linux-mm@kvack.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] mm: mincore: use PAGE_SIZE instead of PAGE_CACHE_SIZE
+Date: Wed, 12 Nov 2014 17:50:37 +0800
+Message-id: <000001cffe5e$44893f60$cd9bbe20$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac/+Xhwhj4CcbRi3RbmYb2dqqhbJ1A==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9jQd0NuskhBrOXWVnMWb+GzWL1Jl+L
+	y7vmsFncW/Of1WLyu2eMFn+vrGexeHLiP4sDu8fhN++ZPXbOusvusenTJHaPEzN+s3i833eV
+	zWPz6WqPz5vkAtijuGxSUnMyy1KL9O0SuDKmv+hmK5gqXDHlWTNTA+Mvvi5GTg4JAROJX+3n
+	WCFsMYkL99azdTFycQgJTGeUuPCrhxnC+cMocWr+VEaQKjYBbYm7/RvBOkQEtCTW3z3GCFLE
+	LPCAUeL8x99gCWEBL4lVn3qZuhg5OFgEVCX+r1ACCfMK2EmsvPWQDcIWlPgx+R4LSAmzgLrE
+	lCm5IGFmAXmJzWveMoOEJYDCj/7qQmzSk7jxcTobRIm4xMYjt1gmMArMQjJoFsKgWUgGzULS
+	sYCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcCQ8k97BuKrB4hCjAAejEg9vxuakECHW
+	xLLiytxDjBIczEoivJ++AoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1I
+	LYLJMnFwSjUwsp+7tWHz8vyTXDd7nl7fdfpz2qpMJ3GzNMYlb0qbfv1n5JHdXNL3+eA85UMW
+	b5vyPizN9Pj25Hvp8mTvx2Xmv1LVt4h9vsy1JEhgtYNl5lumsir+0ITsstksGgc1lwn8Fe/r
+	OeGwt9HLT1CO+YmS6G4LdoujjknrdnPfNPlnuE1QgHke29YtSizFGYmGWsxFxYkAUw5UkoAC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"We are unable to post your comment because you have been blocked by Vitavonni. Find out more."
+This is a RFC patch, because current PAGE_SIZE is equal to PAGE_CACHE_SIZE,
+there isn't any difference and issue when running.
 
-Dear Mr Schubert;
+However, the current code mixes these two aligned_size inconsistently, and if
+they are not equal in future mincore_unmapped_range() would check more file
+pages than wanted.
 
-I have a life and friends. You may notice them collaborating on some of my recordings.
+According to man-page, mincore uses PAGE_SIZE as its size unit, so this patch
+uses PAGE_SIZE instead of PAGE_CACHE_SIZE.
 
-I spent much of this year and the year before working on code for my projects. Almost full time. I am glad I had the free time to do that. Have you ever had such time?
-
-I have constructed 3d models, 3d architecture, 2d maps,  music, textures, pixel art, etc. If there is something incidental to making a program whole, I have done it. All of it free/open-source.
-
-What have you done?
-
-I would have more of a life if there was a point to the upgrade, but the social structure you support bars men from marrying young girls.
-
-You cannot diminish me.
-
-You cannot compare a dot on a canvas to an abyss
-
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
+ mm/mincore.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
-Previously Erich Schubert wrote:
-Sure, and then you also save the world on your spare time... apart from having writting all of nethack and Xonotic, that is.
-Some thousands have downloaded, and then uninstalled your thing.
-Get real. Get a life. Get friends.
+diff --git a/mm/mincore.c b/mm/mincore.c
+index 725c809..8c19bce 100644
+--- a/mm/mincore.c
++++ b/mm/mincore.c
+@@ -102,11 +102,18 @@ static void mincore_unmapped_range(struct vm_area_struct *vma,
+ 	int i;
+ 
+ 	if (vma->vm_file) {
+-		pgoff_t pgoff;
++		pgoff_t pgoff, pgoff_end;
++		int j, count;
++		unsigned char res;
+ 
++		count = 1 << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 		pgoff = linear_page_index(vma, addr);
+-		for (i = 0; i < nr; i++, pgoff++)
+-			vec[i] = mincore_page(vma->vm_file->f_mapping, pgoff);
++		pgoff_end = linear_page_index(vma, end);
++		for (i = 0; pgoff < pgoff_end; pgoff++) {
++			res = mincore_page(vma->vm_file->f_mapping, pgoff);
++			for (j = 0; j < count; j++)
++				vec[i++] = res;
++		}
+ 	} else {
+ 		for (i = 0; i < nr; i++)
+ 			vec[i] = 0;
+@@ -258,7 +265,7 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+  * return values:
+  *  zero    - success
+  *  -EFAULT - vec points to an illegal address
+- *  -EINVAL - addr is not a multiple of PAGE_CACHE_SIZE
++ *  -EINVAL - addr is not a multiple of PAGE_SIZE
+  *  -ENOMEM - Addresses in the range [addr, addr + len] are
+  *		invalid for the address space of this process, or
+  *		specify one or more pages which are not currently
+@@ -273,14 +280,14 @@ SYSCALL_DEFINE3(mincore, unsigned long, start, size_t, len,
+ 	unsigned char *tmp;
+ 
+ 	/* Check the start address: needs to be page-aligned.. */
+- 	if (start & ~PAGE_CACHE_MASK)
++	if (start & ~PAGE_MASK)
+ 		return -EINVAL;
+ 
+ 	/* ..and we need to be passed a valid user-space range */
+ 	if (!access_ok(VERIFY_READ, (void __user *) start, len))
+ 		return -ENOMEM;
+ 
+-	/* This also avoids any overflows on PAGE_CACHE_ALIGN */
++	/* This also avoids any overflows on PAGE_ALIGN */
+ 	pages = len >> PAGE_SHIFT;
+ 	pages += (len & ~PAGE_MASK) != 0;
+ 
+-- 
+1.7.0.4
 
----
 
-Previously MikeeUSA wrote:
-
-Yes. Some thousands have downloaded, used, and enjoyed one of the more recent projects (as an example). They have shared it with eachother and written about it on their sites in various countries/languages. It is quite a large project, somewhere around 1/8th the size of a debian source release. (And that's with all the tricks that can be figured out to compress it) I think the fact that that many bothered to download something that large says something at the very least.
-
-Often I do not credit myself when doing the programming work (including on my own projects), it's just something that's need to support the media. I do credit myself when I do media work.
-
-I'm happy so many people chose to download it. To some, thousands is nothing, but to me it's something.
-
-Everything is under free/opensource licenses.
-
----
-
-Previously Erich Schubert wrote:
-
-Prove me otherwise. You may have dumped GB somewhere, but has anyone enjoyed, used, downloaded, reshared them? Are they in any larger project? I doubt you have contributed "gigabytes" to Debian, if anything at all...
-
-I'm allowing this post of yours, because you at least use your regular handle instead of rotating sock puppets, and keep your insults down.
-
----
-
-Previously MikeeUSA wrote (start of thread):
-
-Dear Mr Schubert;
-
-"He has not contributed anything to the open source community."
-This is a complete lie. I've contributed gigabytes of media alone.
-I've done years and years of programming work.
-I have done far more than you ever will.
-
-"His songs and "games" are not worth looking at,"
-Your subjective view. Coloured by your social views and your
-disdain for those who oppose you in that.
-
-"and I'm not aware of any project that has accepted any of his "contributions"."
-The only objectively true thing you've said: you're not aware.
-I'm glad you're unaware, I hope that trend continues.
-
-I expect this post to be censored, it is par for the course for people like you.
-
-Sincerely;
---MikeeUSA--
