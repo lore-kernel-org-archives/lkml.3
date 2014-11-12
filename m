@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965732AbaKLBtk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:49:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60912 "EHLO
+	id S965748AbaKLBtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:49:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965219AbaKLBth (ORCPT
+	with ESMTP id S965219AbaKLBtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:37 -0500
+	Tue, 11 Nov 2014 20:49:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vasily Averin <vvs@parallels.com>, Eric Dumazet <edumazet@google.com>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 004/123] ipv4: dst_entry leak in ip_send_unicast_reply()
-Date: Wed, 12 Nov 2014 10:16:10 +0900
-Message-Id: <20141112011719.185370599@linuxfoundation.org>
+Subject: [PATCH 3.10 005/123] drivers/net: macvtap and tun depend on INET
+Date: Wed, 12 Nov 2014 10:16:11 +0900
+Message-Id: <20141112011719.238942068@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,56 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasily Averin <vvs@parallels.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-[ Upstream commit 4062090e3e5caaf55bed4523a69f26c3265cc1d2 ]
+[ Upstream commit de11b0e8c569b96c2cf6a811e3805b7aeef498a3 ]
 
-ip_setup_cork() called inside ip_append_data() steals dst entry from rt to cork
-and in case errors in __ip_append_data() nobody frees stolen dst entry
+These drivers now call ipv6_proxy_select_ident(), which is defined
+only if CONFIG_INET is enabled.  However, they have really depended
+on CONFIG_INET for as long as they have allowed sending GSO packets
+from userland.
 
-Fixes: 2e77d89b2fa8 ("net: avoid a pair of dst_hold()/dst_release() in ip_append_data()")
-Signed-off-by: Vasily Averin <vvs@parallels.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fixes: f43798c27684 ("tun: Allow GSO using virtio_net_hdr")
+Fixes: b9fb9ee07e67 ("macvtap: add GSO/csum offload support")
+Fixes: 5188cd44c55d ("drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_output.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/net/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -1481,6 +1481,7 @@ void ip_send_unicast_reply(struct net *n
- 	struct sk_buff *nskb;
- 	struct sock *sk;
- 	struct inet_sock *inet;
-+	int err;
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -139,6 +139,7 @@ config MACVLAN
+ config MACVTAP
+ 	tristate "MAC-VLAN based tap driver"
+ 	depends on MACVLAN
++	depends on INET
+ 	help
+ 	  This adds a specialized tap character device driver that is based
+ 	  on the MAC-VLAN network interface, called macvtap. A macvtap device
+@@ -209,6 +210,7 @@ config RIONET_RX_SIZE
  
- 	if (ip_options_echo(&replyopts.opt.opt, skb))
- 		return;
-@@ -1517,8 +1518,13 @@ void ip_send_unicast_reply(struct net *n
- 	sock_net_set(sk, net);
- 	__skb_queue_head_init(&sk->sk_write_queue);
- 	sk->sk_sndbuf = sysctl_wmem_default;
--	ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base, len, 0,
--		       &ipc, &rt, MSG_DONTWAIT);
-+	err = ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base,
-+			     len, 0, &ipc, &rt, MSG_DONTWAIT);
-+	if (unlikely(err)) {
-+		ip_flush_pending_frames(sk);
-+		goto out;
-+	}
-+
- 	nskb = skb_peek(&sk->sk_write_queue);
- 	if (nskb) {
- 		if (arg->csumoffset >= 0)
-@@ -1530,7 +1536,7 @@ void ip_send_unicast_reply(struct net *n
- 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
- 		ip_push_pending_frames(sk, &fl4);
- 	}
--
-+out:
- 	put_cpu_var(unicast_sock);
- 
- 	ip_rt_put(rt);
+ config TUN
+ 	tristate "Universal TUN/TAP device driver support"
++	depends on INET
+ 	select CRC32
+ 	---help---
+ 	  TUN/TAP provides packet reception and transmission for user space
 
 
