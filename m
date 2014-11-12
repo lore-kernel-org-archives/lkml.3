@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965199AbaKLBnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:43:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60489 "EHLO
+	id S934620AbaKLBno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:43:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934101AbaKLBnq (ORCPT
+	with ESMTP id S934578AbaKLBnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:43:46 -0500
+	Tue, 11 Nov 2014 20:43:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Libin Yang <libin.yang@intel.com>, Takashi Iwai <tiwai@suse.de>,
+        "David E. Box" <david.e.box@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
         Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.14 120/203] ALSA: hda - add PCI IDs for Intel Braswell
-Date: Wed, 12 Nov 2014 10:16:30 +0900
-Message-Id: <20141112011548.173297559@linuxfoundation.org>
+Subject: [PATCH 3.14 119/203] x86/platform/intel/iosf: Add Braswell PCI ID
+Date: Wed, 12 Nov 2014 10:16:29 +0900
+Message-Id: <20141112011548.132991688@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,35 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Libin Yang <libin.yang@intel.com>
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-commit f31b2ffcad2b8c57cee5ffc634928bcbc8c6a558 upstream.
+commit 849f5d894383d25c49132437aa289c9a9c98d5df upstream.
 
-Add HD Audio Device PCI ID for the Intel Braswell platform.
-It is an HDA Intel PCH controller.
+Add Braswell PCI ID to list of supported ID's for the IOSF driver.
 
-AZX_DCAPS_ALIGN_BUFSIZE is not necessary for this controller.
-
-Signed-off-by: Libin Yang <libin.yang@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Link: http://lkml.kernel.org/r/1411017231-20807-2-git-send-email-david.e.box@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/iosf_mbi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -4027,6 +4027,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
- 	/* BayTrail */
- 	{ PCI_DEVICE(0x8086, 0x0f04),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
-+	/* Braswell */
-+	{ PCI_DEVICE(0x8086, 0x2284),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
- 	/* ICH */
- 	{ PCI_DEVICE(0x8086, 0x2668),
- 	  .driver_data = AZX_DRIVER_ICH | AZX_DCAPS_OLD_SSYNC |
+--- a/arch/x86/kernel/iosf_mbi.c
++++ b/arch/x86/kernel/iosf_mbi.c
+@@ -26,6 +26,7 @@
+ #include <asm/iosf_mbi.h>
+ 
+ #define PCI_DEVICE_ID_BAYTRAIL		0x0F00
++#define PCI_DEVICE_ID_BRASWELL		0x2280
+ #define PCI_DEVICE_ID_QUARK_X1000	0x0958
+ 
+ static DEFINE_SPINLOCK(iosf_mbi_lock);
+@@ -204,6 +205,7 @@ static int iosf_mbi_probe(struct pci_dev
+ 
+ static DEFINE_PCI_DEVICE_TABLE(iosf_mbi_pci_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BAYTRAIL) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BRASWELL) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_QUARK_X1000) },
+ 	{ 0, },
+ };
 
 
