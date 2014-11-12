@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161252AbaKLB4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:56:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33165 "EHLO
+	id S966764AbaKLB4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:56:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161235AbaKLB4n (ORCPT
+	with ESMTP id S1161235AbaKLB4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:56:43 -0500
+	Tue, 11 Nov 2014 20:56:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 3.10 118/123] acer-wmi: Add acpi_backlight=video quirk for the Acer KAV80
-Date: Wed, 12 Nov 2014 10:18:04 +0900
-Message-Id: <20141112011724.329806519@linuxfoundation.org>
+        Daniele Palmas <dnlplm@gmail.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 087/123] usb: option: add support for Telit LE910
+Date: Wed, 12 Nov 2014 10:17:33 +0900
+Message-Id: <20141112011722.956649169@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,47 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Daniele Palmas <dnlplm@gmail.com>
 
-commit 183fd8fcd7f8afb7ac5ec68f83194872f9fecc84 upstream.
+commit 2d0eb862dd477c3c4f32b201254ca0b40e6f465c upstream.
 
-The acpi-video backlight interface on the Acer KAV80 is broken, and worse
-it causes the entire machine to slow down significantly after a suspend/resume.
+Add VID/PID for Telit LE910 modem. Interfaces description is almost the
+same than LE920, except that the qmi interface is number 2 (instead than
+5).
 
-Blacklist it, and use the acer-wmi backlight interface instead. Note that
-the KAV80 is somewhat unique in that it is the only Acer model where we
-fall back to acer-wmi after blacklisting, rather then using the native
-(e.g. intel) backlight driver. This is done because there is no native
-backlight interface on this model.
-
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1128309
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/acer-wmi.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/usb/serial/option.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -572,6 +572,17 @@ static const struct dmi_system_id video_
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5750"),
- 		},
- 	},
-+	{
-+		/*
-+		 * Note no video_set_backlight_video_vendor, we must use the
-+		 * acer interface, as there is no native backlight interface.
-+		 */
-+		.ident = "Acer KAV80",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "KAV80"),
-+		},
-+	},
- 	{}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -269,6 +269,7 @@ static void option_instat_callback(struc
+ #define TELIT_PRODUCT_DE910_DUAL		0x1010
+ #define TELIT_PRODUCT_UE910_V2			0x1012
+ #define TELIT_PRODUCT_LE920			0x1200
++#define TELIT_PRODUCT_LE910			0x1201
+ 
+ /* ZTE PRODUCTS */
+ #define ZTE_VENDOR_ID				0x19d2
+@@ -588,6 +589,11 @@ static const struct option_blacklist_inf
+ 	.reserved = BIT(3) | BIT(4),
  };
  
++static const struct option_blacklist_info telit_le910_blacklist = {
++	.sendsetup = BIT(0),
++	.reserved = BIT(1) | BIT(2),
++};
++
+ static const struct option_blacklist_info telit_le920_blacklist = {
+ 	.sendsetup = BIT(0),
+ 	.reserved = BIT(1) | BIT(5),
+@@ -1137,6 +1143,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UE910_V2) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE910),
++		.driver_info = (kernel_ulong_t)&telit_le910_blacklist },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
+ 		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
 
 
