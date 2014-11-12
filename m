@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaKLPBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 10:01:32 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:45183 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752377AbaKLPBb (ORCPT
+	id S1753252AbaKLPCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 10:02:17 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:47973 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796AbaKLPCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 10:01:31 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: robert.w.love@intel.com
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        fcoe-devel@open-fcoe.org
-Subject: [PATCH 1/1] fcoe: use continue instead of goto+label
-Date: Wed, 12 Nov 2014 16:01:26 +0100
-Message-Id: <1415804486-15022-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
+	Wed, 12 Nov 2014 10:02:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415804444-9765-1-git-send-email-danieru.dressler@gmail.com>
+References: <danieru.dressler@gmail.com>
+	<1415804444-9765-1-git-send-email-danieru.dressler@gmail.com>
+Date: Thu, 13 Nov 2014 00:02:14 +0900
+Message-ID: <CAGC3nLBhb6roBF-1ib7pq=2CDpmnvw3f_aCZn=VT6A35xn17Zg@mail.gmail.com>
+Subject: Re: [PATCH] Btrfs: qgroup: add BUILD_BUG to report pointer cast breakage
+From: Daniel Dressler <danieru.dressler@gmail.com>
+To: "danieru.dressler@gmail.com" <danieru.dressler@gmail.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a label pointing to the start of a while loop and a goto
-nested only in the loop. The goto jumps to the label in some cases.
-Replace the goto and the label by simple continue.
+I am very very sorry, I forgot to even test building. Please pretend
+this patch was never submitted.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Robert Love <robert.w.love@intel.com>
-Cc: fcoe-devel@open-fcoe.org
----
- drivers/scsi/fcoe/fcoe.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Daniel
 
-diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
-index 4a8ac7d8c76b..f9eef51c9823 100644
---- a/drivers/scsi/fcoe/fcoe.c
-+++ b/drivers/scsi/fcoe/fcoe.c
-@@ -1874,7 +1874,6 @@ static int fcoe_percpu_receive_thread(void *arg)
- 
- 	set_user_nice(current, MIN_NICE);
- 
--retry:
- 	while (!kthread_should_stop()) {
- 
- 		spin_lock_bh(&p->fcoe_rx_list.lock);
-@@ -1884,7 +1883,7 @@ retry:
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			spin_unlock_bh(&p->fcoe_rx_list.lock);
- 			schedule();
--			goto retry;
-+			continue;
- 		}
- 
- 		spin_unlock_bh(&p->fcoe_rx_list.lock);
--- 
-2.1.3
-
+2014-11-13 0:00 GMT+09:00 Daniel Dressler <danieru.dressler@gmail.com>:
+> Our ulist data structure stores at max 64bit
+> values. qgroup has used this structure to store
+> pointers. In the future when we upgrade to 128bit
+> this casting of pointers to uint64_t will break.
+>
+> This patch adds a BUILD_BUG ensuring that this
+> code will not be left untouched in the upgrade.
+>
+> It also marks this issue on the TODO list so it
+> may be addressed before such an upgrade.
+>
+> Signed-off-by: Daniel Dressler <danieru.dressler@gmail.com>
+> ---
+>  fs/btrfs/qgroup.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/fs/btrfs/qgroup.c b/fs/btrfs/qgroup.c
+> index 48b60db..87f7c98 100644
+> --- a/fs/btrfs/qgroup.c
+> +++ b/fs/btrfs/qgroup.c
+> @@ -44,6 +44,7 @@
+>   *  - caches fuer ulists
+>   *  - performance benchmarks
+>   *  - check all ioctl parameters
+> + *  - do not cast uintptr_t to uint64_t in ulist usage
+>   */
+>
+>  /*
+> @@ -101,6 +102,7 @@ struct btrfs_qgroup_list {
+>
+>  #define ptr_to_u64(x) ((u64)(uintptr_t)x)
+>  #define u64_to_ptr(x) ((struct btrfs_qgroup *)(uintptr_t)x)
+> +BUILD_BUG_ON(UINTPTR_MAX > UINT64_MAX);
+>
+>  static int
+>  qgroup_rescan_init(struct btrfs_fs_info *fs_info, u64 progress_objectid,
+> --
+> 2.1.0
+>
