@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaKLBUR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:20:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58380 "EHLO
+	id S1752976AbaKLBU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:20:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaKLBUO (ORCPT
+	with ESMTP id S1752954AbaKLBUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:14 -0500
+	Tue, 11 Nov 2014 20:20:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Cavallari <nicolas.cavallari@green-communications.fr>,
-        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 019/319] ipv4: Do not cache routing failures due to disabled forwarding.
-Date: Wed, 12 Nov 2014 10:12:37 +0900
-Message-Id: <20141112010955.866756342@linuxfoundation.org>
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 021/319] mlx4: Avoid leaking steering rules on flow creation error flow
+Date: Wed, 12 Nov 2014 10:12:39 +0900
+Message-Id: <20141112010956.206851732@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,38 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-[ Upstream commit fa19c2b050ab5254326f5fc07096dd3c6a8d5d58 ]
+[ Upstream commit 571e1b2c7a4c2fd5faa1648462a6b65fa26530d7 ]
 
-If we cache them, the kernel will reuse them, independently of
-whether forwarding is enabled or not.  Which means that if forwarding is
-disabled on the input interface where the first routing request comes
-from, then that unreachable result will be cached and reused for
-other interfaces, even if forwarding is enabled on them.  The opposite
-is also true.
+If mlx4_ib_create_flow() attempts to create > 1 rules with the
+firmware, and one of these registrations fail, we leaked the
+already created flow rules.
 
-This can be verified with two interfaces A and B and an output interface
-C, where B has forwarding enabled, but not A and trying
-ip route get $dst iif A from $src && ip route get $dst iif B from $src
+One example of the leak is when the registration of the VXLAN ghost
+steering rule fails, we didn't unregister the original rule requested
+by the user, introduced in commit d2fce8a9060d "mlx4: Set
+user-space raw Ethernet QPs to properly handle VXLAN traffic".
 
-Signed-off-by: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
-Reviewed-by: Julian Anastasov <ja@ssi.bg>
+While here, add dump of the VXLAN portion of steering rules
+so it can actually be seen when flow creation fails.
+
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/route.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/infiniband/hw/mlx4/main.c        |   10 ++++++++--
+ drivers/net/ethernet/mellanox/mlx4/mcg.c |    4 ++++
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1798,6 +1798,7 @@ local_input:
- no_route:
- 	RT_CACHE_STAT_INC(in_no_route);
- 	res.type = RTN_UNREACHABLE;
-+	res.fi = NULL;
- 	goto local_input;
+--- a/drivers/infiniband/hw/mlx4/main.c
++++ b/drivers/infiniband/hw/mlx4/main.c
+@@ -1173,18 +1173,24 @@ static struct ib_flow *mlx4_ib_create_fl
+ 		err = __mlx4_ib_create_flow(qp, flow_attr, domain, type[i],
+ 					    &mflow->reg_id[i]);
+ 		if (err)
+-			goto err_free;
++			goto err_create_flow;
+ 		i++;
+ 	}
  
- 	/*
+ 	if (i < ARRAY_SIZE(type) && flow_attr->type == IB_FLOW_ATTR_NORMAL) {
+ 		err = mlx4_ib_tunnel_steer_add(qp, flow_attr, &mflow->reg_id[i]);
+ 		if (err)
+-			goto err_free;
++			goto err_create_flow;
++		i++;
+ 	}
+ 
+ 	return &mflow->ibflow;
+ 
++err_create_flow:
++	while (i) {
++		(void)__mlx4_ib_destroy_flow(to_mdev(qp->device)->dev, mflow->reg_id[i]);
++		i--;
++	}
+ err_free:
+ 	kfree(mflow);
+ 	return ERR_PTR(err);
+--- a/drivers/net/ethernet/mellanox/mlx4/mcg.c
++++ b/drivers/net/ethernet/mellanox/mlx4/mcg.c
+@@ -955,6 +955,10 @@ static void mlx4_err_rule(struct mlx4_de
+ 					cur->ib.dst_gid_msk);
+ 			break;
+ 
++		case MLX4_NET_TRANS_RULE_ID_VXLAN:
++			len += snprintf(buf + len, BUF_SIZE - len,
++					"VNID = %d ", be32_to_cpu(cur->vxlan.vni));
++			break;
+ 		case MLX4_NET_TRANS_RULE_ID_IPV6:
+ 			break;
+ 
 
 
