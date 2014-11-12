@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934217AbaKLBjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:39:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60055 "EHLO
+	id S1754846AbaKLBkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:40:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932889AbaKLBju (ORCPT
+	with ESMTP id S964938AbaKLBkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:39:50 -0500
+	Tue, 11 Nov 2014 20:40:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 021/203] ASoC: tlv320aic3x: fix PLL D configuration
-Date: Wed, 12 Nov 2014 10:14:51 +0900
-Message-Id: <20141112011543.682961443@linuxfoundation.org>
+        Eric Rannaud <e@nanocritical.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 025/203] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+Date: Wed, 12 Nov 2014 10:14:55 +0900
+Message-Id: <20141112011543.894832941@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,63 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+From: Eric Rannaud <e@nanocritical.com>
 
-commit 31d9f8faf9a54c851e835af489c82f45105a442f upstream.
+commit 69a91c237ab0ebe4e9fdeaf6d0090c85275594ec upstream.
 
-Current caching implementation during regcache_sync() call bypasses
-all register writes of values that are already known as default
-(regmap reg_defaults). Same time in TLV320AIC3x codecs register 5
-(AIC3X_PLL_PROGC_REG) write should be immediately followed by register
-6 write (AIC3X_PLL_PROGD_REG) even if it was not changed. Otherwise
-both registers will not be written.
+The man page for open(2) indicates that when O_CREAT is specified, the
+'mode' argument applies only to future accesses to the file:
 
-This brings to issue that appears particulary in case of 44.1kHz
-playback with 19.2MHz master clock. In this case AIC3X_PLL_PROGC_REG
-is 0x6e while AIC3X_PLL_PROGD_REG is 0x0 (same as register
-default). Thus AIC3X_PLL_PROGC_REG also remains not written and we get
-wrong playback speed.
+	Note that this mode applies only to future accesses of the newly
+	created file; the open() call that creates a read-only file
+	may well return a read/write file descriptor.
 
-In this patch snd_soc_read() is used to get cached pll values and
-snd_soc_write() (unlike regcache_sync() this function doesn't bypasses
-hardware default values) to write them to registers.
+The man page for open(2) implies that 'mode' is treated identically by
+O_CREAT and O_TMPFILE.
 
-Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+O_TMPFILE, however, behaves differently:
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
+	assert(fd == -1);
+	assert(errno == EACCES);
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
+	assert(fd > 0);
+
+For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
+
+	if (*opened & FILE_CREATED) {
+		/* Don't check for write permission, don't truncate */
+		open_flag &= ~O_TRUNC;
+		will_truncate = false;
+		acc_mode = MAY_OPEN;
+		path_to_nameidata(path, nd);
+		goto finish_open_created;
+	}
+
+But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
+may_open().
+
+This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
+inode is created, may_open() is called with acc_mode = MAY_OPEN, in
+do_tmpfile().
+
+A different, but related glibc bug revealed the discrepancy:
+https://sourceware.org/bugzilla/show_bug.cgi?id=17523
+
+The glibc lazily loads the 'mode' argument of open() and openat() using
+va_arg() only if O_CREAT is present in 'flags' (to support both the 2
+argument and the 3 argument forms of open; same idea for openat()).
+However, the glibc ignores the 'mode' argument if O_TMPFILE is in
+'flags'.
+
+On x86_64, for open(), it magically works anyway, as 'mode' is in
+RDX when entering open(), and is still in RDX on SYSCALL, which is where
+the kernel looks for the 3rd argument of a syscall.
+
+But openat() is not quite so lucky: 'mode' is in RCX when entering the
+glibc wrapper for openat(), while the kernel looks for the 4th argument
+of a syscall in R10. Indeed, the syscall calling convention differs from
+the regular calling convention in this respect on x86_64. So the kernel
+sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
+fails with EACCES.
+
+Signed-off-by: Eric Rannaud <e@nanocritical.com>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/tlv320aic3x.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ fs/namei.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -1121,6 +1121,7 @@ static int aic3x_regulator_event(struct
- static int aic3x_set_power(struct snd_soc_codec *codec, int power)
- {
- 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
-+	unsigned int pll_c, pll_d;
- 	int ret;
- 
- 	if (power) {
-@@ -1138,6 +1139,18 @@ static int aic3x_set_power(struct snd_so
- 		/* Sync reg_cache with the hardware */
- 		regcache_cache_only(aic3x->regmap, false);
- 		regcache_sync(aic3x->regmap);
-+
-+		/* Rewrite paired PLL D registers in case cached sync skipped
-+		 * writing one of them and thus caused other one also not
-+		 * being written
-+		 */
-+		pll_c = snd_soc_read(codec, AIC3X_PLL_PROGC_REG);
-+		pll_d = snd_soc_read(codec, AIC3X_PLL_PROGD_REG);
-+		if (pll_c == aic3x_reg[AIC3X_PLL_PROGC_REG].def ||
-+			pll_d == aic3x_reg[AIC3X_PLL_PROGD_REG].def) {
-+			snd_soc_write(codec, AIC3X_PLL_PROGC_REG, pll_c);
-+			snd_soc_write(codec, AIC3X_PLL_PROGD_REG, pll_d);
-+		}
- 	} else {
- 		/*
- 		 * Do soft reset to this codec instance in order to clear
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3128,7 +3128,8 @@ static int do_tmpfile(int dfd, struct fi
+ 	if (error)
+ 		goto out2;
+ 	audit_inode(pathname, nd->path.dentry, 0);
+-	error = may_open(&nd->path, op->acc_mode, op->open_flag);
++	/* Don't check for other permissions, the inode was just created */
++	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
+ 	if (error)
+ 		goto out2;
+ 	file->f_path.mnt = nd->path.mnt;
 
 
