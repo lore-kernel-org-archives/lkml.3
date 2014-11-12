@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaKLWMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:12:06 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:43712 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639AbaKLWLM (ORCPT
+	id S1753827AbaKLWMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:12:25 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19219 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808AbaKLWMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:11:12 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        bcousson@baylibre.com, tony@atomide.com, linux@arm.linux.org.uk,
-        tomi.valkeinen@ti.com, plagnioj@jcrosoft.com, grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, hns@goldelico.com,
-        gta04-owner@goldelico.com, Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v2 3/5] arm: dts: omap3-gta04: Add handling for tv output
-Date: Wed, 12 Nov 2014 23:10:45 +0100
-Message-Id: <1415830247-31633-4-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415830247-31633-1-git-send-email-marek@goldelico.com>
-References: <1415830247-31633-1-git-send-email-marek@goldelico.com>
+	Wed, 12 Nov 2014 17:12:22 -0500
+Date: Wed, 12 Nov 2014 17:12:04 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 5/8] x86: Introduce function to get pmd entry pointer
+Message-ID: <20141112221204.GD7549@laptop.dumpdata.com>
+References: <1415684626-18590-1-git-send-email-jgross@suse.com>
+ <1415684626-18590-6-git-send-email-jgross@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415684626-18590-6-git-send-email-jgross@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add handling for gta04 tv out chain:
-venc -> opa362 -> svideo
-
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- arch/arm/boot/dts/omap3-gta04.dtsi | 48 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
-
-diff --git a/arch/arm/boot/dts/omap3-gta04.dtsi b/arch/arm/boot/dts/omap3-gta04.dtsi
-index fd34f91..b50dc10 100644
---- a/arch/arm/boot/dts/omap3-gta04.dtsi
-+++ b/arch/arm/boot/dts/omap3-gta04.dtsi
-@@ -83,6 +83,41 @@
- 		compatible = "usb-nop-xceiv";
- 		reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
- 	};
-+
-+	tv0: connector@1 {
-+		compatible = "svideo-connector";
-+		label = "tv";
-+
-+		port {
-+			tv_connector_in: endpoint {
-+				remote-endpoint = <&opa_out>;
-+			};
-+		};
-+	};
-+
-+	tv_amp: opa362 {
-+		compatible = "ti,opa362";
-+		gpios = <&gpio1 23 0>;
-+
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			port@0 {
-+				reg = <0>;
-+				opa_in: endpoint@0 {
-+					remote-endpoint = <&venc_out>;
-+				};
-+			};
-+
-+			port@1 {
-+				reg = <1>;
-+				opa_out: endpoint@0 {
-+					remote-endpoint = <&tv_connector_in>;
-+				};
-+			};
-+		};
-+	};
- };
+On Tue, Nov 11, 2014 at 06:43:43AM +0100, Juergen Gross wrote:
+> Introduces lookup_pmd_address() to get the address of the pmd entry
+> related to a virtual address in the current address space. This
+> function is needed for support of a virtual mapped sparse p2m list
+> in xen pv domains.
+>
+What is wrong with using 'lookup_address' ?
  
- &omap3_pmx_core {
-@@ -396,6 +431,19 @@
- 	};
- };
- 
-+&venc {
-+	status = "okay";
-+
-+	vdda-supply = <&vdac>;
-+
-+	port {
-+		venc_out: endpoint {
-+			remote-endpoint = <&opa_in>;
-+			ti,channels = <2>;
-+		};
-+	};
-+};
-+
- &gpmc {
- 	ranges = <0 0 0x30000000 0x04>; /* CS0: NAND */
- 
--- 
-1.9.1
-
+> Signed-off-by: Juergen Gross <jgross@suse.com>
+> ---
+>  arch/x86/include/asm/pgtable_types.h |  1 +
+>  arch/x86/mm/pageattr.c               | 20 ++++++++++++++++++++
+>  2 files changed, 21 insertions(+)
+> 
+> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+> index 0778964..d83f5e7 100644
+> --- a/arch/x86/include/asm/pgtable_types.h
+> +++ b/arch/x86/include/asm/pgtable_types.h
+> @@ -396,6 +396,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
+>  extern pte_t *lookup_address(unsigned long address, unsigned int *level);
+>  extern pte_t *lookup_address_in_pgd(pgd_t *pgd, unsigned long address,
+>  				    unsigned int *level);
+> +extern pmd_t *lookup_pmd_address(unsigned long address);
+>  extern phys_addr_t slow_virt_to_phys(void *__address);
+>  extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long address,
+>  				   unsigned numpages, unsigned long page_flags);
+> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+> index 36de293..1298108 100644
+> --- a/arch/x86/mm/pageattr.c
+> +++ b/arch/x86/mm/pageattr.c
+> @@ -384,6 +384,26 @@ static pte_t *_lookup_address_cpa(struct cpa_data *cpa, unsigned long address,
+>  }
+>  
+>  /*
+> + * Lookup the PMD entry for a virtual address. Return a pointer to the entry
+> + * or NULL if not present.
+> + */
+> +pmd_t *lookup_pmd_address(unsigned long address)
+> +{
+> +	pgd_t *pgd;
+> +	pud_t *pud;
+> +
+> +	pgd = pgd_offset_k(address);
+> +	if (pgd_none(*pgd))
+> +		return NULL;
+> +
+> +	pud = pud_offset(pgd, address);
+> +	if (pud_none(*pud) || pud_large(*pud) || !pud_present(*pud))
+> +		return NULL;
+> +
+> +	return pmd_offset(pud, address);
+> +}
+> +
+> +/*
+>   * This is necessary because __pa() does not work on some
+>   * kinds of memory, like vmalloc() or the alloc_remap()
+>   * areas on 32-bit NUMA systems.  The percpu areas can
+> -- 
+> 2.1.2
+> 
