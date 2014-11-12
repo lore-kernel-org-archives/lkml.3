@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934244AbaKLBkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:40:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60101 "EHLO
+	id S934344AbaKLBlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:41:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60184 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933440AbaKLBkb (ORCPT
+	with ESMTP id S934293AbaKLBld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:40:31 -0500
+	Tue, 11 Nov 2014 20:41:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.14 066/203] drm/ast: Fix HW cursor image
-Date: Wed, 12 Nov 2014 10:15:36 +0900
-Message-Id: <20141112011545.739021104@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 082/203] kvm: x86: dont kill guest on unknown exit reason
+Date: Wed, 12 Nov 2014 10:15:52 +0900
+Message-Id: <20141112011546.460405230@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,34 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 1e99cfa8de0f0879091e33cd65fd60418d006ad9 upstream.
+commit 2bc19dc3754fc066c43799659f0d848631c44cfe upstream.
 
-The translation from the X driver to the KMS one typo'ed a couple
-of array indices, causing the HW cursor to look weird (blocky with
-leaking edge colors). This fixes it.
+KVM_EXIT_UNKNOWN is a kvm bug, we don't really know whether it was
+triggered by a priveledged application.  Let's not kill the guest: WARN
+and inject #UD instead.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ast/ast_mode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/svm.c |    6 +++---
+ arch/x86/kvm/vmx.c |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/ast/ast_mode.c
-+++ b/drivers/gpu/drm/ast/ast_mode.c
-@@ -1012,8 +1012,8 @@ static u32 copy_cursor_image(u8 *src, u8
- 			srcdata32[1].ul = *((u32 *)(srcxor + 4)) & 0xf0f0f0f0;
- 			data32.b[0] = srcdata32[0].b[1] | (srcdata32[0].b[0] >> 4);
- 			data32.b[1] = srcdata32[0].b[3] | (srcdata32[0].b[2] >> 4);
--			data32.b[2] = srcdata32[0].b[1] | (srcdata32[1].b[0] >> 4);
--			data32.b[3] = srcdata32[0].b[3] | (srcdata32[1].b[2] >> 4);
-+			data32.b[2] = srcdata32[1].b[1] | (srcdata32[1].b[0] >> 4);
-+			data32.b[3] = srcdata32[1].b[3] | (srcdata32[1].b[2] >> 4);
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3495,9 +3495,9 @@ static int handle_exit(struct kvm_vcpu *
  
- 			writel(data32.ul, dstxor);
- 			csum += data32.ul;
+ 	if (exit_code >= ARRAY_SIZE(svm_exit_handlers)
+ 	    || !svm_exit_handlers[exit_code]) {
+-		kvm_run->exit_reason = KVM_EXIT_UNKNOWN;
+-		kvm_run->hw.hardware_exit_reason = exit_code;
+-		return 0;
++		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_code);
++		kvm_queue_exception(vcpu, UD_VECTOR);
++		return 1;
+ 	}
+ 
+ 	return svm_exit_handlers[exit_code](svm);
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6887,10 +6887,10 @@ static int vmx_handle_exit(struct kvm_vc
+ 	    && kvm_vmx_exit_handlers[exit_reason])
+ 		return kvm_vmx_exit_handlers[exit_reason](vcpu);
+ 	else {
+-		vcpu->run->exit_reason = KVM_EXIT_UNKNOWN;
+-		vcpu->run->hw.hardware_exit_reason = exit_reason;
++		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_reason);
++		kvm_queue_exception(vcpu, UD_VECTOR);
++		return 1;
+ 	}
+-	return 0;
+ }
+ 
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
 
 
