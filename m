@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaKLBVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:21:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58449 "EHLO
+	id S1753185AbaKLBVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:21:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaKLBVA (ORCPT
+	with ESMTP id S1752571AbaKLBVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:21:00 -0500
+	Tue, 11 Nov 2014 20:21:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Pravin B Shelar <pshelar@nicira.com>,
         Li RongQing <roy.qing.li@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 005/319] vxlan: fix a use after free in vxlan_encap_bypass
-Date: Wed, 12 Nov 2014 10:12:23 +0900
-Message-Id: <20141112010953.493331597@linuxfoundation.org>
+Subject: [PATCH 3.17 009/319] ipv4: fix a potential use after free in ip_tunnel_core.c
+Date: Wed, 12 Nov 2014 10:12:27 +0900
+Message-Id: <20141112010954.206722530@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -31,48 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Li RongQing <roy.qing.li@gmail.com>
 
-[ Upstream commit ce6502a8f9572179f044a4d62667c4645256d6e4 ]
+[ Upstream commit 1245dfc8cadb258386fcd27df38215a0eccb1f17 ]
 
-when netif_rx() is done, the netif_rx handled skb maybe be freed,
-and should not be used.
+pskb_may_pull() maybe change skb->data and make eth pointer oboslete,
+so set eth after pskb_may_pull()
 
+Fixes:3d7b46cd("ip_tunnel: push generic protocol handling to ip_tunnel module")
+Cc: Pravin B Shelar <pshelar@nicira.com>
 Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Pravin B Shelar <pshelar@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/ipv4/ip_tunnel_core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1717,6 +1717,8 @@ static void vxlan_encap_bypass(struct sk
- 	struct pcpu_sw_netstats *tx_stats, *rx_stats;
- 	union vxlan_addr loopback;
- 	union vxlan_addr *remote_ip = &dst_vxlan->default_dst.remote_ip;
-+	struct net_device *dev = skb->dev;
-+	int len = skb->len;
+--- a/net/ipv4/ip_tunnel_core.c
++++ b/net/ipv4/ip_tunnel_core.c
+@@ -91,11 +91,12 @@ int iptunnel_pull_header(struct sk_buff
+ 	skb_pull_rcsum(skb, hdr_len);
  
- 	tx_stats = this_cpu_ptr(src_vxlan->dev->tstats);
- 	rx_stats = this_cpu_ptr(dst_vxlan->dev->tstats);
-@@ -1740,16 +1742,16 @@ static void vxlan_encap_bypass(struct sk
+ 	if (inner_proto == htons(ETH_P_TEB)) {
+-		struct ethhdr *eh = (struct ethhdr *)skb->data;
++		struct ethhdr *eh;
  
- 	u64_stats_update_begin(&tx_stats->syncp);
- 	tx_stats->tx_packets++;
--	tx_stats->tx_bytes += skb->len;
-+	tx_stats->tx_bytes += len;
- 	u64_stats_update_end(&tx_stats->syncp);
+ 		if (unlikely(!pskb_may_pull(skb, ETH_HLEN)))
+ 			return -ENOMEM;
  
- 	if (netif_rx(skb) == NET_RX_SUCCESS) {
- 		u64_stats_update_begin(&rx_stats->syncp);
- 		rx_stats->rx_packets++;
--		rx_stats->rx_bytes += skb->len;
-+		rx_stats->rx_bytes += len;
- 		u64_stats_update_end(&rx_stats->syncp);
- 	} else {
--		skb->dev->stats.rx_dropped++;
-+		dev->stats.rx_dropped++;
- 	}
- }
- 
++		eh = (struct ethhdr *)skb->data;
+ 		if (likely(ntohs(eh->h_proto) >= ETH_P_802_3_MIN))
+ 			skb->protocol = eh->h_proto;
+ 		else
 
 
