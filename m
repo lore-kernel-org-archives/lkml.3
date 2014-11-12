@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161197AbaKLB4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:56:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33151 "EHLO
+	id S1161252AbaKLB4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:56:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161161AbaKLB4a (ORCPT
+	with ESMTP id S1161235AbaKLB4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:56:30 -0500
+	Tue, 11 Nov 2014 20:56:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 114/123] usb: gadget: function: acm: make f_acm pass USB20CV Chapter9
-Date: Wed, 12 Nov 2014 10:18:00 +0900
-Message-Id: <20141112011724.156626485@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: [PATCH 3.10 118/123] acer-wmi: Add acpi_backlight=video quirk for the Acer KAV80
+Date: Wed, 12 Nov 2014 10:18:04 +0900
+Message-Id: <20141112011724.329806519@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -28,41 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-[ Upstream commit 52ec49a5e56a27c5b6f8217708783eff39f24c16 ]
+commit 183fd8fcd7f8afb7ac5ec68f83194872f9fecc84 upstream.
 
-During Halt Endpoint Test, our interrupt endpoint
-will be disabled, which will clear out ep->desc
-to NULL. Unless we call config_ep_by_speed() again,
-we will not be able to enable this endpoint which
-will make us fail that test.
+The acpi-video backlight interface on the Acer KAV80 is broken, and worse
+it causes the entire machine to slow down significantly after a suspend/resume.
 
-Fixes: f9c56cd (usb: gadget: Clear usb_endpoint_descriptor
-	inside the struct usb_ep on disable)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Blacklist it, and use the acer-wmi backlight interface instead. Note that
+the KAV80 is somewhat unique in that it is the only Acer model where we
+fall back to acer-wmi after blacklisting, rather then using the native
+(e.g. intel) backlight driver. This is done because there is no native
+backlight interface on this model.
+
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1128309
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/usb/gadget/f_acm.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/gadget/f_acm.c
-+++ b/drivers/usb/gadget/f_acm.c
-@@ -430,11 +430,12 @@ static int acm_set_alt(struct usb_functi
- 		if (acm->notify->driver_data) {
- 			VDBG(cdev, "reset acm control interface %d\n", intf);
- 			usb_ep_disable(acm->notify);
--		} else {
--			VDBG(cdev, "init acm ctrl interface %d\n", intf);
-+		}
-+
-+		if (!acm->notify->desc)
- 			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
- 				return -EINVAL;
--		}
-+
- 		usb_ep_enable(acm->notify);
- 		acm->notify->driver_data = acm;
+---
+ drivers/platform/x86/acer-wmi.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -572,6 +572,17 @@ static const struct dmi_system_id video_
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5750"),
+ 		},
+ 	},
++	{
++		/*
++		 * Note no video_set_backlight_video_vendor, we must use the
++		 * acer interface, as there is no native backlight interface.
++		 */
++		.ident = "Acer KAV80",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "KAV80"),
++		},
++	},
+ 	{}
+ };
  
 
 
