@@ -1,200 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965233AbaKLDi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:38:26 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:59906 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830AbaKLDiX (ORCPT
+	id S965256AbaKLDi5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:38:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59235 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187AbaKLBa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 22:38:23 -0500
-Message-ID: <5462D62C.50602@gmail.com>
-Date: Wed, 12 Nov 2014 11:38:20 +0800
-From: Charles Chiou <ch1102chiou@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 11 Nov 2014 20:30:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        George Cherian <george.cherian@ti.com>, Roger Quadros <rogerq@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.17 209/319] Revert "usb: dwc3: dwc3-omap: Disable/Enable only wrapper interrupts in prepare/complete"
+Date: Wed, 12 Nov 2014 10:15:47 +0900
+Message-Id: <20141112011027.456745815@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: JBottomley@parallels.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [V2 PATCH 3/4] scsi:stex.c Add reboot support
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From 5eac0f3209e0857c983c986786a68eac0d67247b Mon Sep 17 00:00:00 2001
-From: Charles Chiou <charles.chiou@tw.promise.com>
-Date: Wed, 5 Nov 2014 19:29:46 +0800
-Subject: [PATCH 3/4] scsi:stex.c Add reboot support
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-1. Add reboot support, Pegasus devices should be notified that
-    the host is going to shutdown/reboot. I register reboot callback
-    function to distinct host is going to shutdown or to reboot.
+------------------
 
-2. Pegasus FW shutdown flow is sensitive to host behavior
-    (host is going to S3/S4/shutdown/reboot). To this, I add one
-    argument in stex_hba_stop to support various stop command.
+From: Roger Quadros <rogerq@ti.com>
 
-3. For backward compatibility, I used ST_IGNORED
-    variable to specified shutdown should be the old flow.
+commit b01ff5cb2fc99d45e4edc97077b6e17186570a16 upstream.
 
-4. Sometimes Pegasus need to more time to start. Expand
-    delay time from 120 to 240.
+This reverts commit 02dae36aa649a66c5c6181157ddd806e7b4913fc.
 
-Signed-off-by: Charles Chiou <charles.chiou@tw.promise.com>
+That commit is bogus in two ways:
+
+1) There's no way dwc3-omap's ->suspend() can cause any effect
+	on xhci's ->suspend(). Linux device driver model guarantees
+	that a parent's ->suspend() will only be called after all
+	children are suspended. dwc3-omap is the parent of the
+	parent of xhci.
+
+2) When implementing Deep Sleep states where context is lost,
+	USBOTGSS_IRQ0 register, well, looses context so we
+	_must_ rewrite it otherwise core IRQs will never be
+	reenabled and USB will appear to be dead.
+
+Fixes: 02dae36 (usb: dwc3: dwc3-omap: Disable/Enable only
+	wrapper interrupts in prepare/complete)
+Cc: George Cherian <george.cherian@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
-  drivers/scsi/stex.c | 48 +++++++++++++++++++++++++++++++++++++++++++-----
-  1 file changed, 43 insertions(+), 5 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
-index c0bbbbd..7a66a931 100644
---- a/drivers/scsi/stex.c
-+++ b/drivers/scsi/stex.c
-@@ -24,6 +24,7 @@
-  #include <linux/interrupt.h>
-  #include <linux/types.h>
-  #include <linux/module.h>
-+#include <linux/reboot.h>
-  #include <linux/spinlock.h>
-  #include <asm/io.h>
-  #include <asm/irq.h>
-@@ -86,7 +87,7 @@ enum {
-  	MU_STATE_STOP				= 5,
-  	MU_STATE_NOCONNECT			= 6,
-
--	MU_MAX_DELAY				= 120,
-+	MU_MAX_DELAY				= 240,
-  	MU_HANDSHAKE_SIGNATURE			= 0x55aaaa55,
-  	MU_HANDSHAKE_SIGNATURE_HALF		= 0x5a5a0000,
-  	MU_HARD_RESET_WAIT			= 30000,
-@@ -166,6 +167,13 @@ enum {
-
-  	ST_ADDITIONAL_MEM			= 0x200000,
-  	ST_ADDITIONAL_MEM_MIN			= 0x80000,
-+	PMIC_SHUTDOWN				= 0x0D,
-+	PMIC_REUMSE					= 0x10,
-+	ST_IGNORED					= -1,
-+	ST_S3						= 3,
-+	ST_S4						= 4,
-+	ST_S5						= 5,
-+	ST_S6						= 6,
-  };
-
-  struct st_sgitem {
-@@ -344,6 +352,7 @@ struct st_card_info {
-  	u16 sts_count;
-  };
-
-+static int isRestart;
-  static int msi;
-  module_param(msi, int, 0);
-  MODULE_PARM_DESC(msi, "Enable Message Signaled Interrupts(0=off, 1=on)");
-@@ -364,6 +373,14 @@ MODULE_AUTHOR("Ed Lin");
-  MODULE_DESCRIPTION("Promise Technology SuperTrak EX Controllers");
-  MODULE_LICENSE("GPL");
-  MODULE_VERSION(ST_DRIVER_VERSION);
-+static int stex_reboot_callback(struct notifier_block *self,
-+							  unsigned long val,
-+							  void *data)
-+{
-+	if (val == SYS_RESTART)
-+		isRestart = 1;
-+	return NOTIFY_OK;
-+}
-
-  static void stex_gettime(__le64 *time)
-  {
-@@ -1563,6 +1580,7 @@ static int stex_probe(struct pci_dev *pdev, const 
-struct pci_device_id *id)
-  	u32 subID;
-  	int err;
-
-+	isRestart = 0;
-  	err = pci_enable_device(pdev);
-  	if (err)
-  		return err;
-@@ -1749,7 +1767,7 @@ out_disable:
-  	return err;
-  }
-
--static void stex_hba_stop(struct st_hba *hba)
-+static void stex_hba_stop(struct st_hba *hba, int st_sleep_mic)
-  {
-  	struct req_msg *req;
-  	struct st_msg_header *msg_h;
-@@ -1765,11 +1783,18 @@ static void stex_hba_stop(struct st_hba *hba)
-  	} else
-  		memset(req, 0, hba->rq_size);
-
--	if (hba->cardtype == st_yosemite || hba->cardtype == st_yel) {
-+	if ((hba->cardtype == st_yosemite || hba->cardtype == st_yel)
-+		&& st_sleep_mic == ST_IGNORED) {
-  		req->cdb[0] = MGT_CMD;
-  		req->cdb[1] = MGT_CMD_SIGNATURE;
-  		req->cdb[2] = CTLR_CONFIG_CMD;
-  		req->cdb[3] = CTLR_SHUTDOWN;
-+	} else if (hba->cardtype == st_yel && st_sleep_mic != ST_IGNORED) {
-+		req->cdb[0] = MGT_CMD;
-+		req->cdb[1] = MGT_CMD_SIGNATURE;
-+		req->cdb[2] = CTLR_CONFIG_CMD;
-+		req->cdb[3] = PMIC_SHUTDOWN;
-+		req->cdb[4] = st_sleep_mic;
-  	} else {
-  		req->cdb[0] = CONTROLLER_CMD;
-  		req->cdb[1] = CTLR_POWER_STATE_CHANGE;
-@@ -1789,10 +1814,12 @@ static void stex_hba_stop(struct st_hba *hba)
-  	while (hba->ccb[tag].req_type & PASSTHRU_REQ_TYPE) {
-  		if (time_after(jiffies, before + ST_INTERNAL_TIMEOUT * HZ)) {
-  			hba->ccb[tag].req_type = 0;
-+			hba->mu_status = MU_STATE_STOP;
-  			return;
-  		}
-  		msleep(1);
-  	}
-+	hba->mu_status = MU_STATE_STOP;
-  }
-
-  static void stex_hba_free(struct st_hba *hba)
-@@ -1832,7 +1859,14 @@ static void stex_shutdown(struct pci_dev *pdev)
-  {
-  	struct st_hba *hba = pci_get_drvdata(pdev);
-
--	stex_hba_stop(hba);
-+	if (hba->yellowstone == 1)
-+		stex_hba_stop(hba, ST_IGNORED);
-+	else {
-+		if (isRestart)
-+			stex_hba_stop(hba, ST_S6);
-+		else
-+			stex_hba_stop(hba, ST_S5);
-+	}
-  }
-
-  MODULE_DEVICE_TABLE(pci, stex_pci_tbl);
-@@ -1845,18 +1879,22 @@ static struct pci_driver stex_pci_driver = {
-  	.shutdown	= stex_shutdown,
-  };
-
-+static struct notifier_block stex_reboot_notifier = {
-+	stex_reboot_callback, NULL, 0
-+};
-  static int __init stex_init(void)
-  {
-  	printk(KERN_INFO DRV_NAME
-  		": Promise SuperTrak EX Driver version: %s\n",
-  		 ST_DRIVER_VERSION);
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -599,7 +599,7 @@ static int dwc3_omap_prepare(struct devi
+ {
+ 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
+ 
+-	dwc3_omap_write_irqmisc_set(omap, 0x00);
++	dwc3_omap_disable_irqs(omap);
+ 
+ 	return 0;
+ }
+@@ -607,19 +607,8 @@ static int dwc3_omap_prepare(struct devi
+ static void dwc3_omap_complete(struct device *dev)
+ {
+ 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
+-	u32			reg;
+ 
+-	reg = (USBOTGSS_IRQMISC_OEVT |
+-			USBOTGSS_IRQMISC_DRVVBUS_RISE |
+-			USBOTGSS_IRQMISC_CHRGVBUS_RISE |
+-			USBOTGSS_IRQMISC_DISCHRGVBUS_RISE |
+-			USBOTGSS_IRQMISC_IDPULLUP_RISE |
+-			USBOTGSS_IRQMISC_DRVVBUS_FALL |
+-			USBOTGSS_IRQMISC_CHRGVBUS_FALL |
+-			USBOTGSS_IRQMISC_DISCHRGVBUS_FALL |
+-			USBOTGSS_IRQMISC_IDPULLUP_FALL);
 -
-+	register_reboot_notifier(&stex_reboot_notifier);
-  	return pci_register_driver(&stex_pci_driver);
-  }
+-	dwc3_omap_write_irqmisc_set(omap, reg);
++	dwc3_omap_enable_irqs(omap);
+ }
+ 
+ static int dwc3_omap_suspend(struct device *dev)
 
-  static void __exit stex_exit(void)
-  {
-  	pci_unregister_driver(&stex_pci_driver);
-+	unregister_reboot_notifier(&stex_reboot_notifier);
-  }
-
-  module_init(stex_init);
--- 
-1.9.1
 
