@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965462AbaKLBsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:48:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60800 "EHLO
+	id S965480AbaKLBs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:48:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935109AbaKLBsP (ORCPT
+	with ESMTP id S965464AbaKLBsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:48:15 -0500
+	Tue, 11 Nov 2014 20:48:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yu Zhao <yuzhao@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        David Rientjes <rientjes@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 164/203] mm: free compound page with correct order
-Date: Wed, 12 Nov 2014 10:17:14 +0900
-Message-Id: <20141112011550.207051116@linuxfoundation.org>
+Subject: [PATCH 3.14 166/203] mm: memcontrol: do not iterate uninitialized memcgs
+Date: Wed, 12 Nov 2014 10:17:16 +0900
+Message-Id: <20141112011550.298751454@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -33,61 +32,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yu Zhao <yuzhao@google.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 5ddacbe92b806cd5b4f8f154e8e46ac267fff55c upstream.
+commit 2f7dd7a4100ad4affcb141605bef178ab98ccb18 upstream.
 
-Compound page should be freed by put_page() or free_pages() with correct
-order.  Not doing so will cause tail pages leaked.
+The cgroup iterators yield css objects that have not yet gone through
+css_online(), but they are not complete memcgs at this point and so the
+memcg iterators should not return them.  Commit d8ad30559715 ("mm/memcg:
+iteration skip memcgs not yet fully initialized") set out to implement
+exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
+not meet the ordering requirements for memcg, and so the iterator may
+skip over initialized groups, or return partially initialized memcgs.
 
-The compound order can be obtained by compound_order() or use
-HPAGE_PMD_ORDER in our case.  Some people would argue the latter is
-faster but I prefer the former which is more general.
+The cgroup core can not reasonably provide a clear answer on whether the
+object around the css has been fully initialized, as that depends on
+controller-specific locking and lifetime rules.  Thus, introduce a
+memcg-specific flag that is set after the memcg has been initialized in
+css_online(), and read before mem_cgroup_iter() callers access the memcg
+members.
 
-This bug was observed not just on our servers (the worst case we saw is
-11G leaked on a 48G machine) but also on our workstations running Ubuntu
-based distro.
-
-  $ cat /proc/vmstat  | grep thp_zero_page_alloc
-  thp_zero_page_alloc 55
-  thp_zero_page_alloc_failed 0
-
-This means there is (thp_zero_page_alloc - 1) * (2M - 4K) memory leaked.
-
-Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
-Signed-off-by: Yu Zhao <yuzhao@google.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Bob Liu <lliubbo@gmail.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Tejun Heo <tj@kernel.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: <stable@vger.kernel.org>	[3.12+]
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/memcontrol.c |   35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -199,7 +199,7 @@ retry:
- 	preempt_disable();
- 	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
- 		preempt_enable();
--		__free_page(zero_page);
-+		__free_pages(zero_page, compound_order(zero_page));
- 		goto retry;
- 	}
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -292,6 +292,9 @@ struct mem_cgroup {
+ 	/* vmpressure notifications */
+ 	struct vmpressure vmpressure;
  
-@@ -231,7 +231,7 @@ static unsigned long shrink_huge_zero_pa
- 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
- 		struct page *zero_page = xchg(&huge_zero_page, NULL);
- 		BUG_ON(zero_page == NULL);
--		__free_page(zero_page);
-+		__free_pages(zero_page, compound_order(zero_page));
- 		return HPAGE_PMD_NR;
- 	}
++	/* css_online() has been completed */
++	int initialized;
++
+ 	/*
+ 	 * the counter to account for mem+swap usage.
+ 	 */
+@@ -1127,9 +1130,21 @@ skip_node:
+ 	 * skipping css reference should be safe.
+ 	 */
+ 	if (next_css) {
+-		if ((next_css == &root->css) ||
+-		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css)))
+-			return mem_cgroup_from_css(next_css);
++		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
++
++		if (next_css == &root->css)
++			return memcg;
++
++		if (css_tryget(next_css)) {
++			/*
++			 * Make sure the memcg is initialized:
++			 * mem_cgroup_css_online() orders the the
++			 * initialization against setting the flag.
++			 */
++			if (smp_load_acquire(&memcg->initialized))
++				return memcg;
++			css_put(next_css);
++		}
  
+ 		prev_css = next_css;
+ 		goto skip_node;
+@@ -6538,6 +6553,7 @@ mem_cgroup_css_online(struct cgroup_subs
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+ 	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(css));
++	int ret;
+ 
+ 	if (css->cgroup->id > MEM_CGROUP_ID_MAX)
+ 		return -ENOSPC;
+@@ -6574,7 +6590,18 @@ mem_cgroup_css_online(struct cgroup_subs
+ 	}
+ 	mutex_unlock(&memcg_create_mutex);
+ 
+-	return memcg_init_kmem(memcg, &mem_cgroup_subsys);
++	ret = memcg_init_kmem(memcg, &mem_cgroup_subsys);
++	if (ret)
++		return ret;
++
++	/*
++	 * Make sure the memcg is initialized: mem_cgroup_iter()
++	 * orders reading memcg->initialized against its callers
++	 * reading the memcg members.
++	 */
++	smp_store_release(&memcg->initialized, 1);
++
++	return 0;
+ }
+ 
+ /*
 
 
