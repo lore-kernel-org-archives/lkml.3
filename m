@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaKLBXo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:23:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58677 "EHLO
+	id S1753920AbaKLBXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:23:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872AbaKLBXk (ORCPT
+	with ESMTP id S1753872AbaKLBXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:40 -0500
+	Tue, 11 Nov 2014 20:23:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>
-Subject: [PATCH 3.17 084/319] power: charger-manager: Fix NULL pointer exception with missing cm-fuel-gauge
-Date: Wed, 12 Nov 2014 10:13:42 +0900
-Message-Id: <20141112011006.560093081@linuxfoundation.org>
+        Vitaly Kuznetsov <vkuznets@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.17 086/319] xen/blkback: unmap all persistent grants when frontend gets disconnected
+Date: Wed, 12 Nov 2014 10:13:44 +0900
+Message-Id: <20141112011006.836787628@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,87 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
 
-commit 661a88860274e059fdb744dfaa98c045db7b5d1d upstream.
+commit 12ea729645ace01e08f9654df155622898d3aae6 upstream.
 
-NULL pointer exception happens during charger-manager probe if
-'cm-fuel-gauge' property is not present.
+blkback does not unmap persistent grants when frontend goes to Closed
+state (e.g. when blkfront module is being removed). This leads to the
+following in guest's dmesg:
 
-[    2.448536] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[    2.456572] pgd = c0004000
-[    2.459217] [00000000] *pgd=00000000
-[    2.462759] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[    2.468047] Modules linked in:
-[    2.471089] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc6-00251-ge44cf96cd525-dirty #969
-[    2.479765] task: ea890000 ti: ea87a000 task.ti: ea87a000
-[    2.485161] PC is at strcmp+0x4/0x30
-[    2.488719] LR is at power_supply_match_device_by_name+0x10/0x1c
-[    2.494695] pc : [<c01f4220>]    lr : [<c030fe38>]    psr: a0000113
-[    2.494695] sp : ea87bde0  ip : 00000000  fp : eaa97010
-[    2.506150] r10: 00000004  r9 : ea97269c  r8 : ea3bbfd0
-[    2.511360] r7 : eaa97000  r6 : c030fe28  r5 : 00000000  r4 : ea3b0000
-[    2.517869] r3 : 0000006d  r2 : 00000000  r1 : 00000000  r0 : c057c195
-[    2.524381] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    2.531671] Control: 10c5387d  Table: 4000404a  DAC: 00000015
-[    2.537399] Process swapper/0 (pid: 1, stack limit = 0xea87a240)
-[    2.543388] Stack: (0xea87bde0 to 0xea87c000)
-[    2.547733] bde0: ea3b0210 c026b1c8 eaa97010 eaa97000 eaa97010 eabb60a8 ea3b0210 00000000
-[    2.555891] be00: 00000008 ea2db210 ea1a3410 c030fee0 ea3bbf90 c03138fc c068969c c013526c
-[    2.564050] be20: eaa040c0 00000000 c068969c 00000000 eaa040c0 ea2da300 00000002 00000000
-[    2.572208] be40: 00000001 ea2da3c0 00000000 00000001 00000000 eaa97010 c068969c 00000000
-[    2.580367] be60: 00000000 c068969c 00000000 00000002 00000000 c026b71c c026b6f0 eaa97010
-[    2.588527] be80: c0e82530 c026a330 00000000 eaa97010 c068969c eaa97044 00000000 c061df50
-[    2.596686] bea0: ea87a000 c026a4dc 00000000 c068969c c026a448 c0268b5c ea8054a8 eaa8fd50
-[    2.604845] bec0: c068969c ea2db180 c06801f8 c0269b18 c0590f68 c068969c c0656c98 c068969c
-[    2.613004] bee0: c0656c98 ea3bbe40 c06988c0 c026aaf0 00000000 c0656c98 c0656c98 c00088a4
-[    2.621163] bf00: 00000000 c0055f48 00000000 00000004 00000000 ea890000 c05dbc54 c062c178
-[    2.629323] bf20: c0603518 c005f674 00000001 ea87a000 eb7ff83b c0476440 00000091 c003d41c
-[    2.637482] bf40: c05db344 00000007 eb7ff858 00000007 c065a76c c0647d24 00000007 c062c170
-[    2.645642] bf60: c06988c0 00000091 c062c178 c0603518 00000000 c0603cc4 00000007 00000007
-[    2.653801] bf80: c0603518 c0c0c0c0 00000000 c0453948 00000000 00000000 00000000 00000000
-[    2.661959] bfa0: 00000000 c0453950 00000000 c000e728 00000000 00000000 00000000 00000000
-[    2.670118] bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-[    2.678277] bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
-[    2.686454] [<c01f4220>] (strcmp) from [<c030fe38>] (power_supply_match_device_by_name+0x10/0x1c)
-[    2.695303] [<c030fe38>] (power_supply_match_device_by_name) from [<c026b1c8>] (class_find_device+0x54/0xac)
-[    2.705106] [<c026b1c8>] (class_find_device) from [<c030fee0>] (power_supply_get_by_name+0x1c/0x30)
-[    2.714137] [<c030fee0>] (power_supply_get_by_name) from [<c03138fc>] (charger_manager_probe+0x3d8/0xe58)
-[    2.723683] [<c03138fc>] (charger_manager_probe) from [<c026b71c>] (platform_drv_probe+0x2c/0x5c)
-[    2.732532] [<c026b71c>] (platform_drv_probe) from [<c026a330>] (driver_probe_device+0x10c/0x224)
-[    2.741384] [<c026a330>] (driver_probe_device) from [<c026a4dc>] (__driver_attach+0x94/0x98)
-[    2.749813] [<c026a4dc>] (__driver_attach) from [<c0268b5c>] (bus_for_each_dev+0x54/0x88)
-[    2.757969] [<c0268b5c>] (bus_for_each_dev) from [<c0269b18>] (bus_add_driver+0xd4/0x1d0)
-[    2.766123] [<c0269b18>] (bus_add_driver) from [<c026aaf0>] (driver_register+0x78/0xf4)
-[    2.774110] [<c026aaf0>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1bc)
-[    2.782276] [<c00088a4>] (do_one_initcall) from [<c0603cc4>] (kernel_init_freeable+0x100/0x1cc)
-[    2.790952] [<c0603cc4>] (kernel_init_freeable) from [<c0453950>] (kernel_init+0x8/0xec)
-[    2.799029] [<c0453950>] (kernel_init) from [<c000e728>] (ret_from_fork+0x14/0x2c)
-[    2.806572] Code: e12fff1e e1a03000 eafffff7 e4d03001 (e4d12001)
-[    2.812832] ---[ end trace 7f12556111b9e7ef ]---
+[  343.243825] xen:grant_table: WARNING: g.e. 0x445 still in use!
+[  343.243825] xen:grant_table: WARNING: g.e. 0x42a still in use!
+...
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 856ee6115e2d ("charger-manager: Support deivce tree in charger manager driver")
-Signed-off-by: Sebastian Reichel <sre@kernel.org>
+When load module -> use device -> unload module sequence is performed multiple times
+it is possible to hit BUG() condition in blkfront module:
+
+[  343.243825] kernel BUG at drivers/block/xen-blkfront.c:954!
+[  343.243825] invalid opcode: 0000 [#1] SMP
+[  343.243825] Modules linked in: xen_blkfront(-) ata_generic pata_acpi [last unloaded: xen_blkfront]
+...
+[  343.243825] Call Trace:
+[  343.243825]  [<ffffffff814111ef>] ? unregister_xenbus_watch+0x16f/0x1e0
+[  343.243825]  [<ffffffffa0016fbf>] blkfront_remove+0x3f/0x140 [xen_blkfront]
+...
+[  343.243825] RIP  [<ffffffffa0016aae>] blkif_free+0x34e/0x360 [xen_blkfront]
+[  343.243825]  RSP <ffff88001eb8fdc0>
+
+We don't need to keep these grants if we're disconnecting as frontend might already
+forgot about them. Solve the issue by moving xen_blkbk_free_caches() call from
+xen_blkif_free() to xen_blkif_disconnect().
+
+Now we can see the following:
+[  928.590893] xen:grant_table: WARNING: g.e. 0x587 still in use!
+[  928.591861] xen:grant_table: WARNING: g.e. 0x372 still in use!
+...
+[  929.592146] xen:grant_table: freeing g.e. 0x587
+[  929.597174] xen:grant_table: freeing g.e. 0x372
+...
+
+Backend does not keep persistent grants any more, reconnect works fine.
+
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/power/charger-manager.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/block/xen-blkback/xenbus.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -1720,6 +1720,11 @@ static int charger_manager_probe(struct
- 		return -EINVAL;
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -270,6 +270,9 @@ static int xen_blkif_disconnect(struct x
+ 		blkif->blk_rings.common.sring = NULL;
  	}
  
-+	if (!desc->psy_fuel_gauge) {
-+		dev_err(&pdev->dev, "No fuel gauge power supply defined\n");
-+		return -EINVAL;
-+	}
++	/* Remove all persistent grants and the cache of ballooned pages. */
++	xen_blkbk_free_caches(blkif);
 +
- 	/* Counting index only */
- 	while (desc->psy_charger_stat[i])
- 		i++;
+ 	return 0;
+ }
+ 
+@@ -281,9 +284,6 @@ static void xen_blkif_free(struct xen_bl
+ 	xen_blkif_disconnect(blkif);
+ 	xen_vbd_free(&blkif->vbd);
+ 
+-	/* Remove all persistent grants and the cache of ballooned pages. */
+-	xen_blkbk_free_caches(blkif);
+-
+ 	/* Make sure everything is drained before shutting down */
+ 	BUG_ON(blkif->persistent_gnt_c != 0);
+ 	BUG_ON(atomic_read(&blkif->persistent_gnt_in_use) != 0);
 
 
