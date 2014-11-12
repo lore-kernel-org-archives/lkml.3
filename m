@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaKLGkB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 01:40:01 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40124 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaKLGkA (ORCPT
+	id S1753013AbaKLGkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 01:40:37 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:55381 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaKLGkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 01:40:00 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Date: Wed, 12 Nov 2014 15:40:42 +0900 (JST)
-Message-Id: <20141112.154042.59640143160036130.d.hatayama@jp.fujitsu.com>
-To: ebiederm@xmission.com, vgoyal@redhat.com
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        kumagai-atsushi@mxc.nes.nec.co.jp, anderson@redhat.com
-Subject: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-X-Mailer: Mew version 6.6 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Nov 2014 01:40:35 -0500
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Todd Poynor <toddpoynor@google.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC v6 1/3] usb: phy: introduce usb_phy_set_event interface
+Date: Wed, 12 Nov 2014 12:09:42 +0530
+Message-Id: <1415774382-21719-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, VMCOREINFO note information reports the virtual address of
-phys_base that is assigned to symbol phys_base. But this doesn't make
-sense because to refer to value of the phys_base, it's necessary to
-get the value of phys_base itself we are now about to refer to.
+From: Todd Poynor <toddpoynor@google.com>
 
-Userland tools related to kdump such as makedumpfile and crash utility
-so far have made some efforts to calculate phys_base from memory
-mapping information on a variety of crash dump formats. But there's no
-guarantee to keep maintaining it in the future.
+usb: phy: introduce usb_phy_set_event interface
 
-This is also useful for crash dump mechanism running outside Linux
-kernel such as virtual machine hypervisor such as qemu dump, which
-ordinary users use via virsh dump, or ones implemented on vendor
-specific firmware. They cannot get phys_base without special mechanism
-because phys_base is kernel information.
+PHY drivers require a generic interface to handle per-PHY events.
 
-To get VMCOREINFO in vmcore, it's easy to use strings and grep
-commands like this; VMCOREINFO consists of simple string:
+usb_phy_set_event interface sets event to phy event.
+PHY drivers call this interface for each phy event.
 
-$ strings vmcore-3.10.0-121.el7.x86_64 | grep -E ".*VMCOREINFO.*" -A 100
-VMCOREINFO
-OSRELEASE=3.10.0-121.el7.x86_64
-PAGESIZE=4096
-...
-
-Similarly, this is also useful to get value of phys_base in kdump 2nd
-kernel contained in vmcore using the above-mentioned external crash
-dump mechanism; kdump 2nd kernel is an inherently relocated kernel.
-
-This commit doesn't remove VMCOREINFO_SYMBOL(phys_base) line because
-makedumpfile refers to it and if removing it, old versions
-makedumpfile doesn't work well.
-
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Arve Hjønnevåg <arve@android.com>
+Cc: Benoit Goby <benoit@android.com>
+Signed-off-by: Todd Poynor <toddpoynor@google.com>
+[kiran: Added context to commit message, squished build fixes
+from Benoit Goby and Arve Hjønnevåg, changed wakelocks usage
+to wakeupsource, merged Todd's refactoring logic and simplified
+the structures and code and addressed community feedback]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
 ---
- arch/x86/kernel/machine_kexec_64.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/phy/phy.c   | 12 ++++++++++++
+ include/linux/usb/phy.h |  5 +++++
+ 2 files changed, 17 insertions(+)
 
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index 4859810..e6d00a4 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -334,6 +334,7 @@ void arch_crash_save_vmcoreinfo(void)
- #endif
- 	vmcoreinfo_append_str("KERNELOFFSET=%lx\n",
- 			      (unsigned long)&_text - __START_KERNEL);
-+	VMCOREINFO_LENGTH(phys_base, phys_base);
+diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+index 045cd30..2b1039e 100644
+--- a/drivers/usb/phy/phy.c
++++ b/drivers/usb/phy/phy.c
+@@ -444,3 +444,15 @@ int usb_bind_phy(const char *dev_name, u8 index,
+ 	return 0;
  }
+ EXPORT_SYMBOL_GPL(usb_bind_phy);
++
++/**
++ * usb_phy_set_event - set event to phy event
++ * @x: the phy returned by usb_get_phy();
++ *
++ * This sets event to phy event
++ */
++void usb_phy_set_event(struct usb_phy *x, unsigned long event)
++{
++	x->last_event = event;
++}
++EXPORT_SYMBOL_GPL(usb_phy_set_event);
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 353053a..3c713ff 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -210,6 +210,7 @@ extern void usb_put_phy(struct usb_phy *);
+ extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
+ extern int usb_bind_phy(const char *dev_name, u8 index,
+ 				const char *phy_dev_name);
++extern void usb_phy_set_event(struct usb_phy *x, unsigned long event);
+ #else
+ static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
+ {
+@@ -251,6 +252,10 @@ static inline int usb_bind_phy(const char *dev_name, u8 index,
+ {
+ 	return -EOPNOTSUPP;
+ }
++
++static inline void usb_phy_set_event(struct usb_phy *x, unsigned long event)
++{
++}
+ #endif
  
- /* arch-dependent functionality related to kexec file-based syscall */
+ static inline int
 -- 
-1.9.3
+1.8.2.1
 
