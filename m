@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaKLRFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 12:05:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57737 "EHLO mga09.intel.com"
+	id S1753294AbaKLRFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:05:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:56949 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957AbaKLRFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 12:05:53 -0500
+	id S1753194AbaKLRFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:05:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,370,1413270000"; 
-   d="scan'208";a="606712440"
-Subject: [PATCH 08/11] x86, mpx: [new code] decode MPX instruction to get bound violation information
+   d="scan'208";a="606712344"
+Subject: [PATCH 06/11] x86, mpx: introduce VM_MPX to indicate that a VMA is MPX specific
 To: hpa@zytor.com
 Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
         linux-mips@linux-mips.org, qiaowei.ren@intel.com,
         Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
 From: Dave Hansen <dave@sr71.net>
-Date: Wed, 12 Nov 2014 09:05:09 -0800
+Date: Wed, 12 Nov 2014 09:05:03 -0800
 References: <20141112170443.B4BD0899@viggo.jf.intel.com>
 In-Reply-To: <20141112170443.B4BD0899@viggo.jf.intel.com>
-Message-Id: <20141112170509.AED2778F@viggo.jf.intel.com>
+Message-Id: <20141112170503.AB389ADC@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,333 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Note: This is substantially different code from the v9 set.
+MPX-enabled applications using large swaths of memory can
+potentially have large numbers of bounds tables in process
+address space to save bounds information. These tables can take
+up huge swaths of memory (as much as 80% of the memory on the
+system) even if we clean them up aggressively. In the worst-case
+scenario, the tables can be 4x the size of the data structure
+being tracked. IOW, a 1-page structure can require 4 bounds-table
+pages.
 
-This patch sets bound violation fields of siginfo struct in #BR
-exception handler by decoding the user instruction and constructing
-the faulting pointer.
+Being this huge, our expectation is that folks using MPX are
+going to be keen on figuring out how much memory is being
+dedicated to it. So we need a way to track memory use for MPX.
 
-We have to be very careful when decoding these instructions.  They
-are completely controlled by userspace and may be changed at any
-time up to and including the point where we try to copy them in to
-the kernel.  They may or may not be MPX instructions and could be
-completely invalid for all we know.
+If we want to specifically track MPX VMAs we need to be able to
+distinguish them from normal VMAs, and keep them from getting
+merged with normal VMAs. A new VM_ flag set only on MPX VMAs does
+both of those things. With this flag, MPX bounds-table VMAs can
+be distinguished from other VMAs, and userspace can also walk
+/proc/$pid/smaps to get memory usage for MPX.
 
-Note: This code is based on Qiaowei Ren's specialized MPX
-decoder, but uses the generic decoder whenever possible.  It was
-tested for robustness by generating a completely random data
-stream and trying to decode that stream.  I also unmapped random
-pages inside the stream to test the "partial instruction" short
-read code.
+In addition to this flag, we also introduce a special ->vm_ops
+specific to MPX VMAs (see the patch "add MPX specific mmap
+interface"), but currently different ->vm_ops do not by
+themselves prevent VMA merging, so we still need this flag.
 
-We kzalloc() the siginfo instead of stack allocating it because
-we need to memset() it anyway, and doing this makes it much more
-clear when it got initialized by the MPX instruction decoder.
-
-Changes from the old decoder:
- * Use the generic decoder instead of custom functions.  Saved
-   ~70 lines of code overall.
- * Remove insn->addr_bytes code (never used??)
- * Make sure never to possibly overflow the regoff[] array, plus
-   check the register range correctly in 32 and 64-bit modes.
- * Allow get_reg() to return an error and have mpx_get_addr_ref()
-   handle when it sees errors.
- * Only call insn_get_*() near where we actually use the values
-   instead if trying to call them all at once.
- * Handle short reads from copy_from_user() and check the actual
-   number of read bytes against what we expect from
-   insn_get_length().  If a read stops in the middle of an
-   instruction, we error out.
- * Actually check the opcodes intead of ignoring them.
- * Dynamically kzalloc() siginfo_t so we don't leak any stack
-   data.
- * Detect and handle decoder failures instead of ignoring them.
-
+We understand that VM_ flags are scarce and are open to other
+options.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- b/arch/x86/include/asm/mpx.h |   12 ++
- b/arch/x86/mm/mpx.c          |  237 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 249 insertions(+)
+ b/fs/proc/task_mmu.c |    3 +++
+ b/include/linux/mm.h |    6 ++++++
+ 2 files changed, 9 insertions(+)
 
-diff -puN arch/x86/include/asm/mpx.h~mpx-new-decoder arch/x86/include/asm/mpx.h
---- a/arch/x86/include/asm/mpx.h~mpx-new-decoder	2014-11-12 08:49:26.095898480 -0800
-+++ b/arch/x86/include/asm/mpx.h	2014-11-12 08:49:26.099898661 -0800
-@@ -3,6 +3,7 @@
- 
- #include <linux/types.h>
- #include <asm/ptrace.h>
-+#include <asm/insn.h>
- 
- #ifdef CONFIG_X86_64
- 
-@@ -33,4 +34,15 @@
- 
- #define MPX_BNDSTA_ERROR_CODE	0x3
- 
+diff -puN fs/proc/task_mmu.c~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific fs/proc/task_mmu.c
+--- a/fs/proc/task_mmu.c~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific	2014-11-12 08:49:25.303862758 -0800
++++ b/fs/proc/task_mmu.c	2014-11-12 08:49:25.308862983 -0800
+@@ -552,6 +552,9 @@ static void show_smap_vma_flags(struct s
+ 		[ilog2(VM_GROWSDOWN)]	= "gd",
+ 		[ilog2(VM_PFNMAP)]	= "pf",
+ 		[ilog2(VM_DENYWRITE)]	= "dw",
 +#ifdef CONFIG_X86_INTEL_MPX
-+siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
-+				struct xsave_struct *xsave_buf);
-+#else
-+static inline siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
-+					      struct xsave_struct *xsave_buf)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_X86_INTEL_MPX */
-+
- #endif /* _ASM_X86_MPX_H */
-diff -puN arch/x86/mm/mpx.c~mpx-new-decoder arch/x86/mm/mpx.c
---- a/arch/x86/mm/mpx.c~mpx-new-decoder	2014-11-12 08:49:26.096898525 -0800
-+++ b/arch/x86/mm/mpx.c	2014-11-12 08:49:26.100898706 -0800
-@@ -6,6 +6,7 @@
-  * Dave Hansen <dave.hansen@intel.com>
-  */
- #include <linux/kernel.h>
-+#include <linux/slab.h>
- #include <linux/syscalls.h>
- #include <linux/sched/sysctl.h>
- 
-@@ -84,3 +85,239 @@ out:
- 	up_write(&mm->mmap_sem);
- 	return ret;
- }
-+
-+enum reg_type {
-+	REG_TYPE_RM = 0,
-+	REG_TYPE_INDEX,
-+	REG_TYPE_BASE,
-+};
-+
-+static unsigned long get_reg_offset(struct insn *insn, struct pt_regs *regs,
-+				    enum reg_type type)
-+{
-+	int regno = 0;
-+
-+	static const int regoff[] = {
-+		offsetof(struct pt_regs, ax),
-+		offsetof(struct pt_regs, cx),
-+		offsetof(struct pt_regs, dx),
-+		offsetof(struct pt_regs, bx),
-+		offsetof(struct pt_regs, sp),
-+		offsetof(struct pt_regs, bp),
-+		offsetof(struct pt_regs, si),
-+		offsetof(struct pt_regs, di),
-+#ifdef CONFIG_X86_64
-+		offsetof(struct pt_regs, r8),
-+		offsetof(struct pt_regs, r9),
-+		offsetof(struct pt_regs, r10),
-+		offsetof(struct pt_regs, r11),
-+		offsetof(struct pt_regs, r12),
-+		offsetof(struct pt_regs, r13),
-+		offsetof(struct pt_regs, r14),
-+		offsetof(struct pt_regs, r15),
++		[ilog2(VM_MPX)]		= "mp",
 +#endif
-+	};
-+	int nr_registers = ARRAY_SIZE(regoff);
-+	/*
-+	 * Don't possibly decode a 32-bit instructions as
-+	 * reading a 64-bit-only register.
-+	 */
-+	if (IS_ENABLED(CONFIG_X86_64) && !insn->x86_64)
-+		nr_registers -= 8;
+ 		[ilog2(VM_LOCKED)]	= "lo",
+ 		[ilog2(VM_IO)]		= "io",
+ 		[ilog2(VM_SEQ_READ)]	= "sr",
+diff -puN include/linux/mm.h~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific include/linux/mm.h
+--- a/include/linux/mm.h~2014-10-14-01_12-x86-mpx-introduce-VM-MPX-to-indicate-that-a-VMA-is-MPX-specific	2014-11-12 08:49:25.305862848 -0800
++++ b/include/linux/mm.h	2014-11-12 08:49:25.309863029 -0800
+@@ -128,6 +128,7 @@ extern unsigned int kobjsize(const void
+ #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
+ #define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
+ #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
++#define VM_ARCH_2	0x02000000
+ #define VM_DONTDUMP	0x04000000	/* Do not include in the core dump */
+ 
+ #ifdef CONFIG_MEM_SOFT_DIRTY
+@@ -155,6 +156,11 @@ extern unsigned int kobjsize(const void
+ # define VM_MAPPED_COPY	VM_ARCH_1	/* T if mapped copy of data (nommu mmap) */
+ #endif
+ 
++#if defined(CONFIG_X86)
++/* MPX specific bounds table or bounds directory */
++# define VM_MPX		VM_ARCH_2
++#endif
 +
-+	switch (type) {
-+	case REG_TYPE_RM:
-+		regno = X86_MODRM_RM(insn->modrm.value);
-+		if (X86_REX_B(insn->rex_prefix.value) == 1)
-+			regno += 8;
-+		break;
-+
-+	case REG_TYPE_INDEX:
-+		regno = X86_SIB_INDEX(insn->sib.value);
-+		if (X86_REX_X(insn->rex_prefix.value) == 1)
-+			regno += 8;
-+		break;
-+
-+	case REG_TYPE_BASE:
-+		regno = X86_SIB_BASE(insn->sib.value);
-+		if (X86_REX_B(insn->rex_prefix.value) == 1)
-+			regno += 8;
-+		break;
-+
-+	default:
-+		pr_err("invalid register type");
-+		BUG();
-+		break;
-+	}
-+
-+	if (regno > nr_registers) {
-+		WARN_ONCE(1, "decoded an instruction with an invalid register");
-+		return -EINVAL;
-+	}
-+	return regoff[regno];
-+}
-+
-+/*
-+ * return the address being referenced be instruction
-+ * for rm=3 returning the content of the rm reg
-+ * for rm!=3 calculates the address using SIB and Disp
-+ */
-+static void __user *mpx_get_addr_ref(struct insn *insn, struct pt_regs *regs)
-+{
-+	unsigned long addr, addr_offset;
-+	unsigned long base, base_offset;
-+	unsigned long indx, indx_offset;
-+	insn_byte_t sib;
-+
-+	insn_get_modrm(insn);
-+	insn_get_sib(insn);
-+	sib = insn->sib.value;
-+
-+	if (X86_MODRM_MOD(insn->modrm.value) == 3) {
-+		addr_offset = get_reg_offset(insn, regs, REG_TYPE_RM);
-+		if (addr_offset < 0)
-+			goto out_err;
-+		addr = regs_get_register(regs, addr_offset);
-+	} else {
-+		if (insn->sib.nbytes) {
-+			base_offset = get_reg_offset(insn, regs, REG_TYPE_BASE);
-+			if (base_offset < 0)
-+				goto out_err;
-+
-+			indx_offset = get_reg_offset(insn, regs, REG_TYPE_INDEX);
-+			if (indx_offset < 0)
-+				goto out_err;
-+
-+			base = regs_get_register(regs, base_offset);
-+			indx = regs_get_register(regs, indx_offset);
-+			addr = base + indx * (1 << X86_SIB_SCALE(sib));
-+		} else {
-+			addr_offset = get_reg_offset(insn, regs, REG_TYPE_RM);
-+			if (addr_offset < 0)
-+				goto out_err;
-+			addr = regs_get_register(regs, addr_offset);
-+		}
-+		addr += insn->displacement.value;
-+	}
-+	return (void __user *)addr;
-+out_err:
-+	return (void __user *)-1;
-+}
-+
-+static int mpx_insn_decode(struct insn *insn,
-+			   struct pt_regs *regs)
-+{
-+	unsigned char buf[MAX_INSN_SIZE];
-+	int x86_64 = !test_thread_flag(TIF_IA32);
-+	int not_copied;
-+	int nr_copied;
-+
-+	not_copied = copy_from_user(buf, (void __user *)regs->ip, sizeof(buf));
-+	nr_copied = sizeof(buf) - not_copied;
-+	/*
-+	 * The decoder _should_ fail nicely if we pass it a short buffer.
-+	 * But, let's not depend on that implementation detail.  If we
-+	 * did not get anything, just error out now.
-+	 */
-+	if (!nr_copied)
-+		return -EFAULT;
-+	insn_init(insn, buf, nr_copied, x86_64);
-+	insn_get_length(insn);
-+	/*
-+	 * copy_from_user() tries to get as many bytes as we could see in
-+	 * the largest possible instruction.  If the instruction we are
-+	 * after is shorter than that _and_ we attempt to copy from
-+	 * something unreadable, we might get a short read.  This is OK
-+	 * as long as the read did not stop in the middle of the
-+	 * instruction.  Check to see if we got a partial instruction.
-+	 */
-+	if (nr_copied < insn->length)
-+		return -EFAULT;
-+
-+	insn_get_opcode(insn);
-+	/*
-+	 * We only _really_ need to decode bndcl/bndcn/bndcu
-+	 * Error out on anything else.
-+	 */
-+	if (insn->opcode.bytes[0] != 0x0f)
-+		goto bad_opcode;
-+	if ((insn->opcode.bytes[1] != 0x1a) &&
-+	    (insn->opcode.bytes[1] != 0x1b))
-+		goto bad_opcode;
-+
-+	return 0;
-+bad_opcode:
-+	return -EINVAL;
-+}
-+
-+/*
-+ * If a bounds overflow occurs then a #BR is generated. This
-+ * function decodes MPX instructions to get violation address
-+ * and set this address into extended struct siginfo.
-+ *
-+ * Note that this is not a super precise way of doing this.
-+ * Userspace could have, by the time we get here, written
-+ * anything it wants in to the instructions.  We can not
-+ * trust anything about it.  They might not be valid
-+ * instructions or might encode invalid registers, etc...
-+ *
-+ * The caller is expected to kfree() the returned siginfo_t.
-+ */
-+siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
-+				struct xsave_struct *xsave_buf)
-+{
-+	struct insn insn;
-+	uint8_t bndregno;
-+	int err;
-+	siginfo_t *info;
-+
-+	err = mpx_insn_decode(&insn, regs);
-+	if (err)
-+		goto err_out;
-+
-+	/*
-+	 * We know at this point that we are only dealing with
-+	 * MPX instructions.
-+	 */
-+	insn_get_modrm(&insn);
-+	bndregno = X86_MODRM_REG(insn.modrm.value);
-+	if (bndregno > 3) {
-+		err = -EINVAL;
-+		goto err_out;
-+	}
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info) {
-+		err = -ENOMEM;
-+		goto err_out;
-+	}
-+	/*
-+	 * The registers are always 64-bit, but the upper 32
-+	 * bits are ignored in 32-bit mode.  Also, note that the
-+	 * upper bounds are architecturally represented in 1's
-+	 * complement form.
-+	 *
-+	 * The 'unsigned long' cast is because the compiler
-+	 * complains when casting from integers to different-size
-+	 * pointers.
-+	 */
-+	info->si_lower = (void __user *)(unsigned long)
-+		(xsave_buf->bndreg[bndregno].lower_bound);
-+	info->si_upper = (void __user *)(unsigned long)
-+		(~xsave_buf->bndreg[bndregno].upper_bound);
-+	info->si_addr_lsb = 0;
-+	info->si_signo = SIGSEGV;
-+	info->si_errno = 0;
-+	info->si_code = SEGV_BNDERR;
-+	info->si_addr = mpx_get_addr_ref(&insn, regs);
-+	/*
-+	 * We were not able to extract an address from the instruction,
-+	 * probably because there was something invalid in it.
-+	 */
-+	if (info->si_addr == (void *)-1) {
-+		err = -EINVAL;
-+		goto err_out;
-+	}
-+	return info;
-+err_out:
-+	return ERR_PTR(err);
-+}
+ #ifndef VM_GROWSUP
+ # define VM_GROWSUP	VM_NONE
+ #endif
 _
