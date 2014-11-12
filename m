@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaKLOKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:10:55 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:46195 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190AbaKLOKy (ORCPT
+	id S1752793AbaKLOLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:11:12 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:36455 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaKLOLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:10:54 -0500
-Date: Wed, 12 Nov 2014 15:10:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] x86: Two minor cleanups for 3.19
-Message-ID: <20141112141048.GA1916@gmail.com>
-References: <20141111184642.GN31490@pd.tnic>
+	Wed, 12 Nov 2014 09:11:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141111184642.GN31490@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1409307891-16523-1-git-send-email-alim.akhtar@samsung.com>
+References: <1409307891-16523-1-git-send-email-alim.akhtar@samsung.com>
+Date: Wed, 12 Nov 2014 15:11:09 +0100
+Message-ID: <CAPDyKFp_XZ=93wisFScezHLqDWDz5XjqxHV1w13zmU3nzQrZww@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: add support for ARM64
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Alim Akhtar <alim.akhtar@samsung.com>
+Cc: Chris Ball <chris@printf.net>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 29 August 2014 12:24, Alim Akhtar <alim.akhtar@samsung.com> wrote:
+> There are upcoming ARM64 SoCs with dw_mmc host controller.
+>
+> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
 
-* Borislav Petkov <bp@suse.de> wrote:
+Thanks! Applied for next.
 
-> Hi guys,
-> 
-> just two small cleanups which have been lying around for a while.
-> 
-> Please pull,
-> thanks.
-> 
+Kind regards
+Uffe
+
 > ---
-> The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
-> 
->   Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/x86_queue_for_3.19
-> 
-> for you to fetch changes up to 6f9b63a0ae0d694e3d8e6f673e1e8e2638526b97:
-> 
->   x86, CPU, AMD: Move K8 TLB flush filter workaround to K8 code (2014-11-11 17:58:20 +0100)
-> 
-> ----------------------------------------------------------------
-> Two minor cleanups for the next merge window.
-> 
-> ----------------------------------------------------------------
-> Borislav Petkov (2):
->       x86, espfix: Remove stale ptemask
->       x86, CPU, AMD: Move K8 TLB flush filter workaround to K8 code
-> 
->  arch/x86/kernel/cpu/amd.c   | 23 +++++++++++------------
->  arch/x86/kernel/espfix_64.c |  3 ---
->  2 files changed, 11 insertions(+), 15 deletions(-)
-
-Pulled, thanks Boris!
-
-	Ingo
+>  drivers/mmc/host/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index a43295c..72dd6c2 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -580,7 +580,7 @@ config SDH_BFIN_MISSING_CMD_PULLUP_WORKAROUND
+>  config MMC_DW
+>         tristate "Synopsys DesignWare Memory Card Interface"
+>         depends on HAS_DMA
+> -       depends on ARC || ARM || MIPS || COMPILE_TEST
+> +       depends on ARC || ARM || ARM64 || MIPS || COMPILE_TEST
+>         help
+>           This selects support for the Synopsys DesignWare Mobile Storage IP
+>           block, this provides host support for SD and MMC interfaces, in both
+> --
+> 1.7.10.4
+>
