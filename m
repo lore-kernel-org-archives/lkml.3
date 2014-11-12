@@ -1,156 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaKLXRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 18:17:36 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46377 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152AbaKLXRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 18:17:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,371,1413270000"; 
-   d="scan'208";a="636047248"
-Date: Thu, 13 Nov 2014 06:56:36 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
- hotplug
-Message-ID: <20141112225636.GA23249@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
- <1415809626.15631.35.camel@tkhai>
+	id S1753570AbaKLXSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 18:18:10 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:48997 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152AbaKLXSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 18:18:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415809626.15631.35.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141112220058.GA5295@redhat.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Nov 2014 15:17:45 -0800
+Message-ID: <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Tony Luck <tony.luck@intel.com>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
-On Wed, Nov 12, 2014 at 07:27:06PM +0300, Kirill Tkhai wrote:
->В Ср, 12/11/2014 в 09:06 +0800, Wanpeng Li пишет:
->> I observe that dl task can't be migrated to other cpus during cpu hotplug, 
->> in addition, task may/may not be running again if cpu is added back. The 
->> root cause which I found is that dl task will be throtted and removed from 
->> dl rq after comsuming all budget, which leads to stop task can't pick it up 
->> from dl rq and migrate to other cpus during hotplug.
->> 
->> The method to reproduce:
->> schedtool -E -t 50000:100000 -e ./test
->> Actually test is just a simple for loop. Then observe which cpu the test
->> task is on.
->> echo 0 > /sys/devices/system/cpu/cpuN/online
->> 
->> This patch adds the dl task migration during cpu hotplug by finding a most 
->> suitable later deadline rq after dl timer fire if current rq is offline, 
->> if fail to find a suitable later deadline rq then fallback to any eligible 
->> online cpu in order that the deadline task will come back to us, and the 
->> push/pull mechanism should then move it around properly.
->> 
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> v4 -> v5:
->>  * remove raw_spin_unlock(&rq->lock)
->>  * cleanup codes, spotted by Peterz
->>  * cleanup patch description
->> v3 -> v4:
->>  * use tsk_cpus_allowed wrapper
->>  * fix compile error
->> v2 -> v3:
->>  * don't get_task_struct
->>  * if cannot preempt any rq, fallback to pick any online cpus
->>  * use cpu_active_mask as original later_mask if cpu is offline
->> v1 -> v2:
->>  * push the task to another cpu in dl_task_timer() if rq is offline.
->> 
->>  kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
->>  1 file changed, 41 insertions(+), 2 deletions(-)
->> 
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index f3d7776..7c31906 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
->>  	return hrtimer_active(&dl_se->dl_timer);
->>  }
->>  
->> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
->>  /*
->>   * This is the bandwidth enforcement timer callback. If here, we know
->>   * a task is not on its dl_rq, since the fact that the timer was running
->> @@ -538,6 +539,43 @@ again:
->>  	update_rq_clock(rq);
->>  	dl_se->dl_throttled = 0;
->>  	dl_se->dl_yielded = 0;
->> +
->> +	/*
->> +	 * So if we find that the rq the task was on is no longer
->> +	 * available, we need to select a new rq.
->> +	 */
->> +	if (unlikely(!rq->online)) {
->> +		struct rq *later_rq = NULL;
->> +
->> +		later_rq = find_lock_later_rq(p, rq);
->> +
->> +		if (!later_rq) {
->> +			int cpu;
->> +
->> +			/*
->> +			 * If cannot preempt any rq, fallback to pick any
->> +			 * online cpu.
->> +			 */
->> +			cpu = cpumask_any_and(cpu_active_mask,
->> +					tsk_cpus_allowed(p));
->> +			if (cpu >= nr_cpu_ids) {
->> +				pr_warn("fail to find any online cpu and task will never come back\n");
->> +				goto unlock;
->> +			}
->> +			later_rq = cpu_rq(cpu);
+On Wed, Nov 12, 2014 at 2:00 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Andy,
 >
->later_rq is not locked here, but you activate p on it and you do unlock below.
+> As I said many times I do not understand asm ;) so most probably I missed
+> something but let me ask anyway.
 
-Great catch! How about add double_lock_balance(rq, later_rq); here?
-
-Regards,
-Wanpeng Li 
+You must be the most competent non-asm-speaking asm reviewer in the world :)
 
 >
->> +		}
+> On 11/11, Andy Lutomirski wrote:
+>>
+>> --- a/arch/x86/kernel/entry_64.S
+>> +++ b/arch/x86/kernel/entry_64.S
+>> @@ -1064,6 +1064,9 @@ ENTRY(\sym)
+>>       CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+>>
+>>       .if \paranoid
+>> +     CFI_REMEMBER_STATE
+>> +     testl $3, CS(%rsp)              /* If coming from userspace, switch */
+>> +     jnz 1f                          /* stacks. */
+>>       call save_paranoid
+>>       .else
+>>       call error_entry
+>> @@ -1104,6 +1107,36 @@ ENTRY(\sym)
+>>       jmp error_exit                  /* %ebx: no swapgs flag */
+>>       .endif
+>>
+>> +     .if \paranoid
+>> +     CFI_RESTORE_STATE
+>> +     /*
+>> +      * Paranoid entry from userspace.  Switch stacks and treat it
+>> +      * as a normal entry.  This means that paranoid handlers
+>> +      * run in real process context if user_mode(regs).
+>> +      */
+>> +1:
+>> +     call error_entry
 >> +
->> +		deactivate_task(rq, p, 0);
->> +		set_task_cpu(p, later_rq->cpu);
->> +		activate_task(later_rq, p, 0);
->
->		^^^^^
->
+>> +     DEFAULT_FRAME 0
 >> +
->> +		resched_curr(later_rq);
->> +
->> +		double_unlock_balance(rq, later_rq);
+>> +     movq %rsp,%rdi                  /* pt_regs pointer */
+>> +     call sync_regs
 >
->		^^^^^^
+> Can't we simplify sync_regs() then?
+
+Yes.  Will do.
+
 >
->> +
->> +		goto unlock;
->> +	}
->> +
->>  	if (task_on_rq_queued(p)) {
->>  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
->>  		if (dl_task(rq->curr))
->> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
->>  	 * We have to consider system topology and task affinity
->>  	 * first, then we can look for a suitable cpu.
->>  	 */
->> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
->> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
->> +	cpumask_copy(later_mask, cpu_active_mask);
->> +	if (likely(task_rq(task)->online))
->> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
->>  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->>  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->>  			task, later_mask);
+>> @@ -1324,8 +1357,6 @@ ENTRY(paranoid_exit)
+>>       TRACE_IRQS_OFF_DEBUG
+>>       testl %ebx,%ebx                         /* swapgs needed? */
+>>       jnz paranoid_restore
+>> -     testl $3,CS(%rsp)
+>> -     jnz   paranoid_userspace
+>>  paranoid_swapgs:
 >
+> Looks like this label can die.
+>
+
+Yes.
+
+>> -paranoid_userspace:
+>> -     GET_THREAD_INFO(%rcx)
+>> -     movl TI_flags(%rcx),%ebx
+>> -     andl $_TIF_WORK_MASK,%ebx
+>> -     jz paranoid_swapgs
+>> -     movq %rsp,%rdi                  /* &pt_regs */
+>> -     call sync_regs
+>> -     movq %rax,%rsp                  /* switch stack for scheduling */
+>> -     testl $_TIF_NEED_RESCHED,%ebx
+>> -     jnz paranoid_schedule
+>> -     movl %ebx,%edx                  /* arg3: thread flags */
+>> -     TRACE_IRQS_ON
+>> -     ENABLE_INTERRUPTS(CLBR_NONE)
+>> -     xorl %esi,%esi                  /* arg2: oldset */
+>> -     movq %rsp,%rdi                  /* arg1: &pt_regs */
+>> -     call do_notify_resume
+>
+> So, before this patch we use _TIF_WORK_MASK to decide if we need to call
+> do_notify_resume().
+>
+> After this patch we jump to error_exit and it checks the same _TIF_WORK_MASK.
+> But note that retint_careful->retint_careful checks another mask,
+> _TIF_DO_NOTIFY_MASK.
+>
+> So it seems to me we can miss (say) TIF_UPROBE after int3 handler, no?
+
+Only if we didn't call uprobe_deny_signal.  Presumably the
+TIF_NOTIFY_RESUME got added there because it didn't work on x86 due to
+exactly this issue.
+
+>
+> Yes, even _if_ I am right we should blame these masks, _TIF_DO_NOTIFY_MASK
+> should probably include _TIF_UPROBE (and afaics in this case we can remove
+> set_thread_flag(TIF_NOTIFY_RESUME) in uprobe_deny_signal()).
+
+Ugh, yes.  I'll fix that with a separate patch.  Fortunately, the
+other uprobe architectures seem to be okay.
+
+>
+> And in any case, can't we cleanup _TIF_WORK_MASK and _TIF_ALLWORK_MASK?
+> IMHO, they should clearly define which bits we want to check.
+
+Almost certainly.  I'll leave that for another day, though.
+
+v2 coming soon with these changes and some additional comment cleanups.
+
+--Andy
