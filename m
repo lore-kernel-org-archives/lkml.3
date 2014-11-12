@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168AbaKLBc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:32:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59401 "EHLO
+	id S933181AbaKLBcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:32:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59412 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595AbaKLBcV (ORCPT
+	with ESMTP id S1754595AbaKLBc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:32:21 -0500
+	Tue, 11 Nov 2014 20:32:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>,
+        Jan Kara <jack@suse.cz>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 243/319] mm: page-writeback: inline account_page_dirtied() into single caller
-Date: Wed, 12 Nov 2014 10:16:21 +0900
-Message-Id: <20141112011033.016942931@linuxfoundation.org>
+Subject: [PATCH 3.17 245/319] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
+Date: Wed, 12 Nov 2014 10:16:23 +0900
+Message-Id: <20141112011033.376535769@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -31,73 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 3a3c02ecf7f2852f122d6d16fb9b3d9cb0c6f201 upstream.
+commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
 
-A follow-up patch would have changed the call signature.  To save the
-trouble, just fold it instead.
+If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
+a multiple of BITS_PER_LONG, they will try to shift a long value by
+BITS_PER_LONG bits which is undefined.  Change the functions to avoid
+the undefined shift.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>
+Coverity id: 1192175
+Coverity id: 1192174
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mm.h  |    1 -
- mm/page-writeback.c |   23 ++++-------------------
- 2 files changed, 4 insertions(+), 20 deletions(-)
+ lib/bitmap.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1233,7 +1233,6 @@ int __set_page_dirty_no_writeback(struct
- int redirty_page_for_writepage(struct writeback_control *wbc,
- 				struct page *page);
- void account_page_dirtied(struct page *page, struct address_space *mapping);
--void account_page_writeback(struct page *page);
- int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2116,23 +2116,6 @@ void account_page_dirtied(struct page *p
- EXPORT_SYMBOL(account_page_dirtied);
- 
- /*
-- * Helper function for set_page_writeback family.
-- *
-- * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
-- * while calling this function.
-- * See test_set_page_writeback for example.
-- *
-- * NOTE: Unlike account_page_dirtied this does not rely on being atomic
-- * wrt interrupts.
-- */
--void account_page_writeback(struct page *page)
--{
--	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
--	inc_zone_page_state(page, NR_WRITEBACK);
--}
--EXPORT_SYMBOL(account_page_writeback);
--
--/*
-  * For address_spaces which do not use buffers.  Just tag the page as dirty in
-  * its radix tree.
-  *
-@@ -2410,8 +2393,10 @@ int __test_set_page_writeback(struct pag
- 	} else {
- 		ret = TestSetPageWriteback(page);
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long
+ 		lower = src[off + k];
+ 		if (left && off + k == lim - 1)
+ 			lower &= mask;
+-		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
++		dst[k] = lower >> rem;
++		if (rem)
++			dst[k] |= upper << (BITS_PER_LONG - rem);
+ 		if (left && k == lim - 1)
+ 			dst[k] &= mask;
  	}
--	if (!ret)
--		account_page_writeback(page);
-+	if (!ret) {
-+		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
-+		inc_zone_page_state(page, NR_WRITEBACK);
-+	}
- 	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
- 	return ret;
- 
+@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *
+ 		upper = src[k];
+ 		if (left && k == lim - 1)
+ 			upper &= (1UL << left) - 1;
+-		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
++		dst[k + off] = upper << rem;
++		if (rem)
++			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
+ 		if (left && k + off == lim - 1)
+ 			dst[k + off] &= (1UL << left) - 1;
+ 	}
 
 
