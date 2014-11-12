@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaKLBWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:22:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58606 "EHLO
+	id S1753698AbaKLBW5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:22:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58617 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492AbaKLBWm (ORCPT
+	with ESMTP id S1753653AbaKLBWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:22:42 -0500
+	Tue, 11 Nov 2014 20:22:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.17 065/319] fix misuses of f_count() in ppp and netlink
-Date: Wed, 12 Nov 2014 10:13:23 +0900
-Message-Id: <20141112011003.390171681@linuxfoundation.org>
+        Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 036/319] ASoC: tlv320aic3x: fix PLL D configuration
+Date: Wed, 12 Nov 2014 10:12:54 +0900
+Message-Id: <20141112010958.636899172@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,57 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
 
-commit 24dff96a37a2ca319e75a74d3929b2de22447ca6 upstream.
+commit 31d9f8faf9a54c851e835af489c82f45105a442f upstream.
 
-we used to check for "nobody else could start doing anything with
-that opened file" by checking that refcount was 2 or less - one
-for descriptor table and one we'd acquired in fget() on the way to
-wherever we are.  That was race-prone (somebody else might have
-had a reference to descriptor table and do fget() just as we'd
-been checking) and it had become flat-out incorrect back when
-we switched to fget_light() on those codepaths - unlike fget(),
-it doesn't grab an extra reference unless the descriptor table
-is shared.  The same change allowed a race-free check, though -
-we are safe exactly when refcount is less than 2.
+Current caching implementation during regcache_sync() call bypasses
+all register writes of values that are already known as default
+(regmap reg_defaults). Same time in TLV320AIC3x codecs register 5
+(AIC3X_PLL_PROGC_REG) write should be immediately followed by register
+6 write (AIC3X_PLL_PROGD_REG) even if it was not changed. Otherwise
+both registers will not be written.
 
-It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
-to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
-netlink hadn't grown that check until 3.9 and ppp used to live
-in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
-well before that, though, and the same fix used to apply in old
-location of file.
+This brings to issue that appears particulary in case of 44.1kHz
+playback with 19.2MHz master clock. In this case AIC3X_PLL_PROGC_REG
+is 0x6e while AIC3X_PLL_PROGD_REG is 0x0 (same as register
+default). Thus AIC3X_PLL_PROGC_REG also remains not written and we get
+wrong playback speed.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+In this patch snd_soc_read() is used to get cached pll values and
+snd_soc_write() (unlike regcache_sync() this function doesn't bypasses
+hardware default values) to write them to registers.
+
+Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ppp/ppp_generic.c |    2 +-
- net/netlink/af_netlink.c      |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/tlv320aic3x.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/drivers/net/ppp/ppp_generic.c
-+++ b/drivers/net/ppp/ppp_generic.c
-@@ -594,7 +594,7 @@ static long ppp_ioctl(struct file *file,
- 			if (file == ppp->owner)
- 				ppp_shutdown_interface(ppp);
- 		}
--		if (atomic_long_read(&file->f_count) <= 2) {
-+		if (atomic_long_read(&file->f_count) < 2) {
- 			ppp_release(NULL, file);
- 			err = 0;
- 		} else
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -723,7 +723,7 @@ static int netlink_mmap_sendmsg(struct s
- 	 * after validation, the socket and the ring may only be used by a
- 	 * single process, otherwise we fall back to copying.
- 	 */
--	if (atomic_long_read(&sk->sk_socket->file->f_count) > 2 ||
-+	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
- 	    atomic_read(&nlk->mapped) > 1)
- 		excl = false;
+--- a/sound/soc/codecs/tlv320aic3x.c
++++ b/sound/soc/codecs/tlv320aic3x.c
+@@ -1121,6 +1121,7 @@ static int aic3x_regulator_event(struct
+ static int aic3x_set_power(struct snd_soc_codec *codec, int power)
+ {
+ 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
++	unsigned int pll_c, pll_d;
+ 	int ret;
  
+ 	if (power) {
+@@ -1138,6 +1139,18 @@ static int aic3x_set_power(struct snd_so
+ 		/* Sync reg_cache with the hardware */
+ 		regcache_cache_only(aic3x->regmap, false);
+ 		regcache_sync(aic3x->regmap);
++
++		/* Rewrite paired PLL D registers in case cached sync skipped
++		 * writing one of them and thus caused other one also not
++		 * being written
++		 */
++		pll_c = snd_soc_read(codec, AIC3X_PLL_PROGC_REG);
++		pll_d = snd_soc_read(codec, AIC3X_PLL_PROGD_REG);
++		if (pll_c == aic3x_reg[AIC3X_PLL_PROGC_REG].def ||
++			pll_d == aic3x_reg[AIC3X_PLL_PROGD_REG].def) {
++			snd_soc_write(codec, AIC3X_PLL_PROGC_REG, pll_c);
++			snd_soc_write(codec, AIC3X_PLL_PROGD_REG, pll_d);
++		}
+ 	} else {
+ 		/*
+ 		 * Do soft reset to this codec instance in order to clear
 
 
