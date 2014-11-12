@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaKLBVd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:21:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58493 "EHLO
+	id S1753282AbaKLBVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:21:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58507 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaKLBV3 (ORCPT
+	with ESMTP id S1753205AbaKLBVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:21:29 -0500
+	Tue, 11 Nov 2014 20:21:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.17 044/319] mmc: sdhci-s3c: fix runtime PM handling on sdhci_add_host() failure
-Date: Wed, 12 Nov 2014 10:13:02 +0900
-Message-Id: <20141112010959.964910083@linuxfoundation.org>
+        Eric Rannaud <e@nanocritical.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.17 047/319] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+Date: Wed, 12 Nov 2014 10:13:05 +0900
+Message-Id: <20141112011000.393391946@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -33,88 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+From: Eric Rannaud <e@nanocritical.com>
 
-commit 221414db1934c1c883501998f510bb75acfbaa51 upstream.
+commit 69a91c237ab0ebe4e9fdeaf6d0090c85275594ec upstream.
 
-Runtime Power Management handling for the sdhci_add_host() failure
-case in sdhci_s3c_probe() should match the code in sdhci_s3c_remove()
-(which uses pm_runtime_disable() call which matches the earlier
-pm_runtime_enable() one).  Fix it.
+The man page for open(2) indicates that when O_CREAT is specified, the
+'mode' argument applies only to future accesses to the file:
 
-This patch fixes "BUG: spinlock bad magic on CPU#0, swapper/0/1" and
-"Unbalanced pm_runtime_enable!" warnings.
+	Note that this mode applies only to future accesses of the newly
+	created file; the open() call that creates a read-only file
+	may well return a read/write file descriptor.
 
->From the kernel log:
-...
-[    1.659631] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
-[    1.665096] BUG: spinlock bad magic on CPU#0, swapper/0/1
-[    1.670433]  lock: 0xea01e484, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
-[    1.677895] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-next-20140804-00008-ga59480f-dirty #707
-[    1.687037] [<c0013ae4>] (unwind_backtrace) from [<c0010d70>] (show_stack+0x10/0x14)
-[    1.694740] [<c0010d70>] (show_stack) from [<c04050c8>] (dump_stack+0x68/0xb8)
-[    1.701948] [<c04050c8>] (dump_stack) from [<c0052558>] (do_raw_spin_lock+0x15c/0x1a4)
-[    1.709848] [<c0052558>] (do_raw_spin_lock) from [<c040a630>] (_raw_spin_lock_irqsave+0x20/0x28)
-[    1.718619] [<c040a630>] (_raw_spin_lock_irqsave) from [<c030d7d0>] (sdhci_do_set_ios+0x1c/0x5cc)
-[    1.727464] [<c030d7d0>] (sdhci_do_set_ios) from [<c030ddfc>] (sdhci_runtime_resume_host+0x50/0x104)
-[    1.736574] [<c030ddfc>] (sdhci_runtime_resume_host) from [<c02462dc>] (pm_generic_runtime_resume+0x2c/0x40)
-[    1.746383] [<c02462dc>] (pm_generic_runtime_resume) from [<c0247898>] (__rpm_callback+0x34/0x70)
-[    1.755233] [<c0247898>] (__rpm_callback) from [<c02478fc>] (rpm_callback+0x28/0x88)
-[    1.762958] [<c02478fc>] (rpm_callback) from [<c02486f0>] (rpm_resume+0x384/0x4ec)
-[    1.770511] [<c02486f0>] (rpm_resume) from [<c02488b0>] (pm_runtime_forbid+0x58/0x64)
-[    1.778325] [<c02488b0>] (pm_runtime_forbid) from [<c030ea70>] (sdhci_s3c_probe+0x4a4/0x540)
-[    1.786749] [<c030ea70>] (sdhci_s3c_probe) from [<c02429cc>] (platform_drv_probe+0x2c/0x5c)
-[    1.795076] [<c02429cc>] (platform_drv_probe) from [<c02415f0>] (driver_probe_device+0x114/0x234)
-[    1.803929] [<c02415f0>] (driver_probe_device) from [<c024179c>] (__driver_attach+0x8c/0x90)
-[    1.812347] [<c024179c>] (__driver_attach) from [<c023ffb4>] (bus_for_each_dev+0x54/0x88)
-[    1.820506] [<c023ffb4>] (bus_for_each_dev) from [<c0240df8>] (bus_add_driver+0xd8/0x1cc)
-[    1.828665] [<c0240df8>] (bus_add_driver) from [<c0241db8>] (driver_register+0x78/0xf4)
-[    1.836652] [<c0241db8>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1d0)
-[    1.844816] [<c00088a4>] (do_one_initcall) from [<c059ac94>] (kernel_init_freeable+0x108/0x1d4)
-[    1.853503] [<c059ac94>] (kernel_init_freeable) from [<c0401300>] (kernel_init+0x8/0xe4)
-[    1.861568] [<c0401300>] (kernel_init) from [<c000e538>] (ret_from_fork+0x14/0x3c)
-[    1.869582] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
-...
-[    1.997047] s3c-sdhci 12530000.sdhci: Unbalanced pm_runtime_enable!
-...
-[    2.027235] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
-[    2.032884] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
-...
+The man page for open(2) implies that 'mode' is treated identically by
+O_CREAT and O_TMPFILE.
 
-Tested on Hardkernel's Exynos4412 based ODROID-U3 board.
+O_TMPFILE, however, behaves differently:
 
-Fixes: 9f4e8151dbbc ("mmc: sdhci-s3c: Enable runtime power management")
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
+	assert(fd == -1);
+	assert(errno == EACCES);
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
+	assert(fd > 0);
+
+For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
+
+	if (*opened & FILE_CREATED) {
+		/* Don't check for write permission, don't truncate */
+		open_flag &= ~O_TRUNC;
+		will_truncate = false;
+		acc_mode = MAY_OPEN;
+		path_to_nameidata(path, nd);
+		goto finish_open_created;
+	}
+
+But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
+may_open().
+
+This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
+inode is created, may_open() is called with acc_mode = MAY_OPEN, in
+do_tmpfile().
+
+A different, but related glibc bug revealed the discrepancy:
+https://sourceware.org/bugzilla/show_bug.cgi?id=17523
+
+The glibc lazily loads the 'mode' argument of open() and openat() using
+va_arg() only if O_CREAT is present in 'flags' (to support both the 2
+argument and the 3 argument forms of open; same idea for openat()).
+However, the glibc ignores the 'mode' argument if O_TMPFILE is in
+'flags'.
+
+On x86_64, for open(), it magically works anyway, as 'mode' is in
+RDX when entering open(), and is still in RDX on SYSCALL, which is where
+the kernel looks for the 3rd argument of a syscall.
+
+But openat() is not quite so lucky: 'mode' is in RCX when entering the
+glibc wrapper for openat(), while the kernel looks for the 4th argument
+of a syscall in R10. Indeed, the syscall calling convention differs from
+the regular calling convention in this respect on x86_64. So the kernel
+sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
+fails with EACCES.
+
+Signed-off-by: Eric Rannaud <e@nanocritical.com>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-s3c.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/namei.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -606,8 +606,6 @@ static int sdhci_s3c_probe(struct platfo
- 	ret = sdhci_add_host(host);
- 	if (ret) {
- 		dev_err(dev, "sdhci_add_host() failed\n");
--		pm_runtime_forbid(&pdev->dev);
--		pm_runtime_get_noresume(&pdev->dev);
- 		goto err_req_regs;
- 	}
- 
-@@ -618,6 +616,8 @@ static int sdhci_s3c_probe(struct platfo
- 	return 0;
- 
-  err_req_regs:
-+	pm_runtime_disable(&pdev->dev);
-+
-  err_no_busclks:
- 	clk_disable_unprepare(sc->clk_io);
- 
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3154,7 +3154,8 @@ static int do_tmpfile(int dfd, struct fi
+ 	if (error)
+ 		goto out2;
+ 	audit_inode(pathname, nd->path.dentry, 0);
+-	error = may_open(&nd->path, op->acc_mode, op->open_flag);
++	/* Don't check for other permissions, the inode was just created */
++	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
+ 	if (error)
+ 		goto out2;
+ 	file->f_path.mnt = nd->path.mnt;
 
 
