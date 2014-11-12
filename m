@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaKLRaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 12:30:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40470 "EHLO mx1.redhat.com"
+	id S1753462AbaKLRa4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 12:30:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58071 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004AbaKLRaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 12:30:11 -0500
-Date: Wed, 12 Nov 2014 12:30:07 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com
-Subject: Re: [PATCH] audit_tree: keep inode pinned
-Message-ID: <20141112173007.GB28076@madcap2.tricolour.ca>
-References: <20141104102712.GA7088@tucsk.piliscsaba.szeredi.hu>
- <20141105165833.GE5902@madcap2.tricolour.ca>
- <CAJfpeguyGSPp+g1SgwAY3aieB=6Z4d5qb72tOTd6oZ-2JFgsfQ@mail.gmail.com>
+	id S1752997AbaKLRaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 12:30:55 -0500
+Date: Wed, 12 Nov 2014 18:30:48 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Message-ID: <20141112173048.GI16807@pd.tnic>
+References: <20141111230926.GR31490@pd.tnic>
+ <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic>
+ <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3292AE0D@ORSMSX114.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAJfpeguyGSPp+g1SgwAY3aieB=6Z4d5qb72tOTd6oZ-2JFgsfQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3292AE0D@ORSMSX114.amr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/11/05, Miklos Szeredi wrote:
-> On Wed, Nov 5, 2014 at 5:58 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> > On 14/11/04, Miklos Szeredi wrote:
-> >> From: Miklos Szeredi <mszeredi@suse.cz>
-> >
-> > Hi Miklos,
-> >
-> >> Audit rules disappear when an inode they watch is evicted from the cache.
-> >> This is likely not what we want.
-> >>
-> >> The guilty commit is "fsnotify: allow marks to not pin inodes in core",
-> >> which didn't take into account that audit_tree adds watches with a zero
-> >> mask.
-> >>
-> >> Adding any mask should fix this.
-> >
-> > Nice find!  Do you have a quick reproducer to detect this?
+On Wed, Nov 12, 2014 at 05:17:55PM +0000, Luck, Tony wrote:
+> > Not that easy for testing the #MC path - there we have to inject real
+> > MCEs and then noodle through the memory_failure() code. I'd be very much
+> > interested to see what would happen if two MCEs happen back-to-back with
+> > your change, the second one being raised when we're on the kernel stack
+> > and in memory_failure()...
 > 
-> - reboot
-> - add tree rule
-> - echo 2 > /proc/sys/vm/drop_caches
+> If the second one hits before we clear MCG_STATUS, then the processor resets.
 > 
-> drop_caches doesn't guarantee dropping the inode from the cache, but
-> after a reboot it usually does.
+> If the second one is caused by the recovery thread somewhere in memory_failure(),
+> then Andy won't switch stacks - but we will declare this a fatal error an panic (we have
+> no recovery from machine checks in the kernel).
+> 
+> Otherwise the memory_failure() thread is the innocent bystander. If the affected thread
+> decides to do recovery, then the first thread will be allowed to return and continue.
+> 
+> I might worry a bit if the second error is another thread hitting the *same* page which
+> hasn't finished processing yet ... then the second will chase along behind the first trying
+> to fix the same problem.  I *think* the first will complete and the second will just end
+> up here:
+> 
+> 	if (TestSetPageHWPoison(p)) {
+> 		printk(KERN_ERR "MCE %#lx: already hardware poisoned\n", pfn);
+> 		return 0;
+> 	}
+> 
+> which is really early in memory_failure().
 
-Perfect, thanks!  That works as expected.  While I was at it, I checked
-the audit_watch code and the pending "filter on process name" patches to
-make sure they didn't have the same problem.
+Yeah, I meant this case: when we have switched stacks, exited
+do_machine_check() and running the recovery code. Exactly then we get
+another MCE. And the code might handle it, as you say, but I'd like to
+see this in action first to be sure - it is not trivial code.
 
-> Thanks,
-> Miklos
+-- 
+Regards/Gruss,
+    Boris.
 
-- RGB
-
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
