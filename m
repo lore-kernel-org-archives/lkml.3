@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965472AbaKLBxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:53:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32920 "EHLO
+	id S932324AbaKLCOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:14:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966333AbaKLBxH (ORCPT
+	with ESMTP id S966297AbaKLBwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:53:07 -0500
+	Tue, 11 Nov 2014 20:52:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Dmitry Monakhov <dmonakhov@openvz.org>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.10 067/123] ext4: grab missed write_count for EXT4_IOC_SWAP_BOOT
-Date: Wed, 12 Nov 2014 10:17:13 +0900
-Message-Id: <20141112011722.057648519@linuxfoundation.org>
+        David Daney <david.daney@cavium.com>, Huacai Chen <chenhc@lemote.com>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.10 063/123] MIPS: tlbex: Properly fix HUGE TLB Refill exception handler
+Date: Wed, 12 Nov 2014 10:17:09 +0900
+Message-Id: <20141112011721.884831157@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,63 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: David Daney <david.daney@cavium.com>
 
-commit 3e67cfad22230ebed85c56cbe413876f33fea82b upstream.
+commit 9e0f162a36914937a937358fcb45e0609ef2bfc4 upstream.
 
-Otherwise this provokes complain like follows:
-WARNING: CPU: 12 PID: 5795 at fs/ext4/ext4_jbd2.c:48 ext4_journal_check_start+0x4e/0xa0()
-Modules linked in: brd iTCO_wdt lpc_ich mfd_core igb ptp dm_mirror dm_region_hash dm_log dm_mod
-CPU: 12 PID: 5795 Comm: python Not tainted 3.17.0-rc2-00175-gae5344f #158
-Hardware name: Intel Corporation W2600CR/W2600CR, BIOS SE5C600.86B.99.99.x028.061320111235 06/13/2011
- 0000000000000030 ffff8808116cfd28 ffffffff815c7dfc 0000000000000030
- 0000000000000000 ffff8808116cfd68 ffffffff8106ce8c ffff8808116cfdc8
- ffff880813b16000 ffff880806ad6ae8 ffffffff81202008 0000000000000000
-Call Trace:
- [<ffffffff815c7dfc>] dump_stack+0x51/0x6d
- [<ffffffff8106ce8c>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff81202008>] ? ext4_ioctl+0x9e8/0xeb0
- [<ffffffff8106ceda>] warn_slowpath_null+0x1a/0x20
- [<ffffffff8122867e>] ext4_journal_check_start+0x4e/0xa0
- [<ffffffff81228c10>] __ext4_journal_start_sb+0x90/0x110
- [<ffffffff81202008>] ext4_ioctl+0x9e8/0xeb0
- [<ffffffff8107b0bd>] ? ptrace_stop+0x24d/0x2f0
- [<ffffffff81088530>] ? alloc_pid+0x480/0x480
- [<ffffffff8107b1f2>] ? ptrace_do_notify+0x92/0xb0
- [<ffffffff81186545>] do_vfs_ioctl+0x4e5/0x550
- [<ffffffff815cdbcb>] ? _raw_spin_unlock_irq+0x2b/0x40
- [<ffffffff81186603>] SyS_ioctl+0x53/0x80
- [<ffffffff815ce2ce>] tracesys+0xd0/0xd5
+In commit 8393c524a25609 (MIPS: tlbex: Fix a missing statement for
+HUGETLB), the TLB Refill handler was fixed so that non-OCTEON targets
+would work properly with huge pages.  The change was incorrect in that
+it broke the OCTEON case.
 
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+The problem is shown here:
+
+    xxx0:	df7a0000 	ld	k0,0(k1)
+    .
+    .
+    .
+    xxxc0:	df610000 	ld	at,0(k1)
+    xxxc4:	335a0ff0 	andi	k0,k0,0xff0
+    xxxc8:	e825ffcd 	bbit1	at,0x5,0x0
+    xxxcc:	003ad82d 	daddu	k1,at,k0
+    .
+    .
+    .
+
+In the non-octeon case there is a destructive test for the huge PTE
+bit, and then at 0, $k0 is reloaded (that is what the 8393c524a25609
+patch added).
+
+In the octeon case, we modify k1 in the branch delay slot, but we
+never need k0 again, so the new load is not needed, but since k1 is
+modified, if we do the load, we load from a garbage location and then
+get a nested TLB Refill, which is seen in userspace as either SIGBUS
+or SIGSEGV (depending on the garbage).
+
+The real fix is to only do this reloading if it is needed, and never
+where it is harmful.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/8151/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ioctl.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/mips/mm/tlbex.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -549,9 +549,17 @@ group_add_out:
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -1091,6 +1091,7 @@ static void __cpuinit build_update_entri
+ struct mips_huge_tlb_info {
+ 	int huge_pte;
+ 	int restore_scratch;
++	bool need_reload_pte;
+ };
+ 
+ static struct mips_huge_tlb_info __cpuinit
+@@ -1105,6 +1106,7 @@ build_fast_tlb_refill_handler (u32 **p,
+ 
+ 	rv.huge_pte = scratch;
+ 	rv.restore_scratch = 0;
++	rv.need_reload_pte = false;
+ 
+ 	if (check_for_high_segbits) {
+ 		UASM_i_MFC0(p, tmp, C0_BADVADDR);
+@@ -1293,6 +1295,7 @@ static void __cpuinit build_r4000_tlb_re
+ 	} else {
+ 		htlb_info.huge_pte = K0;
+ 		htlb_info.restore_scratch = 0;
++		htlb_info.need_reload_pte = true;
+ 		vmalloc_mode = refill_noscratch;
+ 		/*
+ 		 * create the plain linear handler
+@@ -1329,7 +1332,8 @@ static void __cpuinit build_r4000_tlb_re
  	}
- 
- 	case EXT4_IOC_SWAP_BOOT:
-+	{
-+		int err;
- 		if (!(filp->f_mode & FMODE_WRITE))
- 			return -EBADF;
--		return swap_inode_boot_loader(sb, inode);
-+		err = mnt_want_write_file(filp);
-+		if (err)
-+			return err;
-+		err = swap_inode_boot_loader(sb, inode);
-+		mnt_drop_write_file(filp);
-+		return err;
-+	}
- 
- 	case EXT4_IOC_RESIZE_FS: {
- 		ext4_fsblk_t n_blocks_count;
+ #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
+ 	uasm_l_tlb_huge_update(&l, p);
+-	UASM_i_LW(&p, K0, 0, K1);
++	if (htlb_info.need_reload_pte)
++		UASM_i_LW(&p, htlb_info.huge_pte, 0, K1);
+ 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
+ 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
+ 				   htlb_info.restore_scratch);
 
 
