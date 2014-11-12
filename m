@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290AbaKLB0u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:26:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58929 "EHLO
+	id S932341AbaKLB1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:27:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaKLB0q (ORCPT
+	with ESMTP id S932325AbaKLB1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:26:46 -0500
+	Tue, 11 Nov 2014 20:27:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeffrey Bastian <jbastian@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.17 108/319] drm/vmwgfx: Fix drm.h include
-Date: Wed, 12 Nov 2014 10:14:06 +0900
-Message-Id: <20141112011010.430603524@linuxfoundation.org>
+        Paul Fertser <fercerpav@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.17 113/319] media: usb: uvc: add a quirk for Dell XPS M1330 webcam
+Date: Wed, 12 Nov 2014 10:14:11 +0900
+Message-Id: <20141112011011.304041596@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,37 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@fedoraproject.org>
+From: Paul Fertser <fercerpav@gmail.com>
 
-commit e351943b081f4d9e6f692ce1a6117e8d2e71f478 upstream.
+commit 62ea864f84fed6e04dd033d500d4c9183a83d590 upstream.
 
-The userspace drm.h include doesn't prefix the drm directory.  This can lead
-to compile failures as /usr/include/drm/ isn't in the standard gcc include
-paths.  Fix it to be <drm/drm.h>, which matches the rest of the driver drm
-header files that get installed into /usr/include/drm.
+As reported on [1], this device needs this quirk to be able to
+reliably initialise the webcam.
 
-Red Hat Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1138759
+[1] http://ubuntuforums.org/showthread.php?t=2145996
 
-Fixes: 1d7a5cbf8f74e
-Reported-by: Jeffrey Bastian <jbastian@redhat.com>
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Paul Fertser <fercerpav@gmail.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/drm/vmwgfx_drm.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/include/uapi/drm/vmwgfx_drm.h
-+++ b/include/uapi/drm/vmwgfx_drm.h
-@@ -29,7 +29,7 @@
- #define __VMWGFX_DRM_H__
- 
- #ifndef __KERNEL__
--#include <drm.h>
-+#include <drm/drm.h>
- #endif
- 
- #define DRM_VMW_MAX_SURFACE_FACES 6
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -2229,6 +2229,15 @@ static struct usb_device_id uvc_ids[] =
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_QUIRK_PROBE_DEF },
++	/* Dell XPS M1330 (OmniVision OV7670 webcam) */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x05a9,
++	  .idProduct		= 0x7670,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_PROBE_DEF },
+ 	/* Apple Built-In iSight */
+ 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+ 				| USB_DEVICE_ID_MATCH_INT_INFO,
 
 
