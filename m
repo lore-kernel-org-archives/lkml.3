@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaKLB1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:27:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58944 "EHLO
+	id S1753160AbaKLB1W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:27:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309AbaKLB04 (ORCPT
+	with ESMTP id S932361AbaKLB1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:26:56 -0500
+	Tue, 11 Nov 2014 20:27:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.17 111/319] drm/gt214-/kms: fix hda eld regression
-Date: Wed, 12 Nov 2014 10:14:09 +0900
-Message-Id: <20141112011010.919974314@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.17 151/319] ext4: check EA value offset when loading
+Date: Wed, 12 Nov 2014 10:14:49 +0900
+Message-Id: <20141112011017.598551092@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,52 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit d889c52427d48c05f163f2f39b2cfc12e17e5266 upstream.
+commit a0626e75954078cfacddb00a4545dde821170bc5 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+When loading extended attributes, check each entry's value offset to
+make sure it doesn't collide with the entries.
+
+Without this check it is easy to crash the kernel by mounting a
+malicious FS containing a file with an EA wherein e_value_offs = 0 and
+e_value_size > 0 and then deleting the EA, which corrupts the name
+list.
+
+(See the f_ea_value_crash test's FS image in e2fsprogs for an example.)
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nv50_display.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ fs/ext4/xattr.c |   32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nv50_display.c
-+++ b/drivers/gpu/drm/nouveau/nv50_display.c
-@@ -1653,15 +1653,17 @@ nv50_audio_mode_set(struct drm_encoder *
- 	struct nouveau_encoder *nv_encoder = nouveau_encoder(encoder);
- 	struct nouveau_connector *nv_connector;
- 	struct nv50_disp *disp = nv50_disp(encoder->dev);
--	struct {
--		struct nv50_disp_mthd_v1 base;
--		struct nv50_disp_sor_hda_eld_v0 eld;
-+	struct __packed {
-+		struct {
-+			struct nv50_disp_mthd_v1 mthd;
-+			struct nv50_disp_sor_hda_eld_v0 eld;
-+		} base;
- 		u8 data[sizeof(nv_connector->base.eld)];
- 	} args = {
--		.base.version = 1,
--		.base.method  = NV50_DISP_MTHD_V1_SOR_HDA_ELD,
--		.base.hasht   = nv_encoder->dcb->hasht,
--		.base.hashm   = nv_encoder->dcb->hashm,
-+		.base.mthd.version = 1,
-+		.base.mthd.method  = NV50_DISP_MTHD_V1_SOR_HDA_ELD,
-+		.base.mthd.hasht   = nv_encoder->dcb->hasht,
-+		.base.mthd.hashm   = nv_encoder->dcb->hashm,
- 	};
- 
- 	nv_connector = nouveau_encoder_connector_get(nv_encoder);
-@@ -1671,7 +1673,7 @@ nv50_audio_mode_set(struct drm_encoder *
- 	drm_edid_to_eld(&nv_connector->base, nv_connector->edid);
- 	memcpy(args.data, nv_connector->base.eld, sizeof(args.data));
- 
--	nvif_mthd(disp->disp, 0, &args, sizeof(args));
-+	nvif_mthd(disp->disp, 0, &args, sizeof(args.base) + args.data[2] * 4);
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -190,14 +190,28 @@ ext4_listxattr(struct dentry *dentry, ch
  }
  
- static void
+ static int
+-ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
++ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end,
++		       void *value_start)
+ {
+-	while (!IS_LAST_ENTRY(entry)) {
+-		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(entry);
++	struct ext4_xattr_entry *e = entry;
++
++	while (!IS_LAST_ENTRY(e)) {
++		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(e);
+ 		if ((void *)next >= end)
+ 			return -EIO;
+-		entry = next;
++		e = next;
+ 	}
++
++	while (!IS_LAST_ENTRY(entry)) {
++		if (entry->e_value_size != 0 &&
++		    (value_start + le16_to_cpu(entry->e_value_offs) <
++		     (void *)e + sizeof(__u32) ||
++		     value_start + le16_to_cpu(entry->e_value_offs) +
++		    le32_to_cpu(entry->e_value_size) > end))
++			return -EIO;
++		entry = EXT4_XATTR_NEXT(entry);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -214,7 +228,8 @@ ext4_xattr_check_block(struct inode *ino
+ 		return -EIO;
+ 	if (!ext4_xattr_block_csum_verify(inode, bh->b_blocknr, BHDR(bh)))
+ 		return -EIO;
+-	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
++	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size,
++				       bh->b_data);
+ 	if (!error)
+ 		set_buffer_verified(bh);
+ 	return error;
+@@ -331,7 +346,7 @@ ext4_xattr_ibody_get(struct inode *inode
+ 	header = IHDR(inode, raw_inode);
+ 	entry = IFIRST(header);
+ 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
+-	error = ext4_xattr_check_names(entry, end);
++	error = ext4_xattr_check_names(entry, end, entry);
+ 	if (error)
+ 		goto cleanup;
+ 	error = ext4_xattr_find_entry(&entry, name_index, name,
+@@ -463,7 +478,7 @@ ext4_xattr_ibody_list(struct dentry *den
+ 	raw_inode = ext4_raw_inode(&iloc);
+ 	header = IHDR(inode, raw_inode);
+ 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
+-	error = ext4_xattr_check_names(IFIRST(header), end);
++	error = ext4_xattr_check_names(IFIRST(header), end, IFIRST(header));
+ 	if (error)
+ 		goto cleanup;
+ 	error = ext4_xattr_list_entries(dentry, IFIRST(header),
+@@ -986,7 +1001,8 @@ int ext4_xattr_ibody_find(struct inode *
+ 	is->s.here = is->s.first;
+ 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
+ 	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
+-		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
++		error = ext4_xattr_check_names(IFIRST(header), is->s.end,
++					       IFIRST(header));
+ 		if (error)
+ 			return error;
+ 		/* Find the named attribute. */
 
 
