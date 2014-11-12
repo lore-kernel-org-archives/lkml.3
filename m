@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418AbaKLBeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:34:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59613 "EHLO
+	id S934841AbaKLDX6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:23:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59618 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447AbaKLBeU (ORCPT
+	with ESMTP id S932528AbaKLBeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:34:20 -0500
+	Tue, 11 Nov 2014 20:34:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.17 277/319] media: Remove references to non-existent PLAT_S5P symbol
-Date: Wed, 12 Nov 2014 10:16:55 +0900
-Message-Id: <20141112011038.700144853@linuxfoundation.org>
+        Ondrej Kozina <okozina@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.17 278/319] crypto: algif - avoid excessive use of socket buffer in skcipher
+Date: Wed, 12 Nov 2014 10:16:56 +0900
+Message-Id: <20141112011038.830438736@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -30,78 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: Ondrej Kozina <okozina@redhat.com>
 
-commit 098bcd2335f0824e76dd835e4e2b7ae8e38fc281 upstream.
+commit e2cffb5f493a8b431dc87124388ea59b79f0bccb upstream.
 
-The PLAT_S5P Kconfig symbol was removed in commit d78c16ccde96
-("ARM: SAMSUNG: Remove remaining legacy code"). However, there
-are still some references to that symbol left, fix that by
-substituting them with ARCH_S5PV210.
+On archs with PAGE_SIZE >= 64 KiB the function skcipher_alloc_sgl()
+fails with -ENOMEM no matter what user space actually requested.
+This is caused by the fact sock_kmalloc call inside the function tried
+to allocate more memory than allowed by the default kernel socket buffer
+size (kernel param net.core.optmem_max).
 
-Fixes: d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
-
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Signed-off-by: Ondrej Kozina <okozina@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/Kconfig            |    6 +++---
- drivers/media/platform/exynos4-is/Kconfig |    2 +-
- drivers/media/platform/s5p-tv/Kconfig     |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ crypto/algif_skcipher.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/platform/Kconfig
-+++ b/drivers/media/platform/Kconfig
-@@ -158,7 +158,7 @@ config VIDEO_MEM2MEM_DEINTERLACE
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -49,7 +49,7 @@ struct skcipher_ctx {
+ 	struct ablkcipher_request req;
+ };
  
- config VIDEO_SAMSUNG_S5P_G2D
- 	tristate "Samsung S5P and EXYNOS4 G2D 2d graphics accelerator driver"
--	depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
-+	depends on VIDEO_DEV && VIDEO_V4L2 && (ARCH_S5PV210 || ARCH_EXYNOS)
- 	select VIDEOBUF2_DMA_CONTIG
- 	select V4L2_MEM2MEM_DEV
- 	default n
-@@ -168,7 +168,7 @@ config VIDEO_SAMSUNG_S5P_G2D
+-#define MAX_SGL_ENTS ((PAGE_SIZE - sizeof(struct skcipher_sg_list)) / \
++#define MAX_SGL_ENTS ((4096 - sizeof(struct skcipher_sg_list)) / \
+ 		      sizeof(struct scatterlist) - 1)
  
- config VIDEO_SAMSUNG_S5P_JPEG
- 	tristate "Samsung S5P/Exynos3250/Exynos4 JPEG codec driver"
--	depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
-+	depends on VIDEO_DEV && VIDEO_V4L2 && (ARCH_S5PV210 || ARCH_EXYNOS)
- 	select VIDEOBUF2_DMA_CONTIG
- 	select V4L2_MEM2MEM_DEV
- 	---help---
-@@ -177,7 +177,7 @@ config VIDEO_SAMSUNG_S5P_JPEG
- 
- config VIDEO_SAMSUNG_S5P_MFC
- 	tristate "Samsung S5P MFC Video Codec"
--	depends on VIDEO_DEV && VIDEO_V4L2 && (PLAT_S5P || ARCH_EXYNOS)
-+	depends on VIDEO_DEV && VIDEO_V4L2 && (ARCH_S5PV210 || ARCH_EXYNOS)
- 	select VIDEOBUF2_DMA_CONTIG
- 	default n
- 	help
---- a/drivers/media/platform/exynos4-is/Kconfig
-+++ b/drivers/media/platform/exynos4-is/Kconfig
-@@ -2,7 +2,7 @@
- config VIDEO_SAMSUNG_EXYNOS4_IS
- 	bool "Samsung S5P/EXYNOS4 SoC series Camera Subsystem driver"
- 	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
--	depends on (PLAT_S5P || ARCH_EXYNOS)
-+	depends on ARCH_S5PV210 || ARCH_EXYNOS
- 	depends on OF && COMMON_CLK
- 	help
- 	  Say Y here to enable camera host interface devices for
---- a/drivers/media/platform/s5p-tv/Kconfig
-+++ b/drivers/media/platform/s5p-tv/Kconfig
-@@ -8,7 +8,7 @@
- 
- config VIDEO_SAMSUNG_S5P_TV
- 	bool "Samsung TV driver for S5P platform"
--	depends on (PLAT_S5P || ARCH_EXYNOS) && PM_RUNTIME
-+	depends on (ARCH_S5PV210 || ARCH_EXYNOS) && PM_RUNTIME
- 	default n
- 	---help---
- 	  Say Y here to enable selecting the TV output devices for
+ static inline int skcipher_sndbuf(struct sock *sk)
 
 
