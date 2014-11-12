@@ -1,71 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056AbaKLQOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 11:14:54 -0500
-Received: from sauhun.de ([89.238.76.85]:45544 "EHLO pokefinder.org"
+	id S1753247AbaKLQQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 11:16:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752858AbaKLQOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 11:14:53 -0500
-Date: Wed, 12 Nov 2014 17:16:04 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Devin Ryles <devin.ryles@intel.com>
-Cc: Jean Delvare <jdelvare@suse.de>, Jonathan Corbet <corbet@lwn.net>,
-        james.d.ralston@intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, frank.riegel@intel.com
-Subject: Re: [PATCH] SMBUS: Add DeviceIDs for SunrisePoint LP
-Message-ID: <20141112161604.GG4031@katana>
-References: <1415400943.1954.9.camel@localhost.localdomain>
- <20141110074533.20cbd55f@endymion.delvare>
- <1415639581.1954.21.camel@localhost.localdomain>
+	id S1752944AbaKLQQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 11:16:04 -0500
+Message-ID: <546387B8.9050601@redhat.com>
+Date: Wed, 12 Nov 2014 17:15:52 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iJXiJc/TAIT2rh2r"
-Content-Disposition: inline
-In-Reply-To: <1415639581.1954.21.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stephan Mueller <smueller@chronox.de>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        ABI/API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] crypto: AF_ALG: add random number generator support
+References: <4738444.A2vZX1nNCo@tachyon.chronox.de> <1914037.Wy7EiDNG7B@tachyon.chronox.de>
+In-Reply-To: <1914037.Wy7EiDNG7B@tachyon.chronox.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/12/2014 08:05 AM, Stephan Mueller wrote:
+> This patch adds the random number generator support for AF_ALG.
+>
+> A random number generator's purpose is to generate data without
+> requiring the caller to provide any data. Therefore, the AF_ALG
+> interface handler for RNGs only implements a callback handler for
+> recvmsg.
+...
+> +static int rng_recvmsg(struct kiocb *unused, struct socket *sock,
+> +		       struct msghdr *msg, size_t len, int flags)
+> +{
+> +	struct sock *sk = sock->sk;
+> +	struct alg_sock *ask = alg_sk(sk);
+> +	struct rng_ctx *ctx = ask->private;
+> +	int err = -EFAULT;
+> +
+> +	if (0 == len)
 
---iJXiJc/TAIT2rh2r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+if (len == 0)
+	...
 
-On Mon, Nov 10, 2014 at 12:13:01PM -0500, Devin Ryles wrote:
-> From 8386c61977dce52fcdfe7fb279692606f47650bc Mon Sep 17 00:00:00 2001
-> From: Devin Ryles <devin.ryles@intel.com>
-> Date: Wed, 5 Nov 2014 16:30:03 -0500
-> Subject: [PATCH] SMBUS: Add DeviceIDs for SunrisePoint LP
->=20
-> This patch adds the DeviceIDs for SunrisePoint LP
->=20
-> Signed-off-by: Devin Ryles <devin.ryles@intel.com>
+[And also other places.]
 
-Applied to for-next, thanks!
+We don't use Yoda condition style in the kernel.
 
+> +		return 0;
+> +	if (MAXSIZE < len)
+> +		len = MAXSIZE;
+> +
+> +	lock_sock(sk);
+> +	len = crypto_rng_get_bytes(ctx->drng, ctx->result, len);
+> +	if (0 > len)
+> +		goto unlock;
+> +
+> +	err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
+> +	memset(ctx->result, 0, err);
+> +
 
---iJXiJc/TAIT2rh2r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This looks buggy.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+If copy_to_user() fails from within memcpy_toiovec(), we call memset()
+with a negative return value which is interpreted as size_t and thus
+causes a buffer overflow writing beyond ctx->result, no?
 
-iQIcBAEBAgAGBQJUY4fEAAoJEBQN5MwUoCm2vcQP/AqzMX9HmRwGKBhw67GDTnAJ
-z220mZuLkYpxt2RYauN0LfBRTnNYciM2e0eKoerwOltpW4MChY/4OCzsUm1nzMpP
-R79v9Ep/cwwcU8TDFOf/bKeW9jFZTOQMiBoyrb+b83uROrWbggjpHWD5Lbg5oS8I
-czaK63fsGvKJf3I3Df4kSuaa8OQ/oNpAJcLDiE43fWBw8TloYbNX4otrSqybDO8V
-bh+jByMMqflUr99hEIKr6berbH77RkL79JRFaKmOC8wSGxCaZrWoIP9zjZdGJOjG
-zKdwEntz/V+Mh3HYufjpCcUXmjqljnzE0U/fTVEMN23ZubDZtEOs7558RFZqeoMD
-NKnm0ipDGBdURWQKzV5diqvHiBrZpRNrogZpA7S9zeFzSCNeiot2EHcH2eaKM6LX
-PL1bdrSU9z/uxAx0EYCOCamrOjp/gFJHjyoXME6FrnA1VUD6rD6P8n1GFkyjWvu0
-Nb4WRuPI3vEMbko47xJ1sYPCZ3+dl8ulqZVDO0sdPJuHOKMuyq2eBP1b67R02w/V
-3866KU8g4KQuwiGdPZ4ZVSM/WV5J+V6gFHF+PrVQWTyLpCOULus8HjE9aIBwPaFN
-2NDyp17Xu4U3eIjwFstl1K85zX/A44w7fZU6hc0wk6ewxQLdaW6gFX9dQxbhRsxe
-94pnb5mCLeuzE2m2zPQF
-=YOFB
------END PGP SIGNATURE-----
+If it succeeds, we call memset(ctx->result, 0, 0) .....
 
---iJXiJc/TAIT2rh2r--
+> +unlock:
+> +	release_sock(sk);
+> +
+> +	return err ? err : len;
+> +}
+> +
+> +static struct proto_ops algif_rng_ops = {
+> +	.family		=	PF_ALG,
+> +
+> +	.connect	=	sock_no_connect,
+> +	.socketpair	=	sock_no_socketpair,
+> +	.getname	=	sock_no_getname,
+> +	.ioctl		=	sock_no_ioctl,
+> +	.listen		=	sock_no_listen,
+> +	.shutdown	=	sock_no_shutdown,
+> +	.getsockopt	=	sock_no_getsockopt,
+> +	.mmap		=	sock_no_mmap,
+> +	.bind		=	sock_no_bind,
+> +	.accept		=	sock_no_accept,
+> +	.setsockopt	=	sock_no_setsockopt,
+> +	.poll		=	sock_no_poll,
+> +	.sendmsg	=	sock_no_sendmsg,
+> +	.sendpage	=	sock_no_sendpage,
+> +
+> +	.release	=	af_alg_release,
+> +	.recvmsg	=	rng_recvmsg,
+> +};
+> +
+> +static void *rng_bind(const char *name, u32 type, u32 mask)
+> +{
+> +	return crypto_alloc_rng(name, type, mask);
+> +}
+> +
+> +static void rng_release(void *private)
+> +{
+> +	crypto_free_rng(private);
+> +}
+> +
+> +static void rng_sock_destruct(struct sock *sk)
+> +{
+> +	struct alg_sock *ask = alg_sk(sk);
+> +	struct rng_ctx *ctx = ask->private;
+> +
+> +	memset(ctx->result, 0, MAXSIZE);
+
+memset(ctx->result, 0, sizeof(ctx->result));
+
+> +	sock_kfree_s(sk, ctx, ctx->len);
+> +	af_alg_release_parent(sk);
+> +}
+> +
+> +static int rng_accept_parent(void *private, struct sock *sk)
+> +{
+> +	struct rng_ctx *ctx;
+> +	struct alg_sock *ask = alg_sk(sk);
+> +	unsigned int len = sizeof(*ctx);
+> +	int seedsize = crypto_rng_seedsize(private);
+> +	int ret = -ENOMEM;
+> +
+> +	ctx = sock_kmalloc(sk, len, GFP_KERNEL);
+> +	if (!ctx)
+> +		return -ENOMEM;
+> +	memset(ctx->result, 0, MAXSIZE);
+
+Ditto...
+
+> +	ctx->len = len;
+> +
+> +	if (seedsize) {
+> +		u8 *buf = kmalloc(seedsize, GFP_KERNEL);
+> +		if (!buf)
+> +			goto err;
+> +		get_random_bytes(buf, seedsize);
+> +		ret = crypto_rng_reset(private, buf, len);
+> +		kzfree(buf);
+
