@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006AbaKLD0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:26:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59484 "EHLO
+	id S933281AbaKLBdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:33:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59476 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933289AbaKLBdg (ORCPT
+	with ESMTP id S933264AbaKLBd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:33:36 -0500
+	Tue, 11 Nov 2014 20:33:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>
-Subject: [PATCH 3.17 266/319] tty/vt: dont set font mappings on vc not supporting this
-Date: Wed, 12 Nov 2014 10:16:44 +0900
-Message-Id: <20141112011036.811217548@linuxfoundation.org>
+        Jeff Epler <jepler@unpythonic.net>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.17 264/319] PCI: Rename sysfs enabled file back to enable
+Date: Wed, 12 Nov 2014 10:16:42 +0900
+Message-Id: <20141112011036.486491431@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,44 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 9e326f78713a4421fe11afc2ddeac07698fac131 upstream.
+commit d8e7d53a2fc14e0830ab728cb84ee19933d3ac8d upstream.
 
-We can call this function for a dummy console that doesn't support
-setting the font mapping, which will result in a null ptr BUG. So check
-for this case and return error for consoles w/o font mapping support.
+Back in commit 5136b2da770d ("PCI: convert bus code to use dev_groups"),
+I misstyped the 'enable' sysfs filename as 'enabled', which broke the
+userspace API.  This patch fixes that issue by renaming the file back.
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=59321
-Signed-off-by: Imre Deak <imre.deak@intel.com>
+Fixes: 5136b2da770d ("PCI: convert bus code to use dev_groups")
+Reported-by: Jeff Epler <jepler@unpythonic.net>
+Tested-by: Jeff Epler <jepler@unpythonic.net>	# on v3.14-rt
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
 ---
- drivers/tty/vt/consolemap.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/pci/pci-sysfs.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/tty/vt/consolemap.c
-+++ b/drivers/tty/vt/consolemap.c
-@@ -539,6 +539,12 @@ int con_set_unimap(struct vc_data *vc, u
- 
- 	/* Save original vc_unipagdir_loc in case we allocate a new one */
- 	p = *vc->vc_uni_pagedir_loc;
-+
-+	if (!p) {
-+		err = -EINVAL;
-+
-+		goto out_unlock;
-+	}
- 	
- 	if (p->refcount > 1) {
- 		int j, k;
-@@ -623,6 +629,7 @@ int con_set_unimap(struct vc_data *vc, u
- 		set_inverse_transl(vc, p, i); /* Update inverse translations */
- 	set_inverse_trans_unicode(vc, p);
- 
-+out_unlock:
- 	console_unlock();
- 	return err;
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -185,7 +185,7 @@ static ssize_t modalias_show(struct devi
  }
+ static DEVICE_ATTR_RO(modalias);
+ 
+-static ssize_t enabled_store(struct device *dev, struct device_attribute *attr,
++static ssize_t enable_store(struct device *dev, struct device_attribute *attr,
+ 			     const char *buf, size_t count)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -210,7 +210,7 @@ static ssize_t enabled_store(struct devi
+ 	return result < 0 ? result : count;
+ }
+ 
+-static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
++static ssize_t enable_show(struct device *dev, struct device_attribute *attr,
+ 			    char *buf)
+ {
+ 	struct pci_dev *pdev;
+@@ -218,7 +218,7 @@ static ssize_t enabled_show(struct devic
+ 	pdev = to_pci_dev(dev);
+ 	return sprintf(buf, "%u\n", atomic_read(&pdev->enable_cnt));
+ }
+-static DEVICE_ATTR_RW(enabled);
++static DEVICE_ATTR_RW(enable);
+ 
+ #ifdef CONFIG_NUMA
+ static ssize_t numa_node_show(struct device *dev, struct device_attribute *attr,
+@@ -564,7 +564,7 @@ static struct attribute *pci_dev_attrs[]
+ #endif
+ 	&dev_attr_dma_mask_bits.attr,
+ 	&dev_attr_consistent_dma_mask_bits.attr,
+-	&dev_attr_enabled.attr,
++	&dev_attr_enable.attr,
+ 	&dev_attr_broken_parity_status.attr,
+ 	&dev_attr_msi_bus.attr,
+ #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
 
 
