@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaKLBXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:23:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58645 "EHLO
+	id S1753845AbaKLBXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:23:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58661 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762AbaKLBXQ (ORCPT
+	with ESMTP id S1752417AbaKLBX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:23:16 -0500
+	Tue, 11 Nov 2014 20:23:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thorsten Knabe <linux@thorsten-knabe.de>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3.17 069/319] um: ubd: Fix for processes stuck in D state forever
-Date: Wed, 12 Nov 2014 10:13:27 +0900
-Message-Id: <20141112011004.011938120@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.17 080/319] iommu: Rework iommu_group_get_for_pci_dev()
+Date: Wed, 12 Nov 2014 10:13:38 +0900
+Message-Id: <20141112011005.806108398@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,46 +29,243 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thorsten Knabe <linux@thorsten-knabe.de>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 2a2361228c5e6d8c1733f00653481de918598e50 upstream.
+commit f096c061f5525d1b35a65b793057b52061dcb486 upstream.
 
-Starting with Linux 3.12 processes get stuck in D state forever in
-UserModeLinux under sync heavy workloads. This bug was introduced by
-commit 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport).
-Fix bug by adding a check if FLUSH request was successfully submitted to
-the I/O thread and keeping the FLUSH request on the request queue on
-submission failures.
+It turns out that our assumption that aliases are always to the same
+slot isn't true.  One particular platform reports an IVRS alias of the
+SATA controller (00:11.0) for the legacy IDE controller (00:14.1).
+When we hit this, we attempt to use a single IOMMU group for
+everything on the same bus, which in this case is the root complex.
+We already have multiple groups defined for the root complex by this
+point, resulting in multiple WARN_ON hits.
 
-Fixes: 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport)
-Signed-off-by: Thorsten Knabe <linux@thorsten-knabe.de>
-Signed-off-by: Richard Weinberger <richard@nod.at>
+This patch makes these sorts of aliases work again with IOMMU groups
+by reworking how we search through the PCI address space to find
+existing groups.  This should also now handle looped dependencies and
+all sorts of crazy inter-dependencies that we'll likely never see.
+
+The recursion used here should never be very deep.  It's unlikely to
+have individual aliases and only theoretical that we'd ever see a
+chain where one alias causes us to search through to yet another
+alias.  We're also only dealing with PCIe device on a single bus,
+which means we'll typically only see multiple slots in use on the root
+complex.  Loops are also a theoretically possibility, which I've
+tested using fake DMA alias quirks and prevent from causing problems
+using a bitmap of the devfn space that's been visited.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/um/drivers/ubd_kern.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/iommu/iommu.c |  163 +++++++++++++++++++++++++++++---------------------
+ 1 file changed, 96 insertions(+), 67 deletions(-)
 
---- a/arch/um/drivers/ubd_kern.c
-+++ b/arch/um/drivers/ubd_kern.c
-@@ -1277,7 +1277,7 @@ static void do_ubd_request(struct reques
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -30,6 +30,7 @@
+ #include <linux/notifier.h>
+ #include <linux/err.h>
+ #include <linux/pci.h>
++#include <linux/bitops.h>
+ #include <trace/events/iommu.h>
  
- 	while(1){
- 		struct ubd *dev = q->queuedata;
--		if(dev->end_sg == 0){
-+		if(dev->request == NULL){
- 			struct request *req = blk_fetch_request(q);
- 			if(req == NULL)
- 				return;
-@@ -1299,7 +1299,8 @@ static void do_ubd_request(struct reques
- 				return;
- 			}
- 			prepare_flush_request(req, io_req);
--			submit_request(io_req, dev);
-+			if (submit_request(io_req, dev) == false)
-+				return;
- 		}
+ static struct kset *iommu_group_kset;
+@@ -519,6 +520,9 @@ int iommu_group_id(struct iommu_group *g
+ }
+ EXPORT_SYMBOL_GPL(iommu_group_id);
  
- 		while(dev->start_sg < dev->end_sg){
++static struct iommu_group *get_pci_alias_group(struct pci_dev *pdev,
++					       unsigned long *devfns);
++
+ /*
+  * To consider a PCI device isolated, we require ACS to support Source
+  * Validation, Request Redirection, Completer Redirection, and Upstream
+@@ -529,6 +533,86 @@ EXPORT_SYMBOL_GPL(iommu_group_id);
+  */
+ #define REQ_ACS_FLAGS   (PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
+ 
++/*
++ * For multifunction devices which are not isolated from each other, find
++ * all the other non-isolated functions and look for existing groups.  For
++ * each function, we also need to look for aliases to or from other devices
++ * that may already have a group.
++ */
++static struct iommu_group *get_pci_function_alias_group(struct pci_dev *pdev,
++							unsigned long *devfns)
++{
++	struct pci_dev *tmp = NULL;
++	struct iommu_group *group;
++
++	if (!pdev->multifunction || pci_acs_enabled(pdev, REQ_ACS_FLAGS))
++		return NULL;
++
++	for_each_pci_dev(tmp) {
++		if (tmp == pdev || tmp->bus != pdev->bus ||
++		    PCI_SLOT(tmp->devfn) != PCI_SLOT(pdev->devfn) ||
++		    pci_acs_enabled(tmp, REQ_ACS_FLAGS))
++			continue;
++
++		group = get_pci_alias_group(tmp, devfns);
++		if (group) {
++			pci_dev_put(tmp);
++			return group;
++		}
++	}
++
++	return NULL;
++}
++
++/*
++ * Look for aliases to or from the given device for exisiting groups.  The
++ * dma_alias_devfn only supports aliases on the same bus, therefore the search
++ * space is quite small (especially since we're really only looking at pcie
++ * device, and therefore only expect multiple slots on the root complex or
++ * downstream switch ports).  It's conceivable though that a pair of
++ * multifunction devices could have aliases between them that would cause a
++ * loop.  To prevent this, we use a bitmap to track where we've been.
++ */
++static struct iommu_group *get_pci_alias_group(struct pci_dev *pdev,
++					       unsigned long *devfns)
++{
++	struct pci_dev *tmp = NULL;
++	struct iommu_group *group;
++
++	if (test_and_set_bit(pdev->devfn & 0xff, devfns))
++		return NULL;
++
++	group = iommu_group_get(&pdev->dev);
++	if (group)
++		return group;
++
++	for_each_pci_dev(tmp) {
++		if (tmp == pdev || tmp->bus != pdev->bus)
++			continue;
++
++		/* We alias them or they alias us */
++		if (((pdev->dev_flags & PCI_DEV_FLAGS_DMA_ALIAS_DEVFN) &&
++		     pdev->dma_alias_devfn == tmp->devfn) ||
++		    ((tmp->dev_flags & PCI_DEV_FLAGS_DMA_ALIAS_DEVFN) &&
++		     tmp->dma_alias_devfn == pdev->devfn)) {
++
++			group = get_pci_alias_group(tmp, devfns);
++			if (group) {
++				pci_dev_put(tmp);
++				return group;
++			}
++
++			group = get_pci_function_alias_group(tmp, devfns);
++			if (group) {
++				pci_dev_put(tmp);
++				return group;
++			}
++		}
++	}
++
++	return NULL;
++}
++
+ struct group_for_pci_data {
+ 	struct pci_dev *pdev;
+ 	struct iommu_group *group;
+@@ -557,7 +641,7 @@ static struct iommu_group *iommu_group_g
+ 	struct group_for_pci_data data;
+ 	struct pci_bus *bus;
+ 	struct iommu_group *group = NULL;
+-	struct pci_dev *tmp;
++	u64 devfns[4] = { 0 };
+ 
+ 	/*
+ 	 * Find the upstream DMA alias for the device.  A device must not
+@@ -591,76 +675,21 @@ static struct iommu_group *iommu_group_g
+ 	}
+ 
+ 	/*
+-	 * Next we need to consider DMA alias quirks.  If one device aliases
+-	 * to another, they should be grouped together.  It's theoretically
+-	 * possible that aliases could create chains of devices where each
+-	 * device aliases another device.  If we then factor in multifunction
+-	 * ACS grouping requirements, each alias could incorporate a new slot
+-	 * with multiple functions, each with aliases.  This is all extremely
+-	 * unlikely as DMA alias quirks are typically only used for PCIe
+-	 * devices where we usually have a single slot per bus.  Furthermore,
+-	 * the alias quirk is usually to another function within the slot
+-	 * (and ACS multifunction is not supported) or to a different slot
+-	 * that doesn't physically exist.  The likely scenario is therefore
+-	 * that everything on the bus gets grouped together.  To reduce the
+-	 * problem space, share the IOMMU group for all devices on the bus
+-	 * if a DMA alias quirk is present on the bus.
+-	 */
+-	tmp = NULL;
+-	for_each_pci_dev(tmp) {
+-		if (tmp->bus != pdev->bus ||
+-		    !(tmp->dev_flags & PCI_DEV_FLAGS_DMA_ALIAS_DEVFN))
+-			continue;
+-
+-		pci_dev_put(tmp);
+-		tmp = NULL;
+-
+-		/* We have an alias quirk, search for an existing group */
+-		for_each_pci_dev(tmp) {
+-			struct iommu_group *group_tmp;
+-
+-			if (tmp->bus != pdev->bus)
+-				continue;
+-
+-			group_tmp = iommu_group_get(&tmp->dev);
+-			if (!group) {
+-				group = group_tmp;
+-				continue;
+-			}
+-
+-			if (group_tmp) {
+-				WARN_ON(group != group_tmp);
+-				iommu_group_put(group_tmp);
+-			}
+-		}
+-
+-		return group ? group : iommu_group_alloc();
+-	}
+-
+-	/*
+-	 * Non-multifunction devices or multifunction devices supporting
+-	 * ACS get their own group.
++	 * Look for existing groups on device aliases.  If we alias another
++	 * device or another device aliases us, use the same group.
+ 	 */
+-	if (!pdev->multifunction || pci_acs_enabled(pdev, REQ_ACS_FLAGS))
+-		return iommu_group_alloc();
++	group = get_pci_alias_group(pdev, (unsigned long *)devfns);
++	if (group)
++		return group;
+ 
+ 	/*
+-	 * Multifunction devices not supporting ACS share a group with other
+-	 * similar devices in the same slot.
++	 * Look for existing groups on non-isolated functions on the same
++	 * slot and aliases of those funcions, if any.  No need to clear
++	 * the search bitmap, the tested devfns are still valid.
+ 	 */
+-	tmp = NULL;
+-	for_each_pci_dev(tmp) {
+-		if (tmp == pdev || tmp->bus != pdev->bus ||
+-		    PCI_SLOT(tmp->devfn) !=  PCI_SLOT(pdev->devfn) ||
+-		    pci_acs_enabled(tmp, REQ_ACS_FLAGS))
+-			continue;
+-
+-		group = iommu_group_get(&tmp->dev);
+-		if (group) {
+-			pci_dev_put(tmp);
+-			return group;
+-		}
+-	}
++	group = get_pci_function_alias_group(pdev, (unsigned long *)devfns);
++	if (group)
++		return group;
+ 
+ 	/* No shared group found, allocate new */
+ 	return iommu_group_alloc();
 
 
