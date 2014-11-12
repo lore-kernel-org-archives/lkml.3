@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216AbaKLBZQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:25:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58813 "EHLO
+	id S932094AbaKLBZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:25:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58797 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791AbaKLBZM (ORCPT
+	with ESMTP id S932075AbaKLBZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:25:12 -0500
+	Tue, 11 Nov 2014 20:25:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.17 115/319] media: siano: add support for PCTV 77e
-Date: Wed, 12 Nov 2014 10:14:13 +0900
-Message-Id: <20141112011011.623538179@linuxfoundation.org>
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.17 068/319] sched: Use dl_bw_of() under RCU read lock
+Date: Wed, 12 Nov 2014 10:13:26 +0900
+Message-Id: <20141112011003.870141157@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,57 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Kirill Tkhai <ktkhai@parallels.com>
 
-commit 29bbb7bd0a65e01a0423e1df764676119b71ecb3 upstream.
+commit 66339c31bc3978d5fff9c4b4cb590a861def4db2 upstream.
 
-Add support for PCTV microStick (77e) device that uses a sms1140
-chipset.
+dl_bw_of() dereferences rq->rd which has to have RCU read lock held.
+Probability of use-after-free isn't zero here.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Also add lockdep assert into dl_bw_cpus().
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140922183624.11015.71558.stgit@localhost
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/common/siano/sms-cards.c |    6 ++++++
- drivers/media/common/siano/sms-cards.h |    1 +
- drivers/media/usb/siano/smsusb.c       |    2 ++
- 3 files changed, 9 insertions(+)
+ kernel/sched/core.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/media/common/siano/sms-cards.c
-+++ b/drivers/media/common/siano/sms-cards.c
-@@ -157,6 +157,12 @@ static struct sms_board sms_boards[] = {
- 		.type = SMS_DENVER_2160,
- 		.default_mode = DEVICE_MODE_DAB_TDMB,
- 	},
-+	[SMS1XXX_BOARD_PCTV_77E] = {
-+		.name	= "Hauppauge microStick 77e",
-+		.type	= SMS_NOVA_B0,
-+		.fw[DEVICE_MODE_DVBT_BDA] = SMS_FW_DVB_NOVA_12MHZ_B0,
-+		.default_mode = DEVICE_MODE_DVBT_BDA,
-+	},
- };
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1977,6 +1977,8 @@ unsigned long to_ratio(u64 period, u64 r
+ #ifdef CONFIG_SMP
+ inline struct dl_bw *dl_bw_of(int i)
+ {
++	rcu_lockdep_assert(rcu_read_lock_sched_held(),
++			   "sched RCU must be held");
+ 	return &cpu_rq(i)->rd->dl_bw;
+ }
  
- struct sms_board *sms_get_board(unsigned id)
---- a/drivers/media/common/siano/sms-cards.h
-+++ b/drivers/media/common/siano/sms-cards.h
-@@ -45,6 +45,7 @@
- #define SMS1XXX_BOARD_SIANO_RIO		18
- #define SMS1XXX_BOARD_SIANO_DENVER_1530	19
- #define SMS1XXX_BOARD_SIANO_DENVER_2160 20
-+#define SMS1XXX_BOARD_PCTV_77E		21
+@@ -1985,6 +1987,8 @@ static inline int dl_bw_cpus(int i)
+ 	struct root_domain *rd = cpu_rq(i)->rd;
+ 	int cpus = 0;
  
- struct sms_board_gpio_cfg {
- 	int lna_vhf_exist;
---- a/drivers/media/usb/siano/smsusb.c
-+++ b/drivers/media/usb/siano/smsusb.c
-@@ -655,6 +655,8 @@ static const struct usb_device_id smsusb
- 		.driver_info = SMS1XXX_BOARD_ONDA_MDTV_DATA_CARD },
- 	{ USB_DEVICE(0x3275, 0x0080),
- 		.driver_info = SMS1XXX_BOARD_SIANO_RIO },
-+	{ USB_DEVICE(0x2013, 0x0257),
-+		.driver_info = SMS1XXX_BOARD_PCTV_77E },
- 	{ } /* Terminating entry */
- 	};
++	rcu_lockdep_assert(rcu_read_lock_sched_held(),
++			   "sched RCU must be held");
+ 	for_each_cpu_and(i, rd->span, cpu_active_mask)
+ 		cpus++;
  
+@@ -7580,6 +7584,8 @@ static int sched_dl_global_constraints(v
+ 	int cpu, ret = 0;
+ 	unsigned long flags;
+ 
++	rcu_read_lock();
++
+ 	/*
+ 	 * Here we want to check the bandwidth not being set to some
+ 	 * value smaller than the currently allocated bandwidth in
+@@ -7601,6 +7607,8 @@ static int sched_dl_global_constraints(v
+ 			break;
+ 	}
+ 
++	rcu_read_unlock();
++
+ 	return ret;
+ }
+ 
+@@ -7616,6 +7624,7 @@ static void sched_dl_do_global(void)
+ 	if (global_rt_runtime() != RUNTIME_INF)
+ 		new_bw = to_ratio(global_rt_period(), global_rt_runtime());
+ 
++	rcu_read_lock();
+ 	/*
+ 	 * FIXME: As above...
+ 	 */
+@@ -7626,6 +7635,7 @@ static void sched_dl_do_global(void)
+ 		dl_b->bw = new_bw;
+ 		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+ 	}
++	rcu_read_unlock();
+ }
+ 
+ static int sched_rt_global_validate(void)
 
 
