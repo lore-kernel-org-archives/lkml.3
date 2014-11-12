@@ -1,138 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaKLLkL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 06:40:11 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:7515 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042AbaKLLkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 06:40:07 -0500
+	id S1752635AbaKLLlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 06:41:17 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:20177 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaKLLlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 06:41:15 -0500
 X-IronPort-AV: E=Sophos;i="5.07,368,1413244800"; 
-   d="scan'208";a="191920751"
-Date: Wed, 12 Nov 2014 11:39:51 +0000
+   d="scan'208";a="191920925"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: <xen-devel@lists.xensource.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>
-Subject: [PATCH v9 0/13] introduce GNTTABOP_cache_flush
-Message-ID: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v9 04/13] arm64: introduce is_device_dma_coherent
+Date: Wed, 12 Nov 2014 11:40:45 +0000
+Message-ID: <1415792454-23161-4-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series introduces support for GNTTABOP_cache_flush to perform
-cache maintenance operation on foreign pages and reverts the current
-code based on XENFEAT_grant_map_identity.
+Introduce a boolean flag and an accessor function to check whether a
+device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
 
-It also provides a very slow fallback by bouncing on the swiotlb buffer,
-in case the hypercall is not available.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+---
+ arch/arm64/include/asm/device.h      |    1 +
+ arch/arm64/include/asm/dma-mapping.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
-v7 introduces a flag named dma_coherent in dev_archdata and an accessor
-function named is_device_dma_coherent in asm/dma-mapping.h under arm and
-arm64.
+diff --git a/arch/arm64/include/asm/device.h b/arch/arm64/include/asm/device.h
+index cf98b36..243ef25 100644
+--- a/arch/arm64/include/asm/device.h
++++ b/arch/arm64/include/asm/device.h
+@@ -21,6 +21,7 @@ struct dev_archdata {
+ #ifdef CONFIG_IOMMU_API
+ 	void *iommu;			/* private IOMMU data */
+ #endif
++	bool dma_coherent;
+ };
+ 
+ struct pdev_archdata {
+diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+index adeae3f..e213dc4 100644
+--- a/arch/arm64/include/asm/dma-mapping.h
++++ b/arch/arm64/include/asm/dma-mapping.h
+@@ -54,11 +54,17 @@ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+ 
+ static inline int set_arch_dma_coherent_ops(struct device *dev)
+ {
++	dev->archdata.dma_coherent = true;
+ 	set_dma_ops(dev, &coherent_swiotlb_dma_ops);
+ 	return 0;
+ }
+ #define set_arch_dma_coherent_ops	set_arch_dma_coherent_ops
+ 
++static inline bool is_device_dma_coherent(struct device *dev)
++{
++	return dev->archdata.dma_coherent;
++}
++
+ #include <asm-generic/dma-mapping-common.h>
+ 
+ static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+-- 
+1.7.10.4
 
-
-Changes in v9:
-- remove BUG_ON from the loop in dma_cache_maint;
-- add static inline for xen_dma_unmap_page, xen_dma_sync_single_for_cpu,
-  xen_dma_sync_single_for_device;
-- map_page is always present, don't check whether it's implemented;
-- use bool local for clarity;
-- add an in-code comment.
-
-Changes in v8:
-- remove code duplication in mm32.c by moving the pfn_valid check in
-page-coherent.h;
-- add a dma_addr_t dev_addr argument to xen_dma_map_page;
-- use hypercall to flush caches in map_page;
-- pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu;
-- remove BUG_ON in xen_bus_to_phys.
-
-Changes in v7:
-- rebased on 3.18-rc1;
-- rename is_dma_coherent to is_device_dma_coherent and move it to
-asm/dma-mapping.h on arm and arm64;
-- introduce a dma_coherent flag on arm and arm64;
-- set the flags from set_arch_dma_coherent_ops.
-
-Changes in v6:
-- rename xen_is_dma_coherent to is_dma_coherent;
-- use of_dma_is_coherent to detect the dma coherency of a device;
-- remove arch/arm64/include/asm/xen/page-coherent.h, include
-../../arm/include/asm/xen/page-coherent.h instead;
-- fix indentation.
-
-Changes in v5:
-- introduce xen_is_dma_coherent as a xen specific function;
-- call xen_is_dma_coherent instead of is_dma_coherent;
-- introduce xen_is_dma_coherent to
-arch/arm64/include/asm/xen/page-coherent.h;
-- do not remove arch/arm64/include/asm/xen/page-coherent.h, add
-the missing dma_ops calls from it;
-- fix indentation;
-- rename hypercall_flush to hypercall_cflush;
-- remove spurious change.
-
-Changes in v4:
-- remove outer_*_range call;
-- introduce is_dma_coherent;
-- use is_dma_coherent in arch/arm/xen/mm32.c;
-- merge xen/mm32.c into xen/mm.c;
-- xen/arm/arm64: introduce xen_arch_need_swiotlb;
-- avoid bouncing dma map operations that involve foreign grants and
-non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
-
-Changes in v3:
-- fix the cache maintenance op call to match what Linux does natively;
-- update the hypercall interface to match Xen.
-
-Changes in v2:
-- remove the definition of XENFEAT_grant_map_identity;
-- update the hypercall interface to match Xen;
-- call the interface on a single page at a time.
-
-
-
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git cache_flush_v9
-
-Stefano Stabellini (13):
-      xen/arm: remove handling of XENFEAT_grant_map_identity
-      xen/arm: remove outer_*_range call
-      xen/arm: if(pfn_valid(pfn)) call native dma_ops
-      arm64: introduce is_device_dma_coherent
-      arm: introduce is_device_dma_coherent
-      xen/arm: use is_device_dma_coherent
-      xen: add a dma_addr_t dev_addr argument to xen_dma_map_page
-      xen/arm: use hypercall to flush caches in map_page
-      xen/arm/arm64: merge xen/mm32.c into xen/mm.c
-      xen/arm/arm64: introduce xen_arch_need_swiotlb
-      xen/arm: introduce GNTTABOP_cache_flush
-      swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
-      swiotlb-xen: remove BUG_ON in xen_bus_to_phys
-
- arch/arm/include/asm/device.h              |    1 +
- arch/arm/include/asm/dma-mapping.h         |    6 +
- arch/arm/include/asm/xen/page-coherent.h   |   66 +++++++--
- arch/arm/include/asm/xen/page.h            |    4 +
- arch/arm/xen/Makefile                      |    2 +-
- arch/arm/xen/enlighten.c                   |    5 -
- arch/arm/xen/mm.c                          |  121 +++++++++++++++++
- arch/arm/xen/mm32.c                        |  202 ----------------------------
- arch/arm64/include/asm/device.h            |    1 +
- arch/arm64/include/asm/dma-mapping.h       |    6 +
- arch/arm64/include/asm/xen/page-coherent.h |   44 +-----
- arch/x86/include/asm/xen/page-coherent.h   |    4 +-
- arch/x86/include/asm/xen/page.h            |    7 +
- drivers/xen/swiotlb-xen.c                  |   19 +--
- include/xen/interface/features.h           |    3 -
- include/xen/interface/grant_table.h        |   19 +++
- 16 files changed, 237 insertions(+), 273 deletions(-)
- delete mode 100644 arch/arm/xen/mm32.c
