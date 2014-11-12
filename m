@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965376AbaKLBp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:45:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60603 "EHLO
+	id S965392AbaKLBpc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:45:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60608 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965344AbaKLBpX (ORCPT
+	with ESMTP id S965374AbaKLBp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:45:23 -0500
+	Tue, 11 Nov 2014 20:45:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andrea Adami <andrea.adami@gmail.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 147/203] spi: pxa2xx: toggle clocks on suspend if not disabled by runtime PM
-Date: Wed, 12 Nov 2014 10:16:57 +0900
-Message-Id: <20141112011549.463633645@linuxfoundation.org>
+        Torben Hohn <torbenh@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 148/203] usb: musb: cppi41: restart hrtimer only if not yet done
+Date: Wed, 12 Nov 2014 10:16:58 +0900
+Message-Id: <20141112011549.504129549@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,71 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 2b9375b91bef65b837bed61a05fb387159b38ddf upstream.
+commit d2e6d62c9cbbc2da4211f672dbeea08960e29a80 upstream.
 
-If PM_RUNTIME is enabled, it is easy to trigger the following backtrace
-on pxa2xx hosts:
+commit c58d80f52 ("usb: musb: Ensure that cppi41 timer gets armed on
+premature DMA TX irq") fixed hrtimer scheduling bug. There is one left
+which does not trigger that often.
+The following scenario is still possible:
 
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1 at /home/lumag/linux/arch/arm/mach-pxa/clock.c:35 clk_disable+0xa0/0xa8()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-00007-g1b3d2ee-dirty #104
-[<c000de68>] (unwind_backtrace) from [<c000c078>] (show_stack+0x10/0x14)
-[<c000c078>] (show_stack) from [<c001d75c>] (warn_slowpath_common+0x6c/0x8c)
-[<c001d75c>] (warn_slowpath_common) from [<c001d818>] (warn_slowpath_null+0x1c/0x24)
-[<c001d818>] (warn_slowpath_null) from [<c0015e80>] (clk_disable+0xa0/0xa8)
-[<c0015e80>] (clk_disable) from [<c02507f8>] (pxa2xx_spi_suspend+0x2c/0x34)
-[<c02507f8>] (pxa2xx_spi_suspend) from [<c0200360>] (platform_pm_suspend+0x2c/0x54)
-[<c0200360>] (platform_pm_suspend) from [<c0207fec>] (dpm_run_callback.isra.14+0x2c/0x74)
-[<c0207fec>] (dpm_run_callback.isra.14) from [<c0209254>] (__device_suspend+0x120/0x2f8)
-[<c0209254>] (__device_suspend) from [<c0209a94>] (dpm_suspend+0x50/0x208)
-[<c0209a94>] (dpm_suspend) from [<c00455ac>] (suspend_devices_and_enter+0x8c/0x3a0)
-[<c00455ac>] (suspend_devices_and_enter) from [<c0045ad4>] (pm_suspend+0x214/0x2a8)
-[<c0045ad4>] (pm_suspend) from [<c04b5c34>] (test_suspend+0x14c/0x1dc)
-[<c04b5c34>] (test_suspend) from [<c000880c>] (do_one_initcall+0x8c/0x1fc)
-[<c000880c>] (do_one_initcall) from [<c04aecfc>] (kernel_init_freeable+0xf4/0x1b4)
-[<c04aecfc>] (kernel_init_freeable) from [<c0378078>] (kernel_init+0x8/0xec)
-[<c0378078>] (kernel_init) from [<c0009590>] (ret_from_fork+0x14/0x24)
----[ end trace 46524156d8faa4f6 ]---
+    lock(&x->lock);
+    hrtimer_start(&x->t);
+    unlock(&x->lock);
 
-This happens because suspend function tries to disable a clock that is
-already disabled by runtime_suspend callback. Add if
-(!pm_runtime_suspended()) checks to suspend/resume path.
+expires:
+    t->function();
+                                lock(&x->lock);
+    lock(&x->lock);             if (!hrtimer_queued(&x->t))
+                                        hrtimer_start(&x->t);
+                                unlock(&x->lock);
 
-Fixes: 7d94a505858 (spi/pxa2xx: add support for runtime PM)
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Reported-by: Andrea Adami <andrea.adami@gmail.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+    if (!list_empty(x->early_tx_list))
+           ret = HRTIMER_RESTART;
+->         hrtimer_forward_now(...)
+    } else
+           ret = HRTIMER_NORESTART;
+
+    unlock(&x->lock);
+
+and the timer callback returns HRTIMER_RESTART for an armed timer. This
+is wrong and we run into the BUG_ON() in __run_hrtimer().
+This can happens on SMP or PREEMPT-RT.
+The patch fixes the problem by only starting the timer if the timer is
+not yet queued.
+
+Reported-by: Torben Hohn <torbenh@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bigeasy: collected information and created a patch + description based
+          on it]
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-pxa2xx.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/musb/musb_cppi41.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1280,7 +1280,9 @@ static int pxa2xx_spi_suspend(struct dev
- 	if (status != 0)
- 		return status;
- 	write_SSCR0(0, drv_data->ioaddr);
--	clk_disable_unprepare(ssp->clk);
-+
-+	if (!pm_runtime_suspended(dev))
-+		clk_disable_unprepare(ssp->clk);
+--- a/drivers/usb/musb/musb_cppi41.c
++++ b/drivers/usb/musb/musb_cppi41.c
+@@ -190,7 +190,8 @@ static enum hrtimer_restart cppi41_reche
+ 		}
+ 	}
  
- 	return 0;
- }
-@@ -1294,7 +1296,8 @@ static int pxa2xx_spi_resume(struct devi
- 	pxa2xx_spi_dma_resume(drv_data);
- 
- 	/* Enable the SSP clock */
--	clk_prepare_enable(ssp->clk);
-+	if (!pm_runtime_suspended(dev))
-+		clk_prepare_enable(ssp->clk);
- 
- 	/* Restore LPSS private register bits */
- 	lpss_ssp_setup(drv_data);
+-	if (!list_empty(&controller->early_tx_list)) {
++	if (!list_empty(&controller->early_tx_list) &&
++	    !hrtimer_is_queued(&controller->early_tx)) {
+ 		ret = HRTIMER_RESTART;
+ 		hrtimer_forward_now(&controller->early_tx,
+ 				ktime_set(0, 150 * NSEC_PER_USEC));
 
 
