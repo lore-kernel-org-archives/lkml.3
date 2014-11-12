@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965701AbaKLBt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:49:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60899 "EHLO
+	id S965717AbaKLBtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:49:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60902 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965684AbaKLBtX (ORCPT
+	with ESMTP id S965246AbaKLBtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:49:23 -0500
+	Tue, 11 Nov 2014 20:49:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.10 011/123] fs: make cont_expand_zero interruptible
-Date: Wed, 12 Nov 2014 10:16:17 +0900
-Message-Id: <20141112011719.494631391@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 002/123] ipv4: fix nexthop attlen check in fib_nh_match
+Date: Wed, 12 Nov 2014 10:16:08 +0900
+Message-Id: <20141112011719.100314436@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,42 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit c2ca0fcd202863b14bd041a7fece2e789926c225 upstream.
+[ Upstream commit f76936d07c4eeb36d8dbb64ebd30ab46ff85d9f7 ]
 
-This patch makes it possible to kill a process looping in
-cont_expand_zero. A process may spend a lot of time in this function, so
-it is desirable to be able to kill it.
+fib_nh_match does not match nexthops correctly. Example:
 
-It happened to me that I wanted to copy a piece data from the disk to a
-file. By mistake, I used the "seek" parameter to dd instead of "skip". Due
-to the "seek" parameter, dd attempted to extend the file and became stuck
-doing so - the only possibility was to reset the machine or wait many
-hours until the filesystem runs out of space and cont_expand_zero fails.
-We need this patch to be able to terminate the process.
+ip route add 172.16.10/24 nexthop via 192.168.122.12 dev eth0 \
+                          nexthop via 192.168.122.13 dev eth0
+ip route del 172.16.10/24 nexthop via 192.168.122.14 dev eth0 \
+                          nexthop via 192.168.122.15 dev eth0
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Del command is successful and route is removed. After this patch
+applied, the route is correctly matched and result is:
+RTNETLINK answers: No such process
+
+Please consider this for stable trees as well.
+
+Fixes: 4e902c57417c4 ("[IPv4]: FIB configuration using struct fib_config")
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/buffer.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/ipv4/fib_semantics.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2254,6 +2254,11 @@ static int cont_expand_zero(struct file
- 		err = 0;
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -533,7 +533,7 @@ int fib_nh_match(struct fib_config *cfg,
+ 			return 1;
  
- 		balance_dirty_pages_ratelimited(mapping);
-+
-+		if (unlikely(fatal_signal_pending(current))) {
-+			err = -EINTR;
-+			goto out;
-+		}
- 	}
+ 		attrlen = rtnh_attrlen(rtnh);
+-		if (attrlen < 0) {
++		if (attrlen > 0) {
+ 			struct nlattr *nla, *attrs = rtnh_attrs(rtnh);
  
- 	/* page covers the boundary, find the boundary offset */
+ 			nla = nla_find(attrs, attrlen, RTA_GATEWAY);
 
 
