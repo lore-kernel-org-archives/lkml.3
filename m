@@ -1,110 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239AbaKMJEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:04:10 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:63785 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074AbaKMJEF (ORCPT
+	id S932283AbaKMJEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:04:34 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:33529 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932246AbaKMJE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:04:05 -0500
+	Thu, 13 Nov 2014 04:04:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <1415816222-32200-1-git-send-email-wens@csie.org>
-References: <1415816222-32200-1-git-send-email-wens@csie.org>
-Date: Thu, 13 Nov 2014 10:04:04 +0100
-Message-ID: <CABuKBe+vRJUk1fB2mwUzGnnVcS-3N9U2uwgW1ZFwKBOe5sWf0Q@mail.gmail.com>
-Subject: Re: [PATCH] of: pass name argument for of_io_request_and_map as const
- char *
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+X-Originating-IP: [46.116.100.67]
+In-Reply-To: <5463B9F7.8040105@ti.com>
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
+ <1410553499-55951-6-git-send-email-s-anna@ti.com> <CAK=WgbZE7_WrsNz5E+MDX7j2tAGEjv91zeCgqhB=Jsiu0+d8vw@mail.gmail.com>
+ <5463B9F7.8040105@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 13 Nov 2014 11:04:05 +0200
+Message-ID: <CAK=WgbadSrhJ6hnE2Wf=k74bmyq04vfWAOU-r7iL=A++Y+myMg@mail.gmail.com>
+Subject: Re: [PATCHv6 5/5] hwspinlock/omap: add support for dt nodes
+To: Suman Anna <s-anna@ti.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I already send a patch for that which got accepted by Grant [0].
-Although right now, I'm not able to find it on his repository [1].
+Hi Suman,
 
-Cheers,
-Matthias
+On Wed, Nov 12, 2014 at 9:50 PM, Suman Anna <s-anna@ti.com> wrote:
+> None of the OMAPs have multiple IP instances, and as such the base-id is
+> an optional property. I have made this change to make sure we atleast
+> attempt to use the value if mentioned in DT and not hard-coding the
+> value to begin with (going by the optional property semantics). If and
+> when multiple instances get added and a secondary node doesn't add the
+> property, the node will not be registered with the core due to an
+> overlap failure.
 
-[0] https://lkml.org/lkml/2014/11/4/588
-[1] https://git.kernel.org/cgit/linux/kernel/git/glikely/linux.git/
+Ok, that sounds good.
 
-2014-11-12 19:17 GMT+01:00 Chen-Yu Tsai <wens@csie.org>:
-> The name argument for of_io_request_and_map is only passed to
-> request_mem_region, which is a macro of __request_region, which
-> takes a const name argument.
->
-> Make the name argument const, so when we pass const strings we
-> don't get the following warnings:
->
->     warning: passing argument 3 of 'of_io_request_and_map' discards
->     'const' qualifier from pointer target type [enabled by default]
->
->     In file included from drivers/clk/sunxi/clk-sunxi.c:20:0:
->     include/linux/of_address.h:108:15: note: expected 'char *' but
->     argument is of type 'const char *'
->
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> Cc: Matthias Brugger <matthias.bgg@gmail.com>
-> ---
->
-> I ran into this while switching some of the sunxi clock code to use
-> of_io_request_and_map.
->
-> ---
->  drivers/of/address.c       | 2 +-
->  include/linux/of_address.h | 4 ++--
->  2 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/of/address.c b/drivers/of/address.c
-> index afdb782..e02828f 100644
-> --- a/drivers/of/address.c
-> +++ b/drivers/of/address.c
-> @@ -871,7 +871,7 @@ EXPORT_SYMBOL(of_iomap);
->   *             return PTR_ERR(base);
->   */
->  void __iomem *of_io_request_and_map(struct device_node *np, int index,
-> -                                       char *name)
-> +                                       const char *name)
->  {
->         struct resource res;
->         void __iomem *mem;
-> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-> index 8cb14eb..d88e81b 100644
-> --- a/include/linux/of_address.h
-> +++ b/include/linux/of_address.h
-> @@ -106,7 +106,7 @@ extern int of_address_to_resource(struct device_node *dev, int index,
->                                   struct resource *r);
->  void __iomem *of_iomap(struct device_node *node, int index);
->  void __iomem *of_io_request_and_map(struct device_node *device,
-> -                                       int index, char *name);
-> +                                       int index, const char *name);
->  #else
->
->  #include <linux/io.h>
-> @@ -123,7 +123,7 @@ static inline void __iomem *of_iomap(struct device_node *device, int index)
->  }
->
->  static inline void __iomem *of_io_request_and_map(struct device_node *device,
-> -                                       int index, char *name)
-> +                                       int index, const char *name)
->  {
->         return IOMEM_ERR_PTR(-EINVAL);
->  }
-> --
-> 2.1.3
->
-
-
-
--- 
-motzblog.wordpress.com
+Thanks,
+Ohad.
