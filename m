@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788AbaKMBVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 20:21:41 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:63369 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528AbaKMBVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753729AbaKMBVi (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 12 Nov 2014 20:21:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141113003537.25314.19238@quantum>
-References: <1414721633-29508-1-git-send-email-chao.xie@marvell.com>
-	<CAN1soZyqWtKUajbW_R-_uTwSbN4Apo0+NJ9WupS+YLOP_nGJ3w@mail.gmail.com>
-	<20141113003537.25314.19238@quantum>
-Date: Thu, 13 Nov 2014 09:21:37 +0800
-Message-ID: <CAD6h2NTUc7S9K-R-TfUA8Moiv3rnOd=PE_fnO6LDbj2Sk869Mg@mail.gmail.com>
-Subject: Re: [PATCH V2 00/13] clk: mmp: clock device tree support
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Chao Xie <chao.xie@marvell.com>,
-        Chao Xie <xiechao_mail@163.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Received: from mailout3.samsung.com ([203.254.224.33]:64946 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834AbaKMBVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 20:21:36 -0500
+X-AuditID: cbfee68f-f791c6d000004834-05-5464079e5d09
+Message-id: <5464079E.9010901@samsung.com>
+Date: Thu, 13 Nov 2014 10:21:34 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: max14577: Fix obvious typo in company name in
+ copyright
+References: <1415806089-19684-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1415806089-19684-1-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkWHcee0qIwfnDFhavXxhaXN41h83i
+	duMKNgdmj74tqxg9Pm+SC2CK4rJJSc3JLEst0rdL4Mp4/2I9W8E5torF86sbGLeydjFycEgI
+	mEg87xLtYuQEMsUkLtxbzwZiCwksZZTYfFgXIm4icaT3B3sXIxdQfDqjROveU0wQzmtGicXz
+	D7GDVPEKaEl8Or+TBcRmEVCV+LP5ClicDSi+/8UNsKmiAmESK6dfYYGoF5T4MfkemC0iYChx
+	cPd2JhCbWcBTom9GO1i9MFD9pH+f2SEucpd4cnkfM4jNKeAhsXrSHkaIeh2J/a3T2CBseYnN
+	a94ygxwnIdDPLtG5aRrUQQIS3yYfYoH4WFZi0wFmiM8kJQ6uuMEygVFsFpKTZiEZOwvJ2AWM
+	zKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxAmPl9L9n/TsY7x6wPsQowMGoxMObsTkpRIg1
+	say4MvcQoynQFROZpUST84ERmVcSb2hsZmRhamJqbGRuaaYkzrtQ6mewkEB6YklqdmpqQWpR
+	fFFpTmrxIUYmDk6pBkZRJvtftxMnaZ9uq4yKklj6rtPw4t1JT4rmmTaF1fJf9v5uPvu/eMas
+	hZbiGgv22rl9nal74/Qi4eXKiTdurJ9/y1ju7w2utDuK+8VtfiQeY6w33DLpXFP1U7fTzk/Y
+	D8ysXslQtLPLaTvn3Jqjzns6GFelxbFYSFQ8aH1uI++bb76v1IL1vaoSS3FGoqEWc1FxIgCC
+	OgAJkAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t9jQd157CkhBpdPG1m8fmFocXnXHDaL
+	240r2ByYPfq2rGL0+LxJLoApqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJ
+	IS8xN9VWycUnQNctMwdoh5JCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx
+	4/2L9WwF59gqFs+vbmDcytrFyMkhIWAicaT3BzuELSZx4d56ti5GLg4hgemMEq17TzFBOK8Z
+	JRbPPwRWxSugJfHp/E4WEJtFQFXiz+YrYHE2oPj+FzfYQGxRgTCJldOvsEDUC0r8mHwPzBYR
+	MJQ4uHs7E4jNLOAp0TejHaxeGKh+0r/PYHOEBNwlnlzexwxicwp4SKyetIcRol5HYn/rNDYI
+	W15i85q3zBMYBWYhWTELSdksJGULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH4zOp
+	HYwrGywOMQpwMCrx8HI6JIcIsSaWFVfmHmKU4GBWEuE1/gQU4k1JrKxKLcqPLyrNSS0+xGgK
+	DIGJzFKiyfnARJFXEm9obGJmZGlkbmhhZGyuJM57oNU6UEggPbEkNTs1tSC1CKaPiYNTqoFx
+	+szVQv+XShuqfF/pp9EbwTjX7vYqfp6Y3q4VnettbO84CjwM2yKmInZs3YH5ofsLbZJXTvwx
+	I5cpb8rJa0HtDpFFb7sTZx46YNR0/TP3t8/L7ux8rK0v5XuYm3lmYNbR/VdzYx9V6sfdsPqt
+	9DWjVXZbxCrbnec3fPO+UzdBOqvMNkXCsWSKEktxRqKhFnNRcSIAAB53+dwCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 November 2014 08:35, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Haojian Zhuang (2014-11-04 00:15:55)
->> On Fri, Oct 31, 2014 at 10:13 AM, Chao Xie <chao.xie@marvell.com> wrote:
->> > From: Chao Xie <chao.xie@marvell.com>
->> >
->> > The patch set focuses at support device tree for clock.
->> >
->> > The first part of the patches
->> >   clk: mmp: add prefix "mmp" for structures defined for clk-frac
->> >   clk: mmp: add spin lock for clk-frac
->> >   clk: mmp: add init callback for clk-frac
->> >   clk: mmp: move definiton of mmp_clk_frac to clk.h It enhances the clk-frac.
->> >
->> > The second part of the patches
->> >   clk: mmp: add clock type mix
->> >   clk: mmp: add mmp private gate clock
->> >
->> > The third part of the patches
->> >   clk: mmp: add basic support functions for DT support
->> >   clk: mmp: add reset support
->> >   clk: mmp: add pxa168 DT support for clock driver
->> >   clk: mmp: add pxa910 DT support for clock driver
->> >   clk: mmp: add mmp2 DT support for clock driver
->> > It add the device tree support for pxa168, pxa910 and mmp2.
->> >
->> > V1 -> V2:
->> >   Add reset support for the clocks that have reset bit.
->> >
->> > Chao Xie (13):
->> >   clk: mmp: add prefix "mmp" for structures defined for clk-frac
->> >   clk: mmp: add spin lock for clk-frac
->> >   clk: mmp: add init callback for clk-frac
->> >   clk: mmp: move definiton of mmp_clk_frac to clk.h
->> >   clk: mmp: add clock type mix
->> >   clk: mmp: add mmp private gate clock
->> >   clk: mmp: add basic support functions for DT support
->> >   clk: mmp: add reset support
->> >   clk: mmp: add pxa168 DT support for clock driver
->> >   clk: mmp: add pxa910 DT support for clock driver
->> >   clk: mmp: add mmp2 DT support for clock driver
->> >   arm: mmp: Make all the dts file to be compiled by Makefile
->> >   arm: mmp: Make use of the DT supported clock
->> >
->> >  .../devicetree/bindings/clock/marvell,mmp2.txt     |  21 +
->> >  .../devicetree/bindings/clock/marvell,pxa168.txt   |  21 +
->> >  .../devicetree/bindings/clock/marvell,pxa910.txt   |  21 +
->> >  arch/arm/boot/dts/Makefile                         |   3 +
->> >  arch/arm/boot/dts/mmp2-brownstone.dts              |   2 +-
->> >  arch/arm/boot/dts/mmp2.dtsi                        |  29 +-
->> >  arch/arm/boot/dts/pxa168-aspenite.dts              |   2 +-
->> >  arch/arm/boot/dts/pxa168.dtsi                      |  27 +-
->> >  arch/arm/boot/dts/pxa910-dkb.dts                   |   2 +-
->> >  arch/arm/boot/dts/pxa910.dtsi                      |  28 +-
->> >  arch/arm/mach-mmp/Kconfig                          |  12 +-
->> >  arch/arm/mach-mmp/mmp-dt.c                         |  57 +--
->> >  arch/arm/mach-mmp/mmp2-dt.c                        |  26 +-
->> >  drivers/clk/mmp/Makefile                           |   7 +-
->> >  drivers/clk/mmp/clk-frac.c                         |  74 ++-
->> >  drivers/clk/mmp/clk-gate.c                         | 133 ++++++
->> >  drivers/clk/mmp/clk-mix.c                          | 513 +++++++++++++++++++++
->> >  drivers/clk/mmp/clk-mmp2.c                         |   6 +-
->> >  drivers/clk/mmp/clk-of-mmp2.c                      | 334 ++++++++++++++
->> >  drivers/clk/mmp/clk-of-pxa168.c                    | 279 +++++++++++
->> >  drivers/clk/mmp/clk-of-pxa910.c                    | 301 ++++++++++++
->> >  drivers/clk/mmp/clk-pxa168.c                       |   6 +-
->> >  drivers/clk/mmp/clk-pxa910.c                       |   6 +-
->> >  drivers/clk/mmp/clk.c                              | 192 ++++++++
->> >  drivers/clk/mmp/clk.h                              | 226 ++++++++-
->> >  drivers/clk/mmp/reset.c                            |  99 ++++
->> >  drivers/clk/mmp/reset.h                            |  31 ++
->> >  include/dt-bindings/clock/marvell,mmp2.h           |  74 +++
->> >  include/dt-bindings/clock/marvell,pxa168.h         |  57 +++
->> >  include/dt-bindings/clock/marvell,pxa910.h         |  54 +++
->> >  30 files changed, 2538 insertions(+), 105 deletions(-)
->> >  create mode 100644 Documentation/devicetree/bindings/clock/marvell,mmp2.txt
->> >  create mode 100644 Documentation/devicetree/bindings/clock/marvell,pxa168.txt
->> >  create mode 100644 Documentation/devicetree/bindings/clock/marvell,pxa910.txt
->> >  create mode 100644 drivers/clk/mmp/clk-gate.c
->> >  create mode 100644 drivers/clk/mmp/clk-mix.c
->> >  create mode 100644 drivers/clk/mmp/clk-of-mmp2.c
->> >  create mode 100644 drivers/clk/mmp/clk-of-pxa168.c
->> >  create mode 100644 drivers/clk/mmp/clk-of-pxa910.c
->> >  create mode 100644 drivers/clk/mmp/clk.c
->> >  create mode 100644 drivers/clk/mmp/reset.c
->> >  create mode 100644 drivers/clk/mmp/reset.h
->> >  create mode 100644 include/dt-bindings/clock/marvell,mmp2.h
->> >  create mode 100644 include/dt-bindings/clock/marvell,pxa168.h
->> >  create mode 100644 include/dt-bindings/clock/marvell,pxa910.h
->> >
->> > --
->> > 1.8.3.2
->> >
->>
->> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
->>
->> Mike,
->> Please merge all mach-mmp patches with clock together. Otherwise, it
->> may result in build issue.
->
-> Can patches #12 & #13 go through arm-soc?
->
+On 11/13/2014 12:28 AM, Krzysztof Kozlowski wrote:
+> Fix a typo in name of company in copyright comment.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/extcon/extcon-max14577.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+> index dfc2fd370eb3..c1bf0cf747b0 100644
+> --- a/drivers/extcon/extcon-max14577.c
+> +++ b/drivers/extcon/extcon-max14577.c
+> @@ -1,7 +1,7 @@
+>  /*
+>   * extcon-max14577.c - MAX14577/77836 extcon driver to support MUIC
+>   *
+> - * Copyright (C) 2013,2014 Samsung Electrnoics
+> + * Copyright (C) 2013,2014 Samsung Electronics
+>   * Chanwoo Choi <cw00.choi@samsung.com>
+>   * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>   *
+> 
 
-Hi Mike,
+Applied it.
 
-I also hope so. But patch #12 makes those dtb files built
-automatically. And patch #13
-references clocks that are defined in dt-binding files. If I merge
-patch #12 & #13, I'll meet
-build issue since I'm lack of those new dt-binding files. So it's
-better to go through your
-clock tree.
-
-Best Regards
-Haojian
+Thanks,
+Chanwoo Choi
