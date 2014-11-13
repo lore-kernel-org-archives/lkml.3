@@ -1,103 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933858AbaKMSf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 13:35:27 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47139 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933673AbaKMSfZ (ORCPT
+	id S933672AbaKMSkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 13:40:22 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51462 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933526AbaKMSkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 13:35:25 -0500
-Message-ID: <1415903703.3398.115.camel@decadent.org.uk>
-Subject: Re: [PATCH 3.17 023/319] drivers/net: Disable UFO through virtio
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 13 Nov 2014 18:35:03 +0000
-In-Reply-To: <5464EF03.9020002@suse.cz>
-References: <20141112010952.553519040@linuxfoundation.org>
-		 <20141112010956.540146480@linuxfoundation.org>
-	 <1415826239.3398.113.camel@decadent.org.uk> <5464EF03.9020002@suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-f+H4smH/1MqRe8+26kWX"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 13 Nov 2014 13:40:21 -0500
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ia64: Be consistent in the type of the PCI_CONTROLLER() macro argument.
+Date: Thu, 13 Nov 2014 18:39:43 +0000
+Message-Id: <1415903983-32588-1-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+PCI_CONTROLLER() macro in include/asm/pci.h expects an argument "busdev"
+which implies a 'struct pci_bus *' type of variable (or at least that
+is the type of most of the invocations). Correct the cases where the
+macro is called with a 'struct pci_dev *' variable as argument.
 
---=-f+H4smH/1MqRe8+26kWX
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+---
+ arch/ia64/hp/common/sba_iommu.c    | 2 +-
+ arch/ia64/sn/kernel/io_acpi_init.c | 9 +++++----
+ arch/ia64/sn/kernel/io_common.c    | 2 +-
+ arch/ia64/sn/kernel/io_init.c      | 2 +-
+ 4 files changed, 8 insertions(+), 7 deletions(-)
 
-On Thu, 2014-11-13 at 18:48 +0100, Jiri Slaby wrote:
-> On 11/12/2014, 10:03 PM, Ben Hutchings wrote:
-> > On Wed, 2014-11-12 at 10:12 +0900, Greg Kroah-Hartman wrote:
-> >> 3.17-stable review patch.  If anyone has any objections, please
-> >> let me know.
-> >>=20
-> >> ------------------
-> >>=20
-> >> From: Ben Hutchings <ben@decadent.org.uk>
-> >>=20
-> >> [ Upstream commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 ]
-> >>=20
-> >> IPv6 does not allow fragmentation by routers, so there is no=20
-> >> fragmentation ID in the fixed header.  UFO for IPv6 requires the
-> >> ID to be passed separately, but there is no provision for this in
-> >> the virtio net protocol.
-> >>=20
-> >> Until recently our software implementation of UFO/IPv6 generated
-> >> a new ID, but this was a bug.  Now we will use ID=3D0 for any
-> >> UFO/IPv6 packet passed through a tap, which is even worse.
-> >>=20
-> >> Unfortunately there is no distinction between UFO/IPv4 and v6=20
-> >> features, so disable UFO on taps and virtio_net completely until
-> >> we have a proper solution.
-> > [...]
-> >=20
-> > Please drop this patch for 3.14 and 3.17.  It causes problems for=20
-> > migration of VMs and we're probably going to revert part of this.
-> > The following patch ("drivers/net, ipv6: Select IPv6 fragment
-> > idents for virtio UFO packets") might no longer apply, in which
-> > case you can drop that as well until we have this sorted out
-> > upstream.
->=20
-> The same holds for 3.12, I suppose?
+diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
+index 344387a..fb5b085 100644
+--- a/arch/ia64/hp/common/sba_iommu.c
++++ b/arch/ia64/hp/common/sba_iommu.c
+@@ -256,7 +256,7 @@ static u64 prefetch_spill_page;
+ 
+ #ifdef CONFIG_PCI
+ # define GET_IOC(dev)	((dev_is_pci(dev))						\
+-			 ? ((struct ioc *) PCI_CONTROLLER(to_pci_dev(dev))->iommu) : NULL)
++			 ? ((struct ioc *) PCI_CONTROLLER((to_pci_dev(dev))->bus)->iommu) : NULL)
+ #else
+ # define GET_IOC(dev)	NULL
+ #endif
+diff --git a/arch/ia64/sn/kernel/io_acpi_init.c b/arch/ia64/sn/kernel/io_acpi_init.c
+index 0640739..426ea8e 100644
+--- a/arch/ia64/sn/kernel/io_acpi_init.c
++++ b/arch/ia64/sn/kernel/io_acpi_init.c
+@@ -358,18 +358,19 @@ sn_acpi_get_pcidev_info(struct pci_dev *dev, struct pcidev_info **pcidev_info,
+ 	acpi_handle rootbus_handle;
+ 	unsigned long long segment;
+ 	acpi_status status;
++	struct pci_bus *bus = dev->bus;
+ 	struct acpi_buffer name_buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 
+-	rootbus_handle = acpi_device_handle(PCI_CONTROLLER(dev)->companion);
++	rootbus_handle = acpi_device_handle(PCI_CONTROLLER(bus)->companion);
+         status = acpi_evaluate_integer(rootbus_handle, METHOD_NAME__SEG, NULL,
+                                        &segment);
+         if (ACPI_SUCCESS(status)) {
+-		if (segment != pci_domain_nr(dev)) {
++		if (segment != pci_domain_nr(bus)) {
+ 			acpi_get_name(rootbus_handle, ACPI_FULL_PATHNAME,
+ 				&name_buffer);
+ 			printk(KERN_ERR
+ 			       "%s: Segment number mismatch, 0x%llx vs 0x%x for: %s\n",
+-			       __func__, segment, pci_domain_nr(dev),
++			       __func__, segment, pci_domain_nr(bus),
+ 			       (char *)name_buffer.pointer);
+ 			kfree(name_buffer.pointer);
+ 			return 1;
+@@ -407,7 +408,7 @@ sn_acpi_get_pcidev_info(struct pci_dev *dev, struct pcidev_info **pcidev_info,
+ 	/* Build up the pcidev_info.pdi_slot_host_handle */
+ 	host_devfn = get_host_devfn(pcidev_match.handle, rootbus_handle);
+ 	(*pcidev_info)->pdi_slot_host_handle =
+-			((unsigned long) pci_domain_nr(dev) << 40) |
++			((unsigned long) pci_domain_nr(bus) << 40) |
+ 					/* bus == 0 */
+ 					host_devfn;
+ 	return 0;
+diff --git a/arch/ia64/sn/kernel/io_common.c b/arch/ia64/sn/kernel/io_common.c
+index 11f2275..e7d5d07 100644
+--- a/arch/ia64/sn/kernel/io_common.c
++++ b/arch/ia64/sn/kernel/io_common.c
+@@ -108,7 +108,7 @@ sn_pcidev_info_get(struct pci_dev *dev)
+ 	struct pcidev_info *pcidev;
+ 
+ 	list_for_each_entry(pcidev,
+-			    &(SN_PLATFORM_DATA(dev)->pcidev_info), pdi_list) {
++			    &(SN_PLATFORM_DATA(dev->bus)->pcidev_info), pdi_list) {
+ 		if (pcidev->pdi_linux_pcidev == dev)
+ 			return pcidev;
+ 	}
+diff --git a/arch/ia64/sn/kernel/io_init.c b/arch/ia64/sn/kernel/io_init.c
+index 0b5ce82..eaff214 100644
+--- a/arch/ia64/sn/kernel/io_init.c
++++ b/arch/ia64/sn/kernel/io_init.c
+@@ -164,7 +164,7 @@ sn_io_slot_fixup(struct pci_dev *dev)
+ 		panic("%s: Unable to alloc memory for sn_irq_info", __func__);
+ 
+ 	/* Call to retrieve pci device information needed by kernel. */
+-	status = sal_get_pcidev_info((u64) pci_domain_nr(dev),
++	status = sal_get_pcidev_info((u64) pci_domain_nr(dev->bus),
+ 		(u64) dev->bus->number,
+ 		dev->devfn,
+ 		(u64) __pa(pcidev_info),
+-- 
+2.1.3
 
-Right.
-
-Ben.
-
---=20
-Ben Hutchings
-friends: People who know you well, but like you anyway.
-
---=-f+H4smH/1MqRe8+26kWX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVGT54ue/yOyVhhEJAQrRtQ//a7i4KzBv+m3iy0e6wXl+cdMvzxymTsWz
-IeyHkYAMYFr0GJUDt5IQgOIXc+Wat8cHh2c+Ovc8/q0OI5Hlqb8d7ya6h8UsMtD/
-ONAnzjOIwFfJZftLvnf72vgWKOaxRsLZpWKgdSvsz14+vLlhrzRFECkbtZmvg8JB
-jNWRux+ABgwJZEU/mZiroqTAukYFBI+7g5zC9ouuTgpy+UGiaMjrf8LHKcYHyDPq
-VnrYz8ZNbv9/q1K9C6PTyC+BxQFHP/nNYhWnq9qUBDA+j3WjwoMrdmXrSrtaY7Vn
-pPPicHE0iUj90TaODhG2DP98vB/TdBQNK4IHnRM+FoX4THNG9vzQaO/ABnJvqiLb
-G0lyIwlznMLwdAOTb2xSp4muj+QcqGhBPJ6SVKCiX4esNqeP0PKu7aKqVeAu1oHe
-N/uTd2/mDJj4YXpWg+OEdaQRYTjKdakohwOZANSDtEJ9ELC8mcR5VYBLmUkm18Yi
-lrJm05YX5iR7puglspDtkJ1ZKyUui8z0LD9Rok+qaxsj/NhbEz6h6qlov00TjWpc
-IVLF+k3RzpVwUx2mkgiYFjg189HNt+PMzOZpcRQ+FsP2me/3kpmz1sZ5EXAzioTP
-Iaw3qR7r29qk2OqR9DMdklIJCn89yowqmwPEI/FqyEdcAuOGBJAy+LX+nBKBwFnS
-zjJtxCRyoBs=
-=59UY
------END PGP SIGNATURE-----
-
---=-f+H4smH/1MqRe8+26kWX--
