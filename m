@@ -1,77 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934790AbaKMXpV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:45:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:16978 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934320AbaKMXpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:45:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,381,1413270000"; 
-   d="asc'?scan'208";a="631676187"
-Message-ID: <1415922083.2454.33.camel@jtkirshe-mobl>
-Subject: Re: [PATCHv2 net 1/2] fm10k: Check tunnel header length in encap
- offload
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: netdev@vger.kernel.org, matthew.vick@intel.com, linux.nics@intel.com,
-        therbert@google.com, gerlitz.or@gmail.com, alexander.duyck@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Nov 2014 15:41:23 -0800
-In-Reply-To: <1415921801-10452-1-git-send-email-joestringer@nicira.com>
-References: <1415921801-10452-1-git-send-email-joestringer@nicira.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-GuZpi5xbYnHsqPXICOTQ"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S934806AbaKMXqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:46:39 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38778 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934320AbaKMXqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 18:46:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Pj8nNzaXXQiMaRsvUpOQ2
+Date: Thu, 13 Nov 2014 15:45:52 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
+Message-ID: <20141113234551.GR26481@atomide.com>
+References: <alpine.DEB.2.10.1409190710320.5612@nanos>
+ <20140919161927.GA28613@kahuna>
+ <alpine.DEB.2.10.1409191027330.5612@nanos>
+ <20140919191649.GQ14505@atomide.com>
+ <alpine.DEB.2.10.1409191233590.4213@nanos>
+ <20141002034345.GH3122@atomide.com>
+ <20141106204629.GF31454@atomide.com>
+ <alpine.DEB.2.11.1411131053050.3935@nanos>
+ <20141113174030.GM26481@atomide.com>
+ <alpine.DEB.2.11.1411132251170.3935@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411132251170.3935@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Thomas Gleixner <tglx@linutronix.de> [141113 14:27]:
+> On Thu, 13 Nov 2014, Tony Lindgren wrote:
+> > Oops thanks for catching that. As the devres stuff is separate, I've
+> > updated the patch to keep it that way by adding a minimal manage.h.
+> > This avoids including internals.h in devres.c. Does that seem usable
+> > for you?
+> 
+> What's wrong with internals.h? devres.c is core code, so it is not
+> affected of the ban to include internals.h :)
 
---=-GuZpi5xbYnHsqPXICOTQ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+No problem, just that we need to bring in few other includes and
+devres.c is currently free of any core irq stuff :) I can switch to
+internals.h no problem if you prefer that.
+  
+> > + *	So if replaying the lost device interrupts is absolutely needed from the
+> > + *	hardware point of view, it's probably best to set up a completely
+> > + *	separate wake-up interrupt handler for the wake-up interrupt in the
+> > + *	device driver because of the reasons above.
+> 
+> Can we please kill this last paragraph? I'm already seeing the
+> gazillion of "I think it is required to do so for my soooo special
+> chip" implementations in random drivers which all get it wrong again.
 
-On Thu, 2014-11-13 at 15:36 -0800, Joe Stringer wrote:
-> fm10k supports up to 184 bytes of inner+outer headers. Add an initial
-> check to fail encap offload if these are too large.
->=20
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> ---
-> Matthew, I didn't see the equivalent patch on netdev so I went ahead
-> and
-> created it. If I've missed this somewhere, then please disregard.
->=20
-> v2: First post.
-> ---
->  drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 ++++++
->  1 file changed, 6 insertions(+)
+OK :)
+ 
+> So I'd rather provide a mechanism upfront which lets the driver know
+> that the wakeup interrupt originated from that device, i.e. let the
+> wake up handler call
+> 
+>      pm_wakeup_irq(dev);
+> 
+> which calls:
+> 
+>       pm_runtime_mark_last_busy(dev);
+>       pm_request_resume(dev);
+> 
+> and aside of that tells the device via a flag or preferrably a
+> sequence counter that the wakeup irq has been triggered. So affected
+> devices can handle it based on that information w/o implementing the
+> next broken variant of wakeup irq handlers.
 
-Thanks Joe, I will add your patch to my queue.
+OK I'll take a look if we can just set some pm_runtime flag and use
+the pm_runtime counters for that.
 
---=-GuZpi5xbYnHsqPXICOTQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+> That also allows to remove the wakeflags check for level/edge.
+> 
+> > + */
+> > +int init_disabled_wakeirq(struct device *dev, unsigned int wakeirq,
+> > +			  unsigned long wakeflags)
+> > +{
+> > +	if (!(dev && wakeirq)) {
+> 
+> This is the second time I stumbled over this. While it is correct it
+> would be simpler to parse 
+> 
+>       if (!dev || !wakeirq) {
+> 
+> At least for my review damaged brain :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Heh !!true.
+ 
+> > +		pr_err("Missing device or wakeirq for %s irq %d\n",
+> > +		       dev_name(dev), wakeirq);
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (!(wakeflags & IRQF_ONESHOT)) {
+> > +		pr_err("Invalid wakeirq for %s irq %d, must be oneshot\n",
+> > +		       dev_name(dev), wakeirq);
+> > +		return -EINVAL;
+> > +	}
+> 
+> Is there a reason why we force the wakeirq into a threaded handler?
 
-iQIcBAABCgAGBQJUZUGjAAoJEOVv75VaS+3OAFgQAJ6daVYXSbd2TWSe+vyooSPg
-vT0DbbSpA7FJr6WboB5kVCNiythgsT6A0jSA83i/Ppd8idHdxgT9mb9HFoRKqikb
-mW48LNjDfSxcMc2HVQRskJSOKPnhkSxe3rMN6Fdur6lNB8xrKDq7dkYMrpsIL6FR
-dTqoSW8XfBefg97tiVzCZdyUX4+PrHPBbTYEKQHon3n8rrYtv9eL6kcEBhrFPli+
-XH61dtsjKRxUZ44Fl0HPs224d5jItJcAOTwiGgrKyTNw1Wq3KMFLtHBirEZKlSdN
-ijS8C7XP7ygG+Qbu9ixT6rVzolKmFB68xrypv2+hmOEr0u+CJOALQq530zTf/QBl
-1arcPzC3kciYvZm2OOeO6QS6NaB4zJZY8YN3BNLkPTLsS5iTq+AmspMeFNxpi0VY
-ew4vydmhHi5ThRZvQzv4MvOQbzS8yosUVniImGLgCPXykldEucEdpyaLgderH8zF
-zcTKbhuhPF1fZ6pjEWGQzwLQnUfyhe4YIU9JkLdPYGzHxnxmN7ov4yMEfs58raXa
-PPAR7O+gBiB4inNTIZGzqSZsTHZGvNTG+2qNW2VR7T9MI2gIcpZcLfEK4tTY7tnn
-f5HbeB7shARjzhMJVig2QEfZ75xrSuq5kO2MkdxFhcemIi+iaTkqqnYFXo/aVNeC
-fBpo8Iwytsh75nS8fR4M
-=l1Y5
------END PGP SIGNATURE-----
+Yes the drivers may need to restore hardware state in the pm_runtime
+calls and who knows what else drivers will be doing. So that too might
+be a good reason to just set a flag in pm_runtime land.
 
---=-GuZpi5xbYnHsqPXICOTQ--
+Anyways, thanks for your comments. I'll post a complete series after
+looking into the wake-up counters a bit.
 
+Regards,
+
+Tony
