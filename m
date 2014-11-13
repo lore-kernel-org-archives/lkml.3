@@ -1,151 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469AbaKMP37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:29:59 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:33839 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933279AbaKMP35 (ORCPT
+	id S933503AbaKMPal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:30:41 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52813 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933279AbaKMPak convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:29:57 -0500
-Date: Fri, 14 Nov 2014 00:30:17 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Mahendran Ganesh <opensource.ganesh@gmail.com>
-Cc: minchan@kernel.org, ngupta@vflare.org, ddstreet@ieee.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH 1/3] mm/zsmalloc: avoid unregister a NOT-registered
- zsmalloc zpool driver
-Message-ID: <20141113153017.GC1408@swordfish>
-References: <1415885857-5283-1-git-send-email-opensource.ganesh@gmail.com>
- <20141113152247.GB1408@swordfish>
+	Thu, 13 Nov 2014 10:30:40 -0500
+Message-ID: <5464CE9A.6050209@arm.com>
+Date: Thu, 13 Nov 2014 15:30:34 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141113152247.GB1408@swordfish>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "gleb@kernel.org" <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] virt: kvm: arm: vgic: Process the failure case when kvm_register_device_ops()
+ fails
+References: <5464C865.90504@gmail.com>
+In-Reply-To: <5464C865.90504@gmail.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 13 Nov 2014 15:30:35.0336 (UTC) FILETIME=[C4EFE480:01CFFF56]
+X-MC-Unique: 114111315303702401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (11/14/14 00:22), Sergey Senozhatsky wrote:
-> > Now zsmalloc can be registered as a zpool driver into zpool when
-> > CONFIG_ZPOOL is enabled. During the init of zsmalloc, when error happens,
-> > we need to do cleanup. But in current code, it will unregister a not yet
-> > registered zsmalloc zpool driver(*zs_zpool_driver*).
-> > 
-> > This patch puts the cleanup in zs_init() instead of calling zs_exit()
-> > where it will unregister a not-registered zpool driver.
-> > 
-> > Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
-> > ---
-> >  mm/zsmalloc.c |   12 ++++++++----
-> >  1 file changed, 8 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> > index 839a48c..3d2bb36 100644
-> > --- a/mm/zsmalloc.c
-> > +++ b/mm/zsmalloc.c
-> > @@ -907,10 +907,8 @@ static int zs_init(void)
-> >  	__register_cpu_notifier(&zs_cpu_nb);
-> >  	for_each_online_cpu(cpu) {
-> >  		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-> > -		if (notifier_to_errno(ret)) {
-> > -			cpu_notifier_register_done();
-> > +		if (notifier_to_errno(ret))
-> >  			goto fail;
-> > -		}
-> >  	}
-> >  
-> >  	cpu_notifier_register_done();
-> > @@ -920,8 +918,14 @@ static int zs_init(void)
-> >  #endif
-> >  
-> >  	return 0;
-> > +
-> >  fail:
-> > -	zs_exit();
-> > +	for_each_online_cpu(cpu)
-> > +		zs_cpu_notifier(NULL, CPU_UP_CANCELED, (void *)(long)cpu);
-> > +	__unregister_cpu_notifier(&zs_cpu_nb);
-> > +
-> > +	cpu_notifier_register_done();
-> > +
-> >  	return notifier_to_errno(ret);
+On 13/11/14 15:04, Chen Gang wrote:
+> When kvm_register_device_ops() fails, also need call free_percpu_irq()
+> just like others have down within kvm_vgic_hyp_init().
 > 
-> so we duplicate same code, and there is a bit confusing part
-> now: zs_cpu_notifier(CPU_UP_CANCELED) and zs_cpu_notifier(CPU_DEAD)
-> calls.
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  virt/kvm/arm/vgic.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 > 
+> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+> index 3aaca49..b799f17 100644
+> --- a/virt/kvm/arm/vgic.c
+> +++ b/virt/kvm/arm/vgic.c
+> @@ -2470,8 +2470,14 @@ int kvm_vgic_hyp_init(void)
+>  
+>  	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
+>  
+> -	return kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
+> -				       KVM_DEV_TYPE_ARM_VGIC_V2);
+> +	ret = kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
+> +				      KVM_DEV_TYPE_ARM_VGIC_V2);
+> +	if (ret) {
+> +		kvm_err("Cannot register device ops\n");
+> +		goto out_free_irq;
+> +	}
+> +
+> +	return 0;
+>  
+>  out_free_irq:
+>  	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
 > 
-> how about something like this?
 
-arghhh... silly me. sorry! this wasn't even compile tested.
-it should be zs_unregister_cpu_notifier(void). here it is.
+Awesome. You're now freeing a per-cpu interrupt after just after having
+enabled it on all CPUs. What could possibly go wrong?
 
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-Factor out zsmalloc cpu notifier unregistration code and call
-it from both zs_exit() and zs_init() error path.
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
----
-
- mm/zsmalloc.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
-
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index b3b57ef..8dda7c7 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -881,14 +881,10 @@ static struct notifier_block zs_cpu_nb = {
- 	.notifier_call = zs_cpu_notifier
- };
- 
--static void zs_exit(void)
-+static void zs_unregister_cpu_notifier(void)
- {
- 	int cpu;
- 
--#ifdef CONFIG_ZPOOL
--	zpool_unregister_driver(&zs_zpool_driver);
--#endif
--
- 	cpu_notifier_register_begin();
- 
- 	for_each_online_cpu(cpu)
-@@ -898,6 +894,14 @@ static void zs_exit(void)
- 	cpu_notifier_register_done();
- }
- 
-+static void zs_exit(void)
-+{
-+#ifdef CONFIG_ZPOOL
-+	zpool_unregister_driver(&zs_zpool_driver);
-+#endif
-+	zs_unregister_cpu_notifier();
-+}
-+
- static int zs_init(void)
- {
- 	int cpu, ret;
-@@ -907,10 +911,8 @@ static int zs_init(void)
- 	__register_cpu_notifier(&zs_cpu_nb);
- 	for_each_online_cpu(cpu) {
- 		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
--		if (notifier_to_errno(ret)) {
--			cpu_notifier_register_done();
-+		if (notifier_to_errno(ret))
- 			goto fail;
--		}
- 	}
- 
- 	cpu_notifier_register_done();
-@@ -921,7 +923,7 @@ static int zs_init(void)
- 
- 	return 0;
- fail:
--	zs_exit();
-+	zs_unregister_cpu_notifier();
- 	return notifier_to_errno(ret);
- }
- 
