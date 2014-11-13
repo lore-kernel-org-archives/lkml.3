@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398AbaKMRLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:11:33 -0500
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:51648 "EHLO
-	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933132AbaKMRLc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:11:32 -0500
-Message-ID: <1415898688.1787.6.camel@linaro.org>
-Subject: Re: [PATCH] dmaengine: pl330: Fix linker error "undefined reference
- to `__aeabi_uldivmod'"
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Nov 2014 17:11:28 +0000
-In-Reply-To: <20141113170104.GP24582@intel.com>
-References: <1415896047.1787.4.camel@linaro.org>
-	 <20141113170104.GP24582@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01d-IP: [82.69.122.217]
+	id S933480AbaKMRLo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:11:44 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56684 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933132AbaKMRLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 12:11:41 -0500
+Date: Thu, 13 Nov 2014 18:11:33 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: DRI <dri-devel@lists.freedesktop.org>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, David Airlie <airlied@linux.ie>,
+        H Peter Anvin <h.peter.anvin@intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        intel-gfx@lists.freedesktop.org
+Subject: Re: [PATCH 6/6] x86: Use clwb in drm_clflush_virt_range
+Message-ID: <20141113171133.GD14070@pd.tnic>
+References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1415731396-19364-7-git-send-email-ross.zwisler@linux.intel.com>
+ <5464220D.6090204@amacapital.net>
+ <20141113112017.GA14416@pd.tnic>
+ <CALCETrV2E-LBHLTV6zJ=nfw8ijjV8VZoYAinXdg9ZaOryfqquw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrV2E-LBHLTV6zJ=nfw8ijjV8VZoYAinXdg9ZaOryfqquw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-13 at 22:31 +0530, Vinod Koul wrote:
-> On Thu, Nov 13, 2014 at 04:27:27PM +0000, Jon Medhurst (Tixy) wrote:
-> > 32-bit ARM kernels may have a 64-bit dma_addr_t but have no
-> > implementation of the compiler helper for 64-bit unsigned division,
-> > therefore the use of the modulo operator in pl330_prep_dma_memcpy causes
-> > the link error "undefined reference to `__aeabi_uldivmod'"
-> > 
-> > As the burst value is always a power of two we can fix the problem, and
-> > make the code more efficient, by replacing "% burst" with "& (burst-1)".
-> > 
-> > Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> > Signed-off-by: Jon Medhurst <tixy@linaro.org>
-> > ---
-> > 
-> > Vinod. I haven't added a 'Fixes:' line because I was unsure if the patch
-> > in linux-next is part of a stable branch or if the SHA1 might change
-> > before hitting mainline. If it stable then the line should be...
-> > 
-> > Fixes: 63369d0a96dc ("dmaengine: pl330: Align DMA memcpy operations to MFIFO width")
-> I have applied this for now but...
+On Thu, Nov 13, 2014 at 08:38:23AM -0800, Andy Lutomirski wrote:
+> On Nov 13, 2014 3:20 AM, "Borislav Petkov" <bp@alien8.de> wrote:
+> >
+> > On Wed, Nov 12, 2014 at 07:14:21PM -0800, Andy Lutomirski wrote:
+> > > On 11/11/2014 10:43 AM, Ross Zwisler wrote:
+> > > > If clwb is available on the system, use it in drm_clflush_virt_range.
+> > > > If clwb is not available, fall back to clflushopt if you can.
+> > > > If clflushopt is not supported, fall all the way back to clflush.
+> > >
+> > > I don't know exactly what drm_clflush_virt_range (and the other
+> > > functions you're modifying similarly) are for, but it seems plausible to
+> > > me that they're used before reads to make sure that non-coherent memory
+> > > sees updated data.  If that's true, then this will break it.
+> >
+> > Why would it break it? The updated cachelines will be in memory and
+> > subsequent reads will be serviced from the cache instead from going to
+> > memory as it is not invalidated as it would be by CLFLUSH.
+> >
+> > /me is puzzled.
 > 
-> While at it and also related to Fixes, typically the fixes branch wont be
-> rebased before its sent to Linus and merged. But this is introduced in patch
-> which is sent, should I just fold it in and not cause this regression in
-> first place...?
+> Suppose you map some device memory WB, and then the device
+> non-coherently updates.  If you want the CPU to see it, you need
+> clflush or clflushopt.  Some architectures might do this for
+> dma_sync_single_for_cpu with DMA_FROM_DEVICE.
 
-I have no objection to folding it in, but then doesn't that remove
-credit for Fengguang Wu's test system for finding and reporting errors?
+Ah, you're talking about the other way around - the device does the
+writes. Well, the usage sites are all in i915*, maybe we should ask
+them - it looks to me like this is only the CPU making stuff visible in
+the shared buffer but I don't know that code... intel-gfx CCed although
+dri-devel is already on CC.
 
 -- 
-Tixy
+Regards/Gruss,
+    Boris.
 
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
