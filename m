@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaKMQLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 11:11:17 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:57183 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938AbaKMQLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 11:11:15 -0500
+	id S933041AbaKMQLU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 11:11:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57390 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752938AbaKMQLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 11:11:18 -0500
+Message-ID: <5464D747.4030506@redhat.com>
+Date: Thu, 13 Nov 2014 11:07:35 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1415808457-4030-2-git-send-email-ibanezchen@gmail.com>
-References: <1415808457-4030-1-git-send-email-ibanezchen@gmail.com>
-	<1415808457-4030-2-git-send-email-ibanezchen@gmail.com>
-Date: Thu, 13 Nov 2014 17:11:13 +0100
-Message-ID: <CABuKBeKvhJPQOSoViCtdB_UYKDkwgtQ3XF8fD0fhs+36nFjQbA@mail.gmail.com>
-Subject: Re: [PATCH v6 2/4] ARM: mediatek: add dts for mt6592-evb
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Howard Chen <ibanezchen@gmail.com>
-Cc: arm@kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jerome Glisse <j.glisse@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Brendan Conoboy <blc@redhat.com>, Joe Donohue <jdonohue@redhat.com>,
+        Duncan Poole <dpoole@nvidia.com>, Sherry Cheung <SCheung@nvidia.com>,
+        Subhash Gutti <sgutti@nvidia.com>, John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page table
+ (gpt) v2.
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>	<1415644096-3513-4-git-send-email-j.glisse@gmail.com> <CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
+In-Reply-To: <CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-12 17:07 GMT+01:00 Howard Chen <ibanezchen@gmail.com>:
-> The mt6592-evb is an evaluation board based on the MT6592 SoC.
->
-> Signed-off-by: Howard Chen <ibanezchen@gmail.com>
-> ---
->  arch/arm/boot/dts/Makefile       |  3 ++-
->  arch/arm/boot/dts/mt6592-evb.dts | 25 +++++++++++++++++++++++++
->  2 files changed, 27 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/mt6592-evb.dts
->
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index ab63751..0ce0d9e 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -532,7 +532,8 @@ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
->         dove-d2plug.dtb \
->         dove-d3plug.dtb \
->         dove-dove-db.dtb
-> -dtb-$(CONFIG_ARCH_MEDIATEK) += mt6589-aquaris5.dtb
-> +dtb-$(CONFIG_ARCH_MEDIATEK) += mt6589-aquaris5.dtb \
-> +       mt6592-evb.dtb
->
->  endif
->
-> diff --git a/arch/arm/boot/dts/mt6592-evb.dts b/arch/arm/boot/dts/mt6592-evb.dts
-> new file mode 100644
-> index 0000000..4750c4c
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/mt6592-evb.dts
-> @@ -0,0 +1,25 @@
-> +/*
-> + * Copyright (c) 2014 MediaTek Inc.
-> + * Author: Howard Chen <ibanezchen@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +/dts-v1/;
-> +#include "mt6592.dtsi"
-> +
-> +/ {
-> +       model = "mt6592 evb";
-> +       compatible = "mediatek,mt6592-evb", "mediatek,mt6592";
-> +
-> +       memory {
-> +               reg = <0x80000000 0x08000000>;
+On 11/10/2014 03:22 PM, Linus Torvalds wrote:
 
-Does the eval board only have 128 MB? Maybe there is a zero missing (2GB)?
+> Rik, the fact that you acked this just makes all your other ack's be
+> suspect. Did you do it just because it was from Red Hat, or do you do
+> it because you like seeing Acked-by's with your name?
 
-> +       };
-> +};
-> --
-> 1.9.1
->
+I acked it because I could not come up with a better idea
+on how to solve this problem.
 
+Keeping the device page tables in sync with the CPU page
+tables (and sometimes different, when a page is migrated
+from system DRAM to VRAM) will require either expanded
+macros and generic walker functions like this, or trusting
+the device driver writers to correctly copy over example
+code and implement their own...
 
+I have seen too much copied-and-slightly modified code
+in drivers to develop a dislike for the second alternative.
 
--- 
-motzblog.wordpress.com
