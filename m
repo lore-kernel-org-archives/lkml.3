@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaKMGiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 01:38:20 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60561 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaKMGiT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 01:38:19 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 13 Nov 2014 15:40:35 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Alexander Nyberg <alexn@dsv.su.se>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] mm/page_ext: resurrect struct page extending
- code for debugging
-Message-ID: <20141113064035.GB18369@js1304-P5Q-DELUXE>
-References: <1415780835-24642-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1415780835-24642-2-git-send-email-iamjoonsoo.kim@lge.com>
- <54638BE4.3080509@sr71.net>
+	id S1751627AbaKMGqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 01:46:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907AbaKMGqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 01:46:07 -0500
+Message-ID: <546453A2.8050304@redhat.com>
+Date: Thu, 13 Nov 2014 14:45:54 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54638BE4.3080509@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: gaowanlong@cn.fujitsu.com, linux-kernel@vger.kernel.org
+CC: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] virtio-net: fix buggy features advertised by host
+References: <1415857974-23326-1-git-send-email-jasowang@redhat.com> <1415857974-23326-2-git-send-email-jasowang@redhat.com> <54644A4E.7000902@cn.fujitsu.com>
+In-Reply-To: <54644A4E.7000902@cn.fujitsu.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 08:33:40AM -0800, Dave Hansen wrote:
-> On 11/12/2014 12:27 AM, Joonsoo Kim wrote:
-> > @@ -1092,6 +1096,14 @@ struct mem_section {
-> >  
-> >  	/* See declaration of similar field in struct zone */
-> >  	unsigned long *pageblock_flags;
-> > +#ifdef CONFIG_PAGE_EXTENSION
-> > +	/*
-> > +	 * If !SPARSEMEM, pgdat doesn't have page_ext pointer. We use
-> > +	 * section. (see page_ext.h about this.)
-> > +	 */
-> > +	struct page_ext *page_ext;
-> > +	unsigned long pad;
-> > +#endif
-> 
-> Will the distributions be amenable to enabling this?  If so, I'm all for
-> it if it gets us things like page_owner at runtime.
+On 11/13/2014 02:06 PM, Wanlong Gao wrote:
+> On 11/13/2014 01:52 PM, Jason Wang wrote:
+>> This patch tries to detect the possible buggy features advertised by host
+>> and fix them. One example is booting virtio-net with only ctrl_vq disabled,
+>> qemu may still advertise many features which depends on it. This will
+>> trigger several BUG()s in virtnet_send_command().
+>>
+>> This patch utilizes the fix_features() method, and disables all features that
+>> depends on ctrl_vq if it was not advertised.
+>>
+>> This fixes the crash when booting with ctrl_vq=off.
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>> Changes from V1:
+>> - fix the cut-and-paste error
+>> ---
+>>  drivers/net/virtio_net.c | 35 +++++++++++++++++++++++++++++++++++
+>>  1 file changed, 35 insertions(+)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index ec2a8b4..6ce125e 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -1948,6 +1948,40 @@ static int virtnet_restore(struct virtio_device *vdev)
+>>  }
+>>  #endif
+>>  
+>> +static void virtnet_fix_features(struct virtio_device *dev)
+>> +{
+>> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
+>> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_RX)) {
+>> +			pr_warning("Disable VIRTIO_NET_F_CTRL_RX since host "
+>> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
+>> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
+>> +		}
+>> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VLAN)) {
+>> +			pr_warning("Disable VIRTIO_NET_F_CTRL_VLAN since host "
+>> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
+>> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_VLAN);
+>> +		}
+>> +		if (virtio_has_feature(dev, VIRTIO_NET_F_GUEST_ANNOUNCE)) {
+>> +			pr_warning("Disable VIRTIO_NET_F_GUEST_ANNOUNCE since "
+>> +				   "host does not advertise "
+>> +				   "VIRTIO_NET_F_CTRL_VQ");
+>> +			virtio_disable_feature(dev,
+>> +					       VIRTIO_NET_F_GUEST_ANNOUNCE);
+>> +		}
+>> +		if (virtio_has_feature(dev, VIRTIO_NET_F_MQ)) {
+>> +			pr_warning("Disable VIRTIO_NET_F_MQ since host "
+>> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
+>> +			virtio_disable_feature(dev, VIRTIO_NET_F_MQ);
+>> +		}
+>> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR)) {
+>> +			pr_warning("Disable VIRTIO_NET_F_CTRL_MAC_ADDR since "
+>> +				   "host does not advertise "
+>> +				   "VIRTIO_NET_F_CTRL_VQ");
+>> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR);
+>> +		}
+>
+> Can we use a feature array and check with one loop?  The current check looks so dup?
+>
+>
+> Thanks,
+> Wanlong Gao
+>
 
-Yes, I hope so.
-At least, I can make it default to our product. But, how distributions
-will do is beyond my power. :)
+Yes for sure. I will wait a little bit for the maintainers comment and
+do it in next version.
 
-Thanks.
+Thanks
