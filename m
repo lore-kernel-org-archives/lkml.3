@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360AbaKMIwg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 03:52:36 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:57690 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116AbaKMIwe (ORCPT
+	id S932244AbaKMIxf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 03:53:35 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:43262 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866AbaKMIxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 03:52:34 -0500
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <560c680f7d30bf0d2f048d9ef5dc4cdd>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <54647142.4080800@rock-chips.com>
-Date: Thu, 13 Nov 2014 16:52:18 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-CC: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        fzf@rock-chips.com, ykk@rock-chips.com, yzq@rock-chips.com,
-        dkl@rock-chips.com, huangtao@rock-chips.com,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] clk: rockchip: add full support for HDMI clock on
- rk3288
-References: <1415087559-19444-1-git-send-email-kever.yang@rock-chips.com> <48806799.thBSifdUp8@diego>
-In-Reply-To: <48806799.thBSifdUp8@diego>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 13 Nov 2014 03:53:33 -0500
+Date: Thu, 13 Nov 2014 09:53:26 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] virtio-net: fix buggy features advertised by host
+Message-ID: <20141113095326.3e296c77.cornelia.huck@de.ibm.com>
+In-Reply-To: <1415857974-23326-2-git-send-email-jasowang@redhat.com>
+References: <1415857974-23326-1-git-send-email-jasowang@redhat.com>
+	<1415857974-23326-2-git-send-email-jasowang@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111308-0005-0000-0000-0000021110F6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+On Thu, 13 Nov 2014 13:52:54 +0800
+Jason Wang <jasowang@redhat.com> wrote:
 
-On 11/07/2014 05:06 AM, Heiko Stübner wrote:
-> Hi Kever,
->
-> Am Dienstag, 4. November 2014, 15:52:34 schrieb Kever Yang:
->> we are going to make a clock usage solution for rk3288:
->> 1. CPLL and GPLL always not change after assign init;
->> 2. NPLL default as 500MHz, may used for most scene;
->> 3. NPLL may be changed by VOP(HDMI) clock for some special
->>     frequency requirement.
->>
->>      I test it with rk3288 evb on top of Heiko's clk-for-next
-> In general I'm not really sure if allowing one component to arbitarily change
-> a shared clock wouldn't result in trouble.
->
-> At the moment only dclk_vop0 is included in your series, while the hdmi
-> controller can connect to both vop0 and vop1.
-> And as Doug mentioned the gpu also has the npll as one possible source.
-I think the problem GPU HANGs with 480MHz clock from usbphy has
-been fixed with my patch to gerrit:
-https://chromium-review.googlesource.com/#/c/229554/
->
-> Looking through the clock-tree there are a lot more components possibly using
-> (or wanting to use) the npll: of course the VOPs, the edp, hdmi, isp, hevc,
-> gpu, tsp uart0 and gmac. So I'm slightly uncomfortable with somehow reserving
-> the npll for VOP0 alone.
-It's true that I customized the usage of npll for VOP0 when we need some
-very special frequency, but it doesn't means other modules can't use the
-npll, it will always decided by clock core for module clocks that which 
-parent
-is the best.
+> This patch tries to detect the possible buggy features advertised by host
+> and fix them. One example is booting virtio-net with only ctrl_vq disabled,
+> qemu may still advertise many features which depends on it. This will
+> trigger several BUG()s in virtnet_send_command().
+> 
+> This patch utilizes the fix_features() method, and disables all features that
+> depends on ctrl_vq if it was not advertised.
+> 
+> This fixes the crash when booting with ctrl_vq=off.
 
-I'll be very happy if there is a better solution for this situation, and any
-suggestion is welcome.
+That's a qemu device property, right? Might want to mention that, as
+this line sounds like it is a kernel parameter.
 
-- Kever
->
-> But I also don't see a different way to get these frequencies right now.
->
->
-> Heiko
->
->
->
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Changes from V1:
+> - fix the cut-and-paste error
+> ---
+>  drivers/net/virtio_net.c | 35 +++++++++++++++++++++++++++++++++++
+>  1 file changed, 35 insertions(+)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index ec2a8b4..6ce125e 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1948,6 +1948,40 @@ static int virtnet_restore(struct virtio_device *vdev)
+>  }
+>  #endif
+> 
+> +static void virtnet_fix_features(struct virtio_device *dev)
+> +{
+> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
+> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_RX)) {
+> +			pr_warning("Disable VIRTIO_NET_F_CTRL_RX since host "
+> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
+> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
+> +		}
+
+You should probably use dev_warn() or so, so that the user can figure
+out which device the message is for. And perhaps add "buggy hypervisor"
+to the message to make clear that it's not a guest problem.
+
+I also like the suggestion to use a dependency array.
 
