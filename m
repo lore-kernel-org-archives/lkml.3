@@ -1,34 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaKMJJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:09:37 -0500
-Received: from darkcity.gna.ch ([195.226.6.51]:32876 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753709AbaKMJJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:09:35 -0500
-Message-ID: <54647543.50902@daenzer.net>
-Date: Thu, 13 Nov 2014 18:09:23 +0900
-From: =?UTF-8?Q?Michel_D=c3=a4nzer?= <michel@daenzer.net>
-User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:32.0) Gecko/20100101 Icedove/32.0
+	id S932365AbaKMJKY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:10:24 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45289 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160AbaKMJKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 04:10:19 -0500
+Date: Thu, 13 Nov 2014 10:10:05 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        "linux-pm@vger.kernel.org >> Linux PM list" 
+	<linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v2] PM / Sleep: Timer quiesce in freeze state
+In-Reply-To: <20141113013707.GQ29390@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1411131008280.3935@nanos>
+References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net> <544DE5CF.9040501@linux.intel.com> <20141027074419.GE10501@worktop.programming.kicks-ass.net> <544F4B31.7050308@linux.intel.com>
+ <20141028082503.GN3337@twins.programming.kicks-ass.net> <5450253B.5020802@linux.intel.com> <20141029082432.GV3337@twins.programming.kicks-ass.net> <5451A94F.1090200@linux.intel.com> <alpine.DEB.2.11.1411121558280.3935@nanos>
+ <20141113013707.GQ29390@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Marcus Overhagen <marcus.overhagen@gmail.com>
-CC: dri-devel@lists.freedesktop.org,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: Crash of radeon_ttm_tt_unpopulate in ttm_dma_unpopulate with
-References: <CAJBHPoiYce87At_DKiGbj6WnkcuuS0zEdGvdaYTDUUcq2gn6AA@mail.gmail.com>
-In-Reply-To: <CAJBHPoiYce87At_DKiGbj6WnkcuuS0zEdGvdaYTDUUcq2gn6AA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.11.2014 02:54, Marcus Overhagen wrote:
-> This crash occured after about a day  with 3.18.0-rc3
+On Thu, 13 Nov 2014, Peter Zijlstra wrote:
+> On Wed, Nov 12, 2014 at 10:09:47PM +0100, Thomas Gleixner wrote:
+> But sure, we can add suspend notifiers to stuff to shut down timers; I
+> should have a patch for at least one of the offenders somewhere. But I
+> really think that we should not be looking at the individual timers for
+> this, none of the other suspend modes care about active timers.
 
-Is it a regression? If yes, can you bisect?
+Fair enough.
+ 
+> > But before we do that we want a proper explanation why the interrupt
+> > fires at all. The lack of explanation cleary documents that this is a
+> > 'hacked it into submission' approach.
+> 
+> >From what I remember its the waking interrupt that ends up in the
+> timekeeping code, Li should have a backtrace somwhere.
 
+I can imagine what happens :)
 
--- 
-Earthling Michel Dänzer            |                  http://www.amd.com
-Libre software enthusiast          |                Mesa and X developer
+> > stomp_machine() is in 99% of all use cases a clear indicator for a
+> > complete design failure.
+> 
+> >    So the generic idle task needs a check like this:
+> > 
+> >    if (idle_should_freeze())
+> >       	frozen_idle();
+> 
+> So that is adding extra code to fairly common/hot paths just for this
+> one extra special case. I tried to avoid doing that.
+
+idle enter is not that much of a hot path, really.
+ 
+Thanks,
+
+	tglx
