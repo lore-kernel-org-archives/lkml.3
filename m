@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889AbaKMEgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 23:36:22 -0500
-Received: from mail-am1on0145.outbound.protection.outlook.com ([157.56.112.145]:46313
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753830AbaKMEgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 23:36:18 -0500
-From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-To: <shawn.guo@linaro.org>
-CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-Subject: [RESEND PATCH V2 2/2] ARM: dts: vf-colibri-eval-v3.dts: Enable ST-M41T0M6 RTC
-Date: Thu, 13 Nov 2014 10:05:32 +0530
-Message-ID: <b360a079a8a2acfc92a607105fb88bdd731155f7.1415852425.git.bhuvanchandra.dv@toradex.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1415852424.git.bhuvanchandra.dv@toradex.com>
-References: <cover.1415852424.git.bhuvanchandra.dv@toradex.com>
+	id S1753764AbaKME71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 23:59:27 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:12638 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535AbaKME7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 23:59:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 12 Nov 2014 20:59:35 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH 1/2] ARM: tegra: Remove eMMC vmmc property for roth/tn7
+Date: Thu, 13 Nov 2014 13:59:02 +0900
+Message-ID: <1415854743-11670-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.1.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [115.115.225.206]
-X-ClientProxiedBy: SINPR01CA0015.apcprd01.prod.exchangelabs.com
- (10.141.109.15) To DB3PR05MB266.eurprd05.prod.outlook.com (10.141.4.23)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB3PR05MB266;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR05MB266;
-X-Forefront-PRVS: 0394259C80
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(105586002)(106356001)(230783001)(46102003)(107046002)(66066001)(229853001)(118296001)(87286001)(47776003)(20776003)(64706001)(2351001)(110136001)(77096003)(33646002)(102836001)(40100003)(31966008)(104166001)(62966003)(77156002)(36756003)(81156004)(122386002)(101416001)(42186005)(99396003)(89996001)(21056001)(93916002)(92726001)(86362001)(92566001)(87976001)(575784001)(95666004)(76176999)(69596002)(19580395003)(48376002)(19580405001)(50986999)(97736003)(120916001)(50466002)(4396001)(88136002)(53416004)(50226001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DB3PR05MB266;H:trdx.toradex.int;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR05MB266;
-X-OriginatorOrg: toradex.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST-M41T0M6 is available on Colibri carrier boards.
-Hence enable M41T0M6 RTC.
+This property was wrong and broke eMMC since commit 52221610d. Align the
+eMMC properties to those of other Tegra boards.
 
-Acked-by: Stefan Agner <stefan@agner.ch>
-Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- arch/arm/boot/dts/vf-colibri-eval-v3.dtsi |    6 ++++++
- 1 file changed, 6 insertions(+)
+Stephen, Thierry, could we merge these two guys for 3.18? Roth and TN7
+are effectively broken until these fixes are in. Thanks!
 
-diff --git a/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-index 7324bdc..20251a3 100644
---- a/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-+++ b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-@@ -35,6 +35,12 @@
+ arch/arm/boot/dts/tegra114-roth.dts | 1 -
+ arch/arm/boot/dts/tegra114-tn7.dts  | 1 -
+ 2 files changed, 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/tegra114-roth.dts b/arch/arm/boot/dts/tegra114-roth.dts
+index c7c6825f11fb..1f6eaba92f67 100644
+--- a/arch/arm/boot/dts/tegra114-roth.dts
++++ b/arch/arm/boot/dts/tegra114-roth.dts
+@@ -971,7 +971,6 @@
+ 	sdhci@78000600 {
+ 		status = "okay";
+ 		bus-width = <8>;
+-		vmmc-supply = <&vdd_1v8>;
+ 		non-removable;
+ 	};
  
- &i2c0 {
- 	status = "okay";
-+
-+	/* M41T0M6 real time clock on carrier board */
-+	rtc: m41t0m6@68 {
-+		compatible = "st,m41t00";
-+		reg = <0x68>;
-+	};
- };
+diff --git a/arch/arm/boot/dts/tegra114-tn7.dts b/arch/arm/boot/dts/tegra114-tn7.dts
+index 963662145635..3c3e2afc537d 100644
+--- a/arch/arm/boot/dts/tegra114-tn7.dts
++++ b/arch/arm/boot/dts/tegra114-tn7.dts
+@@ -240,7 +240,6 @@
+ 	sdhci@78000600 {
+ 		status = "okay";
+ 		bus-width = <8>;
+-		vmmc-supply = <&vdd_1v8>;
+ 		non-removable;
+ 	};
  
- &pwm0 {
 -- 
-1.7.9.5
+2.1.3
 
