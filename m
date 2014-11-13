@@ -1,131 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850AbaKMMYp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:24:45 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:60618 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416AbaKMMYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:24:42 -0500
-Message-ID: <5464A2B5.3020207@ti.com>
-Date: Thu, 13 Nov 2014 17:53:17 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932524AbaKMMZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:25:25 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53203 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932416AbaKMMZY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 07:25:24 -0500
+Date: Thu, 13 Nov 2014 13:25:20 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Paul Burton <paul.burton@imgtec.com>, linux-mips@linux-mips.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] binfmt_elf: allow arch code to examine PT_LOPROC
+ ... PT_HIPROC headers
+Message-ID: <20141113122515.GF23422@ulmo>
+References: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
+ <1410420623-11691-4-git-send-email-paul.burton@imgtec.com>
+ <20141112134059.GA12619@ulmo>
+ <20141113001618.GC3839@linux-mips.org>
 MIME-Version: 1.0
-To: Johannes Pointner <johannes.pointner@gmail.com>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <devicetree@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
-        <linux-omap@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, Brad Griffis <bgriffis@ti.com>
-Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>	<20141103180920.GA20779@localhost.localdomain>	<545B2651.4090905@ti.com> <CAJKbBDDyShaJkzzfdFs07EK5gDUfwqWiv39Qi4FVSvRrfc6_fA@mail.gmail.com>
-In-Reply-To: <CAJKbBDDyShaJkzzfdFs07EK5gDUfwqWiv39Qi4FVSvRrfc6_fA@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7uYPyRQQ5N0D02nI"
+Content-Disposition: inline
+In-Reply-To: <20141113001618.GC3839@linux-mips.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wednesday 12 November 2014 06:30 PM, Johannes Pointner wrote:
-> Hello Vignesh,
-> 
-> I tried your patch version 3 on a customized board and had some
-> behavior I couldn't explain.
-> If I only use the touchscreen it works fine but if I also read values
-> from the ADCs then I get a lot of pen_up events even if I am still
-> touching the screen.
-> For the test I read via
-> # cat /sys/bus/iio/devices/iio\:device0/in_voltage5_raw
-> values from the ADC in an busy loop as you explained in an email
-> before. Did you also experience such behavior or do you know what
-> causes it?
+--7uYPyRQQ5N0D02nI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for testing. I was able to fix this issue. Will post version 4
-shortly.
+On Thu, Nov 13, 2014 at 01:16:19AM +0100, Ralf Baechle wrote:
+> On Wed, Nov 12, 2014 at 02:41:04PM +0100, Thierry Reding wrote:
+>=20
+> > Hi Ralf,
+> >=20
+> > This commit showed up in linux-next and causes a warning in linux/elf.h
+> > because it doesn't know struct file. I've fixed it locally with this:
+> >=20
+> > ---
+> > diff --git a/include/linux/elf.h b/include/linux/elf.h
+> > index 6bd15043a585..dac5caaa3509 100644
+> > --- a/include/linux/elf.h
+> > +++ b/include/linux/elf.h
+> > @@ -4,6 +4,8 @@
+> >  #include <asm/elf.h>
+> >  #include <uapi/linux/elf.h>
+> > =20
+> > +struct file;
+> > +
+> >  #ifndef elf_read_implies_exec
+> >    /* Executables for which elf_read_implies_exec() returns TRUE will
+> >       have the READ_IMPLIES_EXEC personality flag set automatically.
+> > ---
+> >=20
+> > Would you mind squashing that into the above commit to get rid of the
+> > warning?
+>=20
+> To fix the warnings reported by sfr on powerpc64 this morning I moved
+> most of the code added to <linux/elf.h> into fs/binfmt_elf.c.  That
+> should also have taken care of the warnings you saw for ARM.
 
-Regards
-Vignesh
+These changes didn't make it into today's next, but manually applying
+them I can indeed verify that the build warning is gone.
 
-> 
-> Without the patches the touchscreen works fine during the iio test.
-> 
-> Thanks,
-> Hannes
-> 
-> 2014-11-06 8:42 GMT+01:00 Vignesh R <vigneshr@ti.com>:
->>
->>
->> On Monday 03 November 2014 11:39 PM, Richard Cochran wrote:
->>> On Mon, Oct 27, 2014 at 04:38:27PM +0530, Vignesh R wrote:
->>>> This series of patches fix TSC defects related to lag in touchscreen
->>>> performance and cursor jump at touch release. The lag was result of
->>>> udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
->>>> The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
->>>> to avoid false pen-up events and remove udelay.
->>>
->>> That advisory has two workarounds. You have chosen the second one?
->>
->> Work around one. Hence 5 wire design is not broken.
->>
->>>
->>> The text of the second workaround says it only works on 4 wire setups,
->>> so I wonder how 5 wire designs will be affected.
->>>
->>>> The advisory says to use
->>>> steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
->>>> ADC).
->>>
->>> No, it doesn't say that. (sprz360f.pdf)
->>
->> The pen up event detection happens immediately after charge step. Hence,
->> interchanging ADC and TSC steps makes sure that sampling of touch
->> co-ordinates and pen events are done one after the other. This
->> workaround was suggested by internal hardware folks. Earlier ADC steps
->> intervened between sampling of co-ordinates and pen event detection
->> which is not desirable.
->>
->>>
->>>> Further the X co-ordinate must be the last one to be sampled just
->>>> before charge step. The first two patches implement the required changes.
->>>
->>> FWIW, I implemented the first workaround and removed the udelay not
->>> too long ago. Like Sebastian, I saw the TSC unit hang after about
->>> 50000 interrupts when running with the workaround.
->>>
->>> Did you test you patch for very long?
->>
->> Yes, I tested for about 200000 interrupts and I didn't see any hang.
->> This patch series does not just implement workaround but also does some
->> minor changes, such as interchanging ADC and TSC steps etc, which makes
->> TSC driver more robust. Let me know if you encounter any issues with my
->> patch series.
->>
->> Regards
->> Vignesh
->>
->>>
->>> Thanks,
->>> Richard
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thierry
+
+--7uYPyRQQ5N0D02nI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUZKMrAAoJEN0jrNd/PrOhin0P/2QdZ2yXgtdvYvWELEmWLaQa
++xSc3Lznq4yKUQZIOFUnu5mlQCixXqQWt+IS0RYGJkwinSLWOP0HudLQ3mtdlfyp
+suZMJXsUJsu7cHW6GxUvu6N+NBHZC8cZryVmOEmS72LE9i4JCAvv6zcL+DHv2nqA
+VrK8iTymt/SOACSFjzqmOfjIBaFlDXOVCj6K70Jr6hrzXlvjzpR0Vzax1VjuhJtY
+j2FepaaZ7TLfhrABBb2I/phE0JLKnKF9V3+fw9aAOLtvQl2VxVJX+2QKxXZmGlXN
+3Af2yzlQfxYSpQ3GcamToqGTos+h+PqBJBRbNe1VYswcJ1niSXjX/utdHJ4NK6vl
+qyucOEhuZF132qTVqQbIeGG8cztMHnXXxPNyY9ZumEhxEbICFXjxE2daywPtJZ5Z
+RWsZ1ulbKY+H12Fa6hmLTsFDjCBtcfBNBWXtNnVY4IlvJCwXbDoItexjR9uVXzos
+5whWtsHmb1lmmrgoBrI3bfULZSeSaxauQ2rOePAIosgHT7TdisETP8Ih7OBEkFP+
+T/uWsfZAL93Vpt0hW5nfMvZpjzK5CAAOcfwceLrLTqTz4amO2eXRMZEnN0ebOEz3
+NFV2Cy6FVk1cEvlSy8MDP9sBKdyFRXGHZBUhJwGue5AEz8Xzjs6q/drLZk52d26u
+G6Z40dryPmObkfaOzyR9
+=Qh9f
+-----END PGP SIGNATURE-----
+
+--7uYPyRQQ5N0D02nI--
