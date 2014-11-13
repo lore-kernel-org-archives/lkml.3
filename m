@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323AbaKMVSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:18:52 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:37301 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934175AbaKMVSt (ORCPT
+	id S934332AbaKMVWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:22:44 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59897 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934114AbaKMVWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:18:49 -0500
-Date: Thu, 13 Nov 2014 16:18:47 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Benson Leung <bleung@chromium.org>
-cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        <linux-usb@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
-In-Reply-To: <CANLzEksGg0KyWOS+WYv_U8GzSJ4C_H0LTpdXvz8Ae-8mH6K41w@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1411131611001.945-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 13 Nov 2014 16:22:42 -0500
+Date: Thu, 13 Nov 2014 16:22:40 -0500 (EST)
+Message-Id: <20141113.162240.1823683928052355016.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141112.223146.2221136950144767962.davem@davemloft.net>
+References: <20141112.144949.645590790916569141.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2ECE8EF@RTITMBSV03.realtek.com.tw>
+	<20141112.223146.2221136950144767962.davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Nov 2014 13:22:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, Benson Leung wrote:
+From: David Miller <davem@davemloft.net>
+Date: Wed, 12 Nov 2014 22:31:46 -0500 (EST)
 
-> On Thu, Nov 13, 2014 at 12:41 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > usbhid_stop probably doesn't need it.  And it should be possible to fix
-> > usbhid_close more easily just by interchanging the two lines:
-> >
-> > -                       usb_kill_urb(usbhid->urbin);
-> >                         usbhid->intf->needs_remote_wakeup = 0;
-> > +                       usb_kill_urb(usbhid->urbin);
-> >
-> > Have you tried this?
+> From: Hayes Wang <hayeswang@realtek.com>
+> Date: Thu, 13 Nov 2014 02:31:14 +0000
 > 
-> Yes, I tried that as well, and that does work.
+>> My last method which I mentioned yesterday is similar to
+>> this one. The difference is that I would re-use the rx
+>> buffers, so I have to add them to the list for re-submitting,
+>> not alwayes allocate new one.
+>> 
+>> Although one rx buffer could contain many packets, I don't
+>> think the whole size of the rx buffer is alwayes used.
+>> Therefore, I re-use the rx buffers to avoid allocating
+>> the 16K bytes rx buffer alwayes. This also makes sure that
+>> I always have the buffers to submit without allocating new
+>> one.
+>> 
+>> If you could accept this, I would modify this patch by
+>> this way.
 > 
-> I used the get/put because that's the way it was done in other
-> drivers, for example in synusb_close() in
-> drivers/input/mouse/synaptics_usb.c
+> I'll reread your original patch and think some more about this.
 
-In the patch description, you wrote:
+What if even the first r8152_submit_rx() fails?  What ever will cause
+any of these retries to trigger at all?
 
-> When a usbhid device that does not support remote wake
-> ( i.e. !device_can_wakeup() ) is closed, we fail out of
-> autosuspend_check() because the autosuspend check is called
-> before the flag is cleared as a result of usb_kill_urb(usbhid->urbin);
-
-If you interchange the two lines then the flag _will_ be cleared before
-usb_kill_urb() and autosuspend_check() can run.  This means your patch
-description is bogus.
-
-Alan Stern
-
+Second, why does your patch increment 'i' with 'i++;' in the error
+break path?  You should mark the first failed entry as unallocated
+with actual_length == 0 and place it on the rx_done queue.
