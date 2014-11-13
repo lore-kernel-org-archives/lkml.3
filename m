@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933554AbaKMRMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:12:49 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29051 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932596AbaKMRMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:12:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,378,1413270000"; 
-   d="asc'?scan'208";a="631490191"
-Message-ID: <1415898512.2454.26.camel@jtkirshe-mobl>
-Subject: Re: [E1000-devel] [PATCH] ixgbe: make VLAN filter conditional in
- SR-IOV case
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Cc: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        Hayato Momma <h-momma@ce.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Nov 2014 09:08:32 -0800
-In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-ztw/TBEd1Vw4sQECYlTr"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1754109AbaKMROr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:14:47 -0500
+Received: from smtp3.tech.numericable.fr ([82.216.111.39]:41404 "EHLO
+	smtp3.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaKMROp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 12:14:45 -0500
+Message-ID: <5464E6E6.3090606@laposte.net>
+Date: Thu, 13 Nov 2014 18:14:14 +0100
+From: Barto <mister.freeman@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+References: <54629CAE.2000207@laposte.net> <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com> <5462CB90.1080303@roeck-us.net> <54642541.9080302@laposte.net> <94D0CD8314A33A4D9D801C0FE68B4029593A1880@G9W0745.americas.hpqcorp.net> <54647C10.4070506@laposte.net> <20141113142907.GB29354@infradead.org>
+In-Reply-To: <20141113142907.GB29354@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrjedvgddtudcutefuodetggdotefrucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepkfffhfgfggfvufhfjggtgfesthekrgdttdefheenucfhrhhomhepuegrrhhtohcuoehmihhsthgvrhdrfhhrvggvmhgrnheslhgrphhoshhtvgdrnhgvtheqnecuffhomhgrihhnpehkvghrnhgvlhdrohhrgh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Christoph,
 
---=-ztw/TBEd1Vw4sQECYlTr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I tested this commit :
 
-On Thu, 2014-11-13 at 08:28 +0000, Hiroshi Shimamoto wrote:
-> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
->=20
-> Disable hardware VLAN filtering if netdev->features VLAN flag is
-> dropped.
->=20
-> In SR-IOV case, there is a use case which needs to disable VLAN
-> filter.
-> For example, we need to make a network function with VF in virtualized
-> environment. That network function may be a software switch, a router
-> or etc. It means that that network function will be an end point which
-> terminates many VLANs.
->=20
-> In the current implementation, VLAN filtering always be turned on and
-> VF can receive only 63 VLANs. It means that only 63 VLANs can be used
-> and it's not enough at all for building a virtual router.
->=20
-> With this patch, if the user turns VLAN filtering off on the host, VF
-> can receive every VLAN packet.
-> The behavior is changed only if VLAN filtering is turned off by
-> ethtool.
->=20
-> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> CC: Choi, Sy Jong <sy.jong.choi@intel.com>
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 10 ++++++++++
->  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c |  4 ++++
->  2 files changed, 14 insertions(+)
+7ae65c0f9646c29432b69580b80e08632e6cd813 scsi: convert target_busy to an
+atomic_t
 
-Thanks Hiroshi, I will add your patch to my queue.
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=7ae65c0f9646c29432b69580b80e08632e6cd813
 
---=-ztw/TBEd1Vw4sQECYlTr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+there is no bug, boot process is ok whit this commit,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+when I did the "git bisect" the first bad commit was Guenters' commit (
+045065d8a300a37218c548e9aa7becd581c6a0e8 ), it seems that all commits
+before 045065d8a300a37218c548e9aa7becd581c6a0e8 are ok,
 
-iQIcBAABCgAGBQJUZOWQAAoJEOVv75VaS+3O3uMP/1a2Lb2lIVsEZL0O8SstPVkf
-yBFd0Dr8kBIqy+fvnuZEO3BAhrXK7dxkL56PXTOQ+bbt+ObSzJFPSi82F/FpDmT0
-Zwnjq2nluRLugTdwd73OL96YL7NB5iBZe8SviSXCiiRnAjFHuXJz3NLEEYn/Vvwx
-trlTRnu/JSmttRLBxXXwHy/2GlOHaFtGKQ3vc0JYW5fooTsgWn7pe7/SIQ8EeWK7
-S8FvMFsEOylF+HELrXc6vqjWFOl42j+rsP+adFNS6c8YyIsq4OIwzCWec1By9CT0
-oMpaH0b4d5KHhjagd964a9YHvzf3g64sLvBSDREE7EM/Xa+Bjtdotmo6iLFfXuTe
-jrwdqF00AlGk1EW2HJ+8qr0abqQiacpES9d6sdf61iFAMT/3yBkNlY4ipRfpbQg0
-Gncr2sL5t86kvUbnjKxrcvd8tNXTL79gM13bI0Vu9sVxmkpLl4vseTXMSGQF0NRp
-F9dUU1vka1wUi3/cxiW3FUj/P4hKgmI3EqhzZuVraePSaazX8/dX+mbU75rfIGrT
-ln+ITBXzjv/0WBJWESkcb35+Y/jXSz9+0Sco/rlcvP1+v/kF55W/5fxE1pXYtMSB
-4wL5oNlYrATcwI6LpI+01C8tY9tsSW61aVdinzUCTRm+vI4xTXrLz5qvA9IeuqKc
-ePVfxWcyR9xmAnt72t7R
-=5iKA
------END PGP SIGNATURE-----
+you can find the log of the bisect here :
 
---=-ztw/TBEd1Vw4sQECYlTr--
+https://bugzilla.kernel.org/attachment.cgi?id=157211
 
+Le 13/11/2014 15:29, Christoph Hellwig a écrit :
+> Guenters commit just fixes the inversion from commit
+> 
+> 71e75c97f97a9645d25fbf3d8e4165a558f18747 scsi: convert device_busy to atomic_t
+> 
+> Can you please test the commit before that:
+> 74665016086615bbaa3fa6f83af410a0a4e029ee scsi: convert host_busy to atomic_t
+> 
+> and check if that works for you or not.
+> 
