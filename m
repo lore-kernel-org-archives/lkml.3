@@ -1,138 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768AbaKMLcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:32:50 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:38864 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932525AbaKMLcr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:32:47 -0500
-Message-ID: <546496DA.1000502@atmel.com>
-Date: Thu, 13 Nov 2014 12:32:42 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932802AbaKMLc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:32:56 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38742 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932610AbaKMLcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 06:32:53 -0500
+Message-ID: <5464969F.30708@ti.com>
+Date: Thu, 13 Nov 2014 13:31:43 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Peter Rosin <peda@axentia.se>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ARM: at91/dt: Fix sama5d3x typos.
-References: <ec77270840f94da6a6d7548e7a3bf5a8@EMAIL.axentia.se>
-In-Reply-To: <ec77270840f94da6a6d7548e7a3bf5a8@EMAIL.axentia.se>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+To: Tony Lindgren <tony@atomide.com>
+CC: Marek Belisko <marek@goldelico.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
+        <plagnioj@jcrosoft.com>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-fbdev@vger.kernel.org>, <hns@goldelico.com>
+Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
+ devconf1 register
+References: <1415051968-4878-1-git-send-email-marek@goldelico.com> <1415051968-4878-5-git-send-email-marek@goldelico.com> <5463585D.9070209@ti.com> <20141112150210.GC26481@atomide.com>
+In-Reply-To: <20141112150210.GC26481@atomide.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/10/2014 13:56, Peter Rosin :
->>From c23d712fe924b929c2eb39eba644fe74bcccfd37 Mon Sep 17 00:00:00 2001
-> From: Peter Rosin <peda@axentia.se>
-> Date: Thu, 23 Oct 2014 13:52:03 +0200
-> Subject: [PATCH] ARM: at91/dt: Fix sama5d3x typos.
-> 
-> The DT compatible strings also need binding documentation, but that is for
-> someone else to write.
+--DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Well, documentation is already queued up for 3.18 in Linus' tree.. Here
-is the commit:
-02037a9719fa (ARM: at91: document Atmel SMART compatibles).
+On 12/11/14 17:02, Tony Lindgren wrote:
 
-So I remove this comment and queue this patch up for at91-3.18-fixes.
+>> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
+>> places in the kernel. I wonder if adding a pinmux entry for it could
+>> cause some rather odd problems.
+>=20
+> They can all use pinctrl-single no problem.
 
-Thanks for having catch the typo, bye.
+Can, but don't. That's my worry. If we touch the DEVCONF1 via pinmux,
+and we have code in mach-omap2 that also touch DEVCONF1, without any
+knowledge (and locking) between those...
 
-> Signed-off-by: Peter Rosin <peda@axentia.se>
-> ---
->  arch/arm/boot/dts/sama5d31.dtsi   |    2 +-
->  arch/arm/boot/dts/sama5d33.dtsi   |    2 +-
->  arch/arm/boot/dts/sama5d34.dtsi   |    2 +-
->  arch/arm/boot/dts/sama5d35.dtsi   |    2 +-
->  arch/arm/boot/dts/sama5d36.dtsi   |    2 +-
->  arch/arm/boot/dts/sama5d3xcm.dtsi |    2 +-
->  6 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/sama5d31.dtsi b/arch/arm/boot/dts/sama5d31.dtsi
-> index 7997dc9..883878b 100644
-> --- a/arch/arm/boot/dts/sama5d31.dtsi
-> +++ b/arch/arm/boot/dts/sama5d31.dtsi
-> @@ -12,5 +12,5 @@
->  #include "sama5d3_uart.dtsi"
->  
->  / {
-> -	compatible = "atmel,samad31", "atmel,sama5d3", "atmel,sama5";
-> +	compatible = "atmel,sama5d31", "atmel,sama5d3", "atmel,sama5";
->  };
-> diff --git a/arch/arm/boot/dts/sama5d33.dtsi b/arch/arm/boot/dts/sama5d33.dtsi
-> index 39f8322..4b4434a 100644
-> --- a/arch/arm/boot/dts/sama5d33.dtsi
-> +++ b/arch/arm/boot/dts/sama5d33.dtsi
-> @@ -10,5 +10,5 @@
->  #include "sama5d3_gmac.dtsi"
->  
->  / {
-> -	compatible = "atmel,samad33", "atmel,sama5d3", "atmel,sama5";
-> +	compatible = "atmel,sama5d33", "atmel,sama5d3", "atmel,sama5";
->  };
-> diff --git a/arch/arm/boot/dts/sama5d34.dtsi b/arch/arm/boot/dts/sama5d34.dtsi
-> index 89cda2c..aa01573 100644
-> --- a/arch/arm/boot/dts/sama5d34.dtsi
-> +++ b/arch/arm/boot/dts/sama5d34.dtsi
-> @@ -12,5 +12,5 @@
->  #include "sama5d3_mci2.dtsi"
->  
->  / {
-> -	compatible = "atmel,samad34", "atmel,sama5d3", "atmel,sama5";
-> +	compatible = "atmel,sama5d34", "atmel,sama5d3", "atmel,sama5";
->  };
-> diff --git a/arch/arm/boot/dts/sama5d35.dtsi b/arch/arm/boot/dts/sama5d35.dtsi
-> index d20cd71..16c39f4 100644
-> --- a/arch/arm/boot/dts/sama5d35.dtsi
-> +++ b/arch/arm/boot/dts/sama5d35.dtsi
-> @@ -14,5 +14,5 @@
->  #include "sama5d3_tcb1.dtsi"
->  
->  / {
-> -	compatible = "atmel,samad35", "atmel,sama5d3", "atmel,sama5";
-> +	compatible = "atmel,sama5d35", "atmel,sama5d3", "atmel,sama5";
->  };
-> diff --git a/arch/arm/boot/dts/sama5d36.dtsi b/arch/arm/boot/dts/sama5d36.dtsi
-> index db58cad..e85139e 100644
-> --- a/arch/arm/boot/dts/sama5d36.dtsi
-> +++ b/arch/arm/boot/dts/sama5d36.dtsi
-> @@ -16,5 +16,5 @@
->  #include "sama5d3_uart.dtsi"
->  
->  / {
-> -	compatible = "atmel,samad36", "atmel,sama5d3", "atmel,sama5";
-> +	compatible = "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
->  };
-> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> index f7d8583..56574c8 100644
-> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> @@ -8,7 +8,7 @@
->   */
->  
->  / {
-> -	compatible = "atmel,samad3xcm", "atmel,sama5d3", "atmel,sama5";
-> +	compatible = "atmel,sama5d3xcm", "atmel,sama5d3", "atmel,sama5";
->  
->  	chosen {
->  		bootargs = "console=ttyS0,115200 rootfstype=ubifs ubi.mtd=5 root=ubi0:rootfs";
-> 
+So _maybe_ that's not an issue, as the pinmux config we have here is
+fixed, and done once at boot time, and maybe the code in mach-omap2 that
+touch DEVCONF1 is also ran just once and not at the same time as the
+pinmux. But I don't know if that's so.
+
+ Tomi
 
 
--- 
-Nicolas Ferre
+
+--DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUZJafAAoJEPo9qoy8lh71jJgP/3qSP8qsUyziPLpWjcX37leM
+NlMTt9xjQ6B8aNIUWDaso5CpfJmsO47I5S5coKcCDAtnyyRZdp1bGg6MtEhxWOoy
+mP0WfoZDzMrQh/j7IASwHe8R9MlHPCSa/+IBmG5BsqRCPaxrDULM8E6aGn3noKo1
+uI7XCossptOUjKhR6NxXaXKR0uqDZfkmCHvsVwNLj1mQiQAuns271AGkCVSUHlWN
+SN+gzxpg367m5DSAXuodLJZ8Vv+fC7Bkl1iDYrSO6zHAPlcPchxCeM9/iFZRzC12
+EAeSYTEQ1jrxiE3XReqNcqDP+/Pb2PDL6lapPMdawhuuFVRKF5X4yKpiNsdMQ8Uf
+qz1uiJN9E+fvewd0AVcndkLhkqwrWDDsFlgNHXM4xIpUHlSofurAhUMOtsy3OTse
+FErYnbNwz5Ls0XWta1OYmXUpwlc6Uy0JFaXdpCiIEpryzqbqYoVpuVuFreciFuGk
+VkoD1n1UkYRqaJW+phdfQxn+OFW/MO/m496rYvoQtCRqd4GRrh5mCVePYQ5ALZD2
+TUwtC+b41ynOO41SBMMAIHLMF0b8nxv4jv6fm1HXT1OI45ba6wxN8UTz0rzat5nE
+UQuvXYRDu+cssCiZq2OXRndj46cai21CZ8w6xpaaQDWbnBNKc3RRTjHHeHc1uKWu
+Xh0V0i2cC29uQe+PqAcE
+=U/8Y
+-----END PGP SIGNATURE-----
+
+--DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x--
