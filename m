@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaKMGsn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 01:48:43 -0500
-Received: from ausxippc101.us.dell.com ([143.166.85.207]:51302 "EHLO
-	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaKMGsm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 01:48:42 -0500
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Nov 2014 01:48:42 EST
-DomainKey-Signature: s=smtpout; d=dell.com; c=nofws; q=dns;
-  h=X-LoopCount0:X-IronPort-AV:From:To:CC:Date:Subject:
-   Thread-Topic:Thread-Index:Message-ID:References:
-   In-Reply-To:Accept-Language:Content-Language:
-   X-MS-Has-Attach:X-MS-TNEF-Correlator:acceptlanguage:
-   Content-Type:Content-Transfer-Encoding:MIME-Version:
-   Return-Path;
-  b=mpZoa7x/O/oZuHzfxe+KdFnTgQZLmXmDa/uQ6Y20cUV+vbDJ/KIUmhoD
-   hnZ1weg75uwhmVj351OHY0v6hQGOC7UcybBnpAaykUTuYu2Zc1W7eIruQ
-   MeDeoaucIWf7OlY3j+fbL2j9ZIMDzfZZSaGXHBAwcQPI2xjPuTkaDGoM6
-   E=;
-X-LoopCount0: from 10.170.28.41
-X-IronPort-AV: E=Sophos;i="5.07,375,1413262800"; 
-   d="scan'208";a="588141132"
-From: <B_B_Singh@DELL.com>
-To: <bp@suse.de>, <stuart.w.hayes@gmail.com>
-CC: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <matt.fleming@intel.com>
-Date: Thu, 13 Nov 2014 12:09:02 +0530
-Subject: RE: [PATCH] x86: Configure NX support earlier in setup_arch
-Thread-Topic: [PATCH] x86: Configure NX support earlier in setup_arch
-Thread-Index: Ac//CzZQXdNuppSdTyCFUyd6BrR/hgAARa7A
-Message-ID: <8B2F6FFD0BD1E448853114367400A3730702007068@BLRX7MCDC203.AMER.DELL.COM>
-References: <53B4B627.8060903@gmail.com> <53BC7210.1000305@gmail.com>
- <53BC72D8.4090705@zytor.com> <53BDE4BD.50605@gmail.com>
- <20140714172225.GE25120@pd.tnic>
-In-Reply-To: <20140714172225.GE25120@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1753787AbaKMGt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 01:49:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54323 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997AbaKMGt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 01:49:27 -0500
+Message-ID: <54645474.4040605@suse.com>
+Date: Thu, 13 Nov 2014 07:49:24 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 4/8] xen: Delay invalidating extra memory
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-5-git-send-email-jgross@suse.com> <20141112221021.GC7549@laptop.dumpdata.com>
+In-Reply-To: <20141112221021.GC7549@laptop.dumpdata.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD6mnOD021832
 
-Hi Boris,
-
-I feel this can be a valid scenario where user wants to disable the memory protection (NX flag disable) for his requirement, in that case he will hit this issue.
-So request you to please revisit this patch.
-
-Regards
-Balaji Singh
-
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Borislav Petkov
-Sent: Monday, July 14, 2014 10:52 PM
-To: Stuart Hayes
-Cc: H. Peter Anvin; tglx@linutronix.de; mingo@redhat.com; x86@kernel.org; linux-kernel@vger.kernel.org; matt.fleming@intel.com; bp@suse.de
-Subject: Re: [PATCH] x86: Configure NX support earlier in setup_arch
-
-On Wed, Jul 09, 2014 at 07:56:29PM -0500, Stuart Hayes wrote:
-> Well... I got this issue because a co-worker tripped over it. He had 
-> NX disabled in BIOS for some reason, and found that linux wouldn't 
-> boot--it hung right after grub2. I guess it took a while to figure out 
-> that it was the fact that NX was disabled that caused linux not to 
-> come up--and that could happen to other people. I don't know of any 
-> real-world scenarios in which someone would actually prefer to run a 
-> recent linux kernel with NX disabled, though.
+On 11/12/2014 11:10 PM, Konrad Rzeszutek Wilk wrote:
+>> @@ -376,12 +374,14 @@ void __init xen_build_dynamic_phys_to_machine(void)
+>>   	unsigned long max_pfn;
+>>   	unsigned long pfn;
+>>
+>> -	 if (xen_feature(XENFEAT_auto_translated_physmap))
+>> +	if (xen_feature(XENFEAT_auto_translated_physmap))
 >
-> It looks like some of the other boot paths into the kernel 
-> automatically clear the XD_DISABLE bit in the MISC_ENABLE MSR in the 
-> CPU (in verify_cpu), but that doesn't happen when grub2 jumps to
-> startup_64 in arch/x86/boot/compressed/head_64.S. I guess instead of 
-> this patch, I could try to make a patch that turns NX back on 
-> (somewhere in startup_64), but since the kernel already supports NX 
-> being disabled, so I thought maybe just fixing that would be better. I 
-> didn't like seeing the kernel just die without giving any indication 
-> of what the problem is.
+> Spurious change.
 
-Well, hpa and I were talking about this briefly and this NX disabling in the BIOS is probably for some broken legacy applications/OSes. Linux enables NX unconditionally very early because disabling it is a very bad idea anyway, security-wise.
+I'll remove it.
 
-So, if this is just a random trip over of a co-worker and doesn't have any sensible use case, I'd rather leave it as is an don't fix it at all.
+>
+> .. snip..
+>> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+>> index 0e5f9b6..8d5985b 100644
+>> --- a/arch/x86/xen/setup.c
+>> +++ b/arch/x86/xen/setup.c
+>> @@ -75,7 +75,6 @@ static unsigned long xen_remap_mfn __initdata = INVALID_P2M_ENTRY;
+>>
+>>   static void __init xen_add_extra_mem(u64 start, u64 size)
+>>   {
+>> -	unsigned long pfn;
+>>   	int i;
+>>
+>>   	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
+>> @@ -95,17 +94,74 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
+>>   		printk(KERN_WARNING "Warning: not enough extra memory regions\n");
+>>
+>>   	memblock_reserve(start, size);
+>> +}
+>>
+>> -	xen_max_p2m_pfn = PFN_DOWN(start + size);
+>> -	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
+>> -		unsigned long mfn = pfn_to_mfn(pfn);
+>> +static void __init xen_del_extra_mem(u64 start, u64 size)
+>> +{
+>> +	int i;
+>> +	u64 start_r, size_r;
+>>
+>> -		if (WARN_ONCE(mfn == pfn, "Trying to over-write 1-1 mapping (pfn: %lx)\n", pfn))
+>> -			continue;
+>> -		WARN_ONCE(mfn != INVALID_P2M_ENTRY, "Trying to remove %lx which has %lx mfn!\n",
+>> -			  pfn, mfn);
+>> +	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
+>> +		start_r = xen_extra_mem[i].start;
+>> +		size_r = xen_extra_mem[i].size;
+>> +
+>> +		/* Start of region. */
+>> +		if (start_r == start) {
+>> +			BUG_ON(size > size_r);
+>> +			xen_extra_mem[i].start += size;
+>> +			xen_extra_mem[i].size -= size;
+>> +			break;
+>> +		}
+>> +		/* End of region. */
+>> +		if (start_r + size_r == start + size) {
+>> +			BUG_ON(size > size_r);
+>> +			xen_extra_mem[i].size -= size;
+>> +			break;
+>> +		}
+>> +		/* Mid of region. */
+>> +		if (start > start_r && start < start_r + size_r) {
+>> +			BUG_ON(start + size > start_r + size_r);
+>> +			xen_extra_mem[i].size = start - start_r;
+>> +			xen_add_extra_mem(start + size, start_r + size_r -
+>> +					  (start + size));
+>
+> Which ends up calling 'memblock_reserve' for an region it already has
+> reserved. Should we call memblock_free(start_r, size_r - size) before calling this?
+>
+> Or is that not neccessary as memblock_* is pretty smart about this sort of thing?
 
---
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+Regions marked via memblock_reserve() are allowed to overlap. I can add
+a comment.
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Juergen
+
