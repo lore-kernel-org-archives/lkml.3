@@ -1,181 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733AbaKMLaW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:30:22 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:51029 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932329AbaKMLaV (ORCPT
+	id S932739AbaKMLco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:32:44 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:59640 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525AbaKMLcm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:30:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: suravee.suthikulpanit@amd.com, mark.rutland@arm.com, will.deacon@arm.com,
-        catalin.marinas@arm.com, Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>, marc.zyngier@arm.com,
-        liviu.dudau@arm.com, linux-kernel@vger.kernel.org,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD Seattle platform
-Date: Thu, 13 Nov 2014 12:29:40 +0100
-Message-ID: <8642876.4lpJWZTuhf@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414503414-3863-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1414503414-3863-1-git-send-email-suravee.suthikulpanit@amd.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:VJ3JLM5/LKM14WH7bcdCvCEoojOxi2rTYH54NEAVrdg
- ts8a/RHJPYVcOg1vW7RALQYRHoMIV1P2HmfzTwhhyihOPX7mhE
- KlRcvP6bH2cdF3q9UCm2Q2Uwz5c0ResE8TnY3n3kFBGgruGuYR
- VGwQvU7ClOMUDtlYs5MCF2ZNf0BJpMgtoK4fC5j+ME3z7FxLEv
- MD8waORbyWmld9RzlXepHQIKj49MuXzdgsO8Luad77gTMMZcca
- JCEIkztY7M1IhdvHO3NnnJFo/3ijO14AMDfw2f8el2P7mYExzZ
- Dff76MrZo9bCmaGqSPUeYtCDNnhaRx7ahadUGEQaL7659r1BOs
- YwdykKD1xoyl06ULVOXQ=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 13 Nov 2014 06:32:42 -0500
+Date: Thu, 13 Nov 2014 12:32:18 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>, Soren Brinkmann <sorenb@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
+Subject: Re: [PATCH] can: Fix bug in suspend/resume
+Message-ID: <20141113123218.79850236@ipc1.ka-ro>
+In-Reply-To: <9455da2b86c74d5aafe9bf118edec7bb@BN1AFFO11FD045.protection.gbl>
+References: <a44efc1fb0144cca9d0c4851cc51db25@BL2FFO11FD024.protection.gbl>
+	<546484D9.4030005@pengutronix.de>
+	<54648BF4.60007@pengutronix.de>
+	<9455da2b86c74d5aafe9bf118edec7bb@BN1AFFO11FD045.protection.gbl>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 October 2014 08:36:54 suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Hi,
+
+Appana Durga Kedareswara Rao wrote:
+> Hi Marc,
 > 
-> Initial revision of device tree for AMD Seattle platform
+> -----Original Message-----
+> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> Sent: Thursday, November 13, 2014 4:16 PM
+> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek; Soren Brinkmann; grant.likely@linaro.org; robh+dt@kernel.org
+> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; Appana Durga Kedareswara Rao
+> Subject: Re: [PATCH] can: Fix bug in suspend/resume
+> 
+> On 11/13/2014 11:15 AM, Marc Kleine-Budde wrote:
+> > On 11/13/2014 07:58 AM, Kedareswara rao Appana wrote:
+> >> When accessing the priv structure use container_of instead of dev_get_drvdata.
+> >
+> > Why?
+> 
+> The drvdata here is the struct net_device, not the platform device.
+> Please state this in the commit message.
+> 
+> If I understand the code correct, you can make use of the existing helper function to_platform_device():
+> 
+> http://lxr.free-electrons.com/source/include/linux/platform_device.h#L42
+> 
+> Thanks for the suggestion.
+>  Will use this macro(to_platform_device)  .
+> 
+> >
+> >> Enable the clocks in the suspend before accessing the registers of the CAN.
+> >>
+> >> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+> >> ---
+> >>  drivers/net/can/xilinx_can.c |   20 ++++++++++++++++++--
+> >>  1 files changed, 18 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/net/can/xilinx_can.c
+> >> b/drivers/net/can/xilinx_can.c index 5e8b560..63ef645 100644
+> >> --- a/drivers/net/can/xilinx_can.c
+> >> +++ b/drivers/net/can/xilinx_can.c
+> >> @@ -972,15 +972,30 @@ static const struct net_device_ops xcan_netdev_ops = {
+> >>   */
+> >>  static int __maybe_unused xcan_suspend(struct device *dev)  {
+> >> -    struct platform_device *pdev = dev_get_drvdata(dev);
+> >> +    struct platform_device *pdev = container_of(dev,
+> >> +                    struct platform_device, dev);
+> >>      struct net_device *ndev = platform_get_drvdata(pdev);
+> >>      struct xcan_priv *priv = netdev_priv(ndev);
+>
+Why not simply:
+	struct net_device *ndev = dev_get_drvdata(dev);
 
-Sorry for not looking at this earlier in enough detail.
-
-> +	dma0: dma@0500000 {
-> +		compatible = "arm,pl330", "arm,primecell";
-> +		reg = <0 0x0500000 0 0x1000>;
-> +		interrupts =
-> +			<0 368 4>,
-> +			<0 369 4>,
-> +			<0 370 4>,
-> +			<0 371 4>,
-> +			<0 372 4>,
-> +			<0 373 4>,
-> +			<0 374 4>,
-> +			<0 375 4>;
-> +		clocks = <&dmaclk_500mhz>;
-> +		clock-names = "apb_pclk";
-> +		#dma-cells = <1>;
-> +	};
-
-Is this device cache-coherent?
-
-Does it support larger than 32-bit DMA addresses?
-
-> +	sata0: sata@00300000 {
-> +		compatible = "snps,dwc-ahci";
-> +		reg = <0 0x300000 0 0x800>;
-> +		interrupts = <0 355 4>;
-> +		clocks = <&sataclk_333mhz>;
-> +		clock-names = "apb_pclk";
-> +		dma-coherent;
-> +	};
-
-Same here: you list it as coherent, but not 64-bit DMA capable.
-Is that intentional?
-
-> +	i2c@1000000 {
-> +		compatible = "snps,designware-i2c";
-> +		reg = <0 0x01000000 0 0x1000>;
-> +		interrupts = <0 357 4>;
-> +		clocks = <&uartspiclk_100mhz>;
-> +		clock-names = "apb_pclk";
-> +	};
-> +
-> +	serial0: serial@1010000 {
-> +		compatible = "arm,pl011", "arm,primecell";
-> +		reg = <0 0x1010000 0 0x1000>;
-> +		interrupts = <0 328 4>;
-> +		clocks = <&uartspiclk_100mhz>, <&uartspiclk_100mhz>;
-> +		clock-names = "uartclk", "apb_pclk";
-> +	};
-> +
-> +	ssp@1020000 {
-> +		compatible = "arm,pl022", "arm,primecell";
-> +		#gpio-cells = <2>;
-> +		reg = <0 0x1020000 0 0x1000>;
-> +		spi-controller;
-> +		interrupts = <0 330 4>;
-> +		clocks = <&uartspiclk_100mhz>;
-> +		clock-names = "apb_pclk";
-> +	};
-
-Should these three be connected to the DMA engine?
-
-> +	ccp: ccp@00100000 {
-> +		compatible = "amd,ccp-seattle-v1a";
-> +		reg = <0 0x00100000 0 0x10000>;
-> +		interrupts = <0 3 4>;
-> +		dma-coherent;
-> +	};
-
-I see the driver hacks an 48-bit DMA mask into this one.
-Please fix the driver and add an appropriate dma-ranges property.
-
-> +	/* This entry is modified by UEFI */
-
-Can you explain which parts are modified by UEFI?
-
-> +	pcie0: pcie-controller{
-> +		compatible = "pci-host-ecam-generic";
-> +		#address-cells = <3>;
-> +		#size-cells = <2>;
-> +		device_type = "pci";
-> +		bus-range = <0 0xff>;
-> +		reg = <0 0xf0000000 0 0x10000000>;
-> +		dma-coherent;
-> +		msi-parent = <&v2m0>;
-
-This surely needs a dma-ranges property to allow larger than 32-bit DMA.
+There is no need for a struct platform_device* at all.
 
 
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-> +		interrupts =
-> +			<0 320 4>, /* ioc_soc_serr */
-> +			<0 321 4>; /* ioc_soc_sci */
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-The pci-host-ecam-generic binding does not allow an interrupts property.
-
-You seem to be missing an interrupt-map property.
-
-
-> +		ranges =
-> +			/* I/O Memory (size=64K) */
-> +			<0x01000000 0x00 0xefff0000 0x00 0xefff0000 0x00 0x00010000>,
-
-Are you able to map the I/O space to bus address zero instead in the
-firmware? This looks like a firmware bug, I/O space should not
-be identity-mapped but is normally expected to have low port numbers.
-
-> +			/* Non-Pref 32-bit MMIO (size=512M) */
-> +			<0x02000000 0x00 0x40000000 0x00 0x40000000 0x00 0x20000000>,
-> +
-> +			/* Non-Pref 32-bit MMIO (size=512M) */
-> +			<0x02000000 0x00 0x60000000 0x00 0x60000000 0x00 0x20000000>,
-> +
-> +			/* Non-Pref 32-bit MMIO (size=512M) */
-> +			<0x02000000 0x00 0x80000000 0x00 0x80000000 0x00 0x20000000>,
-> +
-> +			/* Non-Pref 32-bit MMIO (size=512M) */
-> +			<0x02000000 0x00 0xa0000000 0x00 0xa0000000 0x00 0x20000000>,
-
-I don't understand why you use distinct ranges here and below. These are all
-contiguous, so why not collapse them into one logical range.
-
-> +	smb {
-> +		compatible = "simple-bus";
-> +		#address-cells = <2>;
-> +		#size-cells = <2>;
-> +		ranges = <0 0 0 0xE0000000 0 0x01300000>;
-> +
-> +		/include/ "amd-seattle-periph.dtsi"
-> +	};
-
-I would put the smb node into the other file and move the include statement to the
-top level.
-
-Please use lowercase characters for the address.
-
-	Arnd
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
