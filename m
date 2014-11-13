@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279AbaKMItw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 03:49:52 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:51351 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065AbaKMItu (ORCPT
+	id S932295AbaKMIuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 03:50:09 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:62003 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065AbaKMIuG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 03:49:50 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-81-546470ac72fa
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: pratikp@codeaurora.org, mathieu.poirier@linaro.org,
-        gregkh@linuxfoundation.org, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH 3/3] coresight-replicator: remove .owner field for driver
-Date: Thu, 13 Nov 2014 14:12:49 +0530
-Message-id: <1415868169-13325-4-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1415868169-13325-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1415868169-13325-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsWyRsSkSndNQUqIQfNxPovmxevZLDY9vsZq
-	cXnXHDaLrXsOMFks2vqF3eLbfXMHNo/Lfb1MHneu7WHz2D93DbvH5iX1Hn1bVjF6fN4kF8AW
-	xWWTkpqTWZZapG+XwJWxt+0Ee8FZ1orOx7tYGxhPs3QxcnJICJhIfD93EcoWk7hwbz1bFyMX
-	h5DAUkaJxj1NjDBFp9e1sYHYQgKLGCUuf9eHKJrAJHH79lywIjYBXYkn7+cyg9giAm4SNxo7
-	mEBsZoFaiRPrloHFhQU8JSZtWcAOYrMIqEos290M1MvBwSvgIXHmVwmIKSGgIDFnkg1IBSdQ
-	9aVjP1gh1npInNy0gBVkrYTAZHaJ6+uvMEKMEZD4NvkQC0SvrMSmA8wQJ0tKHFxxg2UCo/AC
-	RoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIHhffrfs74djDcPWB9iFOBgVOLhfcmSEiLE
-	mlhWXJl7iNEUaMNEZinR5HxgFOWVxBsamxlZmJqYGhuZW5opifMmSP0MFhJITyxJzU5NLUgt
-	ii8qzUktPsTIxMEp1cCYZW++hOFZNT+T7NbYqTeXdu1UjD7zzMD78+7D556zzT7kH1bN8ujM
-	lUCdrS/+XWQ1ZTULeL3LJUjS3j7BtDvwu0j6zhTZ2EdXJ2Yfc9Z4L3BrwQXl81nZQd82t8YJ
-	cuZO8DgZ+U82UuN7yfT3ni+2dCzKvP1e+gWfsUX4OeHiaDFmThV2VnslluKMREMt5qLiRADQ
-	7aASagIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd01BSkhBl9fsFk0L17PZrHp8TVW
-	i8u75rBZbN1zgMli0dYv7Bbf7ps7sHlc7utl8rhzbQ+bx/65a9g9Ni+p9+jbsorR4/MmuQC2
-	qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygK5QU
-	yhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGXvbTrAXnGWt6Hy8i7WB8TRL
-	FyMnh4SAicTpdW1sELaYxIV768FsIYFFjBKXv+t3MXIB2ROYJG7fnssIkmAT0JV48n4uM4gt
-	IuAmcaOxgwnEZhaolTixbhlYXFjAU2LSlgXsIDaLgKrEst3NQL0cHLwCHhJnfpWAmBICChJz
-	JtmAVHACVV869oMVYq2HxMlNC1gnMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc
-	Pc+kdzCuarA4xCjAwajEw/uCJSVEiDWxrLgy9xCjBAezkghvkw5QiDclsbIqtSg/vqg0J7X4
-	EKMp0E0TmaVEk/OBkZ1XEm9obGJuamxqaWJhYmapJM57sNU6UEggPbEkNTs1tSC1CKaPiYNT
-	qoGR66KI5iMu6bIWkR8hEyMLhcUef5Lk+PXlgKXNb415l3ef+x6c2yU43TrQ859W5cs102sK
-	lpyM33LoW4UwX3aR9Jonsjus+kT38vy6Lrbt0b//13OiP6bME6x7PrnEwo8zaM++d7MOSd1c
-	cdh0duAPhp/m/mKHMiI2ZHz9HJn7eEVZC+u7FRV9SizFGYmGWsxFxYkAHD37dbQCAAA=
+	Thu, 13 Nov 2014 03:50:06 -0500
+X-AuditID: cbfee68d-f79296d000004278-fe-546470bc3938
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <546470BC.4020104@samsung.com>
+Date: Thu, 13 Nov 2014 17:50:04 +0900
+From: Inki Dae <inki.dae@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] drm/exynos/dsi: remove global display variable
+References: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
+In-reply-to: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsWyRsSkSHdPQUqIwczNEha31p1jtbjy9T2b
+	xYt7F1ksehdcZbM42/SG3eLyrjlsFjPO72OyWHvkLrvFjMkv2Rw4Pe53H2fy6NuyitHj8ya5
+	AOYoLpuU1JzMstQifbsEroxzP+4zFVzgrNh/eAZjA+NT9i5GDg4JAROJ9nc2XYycQKaYxIV7
+	69m6GLk4hASWMkrcfdfODJEwkTgz9wcrRGI6o8TXU08ZQRK8AoISPybfYwGxmQXUJSbNW8QM
+	YYtIfJs/lRXC1pZYtvA1M0TzK0aJV1P7mCCatST2zV0E1swioCrR/ruTDcRmA7InrrgPZosK
+	hEm8eLULbKgI0ILZJ++ADWIWmMoscWFRD1izsIC7xKPVa8BsIQFnicmnt4It4BRwkZi34RXY
+	PxICl9glLhx+zAyxTUDi2+RDLBD/y0psOgD1pqTEwRU3WCYwis9C8twsJM/NQvLcLCTPLWBk
+	WcUomlqQXFCclF5kqFecmFtcmpeul5yfu4kRGKmn/z3r3cF4+4D1IUYBDkYlHt4XLCkhQqyJ
+	ZcWVuYcYTYEumsgsJZqcD0wHeSXxhsZmRhamJqbGRuaWZkrivIpSP4OFBNITS1KzU1MLUovi
+	i0pzUosPMTJxcEo1MEq0nzCd3XHgdH7t7rIJtdzaLhmZE81rLtf6L937r05dR0nBtmvu1pjC
+	6NSHYrIpex04JinaZVVHToprnC0Xs1zvvoyF6p7gJfdqnM8c2FQYm8t83/jd1cAH2j9zs84d
+	nVpqUxIgv+hdYlQ4u9tfpx0Ryzv/5uSV77dcVsu2lPmWwDJFUVMPJZbijERDLeai4kQA1bOV
+	W88CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t9jQd09BSkhBnOe8FvcWneO1eLK1/ds
+	Fi/uXWSx6F1wlc3ibNMbdovLu+awWcw4v4/JYu2Ru+wWMya/ZHPg9LjffZzJo2/LKkaPz5vk
+	ApijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4Du
+	UFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmXLtzm6VgD2fFnV+LWBsY
+	L7J3MXJySAiYSJyZ+4MVwhaTuHBvPVsXIxeHkMB0Romvp54ygiR4BQQlfky+x9LFyMHBLCAv
+	ceRSNkiYWUBdYtK8RcwQ9a8YJV5N7WOCqNeS2Dd3EQuIzSKgKtH+u5MNxGYDsieuuA9miwqE
+	Sbx4tYsZxBYBGjT75B2wQcwCU5klLizqAWsWFnCXeLR6DZgtJOAsMfn0VrAFnAIuEvM2vGKb
+	wCgwC8l9sxDum4XkvgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgqP6mfQOxlUNFocY
+	BTgYlXh4X7CkhAixJpYVV+YeYpTgYFYS4W3SAQrxpiRWVqUW5ccXleakFh9iNAX6biKzlGhy
+	PjDh5JXEGxqbmBlZGpkbWhgZmyuJ8x5stQ4UEkhPLEnNTk0tSC2C6WPi4JRqYLQ7Zbb8y/E7
+	SaJPKsy+zSvfp5DJ7hAyzfeYyam5zBuiin6meBX/r/SbM7vrUYCzl9gm7+X82+ZMz268rCTj
+	dF/x9GL1XfdeL65buXXKo6UH7j9g2vSZ+Vonc7RG5rLZTB337k6Y9MHvxEFDO67Up55cxnM3
+	uMi9WaDHsnJz1HkzHl4L/bMVJmeUWIozEg21mIuKEwHLCm5AAAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,26 +62,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need of .owner field for driver using
-module_platform_driver.
+On 2014년 10월 07일 21:01, Andrzej Hajda wrote:
+> Hi Inki,
+> 
+> Many Exynos DRM drivers uses global variables to represent associated devices
+> in Exynos DRM internal framework. It is quite confusing, it adds data duplication
+> and finally it does not allow to handle more than one device in system.
+> It seems better to embed such structures in private context of the device.
+> 
+> The patchset is based on exynos_drm_next plus my patch [1]:
+> 'drm/exynos: remove explicit encoder/connector de-initialization'.
+> 
+> If the patchset is OK for you I can prepare similar patches for other Exynos DRM components.
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
- drivers/coresight/coresight-replicator.c |    1 -
- 1 file changed, 1 deletion(-)
+Sorry for late. Applied. Can you prepare similar patches for other? If
+so, I'd happy.
 
-diff --git a/drivers/coresight/coresight-replicator.c b/drivers/coresight/coresight-replicator.c
-index c879039..a2dfcf9 100644
---- a/drivers/coresight/coresight-replicator.c
-+++ b/drivers/coresight/coresight-replicator.c
-@@ -117,7 +117,6 @@ static struct platform_driver replicator_driver = {
- 	.remove         = replicator_remove,
- 	.driver         = {
- 		.name   = "coresight-replicator",
--		.owner	= THIS_MODULE,
- 		.of_match_table = replicator_match,
- 	},
- };
--- 
-1.7.9.5
+Thanks,
+Inki Dae
+
+> 
+> [1]: https://lkml.org/lkml/2014/9/22/148
+> 
+> Regards
+> Andrzej
+> 
+> 
+> Andrzej Hajda (4):
+>   drm/exynos/dsi: remove global variable exynos_dsi_display
+>   drm/exynos/dsi: simplify device pointer evaluation
+>   drm/exynos/dsi: remove redundant encoder field
+>   drm/exynos/dsi: stop using display->ctx pointer
+> 
+>  drivers/gpu/drm/exynos/exynos_drm_dsi.c | 96 ++++++++++++++++-----------------
+>  1 file changed, 47 insertions(+), 49 deletions(-)
+> 
 
