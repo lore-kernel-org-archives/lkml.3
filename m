@@ -1,151 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586AbaKMKq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:46:27 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45684 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932371AbaKMKq0 (ORCPT
+	id S932551AbaKMKs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:48:59 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52067 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328AbaKMKs5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:46:26 -0500
-Message-ID: <54648BF4.60007@pengutronix.de>
-Date: Thu, 13 Nov 2014 11:46:12 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 13 Nov 2014 05:48:57 -0500
+Message-ID: <54648C95.6020704@arm.com>
+Date: Thu, 13 Nov 2014 10:48:53 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
-        michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH] can: Fix bug in suspend/resume
-References: <a44efc1fb0144cca9d0c4851cc51db25@BL2FFO11FD024.protection.gbl> <546484D9.4030005@pengutronix.de>
-In-Reply-To: <546484D9.4030005@pengutronix.de>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
+ to reduce duplicated code
+References: <20141112133941.647950773@linutronix.de>  <20141112134120.393705922@linutronix.de> <1415872649.17958.37.camel@mtksdaap41> <54648138.2070900@linux.intel.com>
+In-Reply-To: <54648138.2070900@linux.intel.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 13 Nov 2014 10:48:54.0405 (UTC) FILETIME=[6B327B50:01CFFF2F]
+X-MC-Unique: 114111310485404901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 11/13/2014 11:15 AM, Marc Kleine-Budde wrote:
-> On 11/13/2014 07:58 AM, Kedareswara rao Appana wrote:
->> When accessing the priv structure use container_of instead of dev_get_=
-drvdata.
->=20
-> Why?
-
-The drvdata here is the struct net_device, not the platform device.
-Please state this in the commit message.
-
-If I understand the code correct, you can make use of the existing
-helper function to_platform_device():
-
-http://lxr.free-electrons.com/source/include/linux/platform_device.h#L42
-
->=20
->> Enable the clocks in the suspend before accessing the registers of the=
- CAN.
+On 13/11/14 10:00, Jiang Liu wrote:
+> On 2014/11/13 17:57, Yingjoe Chen wrote:
+>> On Wed, 2014-11-12 at 13:43 +0000, Thomas Gleixner wrote:
+>>> Index: tip/kernel/irq/irqdomain.c
+>>> ===================================================================
+>>> --- tip.orig/kernel/irq/irqdomain.c
+>>> +++ tip/kernel/irq/irqdomain.c
+>>> @@ -882,6 +882,16 @@ int irq_domain_set_hwirq_and_chip(struct
+>>>  	return 0;
+>>>  }
+>>>  
+>>> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
+>>> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
+>>> +			 void *chip_data, irq_flow_handler_t handler,
+>>> +			 void *handler_data, const char *handler_name)
+>>> +{
+>>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
+>>> +	__irq_set_handler(virq, handler, 0, handler_name);
+>>> +	irq_set_handler_data(virq, handler_data);
+>>> +}
+>>> +
 >>
->> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
->> ---
->>  drivers/net/can/xilinx_can.c |   20 ++++++++++++++++++--
->>  1 files changed, 18 insertions(+), 2 deletions(-)
+>> Hi,
 >>
->> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can=
-=2Ec
->> index 5e8b560..63ef645 100644
->> --- a/drivers/net/can/xilinx_can.c
->> +++ b/drivers/net/can/xilinx_can.c
->> @@ -972,15 +972,30 @@ static const struct net_device_ops xcan_netdev_o=
-ps =3D {
->>   */
->>  static int __maybe_unused xcan_suspend(struct device *dev)
->>  {
->> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
->> +	struct platform_device *pdev =3D container_of(dev,
->> +			struct platform_device, dev);
->>  	struct net_device *ndev =3D platform_get_drvdata(pdev);
->>  	struct xcan_priv *priv =3D netdev_priv(ndev);
->> +	int ret;
->> =20
->>  	if (netif_running(ndev)) {
->>  		netif_stop_queue(ndev);
->>  		netif_device_detach(ndev);
->>  	}
->> =20
->> +	ret =3D clk_prepare_enable(priv->can_clk);
->> +	if (ret) {
->> +		dev_err(dev, "unable to enable device clock\n");
->> +		return ret;
->> +	}
->> +
->> +	ret =3D clk_prepare_enable(priv->bus_clk);
->> +	if (ret) {
->> +		dev_err(dev, "unable to enable bus clock\n");
->> +		clk_disable_unprepare(priv->can_clk);
->> +		return ret;
->> +	}
->=20
-> Now you have clock imbalance. Per suspend/resume cycle the clocks are
-> enabled twice, but disabled only once.
->=20
->> +
->>  	priv->write_reg(priv, XCAN_MSR_OFFSET, XCAN_MSR_SLEEP_MASK);
->>  	priv->can.state =3D CAN_STATE_SLEEPING;
->> =20
->> @@ -999,7 +1014,8 @@ static int __maybe_unused xcan_suspend(struct dev=
-ice *dev)
->>   */
->>  static int __maybe_unused xcan_resume(struct device *dev)
->>  {
->> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
->> +	struct platform_device *pdev =3D container_of(dev,
->> +			struct platform_device, dev);
->>  	struct net_device *ndev =3D platform_get_drvdata(pdev);
->>  	struct xcan_priv *priv =3D netdev_priv(ndev);
->>  	int ret;
+>> While trying to use this function, I'm not sure about its interface.
+>> This function have 8 parameters but only save 3 function calls. After
+>> checking uses in Jiang's original patch, I think this make code harder
+>> to understand.
+> Hi Joe,
+> 	It's true, but we also want to reduce duplicated code:(
 
-Marc
+I'm in two minds about this one.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Yes, it looks horrible (to be fair, I hate anything that has more than 3
+or 4 parameters, because I can never remember what they're for).
 
+On the other hand, it gives you a nice check-point in your code, with
+all the bits you need to set, or at least consider. Because it depends
+on so many things that you may have to construct/obtain, you quickly
+realize that there is not that many locations in your stack that fits
+these requirements. Yes, this a twisted reasoning.
 
---JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-iQIcBAEBAgAGBQJUZIv0AAoJECte4hHFiupUBRAQAIEwZXuTkeRCmFmiy27yYlmw
-LIsgVArhIbenkJnaT1LKOlx++6vj+7NzdJfX1K4eU1LLDwbQB4Rl4QDDvMvKjbDg
-5pNq51d5es0fCLP4ZEGTMmmXunlYhTajvBO7+BnPOvCgBXSAd+Ch+wfhtpSf6pwR
-JkwzG39/c4oqDDarqSEbHN6sdsaBWxKY1mANg7MDVYxu0k5BASeus8Jk7YIWJYN+
-UAOgTDRAXdDsegaH3ZgPtNP9QY7Ui0yUNQvVIX5J4W6kr93H4IHbrLTcJ6a+8rgY
-9flcjPrwEh1w+qcUa5875zI89YsnUKZCXArCYeJL3+ty+KUFBqk24lu3RFm9bJ+e
-VNWuSWTzb3uF6nMFLvg9BJoSCm7c/f9enirVDJk2hE188aF00Kf6wntT+eHnOYyg
-zioxAmscDRvIR7EH/U541sldYDQzCvr6jevWnmaMVbInmtL0wFw7Pw7Lof+fybIa
-s8DGxH/SrvC7vbiqVV3XsbDpxHgQ+nSdeoqZ4u+4x74dMCjU9/9auqN3BbgP9eBS
-hNpp1J3kAS4gj4GaaGC7cns47KgJE0+jW2vXwWCrPZ/AegXpNrYFoLL10kIBVM0c
-qbjZXBtmS+J92WhDfZx8g5fJ9uWe9zUQLP7IITUuYPyubN/roAR8fZqXxMQ5N7Ce
-1YzhFTcp+AhOl7bZYHw6
-=ncoe
------END PGP SIGNATURE-----
-
---JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv--
