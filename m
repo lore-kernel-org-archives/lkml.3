@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069AbaKMMy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:54:56 -0500
-Received: from regular1.263xmail.com ([211.150.99.131]:44750 "EHLO
+	id S933115AbaKMMzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:55:50 -0500
+Received: from regular1.263xmail.com ([211.150.99.132]:42133 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932883AbaKMMyx (ORCPT
+	with ESMTP id S932603AbaKMMzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:54:53 -0500
+	Thu, 13 Nov 2014 07:55:47 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,9 +16,9 @@ X-RL-SENDER: andy.yan@rock-chips.com
 X-FST-TO: airlied@linux.ie
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <e6202cdc6483cac65aa0f5253607f167>
+X-UNIQUE-TAG: <9a0fd40f796ea051032dac61e23d1144>
 X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
+X-DNS-TYPE: 0
 From: Andy Yan <andy.yan@rock-chips.com>
 To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
         rmk+kernel@arm.linux.org.uk
@@ -38,9 +38,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v9 2/9] staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
-Date: Thu, 13 Nov 2014 20:54:44 +0800
-Message-Id: <1415883284-3425-1-git-send-email-andy.yan@rock-chips.com>
+Subject: [PATCH v9 5/9] dt-bindings: add document for dw_hdmi
+Date: Thu, 13 Nov 2014 20:55:40 +0800
+Message-Id: <1415883340-3565-1-git-send-email-andy.yan@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
 References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
@@ -48,44 +48,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm driver may probe before the i2c bus, so the driver should
-defer probing until it is available
-
 Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
 ---
 
 Changes in v9: None
-Changes in v8: None
+Changes in v8:
+- correct some spelling mistake
+- modify ddc-i2c-bus and interrupt description
+
 Changes in v7: None
 Changes in v6: None
 Changes in v5: None
-Changes in v4:
-- defer probe ddc i2c adapter
-
+Changes in v4: None
 Changes in v3: None
 Changes in v2: None
 
- drivers/staging/imx-drm/imx-hdmi.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 40 ++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
 
-diff --git a/drivers/staging/imx-drm/imx-hdmi.c b/drivers/staging/imx-drm/imx-hdmi.c
-index 79daec4..c2b035a 100644
---- a/drivers/staging/imx-drm/imx-hdmi.c
-+++ b/drivers/staging/imx-drm/imx-hdmi.c
-@@ -1611,8 +1611,11 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
--		if (!hdmi->ddc)
-+		if (!hdmi->ddc) {
- 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
-+			of_node_put(ddc_node);
-+			return -EPROBE_DEFER;
-+		}
- 
- 		of_node_put(ddc_node);
- 	} else {
+diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+new file mode 100644
+index 0000000..0558442
+--- /dev/null
++++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+@@ -0,0 +1,40 @@
++DesignWare HDMI bridge bindings
++
++Required properities:
++- compatible: platform specific such as:
++   * "fsl,imx6q-hdmi"
++   * "fsl,imx6dl-hdmi"
++   * "rockchip,rk3288-dw-hdmi"
++- reg: physical base address of the controller and length
++- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
++- interrupts: The HDMI interrupt number
++
++Optional properties
++- reg-io-width: the width of the reg:1,4, default set to 1 if not present
++
++Example:
++	hdmi: hdmi@0120000 {
++		compatible = "fsl,imx6q-hdmi";
++		reg = <0x00120000 0x9000>;
++		interrupts = <0 115 0x04>;
++		gpr = <&gpr>;
++		clocks = <&clks 123>, <&clks 124>;
++		clock-names = "iahb", "isfr";
++		ddc-i2c-bus = <&i2c2>;
++
++		port@0 {
++			reg = <0>;
++
++			hdmi_mux_0: endpoint {
++				remote-endpoint = <&ipu1_di0_hdmi>;
++			};
++		};
++
++		port@1 {
++			reg = <1>;
++
++			hdmi_mux_1: endpoint {
++				remote-endpoint = <&ipu1_di1_hdmi>;
++			};
++		};
++	};
 -- 
 1.9.1
 
