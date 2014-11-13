@@ -1,105 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739AbaKMLco (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:32:44 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:59640 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932525AbaKMLcm convert rfc822-to-8bit (ORCPT
+	id S932768AbaKMLcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:32:50 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:38864 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525AbaKMLcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:32:42 -0500
-Date: Thu, 13 Nov 2014 12:32:18 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>, Soren Brinkmann <sorenb@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Thu, 13 Nov 2014 06:32:47 -0500
+Message-ID: <546496DA.1000502@atmel.com>
+Date: Thu, 13 Nov 2014 12:32:42 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Rosin <peda@axentia.se>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-Subject: Re: [PATCH] can: Fix bug in suspend/resume
-Message-ID: <20141113123218.79850236@ipc1.ka-ro>
-In-Reply-To: <9455da2b86c74d5aafe9bf118edec7bb@BN1AFFO11FD045.protection.gbl>
-References: <a44efc1fb0144cca9d0c4851cc51db25@BL2FFO11FD024.protection.gbl>
-	<546484D9.4030005@pengutronix.de>
-	<54648BF4.60007@pengutronix.de>
-	<9455da2b86c74d5aafe9bf118edec7bb@BN1AFFO11FD045.protection.gbl>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] ARM: at91/dt: Fix sama5d3x typos.
+References: <ec77270840f94da6a6d7548e7a3bf5a8@EMAIL.axentia.se>
+In-Reply-To: <ec77270840f94da6a6d7548e7a3bf5a8@EMAIL.axentia.se>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 23/10/2014 13:56, Peter Rosin :
+>>From c23d712fe924b929c2eb39eba644fe74bcccfd37 Mon Sep 17 00:00:00 2001
+> From: Peter Rosin <peda@axentia.se>
+> Date: Thu, 23 Oct 2014 13:52:03 +0200
+> Subject: [PATCH] ARM: at91/dt: Fix sama5d3x typos.
+> 
+> The DT compatible strings also need binding documentation, but that is for
+> someone else to write.
 
-Appana Durga Kedareswara Rao wrote:
-> Hi Marc,
-> 
-> -----Original Message-----
-> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> Sent: Thursday, November 13, 2014 4:16 PM
-> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek; Soren Brinkmann; grant.likely@linaro.org; robh+dt@kernel.org
-> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; Appana Durga Kedareswara Rao
-> Subject: Re: [PATCH] can: Fix bug in suspend/resume
-> 
-> On 11/13/2014 11:15 AM, Marc Kleine-Budde wrote:
-> > On 11/13/2014 07:58 AM, Kedareswara rao Appana wrote:
-> >> When accessing the priv structure use container_of instead of dev_get_drvdata.
-> >
-> > Why?
-> 
-> The drvdata here is the struct net_device, not the platform device.
-> Please state this in the commit message.
-> 
-> If I understand the code correct, you can make use of the existing helper function to_platform_device():
-> 
-> http://lxr.free-electrons.com/source/include/linux/platform_device.h#L42
-> 
-> Thanks for the suggestion.
->  Will use this macro(to_platform_device)  .
-> 
-> >
-> >> Enable the clocks in the suspend before accessing the registers of the CAN.
-> >>
-> >> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> >> ---
-> >>  drivers/net/can/xilinx_can.c |   20 ++++++++++++++++++--
-> >>  1 files changed, 18 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/net/can/xilinx_can.c
-> >> b/drivers/net/can/xilinx_can.c index 5e8b560..63ef645 100644
-> >> --- a/drivers/net/can/xilinx_can.c
-> >> +++ b/drivers/net/can/xilinx_can.c
-> >> @@ -972,15 +972,30 @@ static const struct net_device_ops xcan_netdev_ops = {
-> >>   */
-> >>  static int __maybe_unused xcan_suspend(struct device *dev)  {
-> >> -    struct platform_device *pdev = dev_get_drvdata(dev);
-> >> +    struct platform_device *pdev = container_of(dev,
-> >> +                    struct platform_device, dev);
-> >>      struct net_device *ndev = platform_get_drvdata(pdev);
-> >>      struct xcan_priv *priv = netdev_priv(ndev);
->
-Why not simply:
-	struct net_device *ndev = dev_get_drvdata(dev);
+Well, documentation is already queued up for 3.18 in Linus' tree.. Here
+is the commit:
+02037a9719fa (ARM: at91: document Atmel SMART compatibles).
 
-There is no need for a struct platform_device* at all.
+So I remove this comment and queue this patch up for at91-3.18-fixes.
+
+Thanks for having catch the typo, bye.
+
+> Signed-off-by: Peter Rosin <peda@axentia.se>
+> ---
+>  arch/arm/boot/dts/sama5d31.dtsi   |    2 +-
+>  arch/arm/boot/dts/sama5d33.dtsi   |    2 +-
+>  arch/arm/boot/dts/sama5d34.dtsi   |    2 +-
+>  arch/arm/boot/dts/sama5d35.dtsi   |    2 +-
+>  arch/arm/boot/dts/sama5d36.dtsi   |    2 +-
+>  arch/arm/boot/dts/sama5d3xcm.dtsi |    2 +-
+>  6 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/sama5d31.dtsi b/arch/arm/boot/dts/sama5d31.dtsi
+> index 7997dc9..883878b 100644
+> --- a/arch/arm/boot/dts/sama5d31.dtsi
+> +++ b/arch/arm/boot/dts/sama5d31.dtsi
+> @@ -12,5 +12,5 @@
+>  #include "sama5d3_uart.dtsi"
+>  
+>  / {
+> -	compatible = "atmel,samad31", "atmel,sama5d3", "atmel,sama5";
+> +	compatible = "atmel,sama5d31", "atmel,sama5d3", "atmel,sama5";
+>  };
+> diff --git a/arch/arm/boot/dts/sama5d33.dtsi b/arch/arm/boot/dts/sama5d33.dtsi
+> index 39f8322..4b4434a 100644
+> --- a/arch/arm/boot/dts/sama5d33.dtsi
+> +++ b/arch/arm/boot/dts/sama5d33.dtsi
+> @@ -10,5 +10,5 @@
+>  #include "sama5d3_gmac.dtsi"
+>  
+>  / {
+> -	compatible = "atmel,samad33", "atmel,sama5d3", "atmel,sama5";
+> +	compatible = "atmel,sama5d33", "atmel,sama5d3", "atmel,sama5";
+>  };
+> diff --git a/arch/arm/boot/dts/sama5d34.dtsi b/arch/arm/boot/dts/sama5d34.dtsi
+> index 89cda2c..aa01573 100644
+> --- a/arch/arm/boot/dts/sama5d34.dtsi
+> +++ b/arch/arm/boot/dts/sama5d34.dtsi
+> @@ -12,5 +12,5 @@
+>  #include "sama5d3_mci2.dtsi"
+>  
+>  / {
+> -	compatible = "atmel,samad34", "atmel,sama5d3", "atmel,sama5";
+> +	compatible = "atmel,sama5d34", "atmel,sama5d3", "atmel,sama5";
+>  };
+> diff --git a/arch/arm/boot/dts/sama5d35.dtsi b/arch/arm/boot/dts/sama5d35.dtsi
+> index d20cd71..16c39f4 100644
+> --- a/arch/arm/boot/dts/sama5d35.dtsi
+> +++ b/arch/arm/boot/dts/sama5d35.dtsi
+> @@ -14,5 +14,5 @@
+>  #include "sama5d3_tcb1.dtsi"
+>  
+>  / {
+> -	compatible = "atmel,samad35", "atmel,sama5d3", "atmel,sama5";
+> +	compatible = "atmel,sama5d35", "atmel,sama5d3", "atmel,sama5";
+>  };
+> diff --git a/arch/arm/boot/dts/sama5d36.dtsi b/arch/arm/boot/dts/sama5d36.dtsi
+> index db58cad..e85139e 100644
+> --- a/arch/arm/boot/dts/sama5d36.dtsi
+> +++ b/arch/arm/boot/dts/sama5d36.dtsi
+> @@ -16,5 +16,5 @@
+>  #include "sama5d3_uart.dtsi"
+>  
+>  / {
+> -	compatible = "atmel,samad36", "atmel,sama5d3", "atmel,sama5";
+> +	compatible = "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
+>  };
+> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
+> index f7d8583..56574c8 100644
+> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+> @@ -8,7 +8,7 @@
+>   */
+>  
+>  / {
+> -	compatible = "atmel,samad3xcm", "atmel,sama5d3", "atmel,sama5";
+> +	compatible = "atmel,sama5d3xcm", "atmel,sama5d3", "atmel,sama5";
+>  
+>  	chosen {
+>  		bootargs = "console=ttyS0,115200 rootfstype=ubifs ubi.mtd=5 root=ubi0:rootfs";
+> 
 
 
-Lothar Waßmann
 -- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Nicolas Ferre
