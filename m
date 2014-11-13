@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934380AbaKMVYv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:24:51 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62335 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934043AbaKMVYt (ORCPT
+	id S934398AbaKMVZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:25:20 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52659 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934043AbaKMVZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:24:49 -0500
+	Thu, 13 Nov 2014 16:25:18 -0500
 From: Pieter Smith <pieter@boesman.nl>
 To: pieter@boesman.nl
 Cc: Josh Triplett <josh@joshtriplett.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 01/56] moved sendfile syscall to splice translation unit
-Date: Thu, 13 Nov 2014 22:22:38 +0100
-Message-Id: <1415913813-362-2-git-send-email-pieter@boesman.nl>
+Subject: [PATCH 02/56] moved kernel_write out of splice translation unit
+Date: Thu, 13 Nov 2014 22:22:39 +0100
+Message-Id: <1415913813-362-3-git-send-email-pieter@boesman.nl>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415913813-362-1-git-send-email-pieter@boesman.nl>
 References: <pieter@boesman.nl>
@@ -24,404 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sendfile functionally forms part of the splice group of syscalls (splice,
-vmsplice and tee). Grouping sendfile with splice paves the way to compiling out
-the splice group of syscalls for embedded systems that do not need these.
-
-add/remove: 0/0 grow/shrink: 7/2 up/down: 86/-61 (25)
-function                                     old     new   delta
-file_start_write                              34      68     +34
-file_end_write                                29      58     +29
-sys_pwritev                                  115     122      +7
-sys_preadv                                   115     122      +7
-fdput_pos                                     29      36      +7
-sys_pwrite64                                 115     116      +1
-sys_pread64                                  115     116      +1
-sys_tee                                      497     491      -6
-sys_splice                                  1075    1020     -55
+kernel_write shares infrastructure with the read_write translation unit but not
+with the splice translation unit. Grouping kernel_write with the read_write
+translation unit is more logical. It also paves the way to compiling out the
+splice group of syscalls for embedded systems that do not need them.
 
 Signed-off-by: Pieter Smith <pieter@boesman.nl>
 ---
- fs/read_write.c | 175 -------------------------------------------------------
- fs/splice.c     | 178 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 178 insertions(+), 175 deletions(-)
+ fs/read_write.c | 16 ++++++++++++++++
+ fs/splice.c     | 16 ----------------
+ 2 files changed, 16 insertions(+), 16 deletions(-)
 
 diff --git a/fs/read_write.c b/fs/read_write.c
-index 009d854..3f7f04d 100644
+index 3f7f04d..4361261 100644
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
-@@ -1189,178 +1189,3 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
+@@ -1189,3 +1189,19 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
  }
  #endif
  
--static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
--		  	   size_t count, loff_t max)
--{
--	struct fd in, out;
--	struct inode *in_inode, *out_inode;
--	loff_t pos;
--	loff_t out_pos;
--	ssize_t retval;
--	int fl;
--
--	/*
--	 * Get input file, and verify that it is ok..
--	 */
--	retval = -EBADF;
--	in = fdget(in_fd);
--	if (!in.file)
--		goto out;
--	if (!(in.file->f_mode & FMODE_READ))
--		goto fput_in;
--	retval = -ESPIPE;
--	if (!ppos) {
--		pos = in.file->f_pos;
--	} else {
--		pos = *ppos;
--		if (!(in.file->f_mode & FMODE_PREAD))
--			goto fput_in;
--	}
--	retval = rw_verify_area(READ, in.file, &pos, count);
--	if (retval < 0)
--		goto fput_in;
--	count = retval;
--
--	/*
--	 * Get output file, and verify that it is ok..
--	 */
--	retval = -EBADF;
--	out = fdget(out_fd);
--	if (!out.file)
--		goto fput_in;
--	if (!(out.file->f_mode & FMODE_WRITE))
--		goto fput_out;
--	retval = -EINVAL;
--	in_inode = file_inode(in.file);
--	out_inode = file_inode(out.file);
--	out_pos = out.file->f_pos;
--	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
--	if (retval < 0)
--		goto fput_out;
--	count = retval;
--
--	if (!max)
--		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
--
--	if (unlikely(pos + count > max)) {
--		retval = -EOVERFLOW;
--		if (pos >= max)
--			goto fput_out;
--		count = max - pos;
--	}
--
--	fl = 0;
--#if 0
--	/*
--	 * We need to debate whether we can enable this or not. The
--	 * man page documents EAGAIN return for the output at least,
--	 * and the application is arguably buggy if it doesn't expect
--	 * EAGAIN on a non-blocking file descriptor.
--	 */
--	if (in.file->f_flags & O_NONBLOCK)
--		fl = SPLICE_F_NONBLOCK;
--#endif
--	file_start_write(out.file);
--	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
--	file_end_write(out.file);
--
--	if (retval > 0) {
--		add_rchar(current, retval);
--		add_wchar(current, retval);
--		fsnotify_access(in.file);
--		fsnotify_modify(out.file);
--		out.file->f_pos = out_pos;
--		if (ppos)
--			*ppos = pos;
--		else
--			in.file->f_pos = pos;
--	}
--
--	inc_syscr(current);
--	inc_syscw(current);
--	if (pos > max)
--		retval = -EOVERFLOW;
--
--fput_out:
--	fdput(out);
--fput_in:
--	fdput(in);
--out:
--	return retval;
--}
--
--SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
--{
--	loff_t pos;
--	off_t off;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(get_user(off, offset)))
--			return -EFAULT;
--		pos = off;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--
--SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
--{
--	loff_t pos;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
--			return -EFAULT;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--
--#ifdef CONFIG_COMPAT
--COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
--		compat_off_t __user *, offset, compat_size_t, count)
--{
--	loff_t pos;
--	off_t off;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(get_user(off, offset)))
--			return -EFAULT;
--		pos = off;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--
--COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
--		compat_loff_t __user *, offset, compat_size_t, count)
--{
--	loff_t pos;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
--			return -EFAULT;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--#endif
++ssize_t kernel_write(struct file *file, const char *buf, size_t count,
++			    loff_t pos)
++{
++	mm_segment_t old_fs;
++	ssize_t res;
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++	/* The cast to a user pointer is valid due to the set_fs() */
++	res = vfs_write(file, (__force const char __user *)buf, count, &pos);
++	set_fs(old_fs);
++
++	return res;
++}
++EXPORT_SYMBOL(kernel_write);
++
 diff --git a/fs/splice.c b/fs/splice.c
-index f5cb9ba..c1a2861 100644
+index c1a2861..44b201b 100644
 --- a/fs/splice.c
 +++ b/fs/splice.c
-@@ -28,6 +28,7 @@
- #include <linux/export.h>
- #include <linux/syscalls.h>
- #include <linux/uio.h>
-+#include <linux/fsnotify.h>
- #include <linux/security.h>
- #include <linux/gfp.h>
- #include <linux/socket.h>
-@@ -2039,3 +2040,180 @@ SYSCALL_DEFINE4(tee, int, fdin, int, fdout, size_t, len, unsigned int, flags)
- 
- 	return error;
+@@ -583,22 +583,6 @@ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
+ 	return res;
  }
-+
-+static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
-+			   size_t count, loff_t max)
-+{
-+	struct fd in, out;
-+	struct inode *in_inode, *out_inode;
-+	loff_t pos;
-+	loff_t out_pos;
-+	ssize_t retval;
-+	int fl;
-+
-+	/*
-+	 * Get input file, and verify that it is ok..
-+	 */
-+	retval = -EBADF;
-+	in = fdget(in_fd);
-+	if (!in.file)
-+		goto out;
-+	if (!(in.file->f_mode & FMODE_READ))
-+		goto fput_in;
-+	retval = -ESPIPE;
-+	if (!ppos) {
-+		pos = in.file->f_pos;
-+	} else {
-+		pos = *ppos;
-+		if (!(in.file->f_mode & FMODE_PREAD))
-+			goto fput_in;
-+	}
-+	retval = rw_verify_area(READ, in.file, &pos, count);
-+	if (retval < 0)
-+		goto fput_in;
-+	count = retval;
-+
-+	/*
-+	 * Get output file, and verify that it is ok..
-+	 */
-+	retval = -EBADF;
-+	out = fdget(out_fd);
-+	if (!out.file)
-+		goto fput_in;
-+	if (!(out.file->f_mode & FMODE_WRITE))
-+		goto fput_out;
-+	retval = -EINVAL;
-+	in_inode = file_inode(in.file);
-+	out_inode = file_inode(out.file);
-+	out_pos = out.file->f_pos;
-+	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
-+	if (retval < 0)
-+		goto fput_out;
-+	count = retval;
-+
-+	if (!max)
-+		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
-+
-+	if (unlikely(pos + count > max)) {
-+		retval = -EOVERFLOW;
-+		if (pos >= max)
-+			goto fput_out;
-+		count = max - pos;
-+	}
-+
-+	fl = 0;
-+#if 0
-+	/*
-+	 * We need to debate whether we can enable this or not. The
-+	 * man page documents EAGAIN return for the output at least,
-+	 * and the application is arguably buggy if it doesn't expect
-+	 * EAGAIN on a non-blocking file descriptor.
-+	 */
-+	if (in.file->f_flags & O_NONBLOCK)
-+		fl = SPLICE_F_NONBLOCK;
-+#endif
-+	file_start_write(out.file);
-+	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
-+	file_end_write(out.file);
-+
-+	if (retval > 0) {
-+		add_rchar(current, retval);
-+		add_wchar(current, retval);
-+		fsnotify_access(in.file);
-+		fsnotify_modify(out.file);
-+		out.file->f_pos = out_pos;
-+		if (ppos)
-+			*ppos = pos;
-+		else
-+			in.file->f_pos = pos;
-+	}
-+
-+	inc_syscr(current);
-+	inc_syscw(current);
-+	if (pos > max)
-+		retval = -EOVERFLOW;
-+
-+fput_out:
-+	fdput(out);
-+fput_in:
-+	fdput(in);
-+out:
-+	return retval;
-+}
-+
-+SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
-+{
-+	loff_t pos;
-+	off_t off;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(get_user(off, offset)))
-+			return -EFAULT;
-+		pos = off;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+
-+SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
-+{
-+	loff_t pos;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-+			return -EFAULT;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+
-+#ifdef CONFIG_COMPAT
-+COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
-+		compat_off_t __user *, offset, compat_size_t, count)
-+{
-+	loff_t pos;
-+	off_t off;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(get_user(off, offset)))
-+			return -EFAULT;
-+		pos = off;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+
-+COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
-+		compat_loff_t __user *, offset, compat_size_t, count)
-+{
-+	loff_t pos;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-+			return -EFAULT;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+#endif
-+
+ 
+-ssize_t kernel_write(struct file *file, const char *buf, size_t count,
+-			    loff_t pos)
+-{
+-	mm_segment_t old_fs;
+-	ssize_t res;
+-
+-	old_fs = get_fs();
+-	set_fs(get_ds());
+-	/* The cast to a user pointer is valid due to the set_fs() */
+-	res = vfs_write(file, (__force const char __user *)buf, count, &pos);
+-	set_fs(old_fs);
+-
+-	return res;
+-}
+-EXPORT_SYMBOL(kernel_write);
+-
+ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
+ 				 struct pipe_inode_info *pipe, size_t len,
+ 				 unsigned int flags)
 -- 
 1.9.1
 
