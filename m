@@ -1,146 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933427AbaKMPWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:22:30 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41062 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993AbaKMPW2 (ORCPT
+	id S933461AbaKMPWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:22:44 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57636 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933088AbaKMPWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:22:28 -0500
-Date: Fri, 14 Nov 2014 00:22:48 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Mahendran Ganesh <opensource.ganesh@gmail.com>
-Cc: minchan@kernel.org, ngupta@vflare.org, ddstreet@ieee.org,
-        sergey.senozhatsky@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mm/zsmalloc: avoid unregister a NOT-registered
- zsmalloc zpool driver
-Message-ID: <20141113152247.GB1408@swordfish>
-References: <1415885857-5283-1-git-send-email-opensource.ganesh@gmail.com>
+	Thu, 13 Nov 2014 10:22:42 -0500
+Date: Thu, 13 Nov 2014 15:22:43 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: generic: Add set_msi_parent callback
+Message-ID: <20141113152243.GB9726@red-moon>
+References: <1415647480-3320-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1415647480-3320-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <20141111112424.GB16265@arm.com>
+ <20141111115227.GF12037@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1415885857-5283-1-git-send-email-opensource.ganesh@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141111115227.GF12037@e106497-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (11/13/14 21:37), Mahendran Ganesh wrote:
-> Now zsmalloc can be registered as a zpool driver into zpool when
-> CONFIG_ZPOOL is enabled. During the init of zsmalloc, when error happens,
-> we need to do cleanup. But in current code, it will unregister a not yet
-> registered zsmalloc zpool driver(*zs_zpool_driver*).
+On Tue, Nov 11, 2014 at 11:52:27AM +0000, Liviu Dudau wrote:
+> On Tue, Nov 11, 2014 at 11:24:24AM +0000, Will Deacon wrote:
+> > Hi Suravee,
+> > 
+> > On Mon, Nov 10, 2014 at 07:24:40PM +0000, suravee.suthikulpanit@amd.com wrote:
+> > > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > > 
+> > > This patch implement set_msi_parent callback for PCI generic host controller.
+> > > 
+> > > Cc: Bjorn Helgass <bhelgaas@google.com>
+> > > Cc: Liviu Dudau <liviu.dudau@arm.com>
+> > > Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> > > Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > > ---
+> > >  drivers/pci/host/pci-host-generic.c | 14 ++++++++++++++
+> > >  1 file changed, 14 insertions(+)
+> > > 
+> > > diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
+> > > index 036ab1b..f9bb97a 100644
+> > > --- a/drivers/pci/host/pci-host-generic.c
+> > > +++ b/drivers/pci/host/pci-host-generic.c
+> > > @@ -42,6 +42,7 @@ struct gen_pci {
+> > >  	struct pci_host_bridge			host;
+> > >  	struct gen_pci_cfg_windows		cfg;
+> > >  	struct list_head			resources;
+> > > +	struct msi_chip				*mchip;
+> > >  };
+> > >  
+> > >  #ifdef CONFIG_ARM
+> > > @@ -128,9 +129,19 @@ static int gen_pci_config_write(struct pci_bus *bus, unsigned int devfn,
+> > >  	return PCIBIOS_SUCCESSFUL;
+> > >  }
+> > >  
+> > > +static int gen_pci_set_msi_parent(struct pci_bus *bus)
+> > > +{
+> > > +	struct gen_pci *pci = bus_to_gen_pci(bus);
+> > > +
+> > > +	bus->msi = pci->mchip;
+> > > +
+> > > +	return PCIBIOS_SUCCESSFUL;
+> > > +}
+> > 
+> > I don't think this makes much sense a host controller callback. Why can't
+> > bus->msi be set in generic code?
 > 
-> This patch puts the cleanup in zs_init() instead of calling zs_exit()
-> where it will unregister a not-registered zpool driver.
+> Because of the current way in which a bus gets created and them immediately used for
+> scanning devices if you use pci_scan_root_bus(). Alternative is to use pci_create_root_bus()
+> and increase your code size with the body of pci_scan_root_bus().
 > 
-> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
-> ---
->  mm/zsmalloc.c |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
+> Solution is to have pci_host_bridge holding the msi_chip pointer and that gets created
+> before root bus, with pci_scan_root_bus() now having all the info needed to do successful
+> setup of scanned devices.
+
+Why can't we add a hook like pci_bus_assign_domain_nr(), say:
+
+pci_bus_msi_init()
+
+in pci_create_root_bus() that does what Suravee wants in a generic way ?
+
+What am I missing ?
+
+Lorenzo
+
 > 
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index 839a48c..3d2bb36 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -907,10 +907,8 @@ static int zs_init(void)
->  	__register_cpu_notifier(&zs_cpu_nb);
->  	for_each_online_cpu(cpu) {
->  		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-> -		if (notifier_to_errno(ret)) {
-> -			cpu_notifier_register_done();
-> +		if (notifier_to_errno(ret))
->  			goto fail;
-> -		}
->  	}
->  
->  	cpu_notifier_register_done();
-> @@ -920,8 +918,14 @@ static int zs_init(void)
->  #endif
->  
->  	return 0;
-> +
->  fail:
-> -	zs_exit();
-> +	for_each_online_cpu(cpu)
-> +		zs_cpu_notifier(NULL, CPU_UP_CANCELED, (void *)(long)cpu);
-> +	__unregister_cpu_notifier(&zs_cpu_nb);
-> +
-> +	cpu_notifier_register_done();
-> +
->  	return notifier_to_errno(ret);
-
-so we duplicate same code, and there is a bit confusing part
-now: zs_cpu_notifier(CPU_UP_CANCELED) and zs_cpu_notifier(CPU_DEAD)
-calls.
-
-
-how about something like this?
-
-Factor out zsmalloc cpu notifier unregistration code and call
-it from both zs_exit() and zs_init() error path.
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
----
-
- mm/zsmalloc.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
-
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index b3b57ef..c4d2d60 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -881,14 +881,10 @@ static struct notifier_block zs_cpu_nb = {
- 	.notifier_call = zs_cpu_notifier
- };
- 
--static void zs_exit(void)
-+static inline void zs_unregister_cpu_notifier()
- {
- 	int cpu;
- 
--#ifdef CONFIG_ZPOOL
--	zpool_unregister_driver(&zs_zpool_driver);
--#endif
--
- 	cpu_notifier_register_begin();
- 
- 	for_each_online_cpu(cpu)
-@@ -898,6 +894,14 @@ static void zs_exit(void)
- 	cpu_notifier_register_done();
- }
- 
-+static void zs_exit(void)
-+{
-+#ifdef CONFIG_ZPOOL
-+	zpool_unregister_driver(&zs_zpool_driver);
-+#endif
-+	zs_unregister_cpu_notifier();
-+}
-+
- static int zs_init(void)
- {
- 	int cpu, ret;
-@@ -907,10 +911,8 @@ static int zs_init(void)
- 	__register_cpu_notifier(&zs_cpu_nb);
- 	for_each_online_cpu(cpu) {
- 		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
--		if (notifier_to_errno(ret)) {
--			cpu_notifier_register_done();
-+		if (notifier_to_errno(ret))
- 			goto fail;
--		}
- 	}
- 
- 	cpu_notifier_register_done();
-@@ -921,7 +923,7 @@ static int zs_init(void)
- 
- 	return 0;
- fail:
--	zs_exit();
-+	zs_unregister_cpu_notifier();
- 	return notifier_to_errno(ret);
- }
- 
+> Best regards,
+> Liviu
+> 
+> > 
+> > >  static struct pci_ops gen_pci_ops = {
+> > >  	.read	= gen_pci_config_read,
+> > >  	.write	= gen_pci_config_write,
+> > > +	.set_msi_parent = gen_pci_set_msi_parent,
+> > >  };
+> > >  
+> > >  static const struct of_device_id gen_pci_of_match[] = {
+> > > @@ -313,6 +324,9 @@ static int gen_pci_probe(struct platform_device *pdev)
+> > >  		return err;
+> > >  	}
+> > >  
+> > > +	pci->mchip = of_pci_find_msi_chip_by_node(of_parse_phandle(np,
+> > > +						  "msi-parent", 0));
+> > 
+> > This bit should be in the generic of_pci.c code and not duplicated for
+> > each host controller.
+> > 
+> > Will
+> > 
+> 
+> -- 
+> ====================
+> | I would like to |
+> | fix the world,  |
+> | but they're not |
+> | giving me the   |
+>  \ source code!  /
+>   ---------------
+>     ¯\_(ツ)_/¯
