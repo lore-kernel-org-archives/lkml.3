@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaKMBYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 20:24:15 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:40720 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098AbaKMBYM (ORCPT
+	id S1753651AbaKMB2p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 20:28:45 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:65238 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136AbaKMB2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 20:24:12 -0500
-Date: Thu, 13 Nov 2014 09:23:59 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: kernel@pengutronix.de, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Wed, 12 Nov 2014 20:28:44 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-98-54640949c129
+From: Weijie Yang <weijie.yang@samsung.com>
+To: "'Mahendran Ganesh'" <opensource.ganesh@gmail.com>
+Cc: "'Minchan Kim'" <minchan@kernel.org>, ngupta@vflare.org,
+        sergey.senozhatsky@gmail.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: dts: vf-colibri: add USB regulators
-Message-ID: <20141113012358.GN2704@dragon>
-References: <1415106430-6271-1-git-send-email-stefan@agner.ch>
- <1415106430-6271-4-git-send-email-stefan@agner.ch>
- <20141111141228.GB2704@dragon>
- <0bb62bdfc866f75977d01070d228ed4c@agner.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0bb62bdfc866f75977d01070d228ed4c@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141113000216.GA1074@bbox>
+In-reply-to: <20141113000216.GA1074@bbox>
+Subject: RE: [PATCH] mm/zram: correct ZRAM_ZERO flag bit position
+Date: Thu, 13 Nov 2014 09:27:33 +0800
+Message-id: <000001cffee1$28362ed0$78a28c70$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac/+1Q+V64BeicsdT/qZxTcfBwh5IgAC5yRQ
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t9jQV0vzpQQg+kHGC0u75rDZnFvzX9W
+	i2Vf37NbbGiZxW7Reusxi8Xaz4/ZHdg8ds66y+6xaVUnm8emT5PYPXZ+2szq8XmTXABrFJdN
+	SmpOZllqkb5dAlfGs7mzmQr2clYc29/N2sB4m72LkZNDQsBE4vLJz1C2mMSFe+vZQGwhgemM
+	EkfPGHQxcgHZfxgl3u7eygqSYBPQlrjbvxHMFgFqblqwlhGkiFmgm1Hi7+oeVojuTImmpZPB
+	bE4BTYkX7y+ATRUWcJS4sXwDI4jNIqAqMfX9cSYQm1fATuLb28eMELagxI/J91i6GDmAhqpL
+	TJmSCxJmFpCX2LzmLTNIWAIo/OivLsQJRhJHFnYyQZSIS2w8cotlAqPQLCSDZiEMmoVk0Cwk
+	HQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMfHM+kdjKsaLA4xCnAwKvHwvmBJCRFi
+	TSwrrsw9xCjBwawkwmv8KTlEiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTU
+	gtQimCwTB6dUA+OcVb2Tj4vHvml9296Q2yWoE1HJlHfMVWrDollJtnp1XTq3Gn31X+Rusf95
+	eI+ko1p13Y4nsbemN+elul9aznRuifixzVcVvhzX/upwUTD5/9SadZfLv5+epehRExxt1pG3
+	Q3jdYuU9Pts3rDTYqtcv9KLmz8WrfDwm73oZL3/+68z98VazVLMSS3FGoqEWc1FxIgAwoedf
+	iwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 04:51:16PM +0100, Stefan Agner wrote:
-> >> diff --git a/arch/arm/boot/dts/vf-colibri.dtsi b/arch/arm/boot/dts/vf-colibri.dtsi
-> >> index 2371760..79ccfe2 100644
-> >> --- a/arch/arm/boot/dts/vf-colibri.dtsi
-> >> +++ b/arch/arm/boot/dts/vf-colibri.dtsi
-> >> @@ -163,5 +163,17 @@
-> >>  				VF610_PAD_PTD3__UART2_CTS		0x21a1
-> >>  			>;
-> >>  		};
-> >> +
-> >> +		pinctrl_usbh1_ext: gpio_usb_vbus {
-> >> +			fsl,pins = <
-> >> +				VF610_PAD_PTD4__GPIO_83			0x22ed
-> > 
-> > We used to know the GPIO usage by looking for the phandle reference to
-> > the node.  But it doesn't work for VF610 case now.
-> > 
-> > I guess this is for usbh_vbus_reg usage?  It would be nice to have a
-> > comment telling the usage of the GPIO.
-> 
-> Yeah its true, its assign is not required for Vybird. However, we could
-> assign them anyway, it would even enforce correct pin setup from
-> Startup... This would then make a comment superfluous. What do you
-> think?
+On Thu, Nov 13, 2014 at 8:02 AM, Minchan Kim <minchan@kernel.org> wrote:
+> On Wed, Nov 12, 2014 at 10:37:18PM +0800, Mahendran Ganesh wrote:
+>> In struct zram_table_entry, the element *value* contains obj size and
+>> obj zram flags. Bit 0 to bit (ZRAM_FLAG_SHIFT - 1) represent obj size,
+>> and bit ZRAM_FLAG_SHIFT to the highest bit of unsigned long represent obj
+>> zram_flags. So the first zram flag(ZRAM_ZERO) should be from ZRAM_FLAG_SHIFT
+>> instead of (ZRAM_FLAG_SHIFT + 1).
+>>
+>> This patch fixes this issue.
+>>
+>> Also this patch fixes a typo, "page in now accessed" -> "page is now accessed"
+>>
+>> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+> Acked-by: Minchan Kim <minchan@kernel.org>
 
-I agree with the approach of assigning the phandle anyway.
+Acked-by: Weijie Yang <weijie.yang@samsung.com>
 
-> 
-> 
-> > 
-> >> +			>;
-> >> +		};
-> >> +
-> >> +		pinctrl_usbdev0_ext: gpio_usb_cdet {
-> >> +			fsl,pins = <
-> >> +				VF610_PAD_PTC29__GPIO_102		0x22ed
-> > 
-> > How is this one used?
-> 
-> This is not yet used. It is more or less the OTG-ID pin, but on 3.3V
-> level. We use that on the Colibri standard to switch between Host/Device
-> mode, however a driver which uses that GPIO is still outstanding. I can
-> also leave that away for now, if you prefer....
+> To be clear about "fixes this issue", it's not a bug but just clean up
+> so it doesn't change any behavior.
+>
+> Thanks!
+>
+> --
+> Kind regards,
+> Minchan Kim
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Then let's add it when it's actually required.
 
-Shawn
