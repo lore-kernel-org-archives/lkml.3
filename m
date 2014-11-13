@@ -1,118 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933430AbaKMP3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:29:09 -0500
-Received: from www.sr71.net ([198.145.64.142]:43092 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933114AbaKMP3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:29:07 -0500
-Message-ID: <5464CE41.2090601@sr71.net>
-Date: Thu, 13 Nov 2014 07:29:05 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S933469AbaKMP37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:29:59 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:33839 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933279AbaKMP35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 10:29:57 -0500
+Date: Fri, 14 Nov 2014 00:30:17 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Cc: minchan@kernel.org, ngupta@vflare.org, ddstreet@ieee.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [PATCH 1/3] mm/zsmalloc: avoid unregister a NOT-registered
+ zsmalloc zpool driver
+Message-ID: <20141113153017.GC1408@swordfish>
+References: <1415885857-5283-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141113152247.GB1408@swordfish>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: hpa@zytor.com, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org, qiaowei.ren@intel.com,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH 10/11] x86, mpx: cleanup unused bound tables
-References: <20141112170443.B4BD0899@viggo.jf.intel.com> <20141112170512.C932CF4D@viggo.jf.intel.com> <alpine.DEB.2.11.1411131541520.3935@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411131541520.3935@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113152247.GB1408@swordfish>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2014 06:55 AM, Thomas Gleixner wrote:
-> On Wed, 12 Nov 2014, Dave Hansen wrote:
->> +/*
->> + * Get the base of bounds tables pointed by specific bounds
->> + * directory entry.
->> + */
->> +static int get_bt_addr(struct mm_struct *mm,
->> +			long __user *bd_entry, unsigned long *bt_addr)
->> +{
->> +	int ret;
->> +	int valid;
->> +
->> +	if (!access_ok(VERIFY_READ, (bd_entry), sizeof(*bd_entry)))
->> +		return -EFAULT;
->> +
->> +	while (1) {
->> +		int need_write = 0;
->> +
->> +		pagefault_disable();
->> +		ret = get_user(*bt_addr, bd_entry);
->> +		pagefault_enable();
->> +		if (!ret)
->> +			break;
->> +		if (ret == -EFAULT)
->> +			ret = mpx_resolve_fault(bd_entry, need_write);
->> +		/*
->> +		 * If we could not resolve the fault, consider it
->> +		 * userspace's fault and error out.
->> +		 */
->> +		if (ret)
->> +			return ret;
->> +	}
->> +
->> +	valid = *bt_addr & MPX_BD_ENTRY_VALID_FLAG;
->> +	*bt_addr &= MPX_BT_ADDR_MASK;
->> +
->> +	/*
->> +	 * When the kernel is managing bounds tables, a bounds directory
->> +	 * entry will either have a valid address (plus the valid bit)
->> +	 * *OR* be completely empty. If we see a !valid entry *and* some
->> +	 * data in the address field, we know something is wrong. This
->> +	 * -EINVAL return will cause a SIGSEGV.
->> +	 */
->> +	if (!valid && *bt_addr)
->> +		return -EINVAL;
->> +	/*
->> +	 * Not present is OK.  It just means there was no bounds table
->> +	 * for this memory, which is completely OK.  Make sure to distinguish
->> +	 * this from -EINVAL, which will cause a SEGV.
->> +	 */
->> +	if (!valid)
->> +		return -ENOENT;
+On (11/14/14 00:22), Sergey Senozhatsky wrote:
+> > Now zsmalloc can be registered as a zpool driver into zpool when
+> > CONFIG_ZPOOL is enabled. During the init of zsmalloc, when error happens,
+> > we need to do cleanup. But in current code, it will unregister a not yet
+> > registered zsmalloc zpool driver(*zs_zpool_driver*).
+> > 
+> > This patch puts the cleanup in zs_init() instead of calling zs_exit()
+> > where it will unregister a not-registered zpool driver.
+> > 
+> > Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+> > ---
+> >  mm/zsmalloc.c |   12 ++++++++----
+> >  1 file changed, 8 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> > index 839a48c..3d2bb36 100644
+> > --- a/mm/zsmalloc.c
+> > +++ b/mm/zsmalloc.c
+> > @@ -907,10 +907,8 @@ static int zs_init(void)
+> >  	__register_cpu_notifier(&zs_cpu_nb);
+> >  	for_each_online_cpu(cpu) {
+> >  		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+> > -		if (notifier_to_errno(ret)) {
+> > -			cpu_notifier_register_done();
+> > +		if (notifier_to_errno(ret))
+> >  			goto fail;
+> > -		}
+> >  	}
+> >  
+> >  	cpu_notifier_register_done();
+> > @@ -920,8 +918,14 @@ static int zs_init(void)
+> >  #endif
+> >  
+> >  	return 0;
+> > +
+> >  fail:
+> > -	zs_exit();
+> > +	for_each_online_cpu(cpu)
+> > +		zs_cpu_notifier(NULL, CPU_UP_CANCELED, (void *)(long)cpu);
+> > +	__unregister_cpu_notifier(&zs_cpu_nb);
+> > +
+> > +	cpu_notifier_register_done();
+> > +
+> >  	return notifier_to_errno(ret);
 > 
-> So here you have the extra -ENOENT return value, but at the
-> direct/indirect call sites you ignore -EINVAL or everything.
+> so we duplicate same code, and there is a bit confusing part
+> now: zs_cpu_notifier(CPU_UP_CANCELED) and zs_cpu_notifier(CPU_DEAD)
+> calls.
+> 
+> 
+> how about something like this?
 
-I've gone and audited the call sites and cleaned this up a bit.
+arghhh... silly me. sorry! this wasn't even compile tested.
+it should be zs_unregister_cpu_notifier(void). here it is.
 
->> +static int mpx_unmap_tables(struct mm_struct *mm,
->> +		unsigned long start, unsigned long end)
-> 
->> +	ret = unmap_edge_bts(mm, start, end);
->> +	if (ret == -EFAULT)
->> +		return ret;
-> 
-> So here you ignore EINVAL despite claiming that it will cause a
-> SIGSEGV. So this should be:
-> 
-> 	switch (ret) {
-> 	case 0:
-> 	case -ENOENT:	break;
-> 	default:	return ret;
-> 	}
-> 
->> +	for (bd_entry = bde_start + 1; bd_entry < bde_end; bd_entry++) {
->> +		ret = get_bt_addr(mm, bd_entry, &bt_addr);
->> +		/*
->> +		 * If we encounter an issue like a bad bounds-directory
->> +		 * we should still try the next one.
->> +		 */
->> +		if (ret)
->> +			continue;
-> 
-> You ignore all error returns. 
 
-That was somewhat intentional with the idea that if we have a problem in
-the middle of a large unmap we should attempt to complete the unmap.
-But, I've changed my mind.  If we have any kind of validity issue, we
-should just SIGSEGV and not attempt to keep unmapping things.  I've
-updated the patch.
+Factor out zsmalloc cpu notifier unregistration code and call
+it from both zs_exit() and zs_init() error path.
 
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+ mm/zsmalloc.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index b3b57ef..8dda7c7 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -881,14 +881,10 @@ static struct notifier_block zs_cpu_nb = {
+ 	.notifier_call = zs_cpu_notifier
+ };
+ 
+-static void zs_exit(void)
++static void zs_unregister_cpu_notifier(void)
+ {
+ 	int cpu;
+ 
+-#ifdef CONFIG_ZPOOL
+-	zpool_unregister_driver(&zs_zpool_driver);
+-#endif
+-
+ 	cpu_notifier_register_begin();
+ 
+ 	for_each_online_cpu(cpu)
+@@ -898,6 +894,14 @@ static void zs_exit(void)
+ 	cpu_notifier_register_done();
+ }
+ 
++static void zs_exit(void)
++{
++#ifdef CONFIG_ZPOOL
++	zpool_unregister_driver(&zs_zpool_driver);
++#endif
++	zs_unregister_cpu_notifier();
++}
++
+ static int zs_init(void)
+ {
+ 	int cpu, ret;
+@@ -907,10 +911,8 @@ static int zs_init(void)
+ 	__register_cpu_notifier(&zs_cpu_nb);
+ 	for_each_online_cpu(cpu) {
+ 		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+-		if (notifier_to_errno(ret)) {
+-			cpu_notifier_register_done();
++		if (notifier_to_errno(ret))
+ 			goto fail;
+-		}
+ 	}
+ 
+ 	cpu_notifier_register_done();
+@@ -921,7 +923,7 @@ static int zs_init(void)
+ 
+ 	return 0;
+ fail:
+-	zs_exit();
++	zs_unregister_cpu_notifier();
+ 	return notifier_to_errno(ret);
+ }
+ 
