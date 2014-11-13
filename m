@@ -1,210 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312AbaKMOKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:10:12 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59671 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975AbaKMOKJ (ORCPT
+	id S933250AbaKMOKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:10:06 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:40471 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933032AbaKMOKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:10:09 -0500
-Date: Thu, 13 Nov 2014 15:10:07 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / Domains: Extract code to power off/on a PM domain
-Message-ID: <20141113141007.GD18995@amd>
-References: <1415644759-2616-1-git-send-email-geert+renesas@glider.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415644759-2616-1-git-send-email-geert+renesas@glider.be>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 13 Nov 2014 09:10:04 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 2/4] input: touchscreen: of: Register multitouch axes
+Date: Thu, 13 Nov 2014 15:06:56 +0100
+Message-Id: <1415887618-29844-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1415887618-29844-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1415887618-29844-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-11-10 19:39:19, Geert Uytterhoeven wrote:
-> PM domains are powered on/off from various places. Some callers do
-> latency measurements, others don't. Consolidate using two helper
-> functions, which always measure the latencies, and update the stored
-> latencies when needed.
-> 
-> Other minor changes:
->   - Use pr_warn() instead of pr_warning(),
->   - There's no need to check genpd->name, %s handles NULL pointers fine,
->   - Make the warning format strings identical, to save memory.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+So far, the DT parsing code was only setting up the regular input axes,
+completely ignoring their multitouch counter parts.
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Fill them with the same parameters than the regular axes.
 
-> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-> index a841bab441147b3d..2fccf2c2575e4fa3 100644
-> --- a/drivers/base/power/domain.c
-> +++ b/drivers/base/power/domain.c
-> @@ -151,6 +151,59 @@ static void genpd_recalc_cpu_exit_latency(struct generic_pm_domain *genpd)
->  	genpd->cpuidle_data->idle_state->exit_latency = usecs64;
->  }
->  
-> +static int genpd_power_on(struct generic_pm_domain *genpd)
-> +{
-> +	ktime_t time_start;
-> +	s64 elapsed_ns;
-> +	int ret;
-> +
-> +	if (!genpd->power_on)
-> +		return 0;
-> +
-> +	time_start = ktime_get();
-> +	ret = genpd->power_on(genpd);
-> +	if (ret)
-> +		return ret;
-> +
-> +	elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-> +	if (elapsed_ns <= genpd->power_on_latency_ns)
-> +		return ret;
-> +
-> +	genpd->power_on_latency_ns = elapsed_ns;
-> +	genpd->max_off_time_changed = true;
-> +	genpd_recalc_cpu_exit_latency(genpd);
-> +	pr_warn("%s: Power-%s latency exceeded, new value %lld ns\n",
-> +		genpd->name, "on", elapsed_ns);
-> +
-> +	return ret;
-> +}
-> +
-> +static int genpd_power_off(struct generic_pm_domain *genpd)
-> +{
-> +	ktime_t time_start;
-> +	s64 elapsed_ns;
-> +	int ret;
-> +
-> +	if (!genpd->power_off)
-> +		return 0;
-> +
-> +	time_start = ktime_get();
-> +	ret = genpd->power_off(genpd);
-> +	if (ret == -EBUSY)
-> +		return ret;
-> +
-> +	elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-> +	if (elapsed_ns <= genpd->power_off_latency_ns)
-> +		return ret;
-> +
-> +	genpd->power_off_latency_ns = elapsed_ns;
-> +	genpd->max_off_time_changed = true;
-> +	pr_warn("%s: Power-%s latency exceeded, new value %lld ns\n",
-> +		genpd->name, "off", elapsed_ns);
-> +
-> +	return ret;
-> +}
-> +
->  /**
->   * __pm_genpd_poweron - Restore power to a given PM domain and its masters.
->   * @genpd: PM domain to power up.
-> @@ -222,25 +275,9 @@ static int __pm_genpd_poweron(struct generic_pm_domain *genpd)
->  		}
->  	}
->  
-> -	if (genpd->power_on) {
-> -		ktime_t time_start = ktime_get();
-> -		s64 elapsed_ns;
-> -
-> -		ret = genpd->power_on(genpd);
-> -		if (ret)
-> -			goto err;
-> -
-> -		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-> -		if (elapsed_ns > genpd->power_on_latency_ns) {
-> -			genpd->power_on_latency_ns = elapsed_ns;
-> -			genpd->max_off_time_changed = true;
-> -			genpd_recalc_cpu_exit_latency(genpd);
-> -			if (genpd->name)
-> -				pr_warning("%s: Power-on latency exceeded, "
-> -					"new value %lld ns\n", genpd->name,
-> -					elapsed_ns);
-> -		}
-> -	}
-> +	ret = genpd_power_on(genpd);
-> +	if (ret)
-> +		goto err;
->  
->   out:
->  	genpd_set_active(genpd);
-> @@ -529,16 +566,11 @@ static int pm_genpd_poweroff(struct generic_pm_domain *genpd)
->  	}
->  
->  	if (genpd->power_off) {
-> -		ktime_t time_start;
-> -		s64 elapsed_ns;
-> -
->  		if (atomic_read(&genpd->sd_count) > 0) {
->  			ret = -EBUSY;
->  			goto out;
->  		}
->  
-> -		time_start = ktime_get();
-> -
->  		/*
->  		 * If sd_count > 0 at this point, one of the subdomains hasn't
->  		 * managed to call pm_genpd_poweron() for the master yet after
-> @@ -547,21 +579,11 @@ static int pm_genpd_poweroff(struct generic_pm_domain *genpd)
->  		 * the pm_genpd_poweron() restore power for us (this shouldn't
->  		 * happen very often).
->  		 */
-> -		ret = genpd->power_off(genpd);
-> +		ret = genpd_power_off(genpd);
->  		if (ret == -EBUSY) {
->  			genpd_set_active(genpd);
->  			goto out;
->  		}
-> -
-> -		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-> -		if (elapsed_ns > genpd->power_off_latency_ns) {
-> -			genpd->power_off_latency_ns = elapsed_ns;
-> -			genpd->max_off_time_changed = true;
-> -			if (genpd->name)
-> -				pr_warning("%s: Power-off latency exceeded, "
-> -					"new value %lld ns\n", genpd->name,
-> -					elapsed_ns);
-> -		}
->  	}
->  
->  	genpd->status = GPD_STATE_POWER_OFF;
-> @@ -796,8 +818,7 @@ static void pm_genpd_sync_poweroff(struct generic_pm_domain *genpd)
->  	    || atomic_read(&genpd->sd_count) > 0)
->  		return;
->  
-> -	if (genpd->power_off)
-> -		genpd->power_off(genpd);
-> +	genpd_power_off(genpd);
->  
->  	genpd->status = GPD_STATE_POWER_OFF;
->  
-> @@ -828,8 +849,7 @@ static void pm_genpd_sync_poweron(struct generic_pm_domain *genpd)
->  		genpd_sd_counter_inc(link->master);
->  	}
->  
-> -	if (genpd->power_on)
-> -		genpd->power_on(genpd);
-> +	genpd_power_on(genpd);
->  
->  	genpd->status = GPD_STATE_ACTIVE;
->  }
-> @@ -1251,8 +1271,7 @@ static int pm_genpd_restore_noirq(struct device *dev)
->  			 * If the domain was off before the hibernation, make
->  			 * sure it will be off going forward.
->  			 */
-> -			if (genpd->power_off)
-> -				genpd->power_off(genpd);
-> +			genpd_power_off(genpd);
->  
->  			return 0;
->  		}
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/input/touchscreen/of_touchscreen.c | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/input/touchscreen/of_touchscreen.c b/drivers/input/touchscreen/of_touchscreen.c
+index fe80d8ba7efa..b82b5207c78b 100644
+--- a/drivers/input/touchscreen/of_touchscreen.c
++++ b/drivers/input/touchscreen/of_touchscreen.c
+@@ -11,6 +11,7 @@
+ 
+ #include <linux/of.h>
+ #include <linux/input.h>
++#include <linux/input/mt.h>
+ #include <linux/input/touchscreen.h>
+ 
+ static u32 of_get_optional_u32(struct device_node *np,
+@@ -30,8 +31,13 @@ static void touchscreen_set_params(struct input_dev *dev,
+ 	struct input_absinfo *absinfo;
+ 
+ 	if (!test_bit(axis, dev->absbit)) {
+-		dev_warn(&dev->dev,
+-			 "DT specifies parameters but the axis is not set up\n");
++		/*
++		 * Emit a warning only if the axis is not a multitouch
++		 * axis, which might not be set by the driver.
++		 */
++		if (!input_is_mt_axis(axis))
++			dev_warn(&dev->dev,
++				 "DT specifies parameters but the axis is not set up\n");
+ 		return;
+ 	}
+ 
+@@ -59,17 +65,23 @@ void touchscreen_parse_of_params(struct input_dev *dev)
+ 
+ 	maximum = of_get_optional_u32(np, "touchscreen-size-x");
+ 	fuzz = of_get_optional_u32(np, "touchscreen-fuzz-x");
+-	if (maximum || fuzz)
++	if (maximum || fuzz) {
+ 		touchscreen_set_params(dev, ABS_X, maximum, fuzz);
++		touchscreen_set_params(dev, ABS_MT_POSITION_X, maximum, fuzz);
++	}
+ 
+ 	maximum = of_get_optional_u32(np, "touchscreen-size-y");
+ 	fuzz = of_get_optional_u32(np, "touchscreen-fuzz-y");
+-	if (maximum || fuzz)
++	if (maximum || fuzz) {
+ 		touchscreen_set_params(dev, ABS_Y, maximum, fuzz);
++		touchscreen_set_params(dev, ABS_MT_POSITION_Y, maximum, fuzz);
++	}
+ 
+ 	maximum = of_get_optional_u32(np, "touchscreen-max-pressure");
+ 	fuzz = of_get_optional_u32(np, "touchscreen-fuzz-pressure");
+-	if (maximum || fuzz)
++	if (maximum || fuzz) {
+ 		touchscreen_set_params(dev, ABS_PRESSURE, maximum, fuzz);
++		touchscreen_set_params(dev, ABS_MT_PRESSURE, maximum, fuzz);
++	}
+ }
+ EXPORT_SYMBOL(touchscreen_parse_of_params);
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+2.1.1
+
