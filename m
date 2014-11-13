@@ -1,200 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845AbaKMMhN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:37:13 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:49456 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199AbaKMMhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:37:11 -0500
-Message-ID: <5464A569.5060300@huawei.com>
-Date: Thu, 13 Nov 2014 20:34:49 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S932891AbaKMMkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:40:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37852 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932566AbaKMMj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 07:39:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="487161742"
+Message-ID: <5464A68E.4010004@linux.intel.com>
+Date: Thu, 13 Nov 2014 20:39:42 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+To: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Grant Likely <grant.likely@linaro.org>,
         Marc Zyngier <marc.zyngier@arm.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        "Borislav Petkov" <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Alexander Gordeev <agordeev@redhat.com>
-CC: Tony Luck <tony.luck@intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V1 3/6] genirq: Introduce msi_irq_domain_{alloc|free}_irqs()
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <1415879029-20098-5-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1415879029-20098-5-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+CC: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
+References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <5464A3F8.1000807@huawei.com>
+In-Reply-To: <5464A3F8.1000807@huawei.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gerry, this patch seems to be the same as last one.
 
 
-On 2014/11/13 19:43, Jiang Liu wrote:
-> Introduce msi_irq_domain_{alloc|free}_irqs() to alloc/free interrupts
-> from irqdomain for generic MSI interrupts.
+On 2014/11/13 20:28, Yijing Wang wrote:
+> On 2014/11/13 19:43, Jiang Liu wrote:
+>> This patch set is based on tip/irq/irqdomain and tries to refine
+>> interfaces to support irqdomain for generic MSI and PCI MSI.
+>>
+>> Patch 1 is just minor fixes for tip/irq/irqdomain.
+>>
+>> Patch 2 introduces some helpers to hide struct msi_desc implementation
+>> details, so later we could move msi_list from struct pci_dev into
+>> struct device to enable generic MSI support.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  include/linux/msi.h |   35 ++++++++++++++++++++++++++++++
->  kernel/irq/msi.c    |   59 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 94 insertions(+)
-> 
-> diff --git a/include/linux/msi.h b/include/linux/msi.h
-> index 714716a3ffdd..6b356a1410b2 100644
-> --- a/include/linux/msi.h
-> +++ b/include/linux/msi.h
-> @@ -3,6 +3,7 @@
->  
->  #include <linux/kobject.h>
->  #include <linux/list.h>
-> +#include <asm/hw_irq.h>		/* for msi_alloc_info_t */
->  
->  struct msi_msg {
->  	u32	address_lo;	/* low 32 bits of msi message address */
-> @@ -100,7 +101,26 @@ struct irq_chip;
->  struct device_node;
->  struct msi_domain_info;
->  
-> +#ifndef NUM_MSI_ALLOC_SCRATCHPAD_REGS
-> +#define NUM_MSI_ALLOC_SCRATCHPAD_REGS	2
-> +#endif
-> +
-> +/*
-> + * Default structure for MSI interrupt allocation.
-> + * Arch may overwrite it by define msi_alloc_info_t.
-> + */
-> +struct msi_alloc_info {
-> +	struct msi_desc *desc;
-> +	irq_hw_number_t hwirq;
-> +	long		scratchpad[NUM_MSI_ALLOC_SCRATCHPAD_REGS];
-> +};
-> +
-> +#ifndef msi_alloc_info_t
-> +typedef struct msi_alloc_info msi_alloc_info_t;
-> +#endif
-> +
->  struct msi_domain_ops {
-> +	/* Callbacks for msi_create_irq_domain() */
->  	void		(*calc_hwirq)(struct msi_domain_info *info, void *arg,
->  				      struct msi_desc *desc);
->  	irq_hw_number_t	(*get_hwirq)(struct msi_domain_info *info, void *arg);
-> @@ -111,6 +131,19 @@ struct msi_domain_ops {
->  	void		(*msi_free)(struct irq_domain *domain,
->  				    struct msi_domain_info *info,
->  				    unsigned int virq);
-> +
-> +	/* Callbacks for msi_irq_domain_alloc_irqs() based on msi_descs */
-> +	int		(*msi_check)(struct irq_domain *domain,
-> +				     struct msi_domain_info *info,
-> +				     struct device *dev);
-> +	int		(*msi_prepare)(struct irq_domain *domain,
-> +				       struct device *dev,
-> +				       msi_alloc_info_t *arg);
-> +	void		(*msi_finish)(msi_alloc_info_t *arg, int retval);
-> +	void		(*set_desc)(msi_alloc_info_t *arg,
-> +				    struct msi_desc *desc);
-> +	int		(*handle_error)(struct irq_domain *domain,
-> +					struct msi_desc *desc, int error);
->  };
->  
->  struct msi_domain_info {
-> @@ -125,6 +158,8 @@ int msi_domain_set_affinity(struct irq_data *data, const struct cpumask *mask,
->  struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
->  					 struct msi_domain_info *info,
->  					 struct irq_domain *parent);
-> +int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev);
-> +void msi_domain_free_irqs(struct irq_domain *domain, struct device *dev);
->  struct msi_domain_info *msi_get_domain_info(struct irq_domain *domain);
->  
->  #endif /* CONFIG_GENERIC_MSI_IRQ_DOMAIN */
-> diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
-> index 94d6d87ee23e..0b6665de3a60 100644
-> --- a/kernel/irq/msi.c
-> +++ b/kernel/irq/msi.c
-> @@ -13,6 +13,9 @@
->  #include <linux/irqdomain.h>
->  #include <linux/msi.h>
->  
-> +/* Temparory solution for building, will be removed later */
-> +#include <linux/pci.h>
-> +
->  void __get_cached_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
->  {
->  	*msg = entry->msg;
-> @@ -124,6 +127,62 @@ struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
->  	return domain;
->  }
->  
-> +int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev)
-> +{
-> +	int i, ret, virq = -1;
-> +	msi_alloc_info_t arg;
-> +	struct msi_desc *desc;
-> +	struct msi_domain_info *info = domain->host_data;
-> +	struct msi_domain_ops *ops = info->ops;
-> +
-> +	ret = ops->msi_check(domain, info, dev);
-> +	if (ret == 0)
-> +		ret = ops->msi_prepare(domain, dev, &arg);
-> +	if (ret)
-> +		return ret;
-> +
-> +	for_each_msi_entry(desc, dev) {
-> +		ops->set_desc(&arg, desc);
-> +
-> +		virq = __irq_domain_alloc_irqs(domain, -1, desc->nvec_used,
-> +					       dev_to_node(dev), &arg, false);
-> +		if (virq < 0) {
-> +			ret = -ENOSPC;
-> +			if (ops->handle_error)
-> +				ret = ops->handle_error(domain, desc, ret);
-> +			if (ops->msi_finish)
-> +				ops->msi_finish(&arg, ret);
-> +			return ret;
-> +		}
-> +
-> +		for (i = 0; i < desc->nvec_used; i++)
-> +			irq_set_msi_desc_off(virq, i, desc);
-> +	}
-> +
-> +	if (ops->msi_finish)
-> +		ops->msi_finish(&arg, 0);
-> +
-> +	for_each_msi_entry(desc, dev) {
-> +		if (desc->nvec_used == 1)
-> +			dev_dbg(dev, "irq %d for MSI\n", virq);
-> +		else
-> +			dev_dbg(dev, "irq [%d-%d] for MSI\n",
-> +				virq, virq + desc->nvec_used - 1);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +void msi_domain_free_irqs(struct irq_domain *domain, struct device *dev)
-> +{
-> +	struct msi_desc *desc;
-> +
-> +	for_each_msi_entry(desc, dev) {
-> +		irq_domain_free_irqs(desc->irq, desc->nvec_used);
-> +		desc->irq = 0;
-> +	}
-> +}
-> +
->  struct msi_domain_info *msi_get_domain_info(struct irq_domain *domain)
->  {
->  	return (struct msi_domain_info *)domain->host_data;
-> 
-
-
--- 
+> Hi Gerry,
+>    I tried to move msi info(eg. msi_list) into struct device, but I found
+> DMAR fault interrupt is initialized before the driver core init. And I don't
+> know whether there are other devices like ARM consolidator(introduced in GIC v3)
+> need to be initialized before driver core. What do you think about this ?
+Hi Yijing,
+	DMAR interrupt doesn't make use of msi_desc, so has no
+dependency on msi_list.
+	Actually there are two levels of generic MSI sharing. The first
+level is to share common irq_chip/irqdomain code, such as HPET, DMAR and
+HT_IRQ. The second level is to share msi_desc, such as some device
+on ARM side as you have mentioned.
+	With this patch set applied, we achieve level one sharing. For
+level two sharing, we need to move msi_list into struct device, refactor
+struct msi_desc, and provide a generic pci_enable_msix_range alike
+user interfaces. I'm still working on this part, so we could cooperate
+with each other.
 Thanks!
-Yijing
+Gerry
 
+> 
+> Thanks!
+> Yijing.
+> 
+>>
+>> Patch 3 introduces msi_domain_{alloc|free}_irqs() which generalize
+>> pci_msi_domain_alloc_irqs() to support generic MSI.
+>>
+>> Patch 4 introduces default data structures and callback implementations
+>> to support msi_domain_alloc_irqs(), so reduce burden on generic MSI
+>> users.
+>>
+>> Patch 5 converts PCI MSI to use generic MSI interfaces, and also
+>> implement default callbacks for PCI MSI.
+>>
+>> Patch 6 introduces a mechanism to replace arch_setup_msi_irq()/
+>> arch_setup_msi_irqs()/arch_teardown_msi_irq()/arch_teardown_msi_irqs().
+>>
+>> With this patch set applied, the generic MSI and PCI MSI interfaces
+>> are much easier to use. For extreme case, you only need to define
+>> a "struct msi_domain_info" and don't need to implement any callbacks,
+>> just using the default callbacks is OK:)
+>>
+>> This patch set is also a preparation for:
+>> 1) Kill all weak functions in drivers/pci/msi.c
+>> 2) Implement support for non-PCI-compliant MSI device
+>>
+>> It has been tested on x86 platforms, comments are welcomed!
+>>
+>> Jiang Liu (6):
+>>   PCI, MSI: Fix errors caused by commit e5f1a59c4e12
+>>   PCI, MSI: Introduce helpers to hide struct msi_desc implemenation
+>>     details
+>>   genirq: Introduce msi_domain_{alloc|free}_irqs()
+>>   genirq: Provide default callbacks for msi_domain_ops
+>>   PCI, MSI: Refine irqdomain interfaces to simplify its usage
+>>   PCI, MSI: Provide mechanism to alloc/free MSI/MSIX interrupt from
+>>     irqdomain
+>>
+>>  drivers/pci/msi.c   |  170 ++++++++++++++++++++++++++++++++++++++++-----------
+>>  include/linux/msi.h |   90 ++++++++++++++++++++++++---
+>>  kernel/irq/msi.c    |  150 ++++++++++++++++++++++++++++++++++++++++++++-
+>>  3 files changed, 366 insertions(+), 44 deletions(-)
+>>
+> 
+> 
