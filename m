@@ -1,186 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480AbaKMKVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:21:39 -0500
-Received: from relay.parallels.com ([195.214.232.42]:45586 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932298AbaKMKVh (ORCPT
+	id S932528AbaKMKWZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:22:25 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:34685 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932275AbaKMKWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:21:37 -0500
-Message-ID: <1415874091.15631.44.camel@tkhai>
-Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
- hotplug
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Wanpeng Li <kernellwp@gmail.com>
-CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@arm.com>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Nov 2014 13:21:31 +0300
-In-Reply-To: <546485A2.7050501@gmail.com>
-References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
-		 <1415809626.15631.35.camel@tkhai> <20141112225636.GA23249@kernel>
-	 <1415873444.15631.42.camel@tkhai> <546485A2.7050501@gmail.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Thu, 13 Nov 2014 05:22:23 -0500
+Date: Thu, 13 Nov 2014 10:22:18 +0000
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH 07/13] ARM: STi: DT: STiH407: Add usb2 picophy dt nodes
+Message-ID: <20141113102218.GA25886@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
+ <1415361475-6218-8-git-send-email-peter.griffin@linaro.org>
+ <20141110101131.GP21424@x1>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110101131.GP21424@x1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Чт, 13/11/2014 в 18:19 +0800, Wanpeng Li пишет:
-> Hi Kirill,
-> On 11/13/14, 6:10 PM, Kirill Tkhai wrote:
-> > В Чт, 13/11/2014 в 06:56 +0800, Wanpeng Li пишет:
-> >> Hi Kirill,
-> >> On Wed, Nov 12, 2014 at 07:27:06PM +0300, Kirill Tkhai wrote:
-> >>> В Ср, 12/11/2014 в 09:06 +0800, Wanpeng Li пишет:
-> >>>> I observe that dl task can't be migrated to other cpus during cpu hotplug,
-> >>>> in addition, task may/may not be running again if cpu is added back. The
-> >>>> root cause which I found is that dl task will be throtted and removed from
-> >>>> dl rq after comsuming all budget, which leads to stop task can't pick it up
-> >>>> from dl rq and migrate to other cpus during hotplug.
-> >>>>
-> >>>> The method to reproduce:
-> >>>> schedtool -E -t 50000:100000 -e ./test
-> >>>> Actually test is just a simple for loop. Then observe which cpu the test
-> >>>> task is on.
-> >>>> echo 0 > /sys/devices/system/cpu/cpuN/online
-> >>>>
-> >>>> This patch adds the dl task migration during cpu hotplug by finding a most
-> >>>> suitable later deadline rq after dl timer fire if current rq is offline,
-> >>>> if fail to find a suitable later deadline rq then fallback to any eligible
-> >>>> online cpu in order that the deadline task will come back to us, and the
-> >>>> push/pull mechanism should then move it around properly.
-> >>>>
-> >>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> >>>> ---
-> >>>> v4 -> v5:
-> >>>>   * remove raw_spin_unlock(&rq->lock)
-> >>>>   * cleanup codes, spotted by Peterz
-> >>>>   * cleanup patch description
-> >>>> v3 -> v4:
-> >>>>   * use tsk_cpus_allowed wrapper
-> >>>>   * fix compile error
-> >>>> v2 -> v3:
-> >>>>   * don't get_task_struct
-> >>>>   * if cannot preempt any rq, fallback to pick any online cpus
-> >>>>   * use cpu_active_mask as original later_mask if cpu is offline
-> >>>> v1 -> v2:
-> >>>>   * push the task to another cpu in dl_task_timer() if rq is offline.
-> >>>>
-> >>>>   kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
-> >>>>   1 file changed, 41 insertions(+), 2 deletions(-)
-> >>>>
-> >>>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> >>>> index f3d7776..7c31906 100644
-> >>>> --- a/kernel/sched/deadline.c
-> >>>> +++ b/kernel/sched/deadline.c
-> >>>> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
-> >>>>   	return hrtimer_active(&dl_se->dl_timer);
-> >>>>   }
-> >>>>   
-> >>>> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
-> >>>>   /*
-> >>>>    * This is the bandwidth enforcement timer callback. If here, we know
-> >>>>    * a task is not on its dl_rq, since the fact that the timer was running
-> >>>> @@ -538,6 +539,43 @@ again:
-> >>>>   	update_rq_clock(rq);
-> >>>>   	dl_se->dl_throttled = 0;
-> >>>>   	dl_se->dl_yielded = 0;
-> >>>> +
-> >>>> +	/*
-> >>>> +	 * So if we find that the rq the task was on is no longer
-> >>>> +	 * available, we need to select a new rq.
-> >>>> +	 */
-> >>>> +	if (unlikely(!rq->online)) {
-> >>>> +		struct rq *later_rq = NULL;
-> >>>> +
-> >>>> +		later_rq = find_lock_later_rq(p, rq);
-> >>>> +
-> >>>> +		if (!later_rq) {
-> >>>> +			int cpu;
-> >>>> +
-> >>>> +			/*
-> >>>> +			 * If cannot preempt any rq, fallback to pick any
-> >>>> +			 * online cpu.
-> >>>> +			 */
-> >>>> +			cpu = cpumask_any_and(cpu_active_mask,
-> >>>> +					tsk_cpus_allowed(p));
-> >>>> +			if (cpu >= nr_cpu_ids) {
-> >>>> +				pr_warn("fail to find any online cpu and task will never come back\n");
-> >>>> +				goto unlock;
-> >>>> +			}
-> >>>> +			later_rq = cpu_rq(cpu);
-> >>> later_rq is not locked here, but you activate p on it and you do unlock below.
-> >> Great catch! How about add double_lock_balance(rq, later_rq); here?
-> > This sounds good.
-> 
-> I will do this in next version. ;-)
-> 
-> >
-> >> Regards,
-> >> Wanpeng Li
-> >>
-> >>>> +		}
-> >>>> +
-> >>>> +		deactivate_task(rq, p, 0);
-> >>>> +		set_task_cpu(p, later_rq->cpu);
-> >>>> +		activate_task(later_rq, p, 0);
-> >>> 		^^^^^
-> >>>
-> >>>> +
-> >>>> +		resched_curr(later_rq);
-> >>>> +
-> >>>> +		double_unlock_balance(rq, later_rq);
-> >>> 		^^^^^^
-> >>>
-> >>>> +
-> >>>> +		goto unlock;
-> >>>> +	}
-> >>>> +
-> >>>>   	if (task_on_rq_queued(p)) {
-> >>>>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
-> >>>>   		if (dl_task(rq->curr))
-> >>>> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
-> >>>>   	 * We have to consider system topology and task affinity
-> >>>>   	 * first, then we can look for a suitable cpu.
-> >>>>   	 */
-> >>>> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
-> >>>> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
-> >>>> +	cpumask_copy(later_mask, cpu_active_mask);
-> >>>> +	if (likely(task_rq(task)->online))
-> >>>> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
-> >>>>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
-> >>>>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
-> >>>>   			task, later_mask);
-> > Also, we should think about the following situation.
-> >
-> > DL task is left on dead rq. In your scheme it will be moved by the timer.
-> > But what will be if somebody changes the class of the task (before timer)?
-> 
-> I think timer will be cancelled in switched_from_dl().
+Hi Lee,
 
-Yeah, but nobody will move this task to alive rq.
+Thanks for reviewing.
+
+On Mon, 10 Nov 2014, Lee Jones wrote:
+> > +			reg =	<0xf8 0x04>,	/* syscfg 5062 */
+> > +				<0xf4 0x04>;    /* syscfg 5061 */
+> 
+> Are there really only 2 32bit registers to control this h/w?
+
+Yes
 
 > 
-> Regards,
-> Wanpeng Li
+> > +			reg-names =	"param",
+> > +					"ctrl";
 > 
-> > In this case the task still remains on dead rq.
-> >
-> > We should handle this situation in some way.
-> >
-> > Kirill
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> Superflous indentation after 'reg = ' and 'reg-names = '.
+
+Fixed in v2.
+
+> > +			st,syscfg = <&syscfg_core>;
+> > +			resets = <&softreset STIH407_PICOPHY_SOFTRESET>,
+> > +				 <&picophyreset STIH407_PICOPHY0_RESET>;
+> > +			reset-names = "global",
+> > +				      "port";
 > 
+> May as well put these on the same line.
 
+Fixed in v2.
 
+regards,
+
+Peter.
