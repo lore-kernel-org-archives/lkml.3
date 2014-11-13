@@ -1,119 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683AbaKMPHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:07:52 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:9797 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932730AbaKMPHs convert rfc822-to-8bit (ORCPT
+	id S933705AbaKMPIA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:08:00 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:50648 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932730AbaKMPHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:07:48 -0500
-From: James Hartley <James.Hartley@imgtec.com>
-To: Mark Brown <broonie@kernel.org>, Andrew Bresticker <abrestic@chromium.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        James Hogan <James.Hogan@imgtec.com>
-Subject: RE: [PATCH 2/2] spi: Add driver for IMG SPFI controller
-Thread-Topic: [PATCH 2/2] spi: Add driver for IMG SPFI controller
-Thread-Index: AQHP/sDwFR74YQkS/ku/vxSlX++r9pxdjKQAgAANNoCAAAMzAIABBDqQ
-Date: Thu, 13 Nov 2014 15:07:44 +0000
-Message-ID: <72BC0C8BD7BB6F45988A99382E5FBAE54433DF40@hhmail02.hh.imgtec.org>
-References: <1415828274-24727-1-git-send-email-abrestic@chromium.org>
- <1415828274-24727-3-git-send-email-abrestic@chromium.org>
- <20141112220740.GR3815@sirena.org.uk>
- <CAL1qeaH1rMcy37vcoHZ9xsmYs5iHz3Pp0GrC7agLmQ4Y7==iTw@mail.gmail.com>
- <20141112230624.GA3815@sirena.org.uk>
-In-Reply-To: <20141112230624.GA3815@sirena.org.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.167.65]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 13 Nov 2014 10:07:55 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-7c-5464c9497f2e
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH v2 33/33] thermal: exynos: remove exynos_tmu_data.h include
+Date: Thu, 13 Nov 2014 16:01:28 +0100
+Message-id: <1415890888-8881-34-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t9jQV3PkykhBo+vK1k0XA2x2DhjPavF
+	/CvXWC3ONr1ht3jzcDOjxeVdc9gsPvceYbSYcX4fk8WTh31sDpweO2fdZfdYvOclk0ffllWM
+	Hp83yQWwRHHZpKTmZJalFunbJXBlLG0+w1pw0L/i4ur/7A2MH126GDk5JARMJFbeW8sCYYtJ
+	XLi3ng3EFhKYzihxcC9zFyMXkN3FJLHj2QVWkASbgJXExPZVjCC2iICWxIlL25lAipgFljFJ
+	XPo2H8jh4BAW8JaYuTYLxGQRUJX48d8cpJxXwEPiyq83jBC7FCW6n00A28UJFH819S8jxF53
+	iWuP3jFPYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4tJ5J72Bc1WBxiFGAg1GJ
+	h/cFS0qIEGtiWXFl7iFGCQ5mJRFe78NAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTS
+	E0tSs1NTC1KLYLJMHJxSDYwaugUxktGZfSoT5iwUvf7xyKJXq+r4/e7bnQhfcDDV/OrnmuLI
+	q3sizqu35movmbPtSkTBw0e7bsY0bjLYIO97wXWT/Qf1282OMobRL/1/lexi2BGavnTLp0Cd
+	kPNObL3Wb7jjVt55fET29ZvHm6d0P2Bbn3Vv7+2Kqfnl71YF+GfpPjq3/NYpJZbijERDLeai
+	4kQAIHpWFykCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: 12 November 2014 23:06
-> To: Andrew Bresticker
-> Cc: James Hartley; Rob Herring; Pawel Moll; Mark Rutland; Ian Campbell;
-> Kumar Gala; Grant Likely; Ezequiel Garcia; devicetree@vger.kernel.org; linux-
-> kernel@vger.kernel.org; linux-spi@vger.kernel.org
-> Subject: Re: [PATCH 2/2] spi: Add driver for IMG SPFI controller
-> 
-> On Wed, Nov 12, 2014 at 02:54:57PM -0800, Andrew Bresticker wrote:
-> > On Wed, Nov 12, 2014 at 2:07 PM, Mark Brown <broonie@kernel.org>
-> wrote:
-> 
-> > >>  drivers/spi/spi-img.c | 703
-> > >> ++++++++++++++++++++++++++++++++++++++++++++++++++
-> 
-> > > How about spi-img-spfi?  That way if someone makes another SPI
-> > > controller (say a more generic one, this one seems flash
-> > > specialized) there won't be a collision.
-> 
-> > Despite the name, I believe this controller is used for generic SPI
-> > stuff as well.  I'm not sure if there is a separate one which is more
-> > generic (James?).
+There is no longer need to share defines between exynos_tmu.c
+and exynos_tmu_data.c (as they are now only used by the former
+file) so move them accordingly.  Then move externs for struct
+exynos_tmu_init_data instances to exynos_tmu.h and remove no
+longer needed exynos_tmu_data.h include.
 
-There is another generic img spi hardware block which is not register 
-compatible and doesn't have the flash interface which is also in existing 
-SoC's.  There is a separate img-spi driver for that which has not yet been 
-mainlined. I think spi-img-spfi would be ok for this driver. There is also 
-another sfc (Serial Flash Controller), block in the pipeline, so that could
-then be called spi-img-sfc.
+There should be no functional changes caused by this patch.
 
-> 
-> It would still be better to use a name less impressively generic - this is an
-> entire company, not even a product line.
-> 
-> > >> +             cpu_relax();
-> 
-> > > Seems random - we already relax in the data transfer?
-> 
-> > We don't relax in the transfers - would that be a better place to put
-> > it?  I thought it was better here since we reach this point once the
-> > TX FIFO has filled or RX FIFO has emptied.
-> 
-> Oh, that was the FIFO drain I was thinking of.  I guess here is fine.
-> 
-> > >> +     if (tx_buf)
-> > >> +             spfi_flush_tx_fifo(spfi);
-> > >> +     spfi_disable(spfi);
-> 
-> > > What does the enable and disable actually do?  Should this be
-> > > runtime PM?
-> 
-> > It starts/stops the transfer.  The control registers (bit clock,
-> > transfer mode, etc.) must be programmed before the enable bit is set
-> > and the bit does not clear itself upon completion of the transfer.  I
-> > don't think it makes sense to have this be part of runtime PM.
-> 
-> Perhaps these functions need to be called start() and stop() then - the
-> names sound like they gate the IP?
-> 
-> > > This will unconditionally claim to have handled an interrupt even if
-> > > it didn't get any interrupt status it has ever heard of.  At the
-> > > very least it should log unknown interrupts, ideally return IRQ_NONE
-> > > though since it seems to be a clear on read interrupt that's a bit
-> misleading.
-> 
-> > There's a clear register actually (see the writel() above), but yes,
-> > an error and returning IRQ_NONE sound appropriate in the event of an
-> > unexpected interrupt.
-> 
-> Don't add the error print - the interrupt core has diagnostics already and it
-> won't be nice if the interrupt ends up shared.  My recommendation was
-> intended as an either/or.
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Eduardo Valentin <edubezval@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/thermal/samsung/exynos_tmu.c      |  82 ++++++++++++++++++++-
+ drivers/thermal/samsung/exynos_tmu.h      |   8 +++
+ drivers/thermal/samsung/exynos_tmu_data.c |   1 -
+ drivers/thermal/samsung/exynos_tmu_data.h | 115 ------------------------------
+ 4 files changed, 89 insertions(+), 117 deletions(-)
+ delete mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
 
-James.
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index 6cc6b6e..2a1c4c7 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -33,7 +33,87 @@
+ 
+ #include "exynos_thermal_common.h"
+ #include "exynos_tmu.h"
+-#include "exynos_tmu_data.h"
++
++/* Exynos generic registers */
++#define EXYNOS_TMU_REG_TRIMINFO		0x0
++#define EXYNOS_TMU_REG_CONTROL		0x20
++#define EXYNOS_TMU_REG_STATUS		0x28
++#define EXYNOS_TMU_REG_CURRENT_TEMP	0x40
++#define EXYNOS_TMU_REG_INTEN		0x70
++#define EXYNOS_TMU_REG_INTSTAT		0x74
++#define EXYNOS_TMU_REG_INTCLEAR		0x78
++
++#define EXYNOS_TMU_TEMP_MASK		0xff
++#define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
++#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
++#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
++#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
++#define EXYNOS_TMU_CORE_EN_SHIFT	0
++
++/* Exynos3250 specific registers */
++#define EXYNOS_TMU_TRIMINFO_CON1	0x10
++
++/* Exynos4210 specific registers */
++#define EXYNOS4210_TMU_REG_THRESHOLD_TEMP	0x44
++#define EXYNOS4210_TMU_REG_TRIG_LEVEL0	0x50
++
++/* Exynos5250, Exynos4412, Exynos3250 specific registers */
++#define EXYNOS_TMU_TRIMINFO_CON2	0x14
++#define EXYNOS_THD_TEMP_RISE		0x50
++#define EXYNOS_THD_TEMP_FALL		0x54
++#define EXYNOS_EMUL_CON		0x80
++
++#define EXYNOS_TRIMINFO_RELOAD_ENABLE	1
++#define EXYNOS_TRIMINFO_25_SHIFT	0
++#define EXYNOS_TRIMINFO_85_SHIFT	8
++#define EXYNOS_TMU_TRIP_MODE_SHIFT	13
++#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
++#define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
++
++#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
++#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
++#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
++#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
++#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
++
++#define EXYNOS_EMUL_TIME	0x57F0
++#define EXYNOS_EMUL_TIME_MASK	0xffff
++#define EXYNOS_EMUL_TIME_SHIFT	16
++#define EXYNOS_EMUL_DATA_SHIFT	8
++#define EXYNOS_EMUL_DATA_MASK	0xFF
++#define EXYNOS_EMUL_ENABLE	0x1
++
++/* Exynos5260 specific */
++#define EXYNOS5260_TMU_REG_INTEN		0xC0
++#define EXYNOS5260_TMU_REG_INTSTAT		0xC4
++#define EXYNOS5260_TMU_REG_INTCLEAR		0xC8
++#define EXYNOS5260_EMUL_CON			0x100
++
++/* Exynos4412 specific */
++#define EXYNOS4412_MUX_ADDR_VALUE          6
++#define EXYNOS4412_MUX_ADDR_SHIFT          20
++
++/*exynos5440 specific registers*/
++#define EXYNOS5440_TMU_S0_7_TRIM		0x000
++#define EXYNOS5440_TMU_S0_7_CTRL		0x020
++#define EXYNOS5440_TMU_S0_7_DEBUG		0x040
++#define EXYNOS5440_TMU_S0_7_TEMP		0x0f0
++#define EXYNOS5440_TMU_S0_7_TH0			0x110
++#define EXYNOS5440_TMU_S0_7_TH1			0x130
++#define EXYNOS5440_TMU_S0_7_TH2			0x150
++#define EXYNOS5440_TMU_S0_7_IRQEN		0x210
++#define EXYNOS5440_TMU_S0_7_IRQ			0x230
++/* exynos5440 common registers */
++#define EXYNOS5440_TMU_IRQ_STATUS		0x000
++#define EXYNOS5440_TMU_PMIN			0x004
++
++#define EXYNOS5440_TMU_INTEN_RISE0_SHIFT	0
++#define EXYNOS5440_TMU_INTEN_RISE1_SHIFT	1
++#define EXYNOS5440_TMU_INTEN_RISE2_SHIFT	2
++#define EXYNOS5440_TMU_INTEN_RISE3_SHIFT	3
++#define EXYNOS5440_TMU_INTEN_FALL0_SHIFT	4
++#define EXYNOS5440_TMU_TH_RISE4_SHIFT		24
++#define EXYNOS5440_EFUSE_SWAP_OFFSET		8
+ 
+ /**
+  * struct exynos_tmu_data : A structure to hold the private data of the TMU
+diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+index 8de0f82..da3009b 100644
+--- a/drivers/thermal/samsung/exynos_tmu.h
++++ b/drivers/thermal/samsung/exynos_tmu.h
+@@ -133,4 +133,12 @@ struct exynos_tmu_init_data {
+ 	struct exynos_tmu_platform_data tmu_data[];
+ };
+ 
++extern struct exynos_tmu_init_data const exynos3250_default_tmu_data;
++extern struct exynos_tmu_init_data const exynos4210_default_tmu_data;
++extern struct exynos_tmu_init_data const exynos4412_default_tmu_data;
++extern struct exynos_tmu_init_data const exynos5250_default_tmu_data;
++extern struct exynos_tmu_init_data const exynos5260_default_tmu_data;
++extern struct exynos_tmu_init_data const exynos5420_default_tmu_data;
++extern struct exynos_tmu_init_data const exynos5440_default_tmu_data;
++
+ #endif /* _EXYNOS_TMU_H */
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 592c470..b239100 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -22,7 +22,6 @@
+ 
+ #include "exynos_thermal_common.h"
+ #include "exynos_tmu.h"
+-#include "exynos_tmu_data.h"
+ 
+ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 	.tmu_data = {
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+deleted file mode 100644
+index 0bfbbf2..0000000
+--- a/drivers/thermal/samsung/exynos_tmu_data.h
++++ /dev/null
+@@ -1,115 +0,0 @@
+-/*
+- * exynos_tmu_data.h - Samsung EXYNOS tmu data header file
+- *
+- *  Copyright (C) 2013 Samsung Electronics
+- *  Amit Daniel Kachhap <amit.daniel@samsung.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+- */
+-
+-#ifndef _EXYNOS_TMU_DATA_H
+-#define _EXYNOS_TMU_DATA_H
+-
+-/* Exynos generic registers */
+-#define EXYNOS_TMU_REG_TRIMINFO		0x0
+-#define EXYNOS_TMU_REG_CONTROL		0x20
+-#define EXYNOS_TMU_REG_STATUS		0x28
+-#define EXYNOS_TMU_REG_CURRENT_TEMP	0x40
+-#define EXYNOS_TMU_REG_INTEN		0x70
+-#define EXYNOS_TMU_REG_INTSTAT		0x74
+-#define EXYNOS_TMU_REG_INTCLEAR		0x78
+-
+-#define EXYNOS_TMU_TEMP_MASK		0xff
+-#define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
+-#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
+-#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
+-#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
+-#define EXYNOS_TMU_CORE_EN_SHIFT	0
+-
+-/* Exynos3250 specific registers */
+-#define EXYNOS_TMU_TRIMINFO_CON1	0x10
+-
+-/* Exynos4210 specific registers */
+-#define EXYNOS4210_TMU_REG_THRESHOLD_TEMP	0x44
+-#define EXYNOS4210_TMU_REG_TRIG_LEVEL0	0x50
+-
+-/* Exynos5250, Exynos4412, Exynos3250 specific registers */
+-#define EXYNOS_TMU_TRIMINFO_CON2	0x14
+-#define EXYNOS_THD_TEMP_RISE		0x50
+-#define EXYNOS_THD_TEMP_FALL		0x54
+-#define EXYNOS_EMUL_CON		0x80
+-
+-#define EXYNOS_TRIMINFO_RELOAD_ENABLE	1
+-#define EXYNOS_TRIMINFO_25_SHIFT	0
+-#define EXYNOS_TRIMINFO_85_SHIFT	8
+-#define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+-#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
+-#define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
+-
+-#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
+-#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
+-#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
+-#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
+-#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
+-
+-#define EXYNOS_EMUL_TIME	0x57F0
+-#define EXYNOS_EMUL_TIME_MASK	0xffff
+-#define EXYNOS_EMUL_TIME_SHIFT	16
+-#define EXYNOS_EMUL_DATA_SHIFT	8
+-#define EXYNOS_EMUL_DATA_MASK	0xFF
+-#define EXYNOS_EMUL_ENABLE	0x1
+-
+-/* Exynos5260 specific */
+-#define EXYNOS5260_TMU_REG_INTEN		0xC0
+-#define EXYNOS5260_TMU_REG_INTSTAT		0xC4
+-#define EXYNOS5260_TMU_REG_INTCLEAR		0xC8
+-#define EXYNOS5260_EMUL_CON			0x100
+-
+-/* Exynos4412 specific */
+-#define EXYNOS4412_MUX_ADDR_VALUE          6
+-#define EXYNOS4412_MUX_ADDR_SHIFT          20
+-
+-/*exynos5440 specific registers*/
+-#define EXYNOS5440_TMU_S0_7_TRIM		0x000
+-#define EXYNOS5440_TMU_S0_7_CTRL		0x020
+-#define EXYNOS5440_TMU_S0_7_DEBUG		0x040
+-#define EXYNOS5440_TMU_S0_7_TEMP		0x0f0
+-#define EXYNOS5440_TMU_S0_7_TH0			0x110
+-#define EXYNOS5440_TMU_S0_7_TH1			0x130
+-#define EXYNOS5440_TMU_S0_7_TH2			0x150
+-#define EXYNOS5440_TMU_S0_7_IRQEN		0x210
+-#define EXYNOS5440_TMU_S0_7_IRQ			0x230
+-/* exynos5440 common registers */
+-#define EXYNOS5440_TMU_IRQ_STATUS		0x000
+-#define EXYNOS5440_TMU_PMIN			0x004
+-
+-#define EXYNOS5440_TMU_INTEN_RISE0_SHIFT	0
+-#define EXYNOS5440_TMU_INTEN_RISE1_SHIFT	1
+-#define EXYNOS5440_TMU_INTEN_RISE2_SHIFT	2
+-#define EXYNOS5440_TMU_INTEN_RISE3_SHIFT	3
+-#define EXYNOS5440_TMU_INTEN_FALL0_SHIFT	4
+-#define EXYNOS5440_TMU_TH_RISE4_SHIFT		24
+-#define EXYNOS5440_EFUSE_SWAP_OFFSET		8
+-
+-extern struct exynos_tmu_init_data const exynos3250_default_tmu_data;
+-extern struct exynos_tmu_init_data const exynos4210_default_tmu_data;
+-extern struct exynos_tmu_init_data const exynos4412_default_tmu_data;
+-extern struct exynos_tmu_init_data const exynos5250_default_tmu_data;
+-extern struct exynos_tmu_init_data const exynos5260_default_tmu_data;
+-extern struct exynos_tmu_init_data const exynos5420_default_tmu_data;
+-extern struct exynos_tmu_init_data const exynos5440_default_tmu_data;
+-
+-#endif /*_EXYNOS_TMU_DATA_H*/
+-- 
+1.8.2.3
+
