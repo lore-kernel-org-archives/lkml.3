@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933957AbaKMTwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 14:52:17 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:38347 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933571AbaKMTwQ (ORCPT
+	id S933925AbaKMTzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 14:55:33 -0500
+Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:51648 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933526AbaKMTzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 14:52:16 -0500
-Date: Thu, 13 Nov 2014 20:52:08 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 02/10] perf, tools: Support handling complete branch
- stacks as histograms
-Message-ID: <20141113195208.GS12538@two.firstfloor.org>
-References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
- <1415844328-4884-3-git-send-email-andi@firstfloor.org>
- <20141113191417.GC3612@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141113191417.GC3612@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 13 Nov 2014 14:55:32 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3876:3877:5007:6114:6261:6642:10004:10400:10848:11232:11658:11914:12517:12519:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: screw18_4d38f6fa6a239
+X-Filterd-Recvd-Size: 896
+Message-ID: <1415908529.4223.11.camel@perches.com>
+Subject: spatch for trivial pointer comparison style?
+From: Joe Perches <joe@perches.com>
+To: cocci <cocci@systeme.lip6.fr>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Nov 2014 11:55:29 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 04:14:17PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Nov 12, 2014 at 06:05:20PM -0800, Andi Kleen escreveu:
-> > +static int remove_loops(struct branch_entry *l, int nr)
-> > +{
-> > +	int i, j, off;
-> > +	unsigned char chash[CHASHSZ];
-> > +
-> > +	memset(chash, NO_ENTRY, sizeof(chash));
-> > +
-> > +	BUG_ON(nr >= 256);
-> 
-> What is wrong with return -1 and propagating the error, so that the user
-> is informed if the data being processed is bogus, stop processing with a
-> warning or continue processing if finding the next valid record is
-> possible?
+I added a checkpatch entry for this.
+Maybe some cocci test like this would be useful?
 
-The error doesn't depend on the record. There is a check for the record
-being < 127 in front of this. This is merely to catch that 
-if someone increases PERF_MAX_BRANCH_DEPTH to below 255 they need
-to increase the type of the hash table from u8.
+@@
+type t;
+t *p;
+@@
+-	p == NULL
++	!p
+
+@@
+type t;
+t *p;
+@@
+-	p != NULL
++	p
+
+@@
+type t;
+t *p;
+@@
+-	NULL == p
++	!p
+
+@@
+type t;
+t *p;
+@@
+-	NULL != p
++	p
 
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
