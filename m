@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843AbaKMCFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 21:05:49 -0500
+	id S1753892AbaKMCGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 21:06:10 -0500
 Received: from mga11.intel.com ([192.55.52.93]:47316 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457AbaKMCFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 21:05:47 -0500
+	id S1753834AbaKMCFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 21:05:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
-   d="scan'208";a="631134603"
+   d="scan'208";a="631134604"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 04/10] perf, tools: Add --branch-history option to report
-Date: Wed, 12 Nov 2014 18:05:22 -0800
-Message-Id: <1415844328-4884-5-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org
+Subject: Implement lbr-as-callgraph v10
+Date: Wed, 12 Nov 2014 18:05:18 -0800
+Message-Id: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
-References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+[Reworks to address all the review feedback. Rebased to latest tree]
+[Just a repost after a rebase]
+[Even more review feedback and some bugs addressed.]
+[Only port to changes in perf/core. No other changes.]
+[Rebase to latest perf/core]
+[Another rebase. No changes]
 
-Add a --branch-history option to perf report that changes all
-the settings necessary for using the branches in callstacks.
+This patchkit implements lbr-as-callgraphs in per freport,
+as an alternative way to present LBR information.
 
-This is just a short cut to make this nicer to use, it does
-not enable any functionality by itself.
+Current perf report does a histogram over the branch edges,
+which is useful to look at basic blocks, but doesn't tell
+you anything about the larger control flow behaviour.
 
-v2: Change sort order. Rename option to --branch-history to
-be less confusing.
-v3: Updates
-v4: Fix conflict with newer perf base
-v5: Port to latest tip
-v6: Add more comments. Remove CCKEY_ADDRESS setting. Remove
-unnecessary branch_mode setting. Use a boolean.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-report.txt |  5 +++++
- tools/perf/builtin-report.c              | 26 ++++++++++++++++++++++----
- 2 files changed, 27 insertions(+), 4 deletions(-)
+This patchkit adds a new option --branch-history that
+adds the branch paths to the callgraph history instead.
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 22706be..dd7cccd 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -271,6 +271,11 @@ OPTIONS
- 	branch stacks and it will automatically switch to the branch view mode,
- 	unless --no-branch-stack is used.
- 
-+--branch-history::
-+	Add the addresses of sampled taken branches to the callstack.
-+	This allows to examine the path the program took to each sample.
-+	The data collection must have used -b (or -j) and -g.
-+
- --objdump=<path>::
-         Path to objdump binary.
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 410d44f..fb272ff 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -226,8 +226,9 @@ static int report__setup_sample_type(struct report *rep)
- 			return -EINVAL;
- 		}
- 		if (symbol_conf.use_callchain) {
--			ui__error("Selected -g but no callchain data. Did "
--				    "you call 'perf record' without -g?\n");
-+			ui__error("Selected -g or --branch-history but no "
-+				  "callchain data. Did\n"
-+				  "you call 'perf record' without -g?\n");
- 			return -1;
- 		}
- 	} else if (!rep->dont_use_callchains &&
-@@ -575,6 +576,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct stat st;
- 	bool has_br_stack = false;
- 	int branch_mode = -1;
-+	bool branch_call_mode = false;
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
- 		"perf report [<options>]",
-@@ -684,7 +686,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
- 		    "Show event group information together"),
- 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
--		    "use branch records for histogram filling", parse_branch_mode),
-+		    "use branch records for per branch histogram filling",
-+		    parse_branch_mode),
-+	OPT_BOOLEAN(0, "branch-history", &branch_call_mode,
-+		    "add last branch records to call history"),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
- 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-@@ -745,10 +750,23 @@ repeat:
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
- 
--	if ((branch_mode == -1 && has_br_stack) || branch_mode == 1) {
-+	/*
-+	 * Branch mode is a tristate:
-+	 * -1 means default, so decide based on the file having branch data.
-+	 * 0/1 means the user chose a mode.
-+	 */
-+	if (((branch_mode == -1 && has_br_stack) || branch_mode == 1) &&
-+	    branch_call_mode == -1) {
- 		sort__mode = SORT_MODE__BRANCH;
- 		symbol_conf.cumulate_callchain = false;
- 	}
-+	if (branch_call_mode) {
-+		callchain_param.branch_callstack = 1;
-+		symbol_conf.use_callchain = true;
-+		callchain_register_param(&callchain_param);
-+		if (sort_order == NULL)
-+			sort_order = "srcline,symbol,dso";
-+	}
- 
- 	if (report.mem_mode) {
- 		if (sort__mode == SORT_MODE__BRANCH) {
--- 
-1.9.3
+This allows to reason about individual branch paths leading
+to specific samples.
+
+Also available at
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/lbr-callgraph8
+
+v2:
+- rebased on perf/core
+- fix various issues
+- rename the option to --branch-history
+- various fixes to display the information more concise
+v3:
+- White space changes
+- Consolidate some patches
+- Update some descriptions
+v4:
+- Fix various display problems
+- Unknown srcline is now printed as symbol+offset
+- Refactor some code to address review feedback
+- Merge with latest tip
+- Fix missing srcline display in stdio hist output.
+v5:
+- Rename functions
+- Fix gtk build problem
+- Fix crash without -g
+- Improve error messages
+- Improve srcline display in various ways
+v6:
+- Port to latest perf/core
+v7:
+- Really port to latest perf/core
+v8:
+- Rebased on 3.16-rc1
+v9:
+- Rebase on 3.17-rc* tip/perf/core
+v10:
+- Rebase to latest tree.
+- Address review feedback (except where commented). See
+the individual patches for changelog. I dropped the -v 
+option support.
+
+Example output:
+
+    % perf record -b -g ./tsrc/tcall
+    [ perf record: Woken up 1 times to write data ]
+    [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
+    % perf report --branch-history
+    ...
+        54.91%  tcall.c:6  [.] f2                      tcall
+                |
+                |--65.53%-- f2 tcall.c:5
+                |          |
+                |          |--70.83%-- f1 tcall.c:11
+                |          |          f1 tcall.c:10
+                |          |          main tcall.c:18
+                |          |          main tcall.c:18
+                |          |          main tcall.c:17
+                |          |          main tcall.c:17
+                |          |          f1 tcall.c:13
+                |          |          f1 tcall.c:13
+                |          |          f2 tcall.c:7
+                |          |          f2 tcall.c:5
+                |          |          f1 tcall.c:12
+                |          |          f1 tcall.c:12
+                |          |          f2 tcall.c:7
+                |          |          f2 tcall.c:5
+                |          |          f1 tcall.c:11
+
 
