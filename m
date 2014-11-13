@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329AbaKMP2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:28:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:17408 "EHLO mga09.intel.com"
+	id S933430AbaKMP3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:29:09 -0500
+Received: from www.sr71.net ([198.145.64.142]:43092 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752261AbaKMP2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:28:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="487211176"
-Message-ID: <5464CDE2.2070406@linux.intel.com>
-Date: Thu, 13 Nov 2014 09:27:30 -0600
-From: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933114AbaKMP3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 10:29:07 -0500
+Message-ID: <5464CE41.2090601@sr71.net>
+Date: Thu, 13 Nov 2014 07:29:05 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: gsantosh@codeaurora.org, alsa-devel-bounces@alsa-project.org
-CC: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh@kernel.org>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Magnus <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        devicetree@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, grant.likely@linaro.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Subject: Re: [alsa-devel] Question on Compressed offload session
-References: <85499f52ebd29581bf58b9cafbae6864.squirrel@www.codeaurora.org>
-In-Reply-To: <85499f52ebd29581bf58b9cafbae6864.squirrel@www.codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: hpa@zytor.com, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, qiaowei.ren@intel.com,
+        dave.hansen@linux.intel.com
+Subject: Re: [PATCH 10/11] x86, mpx: cleanup unused bound tables
+References: <20141112170443.B4BD0899@viggo.jf.intel.com> <20141112170512.C932CF4D@viggo.jf.intel.com> <alpine.DEB.2.11.1411131541520.3935@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411131541520.3935@nanos>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/14, 9:02 PM, gsantosh@codeaurora.org wrote:
-> Hi All,
->
-> The Question is for the compressed offload session.
->
-> For a generic codec driver during the startup function it will set some of
-> the hw_constraints rule similarly like this.
->
->          snd_pcm_hw_constraint_list(substream->runtime, 0,
->                      SNDRV_PCM_HW_PARAM_RATE,
->                      &constraints_12_24);
->
-> pcm_lib.c will try to add the rule to the runtime structure by accessing
-> the pointers which will be initialized during opening of the session,
-> as The Constraints added by the codec driver will be updated in the
->
-> struct snd_pcm_hw_constraints of runtime structure which will be part of
-> substream handle.
->
-> But for the compressed offload I do not see the initialization done for HW
-> constraints, as done in pcm session
->
-> 2092int snd_pcm_open_substream(struct snd_pcm *pcm, int stream,
-> 2093			   struct file *file,
-> 2094			   struct snd_pcm_substream **rsubstream)
->
-> most of the existing drivers which has the hw_constraint_list code will
-> not be applicable for compress offload session, how to solve this?
+On 11/13/2014 06:55 AM, Thomas Gleixner wrote:
+> On Wed, 12 Nov 2014, Dave Hansen wrote:
+>> +/*
+>> + * Get the base of bounds tables pointed by specific bounds
+>> + * directory entry.
+>> + */
+>> +static int get_bt_addr(struct mm_struct *mm,
+>> +			long __user *bd_entry, unsigned long *bt_addr)
+>> +{
+>> +	int ret;
+>> +	int valid;
+>> +
+>> +	if (!access_ok(VERIFY_READ, (bd_entry), sizeof(*bd_entry)))
+>> +		return -EFAULT;
+>> +
+>> +	while (1) {
+>> +		int need_write = 0;
+>> +
+>> +		pagefault_disable();
+>> +		ret = get_user(*bt_addr, bd_entry);
+>> +		pagefault_enable();
+>> +		if (!ret)
+>> +			break;
+>> +		if (ret == -EFAULT)
+>> +			ret = mpx_resolve_fault(bd_entry, need_write);
+>> +		/*
+>> +		 * If we could not resolve the fault, consider it
+>> +		 * userspace's fault and error out.
+>> +		 */
+>> +		if (ret)
+>> +			return ret;
+>> +	}
+>> +
+>> +	valid = *bt_addr & MPX_BD_ENTRY_VALID_FLAG;
+>> +	*bt_addr &= MPX_BT_ADDR_MASK;
+>> +
+>> +	/*
+>> +	 * When the kernel is managing bounds tables, a bounds directory
+>> +	 * entry will either have a valid address (plus the valid bit)
+>> +	 * *OR* be completely empty. If we see a !valid entry *and* some
+>> +	 * data in the address field, we know something is wrong. This
+>> +	 * -EINVAL return will cause a SIGSEGV.
+>> +	 */
+>> +	if (!valid && *bt_addr)
+>> +		return -EINVAL;
+>> +	/*
+>> +	 * Not present is OK.  It just means there was no bounds table
+>> +	 * for this memory, which is completely OK.  Make sure to distinguish
+>> +	 * this from -EINVAL, which will cause a SEGV.
+>> +	 */
+>> +	if (!valid)
+>> +		return -ENOENT;
+> 
+> So here you have the extra -ENOENT return value, but at the
+> direct/indirect call sites you ignore -EINVAL or everything.
 
-You can't directly link physical output/input with the decoder/encoder 
-in general.
-For decoders, the sample-rate may not always be known ahead of time, 
-e.g. with AAC-SBR implicit signaling. There is no way to add constraints 
-on open, there is an assumption that a sample-rate converter is part of 
-the chain to take care of the difference between the output of the 
-offloaded decoder and the back-end actual sampling frequency (same with 
-number of channels and bit-width btw).
-Likewise if you encode the frequency may not be the same as what the 
-backend provides and some SRC might be needed.
--Pierre
+I've gone and audited the call sites and cleaned this up a bit.
+
+>> +static int mpx_unmap_tables(struct mm_struct *mm,
+>> +		unsigned long start, unsigned long end)
+> 
+>> +	ret = unmap_edge_bts(mm, start, end);
+>> +	if (ret == -EFAULT)
+>> +		return ret;
+> 
+> So here you ignore EINVAL despite claiming that it will cause a
+> SIGSEGV. So this should be:
+> 
+> 	switch (ret) {
+> 	case 0:
+> 	case -ENOENT:	break;
+> 	default:	return ret;
+> 	}
+> 
+>> +	for (bd_entry = bde_start + 1; bd_entry < bde_end; bd_entry++) {
+>> +		ret = get_bt_addr(mm, bd_entry, &bt_addr);
+>> +		/*
+>> +		 * If we encounter an issue like a bad bounds-directory
+>> +		 * we should still try the next one.
+>> +		 */
+>> +		if (ret)
+>> +			continue;
+> 
+> You ignore all error returns. 
+
+That was somewhat intentional with the idea that if we have a problem in
+the middle of a large unmap we should attempt to complete the unmap.
+But, I've changed my mind.  If we have any kind of validity issue, we
+should just SIGSEGV and not attempt to keep unmapping things.  I've
+updated the patch.
 
