@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaKMO4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:56:39 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39394 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659AbaKMO4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:56:37 -0500
-Message-ID: <5464C699.3080301@ti.com>
-Date: Thu, 13 Nov 2014 20:26:25 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: <chris@printf.net>, <ulf.hansson@linaro.org>, <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <afenkart@gmail.com>, <nsekhar@ti.com>
-Subject: Re: [RFC PATCH 0/3] DRA72: MMC HS200 support
-References: <1415890458-20436-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1415890458-20436-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1753944AbaKMPB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:01:57 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:50216 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaKMPBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 10:01:54 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-19-5464c7e0451d
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH v2 00/33] thermal: exynos: convert the driver to use per-SoC
+ type operations
+Date: Thu, 13 Nov 2014 16:00:55 +0100
+Message-id: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkluLIzCtJLcpLzFFi42I5/e+xoO6D4ykhBte/CVs0XA2x2DhjPavF
+	/CvXWC3ONr1ht3jzcDOjxeVdc9gsPvceYbSYcX4fk8WTh31sDpweO2fdZfdYvOclk0ffllWM
+	Hp83yQWwRHHZpKTmZJalFunbJXBltKyZzVjwWrpi24YNzA2MHeJdjJwcEgImEj0Xv7BC2GIS
+	F+6tZ+ti5OIQEpjOKNE98QUrhNPFJLHt8Ec2kCo2ASuJie2rGEFsEQEtiROXtjOBFDELLGOS
+	uPRtPhNIQlggTuL6xIdgDSwCqhK3Vk4Da+AVcJd4vvYfC8Q6RYnuZxPYJjByL2BkWMUomlqQ
+	XFCclJ5rqFecmFtcmpeul5yfu4kRHDDPpHYwrmywOMQowMGoxMP7giUlRIg1say4MvcQowQH
+	s5IIr/dhoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQbG
+	uimZ/6YfOvVzR6TLi4e9x+ySSxzM1xo/zWT+3t89rb7utb7WxOKsNQ/y/YvS5wcKWm+ycZiz
+	8UvkG8+pconb3Po/G3/c8udjbtyuP1UTfK9c0N35/ba4/H0GHrHfokn9qZZ1z3ZOm5z5re6w
+	8avFK46s3zP1MddJqXslhyyvNWT+0jaNkfNzVGIpzkg01GIuKk4EAHJtbpkUAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Sorry for sending this multiple times. There was some problem with my mail
-configuration which I have fixed now.
+This patch series replaces the hardware registers abstractions in
+the Exynos thermal driver by the usage of per-SoC type operations.
+Such solution provides simpler, easier to understand code and
+allows removal of ~250 LOCs (~11% of the whole source code) from
+the driver.  Some other driver improvements are now also possible
+thanks to these changes but are scheduled at later time (like
+consolidating code for clearing IRQs using INTCLEAR register).
 
-Thanks
-Kishon
+The patchset should not cause any functionality changes.  This
+means that unless there are some bugs in the patches itself there
+should be no behavior changes for the driver (this also includes
+lack of changes in the way hardware is accessed by the driver).
 
-On Thursday 13 November 2014 08:24 PM, Kishon Vijay Abraham I wrote:
-> Added HS200 to improve EMMC throughput for dra72.
-> 
-> With HS200
-> ==============
-> Read throughput
-> ./dd if=/dev/mmcblk0 of=/dev/null bs=1M count=100 oflag=sync
-> 100+0 records in
-> 100+0 records out
-> 104857600 bytes (105 MB) copied, 1.46028 s, 71.8 MB/s
-> 
-> Write throughput
-> root@dra7xx-evm:/# ./dd if=/dev/zero of=/dev/mmcblk0 bs=1M count=100 oflag=sync
-> 100+0 records in
-> 100+0 records out
-> 104857600 bytes (105 MB) copied, 9.34884 s, 11.2 MB/s
-> 
-> 
-> WithOUT HS200
-> ==============
-> Read throughput
-> ./dd if=/dev/mmcblk0 of=/dev/null bs=1M count=100 oflag=sync
-> 100+0 records in
-> 100+0 records out
-> 104857600 bytes (105 MB) copied, 2.6423 s, 39.7 MB/s
-> 
-> Write throughput
-> ./dd if=/dev/zero of=/dev/mmcblk0 bs=1M count=100 oflag=sync
-> 100+0 records in
-> 100+0 records out
-> 104857600 bytes (105 MB) copied, 9.3556 s, 11.2 MB/s
-> 
-> Balaji T K (1):
->   mmc: omap_hsmmc: add tuning support
-> 
-> Kishon Vijay Abraham I (1):
->   ARM: dts: dra72-evm: Set the max-frequency to 192MHz
-> 
-> Viswanath Puttagunta (1):
->   mmc: omap_hsmmc: set host capabilities by reading MMCHS_CAPA2
->     register
-> 
->  arch/arm/boot/dts/dra72-evm.dts |    1 +
->  drivers/mmc/host/omap_hsmmc.c   |  342 ++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 341 insertions(+), 2 deletions(-)
-> 
+All testing was done on (Exynos4412 SoC based) ODROID U3 board
+(some additional patches are needed to make the Exynos thermal
+driver work on this hardware).
+
+Depends on:
+- 'next' branch of linux-soc-thermal.git kernel tree from Eduardo
+
+Changes since v1 (https://lkml.org/lkml/2014/9/18/305):
+- rebased on top of the current linux-soc-thermal kernel
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+
+Bartlomiej Zolnierkiewicz (33):
+  thermal: exynos: remove needless triminfo_data abstraction
+  thermal: exynos: remove needless tmu_status abstraction
+  thermal: exynos: remove needless threshold_temp abstraction
+  thermal: exynos: remove needless triminfo_ctrl abstraction
+  thermal: exynos: remove needless test_mux_addr_shift abstraction
+  thermal: exynos: remove needless therm_trip_[mode,mask]_shift
+    abstractions
+  thermal: exynos: remove needless therm_trip_en_shift abstraction
+  thermal: exynos: remove needless emul_temp_shift abstraction
+  thermal: exynos: remove needless emul_time_shift abstraction
+  thermal: exynos: replace tmu_irqstatus check by Exynos5440 one
+  thermal: exynos: replace tmu_pmin check by Exynos5440 one
+  thermal: exynos: simplify HW_TRIP level setting
+  thermal: exynos: replace threshold_falling check by Exynos SoC type
+    one
+  thermal: exynos: remove TMU_SUPPORT_READY_STATUS flag
+  thermal: exynos: remove TMU_SUPPORT_TRIM_RELOAD flag
+  thermal: exynos: add sanitize_temp_error() helper
+  thermal: exynos: add get_th_reg() helper
+  thermal: exynos: add ->tmu_initialize method
+  thermal: exynos: add get_con_reg() helper
+  thermal: exynos: add ->tmu_control method
+  thermal: exynos: add ->tmu_read method
+  thermal: exynos: add get_emul_con_reg() helper
+  thermal: exynos: add ->tmu_set_emulation method
+  thermal: exynos: add ->tmu_clear_irqs method
+  thermal: exynos: remove TMU_SUPPORT_FALLING_TRIP flag
+  thermal: exynos: remove TMU_SUPPORT_EMUL_TIME flag
+  thermal: exynos: remove TMU_SUPPORT_EMULATION flag
+  thermal: exynos: remove TMU_SUPPORT_ADDRESS_MULTIPLE flag
+  thermal: exynos: remove TMU_SUPPORT_MULTI_INST flag
+  thermal: exynos: remove test_mux pdata field
+  thermal: exynos: remove SoC type ifdefs
+  thermal: exynos: remove __EXYNOS5420_TMU_DATA macro
+  thermal: exynos: remove exynos_tmu_data.h include
+
+ drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+ drivers/thermal/samsung/exynos_tmu.c            | 692 ++++++++++++++++--------
+ drivers/thermal/samsung/exynos_tmu.h            | 123 +----
+ drivers/thermal/samsung/exynos_tmu_data.c       | 239 +-------
+ drivers/thermal/samsung/exynos_tmu_data.h       | 159 ------
+ 5 files changed, 485 insertions(+), 729 deletions(-)
+ delete mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
+
+-- 
+1.8.2.3
+
