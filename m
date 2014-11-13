@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934707AbaKMVbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:31:46 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:50756 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934364AbaKMVbn (ORCPT
+	id S934725AbaKMVbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:31:53 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:44317 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934250AbaKMVbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:31:43 -0500
+	Thu, 13 Nov 2014 16:31:50 -0500
 From: Pieter Smith <pieter@boesman.nl>
 To: pieter@boesman.nl
 Cc: Josh Triplett <josh@joshtriplett.org>,
         "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        netdev@vger.kernel.org (open list:NETWORKING [IPv4/...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 53/56] net/ipv6: support compiling out splice
-Date: Thu, 13 Nov 2014 22:23:30 +0100
-Message-Id: <1415913813-362-54-git-send-email-pieter@boesman.nl>
+        Tom Herbert <therbert@google.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>, Florian Westphal <fw@strlen.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Jan Beulich <JBeulich@suse.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        linux-kernel@vger.kernel.org (open list),
+        netdev@vger.kernel.org (open list:NETWORKING [GENERAL])
+Subject: [PATCH 55/56] net/core: support compiling out splice
+Date: Thu, 13 Nov 2014 22:23:32 +0100
+Message-Id: <1415913813-362-56-git-send-email-pieter@boesman.nl>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415913813-362-1-git-send-email-pieter@boesman.nl>
 References: <pieter@boesman.nl>
@@ -28,28 +33,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compile out splice support from ipv6 networking when the splice-family of
+Compile out splice support from networking core when the splice-family of
 syscalls is not supported by the system (i.e. CONFIG_SYSCALL_SPLICE is
 undefined).
 
 Signed-off-by: Pieter Smith <pieter@boesman.nl>
 ---
- net/ipv6/af_inet6.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/skbuff.h | 2 ++
+ net/core/skbuff.c      | 2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index 2daa3a1..3d17064 100644
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -523,7 +523,7 @@ const struct proto_ops inet6_stream_ops = {
- 	.recvmsg	   = inet_recvmsg,		/* ok		*/
- 	.mmap		   = sock_no_mmap,
- 	.sendpage	   = inet_sendpage,
--	.splice_read	   = tcp_splice_read,
-+	SPLICE_READ_INIT(tcp_splice_read)
- #ifdef CONFIG_COMPAT
- 	.compat_setsockopt = compat_sock_common_setsockopt,
- 	.compat_getsockopt = compat_sock_common_getsockopt,
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index abde271..5a67427 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2543,9 +2543,11 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len);
+ int skb_store_bits(struct sk_buff *skb, int offset, const void *from, int len);
+ __wsum skb_copy_and_csum_bits(const struct sk_buff *skb, int offset, u8 *to,
+ 			      int len, __wsum csum);
++#ifdef CONFIG_SYSCALL_SPLICE
+ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+ 		    struct pipe_inode_info *pipe, unsigned int len,
+ 		    unsigned int flags);
++#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
+ void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
+ unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
+ int skb_zerocopy(struct sk_buff *to, struct sk_buff *from,
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 163b673..5610904 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1649,6 +1649,7 @@ fault:
+ }
+ EXPORT_SYMBOL(skb_copy_bits);
+ 
++#ifdef CONFIG_SYSCALL_SPLICE
+ /*
+  * Callback from splice_to_pipe(), if we need to release some pages
+  * at the end of the spd in case we error'ed out in filling the pipe.
+@@ -1851,6 +1852,7 @@ done:
+ 
+ 	return ret;
+ }
++#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
+ 
+ /**
+  *	skb_store_bits - store bits from kernel buffer to skb
 -- 
 1.9.1
 
