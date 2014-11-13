@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaKMDuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 22:50:14 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60067 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753659AbaKMDuL (ORCPT
+	id S1753830AbaKMD7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 22:59:01 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:62500 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588AbaKMD67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 22:50:11 -0500
-X-Sasl-enc: aNfGYo9CwqOBDgqdzFpqWHbvVuVxAzvdEI2aQGZgvB3f 1415850609
-Message-ID: <1415850606.2631.19.camel@perseus.themaw.net>
-Subject: Re: [PATCH 1/3] autofs - fix log print messages
-From: Ian Kent <raven@themaw.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Nov 2014 11:50:06 +0800
-In-Reply-To: <1415837458.2631.13.camel@perseus.themaw.net>
-References: <20141111012954.25773.4002.stgit@perseus.themaw.net>
-	 <1415676341.16070.0.camel@perches.com>
-	 <1415684245.2486.9.camel@perseus.themaw.net>
-	 <1415684989.16070.2.camel@perches.com>
-	 <1415685712.2486.17.camel@perseus.themaw.net>
-	 <20141112150700.bbb0d82dad1b133fccc1a0ec@linux-foundation.org>
-	 <1415837458.2631.13.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Nov 2014 22:58:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACVXFVN1HmyaiR7fXAxjwkBBJJZdW5bNpujfrPPeWRGZ=8FOig@mail.gmail.com>
+References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
+ <20141111122901.GA4419@red-moon> <CACVXFVNAc9axtESmo1zGZ3GMquTzjzWR3jx-b3tbhhLfQDDRcg@mail.gmail.com>
+ <20141111182418.GA5507@red-moon> <CACVXFVPzo2qNGa5DWESS3TXor=u82_SxHb+xzrBCRXtcQxq4Cg@mail.gmail.com>
+ <CAErSpo5LELkH=9WAq5MDE6fkVJvPK3miQtqrMnRHY7QyLWigUg@mail.gmail.com> <CACVXFVN1HmyaiR7fXAxjwkBBJJZdW5bNpujfrPPeWRGZ=8FOig@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 12 Nov 2014 20:58:38 -0700
+Message-ID: <CAErSpo7qWc8j2OQuEOUqCohndeosC5iDwk2j03Qb-KeDzDKxVw@mail.gmail.com>
+Subject: Re: [PATCH] pci: generic host: make it more generic
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        alvise rigo <a.rigo@virtualopensystems.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-13 at 08:10 +0800, Ian Kent wrote:
-> > 
-> > The tree which these patches were based on seem to have more than a
-> > plain rename.  For example I get
-> 
-> Right, looks like something has gone missing along the way. 
+On Wed, Nov 12, 2014 at 1:58 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Wed, Nov 12, 2014 at 10:47 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Tue, Nov 11, 2014 at 7:12 PM, Ming Lei <ming.lei@canonical.com> wrote:
+>>> ...
+>>> Do you think it is doable to introduce a option(from module
+>>> parameter, or device tree, ...) to let the driver and PCI core
+>>> ignore/bypass all pcibios handling for the generic bus?
+>>
+>> No, I don't think so.
+>
+> Could you explain a bit? In VM world, it might be reasonable to
+> claim that there is no pcibios service or pcibios service needn't.
+>
+> IMO it isn't easy to make a cross-arch PCI generic controller
+> driver if pcibios handling has to be involved.
 
-Ahh .. I get it now.
+I'm not going to add kernel or module parameters to change the way the
+basic code works.  We need a way to factor the differences so the PCI
+core code is the same for all arches, and the differences are hidden
+in the arch-specific code.
 
-> The tree the patches are against is just a local clone of the Linus tree
-> with the patches I'd sent previously applied.
-> 
-> Folding these recent patches into the original series and sending one
-> series only that applies on the current Linus tree should sort out the
-> problem.
-> 
-> > 
-> > --- fs/autofs4/autofs_i.h
-> > +++ fs/autofs4/autofs_i.h
+That's basically what the pcibios interfaces do.  I suspect they were
+originally named "pcibios" because there's a "PCI BIOS" spec that
+tells you how to make BIOS calls to enumerate devices, access config
+space, manage interrupts, etc.  But "pcibios" is now just the name of
+interfaces to arch-specific functionality.  Most arches don't have a
+BIOS, and most pcibios_*() functions don't make BIOS calls.
 
-Looks like the patches I sent on 3rd Dec, which is what Joe commented
-on, were missed.
+If you have a new arch that has no "pcibios service" (I don't know
+exactly what you mean by that), you can still implement the
+pcibios_*() interfaces used by the PCI core.  If some of these
+interfaces don't actually do anything on your arch, that's fine; they
+can be no-ops.
 
-It's probably better for me to start over once its decided how I'll be
-sending the patches.
-
-Ian
-
-
+Bjorn
