@@ -1,91 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934854AbaKMXxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:53:36 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38847 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934400AbaKMXxe (ORCPT
+	id S934662AbaKMX7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:59:34 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55475 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934386AbaKMX7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:53:34 -0500
-Date: Thu, 13 Nov 2014 23:53:22 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Will Deacon'" <will.deacon@arm.com>,
-        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Message-ID: <20141113235322.GC4042@n2100.arm.linux.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
- <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
- <20141030135749.GE32589@arm.com>
- <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+	Thu, 13 Nov 2014 18:59:32 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/z42JF5J+wEeYEXb0ST04K
+Date: Thu, 13 Nov 2014 15:58:41 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Marek Belisko <marek@goldelico.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        bcousson@baylibre.com, linux@arm.linux.org.uk, plagnioj@jcrosoft.com,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        hns@goldelico.com, Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
+ devconf1 register
+Message-ID: <20141113235840.GS26481@atomide.com>
+References: <1415051968-4878-1-git-send-email-marek@goldelico.com>
+ <1415051968-4878-5-git-send-email-marek@goldelico.com>
+ <5463585D.9070209@ti.com>
+ <20141112150210.GC26481@atomide.com>
+ <5464969F.30708@ti.com>
+ <20141113182848.GQ26481@atomide.com>
+ <alpine.DEB.2.02.1411132251320.17030@utopia.booyaka.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+In-Reply-To: <alpine.DEB.2.02.1411132251320.17030@utopia.booyaka.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 01:42:44PM +0800, Wang, Yalin wrote:
-> This patch add bitrev.h file to support rbit instruction,
-> so that we can do bitrev operation by hardware.
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> ---
->  arch/arm/Kconfig              |  1 +
->  arch/arm/include/asm/bitrev.h | 21 +++++++++++++++++++++
->  2 files changed, 22 insertions(+)
->  create mode 100644 arch/arm/include/asm/bitrev.h
+* Paul Walmsley <paul@pwsan.com> [141113 15:01]:
+> Hi
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 89c4b5c..be92b3b 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -28,6 +28,7 @@ config ARM
->  	select HANDLE_DOMAIN_IRQ
->  	select HARDIRQS_SW_RESEND
->  	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
-> +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
+> On Thu, 13 Nov 2014, Tony Lindgren wrote:
+> 
+> > * Tomi Valkeinen <tomi.valkeinen@ti.com> [141113 03:33]:
+> > > On 12/11/14 17:02, Tony Lindgren wrote:
+> > > 
+> > > >> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
+> > > >> places in the kernel. I wonder if adding a pinmux entry for it could
+> > > >> cause some rather odd problems.
+> > > > 
+> > > > They can all use pinctrl-single no problem.
+> > > 
+> > > Can, but don't. That's my worry. If we touch the DEVCONF1 via pinmux,
+> > > and we have code in mach-omap2 that also touch DEVCONF1, without any
+> > > knowledge (and locking) between those...
+> > 
+> > Hmm yeah the McBSP clock mux could be racy as the mux register for
+> > McBSP is treated as a clock. This register muxes the clock between
+> > external pin and internal clock. Considering that this should be
+> > selectable at board level as the external clock probably needs to be
+> > used if level shifters are being used, it should be really handled by
+> > pinctrl-single.
+> > 
+> > The other use for hsmmc.c and pdata-quirks.c for the one time mux for
+> > MMC clock from the MMC clock pin. That can be done with pinctrl-single
+> > from the MMC driver too for DT based booting.
+> > 
+> > Then we just have the save and restore of the registers for
+> > off-idle.
+> >  
+> > > So _maybe_ that's not an issue, as the pinmux config we have here is
+> > > fixed, and done once at boot time, and maybe the code in mach-omap2 that
+> > > touch DEVCONF1 is also ran just once and not at the same time as the
+> > > pinmux. But I don't know if that's so.
+> > 
+> > It seems we could just do a read-only check for McBSP in the clock
+> > code for the mux register, or even completely drop that code from
+> > cclock3xxx_data.c and start using the pinctrl for that mux.
+> > 
+> > Paul & Tero, got any comments here?
+> 
+> It's best to move all of the SCM register reads/writes to an SCM IP block 
+> driver.  This driver would be the only entity that would touch the SCM IP 
+> block registers - no other code on the system would touch it (perhaps 
+> aside from anything needed for early init).  The SCM driver would enforce 
+> mutual exclusion via a spinlock, so concurrent SCM register modifications 
+> wouldn't flake out.  Then the SCM driver would register clocks with the 
+> CCF, register pins with the pinctrl subsystem, etc. etc.
 
-Looking at this, this is just wrong.  Take a moment to consider what
-happens if we build a kernel which supports both ARMv6 _and_ ARMv7 CPUs.
-What happens if an ARMv6 CPU tries to execute an rbit instruction?
+We actually do have that with pinctrl-single + syscon. We certainly
+need to implement more Linux framework drivers for the SCM registers.
+Things like regulators, clocks, and PHYs, but they should use
+pinctrl-single + syscon. See the the pbias-regulator.c for example.
 
-Second point (which isn't obvious from your submissions on-list) is that
-you've loaded the patch system up with patches for other parts of the
-kernel tree for which I am not responsible for.  As such, I can't take
-those patches without the sub-tree maintainer acking them.  Also, the
-commit text in those patches look weird:
+Looking at the McBSP clock handling, threre's yet more handling of
+the same DEVCONF1 mux register in omap2_mcbsp_set_clks_src that gets 
+alled from omap_mcbsp_dai_set_dai_sysclk.
 
-6fire: Convert byte_rev_table uses to bitrev8
+To me it seems that if we handle the DEVCONF with pinctrl-single, we
+don't need most of the McBSP fck code or the omap2_mcbsp_set_clks_src.
+Having the mux register as the clock enable register is not nice..
+Who knows what the clock coming from the external pin might be :)
 
-Use the inline function instead of directly indexing the array.
+Regards,
 
-This allows some architectures with hardware instructions for bit
-reversals to eliminate the array.
-
-Signed-off-by: Joe Perches <(address hidden)>
-Signed-off-by: Yalin Wang <(address hidden)>
-
-Why is Joe signing off on these patches?  As his is the first sign-off,
-one assumes that he was responsible for creating the patch in the first
-place, but there is no From: line marking him as the author.  Shouldn't
-his entry be an Acked-by: ?
-
-Confused.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Tony
