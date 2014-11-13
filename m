@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933053AbaKMOnH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:43:07 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41829 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932705AbaKMOnG (ORCPT
+	id S933105AbaKMOnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:43:22 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:63904 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932706AbaKMOnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:43:06 -0500
-Date: Thu, 13 Nov 2014 14:43:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: load FS modules before pinning the mountpoint
-Message-ID: <20141113144303.GJ7996@ZenIV.linux.org.uk>
-References: <1415888073-1827-1-git-send-email-dh.herrmann@gmail.com>
+	Thu, 13 Nov 2014 09:43:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415888073-1827-1-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141112135009.5a887d200be262d94ba50495@linux-foundation.org>
+References: <1415379664-31555-1-git-send-email-drysdale@google.com> <20141112135009.5a887d200be262d94ba50495@linux-foundation.org>
+From: David Drysdale <drysdale@google.com>
+Date: Thu, 13 Nov 2014 14:42:58 +0000
+Message-ID: <CAHse=S_uQGmzz+umKDfJPOaT2+TAdzbtjZeVZaj1i4NBVWy35g@mail.gmail.com>
+Subject: Re: [PATCHv7 0/3] syscalls,x86: Add execveat() system call
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Rich Felker <dalias@aerifal.cx>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, X86 ML <x86@kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 03:14:33PM +0100, David Herrmann wrote:
-> Several pseudo file-systems create default mountpoints in /sys/fs/ or
-> /sys/kernel/, including:
->     /sys/kernel/debug
->     /sys/fs/mqueue
->     /sys/fs/cgroup
->     /sys/fs/pstore
-> 
-> If the given pseudo file-system is available as a module, user-space can
-> rely on mount(2) to load the module on-demand (assuming MODULE_ALIAS_FS).
-> However, in case the default mount-point is created by the file-system
-> itself, mount(2) will fail as it cannot pin the mountpoint.
-> 
-> This patch makes mount(2) load any requested file-systems before pinning
-> the target mount-point. This way, a file-system module can create default
-> mount-points in the module instead of creating them statically in the
-> core kernel.
+On Wed, Nov 12, 2014 at 9:50 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri,  7 Nov 2014 17:01:01 +0000 David Drysdale <drysdale@google.com> wrote:
+>
+>> This patch set adds execveat(2) for x86, and is derived from Meredydd
+>> Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
+>>
+>> The primary aim of adding an execveat syscall is to allow an
+>> implementation of fexecve(3) that does not rely on the /proc
+>> filesystem, at least for executables (rather than scripts).  The
+>> current glibc version of fexecve(3) is implemented via /proc, which
+>> causes problems in sandboxed or otherwise restricted environments.
+>
+> Have the relevant glibc people seen/reviewed/liked this?
 
-I'm not taking that until I see a module that would attempt to do such
-mountpoint creation *and* managed to get it race-free.
+I think it's been mentioned in passing but not explicitly discussed over there
+(https://sourceware.org/ml/libc-alpha/2014-10/msg00497.html,
+https://sourceware.org/ml/libc-alpha/2014-10/msg00509.html)
+and a couple of the participants in that thread (Christoph Hellwig, Rich Felker)
+were also cc:ed here.
 
-Besides, I really don't like the way you do this lookup only to never use
-the result other than for pinning the damn module.  But that's secondary -
-the main issue is with the amount of fun races in the whole "let module
-create that default mountpoint" approach.
+It sounded like execveat might be useful for another feature (O_EXEC) but
+I'm not sure whether that amounts to the relevant glibc folk liking this...
