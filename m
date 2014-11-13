@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933639AbaKMRik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:38:40 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60046 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933616AbaKMRih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:38:37 -0500
-Message-ID: <5464EC7A.7050603@ti.com>
-Date: Thu, 13 Nov 2014 11:38:02 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S933658AbaKMRi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:38:56 -0500
+Received: from mga14.intel.com ([192.55.52.115]:2151 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933468AbaKMRiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 12:38:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,379,1413270000"; 
+   d="scan'208";a="621917945"
+Date: Thu, 13 Nov 2014 19:33:54 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andy Lutomirski <luto@amacapital.net>, intel-gfx@lists.freedesktop.org,
+        X86 ML <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv6 4/5] hwspinlock/core: add common OF helpers
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com> <1410553499-55951-5-git-send-email-s-anna@ti.com> <CAK=WgbamdqAufjC4Xb5moERRBSB-cO6c1RPTE=f+dp75F+Eh7A@mail.gmail.com> <5463B5B6.8040709@ti.com> <CAK=WgbbatPTiz3efDWHVEcuug_UQfkCViMoK0zcfUg3JwB2oTA@mail.gmail.com>
-In-Reply-To: <CAK=WgbbatPTiz3efDWHVEcuug_UQfkCViMoK0zcfUg3JwB2oTA@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+        DRI <dri-devel@lists.freedesktop.org>, Ingo Molnar <mingo@kernel.org>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        H Peter Anvin <h.peter.anvin@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] x86: Use clwb in drm_clflush_virt_range
+Message-ID: <20141113173354.GT10649@intel.com>
+References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1415731396-19364-7-git-send-email-ross.zwisler@linux.intel.com>
+ <5464220D.6090204@amacapital.net>
+ <20141113112017.GA14416@pd.tnic>
+ <CALCETrV2E-LBHLTV6zJ=nfw8ijjV8VZoYAinXdg9ZaOryfqquw@mail.gmail.com>
+ <20141113171133.GD14070@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141113171133.GD14070@pd.tnic>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
-
-On 11/13/2014 04:03 AM, Ohad Ben-Cohen wrote:
-> Hi Suman,
+On Thu, Nov 13, 2014 at 06:11:33PM +0100, Borislav Petkov wrote:
+> On Thu, Nov 13, 2014 at 08:38:23AM -0800, Andy Lutomirski wrote:
+> > On Nov 13, 2014 3:20 AM, "Borislav Petkov" <bp@alien8.de> wrote:
+> > >
+> > > On Wed, Nov 12, 2014 at 07:14:21PM -0800, Andy Lutomirski wrote:
+> > > > On 11/11/2014 10:43 AM, Ross Zwisler wrote:
+> > > > > If clwb is available on the system, use it in drm_clflush_virt_range.
+> > > > > If clwb is not available, fall back to clflushopt if you can.
+> > > > > If clflushopt is not supported, fall all the way back to clflush.
+> > > >
+> > > > I don't know exactly what drm_clflush_virt_range (and the other
+> > > > functions you're modifying similarly) are for, but it seems plausible to
+> > > > me that they're used before reads to make sure that non-coherent memory
+> > > > sees updated data.  If that's true, then this will break it.
+> > >
+> > > Why would it break it? The updated cachelines will be in memory and
+> > > subsequent reads will be serviced from the cache instead from going to
+> > > memory as it is not invalidated as it would be by CLFLUSH.
+> > >
+> > > /me is puzzled.
+> > 
+> > Suppose you map some device memory WB, and then the device
+> > non-coherently updates.  If you want the CPU to see it, you need
+> > clflush or clflushopt.  Some architectures might do this for
+> > dma_sync_single_for_cpu with DMA_FROM_DEVICE.
 > 
-> On Wed, Nov 12, 2014 at 9:32 PM, Suman Anna <s-anna@ti.com> wrote:
->>> Is this the validation you mentioned which requires the existence of
->>> "hwspinlock/core: maintain a list of registered hwspinlock banks" ?
->>
->> Well, not exactly. The validation is on the following segment,
->>
->> +       id = of_hwspin_lock_simple_xlate(bank, &args);
->> +       if (id < 0 || id >= bank->num_locks) {
->> +               ret = -EINVAL;
->> +               goto out;
->> +       }
-> 
-> I'm not entirely convinced that this justifies adding the proposed
-> linked list. Can't we can get the base_id and number of locks by
-> traversing the DT?
+> Ah, you're talking about the other way around - the device does the
+> writes. Well, the usage sites are all in i915*, maybe we should ask
+> them - it looks to me like this is only the CPU making stuff visible in
+> the shared buffer but I don't know that code... intel-gfx CCed although
+> dri-devel is already on CC.
 
-No, not always, because, either of them can be optional between
-different platform implementations. For example, on OMAP, the number of
-locks is read from an IP register, and not coded in DT. Similarly,
-base_id can be optional on SoCs that don't have multiple IP instances.
-The only place the hwspinlock core knows both of them for sure is at the
-device registration time, but the core only stores the locks and not the
-devices at the moment. Any operation on the device is not possible
-without knowing the exact global lock we are dealing with, and this API
-is about returning that exact global lock id.
+We use it both ways in i915. So please don't break it.
 
-> 
->> That said, it is also needed to provide the support for deferred probing
->> without changing the return code conventions on the existing API.
-> 
-> Here too, adding a data structure maintaining memory objects and
-> taking care of it life cycle seems a bit overkill for anything to do
-> with return values.
-
-IMHO, this life cycle management is not that complicated, it is managed
-alongside the addition/removal of the locks during the device
-registration/unregistration time.
-
-> 
->> Yes, and wouldn't that require that the id is validated? It just cannot
->> return any return value, and expect it will be verified somewhere else
->> or in a following API call. Not doing the validation unnecessarily
->> complicates the system usage of a lock as you are sharing an invalid
->> lock to a remote processor and then you have two validation failure
->> paths on different processors.
-> 
-> Validation is great but I'm still not convinced it can't be done
-> without maintaining another data structure.
-> 
-> Please show me specific technical issues that can't be resolved
-> without adding the proposed linked list.
-
-Same as above.
-
-regards
-Suman
+-- 
+Ville Syrjälä
+Intel OTC
