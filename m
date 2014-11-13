@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaKMPhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:37:31 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:46314 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753304AbaKMPh3 (ORCPT
+	id S1753997AbaKMPsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:48:47 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47793 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaKMPsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:37:29 -0500
-X-Listener-Flag: 11101
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yijing Wang <wangyijing@huawei.com>, <srv_heupstream@mediatek.com>,
-        <yingjoe.chen@gmail.com>, <hc.yen@mediatek.com>,
-        <eddie.huang@mediatek.com>, <nathan.chung@mediatek.com>,
-        <yh.chen@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>
-Subject: [PATCH v6 0/6] ARM: mediatek: Add support for interrupt polarity
-Date: Thu, 13 Nov 2014 23:37:03 +0800
-Message-ID: <1415893029-2971-1-git-send-email-yingjoe.chen@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
+	Thu, 13 Nov 2014 10:48:46 -0500
+Date: Thu, 13 Nov 2014 16:48:31 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@suse.de>
+cc: B_B_Singh@DELL.com, stuart.w.hayes@gmail.com, hpa@zytor.com,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH] x86: Configure NX support earlier in setup_arch
+In-Reply-To: <20141113123045.GA14421@pd.tnic>
+Message-ID: <alpine.DEB.2.11.1411131557190.3935@nanos>
+References: <53B4B627.8060903@gmail.com> <53BC7210.1000305@gmail.com> <53BC72D8.4090705@zytor.com> <53BDE4BD.50605@gmail.com> <20140714172225.GE25120@pd.tnic> <8B2F6FFD0BD1E448853114367400A3730702007068@BLRX7MCDC203.AMER.DELL.COM>
+ <20141113123045.GA14421@pd.tnic>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 13 Nov 2014, Borislav Petkov wrote:
+> Revisit this patch how? I'm not sure I understand...
 
-This series is 6th version of interrupt polarity support for MediaTek SoCs.
-This is based on tip/irq/irqdomain[1] and my mediatek SoC basic support[2].
+X86_64 starts with:
 
-In this version, I added a minor fix to irqdomain as first patch. Patch 3,
-4 are changed to use newly added helper functions. The other patches are
-unchanged.
+pteval_t __supported_pte_mask __read_mostly = ~0;
 
+while i386 starts with:
 
-Simplified block diagram for interrupt on my system:
+pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL);
 
-    +-------+      +-------+
- ---| SYSIRQ|------|ARM GIC|
- ---|       |------|       |
- ---|       |------|       |
- ---|       |------|       |
- ---|       |------|       |
-    +-------+      +-------+
+Now if the stupid BIOS disabled NX via setting bit 34 in
+IA32_MISC_ENABLE, then X86_FEATURE_NX is off, but at the point where
+we call x86_configure_nx() we already used the supported_pte_mask with
+the NX bit set in the early remap code and accessed the mappings.
 
-In device tree, interrupt-parent for other devices is sysirq, child of gic.
-This describe HW better and allow device to specify polarity as it is sent
-by the device.
+On 32bit we are safe because the early maps exclude NX at startup and
+only enable it in x86_configure_nx().
 
-When using hierarchy irq domain, gic will use irq_domain_add_linear to
-create irqdomain and all interrupt numbers must come from device tree. My
-/proc/interrupts looks like this now:
+That's one part of the issue. The other is that grub2 does not call in
+via the trampoline, so we don't call verify_cpu. verify_cpu clears bit
+34 in IA32_MISC_ENABLE depending on the cpu family/model, which is
+true for 64bit machines.
 
-# cat /proc/interrupts
-           CPU0
- 16:     149578  MT_SYSIRQ 113  mtk_timer
- 20:       1082  MT_SYSIRQ  54  serial
+So I think moving x86_configure_nx() to a point before we actually
+create mappings is a sane thing to do in any case.
 
-Changes in v6:
- - Rebased to tip/irq/irqdomain [1]
+But of course we should also clear the stupid disable bit
+unconditionally independent of the entry path for all cpus which
+support it.
 
-Changes in v5:
- - Discussed in [3]
- - Fix bug on mt6589 reported by Matthias
- - Fix bug for irq_find_mapping in irq_create_of_mapping
- - Merge Marc's change to proper handle non-DT case in gic_init_bases
+Thanks,
 
-Changes in v4:
- - Discussed in [4]
- - Remove arm,hierarchy-irq-domain. When GIC is probed by DT, it will
-support hierarchy irqdomain.
-
-Changes in v3:
- - Discussed in [5]
- - First implementation using hierarchy irqdomain
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/297624.html
-[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296093.html
-[3] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/298161.html
-[4] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296911.html
-[5] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/293766.html
+	tglx
 
 
-Yingjoe Chen (6):
-  irqdomain: Use consistent prototype for irq_domain_free_irqs_*
-  genirq: Add more helper functions to support stacked irq_chip
-  irqchip: gic: Support hierarchy irq domain.
-  ARM: mediatek: Add sysirq interrupt polarity support
-  ARM: mediatek: Add sysirq in mt6589/mt8135/mt8127 dtsi
-  dt-bindings: add bindings for mediatek sysirq
 
- .../bindings/arm/mediatek/mediatek,sysirq.txt      |  26 ++++
- arch/arm/boot/dts/mt6589.dtsi                      |  14 +-
- arch/arm/boot/dts/mt8127.dtsi                      |  14 +-
- arch/arm/boot/dts/mt8135.dtsi                      |  14 +-
- drivers/irqchip/Kconfig                            |   1 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-gic.c                          |  80 +++++++----
- drivers/irqchip/irq-mtk-sysirq.c                   | 156 +++++++++++++++++++++
- include/linux/irq.h                                |   6 +
- include/linux/irqdomain.h                          |   8 +-
- kernel/irq/chip.c                                  |  28 ++++
- kernel/irq/irqdomain.c                             |   8 +-
- 12 files changed, 317 insertions(+), 39 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
- create mode 100644 drivers/irqchip/irq-mtk-sysirq.c
-
--- 
-1.8.1.1.dirty
 
