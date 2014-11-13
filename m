@@ -1,167 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553AbaKMKqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:46:07 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:42283 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254AbaKMKqE (ORCPT
+	id S932586AbaKMKq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:46:27 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45684 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932371AbaKMKq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:46:04 -0500
+	Thu, 13 Nov 2014 05:46:26 -0500
+Message-ID: <54648BF4.60007@pengutronix.de>
+Date: Thu, 13 Nov 2014 11:46:12 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-X-Originating-IP: [82.146.27.14]
-In-Reply-To: <20141110162736.GA16054@cbox>
-References: <1394726249-1547-1-git-send-email-a.motakis@virtualopensystems.com>
- <1394726249-1547-2-git-send-email-a.motakis@virtualopensystems.com>
- <20140328190913.GJ25519@cbox> <CADDJ2=Opx2d5ex0hWSXYJjs6uLifR9wZVsahUHzZ7zytSj7ZSg@mail.gmail.com>
- <20141110162736.GA16054@cbox>
-From: Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>
-Date: Thu, 13 Nov 2014 12:45:42 +0200
-Message-ID: <CADDJ2=PTM0fJ0RFfWdVQ1-471xqaJmj0vP1f5-pf57xOV5jgig@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/4] ARM: KVM: on unhandled IO mem abort, route the
- call to the KVM MMIO bus
-To: Christoffer Dall <christoffer.dall@linaro.org>,
-        Andre Przywara <andre.przywara@linaro.org>
-Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        Alexander Graf <agraf@suse.de>, marc.zyngier@arm.com,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
+        michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org
+CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH] can: Fix bug in suspend/resume
+References: <a44efc1fb0144cca9d0c4851cc51db25@BL2FFO11FD024.protection.gbl> <546484D9.4030005@pengutronix.de>
+In-Reply-To: <546484D9.4030005@pengutronix.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 6:27 PM, Christoffer Dall
-<christoffer.dall@linaro.org> wrote:
-> On Mon, Nov 10, 2014 at 05:09:07PM +0200, Nikolay Nikolaev wrote:
->> Hello,
->>
->> On Fri, Mar 28, 2014 at 9:09 PM, Christoffer Dall
->> <christoffer.dall@linaro.org> wrote:
->> >
->> > On Thu, Mar 13, 2014 at 04:57:26PM +0100, Antonios Motakis wrote:
->> > > On an unhandled IO memory abort, use the kvm_io_bus_* API in order to
->> > > handle the MMIO access through any registered read/write callbacks. This
->> > > is a dependency for eventfd support (ioeventfd and irqfd).
->> > >
->> > > However, accesses to the VGIC are still left implemented independently,
->> > > since the kvm_io_bus_* API doesn't pass the VCPU pointer doing the access.
->> > >
->> > > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->> > > Signed-off-by: Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>
->> > > ---
->> > >  arch/arm/kvm/mmio.c | 32 ++++++++++++++++++++++++++++++++
->> > >  virt/kvm/arm/vgic.c |  5 ++++-
->> > >  2 files changed, 36 insertions(+), 1 deletion(-)
->> > >
->> > > diff --git a/arch/arm/kvm/mmio.c b/arch/arm/kvm/mmio.c
->> > > index 4cb5a93..1d17831 100644
->> > > --- a/arch/arm/kvm/mmio.c
->> > > +++ b/arch/arm/kvm/mmio.c
->> > > @@ -162,6 +162,35 @@ static int decode_hsr(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
->> > >       return 0;
->> > >  }
->> > >
->> > > +/**
->> > > + * kvm_handle_mmio - handle an in-kernel MMIO access
->> > > + * @vcpu:    pointer to the vcpu performing the access
->> > > + * @run:     pointer to the kvm_run structure
->> > > + * @mmio:    pointer to the data describing the access
->> > > + *
->> > > + * returns true if the MMIO access has been performed in kernel space,
->> > > + * and false if it needs to be emulated in user space.
->> > > + */
->> > > +static bool handle_kernel_mmio(struct kvm_vcpu *vcpu, struct kvm_run *run,
->> > > +             struct kvm_exit_mmio *mmio)
->> > > +{
->> > > +     int ret;
->> > > +     if (mmio->is_write) {
->> > > +             ret = kvm_io_bus_write(vcpu->kvm, KVM_MMIO_BUS, mmio->phys_addr,
->> > > +                             mmio->len, &mmio->data);
->> > > +
->> > > +     } else {
->> > > +             ret = kvm_io_bus_read(vcpu->kvm, KVM_MMIO_BUS, mmio->phys_addr,
->> > > +                             mmio->len, &mmio->data);
->> > > +     }
->> > > +     if (!ret) {
->> > > +             kvm_prepare_mmio(run, mmio);
->> > > +             kvm_handle_mmio_return(vcpu, run);
->> > > +     }
->> > > +
->> > > +     return !ret;
->> > > +}
->> > > +
->> > >  int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
->> > >                phys_addr_t fault_ipa)
->> > >  {
->> > > @@ -200,6 +229,9 @@ int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
->> > >       if (vgic_handle_mmio(vcpu, run, &mmio))
->> > >               return 1;
->> > >
->> > > +     if (handle_kernel_mmio(vcpu, run, &mmio))
->> > > +             return 1;
->> > > +
->>
->>
->> We're reconsidering ioeventfds patchseries and we tried to evaluate
->> what you suggested here.
->>
->> >
->> > this special-casing of the vgic is now really terrible.  Is there
->> > anything holding you back from doing the necessary restructure of the
->> > kvm_bus_io_*() API instead?
->>
->> Restructuring the kvm_io_bus_ API is not a big thing (we actually did
->> it), but is not directly related to the these patches.
->> Of course it can be justified if we do it in the context of removing
->> vgic_handle_mmio and leaving only handle_kernel_mmio.
->>
->> >
->> > That would allow us to get rid of the ugly
->> > Fix it! in the vgic driver as well.
->>
->> Going through the vgic_handle_mmio we see that it will require large
->> refactoring:
->>  - there are 15 MMIO ranges for the vgic now - each should be
->> registered as a separate device
->>  - the handler of each range should be split into read and write
->>  - all handlers take 'struct kvm_exit_mmio', and pass it to
->> 'vgic_reg_access', 'mmio_data_read' and 'mmio_data_read'
->>
->> To sum up - if we do this refactoring of vgic's MMIO handling +
->> kvm_io_bus_ API getting 'vcpu" argument we'll get a 'much' cleaner
->> vgic code and as a bonus we'll get 'ioeventfd' capabilities.
->>
->> We have 3 questions:
->>  - is the kvm_io_bus_ getting 'vcpu' argument acceptable for the other
->> architectures too?
->>  - is this huge vgic MMIO handling redesign acceptable/desired (it
->> touches a lot of code)?
->>  - is there a way that ioeventfd is accepted leaving vgic.c in it's
->> current state?
->>
-> Not sure how the latter question is relevant to this, but check with
-> Andre who recently looked at this as well and decided that for GICv3 the
-> only sane thing was to remove that comment for the gic.
-@Andre - what's your experience with the GICv3 and MMIO handling,
-anything specific?
->
-> I don't recall the details of what you were trying to accomplish here
-> (it's been 8 months or so) but the surely the vgic handling code should
-> *somehow* be integrated into the handle_kernel_mmio (like Paolo
-> suggested), unless you come back and tell me that that would involve a
-> complete rewrite of the vgic code.
-I'm experimenting now - it's not exactly rewrite of whole vgic code,
-but it will touch a lot of it  - all MMIO access handlers and the
-supporting functions.
-We're ready to spend the effort. My question is  - is this acceptable?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-regards,
-Nikolay Nikolaev
-Virtual Open Systems
->
-> -Christoffer
+On 11/13/2014 11:15 AM, Marc Kleine-Budde wrote:
+> On 11/13/2014 07:58 AM, Kedareswara rao Appana wrote:
+>> When accessing the priv structure use container_of instead of dev_get_=
+drvdata.
+>=20
+> Why?
+
+The drvdata here is the struct net_device, not the platform device.
+Please state this in the commit message.
+
+If I understand the code correct, you can make use of the existing
+helper function to_platform_device():
+
+http://lxr.free-electrons.com/source/include/linux/platform_device.h#L42
+
+>=20
+>> Enable the clocks in the suspend before accessing the registers of the=
+ CAN.
+>>
+>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+>> ---
+>>  drivers/net/can/xilinx_can.c |   20 ++++++++++++++++++--
+>>  1 files changed, 18 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can=
+=2Ec
+>> index 5e8b560..63ef645 100644
+>> --- a/drivers/net/can/xilinx_can.c
+>> +++ b/drivers/net/can/xilinx_can.c
+>> @@ -972,15 +972,30 @@ static const struct net_device_ops xcan_netdev_o=
+ps =3D {
+>>   */
+>>  static int __maybe_unused xcan_suspend(struct device *dev)
+>>  {
+>> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
+>> +	struct platform_device *pdev =3D container_of(dev,
+>> +			struct platform_device, dev);
+>>  	struct net_device *ndev =3D platform_get_drvdata(pdev);
+>>  	struct xcan_priv *priv =3D netdev_priv(ndev);
+>> +	int ret;
+>> =20
+>>  	if (netif_running(ndev)) {
+>>  		netif_stop_queue(ndev);
+>>  		netif_device_detach(ndev);
+>>  	}
+>> =20
+>> +	ret =3D clk_prepare_enable(priv->can_clk);
+>> +	if (ret) {
+>> +		dev_err(dev, "unable to enable device clock\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret =3D clk_prepare_enable(priv->bus_clk);
+>> +	if (ret) {
+>> +		dev_err(dev, "unable to enable bus clock\n");
+>> +		clk_disable_unprepare(priv->can_clk);
+>> +		return ret;
+>> +	}
+>=20
+> Now you have clock imbalance. Per suspend/resume cycle the clocks are
+> enabled twice, but disabled only once.
+>=20
+>> +
+>>  	priv->write_reg(priv, XCAN_MSR_OFFSET, XCAN_MSR_SLEEP_MASK);
+>>  	priv->can.state =3D CAN_STATE_SLEEPING;
+>> =20
+>> @@ -999,7 +1014,8 @@ static int __maybe_unused xcan_suspend(struct dev=
+ice *dev)
+>>   */
+>>  static int __maybe_unused xcan_resume(struct device *dev)
+>>  {
+>> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
+>> +	struct platform_device *pdev =3D container_of(dev,
+>> +			struct platform_device, dev);
+>>  	struct net_device *ndev =3D platform_get_drvdata(pdev);
+>>  	struct xcan_priv *priv =3D netdev_priv(ndev);
+>>  	int ret;
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUZIv0AAoJECte4hHFiupUBRAQAIEwZXuTkeRCmFmiy27yYlmw
+LIsgVArhIbenkJnaT1LKOlx++6vj+7NzdJfX1K4eU1LLDwbQB4Rl4QDDvMvKjbDg
+5pNq51d5es0fCLP4ZEGTMmmXunlYhTajvBO7+BnPOvCgBXSAd+Ch+wfhtpSf6pwR
+JkwzG39/c4oqDDarqSEbHN6sdsaBWxKY1mANg7MDVYxu0k5BASeus8Jk7YIWJYN+
+UAOgTDRAXdDsegaH3ZgPtNP9QY7Ui0yUNQvVIX5J4W6kr93H4IHbrLTcJ6a+8rgY
+9flcjPrwEh1w+qcUa5875zI89YsnUKZCXArCYeJL3+ty+KUFBqk24lu3RFm9bJ+e
+VNWuSWTzb3uF6nMFLvg9BJoSCm7c/f9enirVDJk2hE188aF00Kf6wntT+eHnOYyg
+zioxAmscDRvIR7EH/U541sldYDQzCvr6jevWnmaMVbInmtL0wFw7Pw7Lof+fybIa
+s8DGxH/SrvC7vbiqVV3XsbDpxHgQ+nSdeoqZ4u+4x74dMCjU9/9auqN3BbgP9eBS
+hNpp1J3kAS4gj4GaaGC7cns47KgJE0+jW2vXwWCrPZ/AegXpNrYFoLL10kIBVM0c
+qbjZXBtmS+J92WhDfZx8g5fJ9uWe9zUQLP7IITUuYPyubN/roAR8fZqXxMQ5N7Ce
+1YzhFTcp+AhOl7bZYHw6
+=ncoe
+-----END PGP SIGNATURE-----
+
+--JDTIScx6ajdfsQADus7HgWIFDNJFgeGnv--
