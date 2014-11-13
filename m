@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaKMBV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 20:21:58 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35183 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753648AbaKMBVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 20:21:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="415746520"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "Alex Williamson" <alex.williamson@redhat.com>
-CC: "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLgAyIb0DAAAcBYD//4ReAP/+e7+A//z07vA=
-Date: Thu, 13 Nov 2014 01:21:16 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5A68@SHSMSX104.ccr.corp.intel.com>
-References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
- <5461EC99.1000101@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
- <546324F4.8010002@redhat.com>
- <E959C4978C3B6342920538CF579893F00227680F@SHSMSX104.ccr.corp.intel.com>
- <54632ECA.4070903@redhat.com>
- <E959C4978C3B6342920538CF579893F002284398@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <E959C4978C3B6342920538CF579893F002284398@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753588AbaKMBYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 20:24:15 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:40720 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098AbaKMBYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 20:24:12 -0500
+Date: Thu, 13 Nov 2014 09:23:59 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: kernel@pengutronix.de, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: dts: vf-colibri: add USB regulators
+Message-ID: <20141113012358.GN2704@dragon>
+References: <1415106430-6271-1-git-send-email-stefan@agner.ch>
+ <1415106430-6271-4-git-send-email-stefan@agner.ch>
+ <20141111141228.GB2704@dragon>
+ <0bb62bdfc866f75977d01070d228ed4c@agner.ch>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0bb62bdfc866f75977d01070d228ed4c@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD1M1Nk020683
 
-Wu, Feng wrote on 2014-11-13:
+On Wed, Nov 12, 2014 at 04:51:16PM +0100, Stefan Agner wrote:
+> >> diff --git a/arch/arm/boot/dts/vf-colibri.dtsi b/arch/arm/boot/dts/vf-colibri.dtsi
+> >> index 2371760..79ccfe2 100644
+> >> --- a/arch/arm/boot/dts/vf-colibri.dtsi
+> >> +++ b/arch/arm/boot/dts/vf-colibri.dtsi
+> >> @@ -163,5 +163,17 @@
+> >>  				VF610_PAD_PTD3__UART2_CTS		0x21a1
+> >>  			>;
+> >>  		};
+> >> +
+> >> +		pinctrl_usbh1_ext: gpio_usb_vbus {
+> >> +			fsl,pins = <
+> >> +				VF610_PAD_PTD4__GPIO_83			0x22ed
+> > 
+> > We used to know the GPIO usage by looking for the phandle reference to
+> > the node.  But it doesn't work for VF610 case now.
+> > 
+> > I guess this is for usbh_vbus_reg usage?  It would be nice to have a
+> > comment telling the usage of the GPIO.
+> 
+> Yeah its true, its assign is not required for Vybird. However, we could
+> assign them anyway, it would even enforce correct pin setup from
+> Startup... This would then make a comment superfluous. What do you
+> think?
+
+I agree with the approach of assigning the phandle anyway.
+
 > 
 > 
-> kvm-owner@vger.kernel.org wrote on 2014-11-12:
->> kvm@vger.kernel.org; iommu@lists.linux-foundation.org; 
->> linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest 
->> interrupt configuration changes
->> 
->> 
->> 
->> On 12/11/2014 10:19, Wu, Feng wrote:
->>>> You can certainly backport these patches to distros that do not 
->>>> have VFIO.  But upstream we should work on VFIO first.  VFIO has 
->>>> feature parity with legacy device assignment, and adding a new 
->>>> feature that is not in VFIO would be a bad idea.
->>>> 
->>>> By the way, do you have benchmark results for it?  We have not been 
->>>> able to see any performance improvement for APICv on e.g. netperf.
->>> 
->>> Do you mean benchmark results for APICv itself or VT-d Posted-Interrtups?
->> 
->> Especially for VT-d posted interrupts---but it'd be great to know 
->> which workloads see the biggest speedup from APICv.
+> > 
+> >> +			>;
+> >> +		};
+> >> +
+> >> +		pinctrl_usbdev0_ext: gpio_usb_cdet {
+> >> +			fsl,pins = <
+> >> +				VF610_PAD_PTC29__GPIO_102		0x22ed
+> > 
+> > How is this one used?
 > 
-> We have some draft performance data internally, please see the 
-> attached. For VT-d PI, I think we can get the biggest performance gain 
-> if the VCPU is running in non-root mode for most of the time (not in 
-> HLT state), since external interrupt from assigned devices will be delivered by guest directly in this case.
-> That means we can run some cpu intensive workload in the guests.
+> This is not yet used. It is more or less the OTG-ID pin, but on 3.3V
+> level. We use that on the Colibri standard to switch between Host/Device
+> mode, however a driver which uses that GPIO is still outstanding. I can
+> also leave that away for now, if you prefer....
 
-Have you check that the CPU side posted interrupt is taking effect in w/o VT-D PI case? Per my understanding, the performance gap should be so large if you use CPU side posted interrupt. This data more like the VT-d PI vs non PI(both VT-d and CPU).
+Then let's add it when it's actually required.
 
-> 
-> Thanks,
-> Feng
-> 
->> 
->> Paolo
->> --
->> To unsubscribe from this list: send the line "unsubscribe kvm" in the 
->> body of a message to majordomo@vger.kernel.org More majordomo info at 
->> http://vger.kernel.org/majordomo-info.html
-
-
-Best regards,
-Yang
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Shawn
