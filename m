@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627AbaKMGqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 01:46:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907AbaKMGqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 01:46:07 -0500
-Message-ID: <546453A2.8050304@redhat.com>
-Date: Thu, 13 Nov 2014 14:45:54 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753629AbaKMGsn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 01:48:43 -0500
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:51302 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaKMGsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 01:48:42 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Nov 2014 01:48:42 EST
+DomainKey-Signature: s=smtpout; d=dell.com; c=nofws; q=dns;
+  h=X-LoopCount0:X-IronPort-AV:From:To:CC:Date:Subject:
+   Thread-Topic:Thread-Index:Message-ID:References:
+   In-Reply-To:Accept-Language:Content-Language:
+   X-MS-Has-Attach:X-MS-TNEF-Correlator:acceptlanguage:
+   Content-Type:Content-Transfer-Encoding:MIME-Version:
+   Return-Path;
+  b=mpZoa7x/O/oZuHzfxe+KdFnTgQZLmXmDa/uQ6Y20cUV+vbDJ/KIUmhoD
+   hnZ1weg75uwhmVj351OHY0v6hQGOC7UcybBnpAaykUTuYu2Zc1W7eIruQ
+   MeDeoaucIWf7OlY3j+fbL2j9ZIMDzfZZSaGXHBAwcQPI2xjPuTkaDGoM6
+   E=;
+X-LoopCount0: from 10.170.28.41
+X-IronPort-AV: E=Sophos;i="5.07,375,1413262800"; 
+   d="scan'208";a="588141132"
+From: <B_B_Singh@DELL.com>
+To: <bp@suse.de>, <stuart.w.hayes@gmail.com>
+CC: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <matt.fleming@intel.com>
+Date: Thu, 13 Nov 2014 12:09:02 +0530
+Subject: RE: [PATCH] x86: Configure NX support earlier in setup_arch
+Thread-Topic: [PATCH] x86: Configure NX support earlier in setup_arch
+Thread-Index: Ac//CzZQXdNuppSdTyCFUyd6BrR/hgAARa7A
+Message-ID: <8B2F6FFD0BD1E448853114367400A3730702007068@BLRX7MCDC203.AMER.DELL.COM>
+References: <53B4B627.8060903@gmail.com> <53BC7210.1000305@gmail.com>
+ <53BC72D8.4090705@zytor.com> <53BDE4BD.50605@gmail.com>
+ <20140714172225.GE25120@pd.tnic>
+In-Reply-To: <20140714172225.GE25120@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: gaowanlong@cn.fujitsu.com, linux-kernel@vger.kernel.org
-CC: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] virtio-net: fix buggy features advertised by host
-References: <1415857974-23326-1-git-send-email-jasowang@redhat.com> <1415857974-23326-2-git-send-email-jasowang@redhat.com> <54644A4E.7000902@cn.fujitsu.com>
-In-Reply-To: <54644A4E.7000902@cn.fujitsu.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD6mnOD021832
 
-On 11/13/2014 02:06 PM, Wanlong Gao wrote:
-> On 11/13/2014 01:52 PM, Jason Wang wrote:
->> This patch tries to detect the possible buggy features advertised by host
->> and fix them. One example is booting virtio-net with only ctrl_vq disabled,
->> qemu may still advertise many features which depends on it. This will
->> trigger several BUG()s in virtnet_send_command().
->>
->> This patch utilizes the fix_features() method, and disables all features that
->> depends on ctrl_vq if it was not advertised.
->>
->> This fixes the crash when booting with ctrl_vq=off.
->>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: Michael S. Tsirkin <mst@redhat.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->> Changes from V1:
->> - fix the cut-and-paste error
->> ---
->>  drivers/net/virtio_net.c | 35 +++++++++++++++++++++++++++++++++++
->>  1 file changed, 35 insertions(+)
->>
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index ec2a8b4..6ce125e 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -1948,6 +1948,40 @@ static int virtnet_restore(struct virtio_device *vdev)
->>  }
->>  #endif
->>  
->> +static void virtnet_fix_features(struct virtio_device *dev)
->> +{
->> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
->> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_RX)) {
->> +			pr_warning("Disable VIRTIO_NET_F_CTRL_RX since host "
->> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
->> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
->> +		}
->> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VLAN)) {
->> +			pr_warning("Disable VIRTIO_NET_F_CTRL_VLAN since host "
->> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
->> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_VLAN);
->> +		}
->> +		if (virtio_has_feature(dev, VIRTIO_NET_F_GUEST_ANNOUNCE)) {
->> +			pr_warning("Disable VIRTIO_NET_F_GUEST_ANNOUNCE since "
->> +				   "host does not advertise "
->> +				   "VIRTIO_NET_F_CTRL_VQ");
->> +			virtio_disable_feature(dev,
->> +					       VIRTIO_NET_F_GUEST_ANNOUNCE);
->> +		}
->> +		if (virtio_has_feature(dev, VIRTIO_NET_F_MQ)) {
->> +			pr_warning("Disable VIRTIO_NET_F_MQ since host "
->> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
->> +			virtio_disable_feature(dev, VIRTIO_NET_F_MQ);
->> +		}
->> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR)) {
->> +			pr_warning("Disable VIRTIO_NET_F_CTRL_MAC_ADDR since "
->> +				   "host does not advertise "
->> +				   "VIRTIO_NET_F_CTRL_VQ");
->> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR);
->> +		}
->
-> Can we use a feature array and check with one loop?  The current check looks so dup?
->
->
-> Thanks,
-> Wanlong Gao
->
+Hi Boris,
 
-Yes for sure. I will wait a little bit for the maintainers comment and
-do it in next version.
+I feel this can be a valid scenario where user wants to disable the memory protection (NX flag disable) for his requirement, in that case he will hit this issue.
+So request you to please revisit this patch.
 
-Thanks
+Regards
+Balaji Singh
+
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Borislav Petkov
+Sent: Monday, July 14, 2014 10:52 PM
+To: Stuart Hayes
+Cc: H. Peter Anvin; tglx@linutronix.de; mingo@redhat.com; x86@kernel.org; linux-kernel@vger.kernel.org; matt.fleming@intel.com; bp@suse.de
+Subject: Re: [PATCH] x86: Configure NX support earlier in setup_arch
+
+On Wed, Jul 09, 2014 at 07:56:29PM -0500, Stuart Hayes wrote:
+> Well... I got this issue because a co-worker tripped over it. He had 
+> NX disabled in BIOS for some reason, and found that linux wouldn't 
+> boot--it hung right after grub2. I guess it took a while to figure out 
+> that it was the fact that NX was disabled that caused linux not to 
+> come up--and that could happen to other people. I don't know of any 
+> real-world scenarios in which someone would actually prefer to run a 
+> recent linux kernel with NX disabled, though.
+>
+> It looks like some of the other boot paths into the kernel 
+> automatically clear the XD_DISABLE bit in the MISC_ENABLE MSR in the 
+> CPU (in verify_cpu), but that doesn't happen when grub2 jumps to
+> startup_64 in arch/x86/boot/compressed/head_64.S. I guess instead of 
+> this patch, I could try to make a patch that turns NX back on 
+> (somewhere in startup_64), but since the kernel already supports NX 
+> being disabled, so I thought maybe just fixing that would be better. I 
+> didn't like seeing the kernel just die without giving any indication 
+> of what the problem is.
+
+Well, hpa and I were talking about this briefly and this NX disabling in the BIOS is probably for some broken legacy applications/OSes. Linux enables NX unconditionally very early because disabling it is a very bad idea anyway, security-wise.
+
+So, if this is just a random trip over of a co-worker and doesn't have any sensible use case, I'd rather leave it as is an don't fix it at all.
+
+--
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
