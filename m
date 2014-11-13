@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562AbaKMRo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:44:26 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:46668 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaKMRoZ (ORCPT
+	id S933598AbaKMRpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:45:20 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:20621 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933428AbaKMRpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:44:25 -0500
-Date: Thu, 13 Nov 2014 12:44:22 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: b.L: fix unmet dependency for CPU_PM
-In-Reply-To: <1415857098-16928-1-git-send-email-pankaj.dubey@samsung.com>
-Message-ID: <alpine.LFD.2.11.1411131231060.11690@knanqh.ubzr>
-References: <1415857098-16928-1-git-send-email-pankaj.dubey@samsung.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 13 Nov 2014 12:45:19 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: cleanup for 3.18 #2
+Date: Thu, 13 Nov 2014 18:45:16 +0100
+Message-ID: <1415900716-20882-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, Pankaj Dubey wrote:
+Arnd, Olof, Kevin,
 
-> If BL_SWITCHER is enabled but SUSPEND and CPU_IDLE is not enabled
-> we are getting following config warning.
-> 
-> warning: (BL_SWITCHER) selects CPU_PM which has unmet direct
-> dependencies (SUSPEND || CPU_IDLE)
-> 
-> So BL_SWITCHER should enable CPU_PM only if either of SUSPEND or
-> CPU_IDLE is selected.
-> 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 9d580d0..fe3d969 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1417,7 +1417,7 @@ config BL_SWITCHER
->  	bool "big.LITTLE switcher support"
->  	depends on BIG_LITTLE && MCPM && HOTPLUG_CPU
->  	select ARM_CPU_SUSPEND
-> -	select CPU_PM
-> +	select CPU_PM if (SUSPEND || CPU_IDLE)
+Little pull-request with some fixes following the legacy board removal done
+earlier. I integrated the patch that Olof wrote in this branch before this series:
+please tell me if it works on your side or if I need to do things differently.
+The move of header files out of include/mach is useful for reset and memory
+drivers.
+More legacy code removal is in progress, but I didn't want to mix with this.
+So, bigger cleanup to come...
 
-NAK.  You just broke the code by doing this. CPU_PM is a requirement 
-here.  The dependencies for CPU_PM is lacking.
+Thanks, best regards,
 
+The following changes since commit 7d7ef547d3fa47ac0df667a6e399eb1ebc60ec2d:
 
-Nicolas
+  ARM: at91: fix build breakage due to legacy board removals (2014-11-10 10:38:00 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup2
+
+for you to fetch changes up to f0a0a58e6f46c2dded813ee860b9cbd795b4e571:
+
+  ARM: at91: move sdramc/ddrsdr header to include/soc/at91 (2014-11-13 12:03:44 +0100)
+
+----------------------------------------------------------------
+Second batch of cleanup/SoC for 3.19:
+- fixes following legacy board removal
+- removal of an unused config option CONFIG_MACH_SAMA5_DT
+- move of some header files out of include/mach directory
+
+----------------------------------------------------------------
+Alexandre Belloni (2):
+      ARM: at91: remove CONFIG_MACH_SAMA5_DT
+      ARM: at91: move sdramc/ddrsdr header to include/soc/at91
+
+Boris Brezillon (1):
+      ARM: at91: remove useless init_time for DT-only SoCs
+
+Nicolas Ferre (1):
+      ARM: at91: remove unused CONFIG_ARCH_AT91SAM9G45 option
+
+ MAINTAINERS                                                    |  1 +
+ arch/arm/configs/sama5_defconfig                               |  1 -
+ arch/arm/mach-at91/Kconfig                                     | 10 +---------
+ arch/arm/mach-at91/Makefile                                    |  2 +-
+ arch/arm/mach-at91/Makefile.boot                               |  6 ------
+ arch/arm/mach-at91/at91sam9g45.c                               |  7 -------
+ arch/arm/mach-at91/at91sam9rl.c                                |  7 -------
+ arch/arm/mach-at91/board.h                                     |  4 ----
+ arch/arm/mach-at91/include/mach/at91_ramc.h                    |  6 +++---
+ arch/arm/mach-at91/pm.h                                        |  1 -
+ drivers/power/reset/at91-reset.c                               |  4 ++--
+ .../include/mach => include/soc/at91}/at91rm9200_sdramc.h      |  0
+ .../include/mach => include/soc/at91}/at91sam9_ddrsdr.h        |  0
+ .../include/mach => include/soc/at91}/at91sam9_sdramc.h        |  0
+ 14 files changed, 8 insertions(+), 41 deletions(-)
+ rename {arch/arm/mach-at91/include/mach => include/soc/at91}/at91rm9200_sdramc.h (100%)
+ rename {arch/arm/mach-at91/include/mach => include/soc/at91}/at91sam9_ddrsdr.h (100%)
+ rename {arch/arm/mach-at91/include/mach => include/soc/at91}/at91sam9_sdramc.h (100%)
+
+-- 
+Nicolas Ferre
