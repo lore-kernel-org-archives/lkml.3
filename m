@@ -1,93 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723AbaKMMDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:03:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39856 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932329AbaKMMDk (ORCPT
+	id S932779AbaKMME4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:04:56 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:40138 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932596AbaKMMEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:03:40 -0500
-Message-ID: <54649E0A.7030607@pengutronix.de>
-Date: Thu, 13 Nov 2014 13:03:22 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 13 Nov 2014 07:04:54 -0500
+Date: Thu, 13 Nov 2014 13:04:51 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Olof Johansson <olof@lixom.net>, gnurou@gmail.com,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, gregkh@linux-foundation.org
+Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
+Message-ID: <20141113120449.GD23422@ulmo>
+References: <1415738970-7963-1-git-send-email-olof@lixom.net>
+ <20141112122017.GC30821@ulmo.nvidia.com>
+ <5463A390.2040609@wwwdotorg.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>,
-        Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-CC: "wg@grandegger.com" <wg@grandegger.com>, Michal Simek <michals@xilinx.com>,
-        Soren Brinkmann <sorenb@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-Subject: Re: [PATCH] can: Fix bug in suspend/resume
-References: <a44efc1fb0144cca9d0c4851cc51db25@BL2FFO11FD024.protection.gbl>	<546484D9.4030005@pengutronix.de>	<54648BF4.60007@pengutronix.de>	<9455da2b86c74d5aafe9bf118edec7bb@BN1AFFO11FD045.protection.gbl> <20141113123218.79850236@ipc1.ka-ro>
-In-Reply-To: <20141113123218.79850236@ipc1.ka-ro>
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="4wE7Jg7KguPfsGsbBXRRgDfE747xg132x"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	protocol="application/pgp-signature"; boundary="oj4kGyHlBMXGt3Le"
+Content-Disposition: inline
+In-Reply-To: <5463A390.2040609@wwwdotorg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---4wE7Jg7KguPfsGsbBXRRgDfE747xg132x
-Content-Type: text/plain; charset=UTF-8
+
+--oj4kGyHlBMXGt3Le
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 11/13/2014 12:32 PM, Lothar Wa=C3=9Fmann wrote:
->>>>  static int __maybe_unused xcan_suspend(struct device *dev)  {
->>>> -    struct platform_device *pdev =3D dev_get_drvdata(dev);
->>>> +    struct platform_device *pdev =3D container_of(dev,
->>>> +                    struct platform_device, dev);
->>>>      struct net_device *ndev =3D platform_get_drvdata(pdev);
->>>>      struct xcan_priv *priv =3D netdev_priv(ndev);
->>
-> Why not simply:
-> 	struct net_device *ndev =3D dev_get_drvdata(dev);
+On Wed, Nov 12, 2014 at 11:14:40AM -0700, Stephen Warren wrote:
+> On 11/12/2014 05:20 AM, Thierry Reding wrote:
+> >On Tue, Nov 11, 2014 at 12:49:30PM -0800, Olof Johansson wrote:
+> >>There are general changes pending to make the /aliases/serial* entries
+> >>number the serial ports on the system. On tegra, so far the ports have =
+been
+> >>just numbered dynamically as they are configured so that makes them cha=
+nge.
+> >>
+> >>To avoid this, add specific aliases per board to keep the old numbers. =
+This
+> >>allows us to change the numbering by default on future SoCs while keepi=
+ng the
+> >>numbering on existing boards.
+> ...
+> >I have applied this to the for-3.19/dt branch. So for anything that is
+> >post Tegra124 the new rule shall be to add aliases to the SoC .dtsi and
+> >then use consistent numbering of UART ports across boards?
+> >
+> >The alternative is to remain consistent with what this patch does, which
+> >would be to make the serial port numbering a property of the board. That
+> >doesn't sound too bad to me either since it'll hide all the unused ports
+> >on a given board.
 >=20
-> There is no need for a struct platform_device* at all.
+> For new SoCs, I think board-specific aliases would make most sense. That
+> would be consistent with this patch. The only question I had was for
+> existing SoCs, should we make the switch this patch does, or leave the
+> aliases inactive there? New SoCs should use more sensible aliases.
 
-ACK
+I can't think of a way to keep backwards compatibility. I mean once a
+patch is merged to apply aliases as specified in the DTB it'll change
+behaviour on older DTBs. The best we could achieve is to update DTBs
+with a flag to say that the aliases are to be ignored. But given that
+no such flag exists in old DTBs, ABI would still be broken.
 
-Marc
+So I think it's fair to say that aliases have been buggy up to now and
+therefore relying on deterministic serial port naming is broken, too.
+Also there's precedent for this kind of thing. Ethernet device names
+have undergone similar changes and I think people have dealt with it
+just fine.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Also since the aliases haven't been used up to now it isn't really the
+DT breaking ABI, but rather the kernel, and this patch actually fixes
+things up. I think the lesson to be learned from this is that it is a
+mistake to add DT content that isn't used.
 
+That said, I guess there is one way to preserve the existing naming
+after all. The driver could be patched to special-case Tegra20 through
+Tegra124 and ignore aliases there. But I suspect that there are other
+SoCs that have the same issue, so this is likely going to be a rather
+big table.
 
---4wE7Jg7KguPfsGsbBXRRgDfE747xg132x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Thierry
+
+--oj4kGyHlBMXGt3Le
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUZJ4KAAoJECte4hHFiupU718P/jAARGmiFL2vp3iAHwiDcj4V
-e81t+DyNqBn2blQBvT61+XA6e8iAf9f5tsAzIyvAYMZiBi74b4S1cIl6AG3Re8Pq
-QyDNkngyEWkxG7W+PdxDY6KBcHXJMCRH4Y3G3jYjIdk95QFrH3t1b0G4/Sq8tKqP
-whI4hikmXzt2zG09Opc0D5zn/9Yv1PB1r+J0q0yM767F7FaI0lT2Bwwjb0b0tVbN
-d+QJcGnj1OMapHFiAUSwRc8VqMGqCpguDEwbMjJJutIgpp0dcSL4Gk8j6iUwo2yF
-MIqL2Rc1Hz5K5s3qJ7GJB5UU67SFkBwqUl4NgbNmdc7tOj2TmtsNtNHLGLBzqatC
-cQgVz5AdVH1QsfNg+BgCUEJBfDcoRygDofTpnGLMWleVZ4CWJN9MWxAQc75k8HC+
-E2eqs7vv2Gd0IJj/c1r7BvRK9BhlZXGa07YBSnbEGQ7706mk6fBw29MWvKOG5zmA
-F/UScHHsBuKCmzLTuYhfJviZw5e1UTc1LBB7LBy7wKBWcb28ZmR1WZ2oPDk4OK2p
-xusP7v6WeumzOzNLCpRGj2LCnrYht4ncV6+Jbu2cdFO8cdiszzCZDB8drlOI8sPC
-Iagmfra7+/bA7B4t9YO0AOcE1e7KlmbVdeBQ0zVTH2Pacd5Z6coAsHyvmy+O57Cq
-RRb5GEu/rOoc61v9T1SJ
-=G+o9
+iQIcBAEBAgAGBQJUZJ5hAAoJEN0jrNd/PrOhXR0QAK5IZ39mBNuCLszWKtpH1ixH
+4hdfzKnKYm2TMjuAlWz9gDgr4CT5zrgeRRz2deh8q+3Hh2nYfP7an+8qpJbZZig7
+2MYFTuUSM3fG/rfDmlCD74pmFi//pPc07kbHZN/ELr5hm/JCHONhA2j1Pz3PCpgt
+acBJ+gnApJkN+nf0KrJTGfU0i+JAWediSaDtZtt3cmKz/pWwIAxigPDDJFUAvifR
+FVWwSAA36iaDI/kcZMK4svck7jMkDDqXnwl0rjURrqQ3vW85majshq9TklY9bgpS
+WfW6YRhvmlSPW0pvgpN/jjPBNMAYKIFy4DeIf2mmzCaDQKYK4AQ65vrOHejWmdkz
+/dhSK+jtIDwEpHYsHIh9J4eqBk1uOqAV/HT4aCmGcN10NUXwFlQu9jwb/esBYfCi
+ZlHc4mDHEb8G9fx3+wBNRtmtX1+DVscgHxqrlPHzJ0u7RFsDfTbwTgZKAOZQw490
+fyenm9FeaISmd7/yhFMV+x9JT+GUDpZqq8twoAVlITRAPCi6wwaWyMuAe1DnKzDn
+/05VXhVe3HxMdY1xsK7JXsvMS5klZLUrfzCSMzeVA0xB1sPVTeb6Acp6KyLDOpzY
+/fpPqNHNljyy+03SuXqj7M35GMXh6n/XYE+UE9MH3wk/RRsglLmNna1tCvifTO5v
+RQmNVqYXdbkvxSEAxtvr
+=R+VU
 -----END PGP SIGNATURE-----
 
---4wE7Jg7KguPfsGsbBXRRgDfE747xg132x--
+--oj4kGyHlBMXGt3Le--
