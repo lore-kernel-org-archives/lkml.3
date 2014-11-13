@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaKMJAt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:00:49 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:47542 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065AbaKMJAr (ORCPT
+	id S932200AbaKMJCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:02:44 -0500
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:41158 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753709AbaKMJCk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:00:47 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-b2-5464733cdfc2
-Message-id: <5464733B.5060505@samsung.com>
-Date: Thu, 13 Nov 2014 12:00:43 +0300
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [BUG] index is out of range for nfnl_group2type[]
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xy7o2xSkhBvM3alv83dnObDHnfAuL
-	xYPNF1ktLvdNY7a4vGsOm8WxBWIWE9adYrGY/uYqswOHx+mmjSweW1beZPJ4+/sEk8fSSQuZ
-	PD5vkgtgjeKySUnNySxLLdK3S+DKeHHIumAGT8WWcxeZGxifcnUxcnJICJhI7D7zhxXCFpO4
-	cG89G4gtJLCUUeLvzWAIu5lJ4s6fOhCbV0BL4urJa4wgNouAqsSOpw+YQWw2AT2Jf7O2g/WK
-	CkRIXFkzhxGiXlDix+R7LF2MXBwiAisYJfZPP8gK4jAL9DFKrL6zDqxKWMBK4vL2Y0CTOIAS
-	6hJTpuSChJkF5CU2r3nLPIGRbxaSWbMQqmYhqVrAyLyKUTS1NLmgOCk911CvODG3uDQvXS85
-	P3cTIyRwv+xgXHzM6hCjAAejEg/vB+6UECHWxLLiytxDjBIczEoivE06QCHelMTKqtSi/Pii
-	0pzU4kOMTBycUg2Mqsa2qyb/WvlF42b5jfww78sTNrouO7g78ENGvs5jVYnU1XKdN/iq/4sx
-	2mhs+rBVbw1PHFfGhPQD/HILnZn0zzTPfNc01SN9huf7vs5XVzxFJYRfHt7nbr67yrfiNZvw
-	u9KztUc+z9T5611Xxiny+UKIQ+ydPy2Bi1jMUj9sTxE4UnLXiMFeiaU4I9FQi7moOBEAgGH8
-	JToCAAA=
+	Thu, 13 Nov 2014 04:02:40 -0500
+X-Greylist: delayed 2009 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Nov 2014 04:02:39 EST
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+To: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: Hayato Momma <h-momma@ce.jp.nec.com>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: [PATCH] ixgbe: make VLAN filter conditional in SR-IOV case
+Thread-Topic: [PATCH] ixgbe: make VLAN filter conditional in SR-IOV case
+Thread-Index: Ac//G8Ebgt2hdo25TzufE5RPi0Crjg==
+Date: Thu, 13 Nov 2014 08:28:20 +0000
+Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.5.123]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI I've spotted this:
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-[  180.202810] ================================================================================
-[  180.203600] UBSan: Undefined behaviour in ../net/netfilter/nfnetlink.c:467:28
-[  180.204249] index 9 is out of range for type 'int [9]'
-[  180.204697] CPU: 0 PID: 1771 Comm: trinity-main Not tainted 3.18.0-rc4-mm1+ #122
-[  180.205365] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-[  180.206498]  0000000000000018 0000000000000000 0000000000000009 ffff88007bdf7da8
-[  180.207220]  ffffffff82b0ef5f 0000000000000092 ffffffff845ae2e0 ffff88007bdf7db8
-[  180.207887]  ffffffff8199e489 ffff88007bdf7e18 ffffffff8199ea22 0000003900000000
-[  180.208639] Call Trace:
-[  180.208857] dump_stack (lib/dump_stack.c:52)
-[  180.209370] ubsan_epilogue (lib/ubsan.c:174)
-[  180.209849] __ubsan_handle_out_of_bounds (lib/ubsan.c:400)
-[  180.210512] nfnetlink_bind (net/netfilter/nfnetlink.c:467)
-[  180.210986] netlink_bind (net/netlink/af_netlink.c:1483)
-[  180.211495] SYSC_bind (net/socket.c:1541)
-[  180.211940] ? security_socket_setsockopt (security/security.c:1208)
-[  180.212541] ? SyS_setsockopt (net/socket.c:1920 net/socket.c:1900)
-[  180.213057] ? SyS_write (fs/read_write.c:276 fs/read_write.c:588 fs/read_write.c:577)
-[  180.213506] SyS_bind (net/socket.c:1527)
-[  180.213919] system_call_fastpath (arch/x86/kernel/entry_64.S:423)
-[  180.214479] ================================================================================
+Disable hardware VLAN filtering if netdev->features VLAN flag is dropped.
 
+In SR-IOV case, there is a use case which needs to disable VLAN filter.
+For example, we need to make a network function with VF in virtualized
+environment. That network function may be a software switch, a router
+or etc. It means that that network function will be an end point which
+terminates many VLANs.
+
+In the current implementation, VLAN filtering always be turned on and
+VF can receive only 63 VLANs. It means that only 63 VLANs can be used
+and it's not enough at all for building a virtual router.
+
+With this patch, if the user turns VLAN filtering off on the host, VF
+can receive every VLAN packet.
+The behavior is changed only if VLAN filtering is turned off by ethtool.
+
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+CC: Choi, Sy Jong <sy.jong.choi@intel.com>
+---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 10 ++++++++++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c |  4 ++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index d2df4e3..91ce3a8 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -3948,6 +3948,12 @@ void ixgbe_set_rx_mode(struct net_device *netdev)
+ 		hw->addr_ctrl.user_set_promisc = false;
+ 	}
+ 
++	/* Disable hardware VLAN filter if the feature flag is dropped */
++	if (!(netdev->features & NETIF_F_HW_VLAN_CTAG_FILTER)) {
++		dev_info(&adapter->pdev->dev, "Disable HW VLAN filter\n");
++		vlnctrl &= ~(IXGBE_VLNCTRL_VFE | IXGBE_VLNCTRL_CFIEN);
++	}
++
+ 	/*
+ 	 * Write addresses to available RAR registers, if there is not
+ 	 * sufficient space to store all the addresses then enable
+@@ -7634,6 +7640,10 @@ static int ixgbe_set_features(struct net_device *netdev,
+ 	else
+ 		ixgbe_vlan_strip_disable(adapter);
+ 
++	/* reset if HW VLAN filter is changed */
++	if (changed & NETIF_F_HW_VLAN_CTAG_FILTER)
++		need_reset = true;
++
+ 	if (changed & NETIF_F_RXALL)
+ 		need_reset = true;
+ 
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+index 13916d8..5508d8a 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+@@ -776,6 +776,10 @@ static int ixgbe_set_vf_vlan_msg(struct ixgbe_adapter *adapter,
+ 	u32 bits;
+ 	u8 tcs = netdev_get_num_tc(adapter->netdev);
+ 
++	/* Ignore if VLAN filter is disabled */
++	if (!(adapter->netdev->features & NETIF_F_HW_VLAN_CTAG_FILTER))
++		return 0;
++
+ 	if (adapter->vfinfo[vf].pf_vlan || tcs) {
+ 		e_warn(drv,
+ 		       "VF %d attempted to override administratively set VLAN configuration\n"
+-- 
+1.9.0
 
