@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119AbaKMIJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 03:09:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49692 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaKMIJh (ORCPT
+	id S932085AbaKMIOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 03:14:10 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47103 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaKMIOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 03:09:37 -0500
-Date: Thu, 13 Nov 2014 09:09:27 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Johan Hovold <johan@kernel.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 19/22] dt/bindings: add micrel,rmii_ref_clk_sel_25_mhz to
- eth-phy binding
-Message-ID: <20141113080927.GP30369@pengutronix.de>
-References: <1415727460-20417-1-git-send-email-johan@kernel.org>
- <1415727460-20417-20-git-send-email-johan@kernel.org>
- <20141111175741.GF25295@leverpostej>
- <20141111181825.GH29789@localhost>
- <20141112070127.GF30369@pengutronix.de>
- <20141112091920.GC15215@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141112091920.GC15215@localhost>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:03:35 up 28 days, 19:17, 65 users,  load average: 0.01, 0.04,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 13 Nov 2014 03:14:07 -0500
+From: Kever Yang <kever.yang@rock-chips.com>
+To: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, dkl@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org,
+        Kever Yang <kever.yang@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: rockchip: fix clock select order for usbphy480m_src
+Date: Thu, 13 Nov 2014 16:11:49 +0800
+Message-Id: <1415866309-3277-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 10:19:20AM +0100, Johan Hovold wrote:
-> On Wed, Nov 12, 2014 at 08:01:27AM +0100, Sascha Hauer wrote:
-> > On Tue, Nov 11, 2014 at 07:18:25PM +0100, Johan Hovold wrote:
-> > > On Tue, Nov 11, 2014 at 05:57:42PM +0000, Mark Rutland wrote:
-> > > > On Tue, Nov 11, 2014 at 05:37:37PM +0000, Johan Hovold wrote:
-> > > > > Add "micrel,rmii_ref_clk_sel_25_mhz" to Micrel ethernet PHY binding
-> > > > > documentation.
-> > > > > 
-> > > > > Cc: devicetree@vger.kernel.org
-> > > > > Signed-off-by: Johan Hovold <johan@kernel.org>
-> > > > > ---
-> > > > >  Documentation/devicetree/bindings/net/micrel.txt | 5 +++++
-> > > > >  1 file changed, 5 insertions(+)
-> > > > > 
-> > > > > diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
-> > > > > index a1bab5eaae02..9b08dd6551dd 100644
-> > > > > --- a/Documentation/devicetree/bindings/net/micrel.txt
-> > > > > +++ b/Documentation/devicetree/bindings/net/micrel.txt
-> > > > > @@ -19,6 +19,11 @@ Optional properties:
-> > > > >  
-> > > > >                See the respective PHY datasheet for the mode values.
-> > > > >  
-> > > > > + - micrel,rmii_ref_clk_sel_25_mhz: rmii_ref_clk_sel bit selects 25 MHz mode
-> > > > > +
-> > > > > +		Whether 25 MHz (rather than 50 Mhz) clock mode is selected
-> > > > > +		when the rmii_ref_clk_sel bit is set.
-> > > > 
-> > > > s/_/-/ in property names please.
-> > > 
-> > > Ouch, copied from variable name, sorry.
-> > > 
-> > > > That said, I don't follow the meaning. Does this cause the kernel to do
-> > > > something different, or is is simply that a 25MHz ref clock is wired up?
-> > > 
-> > > Yes, the driver currently sets this configuration bit based on a common
-> > > clock binding.
-> > > 
-> > > However, it turns out the meaning of the bit is reversed on some PHY
-> > > variants. On most PHYs 50 MHz mode is selected by setting this bit,
-> > > whereas on the PHYs that need this new property, setting it selects 25
-> > > MHz mode instead.
-> > 
-> > Maybe rename the property to something like rmii-ref-clk-25mhz-active-high
-> > then? Also you should probably make it more explicit that this is a
-> > hardware property and not for adjusting the clock.
-> 
-> You're right, but how about calling it
-> 
-> 	micrel,rmii-reference-clock-select-inverted
-> 
-> Then no one will set it believing it will change the clock mode and
-> without reading the binding doc first.
-> 
-> The description could then read something like
-> 
-> 	micrel,rmii-reference-clock-select-inverted: RMII Reference
-> 		Clock Select bit is inverted
-> 
-> 	The RMII Reference Clock Select bit is inverted so that setting
-> 	it selects 25 MHz rather than 50 MHz clock mode. 
-> 
-> 	Note that this is only needed for PHY variants that has this bit
-> 	inverted and that a clock reference ("rmii-ref" below) is always
-> 	needed to select the actual mode.
+According to rk3288 trm, the mux selector locate at bit[12:11]
+of CRU_CLKSEL13_CON shows:
+2'b00: select HOST0 USB pll clock (clk_otgphy1)
+2'b01: select HOST1 USB pll clock (clk_otgphy2)
+2'b10: select OTG USB pll clock   (clk_otgphy0)
 
-"Inverted" only has a meaning when everybody agrees what's the normal
-case. Since that not the case I really prefer talking about
-"active-high" or "active-low".
+The clock map is in Fig. 3-4 CRU Clock Architecture Diagram 3
+- clk_otgphy0 -> USB PHY OTG
+- clk_otgphy1 -> USB PHY host0
+- clk_otgphy2 -> USB PHY host1
 
-Sascha
+Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+---
 
+ drivers/clk/rockchip/clk-rk3288.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+index 157b60b..4d70518 100644
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -195,8 +195,8 @@ PNAME(mux_hsadcout_p)	= { "hsadc_src", "ext_hsadc" };
+ PNAME(mux_edp_24m_p)	= { "ext_edp_24m", "xin24m" };
+ PNAME(mux_tspout_p)	= { "cpll", "gpll", "npll", "xin27m" };
+ 
+-PNAME(mux_usbphy480m_p)		= { "sclk_otgphy0", "sclk_otgphy1",
+-				    "sclk_otgphy2" };
++PNAME(mux_usbphy480m_p)		= { "sclk_otgphy1", "sclk_otgphy2",
++				    "sclk_otgphy0" };
+ PNAME(mux_hsicphy480m_p)	= { "cpll", "gpll", "usbphy480m_src" };
+ PNAME(mux_hsicphy12m_p)		= { "hsicphy12m_xin12m", "hsicphy12m_usbphy" };
+ 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.9.1
+
