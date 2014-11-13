@@ -1,119 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376AbaKMJK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:10:58 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:55202 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752AbaKMJKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:10:54 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] memcg: zap kmem_account_flags
-Date: Thu, 13 Nov 2014 12:10:39 +0300
-Message-ID: <1415869839-8212-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932386AbaKMJLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:11:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932074AbaKMJLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 04:11:46 -0500
+Message-ID: <546475C2.50606@redhat.com>
+Date: Thu, 13 Nov 2014 17:11:30 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+CC: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/2] virito: introduce methods of fixing device features
+References: <1415857974-23326-1-git-send-email-jasowang@redhat.com> <20141113094604.1f248c3d.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141113094604.1f248c3d.cornelia.huck@de.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only such flag is KMEM_ACCOUNTED_ACTIVE, but it's set iff
-mem_cgroup->kmemcg_id is initialized, so we can check kmemcg_id instead
-of having a separate flags field.
+On 11/13/2014 04:46 PM, Cornelia Huck wrote:
+> On Thu, 13 Nov 2014 13:52:53 +0800
+> Jason Wang <jasowang@redhat.com> wrote:
+>
+> typo in subject-prefix: s/virito/virtio/
+>
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/memcontrol.c |   31 ++++++++++---------------------
- 1 file changed, 10 insertions(+), 21 deletions(-)
+Will correct this.
+>> Buggy host may advertised buggy host features (a usual case is that host
+>> advertise a feature whose dependencies were missed). In this case, driver
+>> should detect and disable the buggy features by itself.
+>>
+>> This patch introduces driver specific fix_features() method which is called
+>> just before features finalizing to detect and disable buggy features
+>> advertised by host.
+> So the basic problem this patch fixes is that an individual driver may
+> only specify a static set of features but cannot specify any
+> dependencies, right?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5a27e224d561..bb8c237026cc 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -296,7 +296,6 @@ struct mem_cgroup {
- 	 * Should the accounting and control be hierarchical, per subtree?
- 	 */
- 	bool use_hierarchy;
--	unsigned long kmem_account_flags; /* See KMEM_ACCOUNTED_*, below */
- 
- 	bool		oom_lock;
- 	atomic_t	under_oom;
-@@ -366,22 +365,11 @@ struct mem_cgroup {
- 	/* WARNING: nodeinfo must be the last member here */
- };
- 
--/* internal only representation about the status of kmem accounting. */
--enum {
--	KMEM_ACCOUNTED_ACTIVE, /* accounted by this cgroup itself */
--};
--
- #ifdef CONFIG_MEMCG_KMEM
--static inline void memcg_kmem_set_active(struct mem_cgroup *memcg)
--{
--	set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
--}
--
- static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
- {
--	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
-+	return memcg->kmemcg_id >= 0;
- }
--
- #endif
- 
- /* Stuffs for move charges at task migration. */
-@@ -3564,23 +3552,21 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
- 		goto out;
- 	}
- 
--	memcg->kmemcg_id = memcg_id;
--	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
--
- 	/*
--	 * We couldn't have accounted to this cgroup, because it hasn't got the
--	 * active bit set yet, so this should succeed.
-+	 * We couldn't have accounted to this cgroup, because it hasn't got
-+	 * activated yet, so this should succeed.
- 	 */
- 	err = page_counter_limit(&memcg->kmem, nr_pages);
- 	VM_BUG_ON(err);
- 
- 	static_key_slow_inc(&memcg_kmem_enabled_key);
- 	/*
--	 * Setting the active bit after enabling static branching will
-+	 * A memory cgroup is considered kmem-active as soon as it gets
-+	 * kmemcg_id. Setting the id after enabling static branching will
- 	 * guarantee no one starts accounting before all call sites are
- 	 * patched.
- 	 */
--	memcg_kmem_set_active(memcg);
-+	memcg->kmemcg_id = memcg_id;
- out:
- 	return err;
- }
-@@ -4252,7 +4238,6 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	int ret;
- 
--	memcg->kmemcg_id = -1;
- 	ret = memcg_propagate_kmem(memcg);
- 	if (ret)
- 		return ret;
-@@ -4786,6 +4771,10 @@ mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
- 	vmpressure_init(&memcg->vmpressure);
- 	INIT_LIST_HEAD(&memcg->event_list);
- 	spin_lock_init(&memcg->event_list_lock);
-+#ifdef CONFIG_MEMCG_KMEM
-+	memcg->kmemcg_id = -1;
-+	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
-+#endif
- 
- 	return &memcg->css;
- 
--- 
-1.7.10.4
+Right, and what even worse is qemu could not handle dependencies as
+well. So we need fix both sides.
+>  Adding a sanitizer step makes sense, I guess.
+>
+>> Virtio-net will be the first user.
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/virtio/virtio.c       |  4 ++++
+>>  include/linux/virtio.h        |  1 +
+>>  include/linux/virtio_config.h | 12 ++++++++++++
+>>  3 files changed, 17 insertions(+)
+>>
+>> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+>> index df598dd..7001d6e 100644
+>> --- a/drivers/virtio/virtio.c
+>> +++ b/drivers/virtio/virtio.c
+>> @@ -181,6 +181,10 @@ static int virtio_dev_probe(struct device *_d)
+>>  		if (device_features & (1 << i))
+>>  			set_bit(i, dev->features);
+>>
+>> +	/* Fix buggy features advertised by host */
+>> +	if (drv->fix_features)
+>> +		drv->fix_features(dev);
+> I'd probably call this "sanitize_features" instead.
 
+Ok.
+>> +
+>>  	dev->config->finalize_features(dev);
+>>
+>>  	err = drv->probe(dev);
+>> diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+>> index 7f4ef66..7bd89ea 100644
+>> --- a/include/linux/virtio_config.h
+>> +++ b/include/linux/virtio_config.h
+>> @@ -96,6 +96,18 @@ static inline bool virtio_has_feature(const struct virtio_device *vdev,
+>>  	return test_bit(fbit, vdev->features);
+>>  }
+>>
+>> +static inline void virtio_disable_feature(struct virtio_device *vdev,
+>> +                                          unsigned int fbit)
+>> +{
+>> +	BUG_ON(fbit >= VIRTIO_TRANSPORT_F_START);
+>> +	BUG_ON(vdev->config->get_status(vdev) &
+>> +	       ~(VIRTIO_CONFIG_S_ACKNOWLEDGE | VIRTIO_CONFIG_S_DRIVER));
+> When we add virtio-1 support, we can add a check for FEATURES_OK here,
+> so we're really on the safe side.
+>
+
+If I read the spec correctly, FEATURES_OK was set only after writing the
+features bits to device. But we want to sanitize the them before.
+>> +
+>> +	virtio_check_driver_offered_feature(vdev, fbit);
+>> +
+>> +	clear_bit(fbit, vdev->features);
+>> +}
+>> +
+>>  static inline
+>>  struct virtqueue *virtio_find_single_vq(struct virtio_device *vdev,
+>>  					vq_callback_t *c, const char *n)
+> The approach looks good to me.
+>
+
+Thanks for the review.
