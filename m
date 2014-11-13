@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934486AbaKMXEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:04:36 -0500
-Received: from ozlabs.org ([103.22.144.67]:46350 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934003AbaKMXEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:04:35 -0500
-Date: Fri, 14 Nov 2014 10:04:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@ezchip.com>
-Subject: linux-next: change of contact address for the tile tree?
-Message-ID: <20141114100426.6bfa92f8@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S934564AbaKMXGG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:06:06 -0500
+Received: from ezexch.ezchip.com ([212.179.42.101]:40734 "EHLO ezchip.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934512AbaKMXGE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 18:06:04 -0500
+From: Chris Metcalf <cmetcalf@ezchip.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: change of contact address for the tile tree?
+Thread-Topic: linux-next: change of contact address for the tile tree?
+Thread-Index: AQHP/5Y2jqRj6P23dkCRBesbm4DsVZxfLZnp
+Date: Thu, 13 Nov 2014 23:05:58 +0000
+Message-ID: <F21E5D8A-0990-47F3-A89A-01EBA24208DF@ezchip.com>
+References: <20141114100426.6bfa92f8@canb.auug.org.au>
+In-Reply-To: <20141114100426.6bfa92f8@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2600:1000:b010:c992:97f:e775:11d3:7b24]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0537;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0537;
+x-forefront-prvs: 0394259C80
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009020)(6009001)(41574002)(24454002)(51704005)(377454003)(199003)(189002)(46102003)(122556002)(558084003)(105586002)(36756003)(77096003)(62966003)(64706001)(83716003)(107046002)(20776003)(106116001)(106356001)(31966008)(40100003)(77156002)(110136001)(33656002)(101416001)(2656002)(87936001)(21056001)(92726001)(86362001)(92566001)(19580395003)(54356999)(82746002)(97736003)(19580405001)(50986999)(223583001)(4396001)(120916001)(76176999)(95666004)(104396001)(3826002);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR02MB0537;H:DB3PR02MB0537.eurprd02.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/6s4i.ZWo9V6Rwr+3ackdP+X"; protocol="application/pgp-signature"
+X-OriginatorOrg: ezchip.com
+X-TM-AS-Product-Ver: SMEX-11.0.0.1191-7.500.1018-21102.000
+X-TM-AS-Result: No--6.128200-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/6s4i.ZWo9V6Rwr+3ackdP+X
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Chris,
+> On Nov 13, 2014, at 6:04 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> 
+> Hi Chris,
+> 
+> I noticed commit c47b15c4928c ("arch/tile: update MAINTAINERS email to
+> EZchip") in the tile tree today.  Should I update the contact address I
+> have for you?
+> 
 
-I noticed commit c47b15c4928c ("arch/tile: update MAINTAINERS email to
-EZchip") in the tile tree today.  Should I update the contact address I
-have for you?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/6s4i.ZWo9V6Rwr+3ackdP+X
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUZTj/AAoJEMDTa8Ir7ZwVZsoP/3sCCYKYKU9C7kkKB68GdSb+
-FNmzDS6BvCtGtntFLvgppgDzlBewpvyggCCHz2amwkONL1Z1XEjmejpYWpq8B7L8
-OR6QaopfvmMFfwS1lRkBClHZDprB2qU1drFFSW3gOKV7QcrePazr13gOKNR/8ndM
-7eGum5zFjb7v7zgcdnrItKFv/G/6msinheaM8hu/aU0g5EwGVQDyip7UTm62iJ4l
-cLWqu0WxqzCJl5wu4JRiHeciYDmMtszxOHFn1GvHOQg6QhyJUPk3zcrZEawkmqUk
-DtQUnqc3v0X+xIIgb1JjwnGVlellmx9TFopTKYS6JE1vhmogSGfHbBRq/yuthCnT
-n3AjVfhhqcrW2HF3ka2zzK5rlXSNMJqg2H1Sim/FKIotqvOlmwNXYTYN+q6LkyGS
-ZEf2MKx+2YayqyTLmTIWD9bj7ZVB2FnA9TUUkrvK8g1d3P3KE22fDMBg9suX2EgN
-cdYz0qQ3o8YKNVM7HgbHaaG/TMABiwH80zmzFaOkhVaDahNWMEfm4ksOSVOSpVk1
-V+xIZz9SeUfoFGSytK5cKN18EnaxTpCXMAbozthXNZFB/s89RlgNwX4BY2M2fEwf
-he9vGEic7CHY/csSz/ONR/XdHnCRvAPXUO7Hrmva1LPtxANOBbKeLEbL+0Xv7XDj
-qWpn9p8gxGoin2ajw2OU
-=3E6N
------END PGP SIGNATURE-----
-
---Sig_/6s4i.ZWo9V6Rwr+3ackdP+X--
+Yes thanks!
