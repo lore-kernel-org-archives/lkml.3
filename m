@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730AbaKMFo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 00:44:28 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:63516 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaKMFo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 00:44:27 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-43-546445397c5b
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linux@arm.linux.org.uk, nico@linaro.org,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH] ARM: b.L: fix unmet dependency for CPU_PM
-Date: Thu, 13 Nov 2014 11:08:18 +0530
-Message-id: <1415857098-16928-1-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsWyRsSkStfSNSXE4MgtUYtNj6+xWlzeNYfN
-	4vZlXovpx/6yWSza+oXdgdWjpbmHzePOtT1sHpuX1Hv0bVnF6PF5k1wAaxSXTUpqTmZZapG+
-	XQJXxuInD9gKVrFXTNsh3cD4m7WLkYNDQsBEYtMcvi5GTiBTTOLCvfVsXYxcHEICSxklLq9a
-	xwKRMJF492IaO0RiOqPEin2bWCGcCUwSR18dYwSpYhPQlXjyfi4ziC0i4CZxo7GDCcRmFgiT
-	mLD9FjvINmEBK4nj0xVAwiwCqhI/poMcwcnBK+Ah8b2pnQXiIAWJOZNsQMZLCLxmk/hzbw8r
-	RL2AxLfJh6BqZCU2HWCGuE1S4uCKGywTGAUXMDKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/d
-	xAgMzNP/nvXtYLx5wPoQowAHoxIP70uWlBAh1sSy4srcQ4ymQBsmMkuJJucDwz+vJN7Q2MzI
-	wtTE1NjI3NJMSZw3QepnsJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGgMbuBUGSs308X1j+
-	Y754RypU8HXP2UViK8qmsp+dFF6wN3RZEP/6yVNi//cfqjDKfeueIPk1aOcfId2j4mGi59dd
-	vjnJqyBJMttp6bTGMouEUKMJH9+f/7iAW7No+5a9tssMCxWFlMyf9TGsq3uXvIuJmZF7h9X3
-	1jMLY577zL6wMLCgJuK9EktxRqKhFnNRcSIAY7u4b0cCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9jQV1L15QQg68XeS02Pb7GanF51xw2
-	i9uXeS2mH/vLZrFo6xd2B1aPluYeNo871/aweWxeUu/Rt2UVo8fnTXIBrFENjDYZqYkpqUUK
-	qXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QLuVFMoSc0qBQgGJxcVK
-	+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBmLnzxgK1jFXjFth3QD42/WLkZODgkBE4l3L6ax
-	Q9hiEhfurWfrYuTiEBKYziixYt8mVghnApPE0VfHGEGq2AR0JZ68n8sMYosIuEncaOxgArGZ
-	BcIkJmy/BTSJg0NYwEri+HQFkDCLgKrEj+kQy3gFPCS+N7WzgJRICChIzJlkM4GRewEjwypG
-	0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4MB/JrWDcWWDxSFGAQ5GJR7eFywpIUKsiWXFlbmH
-	GCU4mJVEeJt0gEK8KYmVValF+fFFpTmpxYcYTYGWT2SWEk3OB0ZlXkm8obGJuamxqaWJhYmZ
-	pZI474FW60AhgfTEktTs1NSC1CKYPiYOTqkGRuaJgY0P07h71zOk35y7YUIEg9akv0fTS/5V
-	8XVGL38T+raxWswnNndDZFZtcN72mA1n94fGOKbWaUv2HtT0cNQLzbORvZbX2bi/0q3o/aLT
-	BYXHF17es/h4cNLNDDHRXdzrrjXeq85YvjlvcauV7J8/gkatm1cUiP/fE+S6sHzndRsN535F
-	JZbijERDLeai4kQAOfr08ZICAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751214AbaKMFxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 00:53:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46268 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750787AbaKMFxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 00:53:05 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Jason Wang <jasowang@redhat.com>
+Subject: [PATCH 1/2] virito: introduce methods of fixing device features
+Date: Thu, 13 Nov 2014 13:52:53 +0800
+Message-Id: <1415857974-23326-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If BL_SWITCHER is enabled but SUSPEND and CPU_IDLE is not enabled
-we are getting following config warning.
+Buggy host may advertised buggy host features (a usual case is that host
+advertise a feature whose dependencies were missed). In this case, driver
+should detect and disable the buggy features by itself.
 
-warning: (BL_SWITCHER) selects CPU_PM which has unmet direct
-dependencies (SUSPEND || CPU_IDLE)
+This patch introduces driver specific fix_features() method which is called
+just before features finalizing to detect and disable buggy features
+advertised by host.
 
-So BL_SWITCHER should enable CPU_PM only if either of SUSPEND or
-CPU_IDLE is selected.
+Virtio-net will be the first user.
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- arch/arm/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/virtio/virtio.c       |  4 ++++
+ include/linux/virtio.h        |  1 +
+ include/linux/virtio_config.h | 12 ++++++++++++
+ 3 files changed, 17 insertions(+)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 9d580d0..fe3d969 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1417,7 +1417,7 @@ config BL_SWITCHER
- 	bool "big.LITTLE switcher support"
- 	depends on BIG_LITTLE && MCPM && HOTPLUG_CPU
- 	select ARM_CPU_SUSPEND
--	select CPU_PM
-+	select CPU_PM if (SUSPEND || CPU_IDLE)
- 	help
- 	  The big.LITTLE "switcher" provides the core functionality to
- 	  transparently handle transition between a cluster of A15's
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index df598dd..7001d6e 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -181,6 +181,10 @@ static int virtio_dev_probe(struct device *_d)
+ 		if (device_features & (1 << i))
+ 			set_bit(i, dev->features);
+ 
++	/* Fix buggy features advertised by host */
++	if (drv->fix_features)
++		drv->fix_features(dev);
++
+ 	dev->config->finalize_features(dev);
+ 
+ 	err = drv->probe(dev);
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 65261a7..9d01b54 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -142,6 +142,7 @@ struct virtio_driver {
+ 	void (*scan)(struct virtio_device *dev);
+ 	void (*remove)(struct virtio_device *dev);
+ 	void (*config_changed)(struct virtio_device *dev);
++	void (*fix_features)(struct virtio_device *dev);
+ #ifdef CONFIG_PM
+ 	int (*freeze)(struct virtio_device *dev);
+ 	int (*restore)(struct virtio_device *dev);
+diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+index 7f4ef66..7bd89ea 100644
+--- a/include/linux/virtio_config.h
++++ b/include/linux/virtio_config.h
+@@ -96,6 +96,18 @@ static inline bool virtio_has_feature(const struct virtio_device *vdev,
+ 	return test_bit(fbit, vdev->features);
+ }
+ 
++static inline void virtio_disable_feature(struct virtio_device *vdev,
++                                          unsigned int fbit)
++{
++	BUG_ON(fbit >= VIRTIO_TRANSPORT_F_START);
++	BUG_ON(vdev->config->get_status(vdev) &
++	       ~(VIRTIO_CONFIG_S_ACKNOWLEDGE | VIRTIO_CONFIG_S_DRIVER));
++
++	virtio_check_driver_offered_feature(vdev, fbit);
++
++	clear_bit(fbit, vdev->features);
++}
++
+ static inline
+ struct virtqueue *virtio_find_single_vq(struct virtio_device *vdev,
+ 					vq_callback_t *c, const char *n)
 -- 
-1.7.9.5
+1.9.1
 
