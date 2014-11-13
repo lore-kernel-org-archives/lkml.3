@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866AbaKME3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 23:29:04 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:39276 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629AbaKME27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 23:28:59 -0500
-Message-ID: <54643384.5030309@gmail.com>
-Date: Wed, 12 Nov 2014 20:28:52 -0800
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753715AbaKMEgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 23:36:13 -0500
+Received: from mail-db3on0121.outbound.protection.outlook.com ([157.55.234.121]:13441
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753123AbaKMEgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 23:36:11 -0500
+From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+To: <shawn.guo@linaro.org>
+CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+Subject: [RESEND PATCH V2 0/2] Add I2C and enable M41T0M6 RTC
+Date: Thu, 13 Nov 2014 10:05:30 +0530
+Message-ID: <cover.1415852424.git.bhuvanchandra.dv@toradex.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: devicetree@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [RFC] Add of_path property for all devices with a node
-References: <1415342031.4925.27.camel@kernel.crashing.org>
-In-Reply-To: <1415342031.4925.27.camel@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [115.115.225.206]
+X-ClientProxiedBy: SINPR01CA0015.apcprd01.prod.exchangelabs.com
+ (10.141.109.15) To DB3PR05MB266.eurprd05.prod.outlook.com (10.141.4.23)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB3PR05MB266;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR05MB266;
+X-Forefront-PRVS: 0394259C80
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(105586002)(106356001)(46102003)(107046002)(66066001)(229853001)(87286001)(47776003)(20776003)(64706001)(2351001)(110136001)(77096003)(33646002)(102836001)(40100003)(31966008)(104166001)(62966003)(77156002)(36756003)(81156004)(122386002)(101416001)(42186005)(99396003)(89996001)(21056001)(93916002)(92726001)(86362001)(92566001)(87976001)(575784001)(95666004)(69596002)(19580395003)(48376002)(50986999)(97736003)(120916001)(50466002)(4396001)(88136002)(53416004)(50226001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DB3PR05MB266;H:trdx.toradex.int;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR05MB266;
+X-OriginatorOrg: toradex.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/6/2014 10:33 PM, Benjamin Herrenschmidt wrote:
-> Hey folks ! This is not (yet) a formal patch submission but...
-> 
-> So I've been annoyed lately with having a bunch of devices such as i2c
-> eeproms (for use by VPDs, server world !) and other bits and pieces that
-> I want to be able to identify from userspace, and possibly provide
-> additional data about from FW.
-> 
-> Basically, it boils down to correlating the sysfs device with the OF
-> tree device node, so that user space can use device-tree info such as
-> additional "location" or "label" (or whatever else we can come up with)
-> propreties to identify a given device, or get some attributes of use
-> about it, etc...
-> 
-> Now, so far, we've done that in some subsystem in a fairly ad-hoc basis
-> using "devspec" properties. For example, PCI creates them if it can
-> correlate the probed device with a DT node. Some powerpc specific busses
-> do that too.
-> 
-> However, i2c doesn't and it would be nice to have something more generic
-> since technically any device can have a corresponding device tree node.
-> 
-> So I came up with this patch, it seems to work well for me. I'm adding
-> an "of_path" attribute to not conflict with the existing "devspec" one
-> just for the sake of this experiment (plus "devspec" sucks). Long run,
-> we might want to use of_path and leave a "devspec" symlink to of_path on
-> the few busses that currently have devspec (pci and some powerpc
-> specific ones).
-> 
-> Comments ?
-> 
-> Cheers,
-> Ben.
+Add I2C support on Colibri VFxx moduels and enable M41T0M6 RTC
+available on Colibri carrier boards.
 
-If I understand correctly, that information is already available in
-the file uevent.  For example, if I apply your patch, at least
-for a simple path, I see the same path name in uevent as in of_path:
+Bhuvanchandra DV (2):
+  ARM: dts: vf-colibri: Add I2C support
+  ARM: dts: vf-colibri-eval-v3.dts: Enable ST-M41T0M6 RTC
 
-   $ cd /sys/devices/soc/f9824900.sdhci
-   $ cat of_path
-   /soc/sdhci@f9824900
-   $ grep OF_FULLNAME uevent | cut -d"=" -f2
-   /soc/sdhci@f9824900
+ arch/arm/boot/dts/vf-colibri-eval-v3.dtsi |   12 +++++++++++-
+ arch/arm/boot/dts/vf-colibri.dtsi         |   13 +++++++++++++
+ 2 files changed, 24 insertions(+), 1 deletion(-)
 
--Frank
+-- 
+1.7.9.5
+
