@@ -1,127 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626AbaKMBcp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 20:32:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:40464 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753098AbaKMBcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 20:32:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
-   d="scan'208";a="621545942"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLgAyIb0DAAAcBYD//4ReAP/+e7+A//z07vD/+eZFQA==
-Date: Thu, 13 Nov 2014 01:30:54 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F00228443D@SHSMSX104.ccr.corp.intel.com>
-References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
- <5461EC99.1000101@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
- <546324F4.8010002@redhat.com>
- <E959C4978C3B6342920538CF579893F00227680F@SHSMSX104.ccr.corp.intel.com>
- <54632ECA.4070903@redhat.com>
- <E959C4978C3B6342920538CF579893F002284398@SHSMSX104.ccr.corp.intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5A68@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5A68@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753671AbaKMBec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 20:34:32 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:37941 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202AbaKMBeb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 20:34:31 -0500
 MIME-Version: 1.0
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com> <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com> <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Nov 2014 17:34:08 -0800
+Message-ID: <CALCETrXp-bR+1+sfBzGdK0vWJ=Mav3p5T5sxKo_dM24ANfVuhQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD1WqYV020795
+
+On Wed, Nov 12, 2014 at 4:31 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> v2's not going to make a difference unless you're using uprobes at the
+>> same time.
+>
+> Not (knowingly) using uprobes. System is installed with a RHEL7 userspace ... but is essentially
+> idle except for my test program.
+>
+>> In the interest of my sanity, can you add something like
+>> BUG_ON(!user_mode_vm(regs)) or the mce_panic equivalent before calling
+>> memory_failure?
+>
+> I don't think that can possibly trip - we can only end up with a recoverable error from
+> a user mode access.  But I'll see about adding it anyway
+>
+>> What happens if there's a shared bank but the actual offender has a
+>> higher order than the cpu that finds the error?
+>
+> This test case injects a memory error which is logged in bank1. This bank is shared by the
+> two hyperthreads that are on the same core.  The mce_severity() function distinguishes
+> which is the active thread and which the innocent bystander by looking at MCG_STATUS.
+> In the active thread MCG_STATUS.EIPV is 1, in the bystander it is 0. The returned severity
+> is MCE_AR_SEVERITY for the thread that hit the error, MCE_KEEP_SEVERITY for the bystander.
+> So it doesn't matter which thread has the lower order and sees it first.
+>
+>> Is this something I can try under KVM?
+>
+> I don't know if KVM has a way to simulate a machine check event.
+
+With mce-inject and this input:
+
+CPU 1
+BANK 0
+STATUS uc s ar val en 0x0134
+MCGSTATUS mcip eipv
+ADDR 4096
+MISC 0
+IN_PROC
+EXCP
+
+I blow up because mce-inject doesn't have a credible emulation of
+process context (i.e. IN_PROC doesn't work).
+
+--Andy
+
+>
+> -Tony
 
 
 
-> -----Original Message-----
-> From: Zhang, Yang Z
-> Sent: Thursday, November 13, 2014 9:21 AM
-> To: Wu, Feng; Paolo Bonzini; Alex Williamson
-> Cc: gleb@kernel.org; dwmw2@infradead.org; joro@8bytes.org;
-> tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
-> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
-> linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
-> configuration changes
-> 
-> Wu, Feng wrote on 2014-11-13:
-> >
-> >
-> > kvm-owner@vger.kernel.org wrote on 2014-11-12:
-> >> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
-> >> linux-kernel@vger.kernel.org
-> >> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest
-> >> interrupt configuration changes
-> >>
-> >>
-> >>
-> >> On 12/11/2014 10:19, Wu, Feng wrote:
-> >>>> You can certainly backport these patches to distros that do not
-> >>>> have VFIO.  But upstream we should work on VFIO first.  VFIO has
-> >>>> feature parity with legacy device assignment, and adding a new
-> >>>> feature that is not in VFIO would be a bad idea.
-> >>>>
-> >>>> By the way, do you have benchmark results for it?  We have not been
-> >>>> able to see any performance improvement for APICv on e.g. netperf.
-> >>>
-> >>> Do you mean benchmark results for APICv itself or VT-d Posted-Interrtups?
-> >>
-> >> Especially for VT-d posted interrupts---but it'd be great to know
-> >> which workloads see the biggest speedup from APICv.
-> >
-> > We have some draft performance data internally, please see the
-> > attached. For VT-d PI, I think we can get the biggest performance gain
-> > if the VCPU is running in non-root mode for most of the time (not in
-> > HLT state), since external interrupt from assigned devices will be delivered by
-> guest directly in this case.
-> > That means we can run some cpu intensive workload in the guests.
-> 
-> Have you check that the CPU side posted interrupt is taking effect in w/o VT-D
-> PI case? Per my understanding, the performance gap should be so large if you
-> use CPU side posted interrupt. This data more like the VT-d PI vs non PI(both
-> VT-d and CPU).
-
-Yes, this data is VT-d PI vs Non VT-d PI. The CPU side APICv mechanism (including CPU side Posted-Interrtups) is enabled.
-
-Thanks,
-Feng
-
-> 
-> >
-> > Thanks,
-> > Feng
-> >
-> >>
-> >> Paolo
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe kvm" in the
-> >> body of a message to majordomo@vger.kernel.org More majordomo info at
-> >> http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> Best regards,
-> Yang
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
