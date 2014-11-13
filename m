@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934137AbaKMUki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 15:40:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40098 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932767AbaKMUkh (ORCPT
+	id S934168AbaKMUlq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 15:41:46 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42556 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932767AbaKMUlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 15:40:37 -0500
-Date: Thu, 13 Nov 2014 12:40:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Dave Hansen <dave@sr71.net>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Alexander Nyberg <alexn@dsv.su.se>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] mm/page_ext: resurrect struct page extending
- code for debugging
-Message-Id: <20141113124035.35bc5bb743affddf7f425825@linux-foundation.org>
-In-Reply-To: <20141113064035.GB18369@js1304-P5Q-DELUXE>
-References: <1415780835-24642-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1415780835-24642-2-git-send-email-iamjoonsoo.kim@lge.com>
-	<54638BE4.3080509@sr71.net>
-	<20141113064035.GB18369@js1304-P5Q-DELUXE>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Nov 2014 15:41:44 -0500
+Date: Thu, 13 Nov 2014 15:41:43 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Benson Leung <bleung@chromium.org>
+cc: johan@kernel.org, <jkosina@suse.cz>, <linux-usb@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <snanda@chromium.org>
+Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
+In-Reply-To: <1415909806-23848-1-git-send-email-bleung@chromium.org>
+Message-ID: <Pine.LNX.4.44L0.1411131539330.929-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014 15:40:35 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+On Thu, 13 Nov 2014, Benson Leung wrote:
 
-> On Wed, Nov 12, 2014 at 08:33:40AM -0800, Dave Hansen wrote:
-> > On 11/12/2014 12:27 AM, Joonsoo Kim wrote:
-> > > @@ -1092,6 +1096,14 @@ struct mem_section {
-> > >  
-> > >  	/* See declaration of similar field in struct zone */
-> > >  	unsigned long *pageblock_flags;
-> > > +#ifdef CONFIG_PAGE_EXTENSION
-> > > +	/*
-> > > +	 * If !SPARSEMEM, pgdat doesn't have page_ext pointer. We use
-> > > +	 * section. (see page_ext.h about this.)
-> > > +	 */
-> > > +	struct page_ext *page_ext;
-> > > +	unsigned long pad;
-> > > +#endif
-> > 
-> > Will the distributions be amenable to enabling this?  If so, I'm all for
-> > it if it gets us things like page_owner at runtime.
+> usbhid->intf->needs_remote_wakeup is set when a device is
+> opened, and is cleared when a device is closed.
 > 
-> Yes, I hope so.
-> At least, I can make it default to our product. But, how distributions
-> will do is beyond my power. :)
+> When a usbhid device that does not support remote wake
+> ( i.e. !device_can_wakeup() ) is closed, we fail out of
+> autosuspend_check() because the autosuspend check is called
+> before the flag is cleared as a result of usb_kill_urb(usbhid->urbin);
 > 
+> The result is that a device that may otherwise autosuspend will
+> fail to enter suspend again after all handles to it are closed.
+> 
+> In usbhid_open, usb_autopm_get_interface is called
+> before setting the needs_remote_wakeup flag, and
+> usb_autopm_put_interface is called after hid_start_in.
+> 
+> However, when the device is closed in usbhid_close, the same
+> protection isn't there when clearing needs_remote_wakeup. This will
+> add that to usbhid_close as well as usbhid_stop.
 
->From my reading of the code, the overhead is very low if nobody is
-using it.  In which case things should be OK and we can perhaps do away
-with CONFIG_PAGE_EXTENSION altogether.
+usbhid_stop probably doesn't need it.  And it should be possible to fix 
+usbhid_close more easily just by interchanging the two lines:
 
-But my reading of the code may be wrong.  It is very poorly documented.
-As far as I can tell, invoke_need_callbacks() works out whether there
-are any clients of this feature and if not, we avoid allocating that
-huge chunk of memory.
+-			usb_kill_urb(usbhid->urbin);
+ 			usbhid->intf->needs_remote_wakeup = 0;
++			usb_kill_urb(usbhid->urbin);
 
-And the way we register clients is to enter a pointer into the global
-page_ext_ops[].  So this requires a kernel rebuild anyway, so there's
-no point in distros enabling CONFIG_PAGE_EXTENSION.  The way to do this
-is for CONFIG_PAGE_OWNER (for example) to `select'
-CONFIG_PAGE_EXTENSION.
+Have you tried this?
 
-It's unclear to me why invoke_need_callbacks() walks the page_ext_ops[]
-entries, inspecting them.  Perhaps this is so that clients of
-CONFIG_PAGE_EXTENSION can be enabled/disabled at boot time, dunno.
-
-Please, can we get all this design and behaviour appropriately
-documented in the code and changelogs?
+Alan Stern
 
