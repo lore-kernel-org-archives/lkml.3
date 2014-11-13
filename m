@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbaKMAcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 19:32:31 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53826 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752462AbaKMAc2 (ORCPT
+	id S1753539AbaKMAca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 19:32:30 -0500
+Received: from mout.gmx.com ([74.208.4.201]:50711 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752513AbaKMAc2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Nov 2014 19:32:28 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Aaron Lu <aaron.lu@intel.com>, linux-acpi@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and XPower
-Date: Thu, 13 Nov 2014 01:53:23 +0100
-Message-ID: <1668657.Fqph6NyFNz@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141112094419.GC24004@x1>
-References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com> <3052882.EdcZmghHR3@vostro.rjw.lan> <20141112094419.GC24004@x1>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-ID: <trinity-6c78f0e8-a416-4b37-9215-a368301a8b6e-1415838746577@3capp-mailcom-lxa07>
+From: "George Malone" <georgemaloneiii@mail.com>
+To: linux-kernel@vger.kernel.org
+Subject: SystemD male-feminist fanboi claims others have done no
+ contributions to opensource software.
+Content-Type: text/plain; charset=UTF-8
+Date: Thu, 13 Nov 2014 01:32:27 +0100
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:mjfm0CHGOBb92Lit7QqjJ02eNVVTrB2LKdOEvSmB5Dg
+ ALDtUrCwH2o1arkinMYiq9r0ateTJpTlzr1ofwWn7Q1ds6W3xI
+ Bll1Zp7QKczuXUuB690iKgQ76XNCdbOcKLFNN6MXJBQORsd9Xu
+ AhDRTPlxREd5Qj+hSS937p6YDkb3qw6ss2e2B5XqShuQ8kBBKs
+ tCye5SfIui2Vx+D7nPXBU6RlZ7BQbaOmoKZDAHyEGbBbmrRx/Z
+ ln9knSxorfTUG2E4TRRVhg9lbo8pZXXkR79IdgHpa6I/OQ7uqD
+ I2pDxGQ9GfgQ2oeF7vAYrcisPQ5
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 12, 2014 09:44:19 AM Lee Jones wrote:
-> On Wed, 12 Nov 2014, Rafael J. Wysocki wrote:
-> 
-> > On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
-> > > On Tue, 11 Nov 2014, Aaron Lu wrote:
-> > > 
-> > > > On 10/31/2014 02:08 PM, Aaron Lu wrote:
-> > > > > On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
-> > > > > ACPI operation regions defined for the Power Management Integrated Circuit
-> > > > > device, one is for power resource handling and one is for thermal: sensor
-> > > > > temperature reporting, trip point setting, etc. There are different PMIC
-> > > > > chips used on those platforms and though each has the same two operation
-> > > > > regions and functionality, their implementation is different so every PMIC
-> > > > > will need a driver. But since their functionality is similar, some common
-> > > > > code is abstracted into the intel_soc_pmic_opregion.c.
-> > > > > 
-> > > > > The last version is posted here:
-> > > > > https://lkml.org/lkml/2014/9/8/801
-> > > > > 
-> > > > > Changes since then:
-> > > > > 1 Move to drivers/acpi as discussed on the above thread;
-> > > > > 2 Added support for XPower AXP288 PMIC operation region support;
-> > > > > 3 Since operation region handler can not be removed(at the moment at least),
-> > > > >   use bool for the two operation region driver configs instead of tristate;
-> > > > >   Another reason to do this is that, with Mika's MFD ACPI support patch, all
-> > > > >   those MFD cell devices created will have the same modalias as their parent's
-> > > > >   so it doesn't make much sense to compile these drivers into modules.
-> > > > > 
-> > > > > Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
-> > > > > patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
-> > > > > driver XPower AXP288 and iio driver axp288_adc is located.
-> > > > 
-> > > > Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
-> > > > would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
-> > > > 
-> > > > Rafael,
-> > > > Can I get your ACK for the three patches?
-> > > > 
-> > > > Lee,
-> > > > Can you please take the series if Rafael gives it ack?
-> > > 
-> > > Yes, no problem.
-> > 
-> > Well, since the code is going to reside mostly in drivers/acpi, I think I should
-> > be applying the patches and from your response it looks like you are fine with
-> > them.  Is that correct?
-> 
-> I read that this set has dependencies on patches which are already in
-> the MFD tree.  If that's not the case please go ahead and apply them
-> with my Ack for the MFD components.
+Dear Mr Schubert;
 
-I thought you had a branch that I could pull into my tree and apply the patches
-on top of it.  At least that was my understanding of the Aaron's message, so
-please let me know if that's not the case.
+"He has not contributed anything to the open source community."
+This is a complete lie. I've contributed gigabytes of media alone.
+I've done years and years of programming work.
+I have done far more than you ever will.
 
-Rafael
+"His songs and "games" are not worth looking at,"
+Your subjective view. Coloured by your social views and your
+disdain for those who oppose you in that.
 
+"and I'm not aware of any project that has accepted any of his "contributions"."
+The only objectively true thing you've said: you're not aware.
+I'm glad you're unaware, I hope that trend continues.
+
+I expect this post to be censored, it is par for the course for people like you.
+
+Sincerely;
+--MikeeUSA--
+
+---------------------
+(Erich Schubert put forth false claims about lack of involvement of mine in free/opensource software)
+(When corrected he first engaged, then deleted all the posts, keeping only his false statements visible)
+http://www.vitavonni.de/blog/201411/2014110901-gr-vote-on-init-coupling.html
+About Erich_Schubert:
+
+http://www.dbs.ifi.lmu.de/cms/Erich_Schubert
+
+Ludwig-Maximilians-Universität München
+Lehr- und Forschungseinheit für Datenbanksysteme
+Oettingenstraße 67
+80538 München
+Germany
+Room: 	F 109
+Phone:	+49-89-2180-9325
+Fax: 	+49-89-2180-9192
+Email:	schube@dbs.ifi.lmu.de
+
+Sprechstunde: jeden Donnerstag 15-16 Uhr, Zimmer F 109 
+
+What is he all about? Data-Mining an der Hochschule Rosenheim
+(also seen on his most recent projects)
