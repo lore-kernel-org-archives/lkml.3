@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466AbaKMJg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:36:29 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:58088 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127AbaKMJg0 (ORCPT
+	id S932475AbaKMJhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:37:15 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:37434 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932127AbaKMJhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:36:26 -0500
+	Thu, 13 Nov 2014 04:37:12 -0500
+Date: Thu, 13 Nov 2014 10:37:09 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <pebolle@tiscali.nl>
+Subject: Re: [PATCH] ARM: at91: remove unused CONFIG_ARCH_AT91SAM9G45 option
+Message-ID: <20141113103709.35b053ad@bbrezillon>
+In-Reply-To: <1415871190-32244-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1415617517.4862.44.camel@x220>
+	<1415871190-32244-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141112141856.GA26488@ulmo>
-References: <1415779051-26410-1-git-send-email-tomeu.vizoso@collabora.com>
- <1415779051-26410-5-git-send-email-tomeu.vizoso@collabora.com> <20141112141856.GA26488@ulmo>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Thu, 13 Nov 2014 10:36:05 +0100
-X-Google-Sender-Auth: Sj9e2D2B-YXlvSfGMZCnG-_23fU
-Message-ID: <CAAObsKCxZvZE_3DOW3KXJUtdqy6s-vVYLQMzmQGLiurPsPjxWg@mail.gmail.com>
-Subject: Re: [PATCH v4 04/13] of: document new emc-timings subnode in nvidia,tegra124-car
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 November 2014 15:18, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Wed, Nov 12, 2014 at 08:56:27AM +0100, Tomeu Vizoso wrote:
-> [...]
->>  Example SoC include file:
->>
->>  / {
->> -     tegra_car: clock {
->> +     tegra_car: clock@60006000 {
->>               compatible = "nvidia,tegra124-car";
->>               reg = <0x60006000 0x1000>;
->>               #clock-cells = <1>;
->> @@ -60,4 +83,23 @@ Example board file:
->>       &tegra_car {
->>               clocks = <&clk_32k> <&osc>;
->>       };
->> +
->> +     clock@60006000 {
->> +             emc-timings@3 {
->
-> Shouldn't this be following the same naming scheme as the memory
-> controller's subnodes?
->
->> +                     nvidia,ram-code = <3>;
->> +
->> +                     timing@12750000 {
->
-> And this?
+On Thu, 13 Nov 2014 10:33:10 +0100
+Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 
-Thanks for pointing these out. My bad.
+> The CONFIG_ARCH_AT91SAM9G45 config option was removed by ("ARM: at91: remove
+> at91sam9g45/9m10 legacy board support") so cleanup the use of it.
+> 
+> Reported-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Regards,
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 
-Tomeu
+> ---
+>  arch/arm/mach-at91/Makefile.boot | 6 ------
+>  arch/arm/mach-at91/board.h       | 4 ----
+>  2 files changed, 10 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/Makefile.boot b/arch/arm/mach-at91/Makefile.boot
+> index 5309f9b6aabc..29ed0fa374ca 100644
+> --- a/arch/arm/mach-at91/Makefile.boot
+> +++ b/arch/arm/mach-at91/Makefile.boot
+> @@ -3,12 +3,6 @@
+>  #   PARAMS_PHYS must be within 4MB of ZRELADDR
+>  #   INITRD_PHYS must be in RAM
+>  
+> -ifeq ($(CONFIG_ARCH_AT91SAM9G45),y)
+> -   zreladdr-y	+= 0x70008000
+> -params_phys-y	:= 0x70000100
+> -initrd_phys-y	:= 0x70410000
+> -else
+>     zreladdr-y	+= 0x20008000
+>  params_phys-y	:= 0x20000100
+>  initrd_phys-y	:= 0x20410000
+> -endif
+> diff --git a/arch/arm/mach-at91/board.h b/arch/arm/mach-at91/board.h
+> index 836e9a537e0c..d268ec3781dd 100644
+> --- a/arch/arm/mach-at91/board.h
+> +++ b/arch/arm/mach-at91/board.h
+> @@ -56,11 +56,7 @@ extern void __init at91_add_device_usbh_ehci(struct at91_usbh_data *data);
+>  extern void __init at91_add_device_nand(struct atmel_nand_data *data);
+>  
+>   /* I2C*/
+> -#if defined(CONFIG_ARCH_AT91SAM9G45)
+> -extern void __init at91_add_device_i2c(short i2c_id, struct i2c_board_info *devices, int nr_devices);
+> -#else
+>  extern void __init at91_add_device_i2c(struct i2c_board_info *devices, int nr_devices);
+> -#endif
+>  
+>   /* SPI */
+>  extern void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices);
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
