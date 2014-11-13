@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934657AbaKMW2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 17:28:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:36727 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934350AbaKMW20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 17:28:26 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Kevin Hilman <khilman@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd enabled
-Date: Thu, 13 Nov 2014 14:28:21 -0800
-Message-Id: <1415917702-6742-2-git-send-email-khilman@kernel.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
+	id S934427AbaKMWbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 17:31:10 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:33175 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934154AbaKMWbI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 17:31:08 -0500
+Date: Fri, 14 Nov 2014 07:31:27 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Cc: minchan@kernel.org, ngupta@vflare.org, ddstreet@ieee.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [PATCH 1/3] mm/zsmalloc: avoid unregister a NOT-registered
+ zsmalloc zpool driver
+Message-ID: <20141113223127.GA951@swordfish>
+References: <1415885857-5283-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141113152247.GB1408@swordfish>
+ <20141113153017.GC1408@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113153017.GC1408@swordfish>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@linaro.org>
+On (11/14/14 00:30), Sergey Senozhatsky wrote:
+> Factor out zsmalloc cpu notifier unregistration code and call
+> it from both zs_exit() and zs_init() error path.
 
-It makes little sense to use generic power domains without runtime PM.
-Also, since the complexities of handling the !PM_RUNTIME case are
-causing more trouble and confusion than they're worth, let's simplify
-the world by making genpd always enable runtime PM.
+I should had have a good sleep before posting this.
+shame on me!
 
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
+v3
+
+Signed-ogg-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
 ---
- kernel/power/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 3d39cc0228e9..2a8c64d0a43c 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -271,7 +271,7 @@ config PM_CLK
- 
- config PM_GENERIC_DOMAINS
- 	bool
--	depends on PM
-+	select PM_RUNTIME
- 
- config WQ_POWER_EFFICIENT_DEFAULT
- 	bool "Enable workqueue power-efficient mode by default"
--- 
-2.1.3
+ mm/zsmalloc.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index b3b57ef..cd4efa1 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -881,14 +881,10 @@ static struct notifier_block zs_cpu_nb = {
+ 	.notifier_call = zs_cpu_notifier
+ };
+ 
+-static void zs_exit(void)
++static void zs_unregister_cpu_notifier(void)
+ {
+ 	int cpu;
+ 
+-#ifdef CONFIG_ZPOOL
+-	zpool_unregister_driver(&zs_zpool_driver);
+-#endif
+-
+ 	cpu_notifier_register_begin();
+ 
+ 	for_each_online_cpu(cpu)
+@@ -898,6 +894,14 @@ static void zs_exit(void)
+ 	cpu_notifier_register_done();
+ }
+ 
++static void zs_exit(void)
++{
++#ifdef CONFIG_ZPOOL
++	zpool_unregister_driver(&zs_zpool_driver);
++#endif
++	zs_unregister_cpu_notifier();
++}
++
+ static int zs_init(void)
+ {
+ 	int cpu, ret;
+@@ -921,7 +925,7 @@ static int zs_init(void)
+ 
+ 	return 0;
+ fail:
+-	zs_exit();
++	zs_unregister_cpu_notifier();
+ 	return notifier_to_errno(ret);
+ }
+ 
