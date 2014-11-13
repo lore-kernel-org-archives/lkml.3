@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047AbaKMNKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 08:10:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3415 "EHLO mga02.intel.com"
+	id S933063AbaKMNKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 08:10:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35477 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932864AbaKMNKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 08:10:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,377,1413270000"; 
-   d="scan'208";a="636355456"
-Message-ID: <1415884083.14686.439.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
-From: Matt Fleming <matt.fleming@intel.com>
-To: Dave Hansen <dave.hansen@intel.com>
-CC: Borislav Petkov <bp@suse.de>, the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Nov 2014 13:08:03 +0000
-In-Reply-To: <54637AD5.6060300@intel.com>
-References: <5462999A.7090706@intel.com>
-	 <1415784298.14686.323.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <54637576.7030004@intel.com> <20141112151106.GB17793@pd.tnic>
-	 <54637AD5.6060300@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+	id S932864AbaKMNKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 08:10:46 -0500
+Date: Thu, 13 Nov 2014 14:10:43 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Weijie Yang <weijie.yang@samsung.com>, kamezawa.hiroyu@jp.fujitsu.com,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        mina86@mina86.com, linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] mm: page_isolation: check pfn validity before access
+Message-ID: <20141113131043.GA2489@dhcp22.suse.cz>
+References: <000001cff998$ee0b31d0$ca219570$%yang@samsung.com>
+ <20141112193450.GA18936@dhcp22.suse.cz>
+ <CAL1ERfOJm0HW90Xwe9wuKij_ZXedoKPMo4HdU627XmmpuZExPg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [163.33.239.181]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1ERfOJm0HW90Xwe9wuKij_ZXedoKPMo4HdU627XmmpuZExPg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-12 at 07:20 -0800, Dave Hansen wrote:
+On Thu 13-11-14 09:46:34, Weijie Yang wrote:
+> On Thu, Nov 13, 2014 at 3:34 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Thu 06-11-14 16:08:02, Weijie Yang wrote:
+> >> In the undo path of start_isolate_page_range(), we need to check
+> >> the pfn validity before access its page, or it will trigger an
+> >> addressing exception if there is hole in the zone.
+> >
+> > This looks a bit fishy to me. I am not familiar with the code much but
+> > at least __offline_pages zone = page_zone(pfn_to_page(start_pfn)) so it
+> > would blow up before we got here. Same applies to the other caller
+> > alloc_contig_range. So either both need a fix and then
+> > start_isolate_page_range doesn't need more checks or this is all
+> > unnecessary.
 > 
-> The path that we're actually hitting this from is:
+> Thanks for your suggestion.
+> If start_isolate_page_range()'s user can ensure there isn't hole in
+> the [start_pfn, end_pfn) range, we can remove the checks. But if we
+> cann't, I think it's better reserve these "unnecessary" code.
+
+I am not sure I understand you correctly but my point was that we do not
+need check at start_isolate_page_range level but rather than in the
+caller (or do not rely on pfn_to_page at that level). 
+
+> That's really obfuscated : (
 > 
-> > __split_large_page(struct cpa_data *cpa, pte_t *kpte, unsigned long
-> ...
-> >         if (pfn_range_is_mapped(PFN_DOWN(__pa(address)),
-> >                                 PFN_DOWN(__pa(address)) + 1))
-> >                 split_page_count(level);
+> > Please do not make this code more obfuscated than it is already...
+> >
+> >> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> >> ---
+> >>  mm/page_isolation.c |    7 +++++--
+> >>  1 files changed, 5 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> >> index d1473b2..3ddc8b3 100644
+> >> --- a/mm/page_isolation.c
+> >> +++ b/mm/page_isolation.c
+> >> @@ -137,8 +137,11 @@ int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
+> >>  undo:
+> >>       for (pfn = start_pfn;
+> >>            pfn < undo_pfn;
+> >> -          pfn += pageblock_nr_pages)
+> >> -             unset_migratetype_isolate(pfn_to_page(pfn), migratetype);
+> >> +          pfn += pageblock_nr_pages) {
+> >> +             page = __first_valid_page(pfn, pageblock_nr_pages);
+> >> +             if (page)
+> >> +                     unset_migratetype_isolate(page, migratetype);
+> >> +     }
+> >>
+> >>       return -EBUSY;
+> >>  }
+> >> --
+> >> 1.7.0.4
+> >>
+> >>
+> >> --
+> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> see: http://www.linux-mm.org/ .
+> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> > --
+> > Michal Hocko
+> > SUSE Labs
 
-I'm sure I'm just being dumb, but I can't for the life of me work out
-why we need to calculate the physical address from the virtual address
-at this point - we should already have that information.
-
-> So perhaps efi_map_region() is handing an address from the EFI identity
-> map down in here.  __pa() gets called on it, but that fails since __pa()
-> only works on the *KERNEL* identity map.
-
-Yep, sounds right.
-
+-- 
+Michal Hocko
+SUSE Labs
