@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934365AbaKMWE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 17:04:58 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:60149 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065AbaKMWE5 (ORCPT
+	id S934366AbaKMWI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 17:08:28 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:36183 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933065AbaKMWI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 17:04:57 -0500
-Date: Thu, 13 Nov 2014 17:04:53 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH percpu/for-3.19 2/2] percpu_ref: implement
- percpu_ref_is_dying()
-Message-ID: <20141113220453.GE2598@htj.dyndns.org>
-References: <20141113220419.GD2598@htj.dyndns.org>
+	Thu, 13 Nov 2014 17:08:26 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Thu, 13 Nov 2014 17:08:23 -0500
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 11/13] arm: dts: dra7: add DMA properties for UART
+Message-ID: <20141113220823.GK24112@csclub.uwaterloo.ca>
+References: <20141104172117.GC24112@csclub.uwaterloo.ca>
+ <20141104183315.GD24112@csclub.uwaterloo.ca>
+ <20141104210315.GF24112@csclub.uwaterloo.ca>
+ <20141105011506.GG24112@csclub.uwaterloo.ca>
+ <5459DBB7.1090702@linutronix.de>
+ <20141105153307.GN24110@csclub.uwaterloo.ca>
+ <20141105162024.GH24112@csclub.uwaterloo.ca>
+ <545A50BB.2020307@linutronix.de>
+ <20141105194323.GI24112@csclub.uwaterloo.ca>
+ <5464F9A1.9080901@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141113220419.GD2598@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5464F9A1.9080901@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement percpu_ref_is_dying() which tests whether the ref is dying
-or dead.  This is useful to determine the current state when a
-percpu_ref is used as a cyclic on/off switch via kill and reinit.
+On Thu, Nov 13, 2014 at 07:34:09PM +0100, Sebastian Andrzej Siewior wrote:
+> misaligned dma? I haven't seen any alignment requirement for SDMA/EDMA
+> and I haven't seen this error on beagle board, am335x-evm or dra7-evm.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
----
- include/linux/percpu-refcount.h |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+Well I am using the am5728, so it should be the same as the dra7-evm.
 
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -258,6 +258,20 @@ static inline void percpu_ref_put(struct
- }
- 
- /**
-+ * percpu_ref_is_dying - test whether a percpu refcount is dying or dead
-+ * @ref: percpu_ref to test
-+ *
-+ * Returns %true if @ref is dying or dead.
-+ *
-+ * This function is safe to call as long as @ref is between init and exit
-+ * and the caller is responsible for synchronizing against state changes.
-+ */
-+static inline bool percpu_ref_is_dying(struct percpu_ref *ref)
-+{
-+	return ref->percpu_count_ptr & __PERCPU_REF_DEAD;
-+}
-+
-+/**
-  * percpu_ref_is_zero - test whether a percpu refcount reached zero
-  * @ref: percpu_ref to test
-  *
+> So basically what you are saying is that DMA (no matter which channel)
+> gives you this error and without DMA it works fine?
+
+Yes.
+
+I am trying to get the 3.14 kernel tree going, just as soon as I figure
+out which config setting makes the timer probe not crash (it works
+with the default config that enables every omap ever made, but I want
+a cleaner build than that).
+
+-- 
+Len Sorensen
