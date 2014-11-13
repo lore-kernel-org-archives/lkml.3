@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687AbaKMLPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:15:04 -0500
-Received: from mx02.posteo.de ([89.146.194.165]:45886 "EHLO mx02.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932364AbaKMLPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:15:02 -0500
-In-Reply-To: <CAJfpegud-NAbDroWAr+mROUGLPviCaQKa8P5n6bZmA+0GF_qMA@mail.gmail.com>
-References: <20141112112643.GA30821@ulmo.nvidia.com> <1415809894-24084-1-git-send-email-martink@posteo.de> <CAJfpegt2Xz0tGUygpN4eyb3g8EsFNWomsUUOmGBMj03ocOPVng@mail.gmail.com> <B51BC89F-99DB-4F9A-A1E3-14D9627E2496@posteo.de> <CAJfpegud-NAbDroWAr+mROUGLPviCaQKa8P5n6bZmA+0GF_qMA@mail.gmail.com>
+	id S932708AbaKMLPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:15:53 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:58674 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932364AbaKMLPv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 06:15:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Peter Griffin <peter.griffin@linaro.org>, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, srinivas.kandagatla@gmail.com,
+        patrice.chotard@st.com, devicetree@vger.kernel.org,
+        lee.jones@linaro.org
+Subject: Re: [PATCH v2 13/14] ARM: STi: DT: STiH410: Add usb2 picophy dt nodes
+Date: Thu, 13 Nov 2014 12:15:35 +0100
+Message-ID: <3348806.YN8XP4V4uc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1415876417-28728-14-git-send-email-peter.griffin@linaro.org>
+References: <1415876417-28728-1-git-send-email-peter.griffin@linaro.org> <1415876417-28728-14-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] fuse: don't check for file->private_data on open().
-From: Martin Kepplinger <martink@posteo.de>
-Date: Thu, 13 Nov 2014 12:13:32 +0100
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>, thierry.reding@gmail.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        giedriuswork@gmail.com,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <0198135B-B7F1-4E40-A9E2-C9D56C421B6F@posteo.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:UJKRHJnSg5XxoC7eDXP8OpubSeLQewfMgXGujxKFhlV
+ 4wo/RTBerr15qxLECqaM+YS87WrdPGnJgn64Cfdq52W/Z7DxD0
+ cEAuUM8hP1SbVV6AZWosYV5oq3aM1ZcfU3E35LB0s/vVT9vexM
+ 2feMW694u75VgvukWmzO0n1K+0/iLONCBD+2W4lLQDbxg0XR8B
+ pxpaXWKLBcynTkYPqHtIrI4yn+hMksCqlMH5Hfz8auGVG2f51c
+ xW4gQuEFmyVbgBw7KIPea2jJnmMv5RgsdQTthhRlFhKwZem7tO
+ 412yCom+bJUCbjPCBOZ5rHEONRVablA8U8E+fdwxKDlED7q/g7
+ YcUzPB+kgxA4X4TVAeEc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13. November 2014 11:53:29 MEZ, schrieb Miklos Szeredi <miklos@szeredi.hu>:
->On Thu, Nov 13, 2014 at 11:05 AM, Martin Kepplinger <martink@posteo.de>
->wrote:
->
->> In this week's -next this should have changed. My SSD broke down so i
->have to delay further work for a few days, i'm sorry.
->
->Please be more careful with such patches.  Have you audited all of the
->(ca. 200) misc drivers?  If not, this might be a good time to do so.
->If it turns out to be too much, then consider not doing the change.
->The gain might not be worth the cost.
->
->NACK in this form.
->
->Thanks,
->Miklos
+On Thursday 13 November 2014 11:00:16 Peter Griffin wrote:
+> +       soc {
+> +               usb2_picophy0: usbpicophy@0 {
+> +                       compatible = "st,stih407-usb2-phy";
+> +                       reg = <0xf8 0x04>,      /* syscfg 5062 */
+> +                             <0xf4 0x04>;      /* syscfg 5061 */
+> 
 
-Definitely should have been more careful as I checked fs too late now. I totally unnecessarily broke -next.
+I think the node name for the phy should be "phy@f8" instead of usbpicophy@0
+by common convention. I notice that there are some existing instances of
+this, you can probably change them as well. Linux doesn't normally care
+about the node names.
 
-But If fuse-devel is ok with a fix like the one i sent (still has to get tested too) i believe we're covered. I still call for independent review though.
--- 
-Martin Kepplinger
-http://martinkepplinger.com
-sent from mobile
+It also seems that you have put the node in the wrong place, as the reg
+property apparently refers to a different address space. Did you mean
+to put this under the syscfg_core node?
+
+	Arnd
