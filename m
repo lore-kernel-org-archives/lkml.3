@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934478AbaKMWre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 17:47:34 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:44133 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065AbaKMWrd (ORCPT
+	id S934455AbaKMW4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 17:56:12 -0500
+Received: from smtp1.tech.numericable.fr ([82.216.111.37]:46156 "EHLO
+	smtp1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933065AbaKMW4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 17:47:33 -0500
+	Thu, 13 Nov 2014 17:56:11 -0500
+Message-ID: <546536EA.4070705@laposte.net>
+Date: Thu, 13 Nov 2014 23:55:38 +0100
+From: Barto <mister.freeman@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3292D57B@ORSMSX114.amr.corp.intel.com>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141112220058.GA5295@redhat.com> <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
- <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
- <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292CB9A@ORSMSX114.amr.corp.intel.com>
- <CALCETrVx7hGZodWfAoU1oee1SW7XXSn3Lr8Vs9JTOUMNtLXY4A@mail.gmail.com> <3908561D78D1C84285E8C5FCA982C28F3292D57B@ORSMSX114.amr.corp.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Nov 2014 14:47:12 -0800
-Message-ID: <CALCETrVB9VQPqFb7GQyxmVEKYtPhppmZS8SewQmtre+3_su9FA@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        X86 ML <x86@kernel.org>,
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+References: <54629CAE.2000207@laposte.net> <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com> <5462CB90.1080303@roeck-us.net> <54642541.9080302@laposte.net> <94D0CD8314A33A4D9D801C0FE68B4029593A1880@G9W0745.americas.hpqcorp.net> <54647C10.4070506@laposte.net> <20141113142907.GB29354@infradead.org> <5464E6E6.3090606@laposte.net> <20141113175402.GA27327@infradead.org>
+In-Reply-To: <20141113175402.GA27327@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrjedvgdejhecutefuodetggdotefrucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepkfffhfgfggfvufhfjggtgfesthekrgdttdefheenucfhrhhomhepuegrrhhtohcuoehmihhsthgvrhdrfhhrvggvmhgrnheslhgrphhoshhtvgdrnhgvtheqnecuffhomhgrihhnpehkvghrnhgvlhdrohhrgh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 2:33 PM, Luck, Tony <tony.luck@intel.com> wrote:
->> Are you sure that this works in an unmodified kernel
+Hello Christoph,
+
+> Please explicitly test commits:
 >
-> Unmodified kernel has run tens of thousands of injection/consumption/recovery cycles.
+> 71e75c97f97a9645d25fbf3d8e4165a558f18747
+
+with commit 71e75c97f97a9645d25fbf3d8e4165a558f18747 there is no problem
+
+
+> and
 >
-> I did get a crash with the entry/exit traces you asked for.  Last 20000 lines of console log
-> attached.  There are a couple of OOPs before things fall apart completely.  I haven't yet
-> counted all the entry/exits from the last cycle to see if they match.
->
+> 74665016086615bbaa3fa6f83af410a0a4e029ee
 
-That log was a good hint, and I am a fool.  I'll send a v3 once I test it.
+it's interesting, with this commit
+74665016086615bbaa3fa6f83af410a0a4e029ee I have the bug :
 
-I'm still unconvinced by the timeout code, though...
+scsi: convert host_busy to atomic_t :
 
----Andy
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=74665016086615bbaa3fa6f83af410a0a4e029ee
 
-> -Tony
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Le 13/11/2014 18:54, Christoph Hellwig a écrit :
+> On Thu, Nov 13, 2014 at 06:14:14PM +0100, Barto wrote:
+>> Hello Christoph,
+>>
+>> I tested this commit :
+>>
+>> 7ae65c0f9646c29432b69580b80e08632e6cd813 scsi: convert target_busy to an
+>> atomic_t
+>>
+>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=7ae65c0f9646c29432b69580b80e08632e6cd813
+>>
+>> there is no bug, boot process is ok whit this commit,
+>>
+>> when I did the "git bisect" the first bad commit was Guenters' commit (
+>> 045065d8a300a37218c548e9aa7becd581c6a0e8 ), it seems that all commits
+>> before 045065d8a300a37218c548e9aa7becd581c6a0e8 are ok,
+> 
+> The bisect isn't quite interesting here as we're trying to find the real
+> root ause.
+> 
+> 045065d8a300a37218c548e9aa7becd581c6a0e8 reverts the polarity of the
+> check that 71e75c97f97a9645d25fbf3d8e4165a558f18747 incorrectly
+> chaged.
+> 
+> The behavior you see doesn't make a lot of sense from a high level view,
+> so we need to find out what's going on.
+> 
+> When you say all commits before 045065d8a300a37218c548e9aa7becd581c6a0e8
+> I wonder if the bisect simply skiped to many revisions.
+> 
+> Please explicitly test commits:
+> 
+> 71e75c97f97a9645d25fbf3d8e4165a558f18747
+> 
+> and
+> 
+> 74665016086615bbaa3fa6f83af410a0a4e029ee
+> 
+> Thanks!
+> 
+> 
