@@ -1,69 +1,427 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934361AbaKMVYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:24:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57413 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934044AbaKMVYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:24:06 -0500
-Date: Thu, 13 Nov 2014 22:23:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>, Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, kvm ML <kvm@vger.kernel.org>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Message-ID: <20141113212355.GH14070@pd.tnic>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141112220058.GA5295@redhat.com>
- <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
- <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
- <20141113105936.GA14070@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141113105936.GA14070@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S934380AbaKMVYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:24:51 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62335 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934043AbaKMVYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 16:24:49 -0500
+From: Pieter Smith <pieter@boesman.nl>
+To: pieter@boesman.nl
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 01/56] moved sendfile syscall to splice translation unit
+Date: Thu, 13 Nov 2014 22:22:38 +0100
+Message-Id: <1415913813-362-2-git-send-email-pieter@boesman.nl>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415913813-362-1-git-send-email-pieter@boesman.nl>
+References: <pieter@boesman.nl>
+ <1415913813-362-1-git-send-email-pieter@boesman.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 11:59:37AM +0100, Borislav Petkov wrote:
-> I've been thinking about it recently too - adding MCA functionality to
-> qemu/kvm could be very useful, especially the thresholding stuff, for
-> testing RAS kernel code.
+sendfile functionally forms part of the splice group of syscalls (splice,
+vmsplice and tee). Grouping sendfile with splice paves the way to compiling out
+the splice group of syscalls for embedded systems that do not need these.
 
-Btw, qemu monitor has a mce injection command with which I was able
-to tickle some response from the guest kernel. I'll play more with it
-tomorrow and try to tickle a response from the memory failure code.
+add/remove: 0/0 grow/shrink: 7/2 up/down: 86/-61 (25)
+function                                     old     new   delta
+file_start_write                              34      68     +34
+file_end_write                                29      58     +29
+sys_pwritev                                  115     122      +7
+sys_preadv                                   115     122      +7
+fdput_pos                                     29      36      +7
+sys_pwrite64                                 115     116      +1
+sys_pread64                                  115     116      +1
+sys_tee                                      497     491      -6
+sys_splice                                  1075    1020     -55
 
-[  195.328466] Disabling lock debugging due to kernel taint
-[  195.328466] [Hardware Error]: System Fatal error.
-[  195.328466] [Hardware Error]: CPU:1 (10:2:3) MC4_STATUS[Over|UE|MiscV|PCC|AddrV|UECC]: 0xfe002000001f012b
-[  195.328466] [Hardware Error]: MC4_ADDR: 0x0000000000000000
-[  195.328466] [Hardware Error]: MC4 Error (node 1): ECC Error in the Probe Filter directory.
-[  195.328466] [Hardware Error]: cache level: L3/GEN, tx: GEN, mem-tx: WR
-[  195.328466] mce: [Hardware Error]: CPU 1: Machine Check Exception: 3 Bank 4: fe002000001f012b
-[  195.328466] mce: [Hardware Error]: RIP 10:<ffffffff8100e0b5> {default_idle+0x25/0x240}
-[  195.328466] mce: [Hardware Error]: TSC b9e2f56f95 MISC d1d1dad1deadbeef 
-[  195.328466] mce: [Hardware Error]: PROCESSOR 2:100f23 TIME 1415915466 SOCKET 1 APIC 1 microcode 1000065
-[  195.328466] [Hardware Error]: System Fatal error.
-[  195.328466] [Hardware Error]: CPU:1 (10:2:3) MC4_STATUS[Over|UE|MiscV|PCC|AddrV|UECC]: 0xfe002000001f012b
-[  195.328466] [Hardware Error]: MC4_ADDR: 0x0000000000000000
-[  195.328466] [Hardware Error]: MC4 Error (node 1): ECC Error in the Probe Filter directory.
-[  195.328466] [Hardware Error]: cache level: L3/GEN, tx: GEN, mem-tx: WR
-[  195.328466] mce: [Hardware Error]: Machine check: Invalid
-[  195.328466] Kernel panic - not syncing: Fatal machine check on current CPU
-[  195.328466] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-[  195.328466] ---[ end Kernel panic - not syncing: Fatal machine check on current CPU
+Signed-off-by: Pieter Smith <pieter@boesman.nl>
+---
+ fs/read_write.c | 175 -------------------------------------------------------
+ fs/splice.c     | 178 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 178 insertions(+), 175 deletions(-)
 
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 009d854..3f7f04d 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -1189,178 +1189,3 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
+ }
+ #endif
+ 
+-static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
+-		  	   size_t count, loff_t max)
+-{
+-	struct fd in, out;
+-	struct inode *in_inode, *out_inode;
+-	loff_t pos;
+-	loff_t out_pos;
+-	ssize_t retval;
+-	int fl;
+-
+-	/*
+-	 * Get input file, and verify that it is ok..
+-	 */
+-	retval = -EBADF;
+-	in = fdget(in_fd);
+-	if (!in.file)
+-		goto out;
+-	if (!(in.file->f_mode & FMODE_READ))
+-		goto fput_in;
+-	retval = -ESPIPE;
+-	if (!ppos) {
+-		pos = in.file->f_pos;
+-	} else {
+-		pos = *ppos;
+-		if (!(in.file->f_mode & FMODE_PREAD))
+-			goto fput_in;
+-	}
+-	retval = rw_verify_area(READ, in.file, &pos, count);
+-	if (retval < 0)
+-		goto fput_in;
+-	count = retval;
+-
+-	/*
+-	 * Get output file, and verify that it is ok..
+-	 */
+-	retval = -EBADF;
+-	out = fdget(out_fd);
+-	if (!out.file)
+-		goto fput_in;
+-	if (!(out.file->f_mode & FMODE_WRITE))
+-		goto fput_out;
+-	retval = -EINVAL;
+-	in_inode = file_inode(in.file);
+-	out_inode = file_inode(out.file);
+-	out_pos = out.file->f_pos;
+-	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
+-	if (retval < 0)
+-		goto fput_out;
+-	count = retval;
+-
+-	if (!max)
+-		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
+-
+-	if (unlikely(pos + count > max)) {
+-		retval = -EOVERFLOW;
+-		if (pos >= max)
+-			goto fput_out;
+-		count = max - pos;
+-	}
+-
+-	fl = 0;
+-#if 0
+-	/*
+-	 * We need to debate whether we can enable this or not. The
+-	 * man page documents EAGAIN return for the output at least,
+-	 * and the application is arguably buggy if it doesn't expect
+-	 * EAGAIN on a non-blocking file descriptor.
+-	 */
+-	if (in.file->f_flags & O_NONBLOCK)
+-		fl = SPLICE_F_NONBLOCK;
+-#endif
+-	file_start_write(out.file);
+-	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
+-	file_end_write(out.file);
+-
+-	if (retval > 0) {
+-		add_rchar(current, retval);
+-		add_wchar(current, retval);
+-		fsnotify_access(in.file);
+-		fsnotify_modify(out.file);
+-		out.file->f_pos = out_pos;
+-		if (ppos)
+-			*ppos = pos;
+-		else
+-			in.file->f_pos = pos;
+-	}
+-
+-	inc_syscr(current);
+-	inc_syscw(current);
+-	if (pos > max)
+-		retval = -EOVERFLOW;
+-
+-fput_out:
+-	fdput(out);
+-fput_in:
+-	fdput(in);
+-out:
+-	return retval;
+-}
+-
+-SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
+-{
+-	loff_t pos;
+-	off_t off;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(get_user(off, offset)))
+-			return -EFAULT;
+-		pos = off;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
+-{
+-	loff_t pos;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
+-			return -EFAULT;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-#ifdef CONFIG_COMPAT
+-COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
+-		compat_off_t __user *, offset, compat_size_t, count)
+-{
+-	loff_t pos;
+-	off_t off;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(get_user(off, offset)))
+-			return -EFAULT;
+-		pos = off;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-
+-COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
+-		compat_loff_t __user *, offset, compat_size_t, count)
+-{
+-	loff_t pos;
+-	ssize_t ret;
+-
+-	if (offset) {
+-		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
+-			return -EFAULT;
+-		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
+-		if (unlikely(put_user(pos, offset)))
+-			return -EFAULT;
+-		return ret;
+-	}
+-
+-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+-}
+-#endif
+diff --git a/fs/splice.c b/fs/splice.c
+index f5cb9ba..c1a2861 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -28,6 +28,7 @@
+ #include <linux/export.h>
+ #include <linux/syscalls.h>
+ #include <linux/uio.h>
++#include <linux/fsnotify.h>
+ #include <linux/security.h>
+ #include <linux/gfp.h>
+ #include <linux/socket.h>
+@@ -2039,3 +2040,180 @@ SYSCALL_DEFINE4(tee, int, fdin, int, fdout, size_t, len, unsigned int, flags)
+ 
+ 	return error;
+ }
++
++static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
++			   size_t count, loff_t max)
++{
++	struct fd in, out;
++	struct inode *in_inode, *out_inode;
++	loff_t pos;
++	loff_t out_pos;
++	ssize_t retval;
++	int fl;
++
++	/*
++	 * Get input file, and verify that it is ok..
++	 */
++	retval = -EBADF;
++	in = fdget(in_fd);
++	if (!in.file)
++		goto out;
++	if (!(in.file->f_mode & FMODE_READ))
++		goto fput_in;
++	retval = -ESPIPE;
++	if (!ppos) {
++		pos = in.file->f_pos;
++	} else {
++		pos = *ppos;
++		if (!(in.file->f_mode & FMODE_PREAD))
++			goto fput_in;
++	}
++	retval = rw_verify_area(READ, in.file, &pos, count);
++	if (retval < 0)
++		goto fput_in;
++	count = retval;
++
++	/*
++	 * Get output file, and verify that it is ok..
++	 */
++	retval = -EBADF;
++	out = fdget(out_fd);
++	if (!out.file)
++		goto fput_in;
++	if (!(out.file->f_mode & FMODE_WRITE))
++		goto fput_out;
++	retval = -EINVAL;
++	in_inode = file_inode(in.file);
++	out_inode = file_inode(out.file);
++	out_pos = out.file->f_pos;
++	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
++	if (retval < 0)
++		goto fput_out;
++	count = retval;
++
++	if (!max)
++		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
++
++	if (unlikely(pos + count > max)) {
++		retval = -EOVERFLOW;
++		if (pos >= max)
++			goto fput_out;
++		count = max - pos;
++	}
++
++	fl = 0;
++#if 0
++	/*
++	 * We need to debate whether we can enable this or not. The
++	 * man page documents EAGAIN return for the output at least,
++	 * and the application is arguably buggy if it doesn't expect
++	 * EAGAIN on a non-blocking file descriptor.
++	 */
++	if (in.file->f_flags & O_NONBLOCK)
++		fl = SPLICE_F_NONBLOCK;
++#endif
++	file_start_write(out.file);
++	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
++	file_end_write(out.file);
++
++	if (retval > 0) {
++		add_rchar(current, retval);
++		add_wchar(current, retval);
++		fsnotify_access(in.file);
++		fsnotify_modify(out.file);
++		out.file->f_pos = out_pos;
++		if (ppos)
++			*ppos = pos;
++		else
++			in.file->f_pos = pos;
++	}
++
++	inc_syscr(current);
++	inc_syscw(current);
++	if (pos > max)
++		retval = -EOVERFLOW;
++
++fput_out:
++	fdput(out);
++fput_in:
++	fdput(in);
++out:
++	return retval;
++}
++
++SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
++{
++	loff_t pos;
++	off_t off;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(get_user(off, offset)))
++			return -EFAULT;
++		pos = off;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
++{
++	loff_t pos;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
++			return -EFAULT;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++#ifdef CONFIG_COMPAT
++COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
++		compat_off_t __user *, offset, compat_size_t, count)
++{
++	loff_t pos;
++	off_t off;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(get_user(off, offset)))
++			return -EFAULT;
++		pos = off;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++
++COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
++		compat_loff_t __user *, offset, compat_size_t, count)
++{
++	loff_t pos;
++	ssize_t ret;
++
++	if (offset) {
++		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
++			return -EFAULT;
++		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
++		if (unlikely(put_user(pos, offset)))
++			return -EFAULT;
++		return ret;
++	}
++
++	return do_sendfile(out_fd, in_fd, NULL, count, 0);
++}
++#endif
++
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
