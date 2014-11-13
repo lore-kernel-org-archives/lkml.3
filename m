@@ -1,129 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651AbaKMC2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 21:28:06 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:65216 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117AbaKMC2E (ORCPT
+	id S1753707AbaKMCbZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 21:31:25 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:56998 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894AbaKMCbX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 21:28:04 -0500
-Message-ID: <546418A6.3000904@gmail.com>
-Date: Thu, 13 Nov 2014 10:34:14 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 12 Nov 2014 21:31:23 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAD2VFuW027433, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Topic: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Index: AQHP+nD06ZRj/kse50uRMFsgi72OwJxU1qgAgARRxyCAAqOJAIAAqX9g//9+RwCAAIdqwP//gQiAgACRGECAAFtcgIAA7vwg
+Date: Thu, 13 Nov 2014 02:31:14 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2ECE8EF@RTITMBSV03.realtek.com.tw>
+References: <0835B3720019904CB8F7AA43166CEEB2ECE442@RTITMBSV03.realtek.com.tw>
+	<20141112.004331.1112374574697663525.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2ECE46C@RTITMBSV03.realtek.com.tw>
+ <20141112.144949.645590790916569141.davem@davemloft.net>
+In-Reply-To: <20141112.144949.645590790916569141.davem@davemloft.net>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Christoffer Dall <christoffer.dall@linaro.org>
-CC: marc.zyngier@arm.com, gleb@kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] virt: kvm: arm: vgic: Return failure code '-EBUSY' when
- mutex_trylock() fails
-References: <546376F7.90502@gmail.com> <20141112194144.GK19598@cbox>
-In-Reply-To: <20141112194144.GK19598@cbox>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/14 3:41, Christoffer Dall wrote:
-> On Wed, Nov 12, 2014 at 11:04:23PM +0800, Chen Gang wrote:
->> When mutex_trylock() fails, kvm_vgic_create() will not create 'vgic', so
->> it need return failure code '-EBUSY' instead of '0' to let outside know
->> about it.
+David Miller [mailto:davem@davemloft.net] 
+> Sent: Thursday, November 13, 2014 3:50 AM
+[...]
+> > According to the usbnet.c, it would make sure to submit the
+> > number of min(10, RX_QLEN(dev)) rx buffers. If there are
+> > not enough rx buffers, it schedule a tasklet for next try.
+> > 
+> > The brief flow is as following.
+> > 1. Call open().
+> >    - schedule a tasklet.
+> > 2. Tasklet is called.
+> >    if (dev->rxq.qlen < RX_QLEN(dev)) {
+> > 	   - submit rx buffers util the number of
+> > 	     min(10, RX_QLEN(dev)). If the error
+> > 	     occurs, break the loop.
+> > 	   - If the dev->rxq.qlen < RX_QLEN(dev),
+> > 	     schedule the tasklet.
+> >    }
 > 
-> I already sent a patch for the -EBUSY:
-> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-November/011936.html
-> 
+> That sounds like a better recovery model, why don't you mimick it?
 
-Yeah, really it is.
+My last method which I mentioned yesterday is similar to
+this one. The difference is that I would re-use the rx
+buffers, so I have to add them to the list for re-submitting,
+not alwayes allocate new one.
 
->>
->> Also simplify the code within kvm_vgic_create():
->>
->>  - kvm_for_each_vcpu() scanning once is enough for current case.
->>
->>  - Remove redundant variable 'vcpu_lock_idx'.
-> 
-> I don't like using the iterator variable for this kind of thing because
-> it can really break in languages where i is out-of-scope after the loop
-> and it is too easy to reuse the iterator variable in later versions of
-> the code.
-> 
+Although one rx buffer could contain many packets, I don't
+think the whole size of the rx buffer is alwayes used.
+Therefore, I re-use the rx buffers to avoid allocating
+the 16K bytes rx buffer alwayes. This also makes sure that
+I always have the buffers to submit without allocating new
+one.
 
-For me, what you said is OK, we can still keep it no touch.
-
-> That being said, the scanning once is slightly prettier I guess,
-> but I'd rather not introduce the churn unless others (Marc) think this
-> is a big win.
-> 
-
-If only merge the 2 scanning loops, it will not change much. And also
-can let code simpler and clearer for readers (both are for processing
-and checking '-EBUSY').
-
-If possible, after your patch merges into linux next tree, I will send
-the related improving patch for it.
-
-Thanks.
-
-> -Christoffer
-> 
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  virt/kvm/arm/vgic.c | 15 +++++++--------
->>  1 file changed, 7 insertions(+), 8 deletions(-)
->>
->> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
->> index 3aaca49..5846725 100644
->> --- a/virt/kvm/arm/vgic.c
->> +++ b/virt/kvm/arm/vgic.c
->> @@ -1933,7 +1933,7 @@ out:
->>  
->>  int kvm_vgic_create(struct kvm *kvm)
->>  {
->> -	int i, vcpu_lock_idx = -1, ret = 0;
->> +	int i, ret = 0;
->>  	struct kvm_vcpu *vcpu;
->>  
->>  	mutex_lock(&kvm->lock);
->> @@ -1949,13 +1949,12 @@ int kvm_vgic_create(struct kvm *kvm)
->>  	 * that no other VCPUs are run while we create the vgic.
->>  	 */
->>  	kvm_for_each_vcpu(i, vcpu, kvm) {
->> -		if (!mutex_trylock(&vcpu->mutex))
->> +		if (!mutex_trylock(&vcpu->mutex)) {
->> +			ret = -EBUSY;
->>  			goto out_unlock;
->> -		vcpu_lock_idx = i;
->> -	}
->> -
->> -	kvm_for_each_vcpu(i, vcpu, kvm) {
->> +		}
->>  		if (vcpu->arch.has_run_once) {
->> +			mutex_unlock(&vcpu->mutex);
->>  			ret = -EBUSY;
->>  			goto out_unlock;
->>  		}
->> @@ -1968,8 +1967,8 @@ int kvm_vgic_create(struct kvm *kvm)
->>  	kvm->arch.vgic.vgic_cpu_base = VGIC_ADDR_UNDEF;
->>  
->>  out_unlock:
->> -	for (; vcpu_lock_idx >= 0; vcpu_lock_idx--) {
->> -		vcpu = kvm_get_vcpu(kvm, vcpu_lock_idx);
->> +	while (i-- > 0) {
->> +		vcpu = kvm_get_vcpu(kvm, i);
->>  		mutex_unlock(&vcpu->mutex);
->>  	}
->>  
->> -- 
->> 1.9.3
-
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+If you could accept this, I would modify this patch by
+this way.
+ 
+Best Regards,
+Hayes
