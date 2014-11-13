@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaKMCFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 21:05:51 -0500
+	id S1753843AbaKMCFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 21:05:49 -0500
 Received: from mga11.intel.com ([192.55.52.93]:47316 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753803AbaKMCFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 21:05:48 -0500
+	id S1753457AbaKMCFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 21:05:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
-   d="scan'208";a="631134605"
+   d="scan'208";a="631134603"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 08/10] perf, tools: Support source line numbers in annotate
-Date: Wed, 12 Nov 2014 18:05:26 -0800
-Message-Id: <1415844328-4884-9-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/10] perf, tools: Add --branch-history option to report
+Date: Wed, 12 Nov 2014 18:05:22 -0800
+Message-Id: <1415844328-4884-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
 References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
@@ -25,216 +25,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With srcline key/sort'ing it's useful to have line numbers
-in the annotate window. This patch implements this.
+Add a --branch-history option to perf report that changes all
+the settings necessary for using the branches in callstacks.
 
-Use objdump -l to request the line numbers and
-save them in the line structure. Then the browser
-displays them for source lines.
+This is just a short cut to make this nicer to use, it does
+not enable any functionality by itself.
 
-The line numbers are not displayed by default, but can be
-toggled on with 'k'
-
-There is one unfortunate problem with this setup. For
-lines not containing source and which are outside functions
-objdump -l reports line numbers off by a few: it always reports
-the first line number in the next function even for lines
-that are outside the function.
-I haven't found a nice way to detect/correct this. Probably objdump
-has to be fixed.
-See https://sourceware.org/bugzilla/show_bug.cgi?id=16433
-
-The line numbers are still useful even with these problems,
-as most are correct and the ones which are not are nearby.
-
-v2: Fix help text. Handle (discriminator...) output in objdump.
-Left align the line numbers.
+v2: Change sort order. Rename option to --branch-history to
+be less confusing.
+v3: Updates
+v4: Fix conflict with newer perf base
+v5: Port to latest tip
+v6: Add more comments. Remove CCKEY_ADDRESS setting. Remove
+unnecessary branch_mode setting. Use a boolean.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/ui/browsers/annotate.c | 13 ++++++++++++-
- tools/perf/util/annotate.c        | 30 +++++++++++++++++++++++++-----
- tools/perf/util/annotate.h        |  1 +
- 3 files changed, 38 insertions(+), 6 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/builtin-report.c              | 26 ++++++++++++++++++++++----
+ 2 files changed, 27 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index f0697a3..1e0a2fd 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -27,6 +27,7 @@ static struct annotate_browser_opt {
- 	bool hide_src_code,
- 	     use_offset,
- 	     jump_arrows,
-+	     show_linenr,
- 	     show_nr_jumps;
- } annotate_browser__opts = {
- 	.use_offset	= true,
-@@ -128,7 +129,11 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	if (!*dl->line)
- 		slsmg_write_nstring(" ", width - pcnt_width);
- 	else if (dl->offset == -1) {
--		printed = scnprintf(bf, sizeof(bf), "%*s  ",
-+		if (dl->line_nr && annotate_browser__opts.show_linenr)
-+			printed = scnprintf(bf, sizeof(bf), "%-*d ",
-+					ab->addr_width + 1, dl->line_nr);
-+		else
-+			printed = scnprintf(bf, sizeof(bf), "%*s  ",
- 				    ab->addr_width, " ");
- 		slsmg_write_nstring(bf, printed);
- 		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
-@@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 		"o             Toggle disassembler output/simplified view\n"
- 		"s             Toggle source code view\n"
- 		"/             Search string\n"
-+		"k             Toggle line numbers\n"
- 		"r             Run available scripts\n"
- 		"?             Search string backwards\n");
- 			continue;
-@@ -741,6 +747,10 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 				script_browse(NULL);
- 				continue;
- 			}
-+		case 'k':
-+			annotate_browser__opts.show_linenr =
-+				!annotate_browser__opts.show_linenr;
-+			break;
- 		case 'H':
- 			nd = browser->curr_hot;
- 			break;
-@@ -984,6 +994,7 @@ static struct annotate_config {
- } annotate__configs[] = {
- 	ANNOTATE_CFG(hide_src_code),
- 	ANNOTATE_CFG(jump_arrows),
-+	ANNOTATE_CFG(show_linenr),
- 	ANNOTATE_CFG(show_nr_jumps),
- 	ANNOTATE_CFG(use_offset),
- };
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 7dabde1..d821223 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -17,11 +17,13 @@
- #include "debug.h"
- #include "annotate.h"
- #include "evsel.h"
-+#include <regex.h>
- #include <pthread.h>
- #include <linux/bitops.h>
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 22706be..dd7cccd 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -271,6 +271,11 @@ OPTIONS
+ 	branch stacks and it will automatically switch to the branch view mode,
+ 	unless --no-branch-stack is used.
  
- const char 	*disassembler_style;
- const char	*objdump_path;
-+static regex_t	 file_lineno;
- 
- static struct ins *ins__find(const char *name);
- static int disasm_line__parse(char *line, char **namep, char **rawp);
-@@ -570,13 +572,15 @@ out_free_name:
- 	return -1;
- }
- 
--static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
-+static struct disasm_line *disasm_line__new(s64 offset, char *line,
-+					size_t privsize, int line_nr)
- {
- 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
- 
- 	if (dl != NULL) {
- 		dl->offset = offset;
- 		dl->line = strdup(line);
-+		dl->line_nr = line_nr;
- 		if (dl->line == NULL)
- 			goto out_delete;
- 
-@@ -788,13 +792,15 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
-  * The ops.raw part will be parsed further according to type of the instruction.
-  */
- static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
--				      FILE *file, size_t privsize)
-+				      FILE *file, size_t privsize,
-+				      int *line_nr)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct disasm_line *dl;
- 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
- 	size_t line_len;
- 	s64 line_ip, offset = -1;
-+	regmatch_t match[2];
- 
- 	if (getline(&line, &line_len, file) < 0)
- 		return -1;
-@@ -812,6 +818,12 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	line_ip = -1;
- 	parsed_line = line;
- 
-+	/* /filename:linenr ? Save line number and ignore. */
-+	if (regexec(&file_lineno, line, 2, match, 0) == 0) {
-+		*line_nr = atoi(line + match[1].rm_so);
-+		return 0;
-+	}
++--branch-history::
++	Add the addresses of sampled taken branches to the callstack.
++	This allows to examine the path the program took to each sample.
++	The data collection must have used -b (or -j) and -g.
 +
- 	/*
- 	 * Strip leading spaces:
- 	 */
-@@ -842,8 +854,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 			parsed_line = tmp2 + 1;
+ --objdump=<path>::
+         Path to objdump binary.
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 410d44f..fb272ff 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -226,8 +226,9 @@ static int report__setup_sample_type(struct report *rep)
+ 			return -EINVAL;
+ 		}
+ 		if (symbol_conf.use_callchain) {
+-			ui__error("Selected -g but no callchain data. Did "
+-				    "you call 'perf record' without -g?\n");
++			ui__error("Selected -g or --branch-history but no "
++				  "callchain data. Did\n"
++				  "you call 'perf record' without -g?\n");
+ 			return -1;
+ 		}
+ 	} else if (!rep->dont_use_callchains &&
+@@ -575,6 +576,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct stat st;
+ 	bool has_br_stack = false;
+ 	int branch_mode = -1;
++	bool branch_call_mode = false;
+ 	char callchain_default_opt[] = "fractal,0.5,callee";
+ 	const char * const report_usage[] = {
+ 		"perf report [<options>]",
+@@ -684,7 +686,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+ 		    "Show event group information together"),
+ 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
+-		    "use branch records for histogram filling", parse_branch_mode),
++		    "use branch records for per branch histogram filling",
++		    parse_branch_mode),
++	OPT_BOOLEAN(0, "branch-history", &branch_call_mode,
++		    "add last branch records to call history"),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+@@ -745,10 +750,23 @@ repeat:
+ 	has_br_stack = perf_header__has_feat(&session->header,
+ 					     HEADER_BRANCH_STACK);
+ 
+-	if ((branch_mode == -1 && has_br_stack) || branch_mode == 1) {
++	/*
++	 * Branch mode is a tristate:
++	 * -1 means default, so decide based on the file having branch data.
++	 * 0/1 means the user chose a mode.
++	 */
++	if (((branch_mode == -1 && has_br_stack) || branch_mode == 1) &&
++	    branch_call_mode == -1) {
+ 		sort__mode = SORT_MODE__BRANCH;
+ 		symbol_conf.cumulate_callchain = false;
  	}
++	if (branch_call_mode) {
++		callchain_param.branch_callstack = 1;
++		symbol_conf.use_callchain = true;
++		callchain_register_param(&callchain_param);
++		if (sort_order == NULL)
++			sort_order = "srcline,symbol,dso";
++	}
  
--	dl = disasm_line__new(offset, parsed_line, privsize);
-+	dl = disasm_line__new(offset, parsed_line, privsize, *line_nr);
- 	free(line);
-+	(*line_nr)++;
- 
- 	if (dl == NULL)
- 		return -1;
-@@ -869,6 +882,11 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	return 0;
- }
- 
-+static __attribute__((constructor)) void symbol__init_regexpr(void)
-+{
-+	regcomp(&file_lineno, "^/[^:]+:([0-9]+)", REG_EXTENDED);
-+}
-+
- static void delete_last_nop(struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -904,6 +922,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
- 	char symfs_filename[PATH_MAX];
- 	struct kcore_extract kce;
- 	bool delete_extract = false;
-+	int lineno = 0;
- 
- 	if (filename)
- 		symbol__join_symfs(symfs_filename, filename);
-@@ -982,7 +1001,7 @@ fallback:
- 	snprintf(command, sizeof(command),
- 		 "%s %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
--		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
-+		 " -l -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
- 		 objdump_path ? objdump_path : "objdump",
- 		 disassembler_style ? "-M " : "",
- 		 disassembler_style ? disassembler_style : "",
-@@ -999,7 +1018,8 @@ fallback:
- 		goto out_free_filename;
- 
- 	while (!feof(file))
--		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
-+		if (symbol__parse_objdump_line(sym, map, file, privsize,
-+			    &lineno) < 0)
- 			break;
- 
- 	/*
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 112d6e2..0784a94 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -58,6 +58,7 @@ struct disasm_line {
- 	char		    *line;
- 	char		    *name;
- 	struct ins	    *ins;
-+	int		    line_nr;
- 	struct ins_operands ops;
- };
- 
+ 	if (report.mem_mode) {
+ 		if (sort__mode == SORT_MODE__BRANCH) {
 -- 
 1.9.3
 
