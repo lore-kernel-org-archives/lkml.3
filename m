@@ -1,167 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaKLXnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 18:43:18 -0500
-Received: from mga11.intel.com ([192.55.52.93]:42988 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475AbaKLXnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 18:43:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
-   d="scan'208";a="621501669"
-Date: Thu, 13 Nov 2014 07:22:32 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
- hotplug
-Message-ID: <20141112232232.GC23249@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
- <546377FC.4090408@arm.com>
+	id S1752969AbaKMACK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 19:02:10 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51719 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbaKMACJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 19:02:09 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 13 Nov 2014 09:02:16 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Cc: ngupta@vflare.org, weijie.yang@samsung.com, sergey.senozhatsky@gmail.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/zram: correct ZRAM_ZERO flag bit position
+Message-ID: <20141113000216.GA1074@bbox>
+References: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <546377FC.4090408@arm.com>
+In-Reply-To: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-On Wed, Nov 12, 2014 at 03:08:44PM +0000, Juri Lelli wrote:
+On Wed, Nov 12, 2014 at 10:37:18PM +0800, Mahendran Ganesh wrote:
+> In struct zram_table_entry, the element *value* contains obj size and
+> obj zram flags. Bit 0 to bit (ZRAM_FLAG_SHIFT - 1) represent obj size,
+> and bit ZRAM_FLAG_SHIFT to the highest bit of unsigned long represent obj
+> zram_flags. So the first zram flag(ZRAM_ZERO) should be from ZRAM_FLAG_SHIFT
+> instead of (ZRAM_FLAG_SHIFT + 1).
+> 
+> This patch fixes this issue.
+> 
+> Also this patch fixes a typo, "page in now accessed" -> "page is now accessed"
+> 
+> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-Btw, could you review other three deadline patches of mine?
+To be clear about "fixes this issue", it's not a bug but just clean up
+so it doesn't change any behavior.
 
-https://lkml.org/lkml/2014/11/6/51
-https://lkml.org/lkml/2014/11/10/817
-https://lkml.org/lkml/2014/11/10/818
+Thanks!
 
-Great thanks for your time. ;-)
-
-Regards,
-Wanpeng Li 
-
->Hi,
->
->On 12/11/14 01:06, Wanpeng Li wrote:
->> I observe that dl task can't be migrated to other cpus during cpu hotplug, 
->> in addition, task may/may not be running again if cpu is added back. The 
->> root cause which I found is that dl task will be throtted and removed from 
->> dl rq after comsuming all budget, which leads to stop task can't pick it up 
->> from dl rq and migrate to other cpus during hotplug.
->> 
->> The method to reproduce:
->> schedtool -E -t 50000:100000 -e ./test
->> Actually test is just a simple for loop. Then observe which cpu the test
->> task is on.
->> echo 0 > /sys/devices/system/cpu/cpuN/online
->> 
->> This patch adds the dl task migration during cpu hotplug by finding a most 
->> suitable later deadline rq after dl timer fire if current rq is offline, 
->> if fail to find a suitable later deadline rq then fallback to any eligible 
->> online cpu in order that the deadline task will come back to us, and the 
->> push/pull mechanism should then move it around properly.
->> 
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> v4 -> v5:
->>  * remove raw_spin_unlock(&rq->lock)
->>  * cleanup codes, spotted by Peterz
->>  * cleanup patch description
->> v3 -> v4:
->>  * use tsk_cpus_allowed wrapper
->>  * fix compile error
->> v2 -> v3:
->>  * don't get_task_struct
->>  * if cannot preempt any rq, fallback to pick any online cpus
->>  * use cpu_active_mask as original later_mask if cpu is offline
->> v1 -> v2:
->>  * push the task to another cpu in dl_task_timer() if rq is offline.
->> 
->>  kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
->>  1 file changed, 41 insertions(+), 2 deletions(-)
->> 
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index f3d7776..7c31906 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
->>  	return hrtimer_active(&dl_se->dl_timer);
->>  }
->>  
->> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
->>  /*
->>   * This is the bandwidth enforcement timer callback. If here, we know
->>   * a task is not on its dl_rq, since the fact that the timer was running
->> @@ -538,6 +539,43 @@ again:
->>  	update_rq_clock(rq);
->>  	dl_se->dl_throttled = 0;
->>  	dl_se->dl_yielded = 0;
->> +
->> +	/*
->> +	 * So if we find that the rq the task was on is no longer
->> +	 * available, we need to select a new rq.
->> +	 */
->> +	if (unlikely(!rq->online)) {
->> +		struct rq *later_rq = NULL;
->> +
->> +		later_rq = find_lock_later_rq(p, rq);
->> +
->> +		if (!later_rq) {
->> +			int cpu;
->> +
->> +			/*
->> +			 * If cannot preempt any rq, fallback to pick any
->> +			 * online cpu.
->> +			 */
->> +			cpu = cpumask_any_and(cpu_active_mask,
->> +					tsk_cpus_allowed(p));
->> +			if (cpu >= nr_cpu_ids) {
->> +				pr_warn("fail to find any online cpu and task will never come back\n");
->> +				goto unlock;
->> +			}
->> +			later_rq = cpu_rq(cpu);
->> +		}
->> +
->> +		deactivate_task(rq, p, 0);
->> +		set_task_cpu(p, later_rq->cpu);
->> +		activate_task(later_rq, p, 0);
->> +
->> +		resched_curr(later_rq);
->> +
->> +		double_unlock_balance(rq, later_rq);
->> +
->> +		goto unlock;
->> +	}
->> +
->>  	if (task_on_rq_queued(p)) {
->>  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
->>  		if (dl_task(rq->curr))
->> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
->>  	 * We have to consider system topology and task affinity
->>  	 * first, then we can look for a suitable cpu.
->>  	 */
->> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
->> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
->> +	cpumask_copy(later_mask, cpu_active_mask);
->> +	if (likely(task_rq(task)->online))
->> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
->
->So, here you consider the span only when the task_rq is online,
->but there might be others cpus still online belonging to the same
->rd->span. And you have to consider them when migrating. Actually,
->migration must still be restricted to the online cpus of task's
->original rd->span, or I fear you can break clustered scheduling.
->
->Thanks,
->
->- Juri
->
->>  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->>  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->>  			task, later_mask);
->> 
+-- 
+Kind regards,
+Minchan Kim
