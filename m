@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaKMOyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:54:43 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39260 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027AbaKMOyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:54:41 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <chris@printf.net>, <ulf.hansson@linaro.org>, <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <afenkart@gmail.com>, <nsekhar@ti.com>, <kishon@ti.com>
-Subject: [RFC PATCH 3/3] ARM: dts: dra72-evm: Set the max-frequency to 192MHz
-Date: Thu, 13 Nov 2014 20:24:18 +0530
-Message-ID: <1415890458-20436-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1415890458-20436-1-git-send-email-kishon@ti.com>
-References: <1415890458-20436-1-git-send-email-kishon@ti.com>
+	id S932807AbaKMOzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:55:17 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:40668 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079AbaKMOzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 09:55:13 -0500
+Date: Thu, 13 Nov 2014 23:55:33 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Mahendran Ganesh <opensource.ganesh@gmail.com>
+Cc: ngupta@vflare.org, minchan@kernel.org, weijie.yang@samsung.com,
+        sergey.senozhatsky@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/zram: correct ZRAM_ZERO flag bit position
+Message-ID: <20141113145533.GA1408@swordfish>
+References: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the maximum operating frequency of MMC2 to 192MHz.
+On (11/12/14 22:37), Mahendran Ganesh wrote:
+> In struct zram_table_entry, the element *value* contains obj size and
+> obj zram flags. Bit 0 to bit (ZRAM_FLAG_SHIFT - 1) represent obj size,
+> and bit ZRAM_FLAG_SHIFT to the highest bit of unsigned long represent obj
+> zram_flags. So the first zram flag(ZRAM_ZERO) should be from ZRAM_FLAG_SHIFT
+> instead of (ZRAM_FLAG_SHIFT + 1).
+> 
+> This patch fixes this issue.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/dra72-evm.dts |    1 +
- 1 file changed, 1 insertion(+)
+well, I wouldn't say this is an issue; but still.
 
-diff --git a/arch/arm/boot/dts/dra72-evm.dts b/arch/arm/boot/dts/dra72-evm.dts
-index abbaaa7..5cc1110 100644
---- a/arch/arm/boot/dts/dra72-evm.dts
-+++ b/arch/arm/boot/dts/dra72-evm.dts
-@@ -364,6 +364,7 @@
- 	vmmc-supply = <&evm_3v3>;
- 	bus-width = <8>;
- 	ti,non-removable;
-+	max-frequency = <192000000>;
- };
- 
- &dra7_pmx_core {
--- 
-1.7.9.5
+Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
+	-ss
+
+> Also this patch fixes a typo, "page in now accessed" -> "page is now accessed"
+> 
+> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+> ---
+>  drivers/block/zram/zram_drv.h |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index c6ee271..b05a816 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -66,8 +66,8 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
+>  /* Flags for zram pages (table[page_no].value) */
+>  enum zram_pageflags {
+>  	/* Page consists entirely of zeros */
+> -	ZRAM_ZERO = ZRAM_FLAG_SHIFT + 1,
+> -	ZRAM_ACCESS,	/* page in now accessed */
+> +	ZRAM_ZERO = ZRAM_FLAG_SHIFT,
+> +	ZRAM_ACCESS,	/* page is now accessed */
+>  
+>  	__NR_ZRAM_PAGEFLAGS,
+>  };
+> -- 
+> 1.7.9.5
+> 
