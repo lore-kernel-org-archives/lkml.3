@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365AbaKMJKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:10:24 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45289 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaKMJKT (ORCPT
+	id S932376AbaKMJK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:10:58 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:55202 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752AbaKMJKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:10:19 -0500
-Date: Thu, 13 Nov 2014 10:10:05 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Brown, Len" <len.brown@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        "linux-pm@vger.kernel.org >> Linux PM list" 
-	<linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v2] PM / Sleep: Timer quiesce in freeze state
-In-Reply-To: <20141113013707.GQ29390@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.11.1411131008280.3935@nanos>
-References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net> <544DE5CF.9040501@linux.intel.com> <20141027074419.GE10501@worktop.programming.kicks-ass.net> <544F4B31.7050308@linux.intel.com>
- <20141028082503.GN3337@twins.programming.kicks-ass.net> <5450253B.5020802@linux.intel.com> <20141029082432.GV3337@twins.programming.kicks-ass.net> <5451A94F.1090200@linux.intel.com> <alpine.DEB.2.11.1411121558280.3935@nanos>
- <20141113013707.GQ29390@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 13 Nov 2014 04:10:54 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm] memcg: zap kmem_account_flags
+Date: Thu, 13 Nov 2014 12:10:39 +0300
+Message-ID: <1415869839-8212-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, Peter Zijlstra wrote:
-> On Wed, Nov 12, 2014 at 10:09:47PM +0100, Thomas Gleixner wrote:
-> But sure, we can add suspend notifiers to stuff to shut down timers; I
-> should have a patch for at least one of the offenders somewhere. But I
-> really think that we should not be looking at the individual timers for
-> this, none of the other suspend modes care about active timers.
+The only such flag is KMEM_ACCOUNTED_ACTIVE, but it's set iff
+mem_cgroup->kmemcg_id is initialized, so we can check kmemcg_id instead
+of having a separate flags field.
 
-Fair enough.
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/memcontrol.c |   31 ++++++++++---------------------
+ 1 file changed, 10 insertions(+), 21 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 5a27e224d561..bb8c237026cc 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -296,7 +296,6 @@ struct mem_cgroup {
+ 	 * Should the accounting and control be hierarchical, per subtree?
+ 	 */
+ 	bool use_hierarchy;
+-	unsigned long kmem_account_flags; /* See KMEM_ACCOUNTED_*, below */
  
-> > But before we do that we want a proper explanation why the interrupt
-> > fires at all. The lack of explanation cleary documents that this is a
-> > 'hacked it into submission' approach.
-> 
-> >From what I remember its the waking interrupt that ends up in the
-> timekeeping code, Li should have a backtrace somwhere.
-
-I can imagine what happens :)
-
-> > stomp_machine() is in 99% of all use cases a clear indicator for a
-> > complete design failure.
-> 
-> >    So the generic idle task needs a check like this:
-> > 
-> >    if (idle_should_freeze())
-> >       	frozen_idle();
-> 
-> So that is adding extra code to fairly common/hot paths just for this
-> one extra special case. I tried to avoid doing that.
-
-idle enter is not that much of a hot path, really.
+ 	bool		oom_lock;
+ 	atomic_t	under_oom;
+@@ -366,22 +365,11 @@ struct mem_cgroup {
+ 	/* WARNING: nodeinfo must be the last member here */
+ };
  
-Thanks,
+-/* internal only representation about the status of kmem accounting. */
+-enum {
+-	KMEM_ACCOUNTED_ACTIVE, /* accounted by this cgroup itself */
+-};
+-
+ #ifdef CONFIG_MEMCG_KMEM
+-static inline void memcg_kmem_set_active(struct mem_cgroup *memcg)
+-{
+-	set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
+-}
+-
+ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
+ {
+-	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
++	return memcg->kmemcg_id >= 0;
+ }
+-
+ #endif
+ 
+ /* Stuffs for move charges at task migration. */
+@@ -3564,23 +3552,21 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
+ 		goto out;
+ 	}
+ 
+-	memcg->kmemcg_id = memcg_id;
+-	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
+-
+ 	/*
+-	 * We couldn't have accounted to this cgroup, because it hasn't got the
+-	 * active bit set yet, so this should succeed.
++	 * We couldn't have accounted to this cgroup, because it hasn't got
++	 * activated yet, so this should succeed.
+ 	 */
+ 	err = page_counter_limit(&memcg->kmem, nr_pages);
+ 	VM_BUG_ON(err);
+ 
+ 	static_key_slow_inc(&memcg_kmem_enabled_key);
+ 	/*
+-	 * Setting the active bit after enabling static branching will
++	 * A memory cgroup is considered kmem-active as soon as it gets
++	 * kmemcg_id. Setting the id after enabling static branching will
+ 	 * guarantee no one starts accounting before all call sites are
+ 	 * patched.
+ 	 */
+-	memcg_kmem_set_active(memcg);
++	memcg->kmemcg_id = memcg_id;
+ out:
+ 	return err;
+ }
+@@ -4252,7 +4238,6 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ {
+ 	int ret;
+ 
+-	memcg->kmemcg_id = -1;
+ 	ret = memcg_propagate_kmem(memcg);
+ 	if (ret)
+ 		return ret;
+@@ -4786,6 +4771,10 @@ mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
+ 	vmpressure_init(&memcg->vmpressure);
+ 	INIT_LIST_HEAD(&memcg->event_list);
+ 	spin_lock_init(&memcg->event_list_lock);
++#ifdef CONFIG_MEMCG_KMEM
++	memcg->kmemcg_id = -1;
++	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
++#endif
+ 
+ 	return &memcg->css;
+ 
+-- 
+1.7.10.4
 
-	tglx
