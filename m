@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729AbaKMBVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 20:21:38 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:64946 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834AbaKMBVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 20:21:36 -0500
-X-AuditID: cbfee68f-f791c6d000004834-05-5464079e5d09
-Message-id: <5464079E.9010901@samsung.com>
-Date: Thu, 13 Nov 2014 10:21:34 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: max14577: Fix obvious typo in company name in
- copyright
-References: <1415806089-19684-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1415806089-19684-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkWHcee0qIwfnDFhavXxhaXN41h83i
-	duMKNgdmj74tqxg9Pm+SC2CK4rJJSc3JLEst0rdL4Mp4/2I9W8E5torF86sbGLeydjFycEgI
-	mEg87xLtYuQEMsUkLtxbzwZiCwksZZTYfFgXIm4icaT3B3sXIxdQfDqjROveU0wQzmtGicXz
-	D7GDVPEKaEl8Or+TBcRmEVCV+LP5ClicDSi+/8UNsKmiAmESK6dfYYGoF5T4MfkemC0iYChx
-	cPd2JhCbWcBTom9GO1i9MFD9pH+f2SEucpd4cnkfM4jNKeAhsXrSHkaIeh2J/a3T2CBseYnN
-	a94ygxwnIdDPLtG5aRrUQQIS3yYfYoH4WFZi0wFmiM8kJQ6uuMEygVFsFpKTZiEZOwvJ2AWM
-	zKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxAmPl9L9n/TsY7x6wPsQowMGoxMObsTkpRIg1
-	say4MvcQoynQFROZpUST84ERmVcSb2hsZmRhamJqbGRuaaYkzrtQ6mewkEB6YklqdmpqQWpR
-	fFFpTmrxIUYmDk6pBkZRJvtftxMnaZ9uq4yKklj6rtPw4t1JT4rmmTaF1fJf9v5uPvu/eMas
-	hZbiGgv22rl9nal74/Qi4eXKiTdurJ9/y1ju7w2utDuK+8VtfiQeY6w33DLpXFP1U7fTzk/Y
-	D8ysXslQtLPLaTvn3Jqjzns6GFelxbFYSFQ8aH1uI++bb76v1IL1vaoSS3FGoqEWc1FxIgCC
-	OgAJkAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t9jQd157CkhBpdPG1m8fmFocXnXHDaL
-	240r2ByYPfq2rGL0+LxJLoApqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJ
-	IS8xN9VWycUnQNctMwdoh5JCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx
-	4/2L9WwF59gqFs+vbmDcytrFyMkhIWAicaT3BzuELSZx4d56ti5GLg4hgemMEq17TzFBOK8Z
-	JRbPPwRWxSugJfHp/E4WEJtFQFXiz+YrYHE2oPj+FzfYQGxRgTCJldOvsEDUC0r8mHwPzBYR
-	MJQ4uHs7E4jNLOAp0TejHaxeGKh+0r/PYHOEBNwlnlzexwxicwp4SKyetIcRol5HYn/rNDYI
-	W15i85q3zBMYBWYhWTELSdksJGULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH4zOp
-	HYwrGywOMQpwMCrx8HI6JIcIsSaWFVfmHmKU4GBWEuE1/gQU4k1JrKxKLcqPLyrNSS0+xGgK
-	DIGJzFKiyfnARJFXEm9obGJmZGlkbmhhZGyuJM57oNU6UEggPbEkNTs1tSC1CKaPiYNTqoFx
-	+szVQv+XShuqfF/pp9EbwTjX7vYqfp6Y3q4VnettbO84CjwM2yKmInZs3YH5ofsLbZJXTvwx
-	I5cpb8rJa0HtDpFFb7sTZx46YNR0/TP3t8/L7ux8rK0v5XuYm3lmYNbR/VdzYx9V6sfdsPqt
-	9DWjVXZbxCrbnec3fPO+UzdBOqvMNkXCsWSKEktxRqKhFnNRcSIAAB53+dwCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753828AbaKMBV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 20:21:58 -0500
+Received: from mga01.intel.com ([192.55.52.88]:35183 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753648AbaKMBVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 20:21:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="415746520"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "Alex Williamson" <alex.williamson@redhat.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLgAyIb0DAAAcBYD//4ReAP/+e7+A//z07vA=
+Date: Thu, 13 Nov 2014 01:21:16 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5A68@SHSMSX104.ccr.corp.intel.com>
+References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
+ <5461EC99.1000101@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
+ <546324F4.8010002@redhat.com>
+ <E959C4978C3B6342920538CF579893F00227680F@SHSMSX104.ccr.corp.intel.com>
+ <54632ECA.4070903@redhat.com>
+ <E959C4978C3B6342920538CF579893F002284398@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F002284398@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD1M1Nk020683
 
-On 11/13/2014 12:28 AM, Krzysztof Kozlowski wrote:
-> Fix a typo in name of company in copyright comment.
+Wu, Feng wrote on 2014-11-13:
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/extcon/extcon-max14577.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
-> index dfc2fd370eb3..c1bf0cf747b0 100644
-> --- a/drivers/extcon/extcon-max14577.c
-> +++ b/drivers/extcon/extcon-max14577.c
-> @@ -1,7 +1,7 @@
->  /*
->   * extcon-max14577.c - MAX14577/77836 extcon driver to support MUIC
->   *
-> - * Copyright (C) 2013,2014 Samsung Electrnoics
-> + * Copyright (C) 2013,2014 Samsung Electronics
->   * Chanwoo Choi <cw00.choi@samsung.com>
->   * Krzysztof Kozlowski <k.kozlowski@samsung.com>
->   *
+> kvm-owner@vger.kernel.org wrote on 2014-11-12:
+>> kvm@vger.kernel.org; iommu@lists.linux-foundation.org; 
+>> linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest 
+>> interrupt configuration changes
+>> 
+>> 
+>> 
+>> On 12/11/2014 10:19, Wu, Feng wrote:
+>>>> You can certainly backport these patches to distros that do not 
+>>>> have VFIO.  But upstream we should work on VFIO first.  VFIO has 
+>>>> feature parity with legacy device assignment, and adding a new 
+>>>> feature that is not in VFIO would be a bad idea.
+>>>> 
+>>>> By the way, do you have benchmark results for it?  We have not been 
+>>>> able to see any performance improvement for APICv on e.g. netperf.
+>>> 
+>>> Do you mean benchmark results for APICv itself or VT-d Posted-Interrtups?
+>> 
+>> Especially for VT-d posted interrupts---but it'd be great to know 
+>> which workloads see the biggest speedup from APICv.
 > 
+> We have some draft performance data internally, please see the 
+> attached. For VT-d PI, I think we can get the biggest performance gain 
+> if the VCPU is running in non-root mode for most of the time (not in 
+> HLT state), since external interrupt from assigned devices will be delivered by guest directly in this case.
+> That means we can run some cpu intensive workload in the guests.
 
-Applied it.
+Have you check that the CPU side posted interrupt is taking effect in w/o VT-D PI case? Per my understanding, the performance gap should be so large if you use CPU side posted interrupt. This data more like the VT-d PI vs non PI(both VT-d and CPU).
 
-Thanks,
-Chanwoo Choi
+> 
+> Thanks,
+> Feng
+> 
+>> 
+>> Paolo
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kvm" in the 
+>> body of a message to majordomo@vger.kernel.org More majordomo info at 
+>> http://vger.kernel.org/majordomo-info.html
+
+
+Best regards,
+Yang
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
