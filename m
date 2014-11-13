@@ -1,309 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011AbaKMMqA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:46:00 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51651 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969AbaKMMpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:45:52 -0500
-From: Thomas Graf <tgraf@suug.ch>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        eric.dumazet@gmail.com
-Subject: [PATCH net-next] rhashtable: Drop gfp_flags arg in insert/remove functions
-Date: Thu, 13 Nov 2014 13:45:46 +0100
-Message-Id: <17c3262027e643a0826c6ac5dd2d14cda0822a0b.1415879747.git.tgraf@suug.ch>
-X-Mailer: git-send-email 1.9.3
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@suug.ch> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933018AbaKMMrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:47:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34695 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932807AbaKMMrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 07:47:12 -0500
+Message-ID: <5464A84C.1040903@suse.cz>
+Date: Thu, 13 Nov 2014 13:47:08 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 5/5] mm, compaction: more focused lru and pcplists draining
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-6-git-send-email-vbabka@suse.cz> <20141027074112.GC23379@js1304-P5Q-DELUXE> <545738F1.4010307@suse.cz> <20141104003733.GB8412@js1304-P5Q-DELUXE>
+In-Reply-To: <20141104003733.GB8412@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reallocation is only required for shrinking and expanding and both rely
-on a mutex for synchronization and callers of rhashtable_init() are in
-non atomic context. Therefore, no reason to continue passing allocation
-hints through the API.
+On 11/04/2014 01:37 AM, Joonsoo Kim wrote:
+> On Mon, Nov 03, 2014 at 09:12:33AM +0100, Vlastimil Babka wrote:
+>> On 10/27/2014 08:41 AM, Joonsoo Kim wrote:
+>>> On Tue, Oct 07, 2014 at 05:33:39PM +0200, Vlastimil Babka wrote:
+>>>
+>>> And, I wonder why last_migrated_pfn is set after isolate_migratepages().
+>>
+>> Not sure I understand your question. With the mistake above, it
+>> cannot currently be set at the point isolate_migratepages() is
+>> called, so you might question the goto check_drain in the
+>> ISOLATE_NONE case, if that's what you are wondering about.
+>>
+>> When I correct that, it might be set when COMPACT_CLUSTER_MAX pages
+>> are isolated and migrated the middle of a pageblock, and then the
+>> rest of the pageblock contains no pages that could be isolated, so
+>> the last isolate_migratepages() attempt in the pageblock returns
+>> with ISOLATE_NONE. Still there were some migrations that produced
+>> free pages that should be drained at that point.
+>
+> To clarify my question, I attach psuedo code that I thought correct.
 
-Instead, use GFP_KERNEL and add __GFP_NOWARN | __GFP_NORETRY to allow
-for silent fall back to vzalloc() without the OOM killer jumping in as
-pointed out by Eric Dumazet and Eric W. Biederman.
+Sorry for the late reply.
 
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
----
- include/linux/rhashtable.h | 10 +++++-----
- lib/rhashtable.c           | 41 +++++++++++++++++------------------------
- net/netfilter/nft_hash.c   |  4 ++--
- net/netlink/af_netlink.c   |  4 ++--
- 4 files changed, 26 insertions(+), 33 deletions(-)
+> static int compact_zone()
+> {
+>          unsigned long last_migrated_pfn = 0;
+>
+>          ...
+>
+>          compaction_suitable();
+>
+>          ...
+>
+>          while (compact_finished()) {
+>                  if (!last_migrated_pfn)
+>                          last_migrated_pfn = cc->migrate_pfn - 1;
+>
+>                  isolate_migratepages();
+>                  switch case
+>                  migrate_pages();
+>                  ...
+>
+>                  check_drain: (at the end of loop)
+>                          do flush and reset last_migrated_pfn if needed
+>          }
+> }
+>
+> We should record last_migrated_pfn before isolate_migratepages() and
+> then compare it with cc->migrate_pfn after isolate_migratepages() to
+> know if we moved away from the previous cc->order aligned block.
+> Am I missing something?
 
-diff --git a/include/linux/rhashtable.h b/include/linux/rhashtable.h
-index fb298e9d..942fa44 100644
---- a/include/linux/rhashtable.h
-+++ b/include/linux/rhashtable.h
-@@ -96,16 +96,16 @@ int rhashtable_init(struct rhashtable *ht, struct rhashtable_params *params);
- u32 rhashtable_hashfn(const struct rhashtable *ht, const void *key, u32 len);
- u32 rhashtable_obj_hashfn(const struct rhashtable *ht, void *ptr);
- 
--void rhashtable_insert(struct rhashtable *ht, struct rhash_head *node, gfp_t);
--bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *node, gfp_t);
-+void rhashtable_insert(struct rhashtable *ht, struct rhash_head *node);
-+bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *node);
- void rhashtable_remove_pprev(struct rhashtable *ht, struct rhash_head *obj,
--			     struct rhash_head __rcu **pprev, gfp_t flags);
-+			     struct rhash_head __rcu **pprev);
- 
- bool rht_grow_above_75(const struct rhashtable *ht, size_t new_size);
- bool rht_shrink_below_30(const struct rhashtable *ht, size_t new_size);
- 
--int rhashtable_expand(struct rhashtable *ht, gfp_t flags);
--int rhashtable_shrink(struct rhashtable *ht, gfp_t flags);
-+int rhashtable_expand(struct rhashtable *ht);
-+int rhashtable_shrink(struct rhashtable *ht);
- 
- void *rhashtable_lookup(const struct rhashtable *ht, const void *key);
- void *rhashtable_lookup_compare(const struct rhashtable *ht, u32 hash,
-diff --git a/lib/rhashtable.c b/lib/rhashtable.c
-index 081be3b..088e7e5 100644
---- a/lib/rhashtable.c
-+++ b/lib/rhashtable.c
-@@ -107,13 +107,13 @@ static u32 head_hashfn(const struct rhashtable *ht,
- 	return obj_hashfn(ht, rht_obj(ht, he), hsize);
- }
- 
--static struct bucket_table *bucket_table_alloc(size_t nbuckets, gfp_t flags)
-+static struct bucket_table *bucket_table_alloc(size_t nbuckets)
- {
- 	struct bucket_table *tbl;
- 	size_t size;
- 
- 	size = sizeof(*tbl) + nbuckets * sizeof(tbl->buckets[0]);
--	tbl = kzalloc(size, flags);
-+	tbl = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
- 	if (tbl == NULL)
- 		tbl = vzalloc(size);
- 
-@@ -200,7 +200,6 @@ static void hashtable_chain_unzip(const struct rhashtable *ht,
- /**
-  * rhashtable_expand - Expand hash table while allowing concurrent lookups
-  * @ht:		the hash table to expand
-- * @flags:	allocation flags
-  *
-  * A secondary bucket array is allocated and the hash entries are migrated
-  * while keeping them on both lists until the end of the RCU grace period.
-@@ -211,7 +210,7 @@ static void hashtable_chain_unzip(const struct rhashtable *ht,
-  * The caller must ensure that no concurrent table mutations take place.
-  * It is however valid to have concurrent lookups if they are RCU protected.
-  */
--int rhashtable_expand(struct rhashtable *ht, gfp_t flags)
-+int rhashtable_expand(struct rhashtable *ht)
- {
- 	struct bucket_table *new_tbl, *old_tbl = rht_dereference(ht->tbl, ht);
- 	struct rhash_head *he;
-@@ -223,7 +222,7 @@ int rhashtable_expand(struct rhashtable *ht, gfp_t flags)
- 	if (ht->p.max_shift && ht->shift >= ht->p.max_shift)
- 		return 0;
- 
--	new_tbl = bucket_table_alloc(old_tbl->size * 2, flags);
-+	new_tbl = bucket_table_alloc(old_tbl->size * 2);
- 	if (new_tbl == NULL)
- 		return -ENOMEM;
- 
-@@ -281,7 +280,6 @@ EXPORT_SYMBOL_GPL(rhashtable_expand);
- /**
-  * rhashtable_shrink - Shrink hash table while allowing concurrent lookups
-  * @ht:		the hash table to shrink
-- * @flags:	allocation flags
-  *
-  * This function may only be called in a context where it is safe to call
-  * synchronize_rcu(), e.g. not within a rcu_read_lock() section.
-@@ -289,7 +287,7 @@ EXPORT_SYMBOL_GPL(rhashtable_expand);
-  * The caller must ensure that no concurrent table mutations take place.
-  * It is however valid to have concurrent lookups if they are RCU protected.
-  */
--int rhashtable_shrink(struct rhashtable *ht, gfp_t flags)
-+int rhashtable_shrink(struct rhashtable *ht)
- {
- 	struct bucket_table *ntbl, *tbl = rht_dereference(ht->tbl, ht);
- 	struct rhash_head __rcu **pprev;
-@@ -300,7 +298,7 @@ int rhashtable_shrink(struct rhashtable *ht, gfp_t flags)
- 	if (ht->shift <= ht->p.min_shift)
- 		return 0;
- 
--	ntbl = bucket_table_alloc(tbl->size / 2, flags);
-+	ntbl = bucket_table_alloc(tbl->size / 2);
- 	if (ntbl == NULL)
- 		return -ENOMEM;
- 
-@@ -341,7 +339,6 @@ EXPORT_SYMBOL_GPL(rhashtable_shrink);
-  * rhashtable_insert - insert object into hash hash table
-  * @ht:		hash table
-  * @obj:	pointer to hash head inside object
-- * @flags:	allocation flags (table expansion)
-  *
-  * Will automatically grow the table via rhashtable_expand() if the the
-  * grow_decision function specified at rhashtable_init() returns true.
-@@ -349,8 +346,7 @@ EXPORT_SYMBOL_GPL(rhashtable_shrink);
-  * The caller must ensure that no concurrent table mutations occur. It is
-  * however valid to have concurrent lookups if they are RCU protected.
-  */
--void rhashtable_insert(struct rhashtable *ht, struct rhash_head *obj,
--		       gfp_t flags)
-+void rhashtable_insert(struct rhashtable *ht, struct rhash_head *obj)
- {
- 	struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
- 	u32 hash;
-@@ -363,7 +359,7 @@ void rhashtable_insert(struct rhashtable *ht, struct rhash_head *obj,
- 	ht->nelems++;
- 
- 	if (ht->p.grow_decision && ht->p.grow_decision(ht, tbl->size))
--		rhashtable_expand(ht, flags);
-+		rhashtable_expand(ht);
- }
- EXPORT_SYMBOL_GPL(rhashtable_insert);
- 
-@@ -372,14 +368,13 @@ EXPORT_SYMBOL_GPL(rhashtable_insert);
-  * @ht:		hash table
-  * @obj:	pointer to hash head inside object
-  * @pprev:	pointer to previous element
-- * @flags:	allocation flags (table expansion)
-  *
-  * Identical to rhashtable_remove() but caller is alreayd aware of the element
-  * in front of the element to be deleted. This is in particular useful for
-  * deletion when combined with walking or lookup.
-  */
- void rhashtable_remove_pprev(struct rhashtable *ht, struct rhash_head *obj,
--			     struct rhash_head __rcu **pprev, gfp_t flags)
-+			     struct rhash_head __rcu **pprev)
- {
- 	struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
- 
-@@ -390,7 +385,7 @@ void rhashtable_remove_pprev(struct rhashtable *ht, struct rhash_head *obj,
- 
- 	if (ht->p.shrink_decision &&
- 	    ht->p.shrink_decision(ht, tbl->size))
--		rhashtable_shrink(ht, flags);
-+		rhashtable_shrink(ht);
- }
- EXPORT_SYMBOL_GPL(rhashtable_remove_pprev);
- 
-@@ -398,7 +393,6 @@ EXPORT_SYMBOL_GPL(rhashtable_remove_pprev);
-  * rhashtable_remove - remove object from hash table
-  * @ht:		hash table
-  * @obj:	pointer to hash head inside object
-- * @flags:	allocation flags (table expansion)
-  *
-  * Since the hash chain is single linked, the removal operation needs to
-  * walk the bucket chain upon removal. The removal operation is thus
-@@ -410,8 +404,7 @@ EXPORT_SYMBOL_GPL(rhashtable_remove_pprev);
-  * The caller must ensure that no concurrent table mutations occur. It is
-  * however valid to have concurrent lookups if they are RCU protected.
-  */
--bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *obj,
--		       gfp_t flags)
-+bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *obj)
- {
- 	struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
- 	struct rhash_head __rcu **pprev;
-@@ -429,7 +422,7 @@ bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *obj,
- 			continue;
- 		}
- 
--		rhashtable_remove_pprev(ht, he, pprev, flags);
-+		rhashtable_remove_pprev(ht, he, pprev);
- 		return true;
- 	}
- 
-@@ -572,7 +565,7 @@ int rhashtable_init(struct rhashtable *ht, struct rhashtable_params *params)
- 	if (params->nelem_hint)
- 		size = rounded_hashtable_size(params);
- 
--	tbl = bucket_table_alloc(size, GFP_KERNEL);
-+	tbl = bucket_table_alloc(size);
- 	if (tbl == NULL)
- 		return -ENOMEM;
- 
-@@ -707,7 +700,7 @@ static int __init test_rhashtable(struct rhashtable *ht)
- 		obj->ptr = TEST_PTR;
- 		obj->value = i * 2;
- 
--		rhashtable_insert(ht, &obj->node, GFP_KERNEL);
-+		rhashtable_insert(ht, &obj->node);
- 	}
- 
- 	rcu_read_lock();
-@@ -718,7 +711,7 @@ static int __init test_rhashtable(struct rhashtable *ht)
- 
- 	for (i = 0; i < TEST_NEXPANDS; i++) {
- 		pr_info("  Table expansion iteration %u...\n", i);
--		rhashtable_expand(ht, GFP_KERNEL);
-+		rhashtable_expand(ht);
- 
- 		rcu_read_lock();
- 		pr_info("  Verifying lookups...\n");
-@@ -728,7 +721,7 @@ static int __init test_rhashtable(struct rhashtable *ht)
- 
- 	for (i = 0; i < TEST_NEXPANDS; i++) {
- 		pr_info("  Table shrinkage iteration %u...\n", i);
--		rhashtable_shrink(ht, GFP_KERNEL);
-+		rhashtable_shrink(ht);
- 
- 		rcu_read_lock();
- 		pr_info("  Verifying lookups...\n");
-@@ -743,7 +736,7 @@ static int __init test_rhashtable(struct rhashtable *ht)
- 		obj = rhashtable_lookup(ht, &key);
- 		BUG_ON(!obj);
- 
--		rhashtable_remove(ht, &obj->node, GFP_KERNEL);
-+		rhashtable_remove(ht, &obj->node);
- 		kfree(obj);
- 	}
- 
-diff --git a/net/netfilter/nft_hash.c b/net/netfilter/nft_hash.c
-index 8892b7b..2501187 100644
---- a/net/netfilter/nft_hash.c
-+++ b/net/netfilter/nft_hash.c
-@@ -65,7 +65,7 @@ static int nft_hash_insert(const struct nft_set *set,
- 	if (set->flags & NFT_SET_MAP)
- 		nft_data_copy(he->data, &elem->data);
- 
--	rhashtable_insert(priv, &he->node, GFP_KERNEL);
-+	rhashtable_insert(priv, &he->node);
- 
- 	return 0;
- }
-@@ -88,7 +88,7 @@ static void nft_hash_remove(const struct nft_set *set,
- 	pprev = elem->cookie;
- 	he = rht_dereference((*pprev), priv);
- 
--	rhashtable_remove_pprev(priv, he, pprev, GFP_KERNEL);
-+	rhashtable_remove_pprev(priv, he, pprev);
- 
- 	synchronize_rcu();
- 	kfree(he);
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 580b794..756fc14 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1092,7 +1092,7 @@ static int netlink_insert(struct sock *sk, struct net *net, u32 portid)
- 
- 	nlk_sk(sk)->portid = portid;
- 	sock_hold(sk);
--	rhashtable_insert(&table->hash, &nlk_sk(sk)->node, GFP_KERNEL);
-+	rhashtable_insert(&table->hash, &nlk_sk(sk)->node);
- 	err = 0;
- err:
- 	mutex_unlock(&nl_sk_hash_lock);
-@@ -1105,7 +1105,7 @@ static void netlink_remove(struct sock *sk)
- 
- 	mutex_lock(&nl_sk_hash_lock);
- 	table = &nl_table[sk->sk_protocol];
--	if (rhashtable_remove(&table->hash, &nlk_sk(sk)->node, GFP_KERNEL)) {
-+	if (rhashtable_remove(&table->hash, &nlk_sk(sk)->node)) {
- 		WARN_ON(atomic_read(&sk->sk_refcnt) == 1);
- 		__sock_put(sk);
- 	}
--- 
-1.9.3
+What about this scenario, with pageblock order:
+
+- record cc->migrate_pfn pointing to pageblock X
+- isolate_migratepages() skips the pageblock due to e.g. skip bit, or 
+the pageblock being a THP already...
+- loop to pageblock X+1, last_migrated_pfn is still set to pfn of 
+pageblock X (more precisely the pfn is (X << pageblock_order) - 1 per 
+your code, but doesn't matter)
+- isolate_migratepages isolates something, but ends up somewhere in the 
+middle of pageblock due to COMPACT_CLUSTER_MAX
+- cc->migrate_pfn points to pageblock X+1 (plus some pages it scanned)
+- so it will decide that it has fully migrated pageblock X and it's time 
+to drain. But the drain is most likely useless - we didn't migrate 
+anything in pageblock X, we skipped it. And in X+1 we didn't migrate 
+everything yet, so we should drain only after finishing the other part 
+of the pageblock.
+
+In short, "last_migrated_pfn" is not "last position of migrate scanner" 
+but "last block where we *actually* migrated".
+
+I think if you would try to fix the scenario above, you would end up 
+with something like my patch :)
+
+Vlastimil
+
+> Thanks.
+>
 
