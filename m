@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537AbaKMKgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:36:23 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30669 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215AbaKMKgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:36:21 -0500
-Date: Thu, 13 Nov 2014 13:36:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Octavian Purdila <octavian.purdila@intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch 2/2 -next] mfd: dln2: a couple endian fixes
-Message-ID: <20141113103607.GB17038@mwanda>
+	id S932515AbaKMKhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:37:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8294 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932174AbaKMKhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 05:37:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,376,1413270000"; 
+   d="scan'208";a="607164216"
+Message-ID: <1415874993.14686.434.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
+From: Matt Fleming <matt.fleming@intel.com>
+To: Borislav Petkov <bp@suse.de>
+CC: Dave Hansen <dave.hansen@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Nov 2014 10:36:33 +0000
+In-Reply-To: <20141112172513.GC17793@pd.tnic>
+References: <5462999A.7090706@intel.com>
+	 <1415784298.14686.323.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <54637576.7030004@intel.com> <20141112151106.GB17793@pd.tnic>
+	 <54637AD5.6060300@intel.com> <20141112172513.GC17793@pd.tnic>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [163.33.239.180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse catches a couple endian bugs.
+On Wed, 2014-11-12 at 18:25 +0100, Borislav Petkov wrote:
+> 
+> But before we do that: Matt, why do we need the kernel text mapped 1:1
+> in the EFI page table at all?
+> 
+> You've added this with
+> 
+> 4f9dbcfc4029 ("x86/efi: Add mixed runtime services support")
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-Not tested.
+So that when we switch into 32-bit mode we can still access the kernel
+text via the 1:1 mapping in protected mode.
 
-diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
-index 3101e5e..babf7b6 100644
---- a/drivers/mfd/dln2.c
-+++ b/drivers/mfd/dln2.c
-@@ -437,6 +437,7 @@ static int _dln2_transfer(struct dln2_dev *dln2, u16 handle, u16 cmd,
- 	struct device *dev = &dln2->interface->dev;
- 	const unsigned long timeout = DLN2_USB_TIMEOUT * HZ / 1000;
- 	struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
-+	int size;
- 
- 	spin_lock(&dln2->disconnect_lock);
- 	if (!dln2->disconnect)
-@@ -476,8 +477,9 @@ static int _dln2_transfer(struct dln2_dev *dln2, u16 handle, u16 cmd,
- 
- 	/* if we got here we know that the response header has been checked */
- 	rsp = rxc->urb->transfer_buffer;
-+	size = le16_to_cpu(rsp->hdr.size);
- 
--	if (rsp->hdr.size < sizeof(*rsp)) {
-+	if (size < sizeof(*rsp)) {
- 		ret = -EPROTO;
- 		goto out_free_rx_slot;
- 	}
-@@ -494,8 +496,8 @@ static int _dln2_transfer(struct dln2_dev *dln2, u16 handle, u16 cmd,
- 		goto out_free_rx_slot;
- 	}
- 
--	if (*ibuf_len > rsp->hdr.size - sizeof(*rsp))
--		*ibuf_len = rsp->hdr.size - sizeof(*rsp);
-+	if (*ibuf_len > size - sizeof(*rsp))
-+		*ibuf_len = size - sizeof(*rsp);
- 
- 	memcpy(ibuf, rsp + 1, *ibuf_len);
- 
