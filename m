@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399AbaKMJMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:12:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065AbaKMJMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:12:41 -0500
-Message-ID: <546475FB.800@redhat.com>
-Date: Thu, 13 Nov 2014 17:12:27 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932430AbaKMJNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:13:00 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:56851 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074AbaKMJMu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 04:12:50 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm 1/2] memcg: only check memcg_kmem_skip_account in __memcg_kmem_get_cache
+Date: Thu, 13 Nov 2014 12:12:42 +0300
+Message-ID: <c07e576c9b76c00fbcc1978f9659bf5b83513d14.1415868622.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-CC: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] virtio-net: fix buggy features advertised by host
-References: <1415857974-23326-1-git-send-email-jasowang@redhat.com>	<1415857974-23326-2-git-send-email-jasowang@redhat.com> <20141113095326.3e296c77.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141113095326.3e296c77.cornelia.huck@de.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2014 04:53 PM, Cornelia Huck wrote:
-> On Thu, 13 Nov 2014 13:52:54 +0800
-> Jason Wang <jasowang@redhat.com> wrote:
->
->> This patch tries to detect the possible buggy features advertised by host
->> and fix them. One example is booting virtio-net with only ctrl_vq disabled,
->> qemu may still advertise many features which depends on it. This will
->> trigger several BUG()s in virtnet_send_command().
->>
->> This patch utilizes the fix_features() method, and disables all features that
->> depends on ctrl_vq if it was not advertised.
->>
->> This fixes the crash when booting with ctrl_vq=off.
-> That's a qemu device property, right? Might want to mention that, as
-> this line sounds like it is a kernel parameter.
+__memcg_kmem_get_cache can recurse if it calls kmalloc (which it does if
+the cgroup's kmem cache doesn't exist), because kmalloc may call
+__memcg_kmem_get_cache internally again. To avoid the recursion, we use
+the task_struct->memcg_kmem_skip_account flag.
 
-Right, ok.
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: Michael S. Tsirkin <mst@redhat.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->> Changes from V1:
->> - fix the cut-and-paste error
->> ---
->>  drivers/net/virtio_net.c | 35 +++++++++++++++++++++++++++++++++++
->>  1 file changed, 35 insertions(+)
->>
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index ec2a8b4..6ce125e 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -1948,6 +1948,40 @@ static int virtnet_restore(struct virtio_device *vdev)
->>  }
->>  #endif
->>
->> +static void virtnet_fix_features(struct virtio_device *dev)
->> +{
->> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
->> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_RX)) {
->> +			pr_warning("Disable VIRTIO_NET_F_CTRL_RX since host "
->> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
->> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
->> +		}
-> You should probably use dev_warn() or so, so that the user can figure
-> out which device the message is for. And perhaps add "buggy hypervisor"
-> to the message to make clear that it's not a guest problem.
+However, there's no need checking the flag in memcg_kmem_newpage_charge,
+because there's no way how this function could result in recursion, if
+called from memcg_kmem_get_cache. So let's remove the redundant code.
 
-Ok.
-> I also like the suggestion to use a dependency array.
->
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/memcontrol.c |   28 ----------------------------
+ 1 file changed, 28 deletions(-)
 
-Yes, will do it in next version.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index bb8c237026cc..d9fab72da52e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2905,34 +2905,6 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
+ 
+ 	*_memcg = NULL;
+ 
+-	/*
+-	 * Disabling accounting is only relevant for some specific memcg
+-	 * internal allocations. Therefore we would initially not have such
+-	 * check here, since direct calls to the page allocator that are
+-	 * accounted to kmemcg (alloc_kmem_pages and friends) only happen
+-	 * outside memcg core. We are mostly concerned with cache allocations,
+-	 * and by having this test at memcg_kmem_get_cache, we are already able
+-	 * to relay the allocation to the root cache and bypass the memcg cache
+-	 * altogether.
+-	 *
+-	 * There is one exception, though: the SLUB allocator does not create
+-	 * large order caches, but rather service large kmallocs directly from
+-	 * the page allocator. Therefore, the following sequence when backed by
+-	 * the SLUB allocator:
+-	 *
+-	 *	memcg_stop_kmem_account();
+-	 *	kmalloc(<large_number>)
+-	 *	memcg_resume_kmem_account();
+-	 *
+-	 * would effectively ignore the fact that we should skip accounting,
+-	 * since it will drive us directly to this function without passing
+-	 * through the cache selector memcg_kmem_get_cache. Such large
+-	 * allocations are extremely rare but can happen, for instance, for the
+-	 * cache arrays. We bring this test here.
+-	 */
+-	if (current->memcg_kmem_skip_account)
+-		return true;
+-
+ 	memcg = get_mem_cgroup_from_mm(current->mm);
+ 
+ 	if (!memcg_kmem_is_active(memcg)) {
+-- 
+1.7.10.4
+
