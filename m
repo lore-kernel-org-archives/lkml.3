@@ -1,96 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934047AbaKMUiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 15:38:22 -0500
-Received: from smtprelay0211.hostedemail.com ([216.40.44.211]:57598 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932684AbaKMUiV (ORCPT
+	id S934118AbaKMUit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 15:38:49 -0500
+Received: from mail-bn1bn0105.outbound.protection.outlook.com ([157.56.110.105]:49431
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932684AbaKMUis convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 15:38:21 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:2899:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:5007:6261:7903:8660:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13019:13095:13138:13148:13149:13230:13231:14096:14097:21063:21080:21094,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bells81_e54cebe94360
-X-Filterd-Recvd-Size: 3928
-Message-ID: <1415911097.4223.13.camel@perches.com>
-Subject: Re: [PATCH] audit: convert status version to a feature bitmap
-From: Joe Perches <joe@perches.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, sgrubb@redhat.com,
-        eparis@parisplace.org, pmoore@redhat.com
-Date: Thu, 13 Nov 2014 12:38:17 -0800
-In-Reply-To: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com>
-References: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Nov 2014 15:38:48 -0500
+X-WSS-ID: 0NEZW0J-07-QXV-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: Joe Perches <joe@perches.com>
+CC: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Oded Gabbay <oded.gabbay@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Jean Delvare <khali@linux-fr.org>, Christoph Lameter <cl@gentwo.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Sebastian Reichel <sre@debian.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Antti Palosaari <crope@iki.fi>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH v6 06/24] Update MAINTAINERS and CREDITS files with amdkfd info
+Date: Thu, 13 Nov 2014 22:38:01 +0200
+Message-ID: <1415911096-16577-1-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+X-Originating-IP: [10.180.168.240]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(979002)(6009001)(428002)(199003)(189002)(36756003)(64706001)(47776003)(105586002)(68736004)(106466001)(53416004)(20776003)(50466002)(44976005)(19580395003)(19580405001)(99396003)(120916001)(46102003)(33646002)(107046002)(50986999)(102836001)(104166001)(77096003)(62966003)(93916002)(101416001)(89996001)(23676002)(88136002)(92566001)(87286001)(87936001)(86362001)(92726001)(77156002)(97736003)(21056001)(4396001)(95666004)(50226001)(110136001)(84676001)(229853001)(31966008)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-Forefront-PRVS: 0394259C80
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-13 at 15:29 -0500, Richard Guy Briggs wrote:
-> The version field defined in the audit status structure was found to have
-> limitations in terms of its expressibility of features supported.  This is
-> distict from the get/set features call to be able to command those features
-> that are present.
-> 
-> Converting this field from a version number to a feature bitmap will allow
-> distributions to selectively backport and support certain features and will
-> allow upstream to be able to deprecate features in the future.  It will allow
-> userspace clients to first query the kernel for which features are actually
-> present and supported.  Currently, EINVAL is returned rather than EOPNOTSUP,
-> which isn't helpful in determining if there was an error in the command, or if
-> it simply isn't supported yet.  Past features are not represented by this
-> bitmap, but their use may be converted to EOPNOTSUP if needed in the future.
+v6: Update entries to reflect new name & location of driver
 
-Maybe use DECLARE_BITMAP instead of u32 and test_bit/set_bit
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ CREDITS     |  7 +++++++
+ MAINTAINERS | 10 ++++++++++
+ 2 files changed, 17 insertions(+)
 
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-
-> @@ -322,9 +322,15 @@ enum {
->  #define AUDIT_STATUS_BACKLOG_LIMIT	0x0010
->  #define AUDIT_STATUS_BACKLOG_WAIT_TIME	0x0020
->  
-> -#define AUDIT_VERSION_BACKLOG_LIMIT	1
-> -#define AUDIT_VERSION_BACKLOG_WAIT_TIME	2
-> -#define AUDIT_VERSION_LATEST AUDIT_VERSION_BACKLOG_WAIT_TIME
-> +#define AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT	0x00000001
-> +#define AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME	0x00000002
-> +#define AUDIT_FEATURE_BITMAP (	AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT     | \
-> +				AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME   )
-> +
-> +/* deprecated: AUDIT_VERSION_* */
-> +#define AUDIT_VERSION_LATEST 		AUDIT_FEATURE_BITMAP
-> +#define AUDIT_VERSION_BACKLOG_LIMIT	AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT
-> +#define AUDIT_VERSION_BACKLOG_WAIT_TIME	AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME
->  
->  				/* Failure-to-log actions */
->  #define AUDIT_FAIL_SILENT	0
-> @@ -403,7 +409,10 @@ struct audit_status {
->  	__u32		backlog_limit;	/* waiting messages limit */
->  	__u32		lost;		/* messages lost */
->  	__u32		backlog;	/* messages waiting in queue */
-> -	__u32		version;	/* audit api version number */
-> +	union {
-> +		__u32	version;	/* deprecated: audit api version num */
-> +		__u32	feature_bitmap;	/* bitmap of kernel audit features */
-> +	};
->  	__u32		backlog_wait_time;/* message queue wait timeout */
->  };
->  
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 8ee4508..c9d0e30 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -842,7 +842,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  		s.backlog_limit		= audit_backlog_limit;
->  		s.lost			= atomic_read(&audit_lost);
->  		s.backlog		= skb_queue_len(&audit_skb_queue);
-> -		s.version		= AUDIT_VERSION_LATEST;
-> +		s.feature_bitmap	= AUDIT_FEATURE_BITMAP;
->  		s.backlog_wait_time	= audit_backlog_wait_time;
->  		audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &s, sizeof(s));
->  		break;
-
-
+diff --git a/CREDITS b/CREDITS
+index bb62788..c56d8aa 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -1197,6 +1197,13 @@ S: R. Tocantins, 89 - Cristo Rei
+ S: 80050-430 - Curitiba - Paraná
+ S: Brazil
+ 
++N: Oded Gabbay
++E: oded.gabbay@gmail.com
++D: AMD KFD maintainer
++S: 12 Shraga Raphaeli
++S: Petah-Tikva, 4906418
++S: Israel
++
+ N: Kumar Gala
+ E: galak@kernel.crashing.org
+ D: Embedded PowerPC 6xx/7xx/74xx/82xx/83xx/85xx support
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ea4d005..3c69a3c7 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -618,6 +618,16 @@ S:	Maintained
+ F:	drivers/iommu/amd_iommu*.[ch]
+ F:	include/linux/amd-iommu.h
+ 
++AMD KFD
++M:      Oded Gabbay <oded.gabbay@amd.com>
++L:      dri-devel@lists.freedesktop.org
++T:      git git://people.freedesktop.org/~gabbayo/linux.git
++S:      Supported
++F:      drivers/gpu/drm/amd/amdkfd/
++F:      drivers/gpu/drm/radeon/radeon_kfd.c
++F:      drivers/gpu/drm/radeon/radeon_kfd.h
++F:      include/uapi/linux/kfd_ioctl.h
++
+ AMD MICROCODE UPDATE SUPPORT
+ M:	Andreas Herrmann <herrmann.der.user@googlemail.com>
+ L:	amd64-microcode@amd64.org
+-- 
+2.1.0
 
