@@ -1,172 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaKMGQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 01:16:39 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54247 "EHLO arroyo.ext.ti.com"
+	id S1753586AbaKMGXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 01:23:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54138 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981AbaKMGQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 01:16:38 -0500
-Message-ID: <54644C92.8000900@ti.com>
-Date: Thu, 13 Nov 2014 11:45:46 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751044AbaKMGXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 01:23:09 -0500
+Message-ID: <54644E48.3040506@suse.com>
+Date: Thu, 13 Nov 2014 07:23:04 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Mark Rutland <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/6] phy: add support for USB cluster on the Armada
- 375 SoC
-References: <1415786237-21985-1-git-send-email-gregory.clement@free-electrons.com> <1415786237-21985-5-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1415786237-21985-5-git-send-email-gregory.clement@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 2/8] xen: Delay remapping memory of pv-domain
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-3-git-send-email-jgross@suse.com> <20141112214506.GA5922@laptop.dumpdata.com>
+In-Reply-To: <20141112214506.GA5922@laptop.dumpdata.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/12/2014 10:45 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Nov 11, 2014 at 06:43:40AM +0100, Juergen Gross wrote:
+>> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+>> index a8a1a3d..d3e492b 100644
+>> --- a/arch/x86/xen/mmu.c
+>> +++ b/arch/x86/xen/mmu.c
+>> @@ -1223,6 +1223,10 @@ static void __init xen_pagetable_init(void)
+>>   	/* Allocate and initialize top and mid mfn levels for p2m structure */
+>>   	xen_build_mfn_list_list();
+>>
+>> +	/* Remap memory freed because of conflicts with E820 map */
+>
+> s/becasue of/due to
 
-On Wednesday 12 November 2014 03:27 PM, Gregory CLEMENT wrote:
-> The Armada 375 SoC comes with an USB2 host and device controller and
-> an USB3 controller. The USB cluster control register allows to manage
-> common features of both USB controllers.
-> 
-> This commit adds a driver integrated in the generic PHY framework to
-> control this USB cluster feature.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> ---
->  drivers/phy/Kconfig              |   6 ++
->  drivers/phy/Makefile             |   1 +
->  drivers/phy/phy-armada375-usb2.c | 145 +++++++++++++++++++++++++++++++++++++++
->  include/dt-bindings/phy/phy.h    |   1 +
->  4 files changed, 153 insertions(+)
->  create mode 100644 drivers/phy/phy-armada375-usb2.c
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index 2a436e607f99..625adb0abd43 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -21,6 +21,12 @@ config PHY_BERLIN_SATA
->  	select GENERIC_PHY
->  	help
->  	  Enable this to support the SATA PHY on Marvell Berlin SoCs.
-> +config ARMADA375_USBCLUSTER_PHY
-> +	def_bool y
-> +	depends on MACH_ARMADA_375 || COMPILE_TEST
-> +	depends on OF
-> +	select GENERIC_PHY
-> +
->  
->  config PHY_EXYNOS_MIPI_VIDEO
->  	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index c4590fce082f..26b5633f378a 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -4,6 +4,7 @@
->  
->  obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
->  obj-$(CONFIG_PHY_BERLIN_SATA)		+= phy-berlin-sata.o
-> +obj-$(CONFIG_ARMADA375_USBCLUSTER_PHY)	+= phy-armada375-usb2.o
->  obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
->  obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
->  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
-> diff --git a/drivers/phy/phy-armada375-usb2.c b/drivers/phy/phy-armada375-usb2.c
-> new file mode 100644
-> index 000000000000..d22fed4761f4
-> --- /dev/null
-> +++ b/drivers/phy/phy-armada375-usb2.c
-> @@ -0,0 +1,145 @@
-> +/*
-> + * USB cluster support for Armada 375 platform.
-> + *
-> + * Copyright (C) 2014 Marvell
-> + *
-> + * Gregory CLEMENT <gregory.clement@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2 or later. This program is licensed "as is"
-> + * without any warranty of any kind, whether express or implied.
-> + *
-> + * Armada 375 comes with an USB2 host and device controller and an
-> + * USB3 controller. The USB cluster control register allows to manage
-> + * common features of both USB controllers.
-> + */
-> +
-> +#include <dt-bindings/phy/phy.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of_address.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +
-> +#define USB2_PHY_CONFIG_DISABLE BIT(0)
-> +
-> +struct armada375_cluster_phy {
-> +	struct phy *phy;
-> +	void __iomem *reg;
-> +	bool use_usb3;
-> +	int phy_provided;
-> +};
-> +
-> +static struct armada375_cluster_phy usb_cluster_phy;
+Okay.
 
-don't use global variables.
-> +
-> +static int armada375_usb_phy_init(struct phy *phy)
-> +{
-> +	struct armada375_cluster_phy *cluster_phy = phy_get_drvdata(phy);
-> +	u32 reg;
-> +
-> +	reg = readl(cluster_phy->reg);
-> +	if (cluster_phy->use_usb3)
-> +		reg |= USB2_PHY_CONFIG_DISABLE;
-> +	else
-> +		reg &= ~USB2_PHY_CONFIG_DISABLE;
-> +	writel(reg, cluster_phy->reg);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct phy_ops armada375_usb_phy_ops = {
-> +	.init = armada375_usb_phy_init,
-> +	.owner = THIS_MODULE,
-> +};
-> +
-> +/*
-> + * Only one controller can use this PHY. We shouldn't have the case
-> + * when two controllers want to use this PHY. But if this case occurs
-> + * then we provide a phy to the first one and return an error for the
-> + * next one. This error has also to be an error returned by
-> + * devm_phy_optional_get() so different from ENODEV for USB2. In the
-> + * USB3 case it still optional and we use ENODEV.
-> + */
-> +static struct phy *armada375_usb_phy_xlate(struct device *dev,
-> +					struct of_phandle_args *args)
-> +{
-> +
-> +    /*
-> +     * Either the phy had never been requested and then the first usb
-> +     * claiming it can get it, or it had already been requested in
-> +     * this case, we only allow to use it with the same configuration.
-> +     */
+>>   	/* Boundary cross-over for the edges: */
+>> -	p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
+>> +	p2m = alloc_p2m_page();
+>>
+>>   	p2m_init(p2m);
+>>
+>> @@ -640,7 +651,7 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn)
+>>
+>>   	mid = p2m_top[topidx];
+>>   	if (mid == p2m_mid_missing) {
+>> -		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
+>> +		mid = alloc_p2m_page();
+>>
+>>   		p2m_mid_init(mid, p2m_missing);
+>>
+>> @@ -649,100 +660,6 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn)
+>>   	return true;
+>>   }
+>>
+>
+> I would split this patch in two - one for the extend_brk/alloc_page conversation
+> to alloc_p2m_page and free_page to free_p2m_page.
 
-You can dynamically create usb_cluster_phy in probe and then invoke
-platform_set_drvdata by passing *usb_cluster_phy. Then you can invoke
-platform_get_drvdata here to get *usb_cluster_phy.
+Okay.
 
-While fixing this also add yourself as Maintainer of this file.
+>> -/* Buffer used to remap identity mapped pages */
+>> -unsigned long xen_remap_buf[P2M_PER_PAGE] __initdata;
+>> +/*
+>> + * Buffer used to remap identity mapped pages. We only need the virtual space.
+>
+> Could you expand on the 'need the virtual space'?
 
-Thanks
-Kishon
+I'll update the comment to:
+
+/*
+  * Buffer used to remap identity mapped pages. We only need the virtual
+  * space. The physical page behind this address is remapped as needed to
+  * different buffer pages.
+  */
+
+>
+>
+> .. snip..
+>>   /*
+>>    * This function updates the p2m and m2p tables with an identity map from
+>> - * start_pfn to start_pfn+size and remaps the underlying RAM of the original
+>> - * allocation at remap_pfn. It must do so carefully in P2M_PER_PAGE sized blocks
+>> - * to not exhaust the reserved brk space. Doing it in properly aligned blocks
+>> - * ensures we only allocate the minimum required leaf pages in the p2m table. It
+>> - * copies the existing mfns from the p2m table under the 1:1 map, overwrites
+>> - * them with the identity map and then updates the p2m and m2p tables with the
+>> - * remapped memory.
+>> + * start_pfn to start_pfn+size and prepares remapping the underlying RAM of the
+>> + * original allocation at remap_pfn. The information needed for remapping is
+>> + * saved in the memory itself to avoid the need for allocating buffers. The
+>> + * complete remap information is contained in a list of MFNs each containing
+>> + * up to REMAP_SIZE MFNs and the start target PFN for doing the remap.
+>> + * This enables to preserve the original mfn sequence while doing the remapping
+>
+> us to
+
+Yep.
+
+>> + * at a time when the memory management is capable of allocating virtual and
+>> + * physical memory in arbitrary amounts.
+>
+> You might want to add, see 'xen_remap_memory' and its callers.
+
+Okay.
+
+>> -		/* These two checks move from the start to end boundaries */
+>> -		if (ident_boundary_pfn == ident_start_pfn_align)
+>> -			ident_boundary_pfn = ident_pfn_iter;
+>> -		if (remap_boundary_pfn == remap_start_pfn_align)
+>> -			remap_boundary_pfn = remap_pfn_iter;
+>> +		/* Map first pfn to xen_remap_buf */
+>> +		mfn = pfn_to_mfn(ident_pfn_iter);
+>> +		set_pte_mfn(buf, mfn, PAGE_KERNEL);
+>
+> So you set the buf to be point to 'mfn'.
+
+Correct.
+
+>>
+>> -		/* Check we aren't past the end */
+>> -		BUG_ON(ident_boundary_pfn >= start_pfn + size);
+>> -		BUG_ON(remap_boundary_pfn >= remap_pfn + size);
+>> +		/* Save mapping information in page */
+>> +		xen_remap_buf.next_area_mfn = xen_remap_mfn;
+>> +		xen_remap_buf.target_pfn = remap_pfn_iter;
+>> +		xen_remap_buf.size = chunk;
+>> +		for (i = 0; i < chunk; i++)
+>> +			xen_remap_buf.mfns[i] = pfn_to_mfn(ident_pfn_iter + i);
+>>
+>> -		mfn = pfn_to_mfn(ident_boundary_pfn);
+>> +		/* New element first in list */
+>
+> I don't get that comment. Don't you mean the MFN of the last chunk you
+> had stashed the 'xen_remap_buf' structure in?
+>
+> The 'xen_remap_mfn' ends up being the the tail value of this
+> "list".
+
+I'll redo the comment:
+
+/* Put remap buf into list. */
+
+>> +/*
+>> + * Remap the memory prepared in xen_do_set_identity_and_remap_chunk().
+>> + */
+>> +void __init xen_remap_memory(void)
+>> +{
+>> +	unsigned long buf = (unsigned long)&xen_remap_buf;
+>> +	unsigned long mfn_save, mfn, pfn;
+>> +	unsigned long remapped = 0, released = 0;
+>> +	unsigned int i, free;
+>> +	unsigned long pfn_s = ~0UL;
+>> +	unsigned long len = 0;
+>> +
+>> +	mfn_save = virt_to_mfn(buf);
+>> +
+>> +	while (xen_remap_mfn != INVALID_P2M_ENTRY) {
+>
+> So the 'list' is constructed by going forward - that is from low-numbered
+> PFNs to higher numbered ones. But the 'xen_remap_mfn' is going the
+> other way - from the highest PFN to the lowest PFN.
+>
+> Won't that mean we will restore the chunks of memory in the wrong
+> order? That is we will still restore them in chunks size, but the
+> chunks will be in descending order instead of ascending?
+
+No, the information where to put each chunk is contained in the chunk
+data. I can add a comment explaining this.
+
+>
+>> +		/* Map the remap information */
+>> +		set_pte_mfn(buf, xen_remap_mfn, PAGE_KERNEL);
+>> +
+>> +		BUG_ON(xen_remap_mfn != xen_remap_buf.mfns[0]);
+>> +
+>> +		free = 0;
+>> +		pfn = xen_remap_buf.target_pfn;
+>> +		for (i = 0; i < xen_remap_buf.size; i++) {
+>> +			mfn = xen_remap_buf.mfns[i];
+>> +			if (!released && xen_update_mem_tables(pfn, mfn)) {
+>> +				remapped++;
+>
+> If we fail 'xen_update_mem_tables' we will on the next chunk (so i+1) keep on
+> freeing pages instead of trying to remap. Is that intentional? Could we
+> try to remap?
+
+Hmm, I'm not sure this is worth the effort. What could lead to failure
+here? I suspect we could even just BUG() on failure. What do you think?
+
+
+Juergen
+
