@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934144AbaKMT0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 14:26:09 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:43116 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933843AbaKMTZv (ORCPT
+	id S934086AbaKMTZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 14:25:36 -0500
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:53181 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934026AbaKMTZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 14:25:51 -0500
+	Thu, 13 Nov 2014 14:25:31 -0500
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        netdev@vger.kernel.org (open list:NETWORKING [GENERAL]),
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Rientjes <rientjes@google.com>, Joerg Roedel <jroedel@suse.de>,
+        NeilBrown <neilb@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
+        Paul McQuade <paulmcquad@gmail.com>,
+        linux-mm@kvack.org (open list:MEMORY MANAGEMENT),
         linux-kernel@vger.kernel.org (open list)
 Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH 16/16] rxrpc: Replace smp_read_barrier_depends() with lockless_dereference()
-Date: Thu, 13 Nov 2014 14:24:22 -0500
-Message-Id: <1415906662-4576-17-git-send-email-bobby.prani@gmail.com>
+Subject: [PATCH 13/16] ksm: Replace smp_read_barrier_depends() with lockless_dereference()
+Date: Thu, 13 Nov 2014 14:24:19 -0500
+Message-Id: <1415906662-4576-14-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
 References: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
@@ -29,77 +34,32 @@ hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- net/rxrpc/ar-ack.c | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ mm/ksm.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/net/rxrpc/ar-ack.c b/net/rxrpc/ar-ack.c
-index c6be17a..9237448 100644
---- a/net/rxrpc/ar-ack.c
-+++ b/net/rxrpc/ar-ack.c
-@@ -234,8 +234,7 @@ static void rxrpc_resend(struct rxrpc_call *call)
- 	     loop != call->acks_head || stop;
- 	     loop = (loop + 1) &  (call->acks_winsz - 1)
- 	     ) {
--		p_txb = call->acks_window + loop;
--		smp_read_barrier_depends();
-+		p_txb = lockless_dereference(call)->acks_window + loop;
- 		if (*p_txb & 1)
- 			continue;
- 
-@@ -303,8 +302,7 @@ static void rxrpc_resend_timer(struct rxrpc_call *call)
- 	     loop != call->acks_head;
- 	     loop = (loop + 1) &  (call->acks_winsz - 1)
- 	     ) {
--		p_txb = call->acks_window + loop;
--		smp_read_barrier_depends();
-+		p_txb = lockless_dereference(call)->acks_window + loop;
- 		txb = (struct sk_buff *) (*p_txb & ~1);
- 		sp = rxrpc_skb(txb);
- 
-@@ -354,9 +352,10 @@ static int rxrpc_process_soft_ACKs(struct rxrpc_call *call,
- 	resend = 0;
- 	resend_at = 0;
- 	for (loop = 0; loop < ack->nAcks; loop++) {
--		p_txb = call->acks_window;
--		p_txb += (call->acks_tail + loop) & (call->acks_winsz - 1);
--		smp_read_barrier_depends();
-+		struct rxrpc_call *callp = lockless_dereference(call);
+diff --git a/mm/ksm.c b/mm/ksm.c
+index d247efa..a67de79 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -542,15 +542,14 @@ static struct page *get_ksm_page(struct stable_node *stable_node, bool lock_it)
+ 	expected_mapping = (void *)stable_node +
+ 				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
+ again:
+-	kpfn = ACCESS_ONCE(stable_node->kpfn);
+-	page = pfn_to_page(kpfn);
+-
+ 	/*
+ 	 * page is computed from kpfn, so on most architectures reading
+ 	 * page->mapping is naturally ordered after reading node->kpfn,
+ 	 * but on Alpha we need to be more careful.
+ 	 */
+-	smp_read_barrier_depends();
++	kpfn = lockless_dereference(stable_node->kpfn);
++	page = pfn_to_page(kpfn);
 +
-+		p_txb = callp->acks_window;
-+		p_txb += (callp->acks_tail + loop) & (callp->acks_winsz - 1);
- 		txb = (struct sk_buff *) (*p_txb & ~1);
- 		sp = rxrpc_skb(txb);
+ 	if (ACCESS_ONCE(page->mapping) != expected_mapping)
+ 		goto stale;
  
-@@ -385,8 +384,7 @@ static int rxrpc_process_soft_ACKs(struct rxrpc_call *call,
- 	     loop != call->acks_head;
- 	     loop = (loop + 1) &  (call->acks_winsz - 1)
- 	     ) {
--		p_txb = call->acks_window + loop;
--		smp_read_barrier_depends();
-+		p_txb = lockless_dereference(call)->acks_window + loop;
- 		txb = (struct sk_buff *) (*p_txb & ~1);
- 		sp = rxrpc_skb(txb);
- 
-@@ -432,8 +430,7 @@ static void rxrpc_rotate_tx_window(struct rxrpc_call *call, u32 hard)
- 	ASSERTCMP(hard - call->acks_hard, <=, win);
- 
- 	while (call->acks_hard < hard) {
--		smp_read_barrier_depends();
--		_skb = call->acks_window[tail] & ~1;
-+		_skb = lockless_dereference(call)->acks_window[tail] & ~1;
- 		rxrpc_free_skb((struct sk_buff *) _skb);
- 		old_tail = tail;
- 		tail = (tail + 1) & (call->acks_winsz - 1);
-@@ -577,8 +574,7 @@ static void rxrpc_zap_tx_window(struct rxrpc_call *call)
- 	call->acks_window = NULL;
- 
- 	while (CIRC_CNT(call->acks_head, call->acks_tail, winsz) > 0) {
--		tail = call->acks_tail;
--		smp_read_barrier_depends();
-+		tail = lockless_dereference(call)->acks_tail;
- 		_skb = acks_window[tail] & ~1;
- 		smp_mb();
- 		call->acks_tail = (call->acks_tail + 1) & (winsz - 1);
 -- 
 1.9.1
 
