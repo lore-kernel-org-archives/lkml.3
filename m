@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295AbaKMOPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:15:10 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:64306 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933151AbaKMOPH (ORCPT
+	id S933315AbaKMOQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:16:12 -0500
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:57924 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932910AbaKMOQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:15:07 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH] fs: load FS modules before pinning the mountpoint
-Date: Thu, 13 Nov 2014 15:14:33 +0100
-Message-Id: <1415888073-1827-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Thu, 13 Nov 2014 09:16:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141113025544.GB9068@medulla.variantweb.net>
+References: <1415535832-4822-1-git-send-email-opensource.ganesh@gmail.com>
+	<20141113025544.GB9068@medulla.variantweb.net>
+Date: Thu, 13 Nov 2014 22:16:10 +0800
+Message-ID: <CADAEsF-LvMCm0SA4PY4f66rwJGWiyR6OWHG2vaagSPQ1LrQ0GQ@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: add __init to some functions in zswap
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Minchan Kim <minchan@kernel.org>, ddstreet@ieee.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several pseudo file-systems create default mountpoints in /sys/fs/ or
-/sys/kernel/, including:
-    /sys/kernel/debug
-    /sys/fs/mqueue
-    /sys/fs/cgroup
-    /sys/fs/pstore
+2014-11-13 10:55 GMT+08:00 Seth Jennings <sjennings@variantweb.net>:
+> On Sun, Nov 09, 2014 at 08:23:52PM +0800, Mahendran Ganesh wrote:
+>> zswap_cpu_init/zswap_comp_exit/zswap_entry_cache_create is only
+>> called by __init init_zswap()
+>
+> Thanks for the cleanup!
+>
+> Acked-by: Seth Jennings <sjennings@variantweb.net>
 
-If the given pseudo file-system is available as a module, user-space can
-rely on mount(2) to load the module on-demand (assuming MODULE_ALIAS_FS).
-However, in case the default mount-point is created by the file-system
-itself, mount(2) will fail as it cannot pin the mountpoint.
+Thanks very much!
 
-This patch makes mount(2) load any requested file-systems before pinning
-the target mount-point. This way, a file-system module can create default
-mount-points in the module instead of creating them statically in the
-core kernel.
-
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- fs/namespace.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 5b66b2b..b1dc9f8 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2565,6 +2565,7 @@ char *copy_mount_string(const void __user *data)
- long do_mount(const char *dev_name, const char __user *dir_name,
- 		const char *type_page, unsigned long flags, void *data_page)
- {
-+	struct file_system_type *fstype = NULL;
- 	struct path path;
- 	int retval = 0;
- 	int mnt_flags = 0;
-@@ -2577,10 +2578,15 @@ long do_mount(const char *dev_name, const char __user *dir_name,
- 	if (data_page)
- 		((char *)data_page)[PAGE_SIZE - 1] = 0;
- 
-+	/* load fs-modules before pinning the mountpoint */
-+	if (type_page && !(flags & (MS_REMOUNT|MS_BIND|MS_MOVE|MS_SHARED|
-+				    MS_PRIVATE|MS_SLAVE|MS_UNBINDABLE)))
-+		fstype = get_fs_type(type_page);
-+
- 	/* ... and get the mountpoint */
- 	retval = user_path(dir_name, &path);
- 	if (retval)
--		return retval;
-+		goto putfs_out;
- 
- 	retval = security_sb_mount(dev_name, &path,
- 				   type_page, flags, data_page);
-@@ -2635,6 +2641,9 @@ long do_mount(const char *dev_name, const char __user *dir_name,
- 				      dev_name, data_page);
- dput_out:
- 	path_put(&path);
-+putfs_out:
-+	if (fstype)
-+		put_filesystem(fstype);
- 	return retval;
- }
- 
--- 
-2.1.3
-
+>
+>>
+>> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+>> ---
+>>  mm/zswap.c |    6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/mm/zswap.c b/mm/zswap.c
+>> index 51a2c45..2e621fa 100644
+>> --- a/mm/zswap.c
+>> +++ b/mm/zswap.c
+>> @@ -149,7 +149,7 @@ static int __init zswap_comp_init(void)
+>>       return 0;
+>>  }
+>>
+>> -static void zswap_comp_exit(void)
+>> +static void __init zswap_comp_exit(void)
+>>  {
+>>       /* free percpu transforms */
+>>       if (zswap_comp_pcpu_tfms)
+>> @@ -206,7 +206,7 @@ static struct zswap_tree *zswap_trees[MAX_SWAPFILES];
+>>  **********************************/
+>>  static struct kmem_cache *zswap_entry_cache;
+>>
+>> -static int zswap_entry_cache_create(void)
+>> +static int __init zswap_entry_cache_create(void)
+>>  {
+>>       zswap_entry_cache = KMEM_CACHE(zswap_entry, 0);
+>>       return zswap_entry_cache == NULL;
+>> @@ -389,7 +389,7 @@ static struct notifier_block zswap_cpu_notifier_block = {
+>>       .notifier_call = zswap_cpu_notifier
+>>  };
+>>
+>> -static int zswap_cpu_init(void)
+>> +static int __init zswap_cpu_init(void)
+>>  {
+>>       unsigned long cpu;
+>>
+>> --
+>> 1.7.9.5
+>>
