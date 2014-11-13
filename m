@@ -1,128 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404AbaKMJop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:44:45 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:37044 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932136AbaKMJon (ORCPT
+	id S932422AbaKMJpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:45:47 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59696 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932224AbaKMJpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:44:43 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="43329996"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: Richard Weinberger <richard@nod.at>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Oleg Nesterov" <oleg@redhat.com>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        "Richard Weinberger" <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
-Subject: RE: [PATCH v7 1/2] procfs: show hierarchy of pid namespace
-Thread-Topic: [PATCH v7 1/2] procfs: show hierarchy of pid namespace
-Thread-Index: AQHP/mn1Cs5YgZRQ9k+SS5toqqvYLJxeSLwg
-Date: Thu, 13 Nov 2014 09:44:41 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E63280E@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1415786899-13392-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1415786899-13392-2-git-send-email-chenhanxiao@cn.fujitsu.com>
- <5463413E.6000800@nod.at>
-In-Reply-To: <5463413E.6000800@nod.at>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 13 Nov 2014 04:45:44 -0500
+Message-ID: <54647DA7.1070000@linux.vnet.ibm.com>
+Date: Thu, 13 Nov 2014 15:15:11 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
+        Paul.Clothier@imgtec.com, peterz@infradead.org, palves@redhat.com,
+        oleg@redhat.com, davem@davemloft.net, dhowells@redhat.com,
+        davej@redhat.com, akpm@linux-foundation.org,
+        sukadev@linux.vnet.ibm.com, tglx@linutronix.de,
+        sam.bobroff@au1.ibm.com
+Subject: Re: [PATCH V4 7/8] powerpc, ptrace: Enable support for miscellaneous
+ debug registers
+References: <1415683597-22819-1-git-send-email-khandual@linux.vnet.ibm.com> <1415683597-22819-8-git-send-email-khandual@linux.vnet.ibm.com>
+In-Reply-To: <1415683597-22819-8-git-send-email-khandual@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111309-0025-0000-0000-0000007EBE0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD9iqxd022824
 
+On 11/11/2014 10:56 AM, Anshuman Khandual wrote:
+> This patch enables get and set of miscellaneous debug registers through
+> ptrace PTRACE_GETREGSET-PTRACE_SETREGSET interface by implementing new
+> powerpc specific register set REGSET_MISC support corresponding to the
+> new ELF core note NT_PPC_MISC added previously in this regard.
 
+Right now this one does not compile for "ppc64e_defconfig" and
+"pmac32_defconfig" config options. The patch below will fix it
+and would be part of next revision.
 
-> -----Original Message-----
-> From: Richard Weinberger [mailto:richard@nod.at]
-> Sent: Wednesday, November 12, 2014 7:15 PM
-> To: Chen, Hanxiao/é™ˆ æ™—éœ„; Eric W. Biederman; Serge Hallyn; Oleg Nesterov
-> Cc: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org; David
-> Howells; Richard Weinberger; Pavel Emelyanov; Vasiliy Kulikov; Mateusz Guzik
-> Subject: Re: [PATCH v7 1/2] procfs: show hierarchy of pid namespace
-> 
-> Am 12.11.2014 um 11:08 schrieb Chen Hanxiao:
-> > We lack of pid hierarchy information, and this will lead to:
-> > a) we don't know pids' relationship, who is whose child:
-> >    /proc/PID/ns/pid only tell us whether two pids live in different ns
-> > b) bring trouble to nested lxc container check/restore/migration
-> > c) bring trouble to pid translation between containers;
-> >
-> > This patch will show the hierarchy of pid namespace
-> > by pidns_hierarchy like:
-> >
-> > <init_PID> <parent_of_init_PID> <relative PID level>
-> >
-> > Ex:
-> > [root@localhost ~]#cat /proc/pidns_hierarchy
-> > 18060 1 1
-> > 18102 18060 2
-> > 1534  18102 3
-> > 1600  18102 3
-> > 1550  1 1
-> > *Note: numbers represent the pid 1 in different ns
-> >
-[snip]
-> > +
-> > +#define NS_HIERARCHY	"pidns_hierarchy"
-> > +#define MAX(a, b) ((a) > (b) ? (a) : (b))
-> 
-> Please use max() from kernel.h, there is no need to reinvent the wheel.
-> 
+diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+index 61a2581..be566eb 100644
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -1326,6 +1326,7 @@ static int tm_cvmx_set(struct task_struct *target,
+ }
+ #endif	/* CONFIG_PPC_TRANSACTIONAL_MEM */
+ 
++#ifdef CONFIG_PPC64
+ /*
+  * get_misc_dbg
+  *
+@@ -1339,6 +1340,9 @@ static int tm_cvmx_set(struct task_struct *target,
+  *	unsigned long ppr;
+  *	unsigned long tar;
+  * };
++ *
++ * The data element 'tar' will be valid only if the
++ * kernel has CONFIG_PPC_BOOK3S_64 config option enabled.
+  */
+ static int get_misc_dbg(struct task_struct *target,
+ 			const struct user_regset *regset, unsigned int pos,
+@@ -1348,7 +1352,10 @@ static int get_misc_dbg(struct task_struct *target,
+ 
+ 	/* Build test */
+ 	BUILD_BUG_ON(TSO(dscr) + 2 * sizeof(unsigned long) != TSO(ppr));
++
++#ifdef CONFIG_PPC_BOOK3S_64
+ 	BUILD_BUG_ON(TSO(ppr) + sizeof(unsigned long) != TSO(tar));
++#endif
+ 
+ 	/* DSCR register */
+ 	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+@@ -1362,12 +1369,14 @@ static int get_misc_dbg(struct task_struct *target,
+ 						sizeof(unsigned long),
+ 						2 * sizeof(unsigned long));
+ 
++#ifdef CONFIG_PPC_BOOK3S_64
+ 	/* TAR register */
+ 	if (!ret)
+ 		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+ 						&target->thread.tar,
+ 						2 * sizeof(unsigned long),
+ 						3 * sizeof(unsigned long));
++#endif
+ 	return ret;
+ }
+ 
+@@ -1384,6 +1393,9 @@ static int get_misc_dbg(struct task_struct *target,
+  *	unsigned long ppr;
+  *	unsigned long tar;
+  * };
++ *
++ * The data element 'tar' will be valid only if the
++ * kernel has CONFIG_PPC_BOOK3S_64 config option enabled.
+  */
+ static int set_misc_dbg(struct task_struct *target,
+ 			const struct user_regset *regset, unsigned int pos,
+@@ -1394,7 +1406,10 @@ static int set_misc_dbg(struct task_struct *target,
+ 
+ 	/* Build test */
+ 	BUILD_BUG_ON(TSO(dscr) + 2 * sizeof(unsigned long) != TSO(ppr));
++
++#ifdef CONFIG_PPC_BOOK3S_64
+ 	BUILD_BUG_ON(TSO(ppr) + sizeof(unsigned long) != TSO(tar));
++#endif
+ 
+ 	/* DSCR register */
+ 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+@@ -1407,15 +1422,17 @@ static int set_misc_dbg(struct task_struct *target,
+ 						&target->thread.ppr,
+ 						sizeof(unsigned long),
+ 						2 * sizeof(unsigned long));
+-
++#ifdef CONFIG_PPC_BOOK3S_64
+ 	/* TAR register */
+ 	if (!ret)
+ 		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+ 						&target->thread.tar,
+ 						2 * sizeof(unsigned long),
+ 						3 * sizeof(unsigned long));
++#endif
+ 	return ret;
+ }
++#endif /* CONFIG_PPC64 */
+ 
+ /*
+  * These are our native regset flavors.
+@@ -1438,7 +1455,9 @@ enum powerpc_regset {
+ 	REGSET_TM_CFPR,		/* TM checkpointed FPR registers */
+ 	REGSET_TM_CVMX,		/* TM checkpointed VMX registers */
+ #endif
++#ifdef CONFIG_PPC64
+ 	REGSET_MISC		/* Miscellaneous debug registers */
++#endif
+ };
+ 
+ static const struct user_regset native_regsets[] = {
+@@ -1495,11 +1514,13 @@ static const struct user_regset native_regsets[] = {
+ 		.active = tm_cvmx_active, .get = tm_cvmx_get, .set = tm_cvmx_set
+ 	},
+ #endif
++#ifdef CONFIG_PPC64
+ 	[REGSET_MISC] = {
+ 		.core_note_type = NT_PPC_MISC, .n = ELF_NMISCREG,
+ 		.size = sizeof(u64), .align = sizeof(u64),
+ 		.get = get_misc_dbg, .set = set_misc_dbg
+ 	},
++#endif
+ };
+ 
+ static const struct user_regset_view user_ppc_native_view = {
 
-Thanks for your reminding.
-
-> > +
-> > +/* list for host pid collection */
-> > +struct pidns_list {
-> > +	struct list_head list;
-> > +	struct pid *pid;
-> > +	int show_level;
-> 
-> s/show_level/level, to keep it easy. :-)
-
-Sure, also change the type to unsigned int 
-for making max() happy.
-
-[snip]
-> > +}
-> > +
-> > +/*
-> > + * collect pids and stored in pidns_pid_list,
-> 
-> s/stored/store
-Oops...
-
-> 
-> > + * then remove duplicated ones,
-> > + * add the rest to pidns_pid_tree
-> > + */
-> 
-> This comment is a bit confusing.
-> 
-> What about "proc_pidns_list_refresh - Finds all init pids, places them into
-> pidns_pid_list
-> and then stores the hirarchy into pidns_pid_tree."?
-> 
-That's much more clear.
-
-> Beside of my minor comments I like the patch. :-)
-> Thanks a lot for doing this work!
-> 
-
-Thanks for your kindly help. :)
-
-- Chen
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
