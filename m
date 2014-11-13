@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933925AbaKMTzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 14:55:33 -0500
-Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:51648 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933526AbaKMTzc (ORCPT
+	id S933983AbaKMT4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 14:56:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24419 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933526AbaKMT4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 14:55:32 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3876:3877:5007:6114:6261:6642:10004:10400:10848:11232:11658:11914:12517:12519:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: screw18_4d38f6fa6a239
-X-Filterd-Recvd-Size: 896
-Message-ID: <1415908529.4223.11.camel@perches.com>
-Subject: spatch for trivial pointer comparison style?
-From: Joe Perches <joe@perches.com>
-To: cocci <cocci@systeme.lip6.fr>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Nov 2014 11:55:29 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Nov 2014 14:56:30 -0500
+Date: Thu, 13 Nov 2014 14:56:06 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 2/8] xen: Delay remapping memory of pv-domain
+Message-ID: <20141113195605.GA13039@laptop.dumpdata.com>
+References: <1415684626-18590-1-git-send-email-jgross@suse.com>
+ <1415684626-18590-3-git-send-email-jgross@suse.com>
+ <20141112214506.GA5922@laptop.dumpdata.com>
+ <54644E48.3040506@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54644E48.3040506@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I added a checkpatch entry for this.
-Maybe some cocci test like this would be useful?
+> >>+	mfn_save = virt_to_mfn(buf);
+> >>+
+> >>+	while (xen_remap_mfn != INVALID_P2M_ENTRY) {
+> >
+> >So the 'list' is constructed by going forward - that is from low-numbered
+> >PFNs to higher numbered ones. But the 'xen_remap_mfn' is going the
+> >other way - from the highest PFN to the lowest PFN.
+> >
+> >Won't that mean we will restore the chunks of memory in the wrong
+> >order? That is we will still restore them in chunks size, but the
+> >chunks will be in descending order instead of ascending?
+> 
+> No, the information where to put each chunk is contained in the chunk
+> data. I can add a comment explaining this.
 
-@@
-type t;
-t *p;
-@@
--	p == NULL
-+	!p
+Right, the MFNs in a "chunks" are going to be restored in the right order.
 
-@@
-type t;
-t *p;
-@@
--	p != NULL
-+	p
+I was thinking that the "chunks" (so a set of MFNs) will be restored in
+the opposite order that they are written to. 
 
-@@
-type t;
-t *p;
-@@
--	NULL == p
-+	!p
+And oddly enough the "chunks" are done in 512-3 = 509 MFNs at once?
 
-@@
-type t;
-t *p;
-@@
--	NULL != p
-+	p
+> 
+> >
+> >>+		/* Map the remap information */
+> >>+		set_pte_mfn(buf, xen_remap_mfn, PAGE_KERNEL);
+> >>+
+> >>+		BUG_ON(xen_remap_mfn != xen_remap_buf.mfns[0]);
+> >>+
+> >>+		free = 0;
+> >>+		pfn = xen_remap_buf.target_pfn;
+> >>+		for (i = 0; i < xen_remap_buf.size; i++) {
+> >>+			mfn = xen_remap_buf.mfns[i];
+> >>+			if (!released && xen_update_mem_tables(pfn, mfn)) {
+> >>+				remapped++;
+> >
+> >If we fail 'xen_update_mem_tables' we will on the next chunk (so i+1) keep on
+> >freeing pages instead of trying to remap. Is that intentional? Could we
+> >try to remap?
+> 
+> Hmm, I'm not sure this is worth the effort. What could lead to failure
+> here? I suspect we could even just BUG() on failure. What do you think?
 
+I was hoping that this question would lead to making this loop a bit
+simpler as you would have to spread some of the code in the loop
+into functions.
 
+And keep 'remmaped' and 'released' reset every loop.
+
+However, if it makes the code more complex - then please
+forget my question.
