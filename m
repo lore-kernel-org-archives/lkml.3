@@ -1,44 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934548AbaKMVzP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:55:15 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:53227 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934250AbaKMVzO (ORCPT
+	id S934415AbaKMV4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:56:48 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:48288 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933424AbaKMV4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:55:14 -0500
-Message-ID: <546528BF.5040902@gmail.com>
-Date: Thu, 13 Nov 2014 16:55:11 -0500
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 13 Nov 2014 16:56:47 -0500
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 16/16] rxrpc: Replace smp_read_barrier_depends() with
- lockless_dereference()
-References: <1415906662-4576-17-git-send-email-bobby.prani@gmail.com> <1415906662-4576-1-git-send-email-bobby.prani@gmail.com> <24601.1415911646@warthog.procyon.org.uk>
-In-Reply-To: <24601.1415911646@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1415913389-17734-1-git-send-email-johannes@sipsolutions.net>
+References: <1415913389-17734-1-git-send-email-johannes@sipsolutions.net>
+Date: Thu, 13 Nov 2014 13:56:44 -0800
+Message-ID: <CAGXu5jL8CBPXyiZM+AQpNUOvF=rQxay7ozmEaLuRL8WSiRQ2tA@mail.gmail.com>
+Subject: Re: [PATCH] devcoredump: provide a one-way disable function
+From: Kees Cook <keescook@google.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Greg Kroah-Hartmann <gregkh@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2014 03:47 PM, David Howells wrote:
-> Pranith Kumar <bobby.prani@gmail.com> wrote:
-> 
->> Recently lockless_dereference() was added which can be used in place of
->> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
-> 
-> Actually, the use of smp_read_barrier_depends() is wrong in circular
-> buffering.  See Documentation/circular-buffers.txt
-> 
+On Thu, Nov 13, 2014 at 1:16 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> From: Johannes Berg <johannes.berg@intel.com>
+>
+> Since device/firmware coredumps can contain private data, it can
+> be desirable to turn them off unconditionally to be certain that
+> no such data will be collected by the system.
+>
+> To achieve this, provide a "disabled" sysfs class attribute that
+> can only be changed from 0 to 1 and not back. Upon disabling,
+> discard existing coredumps and stop storing new ones.
+>
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 
-OK. Should I send in a patch removing these barriers then?
+Great; thanks for implementing this! This will come in handy for Chrome OS. :)
 
---
-Pranith
+Reviewed-by: Kees Cook <keescook@chromium.org>
 
+> ---
+>  drivers/base/devcoredump.c | 56 +++++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 48 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/base/devcoredump.c b/drivers/base/devcoredump.c
+> index 96614b04544c..1bd120a0b084 100644
+> --- a/drivers/base/devcoredump.c
+> +++ b/drivers/base/devcoredump.c
+> @@ -31,6 +31,11 @@
+>  #include <linux/fs.h>
+>  #include <linux/workqueue.h>
+>
+> +static struct class devcd_class;
+> +
+> +/* global disable flag, for security purposes */
+> +static bool devcd_disabled;
+> +
+>  /* if data isn't read by userspace after 5 minutes then delete it */
+>  #define DEVCD_TIMEOUT  (HZ * 60 * 5)
+>
+> @@ -121,11 +126,51 @@ static const struct attribute_group *devcd_dev_groups[] = {
+>         &devcd_dev_group, NULL,
+>  };
+>
+> +static int devcd_free(struct device *dev, void *data)
+> +{
+> +       struct devcd_entry *devcd = dev_to_devcd(dev);
+> +
+> +       flush_delayed_work(&devcd->del_wk);
+> +       return 0;
+> +}
+> +
+> +static ssize_t disabled_show(struct class *class, struct class_attribute *attr,
+> +                            char *buf)
+> +{
+> +       return sprintf(buf, "%d\n", devcd_disabled);
+> +}
+> +
+> +static ssize_t disabled_store(struct class *class, struct class_attribute *attr,
+> +                             const char *buf, size_t count)
+> +{
+> +       long tmp = simple_strtol(buf, NULL, 10);
+> +
+> +       /*
+> +        * This essentially makes the attribute write-once, since you can't
+> +        * go back to not having it disabled. This is intentional, it serves
+> +        * as a system lockdown feature.
+> +        */
+> +       if (tmp != 1)
+> +               return -EINVAL;
+
+Just a nit, but writing "0" is valid if devcd_disabled = false?
+
+> +
+> +       devcd_disabled = true;
+> +
+> +       class_for_each_device(&devcd_class, NULL, NULL, devcd_free);
+> +
+> +       return count;
+> +}
+> +
+> +static struct class_attribute devcd_class_attrs[] = {
+> +       __ATTR_RW(disabled),
+> +       __ATTR_NULL
+> +};
+> +
+>  static struct class devcd_class = {
+>         .name           = "devcoredump",
+>         .owner          = THIS_MODULE,
+>         .dev_release    = devcd_dev_release,
+>         .dev_groups     = devcd_dev_groups,
+> +       .class_attrs    = devcd_class_attrs,
+>  };
+>
+>  static ssize_t devcd_readv(char *buffer, loff_t offset, size_t count,
+> @@ -192,6 +237,9 @@ void dev_coredumpm(struct device *dev, struct module *owner,
+>         struct devcd_entry *devcd;
+>         struct device *existing;
+>
+> +       if (devcd_disabled)
+> +               goto free;
+> +
+>         existing = class_find_device(&devcd_class, NULL, dev,
+>                                      devcd_match_failing);
+>         if (existing) {
+> @@ -249,14 +297,6 @@ static int __init devcoredump_init(void)
+>  }
+>  __initcall(devcoredump_init);
+>
+> -static int devcd_free(struct device *dev, void *data)
+> -{
+> -       struct devcd_entry *devcd = dev_to_devcd(dev);
+> -
+> -       flush_delayed_work(&devcd->del_wk);
+> -       return 0;
+> -}
+> -
+>  static void __exit devcoredump_exit(void)
+>  {
+>         class_for_each_device(&devcd_class, NULL, NULL, devcd_free);
+> --
+> 2.1.1
+>
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
