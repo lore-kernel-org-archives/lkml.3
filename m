@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334AbaKMQVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 11:21:48 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:51714 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932327AbaKMQVq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 11:21:46 -0500
+	id S933401AbaKMQWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 11:22:09 -0500
+Received: from sauhun.de ([89.238.76.85]:54872 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933311AbaKMQWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 11:22:06 -0500
+Date: Thu, 13 Nov 2014 17:23:16 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: lee.jones@linaro.org, laurentiu.palcu@intel.com, johan@kernel.org,
+        julia.lawall@lip6.fr, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] i2c: dln2: simplify return flow for dln2_i2c_enable
+Message-ID: <20141113162315.GC1275@katana>
+References: <1415708457-18798-1-git-send-email-octavian.purdila@intel.com>
+ <1415708457-18798-3-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1415808457-4030-4-git-send-email-ibanezchen@gmail.com>
-References: <1415808457-4030-1-git-send-email-ibanezchen@gmail.com>
-	<1415808457-4030-4-git-send-email-ibanezchen@gmail.com>
-Date: Thu, 13 Nov 2014 17:21:44 +0100
-Message-ID: <CABuKBeJXwrEQgttj=wVYJz5E_pdn-2D4DP2=iqtPAuMcFWM5GQ@mail.gmail.com>
-Subject: Re: [PATCH v6 4/4] DTS: serial: Add bindings documention for the
- Mediatek UARTs
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Howard Chen <ibanezchen@gmail.com>
-Cc: arm@kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="H8ygTp4AXg6deix2"
+Content-Disposition: inline
+In-Reply-To: <1415708457-18798-3-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-12 17:07 GMT+01:00 Howard Chen <ibanezchen@gmail.com>:
-> This patch add s devicetree document for Mediatek UART.
->
-> Signed-off-by: Howard Chen <ibanezchen@gmail.com>
-> ---
->  Documentation/devicetree/bindings/serial/mtk-uart.txt | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/Documentation/devicetree/bindings/serial/mtk-uart.txt b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> index 48358a3..e2864b7 100644
-> --- a/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> +++ b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> @@ -2,9 +2,10 @@
->
->  Required properties:
->  - compatible should contain:
-> +  * "mediatek,mt6592-uart" for MT6592 compatible UARTS
->    * "mediatek,mt6589-uart" for MT6589 compatible UARTS
->    * "mediatek,mt6582-uart" for MT6582 compatible UARTS
-> -  * "mediatek,mt6577-uart" for all compatible UARTS (MT6589, MT6582, MT6577)
-> +  * "mediatek,mt6577-uart" for all compatible UARTS on MT65xx
 
-This patch should be send when we can add the uart driver to the SoC.
-Sorry I didn't realize in my last review.
+--H8ygTp4AXg6deix2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->
->  - reg: The base address of the UART register bank.
->
-> --
-> 1.9.1
->
+On Tue, Nov 11, 2014 at 02:20:57PM +0200, Octavian Purdila wrote:
+> This fixes the following kbuild test robot warning:
+>=20
+> >> drivers/i2c/busses/i2c-dln2.c:70:1-4: WARNING: end returns can be simp=
+lified if negative or 0 value
+>=20
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Reported-by: Julia Lawall <julia.lawall@lip6.fr>
+>=20
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
+
+Lee, I think it is easiest if you simply add it to the branch you have
+for this driver. OK?
 
 
+--H8ygTp4AXg6deix2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-motzblog.wordpress.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUZNrzAAoJEBQN5MwUoCm2hYEQAK8Vl1LSgOEumr0m0S/r9LAq
+wKhjfG3+GePjKw0hubynlOIQd1tlEcK5bnnKLeCHY3KTmEMc93RqvMCOLFQrhjVN
+rM+dameOLR8gUqPo7qoC/XyNq2Buk18hUGowu2mvqAjtNykj8J7oOucY7gl0E2jf
+VwIMfQfZ6Oks0xY5BwnBo/VgAgEXGezYyX1rcyiBYGKNzZGhW2G+AqkCxk0DyFvY
+pwO0pTQZ40KtXSK/tVl/UGcHGn6KWeIwB4gvwl8+HGbZt14rDaAFhYLlHoqThbv0
+8cAptEJ1yB7ECeZX/5beu3xP6I3whY89bqKKsQLSiI/6Vr3ay0w4TRWh/v+Yo7Nj
+C9ivrjzTnxU3s5fqFRisU0N24IQmpGZ+UUQbedfr+pikc14ShpmXGfaRgrpoXAXA
+t7tJuplzGCiK5stW5SAOW5cLsAuuNpUbQ1TUBVe5t14FVp2U7gO27jnpn3PpCKkO
+vNVvuolmrIgqiAkKpYO3UW5EEurP6wWQCuWVr/AHA9rQEDKpNMsvifiaGvF7XcIx
+aPnNvXjmggRCtmX2vRtjXKwr93Xh4Fd0vs2dl+yuHpV9XBYgzwqlmstY6njp8InD
+Wm7OvSanc3BhQJtlljE10fGoXRJJw/aPkUWph6hd//7rsT6B6OyqlNx6lRj4BIPz
+ZM0CNRexB4QzGjID8JvB
+=gM3i
+-----END PGP SIGNATURE-----
+
+--H8ygTp4AXg6deix2--
