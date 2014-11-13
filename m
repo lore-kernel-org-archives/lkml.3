@@ -1,176 +1,770 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967AbaKMLBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:01:49 -0500
-Received: from mail-bl2on0089.outbound.protection.outlook.com ([65.55.169.89]:15620
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932503AbaKMLBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:01:45 -0500
-X-Greylist: delayed 13651 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Nov 2014 06:01:45 EST
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>, Soren Brinkmann <sorenb@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH] can: Fix bug in suspend/resume
-Thread-Topic: [PATCH] can: Fix bug in suspend/resume
-Thread-Index: AQHP/yrOOprZB47R1kO98xYQocKVkJxd2aIAgACINLCAAAGLYA==
-Date: Thu, 13 Nov 2014 11:01:30 +0000
-References: <a44efc1fb0144cca9d0c4851cc51db25@BL2FFO11FD024.protection.gbl>
- <546484D9.4030005@pengutronix.de> <54648BF4.60007@pengutronix.de> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.96.224]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21098.003
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <2abd0a7b76bd4c5fab3cda60b8e2f8d1@BN1AFFO11FD030.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51914003)(189002)(13464003)(24454002)(377454003)(479174003)(51704005)(199003)(120916001)(31966008)(50986999)(54356999)(33646002)(76176999)(62966003)(77156002)(77096003)(104016003)(50466002)(47776003)(95666004)(106466001)(16601075003)(64706001)(23676002)(19580395003)(106116001)(2501002)(15975445006)(46102003)(87936001)(4396001)(99396003)(86362001)(20776003)(107046002)(19580405001)(44976005)(92566001)(108616004)(15202345003)(53416004)(2656002)(6806004)(21056001)(74316001)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB019;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB019;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB019;
-X-Forefront-PRVS: 0394259C80
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB019;
-X-OriginatorOrg: xilinx.com
+	id S932899AbaKMLBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:01:15 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37541 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932836AbaKMLBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 06:01:08 -0500
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, srinivas.kandagatla@gmail.com,
+        patrice.chotard@st.com, arnd@arndb.de
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
+Subject: [PATCH v2 10/14] ARM: STi: DT: STih407: Abstract common dt nodes into shared files.
+Date: Thu, 13 Nov 2014 11:00:13 +0000
+Message-Id: <1415876417-28728-11-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415876417-28728-1-git-send-email-peter.griffin@linaro.org>
+References: <1415876417-28728-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sADB1vns023459
 
-Hi Marc,
+The stih410 soc which will be added in the following commit is very similar to
+the stih407, to enable maximum re-use of the dt files this commit abstracts the
+common parts into a shared dt file stihxxx-b2120 for the board, and also a shared
+file stih407-family.dtsi for the SoC.
 
------Original Message-----
-From: Appana Durga Kedareswara Rao
-Sent: Thursday, November 13, 2014 4:28 PM
-To: 'Marc Kleine-Budde'; wg@grandegger.com; Michal Simek; Soren Brinkmann; grant.likely@linaro.org; robh+dt@kernel.org
-Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; devicetree@vger.kernel.org
-Subject: RE: [PATCH] can: Fix bug in suspend/resume
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ arch/arm/boot/dts/stih407-b2120.dts   |  53 +------
+ arch/arm/boot/dts/stih407-family.dtsi | 290 +++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih407.dtsi        | 291 ----------------------------------
+ arch/arm/boot/dts/stihxxx-b2120.dtsi  |  59 +++++++
+ 4 files changed, 352 insertions(+), 341 deletions(-)
+ create mode 100644 arch/arm/boot/dts/stih407-family.dtsi
+ delete mode 100644 arch/arm/boot/dts/stih407.dtsi
+ create mode 100644 arch/arm/boot/dts/stihxxx-b2120.dtsi
 
-Hi Marc,
+diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
+index fe69f92..a3ad52b 100644
+--- a/arch/arm/boot/dts/stih407-b2120.dts
++++ b/arch/arm/boot/dts/stih407-b2120.dts
+@@ -7,7 +7,9 @@
+  * published by the Free Software Foundation.
+  */
+ /dts-v1/;
+-#include "stih407.dtsi"
++#include "stih407-clock.dtsi"
++#include "stih407-family.dtsi"
++#include "stihxxx-b2120.dtsi"
+ / {
+ 	model = "STiH407 B2120";
+ 	compatible = "st,stih407-b2120", "st,stih407";
+@@ -26,53 +28,4 @@
+ 		ttyAS0 = &sbc_serial0;
+ 	};
+ 
+-	soc {
+-		sbc_serial0: serial@9530000 {
+-			status = "okay";
+-		};
+-
+-		leds {
+-			compatible = "gpio-leds";
+-			red {
+-				#gpio-cells = <2>;
+-				label = "Front Panel LED";
+-				gpios = <&pio4 1 0>;
+-				linux,default-trigger = "heartbeat";
+-			};
+-			green {
+-				#gpio-cells = <2>;
+-				gpios = <&pio1 3 0>;
+-				default-state = "off";
+-			};
+-		};
+-
+-		i2c@9842000 {
+-			status = "okay";
+-		};
+-
+-		i2c@9843000 {
+-			status = "okay";
+-		};
+-
+-		i2c@9844000 {
+-			status = "okay";
+-		};
+-
+-		i2c@9845000 {
+-			status = "okay";
+-		};
+-
+-		i2c@9540000 {
+-			status = "okay";
+-		};
+-
+-		/* SSC11 to HDMI */
+-		i2c@9541000 {
+-			status = "okay";
+-			/* HDMI V1.3a supports Standard mode only */
+-			clock-frequency = <100000>;
+-			st,i2c-min-scl-pulse-width-us = <0>;
+-			st,i2c-min-sda-pulse-width-us = <5>;
+-		};
+-	};
+ };
+diff --git a/arch/arm/boot/dts/stih407-family.dtsi b/arch/arm/boot/dts/stih407-family.dtsi
+new file mode 100644
+index 0000000..306713d
+--- /dev/null
++++ b/arch/arm/boot/dts/stih407-family.dtsi
+@@ -0,0 +1,290 @@
++/*
++ * Copyright (C) 2014 STMicroelectronics Limited.
++ * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
++ */
++#include "stih407-pinctrl.dtsi"
++#include <dt-bindings/reset-controller/stih407-resets.h>
++/ {
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0>;
++		};
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <1>;
++		};
++	};
++
++	intc: interrupt-controller@08761000 {
++		compatible = "arm,cortex-a9-gic";
++		#interrupt-cells = <3>;
++		interrupt-controller;
++		reg = <0x08761000 0x1000>, <0x08760100 0x100>;
++	};
++
++	scu@08760000 {
++		compatible = "arm,cortex-a9-scu";
++		reg = <0x08760000 0x1000>;
++	};
++
++	timer@08760200 {
++		interrupt-parent = <&intc>;
++		compatible = "arm,cortex-a9-global-timer";
++		reg = <0x08760200 0x100>;
++		interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&arm_periph_clk>;
++	};
++
++	l2: cache-controller {
++		compatible = "arm,pl310-cache";
++		reg = <0x08762000 0x1000>;
++		arm,data-latency = <3 3 3>;
++		arm,tag-latency = <2 2 2>;
++		cache-unified;
++		cache-level = <2>;
++	};
++
++	soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		interrupt-parent = <&intc>;
++		ranges;
++		compatible = "simple-bus";
++
++		powerdown: powerdown-controller {
++			compatible = "st,stih407-powerdown";
++			#reset-cells = <1>;
++		};
++
++		softreset: softreset-controller {
++			compatible = "st,stih407-softreset";
++			#reset-cells = <1>;
++		};
++
++		picophyreset: picophyreset-controller {
++			compatible = "st,stih407-picophyreset";
++			#reset-cells = <1>;
++		};
++
++		syscfg_sbc: sbc-syscfg@9620000 {
++			compatible = "st,stih407-sbc-syscfg", "syscon";
++			reg = <0x9620000 0x1000>;
++		};
++
++		syscfg_front: front-syscfg@9280000 {
++			compatible = "st,stih407-front-syscfg", "syscon";
++			reg = <0x9280000 0x1000>;
++		};
++
++		syscfg_rear: rear-syscfg@9290000 {
++			compatible = "st,stih407-rear-syscfg", "syscon";
++			reg = <0x9290000 0x1000>;
++		};
++
++		syscfg_flash: flash-syscfg@92a0000 {
++			compatible = "st,stih407-flash-syscfg", "syscon";
++			reg = <0x92a0000 0x1000>;
++		};
++
++		syscfg_sbc_reg: fvdp-lite-syscfg@9600000 {
++			compatible = "st,stih407-sbc-reg-syscfg", "syscon";
++			reg = <0x9600000 0x1000>;
++		};
++
++		syscfg_core: core-syscfg@92b0000 {
++			compatible = "st,stih407-core-syscfg", "syscon";
++			reg = <0x92b0000 0x1000>;
++		};
++
++		syscfg_lpm: lpm-syscfg@94b5100 {
++			compatible = "st,stih407-lpm-syscfg", "syscon";
++			reg = <0x94b5100 0x1000>;
++		};
++
++		serial@9830000 {
++			compatible = "st,asc";
++			reg = <0x9830000 0x2c>;
++			interrupts = <GIC_SPI 122 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_serial0>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++
++			status = "disabled";
++		};
++
++		serial@9831000 {
++			compatible = "st,asc";
++			reg = <0x9831000 0x2c>;
++			interrupts = <GIC_SPI 123 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_serial1>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++
++			status = "disabled";
++		};
++
++		serial@9832000 {
++			compatible = "st,asc";
++			reg = <0x9832000 0x2c>;
++			interrupts = <GIC_SPI 124 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_serial2>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++
++			status = "disabled";
++		};
++
++		/* SBC_ASC0 - UART10 */
++		sbc_serial0: serial@9530000 {
++			compatible = "st,asc";
++			reg = <0x9530000 0x2c>;
++			interrupts = <GIC_SPI 138 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_sbc_serial0>;
++			clocks = <&clk_sysin>;
++
++			status = "disabled";
++		};
++
++		serial@9531000 {
++			compatible = "st,asc";
++			reg = <0x9531000 0x2c>;
++			interrupts = <GIC_SPI 139 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_sbc_serial1>;
++			clocks = <&clk_sysin>;
++
++			status = "disabled";
++		};
++
++		i2c@9840000 {
++			compatible = "st,comms-ssc4-i2c";
++			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
++			reg = <0x9840000 0x110>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c0_default>;
++
++			status = "disabled";
++		};
++
++		i2c@9841000 {
++			compatible = "st,comms-ssc4-i2c";
++			reg = <0x9841000 0x110>;
++			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c1_default>;
++
++			status = "disabled";
++		};
++
++		i2c@9842000 {
++			compatible = "st,comms-ssc4-i2c";
++			reg = <0x9842000 0x110>;
++			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c2_default>;
++
++			status = "disabled";
++		};
++
++		i2c@9843000 {
++			compatible = "st,comms-ssc4-i2c";
++			reg = <0x9843000 0x110>;
++			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c3_default>;
++
++			status = "disabled";
++		};
++
++		i2c@9844000 {
++			compatible = "st,comms-ssc4-i2c";
++			reg = <0x9844000 0x110>;
++			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c4_default>;
++
++			status = "disabled";
++		};
++
++		i2c@9845000 {
++			compatible = "st,comms-ssc4-i2c";
++			reg = <0x9845000 0x110>;
++			interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c5_default>;
++
++			status = "disabled";
++		};
++
++
++		/* SSCs on SBC */
++		i2c@9540000 {
++			compatible = "st,comms-ssc4-i2c";
++			reg = <0x9540000 0x110>;
++			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_sysin>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c10_default>;
++
++			status = "disabled";
++		};
++
++		i2c@9541000 {
++			compatible = "st,comms-ssc4-i2c";
++			reg = <0x9541000 0x110>;
++			interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_sysin>;
++			clock-names = "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_i2c11_default>;
++
++			status = "disabled";
++		};
++
++		usb2_picophy0: usbpicophy@0 {
++			compatible = "st,stih407-usb2-phy";
++			reg = <0xf8 0x04>,	/* syscfg 5062 */
++			      <0xf4 0x04>;	/* syscfg 5061 */
++			reg-names = "param", "ctrl";
++			#phy-cells = <0>;
++			st,syscfg = <&syscfg_core>;
++			resets = <&softreset STIH407_PICOPHY_SOFTRESET>,
++				 <&picophyreset STIH407_PICOPHY0_RESET>;
++			reset-names = "global", "port";
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+deleted file mode 100644
+index 4ce1f07..0000000
+--- a/arch/arm/boot/dts/stih407.dtsi
++++ /dev/null
+@@ -1,291 +0,0 @@
+-/*
+- * Copyright (C) 2014 STMicroelectronics Limited.
+- * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * publishhed by the Free Software Foundation.
+- */
+-#include "stih407-clock.dtsi"
+-#include "stih407-pinctrl.dtsi"
+-#include <dt-bindings/reset-controller/stih407-resets.h>
+-/ {
+-	#address-cells = <1>;
+-	#size-cells = <1>;
+-
+-	cpus {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		cpu@0 {
+-			device_type = "cpu";
+-			compatible = "arm,cortex-a9";
+-			reg = <0>;
+-		};
+-		cpu@1 {
+-			device_type = "cpu";
+-			compatible = "arm,cortex-a9";
+-			reg = <1>;
+-		};
+-	};
+-
+-	intc: interrupt-controller@08761000 {
+-		compatible = "arm,cortex-a9-gic";
+-		#interrupt-cells = <3>;
+-		interrupt-controller;
+-		reg = <0x08761000 0x1000>, <0x08760100 0x100>;
+-	};
+-
+-	scu@08760000 {
+-		compatible = "arm,cortex-a9-scu";
+-		reg = <0x08760000 0x1000>;
+-	};
+-
+-	timer@08760200 {
+-		interrupt-parent = <&intc>;
+-		compatible = "arm,cortex-a9-global-timer";
+-		reg = <0x08760200 0x100>;
+-		interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&arm_periph_clk>;
+-	};
+-
+-	l2: cache-controller {
+-		compatible = "arm,pl310-cache";
+-		reg = <0x08762000 0x1000>;
+-		arm,data-latency = <3 3 3>;
+-		arm,tag-latency = <2 2 2>;
+-		cache-unified;
+-		cache-level = <2>;
+-	};
+-
+-	soc {
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-		interrupt-parent = <&intc>;
+-		ranges;
+-		compatible = "simple-bus";
+-
+-		powerdown: powerdown-controller {
+-			compatible = "st,stih407-powerdown";
+-			#reset-cells = <1>;
+-		};
+-
+-		softreset: softreset-controller {
+-			compatible = "st,stih407-softreset";
+-			#reset-cells = <1>;
+-		};
+-
+-		picophyreset: picophyreset-controller {
+-			compatible = "st,stih407-picophyreset";
+-			#reset-cells = <1>;
+-		};
+-
+-		syscfg_sbc: sbc-syscfg@9620000 {
+-			compatible = "st,stih407-sbc-syscfg", "syscon";
+-			reg = <0x9620000 0x1000>;
+-		};
+-
+-		syscfg_front: front-syscfg@9280000 {
+-			compatible = "st,stih407-front-syscfg", "syscon";
+-			reg = <0x9280000 0x1000>;
+-		};
+-
+-		syscfg_rear: rear-syscfg@9290000 {
+-			compatible = "st,stih407-rear-syscfg", "syscon";
+-			reg = <0x9290000 0x1000>;
+-		};
+-
+-		syscfg_flash: flash-syscfg@92a0000 {
+-			compatible = "st,stih407-flash-syscfg", "syscon";
+-			reg = <0x92a0000 0x1000>;
+-		};
+-
+-		syscfg_sbc_reg: fvdp-lite-syscfg@9600000 {
+-			compatible = "st,stih407-sbc-reg-syscfg", "syscon";
+-			reg = <0x9600000 0x1000>;
+-		};
+-
+-		syscfg_core: core-syscfg@92b0000 {
+-			compatible = "st,stih407-core-syscfg", "syscon";
+-			reg = <0x92b0000 0x1000>;
+-		};
+-
+-		syscfg_lpm: lpm-syscfg@94b5100 {
+-			compatible = "st,stih407-lpm-syscfg", "syscon";
+-			reg = <0x94b5100 0x1000>;
+-		};
+-
+-		serial@9830000 {
+-			compatible = "st,asc";
+-			reg = <0x9830000 0x2c>;
+-			interrupts = <GIC_SPI 122 IRQ_TYPE_NONE>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_serial0>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-
+-			status = "disabled";
+-		};
+-
+-		serial@9831000 {
+-			compatible = "st,asc";
+-			reg = <0x9831000 0x2c>;
+-			interrupts = <GIC_SPI 123 IRQ_TYPE_NONE>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_serial1>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-
+-			status = "disabled";
+-		};
+-
+-		serial@9832000 {
+-			compatible = "st,asc";
+-			reg = <0x9832000 0x2c>;
+-			interrupts = <GIC_SPI 124 IRQ_TYPE_NONE>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_serial2>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-
+-			status = "disabled";
+-		};
+-
+-		/* SBC_ASC0 - UART10 */
+-		sbc_serial0: serial@9530000 {
+-			compatible = "st,asc";
+-			reg = <0x9530000 0x2c>;
+-			interrupts = <GIC_SPI 138 IRQ_TYPE_NONE>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_sbc_serial0>;
+-			clocks = <&clk_sysin>;
+-
+-			status = "disabled";
+-		};
+-
+-		serial@9531000 {
+-			compatible = "st,asc";
+-			reg = <0x9531000 0x2c>;
+-			interrupts = <GIC_SPI 139 IRQ_TYPE_NONE>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_sbc_serial1>;
+-			clocks = <&clk_sysin>;
+-
+-			status = "disabled";
+-		};
+-
+-		i2c@9840000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
+-			reg = <0x9840000 0x110>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c0_default>;
+-
+-			status = "disabled";
+-		};
+-
+-		i2c@9841000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			reg = <0x9841000 0x110>;
+-			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c1_default>;
+-
+-			status = "disabled";
+-		};
+-
+-		i2c@9842000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			reg = <0x9842000 0x110>;
+-			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c2_default>;
+-
+-			status = "disabled";
+-		};
+-
+-		i2c@9843000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			reg = <0x9843000 0x110>;
+-			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c3_default>;
+-
+-			status = "disabled";
+-		};
+-
+-		i2c@9844000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			reg = <0x9844000 0x110>;
+-			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c4_default>;
+-
+-			status = "disabled";
+-		};
+-
+-		i2c@9845000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			reg = <0x9845000 0x110>;
+-			interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c5_default>;
+-
+-			status = "disabled";
+-		};
+-
+-
+-		/* SSCs on SBC */
+-		i2c@9540000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			reg = <0x9540000 0x110>;
+-			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&clk_sysin>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c10_default>;
+-
+-			status = "disabled";
+-		};
+-
+-		i2c@9541000 {
+-			compatible = "st,comms-ssc4-i2c";
+-			reg = <0x9541000 0x110>;
+-			interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&clk_sysin>;
+-			clock-names = "ssc";
+-			clock-frequency = <400000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&pinctrl_i2c11_default>;
+-
+-			status = "disabled";
+-		};
+-
+-		usb2_picophy0: usbpicophy@0 {
+-			compatible = "st,stih407-usb2-phy";
+-			reg = <0xf8 0x04>,	/* syscfg 5062 */
+-			      <0xf4 0x04>;	/* syscfg 5061 */
+-			reg-names = "param", "ctrl";
+-			#phy-cells = <0>;
+-			st,syscfg = <&syscfg_core>;
+-			resets = <&softreset STIH407_PICOPHY_SOFTRESET>,
+-				 <&picophyreset STIH407_PICOPHY0_RESET>;
+-			reset-names = "global", "port";
+-		};
+-	};
+-};
+diff --git a/arch/arm/boot/dts/stihxxx-b2120.dtsi b/arch/arm/boot/dts/stihxxx-b2120.dtsi
+new file mode 100644
+index 0000000..0074bd4
+--- /dev/null
++++ b/arch/arm/boot/dts/stihxxx-b2120.dtsi
+@@ -0,0 +1,59 @@
++/*
++ * Copyright (C) 2014 STMicroelectronics (R&D) Limited.
++ * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/ {
++	soc {
++		sbc_serial0: serial@9530000 {
++			status = "okay";
++		};
++
++		leds {
++			compatible = "gpio-leds";
++			red {
++				#gpio-cells = <2>;
++				label = "Front Panel LED";
++				gpios = <&pio4 1 0>;
++				linux,default-trigger = "heartbeat";
++			};
++			green {
++				#gpio-cells = <2>;
++				gpios = <&pio1 3 0>;
++				default-state = "off";
++			};
++		};
++
++		i2c@9842000 {
++			status = "okay";
++		};
++
++		i2c@9843000 {
++			status = "okay";
++		};
++
++		i2c@9844000 {
++			status = "okay";
++		};
++
++		i2c@9845000 {
++			status = "okay";
++		};
++
++		i2c@9540000 {
++			status = "okay";
++		};
++
++		/* SSC11 to HDMI */
++		i2c@9541000 {
++			status = "okay";
++			/* HDMI V1.3a supports Standard mode only */
++			clock-frequency = <100000>;
++			st,i2c-min-scl-pulse-width-us = <0>;
++			st,i2c-min-sda-pulse-width-us = <5>;
++		};
++	};
++};
+-- 
+1.9.1
 
------Original Message-----
-From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-Sent: Thursday, November 13, 2014 4:16 PM
-To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek; Soren Brinkmann; grant.likely@linaro.org; robh+dt@kernel.org
-Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; Appana Durga Kedareswara Rao
-Subject: Re: [PATCH] can: Fix bug in suspend/resume
-
-On 11/13/2014 11:15 AM, Marc Kleine-Budde wrote:
-> On 11/13/2014 07:58 AM, Kedareswara rao Appana wrote:
->> When accessing the priv structure use container_of instead of dev_get_drvdata.
->
-> Why?
-
-The drvdata here is the struct net_device, not the platform device.
-Please state this in the commit message.
-
-If I understand the code correct, you can make use of the existing helper function to_platform_device():
-
-http://lxr.free-electrons.com/source/include/linux/platform_device.h#L42
-
-Thanks for the suggestion.
- Will use this macro(to_platform_device)  .
-
->
->> Enable the clocks in the suspend before accessing the registers of the CAN.
->>
->> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
->> ---
->>  drivers/net/can/xilinx_can.c |   20 ++++++++++++++++++--
->>  1 files changed, 18 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/can/xilinx_can.c
->> b/drivers/net/can/xilinx_can.c index 5e8b560..63ef645 100644
->> --- a/drivers/net/can/xilinx_can.c
->> +++ b/drivers/net/can/xilinx_can.c
->> @@ -972,15 +972,30 @@ static const struct net_device_ops xcan_netdev_ops = {
->>   */
->>  static int __maybe_unused xcan_suspend(struct device *dev)  {
->> -    struct platform_device *pdev = dev_get_drvdata(dev);
->> +    struct platform_device *pdev = container_of(dev,
->> +                    struct platform_device, dev);
->>      struct net_device *ndev = platform_get_drvdata(pdev);
->>      struct xcan_priv *priv = netdev_priv(ndev);
->> +    int ret;
->>
->>      if (netif_running(ndev)) {
->>              netif_stop_queue(ndev);
->>              netif_device_detach(ndev);
->>      }
->>
->> +    ret = clk_prepare_enable(priv->can_clk);
->> +    if (ret) {
->> +            dev_err(dev, "unable to enable device clock\n");
->> +            return ret;
->> +    }
->> +
->> +    ret = clk_prepare_enable(priv->bus_clk);
->> +    if (ret) {
->> +            dev_err(dev, "unable to enable bus clock\n");
->> +            clk_disable_unprepare(priv->can_clk);
->> +            return ret;
->> +    }
->
-> Now you have clock imbalance. Per suspend/resume cycle the clocks are
-> enabled twice, but disabled only once.
->
-
-The clocks are getting disabled and un prepared at the end of the probe.
-In the resume the driver is doing register write.
-
-Sorry spell mistake not in resume in the suspend I am doing a register write.
-
-In order to do that register write I have to again enable and prepare the clocks.
-
-
-Regards,
-Kedar.
-
-
-Regards,
-Kedar.
-
->> +
->>      priv->write_reg(priv, XCAN_MSR_OFFSET, XCAN_MSR_SLEEP_MASK);
->>      priv->can.state = CAN_STATE_SLEEPING;
->>
->> @@ -999,7 +1014,8 @@ static int __maybe_unused xcan_suspend(struct device *dev)
->>   */
->>  static int __maybe_unused xcan_resume(struct device *dev)  {
->> -    struct platform_device *pdev = dev_get_drvdata(dev);
->> +    struct platform_device *pdev = container_of(dev,
->> +                    struct platform_device, dev);
->>      struct net_device *ndev = platform_get_drvdata(pdev);
->>      struct xcan_priv *priv = netdev_priv(ndev);
->>      int ret;
-
-Marc
-
---
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
