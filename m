@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551AbaKMKs7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:48:59 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52067 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328AbaKMKs5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:48:57 -0500
-Message-ID: <54648C95.6020704@arm.com>
-Date: Thu, 13 Nov 2014 10:48:53 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
- to reduce duplicated code
-References: <20141112133941.647950773@linutronix.de>  <20141112134120.393705922@linutronix.de> <1415872649.17958.37.camel@mtksdaap41> <54648138.2070900@linux.intel.com>
-In-Reply-To: <54648138.2070900@linux.intel.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 13 Nov 2014 10:48:54.0405 (UTC) FILETIME=[6B327B50:01CFFF2F]
-X-MC-Unique: 114111310485404901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932601AbaKMKte (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:49:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19710 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932338AbaKMKtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 05:49:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,376,1413270000"; 
+   d="scan'208";a="631308337"
+From: Maurice Petallo <mauricex.r.petallo@intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maurice Petallo <mauricex.r.petallo@intel.com>
+Subject: [PATCH] thermal: Don't call thermal_zone_device_update inside spinlock
+Date: Thu, 13 Nov 2014 18:47:04 +0800
+Message-Id: <1415875624-587-1-git-send-email-mauricex.r.petallo@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/11/14 10:00, Jiang Liu wrote:
-> On 2014/11/13 17:57, Yingjoe Chen wrote:
->> On Wed, 2014-11-12 at 13:43 +0000, Thomas Gleixner wrote:
->>> Index: tip/kernel/irq/irqdomain.c
->>> ===================================================================
->>> --- tip.orig/kernel/irq/irqdomain.c
->>> +++ tip/kernel/irq/irqdomain.c
->>> @@ -882,6 +882,16 @@ int irq_domain_set_hwirq_and_chip(struct
->>>  	return 0;
->>>  }
->>>  
->>> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
->>> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
->>> +			 void *chip_data, irq_flow_handler_t handler,
->>> +			 void *handler_data, const char *handler_name)
->>> +{
->>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
->>> +	__irq_set_handler(virq, handler, 0, handler_name);
->>> +	irq_set_handler_data(virq, handler_data);
->>> +}
->>> +
->>
->> Hi,
->>
->> While trying to use this function, I'm not sure about its interface.
->> This function have 8 parameters but only save 3 function calls. After
->> checking uses in Jiang's original patch, I think this make code harder
->> to understand.
-> Hi Joe,
-> 	It's true, but we also want to reduce duplicated code:(
+The driver calls spin_lock_irqsave during DTS interrupt. The interrupt
+handle then calls thermal_zone_device_update which implicitly calls
+a sleep function and produce the following bug:
 
-I'm in two minds about this one.
+BUG: sleeping function called from invalid context at kernel/locking/mutex.c:97
+in_atomic(): 1, irqs_disabled(): 1, pid: 920, name: irq/86-soc_dts
+CPU: 0 PID: 920 Comm: irq/86-soc_dts Tainted: G            E  3.17.0-rc2+ #1
+Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS BYTICRB1.86C.0092.R31.1408290850 08/29/2014
+ 00000000 00000000 c25dbe74 c1818cfd f3cc488c c25dbe9c c1059305 c1b4063b
+ 00000001 00000001 00000398 f3cc488c f6817644 f6817644 f3ecc6c0 c25dbea8
+ c18208f2 f6817400 c25dbebc c159b0bb c25dbedc f6817400 f32a2300 c25dbee8
+Call Trace:
+ [<c1818cfd>] dump_stack+0x48/0x60
+ [<c1059305>] __might_sleep+0xec/0xf4
+ [<c18208f2>] mutex_lock+0x1c/0x34
+ [<c159b0bb>] thermal_zone_get_temp+0x34/0x59
+ [<c159bde5>] thermal_zone_device_update+0x2d/0xcb
+ [<f85da16a>] ? iosf_mbi_write+0x6c/0x74 [iosf_mbi]
+ [<f7c7445d>] soc_irq_thread_fn+0x10c/0x163 [intel_soc_dts_thermal]
+ [<c107b72b>] irq_thread_fn+0x18/0x2a
+ [<c107bedb>] irq_thread+0x81/0x11f
+ [<c107b713>] ? irq_finalize_oneshot+0x7c/0x7c
+ [<c107bf79>] ? irq_thread+0x11f/0x11f
+ [<c107be5a>] ? wake_threads_waitq+0x31/0x31
+ [<c1054217>] kthread+0x87/0x8c
+ [<c1821e41>] ret_from_kernel_thread+0x21/0x30
+ [<c1054190>] ? __kthread_parkme+0x55/0x55
 
-Yes, it looks horrible (to be fair, I hate anything that has more than 3
-or 4 parameters, because I can never remember what they're for).
+Signed-off-by: Maurice Petallo <mauricex.r.petallo@intel.com>
+Acked-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+---
+ drivers/thermal/intel_soc_dts_thermal.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-On the other hand, it gives you a nice check-point in your code, with
-all the bits you need to set, or at least consider. Because it depends
-on so many things that you may have to construct/obtain, you quickly
-realize that there is not that many locations in your stack that fits
-these requirements. Yes, this a twisted reasoning.
-
-Thanks,
-
-	M.
+diff --git a/drivers/thermal/intel_soc_dts_thermal.c b/drivers/thermal/intel_soc_dts_thermal.c
+index a6a0a18..5580f5b 100644
+--- a/drivers/thermal/intel_soc_dts_thermal.c
++++ b/drivers/thermal/intel_soc_dts_thermal.c
+@@ -360,6 +360,9 @@ static void proc_thermal_interrupt(void)
+ 	u32 sticky_out;
+ 	int status;
+ 	u32 ptmc_out;
++	unsigned long flags;
++
++	spin_lock_irqsave(&intr_notify_lock, flags);
+ 
+ 	/* Clear APIC interrupt */
+ 	status = iosf_mbi_read(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_READ,
+@@ -378,21 +381,20 @@ static void proc_thermal_interrupt(void)
+ 		/* reset sticky bit */
+ 		status = iosf_mbi_write(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_WRITE,
+ 					SOC_DTS_OFFSET_PTTSS, sticky_out);
++		spin_unlock_irqrestore(&intr_notify_lock, flags);
++
+ 		for (i = 0; i < SOC_MAX_DTS_SENSORS; ++i) {
+ 			pr_debug("TZD update for zone %d\n", i);
+ 			thermal_zone_device_update(soc_dts[i]->tzone);
+ 		}
+-	}
++	} else
++		spin_unlock_irqrestore(&intr_notify_lock, flags);
+ 
+ }
+ 
+ static irqreturn_t soc_irq_thread_fn(int irq, void *dev_data)
+ {
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&intr_notify_lock, flags);
+ 	proc_thermal_interrupt();
+-	spin_unlock_irqrestore(&intr_notify_lock, flags);
+ 	pr_debug("proc_thermal_interrupt\n");
+ 
+ 	return IRQ_HANDLED;
 -- 
-Jazz is not dead. It just smells funny...
+1.7.9.5
 
