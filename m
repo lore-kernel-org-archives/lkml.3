@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890AbaKMOiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:38:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913AbaKMOiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:38:18 -0500
-Date: Thu, 13 Nov 2014 08:38:10 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        jslaby@suse.cz, pmladek@suse.cz, live-patching@vger.kernel.org,
-        kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] kernel: add support for live patching
-Message-ID: <20141113143810.GA502@treble.redhat.com>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
- <1415284748-14648-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411131105290.10080@pobox.suse.cz>
+	id S933053AbaKMOnH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:43:07 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41829 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932705AbaKMOnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 09:43:06 -0500
+Date: Thu, 13 Nov 2014 14:43:03 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: load FS modules before pinning the mountpoint
+Message-ID: <20141113144303.GJ7996@ZenIV.linux.org.uk>
+References: <1415888073-1827-1-git-send-email-dh.herrmann@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411131105290.10080@pobox.suse.cz>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+In-Reply-To: <1415888073-1827-1-git-send-email-dh.herrmann@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 11:16:00AM +0100, Miroslav Benes wrote:
+On Thu, Nov 13, 2014 at 03:14:33PM +0100, David Herrmann wrote:
+> Several pseudo file-systems create default mountpoints in /sys/fs/ or
+> /sys/kernel/, including:
+>     /sys/kernel/debug
+>     /sys/fs/mqueue
+>     /sys/fs/cgroup
+>     /sys/fs/pstore
 > 
-> Hi,
+> If the given pseudo file-system is available as a module, user-space can
+> rely on mount(2) to load the module on-demand (assuming MODULE_ALIAS_FS).
+> However, in case the default mount-point is created by the file-system
+> itself, mount(2) will fail as it cannot pin the mountpoint.
 > 
-> thank you for the first version of the united live patching core.
-> 
-> The patch below implements some of our review objections. Changes are 
-> described in the commit log. It simplifies the hierarchy of data 
-> structures, removes data duplication (lp_ and lpc_ structures) and 
-> simplifies sysfs directory.
-> 
-> I did not try to repair other stuff (races, function names, function 
-> prefix, api symmetry etc.). It should serve as a demonstration of our 
-> point of view.
-> 
-> There are some problems with this. try_module_get and module_put may be 
-> called several times for each kernel module where some function is 
-> patched in. This should be fixed with module going notifier as suggested 
-> by Petr. 
-> 
-> The modified core was tested with modified testing live patch originally 
-> from Seth's github. It worked as expected.
-> 
-> Please take a look at these changes, so we can discuss them in more 
-> detail.
+> This patch makes mount(2) load any requested file-systems before pinning
+> the target mount-point. This way, a file-system module can create default
+> mount-points in the module instead of creating them statically in the
+> core kernel.
 
-Hi Miroslav,
+I'm not taking that until I see a module that would attempt to do such
+mountpoint creation *and* managed to get it race-free.
 
-Thanks for the code suggestions.
-
-This is a single patch with three major changes, which makes it hard to
-discuss each individual change on its own merits.
-
-Also, Seth has already made a lot of changes already based on previous
-comments, and is very close to having a v2 patch.  Because this patch is
-so big, there are a lot of conflicts.
-
-Can you wait for the v2 patch set and then post your own patch set
-against it, with the patches split out so we can discuss them
-individually?
-
--- 
-Josh
+Besides, I really don't like the way you do this lookup only to never use
+the result other than for pinning the damn module.  But that's secondary -
+the main issue is with the amount of fun races in the whole "let module
+create that default mountpoint" approach.
