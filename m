@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933366AbaKMQ6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 11:58:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39184 "EHLO mx1.redhat.com"
+	id S1754033AbaKMRAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:00:18 -0500
+Received: from mga14.intel.com ([192.55.52.115]:57980 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932245AbaKMQ6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 11:58:34 -0500
-Message-ID: <5464E336.7020402@redhat.com>
-Date: Thu, 13 Nov 2014 17:58:30 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751116AbaKMRAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 12:00:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="416075109"
+Date: Thu, 13 Nov 2014 22:31:04 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: pl330: Fix linker error "undefined
+ reference to `__aeabi_uldivmod'"
+Message-ID: <20141113170104.GP24582@intel.com>
+References: <1415896047.1787.4.camel@linaro.org>
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm: memslots: replace heap sort with insertion sort
-References: <545BA09E.7040301@redhat.com> <1415896267-2146-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1415896267-2146-1-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415896047.1787.4.camel@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 13/11/2014 17:31, Igor Mammedov wrote:
-> memslots is a sorted array, when slot changes in it
-> with current heapsort it would take O(n log n) time
-> to update array, while using insertion sort like
-> algorithm on array with 1 item out of order will
-> take only O(n) time.
+On Thu, Nov 13, 2014 at 04:27:27PM +0000, Jon Medhurst (Tixy) wrote:
+> 32-bit ARM kernels may have a 64-bit dma_addr_t but have no
+> implementation of the compiler helper for 64-bit unsigned division,
+> therefore the use of the modulo operator in pl330_prep_dma_memcpy causes
+> the link error "undefined reference to `__aeabi_uldivmod'"
 > 
-> Replace current heapsort with custom sort that
-> takes advantage of memslots usage pattern and known
-> position of changed slot.
+> As the burst value is always a power of two we can fix the problem, and
+> make the code more efficient, by replacing "% burst" with "& (burst-1)".
 > 
-> performance change of 128 memslots insersions with
-> gradually increasing size (the worst case):
->       heap sort   custom sort
-> max:  249747      15654 cycles
-> min:  52536       5562 cycles
-> with custom sort alg taking 90% less then original
-> update time.
-> 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Jon Medhurst <tixy@linaro.org>
 > ---
->  virt/kvm/kvm_main.c | 54 +++++++++++++++++++++++++++++------------------------
->  1 file changed, 30 insertions(+), 24 deletions(-)
+> 
+> Vinod. I haven't added a 'Fixes:' line because I was unsure if the patch
+> in linux-next is part of a stable branch or if the SHA1 might change
+> before hitting mainline. If it stable then the line should be...
+> 
+> Fixes: 63369d0a96dc ("dmaengine: pl330: Align DMA memcpy operations to MFIFO width")
+I have applied this for now but...
 
-Nice!  I think strictly speaking it's not an insertion sort because
-insertion sort doesn't use swaps; it's more similar to a bubble sort.
-But the code is very readable and we do not need ultimate
-performance---we are just trying to avoid doing something stupid.
+While at it and also related to Fixes, typically the fixes branch wont be
+rebased before its sent to Linus and merged. But this is introduced in patch
+which is sent, should I just fold it in and not cause this regression in
+first place...?
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+-- 
+~Vinod
+> 
+> 
+>  drivers/dma/pl330.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index 38c9617..52c4c62 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -2464,11 +2464,8 @@ pl330_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dst,
+>  	 * parameters because our DMA programming algorithm doesn't cope with
+>  	 * transfers which straddle an entry in the DMA device's MFIFO.
+>  	 */
+> -	while (burst > 1) {
+> -		if (!((src | dst | len) % burst))
+> -			break;
+> +	while ((src | dst | len) & (burst - 1))
+>  		burst /= 2;
+> -	}
+>  
+>  	desc->rqcfg.brst_size = 0;
+>  	while (burst != (1 << desc->rqcfg.brst_size))
+> -- 
+> 2.1.1
+> 
+> 
 
-Paolo
+-- 
