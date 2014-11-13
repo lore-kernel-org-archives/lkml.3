@@ -1,137 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934109AbaKMUHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 15:07:17 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42121 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933383AbaKMUHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 15:07:14 -0500
-Date: Thu, 13 Nov 2014 12:07:01 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        Ruchika Gupta <ruchika.gupta@freescale.com>,
-        Michael Neuling <mikey@neuling.org>, Wolfram Sang <wsa@the-dreams.de>,
-        "open list:CRYPTO API" <linux-crypto@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Manuel =?iso-8859-1?Q?Sch=F6lling?= <manuel.schoelling@gmx.de>,
-        Dave Jiang <dave.jiang@intel.com>, Rashika <rashika.kheria@gmail.com>,
-        "open list:DMA GENERIC OFFLO..." <dmaengine@vger.kernel.org>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "open list:Hyper-V CORE AND..." <devel@linuxdriverproject.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, NeilBrown <neilb@suse.de>,
-        Joerg Roedel <jroedel@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Paul McQuade <paulmcquad@gmail.com>,
-        "open list:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>
-Subject: Re: [RFC PATCH 00/16] Replace smp_read_barrier_depends() with
- lockless_derefrence()
-Message-ID: <20141113200701.GP4460@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
+	id S934115AbaKMUIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 15:08:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58828 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933383AbaKMUIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 15:08:39 -0500
+Date: Thu, 13 Nov 2014 17:08:33 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 02/10] perf, tools: Support handling complete branch
+ stacks as histograms
+Message-ID: <20141113200833.GI3612@kernel.org>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <1415844328-4884-3-git-send-email-andi@firstfloor.org>
+ <20141113191417.GC3612@kernel.org>
+ <20141113195208.GS12538@two.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111320-0009-0000-0000-000006503C8C
+In-Reply-To: <20141113195208.GS12538@two.firstfloor.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 02:24:06PM -0500, Pranith Kumar wrote:
-> Recently lockless_dereference() was added which can be used in place of
-> hard-coding smp_read_barrier_depends(). 
+Em Thu, Nov 13, 2014 at 08:52:08PM +0100, Andi Kleen escreveu:
+> On Thu, Nov 13, 2014 at 04:14:17PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Nov 12, 2014 at 06:05:20PM -0800, Andi Kleen escreveu:
+> > > +static int remove_loops(struct branch_entry *l, int nr)
+> > > +{
+> > > +	int i, j, off;
+> > > +	unsigned char chash[CHASHSZ];
+> > > +
+> > > +	memset(chash, NO_ENTRY, sizeof(chash));
+> > > +
+> > > +	BUG_ON(nr >= 256);
+> > 
+> > What is wrong with return -1 and propagating the error, so that the user
+> > is informed if the data being processed is bogus, stop processing with a
+> > warning or continue processing if finding the next valid record is
+> > possible?
 > 
-> http://lkml.iu.edu/hypermail/linux/kernel/1410.3/04561.html
-> 
-> The following series tries to do this.
-> 
-> There are still some hard-coded locations which I was not sure how to replace
-> with. I will send in separate patches/questions regarding them.
+> The error doesn't depend on the record. There is a check for the record
+> being < 127 in front of this. This is merely to catch that 
+> if someone increases PERF_MAX_BRANCH_DEPTH to below 255 they need
+> to increase the type of the hash table from u8.
 
-Thank you for taking this on!  Some questions and comments in response
-to the individual patches.
+Ok, so this would be better as a BUILD_BUG_ON? 
 
-							Thanx, Paul
+Like:
 
-> Pranith Kumar (16):
->   crypto: caam - Remove unnecessary smp_read_barrier_depends()
->   doc: memory-barriers.txt: Document use of lockless_dereference()
->   drivers: dma: Replace smp_read_barrier_depends() with
->     lockless_dereference()
->   dcache: Replace smp_read_barrier_depends() with lockless_dereference()
->   overlayfs: Replace smp_read_barrier_depends() with
->     lockless_dereference()
->   assoc_array: Replace smp_read_barrier_depends() with
->     lockless_dereference()
->   hyperv: Replace smp_read_barrier_depends() with lockless_dereference()
->   rcupdate: Replace smp_read_barrier_depends() with
->     lockless_dereference()
->   percpu: Replace smp_read_barrier_depends() with lockless_dereference()
->   perf: Replace smp_read_barrier_depends() with lockless_dereference()
->   seccomp: Replace smp_read_barrier_depends() with
->     lockless_dereference()
->   task_work: Replace smp_read_barrier_depends() with
->     lockless_dereference()
->   ksm: Replace smp_read_barrier_depends() with lockless_dereference()
->   slab: Replace smp_read_barrier_depends() with lockless_dereference()
->   netfilter: Replace smp_read_barrier_depends() with
->     lockless_dereference()
->   rxrpc: Replace smp_read_barrier_depends() with lockless_dereference()
-> 
->  Documentation/memory-barriers.txt |  2 +-
->  drivers/crypto/caam/jr.c          |  3 ---
->  drivers/dma/ioat/dma_v2.c         |  3 +--
->  drivers/dma/ioat/dma_v3.c         |  3 +--
->  fs/dcache.c                       |  7 ++-----
->  fs/overlayfs/super.c              |  4 +---
->  include/linux/assoc_array_priv.h  | 11 +++++++----
->  include/linux/hyperv.h            |  9 ++++-----
->  include/linux/percpu-refcount.h   |  4 +---
->  include/linux/rcupdate.h          | 10 +++++-----
->  kernel/events/core.c              |  3 +--
->  kernel/events/uprobes.c           |  8 ++++----
->  kernel/seccomp.c                  |  7 +++----
->  kernel/task_work.c                |  3 +--
->  lib/assoc_array.c                 |  7 -------
->  mm/ksm.c                          |  7 +++----
->  mm/slab.h                         |  6 +++---
->  net/ipv4/netfilter/arp_tables.c   |  3 +--
->  net/ipv4/netfilter/ip_tables.c    |  3 +--
->  net/ipv6/netfilter/ip6_tables.c   |  3 +--
->  net/rxrpc/ar-ack.c                | 22 +++++++++-------------
->  security/keys/keyring.c           |  6 ------
->  22 files changed, 50 insertions(+), 84 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
+#define CHASHSZ 127
+#define CHASHBITS 7
+#define NO_ENTRY 0xff
 
+#define PERF_MAX_BRANCH_DEPTH 127
+
+/* Remove loops. */
+static int remove_loops(struct branch_entry *l, int nr)
+{
+	int i, j, off;
+	unsigned char chash[CHASHSZ];
+
+	memset(chash, NO_ENTRY, sizeof(chash));
+
+	/* Change the type of the chash table, u8 is not enough now */
+	BUILD_BUG_ON(PERF_MAX_BRANCH_DEPTH >= 256);
+	for (i = 0; i < nr; i++) {
+		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
+
+-------------------------------------
+
+- Arnaldo
