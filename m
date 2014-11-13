@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934410AbaKMVvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:51:43 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42658 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933424AbaKMVvm (ORCPT
+	id S934548AbaKMVzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:55:15 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:53227 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934250AbaKMVzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:51:42 -0500
-Date: Thu, 13 Nov 2014 21:51:39 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Jeff Layton <jlayton@poochiereds.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        linux-fsdevel@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/56] fs: Macros to define splice file_operations
-Message-ID: <20141113215139.GK7996@ZenIV.linux.org.uk>
-References: <pieter@boesman.nl>
- <1415913813-362-1-git-send-email-pieter@boesman.nl>
- <1415913813-362-5-git-send-email-pieter@boesman.nl>
+	Thu, 13 Nov 2014 16:55:14 -0500
+Message-ID: <546528BF.5040902@gmail.com>
+Date: Thu, 13 Nov 2014 16:55:11 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415913813-362-5-git-send-email-pieter@boesman.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Howells <dhowells@redhat.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 16/16] rxrpc: Replace smp_read_barrier_depends() with
+ lockless_dereference()
+References: <1415906662-4576-17-git-send-email-bobby.prani@gmail.com> <1415906662-4576-1-git-send-email-bobby.prani@gmail.com> <24601.1415911646@warthog.procyon.org.uk>
+In-Reply-To: <24601.1415911646@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 10:22:41PM +0100, Pieter Smith wrote:
-> Provides a CONFIG_SYSCALL_SPLICE compatible way of defining the .splice_read
-> and .splice_write file_operations so that they can later be compiled out when
-> the kernel is configured without the splice-family syscalls
+On 11/13/2014 03:47 PM, David Howells wrote:
+> Pranith Kumar <bobby.prani@gmail.com> wrote:
+> 
+>> Recently lockless_dereference() was added which can be used in place of
+>> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+> 
+> Actually, the use of smp_read_barrier_depends() is wrong in circular
+> buffering.  See Documentation/circular-buffers.txt
+> 
 
-This (and subsequent stuff making use of that) is bloody pointless.  You
-save 2 words per file_operations instance, at the cost of making things
-uglier and harder to grep.  NAK.
+OK. Should I send in a patch removing these barriers then?
+
+--
+Pranith
+
