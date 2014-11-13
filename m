@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933629AbaKMPHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:07:18 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:41178 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933164AbaKMPHO (ORCPT
+	id S933646AbaKMPHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:07:32 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:50588 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932706AbaKMPH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:07:14 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-4c-5464c921df7e
+	Thu, 13 Nov 2014 10:07:26 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-59-5464c92c63f8
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>
 Cc: Zhang Rui <rui.zhang@intel.com>,
@@ -16,32 +16,35 @@ Cc: Zhang Rui <rui.zhang@intel.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v2 30/33] thermal: exynos: remove test_mux pdata field
-Date: Thu, 13 Nov 2014 16:01:25 +0100
-Message-id: <1415890888-8881-31-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v2 31/33] thermal: exynos: remove SoC type ifdefs
+Date: Thu, 13 Nov 2014 16:01:26 +0100
+Message-id: <1415890888-8881-32-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQV3FkykhBsd+Clg0XA2x2DhjPavF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t9jQV2dkykhBre2ylk0XA2x2DhjPavF
 	/CvXWC3ONr1ht3jzcDOjxeVdc9gsPvceYbSYcX4fk8WTh31sDpweO2fdZfdYvOclk0ffllWM
-	Hp83yQWwRHHZpKTmZJalFunbJXBlfPpzhq1gr0RF2/adLA2M10S6GDk5JARMJJ4v+s8GYYtJ
-	XLi3Hsjm4hASmM4oMfXNWyaQhJBAF5PEr1+lIDabgJXExPZVjCC2iICWxIlL25lAGpgFljFJ
-	XPo2H8jh4BAWcJN4fYALpIZFQFXi6O9d7CA2r4CHxNdDTUwQyxQlup9NAFvMCRR/NfUvI8Qu
-	d4lrj94xT2DkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOLieSe9gXNVgcYhRgINR
-	iYf3BUtKiBBrYllxZe4hRgkOZiURXu/DQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE
-	0hNLUrNTUwtSi2CyTBycUg2M/Yv9Ni5/5/Yoag73leeZZqa1KX8yH92VVViStqlQYc70Wqtt
-	6jevPz7KGjrDZpOTunn4/wtWXYGNXz11HQPnyVRs/qIlJ+VzX22L9R3HBawSzzcem9yq3v9/
-	ww23awoOxZxR8p/MUt0TzwuXH7j+JWjajfI8dof/e+6Hs33ZsFCMt4N731RxJZbijERDLeai
-	4kQAfubW7SoCAAA=
+	Hp83yQWwRHHZpKTmZJalFunbJXBlrJn+irHgtEXFoh0/2RoY7+l3MXJySAiYSPR/PMgMYYtJ
+	XLi3ng3EFhKYzijx85JSFyMXkN3FJDGh4RI7SIJNwEpiYvsqRhBbREBL4sSl7UwgRcwCy5gk
+	Ln2bzwSSEBZwlNi09QBrFyMHB4uAqsSiux4gJq+Ah0TjKj+IXYoS3c8mgO3iBAq/mvqXEWKv
+	u8S1R++YJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHFrPpHcwrmqwOMQowMGo
+	xMP7giUlRIg1say4MvcQowQHs5IIr/dhoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC
+	6YklqdmpqQWpRTBZJg5OqQZGlXW/fFK1g1PbUmSKXuU3WUWxv63qaD/oGf5+4p59AWnbfgQl
+	Xlyv6/Z0beQJNo2r+zdxzbh0i/371UXeon9Z/9aq/r/Vrb/UxkByMqe2YPufiAnnrmlt5Dr0
+	Ny7x6ofjCw3kdu/ZID6bX5R9E8/Hx3Nmft116eqauFt6+pMyr7r5bZwjKS+zQYmlOCPRUIu5
+	qDgRAHnTxwcpAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace pdata->test_mux check in get_con_reg() by explicitly
-checking for SoC type.
+Maximum theoretical size saving (i.e. with only Exynos5410
+SoC support enabled in kernel config so all SoC dependend
+Exynos thermal driver code was dropped) is 4096 bytes so
+there is no much sense in keeping these ifdefs (especially
+given that they are useless once the driver gets updated to
+use device tree).
 
-Also since the used pdata->test_mux value is always identical
-use it directly and remove pdata->test_mux completely.
+While at it remove needless 'void *' casts.
 
 There should be no functional changes caused by this patch.
 
@@ -52,67 +55,214 @@ Cc: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      | 5 +++--
- drivers/thermal/samsung/exynos_tmu.h      | 2 --
- drivers/thermal/samsung/exynos_tmu_data.c | 2 --
- 3 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c      | 16 ++++++------
+ drivers/thermal/samsung/exynos_tmu_data.c | 18 --------------
+ drivers/thermal/samsung/exynos_tmu_data.h | 41 -------------------------------
+ 3 files changed, 8 insertions(+), 67 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 65eeecc..2fcb4cd 100644
+index 2fcb4cd..6cc6b6e 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -193,8 +193,9 @@ static u32 get_con_reg(struct exynos_tmu_data *data, u32 con)
- {
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
- 
--	if (pdata->test_mux)
--		con |= (pdata->test_mux << EXYNOS4412_MUX_ADDR_SHIFT);
-+	if (data->soc == SOC_ARCH_EXYNOS4412 ||
-+	    data->soc == SOC_ARCH_EXYNOS3250)
-+		con |= (EXYNOS4412_MUX_ADDR_VALUE << EXYNOS4412_MUX_ADDR_SHIFT);
- 
- 	con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK << EXYNOS_TMU_REF_VOLTAGE_SHIFT);
- 	con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 2eb4cb9..8de0f82 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -89,7 +89,6 @@ enum soc_type {
-  * @first_point_trim: temp value of the first point trimming
-  * @second_point_trim: temp value of the second point trimming
-  * @default_temp_offset: default temperature offset in case of no trimming
-- * @test_mux; information if SoC supports test MUX
-  * @cal_type: calibration type for temperature
-  * @freq_clip_table: Table representing frequency reduction percentage.
-  * @freq_tab_count: Count of the above table as frequency reduction may
-@@ -115,7 +114,6 @@ struct exynos_tmu_platform_data {
- 	u8 first_point_trim;
- 	u8 second_point_trim;
- 	u8 default_temp_offset;
--	u8 test_mux;
- 
- 	enum calibration_type cal_type;
- 	enum soc_type type;
+@@ -593,35 +593,35 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
+ static const struct of_device_id exynos_tmu_match[] = {
+ 	{
+ 		.compatible = "samsung,exynos3250-tmu",
+-		.data = (void *)EXYNOS3250_TMU_DRV_DATA,
++		.data = &exynos3250_default_tmu_data,
+ 	},
+ 	{
+ 		.compatible = "samsung,exynos4210-tmu",
+-		.data = (void *)EXYNOS4210_TMU_DRV_DATA,
++		.data = &exynos4210_default_tmu_data,
+ 	},
+ 	{
+ 		.compatible = "samsung,exynos4412-tmu",
+-		.data = (void *)EXYNOS4412_TMU_DRV_DATA,
++		.data = &exynos4412_default_tmu_data,
+ 	},
+ 	{
+ 		.compatible = "samsung,exynos5250-tmu",
+-		.data = (void *)EXYNOS5250_TMU_DRV_DATA,
++		.data = &exynos5250_default_tmu_data,
+ 	},
+ 	{
+ 		.compatible = "samsung,exynos5260-tmu",
+-		.data = (void *)EXYNOS5260_TMU_DRV_DATA,
++		.data = &exynos5260_default_tmu_data,
+ 	},
+ 	{
+ 		.compatible = "samsung,exynos5420-tmu",
+-		.data = (void *)EXYNOS5420_TMU_DRV_DATA,
++		.data = &exynos5420_default_tmu_data,
+ 	},
+ 	{
+ 		.compatible = "samsung,exynos5420-tmu-ext-triminfo",
+-		.data = (void *)EXYNOS5420_TMU_DRV_DATA,
++		.data = &exynos5420_default_tmu_data,
+ 	},
+ 	{
+ 		.compatible = "samsung,exynos5440-tmu",
+-		.data = (void *)EXYNOS5440_TMU_DRV_DATA,
++		.data = &exynos5440_default_tmu_data,
+ 	},
+ 	{},
+ };
 diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index d90b050..708c3e1 100644
+index 708c3e1..02a1c34 100644
 --- a/drivers/thermal/samsung/exynos_tmu_data.c
 +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -109,7 +109,6 @@ struct exynos_tmu_init_data const exynos3250_default_tmu_data = {
+@@ -24,7 +24,6 @@
+ #include "exynos_tmu.h"
+ #include "exynos_tmu_data.h"
+ 
+-#if defined(CONFIG_CPU_EXYNOS4210)
+ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 	.tmu_data = {
  		{
- 			EXYNOS3250_TMU_DATA,
- 			.type = SOC_ARCH_EXYNOS3250,
--			.test_mux = EXYNOS4412_MUX_ADDR_VALUE,
- 		},
+@@ -63,9 +62,7 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
  	},
  	.tmu_count = 1,
-@@ -160,7 +159,6 @@ struct exynos_tmu_init_data const exynos4412_default_tmu_data = {
+ };
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS3250)
+ #define EXYNOS3250_TMU_DATA \
+ 	.threshold_falling = 10, \
+ 	.trigger_levels[0] = 70, \
+@@ -101,9 +98,7 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 		.temp_level = 95, \
+ 	}, \
+ 	.freq_tab_count = 2
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS3250)
+ struct exynos_tmu_init_data const exynos3250_default_tmu_data = {
+ 	.tmu_data = {
  		{
- 			EXYNOS4412_TMU_DATA,
- 			.type = SOC_ARCH_EXYNOS4412,
--			.test_mux = EXYNOS4412_MUX_ADDR_VALUE,
- 		},
+@@ -113,9 +108,7 @@ struct exynos_tmu_init_data const exynos3250_default_tmu_data = {
  	},
  	.tmu_count = 1,
+ };
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
+ #define EXYNOS4412_TMU_DATA \
+ 	.threshold_falling = 10, \
+ 	.trigger_levels[0] = 70, \
+@@ -151,9 +144,7 @@ struct exynos_tmu_init_data const exynos3250_default_tmu_data = {
+ 		.temp_level = 95, \
+ 	}, \
+ 	.freq_tab_count = 2
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS4412)
+ struct exynos_tmu_init_data const exynos4412_default_tmu_data = {
+ 	.tmu_data = {
+ 		{
+@@ -163,9 +154,7 @@ struct exynos_tmu_init_data const exynos4412_default_tmu_data = {
+ 	},
+ 	.tmu_count = 1,
+ };
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS5250)
+ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+ 	.tmu_data = {
+ 		{
+@@ -175,9 +164,7 @@ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+ 	},
+ 	.tmu_count = 1,
+ };
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS5260)
+ #define __EXYNOS5260_TMU_DATA	\
+ 	.threshold_falling = 10, \
+ 	.trigger_levels[0] = 85, \
+@@ -228,9 +215,7 @@ struct exynos_tmu_init_data const exynos5260_default_tmu_data = {
+ 	},
+ 	.tmu_count = 5,
+ };
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS5420)
+ #define __EXYNOS5420_TMU_DATA	\
+ 	.threshold_falling = 10, \
+ 	.trigger_levels[0] = 85, \
+@@ -285,9 +270,7 @@ struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
+ 	},
+ 	.tmu_count = 5,
+ };
+-#endif
+ 
+-#if defined(CONFIG_SOC_EXYNOS5440)
+ #define EXYNOS5440_TMU_DATA \
+ 	.trigger_levels[0] = 100, \
+ 	.trigger_levels[4] = 105, \
+@@ -316,4 +299,3 @@ struct exynos_tmu_init_data const exynos5440_default_tmu_data = {
+ 	},
+ 	.tmu_count = 3,
+ };
+-#endif
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+index 2af312d..0bfbbf2 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.h
++++ b/drivers/thermal/samsung/exynos_tmu_data.h
+@@ -104,53 +104,12 @@
+ #define EXYNOS5440_TMU_TH_RISE4_SHIFT		24
+ #define EXYNOS5440_EFUSE_SWAP_OFFSET		8
+ 
+-#if defined(CONFIG_SOC_EXYNOS3250)
+ extern struct exynos_tmu_init_data const exynos3250_default_tmu_data;
+-#define EXYNOS3250_TMU_DRV_DATA (&exynos3250_default_tmu_data)
+-#else
+-#define EXYNOS3250_TMU_DRV_DATA (NULL)
+-#endif
+-
+-#if defined(CONFIG_CPU_EXYNOS4210)
+ extern struct exynos_tmu_init_data const exynos4210_default_tmu_data;
+-#define EXYNOS4210_TMU_DRV_DATA (&exynos4210_default_tmu_data)
+-#else
+-#define EXYNOS4210_TMU_DRV_DATA (NULL)
+-#endif
+-
+-#if defined(CONFIG_SOC_EXYNOS4412)
+ extern struct exynos_tmu_init_data const exynos4412_default_tmu_data;
+-#define EXYNOS4412_TMU_DRV_DATA (&exynos4412_default_tmu_data)
+-#else
+-#define EXYNOS4412_TMU_DRV_DATA (NULL)
+-#endif
+-
+-#if defined(CONFIG_SOC_EXYNOS5250)
+ extern struct exynos_tmu_init_data const exynos5250_default_tmu_data;
+-#define EXYNOS5250_TMU_DRV_DATA (&exynos5250_default_tmu_data)
+-#else
+-#define EXYNOS5250_TMU_DRV_DATA (NULL)
+-#endif
+-
+-#if defined(CONFIG_SOC_EXYNOS5260)
+ extern struct exynos_tmu_init_data const exynos5260_default_tmu_data;
+-#define EXYNOS5260_TMU_DRV_DATA (&exynos5260_default_tmu_data)
+-#else
+-#define EXYNOS5260_TMU_DRV_DATA (NULL)
+-#endif
+-
+-#if defined(CONFIG_SOC_EXYNOS5420)
+ extern struct exynos_tmu_init_data const exynos5420_default_tmu_data;
+-#define EXYNOS5420_TMU_DRV_DATA (&exynos5420_default_tmu_data)
+-#else
+-#define EXYNOS5420_TMU_DRV_DATA (NULL)
+-#endif
+-
+-#if defined(CONFIG_SOC_EXYNOS5440)
+ extern struct exynos_tmu_init_data const exynos5440_default_tmu_data;
+-#define EXYNOS5440_TMU_DRV_DATA (&exynos5440_default_tmu_data)
+-#else
+-#define EXYNOS5440_TMU_DRV_DATA (NULL)
+-#endif
+ 
+ #endif /*_EXYNOS_TMU_DATA_H*/
 -- 
 1.8.2.3
 
