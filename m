@@ -1,161 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655AbaKMMU1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:20:27 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:52482 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498AbaKMMUZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:20:25 -0500
-Date: Thu, 13 Nov 2014 13:20:20 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Paul Burton <paul.burton@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/10] binfmt_elf: load interpreter program headers
- earlier
-Message-ID: <20141113122011.GE23422@ulmo>
-References: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
- <1410420623-11691-3-git-send-email-paul.burton@imgtec.com>
+	id S932850AbaKMMYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:24:45 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60618 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932416AbaKMMYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 07:24:42 -0500
+Message-ID: <5464A2B5.3020207@ti.com>
+Date: Thu, 13 Nov 2014 17:53:17 +0530
+From: Vignesh R <vigneshr@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bGR76rFJjkSxVeRa"
-Content-Disposition: inline
-In-Reply-To: <1410420623-11691-3-git-send-email-paul.burton@imgtec.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Johannes Pointner <johannes.pointner@gmail.com>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <devicetree@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jan Kardell <jan.kardell@telliq.com>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
+        <linux-omap@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, Brad Griffis <bgriffis@ti.com>
+Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
+References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>	<20141103180920.GA20779@localhost.localdomain>	<545B2651.4090905@ti.com> <CAJKbBDDyShaJkzzfdFs07EK5gDUfwqWiv39Qi4FVSvRrfc6_fA@mail.gmail.com>
+In-Reply-To: <CAJKbBDDyShaJkzzfdFs07EK5gDUfwqWiv39Qi4FVSvRrfc6_fA@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---bGR76rFJjkSxVeRa
-Content-Type: multipart/mixed; boundary="3O1VwFp74L81IIeR"
-Content-Disposition: inline
+On Wednesday 12 November 2014 06:30 PM, Johannes Pointner wrote:
+> Hello Vignesh,
+> 
+> I tried your patch version 3 on a customized board and had some
+> behavior I couldn't explain.
+> If I only use the touchscreen it works fine but if I also read values
+> from the ADCs then I get a lot of pen_up events even if I am still
+> touching the screen.
+> For the test I read via
+> # cat /sys/bus/iio/devices/iio\:device0/in_voltage5_raw
+> values from the ADC in an busy loop as you explained in an email
+> before. Did you also experience such behavior or do you know what
+> causes it?
 
+Thanks for testing. I was able to fix this issue. Will post version 4
+shortly.
 
---3O1VwFp74L81IIeR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Regards
+Vignesh
 
-On Thu, Sep 11, 2014 at 08:30:15AM +0100, Paul Burton wrote:
-> Load the program headers of an ELF interpreter early enough in
-> load_elf_binary that they can be examined before it's too late to return
-> an error from an exec syscall. This patch does not perform any such
-> checking, it merely lays the groundwork for a further patch to do so.
->=20
-> No functional change is intended.
->=20
-> Signed-off-by: Paul Burton <paul.burton@imgtec.com>
-> ---
->  fs/binfmt_elf.c | 36 ++++++++++++++++++------------------
->  1 file changed, 18 insertions(+), 18 deletions(-)
->=20
-> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-[...]
-
-kmemleak started complaining for me recently and the stacktrace (see
-below) points to this function:
-
-	unreferenced object 0xec0f77c0 (size 192):
-	  comm "kworker/u8:0", pid 169, jiffies 4294939367 (age 86.360s)
-	  hex dump (first 32 bytes):
-	    01 00 00 70 1c ef 01 00 1c ef 01 00 1c ef 01 00  ...p............
-	    a0 00 00 00 a0 00 00 00 04 00 00 00 04 00 00 00  ................
-	  backtrace:
-	    [<c00ec080>] __kmalloc+0x104/0x190
-	    [<c01387d4>] load_elf_phdrs+0x60/0x8c
-	    [<c0138cb4>] load_elf_binary+0x280/0x12d8
-	    [<c00f8ef0>] search_binary_handler+0x80/0x1f0
-	    [<c00fa370>] do_execveat_common+0x570/0x658
-	    [<c00fa480>] do_execve+0x28/0x30
-	    [<c0038eb4>] ____call_usermodehelper+0x144/0x19c
-	    [<c000e638>] ret_from_fork+0x14/0x3c
-	    [<ffffffff>] 0xffffffff
-
-> @@ -605,7 +598,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
->  	int load_addr_set =3D 0;
->  	char * elf_interpreter =3D NULL;
->  	unsigned long error;
-> -	struct elf_phdr *elf_ppnt, *elf_phdata;
-> +	struct elf_phdr *elf_ppnt, *elf_phdata, *interp_elf_phdata =3D NULL;
->  	unsigned long elf_bss, elf_brk;
->  	int retval, i;
->  	unsigned long elf_entry;
-> @@ -729,6 +722,12 @@ static int load_elf_binary(struct linux_binprm *bprm)
->  		/* Verify the interpreter has a valid arch */
->  		if (!elf_check_arch(&loc->interp_elf_ex))
->  			goto out_free_dentry;
-> +
-> +		/* Load the interpreter program headers */
-> +		interp_elf_phdata =3D load_elf_phdrs(&loc->interp_elf_ex,
-> +						   interpreter);
-> +		if (!interp_elf_phdata)
-> +			goto out_free_dentry;
->  	}
-> =20
->  	/* Flush all traces of the currently running executable */
-> @@ -912,7 +911,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
->  		elf_entry =3D load_elf_interp(&loc->interp_elf_ex,
->  					    interpreter,
->  					    &interp_map_addr,
-> -					    load_bias);
-> +					    load_bias, interp_elf_phdata);
->  		if (!IS_ERR((void *)elf_entry)) {
->  			/*
->  			 * load_elf_interp() returns relocation
-> @@ -1009,6 +1008,7 @@ out_ret:
-> =20
->  	/* error cleanup */
->  out_free_dentry:
-> +	kfree(interp_elf_phdata);
-
-I think what happens is that the interp_elf_phdata memory is freed only
-in the error cleanup path, but not when the function actually succeeds.
-
-The attached patch plugs the leak for me.
-
-Thierry
-
---3O1VwFp74L81IIeR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline; filename=patch
-Content-Transfer-Encoding: quoted-printable
-
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index f95da60e440e..8a9be83e88c2 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1029,6 +1029,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 		}
- 	}
-=20
-+	kfree(interp_elf_phdata);
- 	kfree(elf_phdata);
-=20
- 	set_binfmt(&elf_format);
-
---3O1VwFp74L81IIeR--
-
---bGR76rFJjkSxVeRa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUZKH7AAoJEN0jrNd/PrOhy/MQAJVjlbLVcaWEqO9GHVkk/yen
-zwvbp8+vEipD9pWIZnbVb8HOW5szSw/M1QiKYW7nAD6v22dEtxHOAxRsCSeZch+T
-/JusxauITCGbvouclcPw+HWoFduCGocHiuBgL6UeMdcYC6usnJecglt9HgNadKAQ
-CtKCGY7uAeqJj+Fn91jjtlPmJEKL74Zy3uEdqjFJZL4VjJVteOzdKMTYcOpzuBF9
-OoJWr3H4lS5UYyMyIcrLNRFmjkjo2xy8AhXXFDy/b79PMIFskV75xy/sADu/KXxv
-V+ZMNhwnWHGo7lbmEZpvLKBZ3kFR5tj2AMXEpJ8tyBiYVZM8wtWvmU4cCkq+ACk1
-h99sJv9WvipH51laj7Y1rmZ4/z31/WHQ5S9GViHFwrWFyojsBMxBZLRRUc4NUKBO
-zQFyxqdNdpm+F2O5zGV4gVagwzT1i5feHkLHwbNae5BbyB4S5tOetL+TTXiOQ/5O
-mNv15QzOkoNaxb2aTlmmpMgINxob2WEpkGbU7naPWPATHeN+QirWVMfrGMqC4hjx
-RxZvF6ziTCN8oS2znbZ6vgkd8vmETYLaGRoFwkI0VwEEhKKvYPy3GR6Akduwzlf9
-ZK3v/77shJlozPI+nShLYelkGg/tbxtvEEefvTsQToS0IbgHNg8Ss1sfIpjvHDQB
-QMphqnv+9f+xMYFdJnhH
-=RkI8
------END PGP SIGNATURE-----
-
---bGR76rFJjkSxVeRa--
+> 
+> Without the patches the touchscreen works fine during the iio test.
+> 
+> Thanks,
+> Hannes
+> 
+> 2014-11-06 8:42 GMT+01:00 Vignesh R <vigneshr@ti.com>:
+>>
+>>
+>> On Monday 03 November 2014 11:39 PM, Richard Cochran wrote:
+>>> On Mon, Oct 27, 2014 at 04:38:27PM +0530, Vignesh R wrote:
+>>>> This series of patches fix TSC defects related to lag in touchscreen
+>>>> performance and cursor jump at touch release. The lag was result of
+>>>> udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
+>>>> The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
+>>>> to avoid false pen-up events and remove udelay.
+>>>
+>>> That advisory has two workarounds. You have chosen the second one?
+>>
+>> Work around one. Hence 5 wire design is not broken.
+>>
+>>>
+>>> The text of the second workaround says it only works on 4 wire setups,
+>>> so I wonder how 5 wire designs will be affected.
+>>>
+>>>> The advisory says to use
+>>>> steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
+>>>> ADC).
+>>>
+>>> No, it doesn't say that. (sprz360f.pdf)
+>>
+>> The pen up event detection happens immediately after charge step. Hence,
+>> interchanging ADC and TSC steps makes sure that sampling of touch
+>> co-ordinates and pen events are done one after the other. This
+>> workaround was suggested by internal hardware folks. Earlier ADC steps
+>> intervened between sampling of co-ordinates and pen event detection
+>> which is not desirable.
+>>
+>>>
+>>>> Further the X co-ordinate must be the last one to be sampled just
+>>>> before charge step. The first two patches implement the required changes.
+>>>
+>>> FWIW, I implemented the first workaround and removed the udelay not
+>>> too long ago. Like Sebastian, I saw the TSC unit hang after about
+>>> 50000 interrupts when running with the workaround.
+>>>
+>>> Did you test you patch for very long?
+>>
+>> Yes, I tested for about 200000 interrupts and I didn't see any hang.
+>> This patch series does not just implement workaround but also does some
+>> minor changes, such as interchanging ADC and TSC steps etc, which makes
+>> TSC driver more robust. Let me know if you encounter any issues with my
+>> patch series.
+>>
+>> Regards
+>> Vignesh
+>>
+>>>
+>>> Thanks,
+>>> Richard
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
