@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805AbaKMSEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 13:04:55 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53756 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932866AbaKMSEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 13:04:53 -0500
-Date: Thu, 13 Nov 2014 12:05:17 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB fixes for v3.18-rc5
-Message-ID: <20141113180517.GC12546@saruman>
-Reply-To: <balbi@ti.com>
-References: <1415652779-31904-1-git-send-email-balbi@ti.com>
+	id S933695AbaKMSIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 13:08:07 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36889 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932866AbaKMSIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 13:08:04 -0500
+Date: Thu, 13 Nov 2014 18:06:21 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: lee.jones@linaro.org, lgirdwood@gmail.com, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, linus.walleij@linaro.org, gnurou@gmail.com,
+        tiwai@suse.de, perex@perex.cz, sameo@linux.intel.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        ckeepax@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-gpio@vger.kernel.org, alsa-devel@alsa-project.org
+Message-ID: <20141113180621.GL3815@sirena.org.uk>
+References: <1415901046-3391-1-git-send-email-rf@opensource.wolfsonmicro.com>
+ <1415901046-3391-3-git-send-email-rf@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2/5bycvrmDh4d1IB"
+	protocol="application/pgp-signature"; boundary="7Rze0zIwr58YS37C"
 Content-Disposition: inline
-In-Reply-To: <1415652779-31904-1-git-send-email-balbi@ti.com>
+In-Reply-To: <1415901046-3391-3-git-send-email-rf@opensource.wolfsonmicro.com>
+X-Cookie: Some optional equipment shown.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/6] Documentation: devicetree: arizona: Add bindings for
+ WM8280
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2/5bycvrmDh4d1IB
+
+--7Rze0zIwr58YS37C
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Thu, Nov 13, 2014 at 05:50:42PM +0000, Richard Fitzgerald wrote:
 
-On Mon, Nov 10, 2014 at 02:52:59PM -0600, Felipe Balbi wrote:
-> Hi Greg,
->=20
-> Here's another minor for v3.18-rc5. Please consider
-> merging to your usb-linus branch.
->=20
-> Tested with AM437x SK and testusb.
->=20
-> cheers
->=20
-> The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb061=
-08:
->=20
->   Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
->=20
-> are available in the git repository at:
->=20
->   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-=
-for-v3.18-rc5
->=20
-> for you to fetch changes up to 520fe7633692181bb6d1560d655fbdfbb7c05aaa:
->=20
->   usb: dwc3: ep0: fix for dead code (2014-11-10 14:39:44 -0600)
->=20
-> ----------------------------------------------------------------
-> usb: fixes for v3.18-rc5
->=20
-> Just one fix here on dwc3 which fixes a minor
-> bug caused by a fix that went in this v3.18-rc
-> cycle.
->=20
-> The corner case is minimal as it can only be
-> reproduced with back-to-back Setup transfers
-> (without starting data or status phase) by
-> means of a LeCroy USB Trainer, where we can
-> generate USB packets any way we like.
->=20
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
->=20
-> ----------------------------------------------------------------
-> Felipe Balbi (1):
->       usb: dwc3: ep0: fix for dead code
->=20
->  drivers/usb/dwc3/ep0.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+> -  - AVDD-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply (wm5102, wm5110),
+> -    CPVDD-supply, SPKVDDL-supply (wm5102, wm5110), SPKVDDR-supply (wm5102,
+> -    wm5110), SPKVDD-supply (wm8997) : Power supplies for the device, as covered
+> -    in Documentation/devicetree/bindings/regulator/regulator.txt
+> +  - AVDD-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply (wm5102, wm5110,
+> +    wm8280), CPVDD-supply, SPKVDDL-supply (wm5102, wm5110, wm8280),
+> +    SPKVDDR-supply (wm5102, wm5110, wm8280), SPKVDD-supply (wm8997)
+> +    : Power supplies for the device, as covered in
+> +    Documentation/devicetree/bindings/regulator/regulator.txt
 
-Gentle reminder on this pull request.
+This is getting pretty illegible, how about either a per device list or
+breaking each supply onto a separate line?
 
-cheers
-
---=20
-balbi
-
---2/5bycvrmDh4d1IB
+--7Rze0zIwr58YS37C
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUZPLdAAoJEIaOsuA1yqREVlcP/2KwGt1JjMAkgo4IBD3TWMUP
-14H3hESqLDadLMMteHiO3HLgN5uvA8pOrq2ilYISUpMfy+f7QCxHo7K5lTBkAGzy
-HQ5qKfCP0VR4l11Mm12f7J3PWxytrZl1oG0RAKhgyE8NqRR/FRopUA7am7i4wThH
-sGkxKjNd17cGHQESTIsNsn1u5cNZj8pyj1+1ZNoQcLi3ZzgoGxg8WjupDT03+IND
-oBcqufS+V7o9hMx89r5pjcgkyfVsKDepou17LwCn8Hg3uOp410TOw6jyUdRmIUWc
-3S+uWWHWRAmriYFFlPea7xUpKHh/WujebqCRjI0uxobmv/wFtyqMZ9uyz/HD4whO
-qMB8JcOlB2GKabtPe0zESm/27BupdOowZAK0nZ44wSMcbK9H3Dra1Brk9edEwli4
-0qhe1tk6mqqxtIlb3ycATxFFyRBrBIKnoK8BpuR391rE53o68ykCPLfUUK46uABe
-EaZ52kGCY3LpV25EM/YDVHmdMDSYgRUrdBsAZNkzCJPBvyRRYM4boZ/iSyHb5SyZ
-z7Wuebrm6iawhu9gGDWeOtmpY2V+fxrk+Vkf7OSDYt85nhYQ5eGsJnQ+cgOp7Qjk
-wTfcJ+Ymz581Xh0WYvr4UyvsYN2NGizsKW8jwCb31dICI7jir5cPFZ6lboviBEnH
-MzqH3x7oO6hJ88jea2Xf
-=zaSs
+iQEcBAEBAgAGBQJUZPMdAAoJECTWi3JdVIfQZqQH+wZoGeWn8YnovgWARutLXtb9
+FBhW5UGwl8uUnNFPwAIljwPCfeKMGieMCgq78KybkmXGMnS2ewf9180gtnSNhriz
+U656k4yFTGRn138IMqd54vyCiA/Xp3wAhH/aEHMsZ66H9e4q7kUk1Eipb8rilPIu
+WMOAQBjJmnC3SvG585U/Q3HlO68xrZeNjfud5CKQesOswNc5dSsP8izrp6HLSZLa
+XVQrHFHhoK3ysHXnO34FX0HjdhMYXG6znVI+bWGGWznr5TeYn9DAZNkwf99wpV4F
+qL+zYaS3SuxqcSC1mHvnn3XoO/V2Ahdi7s1Z3ElX7jAGfpx3fNN+S8DSEktHtSk=
+=ghzR
 -----END PGP SIGNATURE-----
 
---2/5bycvrmDh4d1IB--
+--7Rze0zIwr58YS37C--
