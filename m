@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658AbaKMLky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:40:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39574 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932583AbaKMLkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:40:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,376,1413270000"; 
-   d="scan'208";a="607188062"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Alexander Gordeev <agordeev@redhat.com>
-Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [Patch V1 1/6] PCI, MSI: Fix errors caused by commit e5f1a59c4e12
-Date: Thu, 13 Nov 2014 19:43:43 +0800
-Message-Id: <1415879029-20098-2-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com>
+	id S932711AbaKMLrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:47:05 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:39161 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932552AbaKMLrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 06:47:03 -0500
+Message-ID: <54649A25.6050304@free-electrons.com>
+Date: Thu, 13 Nov 2014 12:46:45 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] phy: add support for USB cluster on the Armada
+ 375 SoC
+References: <1415786237-21985-1-git-send-email-gregory.clement@free-electrons.com> <1415786237-21985-5-git-send-email-gregory.clement@free-electrons.com> <54644C92.8000900@ti.com>
+In-Reply-To: <54644C92.8000900@ti.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Better to fold into commit e5f1a59c4e12 "PCI/MSI: Rename write_msi_msg()
-to pci_write_msi_msg()".
+Hi,
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/pci/msi.c   |    2 +-
- include/linux/msi.h |    2 --
- 2 files changed, 1 insertion(+), 3 deletions(-)
+[...]
+>> +
+>> +static struct armada375_cluster_phy usb_cluster_phy;
+> 
+> don't use global variables.
+>> +
+>> +static int armada375_usb_phy_init(struct phy *phy)
+>> +{
+>> +	struct armada375_cluster_phy *cluster_phy = phy_get_drvdata(phy);
+>> +	u32 reg;
+>> +
+>> +	reg = readl(cluster_phy->reg);
+>> +	if (cluster_phy->use_usb3)
+>> +		reg |= USB2_PHY_CONFIG_DISABLE;
+>> +	else
+>> +		reg &= ~USB2_PHY_CONFIG_DISABLE;
+>> +	writel(reg, cluster_phy->reg);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static struct phy_ops armada375_usb_phy_ops = {
+>> +	.init = armada375_usb_phy_init,
+>> +	.owner = THIS_MODULE,
+>> +};
+>> +
+>> +/*
+>> + * Only one controller can use this PHY. We shouldn't have the case
+>> + * when two controllers want to use this PHY. But if this case occurs
+>> + * then we provide a phy to the first one and return an error for the
+>> + * next one. This error has also to be an error returned by
+>> + * devm_phy_optional_get() so different from ENODEV for USB2. In the
+>> + * USB3 case it still optional and we use ENODEV.
+>> + */
+>> +static struct phy *armada375_usb_phy_xlate(struct device *dev,
+>> +					struct of_phandle_args *args)
+>> +{
+>> +
+>> +    /*
+>> +     * Either the phy had never been requested and then the first usb
+>> +     * claiming it can get it, or it had already been requested in
+>> +     * this case, we only allow to use it with the same configuration.
+>> +     */
+> 
+> You can dynamically create usb_cluster_phy in probe and then invoke
+> platform_set_drvdata by passing *usb_cluster_phy. Then you can invoke
+> platform_get_drvdata here to get *usb_cluster_phy.
+> 
+> While fixing this also add yourself as Maintainer of this file.
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 564850b1316e..9c53b865cb1b 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -1084,7 +1084,7 @@ void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *msg)
- 	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
- 	 */
- 	if (desc->irq == irq_data->irq)
--		pci_write_msi_msg(desc, msg);
-+		__pci_write_msi_msg(desc, msg);
- }
- 
- /*
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 8112a17cdca1..190c7abbec84 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -44,11 +44,9 @@ struct msi_desc {
- 	struct msi_msg msg;
- };
- 
--#ifdef CONFIG_PCI_MSI
- void __pci_read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void __pci_write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void pci_write_msi_msg(unsigned int irq, struct msi_msg *msg);
--#endif
- 
- /*
-  * The arch hooks to setup up msi irqs. Those functions are
+I am taking into account your comment and I am going to send a new version soon.
+
+Thanks,
+
+Gregory
+
+
+> 
+> Thanks
+> Kishon
+> 
+
+
 -- 
-1.7.10.4
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
