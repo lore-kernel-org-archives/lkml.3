@@ -1,181 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaKMFdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 00:33:16 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:61325 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaKMFdP (ORCPT
+	id S1751357AbaKMFfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 00:35:13 -0500
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:57205 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaKMFfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 00:33:15 -0500
-Message-ID: <54644295.2050003@gmail.com>
-Date: Thu, 13 Nov 2014 11:03:09 +0530
-From: Sanchayan Maity <maitysanchayan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 13 Nov 2014 00:35:11 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Barto <mister.freeman@laposte.net>, Guenter Roeck <linux@roeck-us.net>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: RE: BUG in scsi_lib.c due to a bad commit
+Thread-Topic: BUG in scsi_lib.c due to a bad commit
+Thread-Index: AQHP/gfw5DnDInPNbkurae5DQHjb7pxcH/iAgAArhgCAAZwZgIAAFbvw
+Date: Thu, 13 Nov 2014 05:33:06 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593A1880@G9W0745.americas.hpqcorp.net>
+References: <54629CAE.2000207@laposte.net>
+ <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com>
+ <5462CB90.1080303@roeck-us.net> <54642541.9080302@laposte.net>
+In-Reply-To: <54642541.9080302@laposte.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.192.240]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Stefan Agner <stefan@agner.ch>, rtc-linux@googlegroups.com,
-        linux@arm.linux.org.uk, kernel@pengutronix.de, b35083@freescale.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [[PATCHv2] 3/3] drivers/rtc/rtc-snvs: Add clock support
-References: <cover.1415364391.git.maitysanchayan@gmail.com> <30e496ce2d6521e608df3b68b73b3e05caa1daef.1415364391.git.maitysanchayan@gmail.com> <7807253ec0fd349b5bb1489e0d3b1347@agner.ch> <546320D3.2030501@gmail.com> <20141112104735.GK2704@dragon>
-In-Reply-To: <20141112104735.GK2704@dragon>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD5ZNTX021689
 
-On Wednesday 12 November 2014 04:17 PM, Shawn Guo wrote:
-> On Wed, Nov 12, 2014 at 02:26:51PM +0530, Sanchayan Maity wrote:
->> On Wednesday 12 November 2014 02:57 AM, Stefan Agner wrote:
->>> On 2014-11-07 14:04, Sanchayan Maity wrote:
->>>> This patch adds clock enable and disable support for
->>>> the SNVS peripheral, which is required for using the
->>>> RTC within the SNVS block.
->>>
->>> What happens if the device tree node is there while this patch is not
->>> applied? I guess the driver would load, but since the clocks of the
->>> peripheral are not enabled the first register access would lead to bus
->>> error or similar. If this is the case, this would break bisectability.
->>> You should move the device tree patch to the end.
->>>
->>
->> If the DT node was present with this patch not applied, the driver would 
->> still crash with a bus error, since the clocks for SNVS are not explicitly 
->> enabled anywhere else. I had not thought about any problems which might 
->> occur later with git bisect. Will move this to the end with v3.
+
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Barto
+> Sent: Wednesday, November 12, 2014 9:28 PM
+> To: Guenter Roeck; Bjorn Helgaas
+> Cc: linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org; Joe
+> Perches
+> Subject: Re: BUG in scsi_lib.c due to a bad commit
 > 
-> Since changes on rtc-snvs.c will need to go through RTC subsystem tree,
-> that means I cannot apply DTS changes until the driver patch gets
-> mainlined and appears on my tree.
+> reverting your commit 045065d8a300a37218c is a solution, but it's just a
+> temporary solution,
 > 
-> Shawn
-
-Shawn
-
-So the approach in this patch is OK and acceptable? 
-
-Since the DT changes cannot be applied by you, till this goes through the 
-RTC subsystem tree, gets mainlined and appears on your tree, I will send out 
-this patch by itself then and send the DT changes later once this gets
-mainlined?
-
-I did not CC Alessandro Zummo, the maintainer of RTC subsystem by mistake.
-Once you ACK/OK this i will send out this patch in isolation then or just 
-CC Alessandro Zummo.
-
-- Sanchayan
-
+> it's better to search why your commit can create a random hang on boot
+> on some PC configurations,
 > 
->>
->> Thanks.
->>
->> Regards,
->> Sanchayan.
->>
->>> Other than that
->>> Acked-by: Stefan Agner <stefan@agner.ch>
->>>
->>> --
->>> Stefan
->>>
->>>>
->>>> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
->>>> ---
->>>>  drivers/rtc/rtc-snvs.c |   34 ++++++++++++++++++++++++++++++++--
->>>>  1 file changed, 32 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/drivers/rtc/rtc-snvs.c b/drivers/rtc/rtc-snvs.c
->>>> index fa384fe..d4a6512 100644
->>>> --- a/drivers/rtc/rtc-snvs.c
->>>> +++ b/drivers/rtc/rtc-snvs.c
->>>> @@ -17,6 +17,7 @@
->>>>  #include <linux/of_device.h>
->>>>  #include <linux/platform_device.h>
->>>>  #include <linux/rtc.h>
->>>> +#include <linux/clk.h>
->>>>  
->>>>  /* These register offsets are relative to LP (Low Power) range */
->>>>  #define SNVS_LPCR		0x04
->>>> @@ -39,6 +40,7 @@ struct snvs_rtc_data {
->>>>  	void __iomem *ioaddr;
->>>>  	int irq;
->>>>  	spinlock_t lock;
->>>> +	struct clk *clk;
->>>>  };
->>>>  
->>>>  static u32 rtc_read_lp_counter(void __iomem *ioaddr)
->>>> @@ -260,6 +262,18 @@ static int snvs_rtc_probe(struct platform_device *pdev)
->>>>  	if (data->irq < 0)
->>>>  		return data->irq;
->>>>  
->>>> +	data->clk = devm_clk_get(&pdev->dev, "snvs-rtc");
->>>> +	if (IS_ERR(data->clk)) {
->>>> +		data->clk = NULL;
->>>> +	} else {
->>>> +		ret = clk_prepare_enable(data->clk);
->>>> +		if (ret) {
->>>> +			dev_err(&pdev->dev,
->>>> +				"Could not prepare or enable the snvs clock\n");
->>>> +			return ret;
->>>> +		}
->>>> +	}
->>>> +
->>>>  	platform_set_drvdata(pdev, data);
->>>>  
->>>>  	spin_lock_init(&data->lock);
->>>> @@ -280,7 +294,7 @@ static int snvs_rtc_probe(struct platform_device *pdev)
->>>>  	if (ret) {
->>>>  		dev_err(&pdev->dev, "failed to request irq %d: %d\n",
->>>>  			data->irq, ret);
->>>> -		return ret;
->>>> +		goto error_rtc_device_register;
->>>>  	}
->>>>  
->>>>  	data->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
->>>> @@ -288,10 +302,16 @@ static int snvs_rtc_probe(struct platform_device *pdev)
->>>>  	if (IS_ERR(data->rtc)) {
->>>>  		ret = PTR_ERR(data->rtc);
->>>>  		dev_err(&pdev->dev, "failed to register rtc: %d\n", ret);
->>>> -		return ret;
->>>> +		goto error_rtc_device_register;
->>>>  	}
->>>>  
->>>>  	return 0;
->>>> +
->>>> +error_rtc_device_register:
->>>> +	if (data->clk)
->>>> +		clk_disable_unprepare(data->clk);
->>>> +
->>>> +	return ret;
->>>>  }
->>>>  
->>>>  #ifdef CONFIG_PM_SLEEP
->>>> @@ -302,16 +322,26 @@ static int snvs_rtc_suspend(struct device *dev)
->>>>  	if (device_may_wakeup(dev))
->>>>  		enable_irq_wake(data->irq);
->>>>  
->>>> +	if (data->clk)
->>>> +		clk_disable_unprepare(data->clk);
->>>> +
->>>>  	return 0;
->>>>  }
->>>>  
->>>>  static int snvs_rtc_resume(struct device *dev)
->>>>  {
->>>>  	struct snvs_rtc_data *data = dev_get_drvdata(dev);
->>>> +	int ret;
->>>>  
->>>>  	if (device_may_wakeup(dev))
->>>>  		disable_irq_wake(data->irq);
->>>>  
->>>> +	if (data->clk) {
->>>> +		ret = clk_prepare_enable(data->clk);
->>>> +		if (ret)
->>>> +			return ret;
->>>> +	}
->>>> +
->>>>  	return 0;
->>>>  }
->>>>  #endif
->>>
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct request_queue
+> *q)
+> blk_requeue_request(q, req);
+> atomic_dec(&sdev->device_busy);
+> out_delay:
+> - if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+> + if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+> blk_delay_queue(q, SCSI_QUEUE_DELAY);
+> }
+> 
+> perhaps the atomic_read() function doesn't make the expected job on some
+> rare circonstances, I have the same doubts about the blk_delay_queue()
+> function
+
+Were you running with scsi_mod.use_blk_mq=Y or =N?
+
+device_busy is the active queue depth for the device (e.g.
+5 means there are 5 commands submitted but not yet completed).
+
+The function reaches this code if it has run out of tags, the host
+has reached its limit of outstanding commands, or the target has
+reached its limit.  It requeus the request:
+* with delay if device_busy is zero
+* without delay if device_busy is non_zero
+
+I think this is the reasoning:
+If device_busy is zero, trying to process the request again will
+probably run into the same problem; a delay gives time for the
+situation to change.  If device_busy is non-zero, then the 
+requeued command goes behind others and might get a different
+result.
+
+With the polarity backwards, the lack of delay hung PA-RISC 
+and SPARC64 systems), not just QEMU.  So, I don't think reverting
+the fix is good.
+
+Changing it to an unconditional delay might be safe - delay
+regardless of device_busy (until the root cause is understood).
+
+Also, SCSI_QUEUE_DELAY seems like an arbitrary magic number; 
+maybe that value isn't working correctly anymore?
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
