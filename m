@@ -1,155 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964878AbaKMXiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:38:20 -0500
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:37696 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934432AbaKMXiR (ORCPT
+	id S964908AbaKMXkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:40:33 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:59338 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964887AbaKMXkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:38:17 -0500
+	Thu, 13 Nov 2014 18:40:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141113152247.GB1408@swordfish>
-References: <1415885857-5283-1-git-send-email-opensource.ganesh@gmail.com>
-	<20141113152247.GB1408@swordfish>
-Date: Fri, 14 Nov 2014 07:38:16 +0800
-Message-ID: <CADAEsF80gaDH=uctJeU7_uRBXvL4D_vX_y6Jiw71-u+uErB7ZQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mm/zsmalloc: avoid unregister a NOT-registered
- zsmalloc zpool driver
-From: Ganesh Mahendran <opensource.ganesh@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        ddstreet@ieee.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <23608147.9L5xhJDu6b@wuerfel>
+References: <1415912288-26926-1-git-send-email-abrestic@chromium.org>
+	<11336807.gWpZoH7Aih@wuerfel>
+	<CAL1qeaGvaHmfCHAhVejEqtV-dMVTEGprZJZPOevOmXaSyf8Uyw@mail.gmail.com>
+	<23608147.9L5xhJDu6b@wuerfel>
+Date: Thu, 13 Nov 2014 15:40:30 -0800
+X-Google-Sender-Auth: yQF6jaO2XKuzaY0L1qhnWU818qA
+Message-ID: <CAL1qeaE7BixrsBn5EUMXOb4wweV4ARXc8T9AegNrauL=uJ=SqA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dmaengine: Add driver for IMG MDC
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        James Hartley <james.hartley@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
+        Damien Horsley <Damien.Horsley@imgtec.com>, dmaengine@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-
-2014-11-13 23:22 GMT+08:00 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>:
-> On (11/13/14 21:37), Mahendran Ganesh wrote:
->> Now zsmalloc can be registered as a zpool driver into zpool when
->> CONFIG_ZPOOL is enabled. During the init of zsmalloc, when error happens,
->> we need to do cleanup. But in current code, it will unregister a not yet
->> registered zsmalloc zpool driver(*zs_zpool_driver*).
+On Thu, Nov 13, 2014 at 3:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 13 November 2014 15:07:06 Andrew Bresticker wrote:
+>> On Thu, Nov 13, 2014 at 2:13 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Thursday 13 November 2014 12:58:08 Andrew Bresticker wrote:
+>> >> +
+>> >> +static bool mdc_filter_fn(struct dma_chan *chan, void *fn_param)
+>> >> +{
+>> >> +       struct mdc_filter_data *data = fn_param;
+>> >> +       struct mdc_chan *mchan;
+>> >> +
+>> >> +       if (chan->device->dev->driver == &mdc_dma_driver.driver) {
+>> >> +               mchan = to_mdc_chan(chan);
+>> >> +               if (!(data->mask & BIT(mchan->chan_nr)))
+>> >> +                       return false;
+>> >> +               mchan->periph = data->periph;
+>> >> +               mchan->thread = data->thread;
+>> >> +               return true;
+>> >> +       }
+>> >> +       return false;
+>> >> +}
+>> >> +
+>> >> +static struct dma_chan *mdc_of_xlate(struct of_phandle_args *dma_spec,
+>> >> +                                    struct of_dma *ofdma)
+>> >> +{
+>> >> +       struct mdc_dma *mdma = ofdma->of_dma_data;
+>> >> +       struct mdc_filter_data data;
+>> >> +
+>> >> +       if (dma_spec->args_count != 3)
+>> >> +               return NULL;
+>> >> +
+>> >> +       data.periph = dma_spec->args[0];
+>> >> +       data.mask = dma_spec->args[1];
+>> >> +       data.thread = dma_spec->args[2];
+>> >> +
+>> >> +       return dma_request_channel(mdma->dma_dev.cap_mask, mdc_filter_fn,
+>> >> +                                  &data);
+>> >> +}
+>> >
+>> > The filter function is broken if you ever have multiple instances
+>> > of the device. Better avoid calling dma_request_channel and scan
+>> > the channels that the device knows about.
 >>
->> This patch puts the cleanup in zs_init() instead of calling zs_exit()
->> where it will unregister a not-registered zpool driver.
->>
->> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
->> ---
->>  mm/zsmalloc.c |   12 ++++++++----
->>  1 file changed, 8 insertions(+), 4 deletions(-)
->>
->> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
->> index 839a48c..3d2bb36 100644
->> --- a/mm/zsmalloc.c
->> +++ b/mm/zsmalloc.c
->> @@ -907,10 +907,8 @@ static int zs_init(void)
->>       __register_cpu_notifier(&zs_cpu_nb);
->>       for_each_online_cpu(cpu) {
->>               ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
->> -             if (notifier_to_errno(ret)) {
->> -                     cpu_notifier_register_done();
->> +             if (notifier_to_errno(ret))
->>                       goto fail;
->> -             }
->>       }
->>
->>       cpu_notifier_register_done();
->> @@ -920,8 +918,14 @@ static int zs_init(void)
->>  #endif
->>
->>       return 0;
->> +
->>  fail:
->> -     zs_exit();
->> +     for_each_online_cpu(cpu)
->> +             zs_cpu_notifier(NULL, CPU_UP_CANCELED, (void *)(long)cpu);
->> +     __unregister_cpu_notifier(&zs_cpu_nb);
->> +
->> +     cpu_notifier_register_done();
->> +
->>       return notifier_to_errno(ret);
+>> It seems unlikely that there would be multiple instances of this IP in
+>> a system, but it doesn't hurt to be safe.  Perhaps instead of
+>> iterating through the list here I could extend struct mdc_filter_data
+>> to include a pointer to the struct dma_device corresponding to this
+>> instance of the MDC and compare based on that.
 >
-> so we duplicate same code, and there is a bit confusing part
-> now: zs_cpu_notifier(CPU_UP_CANCELED) and zs_cpu_notifier(CPU_DEAD)
-> calls.
+> You still need to iterate through all channels of all dma engines
+> in the system. Since you have the pointer to the engine here,
+> just go through the channels that you already know are there.
+> Unfortunately, the mask prevents you from just using
+> dma_get_any_slave_channel(), that would be the easiest approach
+> that we prefer in most drivers these days.
 
-Thanks for your review.
-
-CPU_UP_CANCELED and CPU_DEAD have different scenario.
-CPU_UP_CANCELED is better for fail to complete initialization. While
-CPU_DEAD is better for exit(such as removing module)
-
-Thanks.
-
->
-> how about something like this?
->
-> Factor out zsmalloc cpu notifier unregistration code and call
-> it from both zs_exit() and zs_init() error path.
->
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
->
-> ---
->
->  mm/zsmalloc.c | 20 +++++++++++---------
->  1 file changed, 11 insertions(+), 9 deletions(-)
->
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index b3b57ef..c4d2d60 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -881,14 +881,10 @@ static struct notifier_block zs_cpu_nb = {
->         .notifier_call = zs_cpu_notifier
->  };
->
-> -static void zs_exit(void)
-> +static inline void zs_unregister_cpu_notifier()
->  {
->         int cpu;
->
-> -#ifdef CONFIG_ZPOOL
-> -       zpool_unregister_driver(&zs_zpool_driver);
-> -#endif
-> -
->         cpu_notifier_register_begin();
->
->         for_each_online_cpu(cpu)
-> @@ -898,6 +894,14 @@ static void zs_exit(void)
->         cpu_notifier_register_done();
->  }
->
-> +static void zs_exit(void)
-> +{
-> +#ifdef CONFIG_ZPOOL
-> +       zpool_unregister_driver(&zs_zpool_driver);
-> +#endif
-> +       zs_unregister_cpu_notifier();
-> +}
-> +
->  static int zs_init(void)
->  {
->         int cpu, ret;
-> @@ -907,10 +911,8 @@ static int zs_init(void)
->         __register_cpu_notifier(&zs_cpu_nb);
->         for_each_online_cpu(cpu) {
->                 ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-> -               if (notifier_to_errno(ret)) {
-> -                       cpu_notifier_register_done();
-> +               if (notifier_to_errno(ret))
->                         goto fail;
-> -               }
->         }
->
->         cpu_notifier_register_done();
-> @@ -921,7 +923,7 @@ static int zs_init(void)
->
->         return 0;
->  fail:
-> -       zs_exit();
-> +       zs_unregister_cpu_notifier();
->         return notifier_to_errno(ret);
->  }
->
+Ok, I'll do that then.
