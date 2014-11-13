@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaKMAad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 19:30:33 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51536 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752513AbaKMAab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 19:30:31 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and XPower
-Date: Thu, 13 Nov 2014 01:51:26 +0100
-Message-ID: <1834078.D8VLOj1LAI@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5462BC5A.7070407@intel.com>
-References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com> <3052882.EdcZmghHR3@vostro.rjw.lan> <5462BC5A.7070407@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1753449AbaKMAbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 19:31:33 -0500
+Received: from mga01.intel.com ([192.55.52.88]:2731 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679AbaKMAbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 19:31:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="415729083"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Andi Kleen" <andi@firstfloor.org>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/s7+MsolZCiViEiCPzqCVeTRAJxdoOwAgACR1oD//3yvMA==
+Date: Thu, 13 Nov 2014 00:31:30 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com>
+ <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+In-Reply-To: <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD0VcUm020509
 
-On Wednesday, November 12, 2014 09:48:10 AM Aaron Lu wrote:
-> On 11/12/2014 07:35 AM, Rafael J. Wysocki wrote:
-> > On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
-> >> On Tue, 11 Nov 2014, Aaron Lu wrote:
-> >>
-> >>> On 10/31/2014 02:08 PM, Aaron Lu wrote:
-> >>>> On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
-> >>>> ACPI operation regions defined for the Power Management Integrated Circuit
-> >>>> device, one is for power resource handling and one is for thermal: sensor
-> >>>> temperature reporting, trip point setting, etc. There are different PMIC
-> >>>> chips used on those platforms and though each has the same two operation
-> >>>> regions and functionality, their implementation is different so every PMIC
-> >>>> will need a driver. But since their functionality is similar, some common
-> >>>> code is abstracted into the intel_soc_pmic_opregion.c.
-> >>>>
-> >>>> The last version is posted here:
-> >>>> https://lkml.org/lkml/2014/9/8/801
-> >>>>
-> >>>> Changes since then:
-> >>>> 1 Move to drivers/acpi as discussed on the above thread;
-> >>>> 2 Added support for XPower AXP288 PMIC operation region support;
-> >>>> 3 Since operation region handler can not be removed(at the moment at least),
-> >>>>   use bool for the two operation region driver configs instead of tristate;
-> >>>>   Another reason to do this is that, with Mika's MFD ACPI support patch, all
-> >>>>   those MFD cell devices created will have the same modalias as their parent's
-> >>>>   so it doesn't make much sense to compile these drivers into modules.
-> >>>>
-> >>>> Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
-> >>>> patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
-> >>>> driver XPower AXP288 and iio driver axp288_adc is located.
-> >>>
-> >>> Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
-> >>> would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
-> >>>
-> >>> Rafael,
-> >>> Can I get your ACK for the three patches?
-> >>>
-> >>> Lee,
-> >>> Can you please take the series if Rafael gives it ack?
-> >>
-> >> Yes, no problem.
-> > 
-> > Well, since the code is going to reside mostly in drivers/acpi, I think I should
-> > be applying the patches and from your response it looks like you are fine with
-> > them.  Is that correct?
-> 
-> Oh I thought you may not want to merge another branch into your next
-> branch so I asked this question. If you can handle the whole thing in your
-> tree, that's of course not a problem :-)
+> v2's not going to make a difference unless you're using uprobes at the
+> same time.
 
-Merging one more branch wouldn't be a problem, but we'll take care of that
-later.
+Not (knowingly) using uprobes. System is installed with a RHEL7 userspace ... but is essentially
+idle except for my test program.
 
-For now, would it be possible to rename the subdir to "pmic" instead of
-"pmic_opregion"?  The "_opregion" part doesn't seem to add much value here.
+> In the interest of my sanity, can you add something like
+> BUG_ON(!user_mode_vm(regs)) or the mce_panic equivalent before calling
+> memory_failure?
 
-And can the names of the files be somewhat shorter too?  Like "intel_pmic.[h][c]"
-and "intel_pmic_crc.c"?
+I don't think that can possibly trip - we can only end up with a recoverable error from
+a user mode access.  But I'll see about adding it anyway
 
+> What happens if there's a shared bank but the actual offender has a
+> higher order than the cpu that finds the error?
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This test case injects a memory error which is logged in bank1. This bank is shared by the
+two hyperthreads that are on the same core.  The mce_severity() function distinguishes
+which is the active thread and which the innocent bystander by looking at MCG_STATUS.
+In the active thread MCG_STATUS.EIPV is 1, in the bystander it is 0. The returned severity
+is MCE_AR_SEVERITY for the thread that hit the error, MCE_KEEP_SEVERITY for the bystander.
+So it doesn't matter which thread has the lower order and sees it first.
+
+> Is this something I can try under KVM?
+
+I don't know if KVM has a way to simulate a machine check event.
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
