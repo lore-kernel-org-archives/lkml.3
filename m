@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897AbaKMTte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 14:49:34 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58871 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146AbaKMTtc (ORCPT
+	id S933957AbaKMTwR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 14:52:17 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:38347 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933571AbaKMTwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 14:49:32 -0500
-Date: Thu, 13 Nov 2014 14:49:28 -0500 (EST)
-Message-Id: <20141113.144928.993194909814299360.davem@davemloft.net>
-To: mkubecek@suse.cz
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, j.vosburgh@gmail.com,
-        vfalico@gmail.com, andy@greyhouse.net, jiri@resnulli.us
-Subject: Re: [PATCH net-next v2] net: generic dev_disable_lro() stacked
- device handling
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141113065450.1645FA0BEF@unicorn.suse.cz>
-References: <20141111.214752.266800170368088905.davem@davemloft.net>
-	<20141113065450.1645FA0BEF@unicorn.suse.cz>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Nov 2014 11:49:31 -0800 (PST)
+	Thu, 13 Nov 2014 14:52:16 -0500
+Date: Thu, 13 Nov 2014 20:52:08 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 02/10] perf, tools: Support handling complete branch
+ stacks as histograms
+Message-ID: <20141113195208.GS12538@two.firstfloor.org>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <1415844328-4884-3-git-send-email-andi@firstfloor.org>
+ <20141113191417.GC3612@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113191417.GC3612@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Kubecek <mkubecek@suse.cz>
-Date: Thu, 13 Nov 2014 07:54:50 +0100 (CET)
+On Thu, Nov 13, 2014 at 04:14:17PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Nov 12, 2014 at 06:05:20PM -0800, Andi Kleen escreveu:
+> > +static int remove_loops(struct branch_entry *l, int nr)
+> > +{
+> > +	int i, j, off;
+> > +	unsigned char chash[CHASHSZ];
+> > +
+> > +	memset(chash, NO_ENTRY, sizeof(chash));
+> > +
+> > +	BUG_ON(nr >= 256);
+> 
+> What is wrong with return -1 and propagating the error, so that the user
+> is informed if the data being processed is bogus, stop processing with a
+> warning or continue processing if finding the next valid record is
+> possible?
 
-> Large receive offloading is known to cause problems if received packets
-> are passed to other host. Therefore the kernel disables it by calling
-> dev_disable_lro() whenever a network device is enslaved in a bridge or
-> forwarding is enabled for it (or globally). For virtual devices we need
-> to disable LRO on the underlying physical device (which is actually
-> receiving the packets).
-> 
-> Current dev_disable_lro() code handles this  propagation for a vlan
-> (including 802.1ad nested vlan), macvlan or a vlan on top of a macvlan.
-> It doesn't handle other stacked devices and their combinations, in
-> particular propagation from a bond to its slaves which often causes
-> problems in virtualization setups.
-> 
-> As we now have generic data structures describing the upper-lower device
-> relationship, dev_disable_lro() can be generalized to disable LRO also
-> for all lower devices (if any) once it is disabled for the device
-> itself.
-> 
-> For bonding and teaming devices, it is necessary to disable LRO not only
-> on current slaves at the moment when dev_disable_lro() is called but
-> also on any slave (port) added later.
-> 
-> v2: use lower device links for all devices (including vlan and macvlan)
-> 
-> Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+The error doesn't depend on the record. There is a check for the record
+being < 127 in front of this. This is merely to catch that 
+if someone increases PERF_MAX_BRANCH_DEPTH to below 255 they need
+to increase the type of the hash table from u8.
 
-Applied, thanks a lot.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
