@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279AbaKMQtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 11:49:14 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:54470 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932245AbaKMQtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 11:49:13 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: pl330: Fix linker error "undefined reference to `__aeabi_uldivmod'"
-Date: Thu, 13 Nov 2014 17:49:05 +0100
-Message-ID: <1799482.v2vqT9blFd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415896047.1787.4.camel@linaro.org>
-References: <1415896047.1787.4.camel@linaro.org>
+	id S933366AbaKMQ6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 11:58:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932245AbaKMQ6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 11:58:34 -0500
+Message-ID: <5464E336.7020402@redhat.com>
+Date: Thu, 13 Nov 2014 17:58:30 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ChYDMpe71H00eSgSd3MuUGQ2icr4qe0OtAZFsvMiEmc
- sqNH9zl5nY/Hs8g6ulOuPhpUuDx7tD0hbvHPg+NrGNHqBiBcEV
- q3kxA/hs8M8ZlCQxEySuCc1slvWi2nvmWyXIbrBMwRujpxi9Ey
- 35DtGtvP7R6Dsqhy82fUiGY68m5GNdxyDx3XnE1AIKTLKxZoU7
- TFx/sFlRXYSJif1nys78fk8FKlTY2HEgVkPuPHnpvHbRtlqCVz
- kn4Z2b6FWUAEwp4+fFOgK2xr5/BXHy1276UWXGX/b+SuaPq0OP
- LNndA4HqNlhoL3m0miUPX/b1HgO+VA6afIcvQC71WeIazrdKsU
- rjBqYimn6x0fZU34WvBQ=
-X-UI-Out-Filterresults: notjunk:1;
+To: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm: memslots: replace heap sort with insertion sort
+References: <545BA09E.7040301@redhat.com> <1415896267-2146-1-git-send-email-imammedo@redhat.com>
+In-Reply-To: <1415896267-2146-1-git-send-email-imammedo@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 November 2014 16:27:27 Jon Medhurst wrote:
-> 32-bit ARM kernels may have a 64-bit dma_addr_t but have no
-> implementation of the compiler helper for 64-bit unsigned division,
-> therefore the use of the modulo operator in pl330_prep_dma_memcpy causes
-> the link error "undefined reference to `__aeabi_uldivmod'"
-> 
-> As the burst value is always a power of two we can fix the problem, and
-> make the code more efficient, by replacing "% burst" with "& (burst-1)".
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Jon Medhurst <tixy@linaro.org>
-> 
 
-Just saw the same thing and was going to send a different patch, but
-yours is better.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On 13/11/2014 17:31, Igor Mammedov wrote:
+> memslots is a sorted array, when slot changes in it
+> with current heapsort it would take O(n log n) time
+> to update array, while using insertion sort like
+> algorithm on array with 1 item out of order will
+> take only O(n) time.
+> 
+> Replace current heapsort with custom sort that
+> takes advantage of memslots usage pattern and known
+> position of changed slot.
+> 
+> performance change of 128 memslots insersions with
+> gradually increasing size (the worst case):
+>       heap sort   custom sort
+> max:  249747      15654 cycles
+> min:  52536       5562 cycles
+> with custom sort alg taking 90% less then original
+> update time.
+> 
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+>  virt/kvm/kvm_main.c | 54 +++++++++++++++++++++++++++++------------------------
+>  1 file changed, 30 insertions(+), 24 deletions(-)
+
+Nice!  I think strictly speaking it's not an insertion sort because
+insertion sort doesn't use swaps; it's more similar to a bubble sort.
+But the code is very readable and we do not need ultimate
+performance---we are just trying to avoid doing something stupid.
+
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+
+Paolo
