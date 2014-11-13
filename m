@@ -1,58 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaKMTXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 14:23:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:55736 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171AbaKMTXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 14:23:04 -0500
-Date: Thu, 13 Nov 2014 16:22:58 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 07/10] perf, tools: Only print base source file for
- srcline
-Message-ID: <20141113192258.GH3612@kernel.org>
-References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
- <1415844328-4884-8-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415844328-4884-8-git-send-email-andi@firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933981AbaKMTZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 14:25:03 -0500
+Received: from mail-yk0-f173.google.com ([209.85.160.173]:53509 "EHLO
+	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933908AbaKMTY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 14:24:56 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Horia Geanta <horia.geanta@freescale.com>,
+        Ruchika Gupta <ruchika.gupta@freescale.com>,
+        Michael Neuling <mikey@neuling.org>, Wolfram Sang <wsa@the-dreams.de>,
+        linux-crypto@vger.kernel.org (open list:CRYPTO API),
+        linux-kernel@vger.kernel.org (open list),
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>,
+        Dave Jiang <dave.jiang@intel.com>, Rashika <rashika.kheria@gmail.com>,
+        dmaengine@vger.kernel.org (open list:DMA GENERIC OFFLO...),
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        devel@linuxdriverproject.org (open list:Hyper-V CORE AND...),
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, NeilBrown <neilb@suse.de>,
+        Joerg Roedel <jroedel@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
+        Paul McQuade <paulmcquad@gmail.com>,
+        linux-mm@kvack.org (open list:MEMORY MANAGEMENT),
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org (open list:NETWORKING [IPv4/...)
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [RFC PATCH 00/16] Replace smp_read_barrier_depends() with lockless_derefrence()
+Date: Thu, 13 Nov 2014 14:24:06 -0500
+Message-Id: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 12, 2014 at 06:05:25PM -0800, Andi Kleen escreveu:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> For perf report with --sort srcline only print the base source file
-> name. This makes the results generally fit much better to the
-> screen. The path is usually not that useful anyways because it is
-> often from different systems.
+Recently lockless_dereference() was added which can be used in place of
+hard-coding smp_read_barrier_depends(). 
 
-Applied
- 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/util/srcline.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-> index c6a7cdc..ac877f9 100644
-> --- a/tools/perf/util/srcline.c
-> +++ b/tools/perf/util/srcline.c
-> @@ -274,7 +274,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
->  	if (!addr2line(dso_name, addr, &file, &line, dso))
->  		goto out;
->  
-> -	if (asprintf(&srcline, "%s:%u", file, line) < 0) {
-> +	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
->  		free(file);
->  		goto out;
->  	}
-> -- 
-> 1.9.3
+http://lkml.iu.edu/hypermail/linux/kernel/1410.3/04561.html
+
+The following series tries to do this.
+
+There are still some hard-coded locations which I was not sure how to replace
+with. I will send in separate patches/questions regarding them.
+
+Pranith Kumar (16):
+  crypto: caam - Remove unnecessary smp_read_barrier_depends()
+  doc: memory-barriers.txt: Document use of lockless_dereference()
+  drivers: dma: Replace smp_read_barrier_depends() with
+    lockless_dereference()
+  dcache: Replace smp_read_barrier_depends() with lockless_dereference()
+  overlayfs: Replace smp_read_barrier_depends() with
+    lockless_dereference()
+  assoc_array: Replace smp_read_barrier_depends() with
+    lockless_dereference()
+  hyperv: Replace smp_read_barrier_depends() with lockless_dereference()
+  rcupdate: Replace smp_read_barrier_depends() with
+    lockless_dereference()
+  percpu: Replace smp_read_barrier_depends() with lockless_dereference()
+  perf: Replace smp_read_barrier_depends() with lockless_dereference()
+  seccomp: Replace smp_read_barrier_depends() with
+    lockless_dereference()
+  task_work: Replace smp_read_barrier_depends() with
+    lockless_dereference()
+  ksm: Replace smp_read_barrier_depends() with lockless_dereference()
+  slab: Replace smp_read_barrier_depends() with lockless_dereference()
+  netfilter: Replace smp_read_barrier_depends() with
+    lockless_dereference()
+  rxrpc: Replace smp_read_barrier_depends() with lockless_dereference()
+
+ Documentation/memory-barriers.txt |  2 +-
+ drivers/crypto/caam/jr.c          |  3 ---
+ drivers/dma/ioat/dma_v2.c         |  3 +--
+ drivers/dma/ioat/dma_v3.c         |  3 +--
+ fs/dcache.c                       |  7 ++-----
+ fs/overlayfs/super.c              |  4 +---
+ include/linux/assoc_array_priv.h  | 11 +++++++----
+ include/linux/hyperv.h            |  9 ++++-----
+ include/linux/percpu-refcount.h   |  4 +---
+ include/linux/rcupdate.h          | 10 +++++-----
+ kernel/events/core.c              |  3 +--
+ kernel/events/uprobes.c           |  8 ++++----
+ kernel/seccomp.c                  |  7 +++----
+ kernel/task_work.c                |  3 +--
+ lib/assoc_array.c                 |  7 -------
+ mm/ksm.c                          |  7 +++----
+ mm/slab.h                         |  6 +++---
+ net/ipv4/netfilter/arp_tables.c   |  3 +--
+ net/ipv4/netfilter/ip_tables.c    |  3 +--
+ net/ipv6/netfilter/ip6_tables.c   |  3 +--
+ net/rxrpc/ar-ack.c                | 22 +++++++++-------------
+ security/keys/keyring.c           |  6 ------
+ 22 files changed, 50 insertions(+), 84 deletions(-)
+
+-- 
+1.9.1
+
