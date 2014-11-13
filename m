@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411AbaKMJd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:33:58 -0500
-Received: from mout.web.de ([212.227.17.11]:53910 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932170AbaKMJd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:33:56 -0500
-Message-ID: <54647AF1.6@users.sourceforge.net>
-Date: Thu, 13 Nov 2014 10:33:37 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932444AbaKMJeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:34:09 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:54676 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932170AbaKMJeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 04:34:04 -0500
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH v2 2/2] staging: rtl8188eu: Better memory clean-up in
- efuse_phymap_to_logical()
-References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net> <alpine.DEB.2.10.1410311900201.2481@hadrien> <5463C10D.6020409@users.sourceforge.net> <5463C373.5050804@users.sourceforge.net> <alpine.DEB.2.10.1411130942150.2389@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1411130942150.2389@hadrien>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:7koFVLi5/faJ+5i9OwLxkikSg1/O9KvtMHlqwy3SgrxFJo0ti1/
- 6L1fhkmKh5E+BvaixoUeissK1xSZvbPUwWfIpUcfhGDpNE24Zrzcd2zBRbYuFEdv/7o0IqE
- 94vT3gvq2vG9aPjXdNirVOd6z6O0fxl9KvGna4b0xuMn0W4ikUC0hzUPHcOMHFEoehjMvWx
- zJyJlQdtk2PPxdPydihDA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141112142202.GB26488@ulmo>
+References: <1415779051-26410-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1415779051-26410-6-git-send-email-tomeu.vizoso@collabora.com> <20141112142202.GB26488@ulmo>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Thu, 13 Nov 2014 10:33:43 +0100
+X-Google-Sender-Auth: oFXk1yFbGmNzXV_W6oqrjOK-g7A
+Message-ID: <CAAObsKDqTa8ozgeXryPdw-uU-VBnp5w5=xojBHO=0Nryd_W6cw@mail.gmail.com>
+Subject: Re: [PATCH v4 05/13] of: Document timings subnode of nvidia,tegra-mc
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You are not using the most recent version of the code.  The issue has
-> already been fixed.
+On 12 November 2014 15:22, Thierry Reding <thierry.reding@gmail.com> wrote:
+> On Wed, Nov 12, 2014 at 08:56:28AM +0100, Tomeu Vizoso wrote:
+> [...]
+>> diff --git a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
+> [...]
+>> +Example board file:
+>> +
+>> +/ {
+>> +     memory-controller@0,70019000 {
+>> +             emc-timings-3 {
+>> +                     nvidia,ram-code = <3>;
+>
+> I guess the alternative would be to keep the old names and simply use
+> the reg property instead of nvidia,ram-code to be compliant with best
+> practices in DT:
+>
+>                 emc-timings@3 {
+>                         reg = <3>;
+>
+>> +
+>> +                     timing-12750000 {
+>> +                             clock-frequency = <12750000>;
+>
+> And:
+>
+>                         timing@12750000 {
+>                                 reg = <12750000>;
+>
+> But I haven't been following this series too closely so far, so maybe
+> that had already been rejected.
 
-Thanks for your reminder.
-
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/staging/rtl8188eu/core/rtw_efuse.c?id=3cfab18ce55282a85e2c7e5db15c5daf065efdb4
+It has been mentioned already, but I think nobody has shown any strong
+opinions on it. I personally like how it is now as it matches how it's
+already done for display-timings.
 
 Regards,
-Markus
+
+Tomeu
+
+> Thierry
