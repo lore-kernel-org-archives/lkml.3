@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaKMPCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:02:36 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:40958 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaKMPCe (ORCPT
+	id S932941AbaKMPCp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:02:45 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:50290 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004AbaKMPCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:02:34 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-94-5464c800328a
+	Thu, 13 Nov 2014 10:02:41 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-5c-5464c80fdeb4
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>
 Cc: Zhang Rui <rui.zhang@intel.com>,
@@ -16,33 +16,33 @@ Cc: Zhang Rui <rui.zhang@intel.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v2 03/33] thermal: exynos: remove needless threshold_temp
+Subject: [PATCH v2 05/33] thermal: exynos: remove needless test_mux_addr_shift
  abstraction
-Date: Thu, 13 Nov 2014 16:00:58 +0100
-Message-id: <1415890888-8881-4-git-send-email-b.zolnierkie@samsung.com>
+Date: Thu, 13 Nov 2014 16:01:00 +0100
+Message-id: <1415890888-8881-6-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQV2GEykhBjev8Fg0XA2x2DhjPavF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQV2BEykhBl+us1s0XA2x2DhjPavF
 	/CvXWC3ONr1ht3jzcDOjxeVdc9gsPvceYbSYcX4fk8WTh31sDpweO2fdZfdYvOclk0ffllWM
-	Hp83yQWwRHHZpKTmZJalFunbJXBl/J+3i6WgTaLi288P7A2MZ0W6GDk5JARMJKZe2MsEYYtJ
-	XLi3ng3EFhKYzigx4URUFyMXkN3FJHF75kZmkASbgJXExPZVjCC2iICWxIlL25lAipgFljFJ
-	XPo2H8jh4BAWCJf4f58fpIZFQFXiy7MOsKG8Au4SHy88YoRYpijR/WwCWJxTwEPi1dS/jBCL
-	3SWuPXrHPIGRdwEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4OB6Jr2DcVWDxSFGAQ5G
-	JR7eFywpIUKsiWXFlbmHGCU4mJVEeL0PA4V4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQS
-	SE8sSc1OTS1ILYLJMnFwSjUwdnY+3bpOr2FiUiPPe1Oha4GLT773qPPNOzB3TeHNrK79p4/+
-	yDy6db304voJv6f26R9RXRzEHGWn+HdHs097KMMc6dOOqZNSthb/ver+LFXb9MPtZgfhD0vu
-	n39TYsW2e5b+uedGxVJTpn+7NbFJnlXuydY3DmxvZlTvNIpcF+4+oTM6csaCw0osxRmJhlrM
-	RcWJAJxU9KEqAgAA
+	Hp83yQWwRHHZpKTmZJalFunbJXBlvLm5i71ggUzFhYv7WBsYt0l0MXJySAiYSKz5Po8RwhaT
+	uHBvPVsXIxeHkMB0Rolt6+6wQDhdTBIPOm+ygFSxCVhJTGxfBdYhIqAlceLSdiaQImaBZUwS
+	l77NZwJJCAvESPyf8gGsgUVAVWLxvg5mEJtXwF3i0OmvTBDrFCW6n01gA7E5BTwkXk39CzZU
+	CKjm2qN3zBMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECA6wZ1I7GFc2WBxiFOBg
+	VOLhfcGSEiLEmlhWXJl7iFGCg1lJhNf7MFCINyWxsiq1KD++qDQntfgQozQHi5I474FW60Ah
+	gfTEktTs1NSC1CKYLBMHp1QDI6unwfT9GXs3P67/6Dg/9VlNrS/DxlmXdlxQX1+xQdbT1Wxp
+	1e/sP7+lpb5LLjrfFqThPKWsOahlA1vmMb2ns3ZfMmOZOHXdt28/fXYmX2As+Tu32fXP7u/a
+	59r/7g25cjlTLWflsvorJ5yKpef8XLJrvdxTZ6a0pKP7Hvz/cb/S5qAet+uTEwxKLMUZiYZa
+	zEXFiQCyRESgLAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-reg->threshold_temp is used only in exynos_tmu_initialize() and
-is accessed only on Exynos4210 (other SoC types don't even have
-threshold_temp entry assigned in their struct exynos_tmu_registers
-instances) so the register abstraction is not needed and can be
-removed.
+reg->test_mux_addr_shift is used only if pdata->test_mux is
+non-zero.  pdata->test_mux is defined only on Exynos3250 and
+Exynos4412 (other SoC types don't even have pdata->test_mux
+entry assigned in their struct exynos_tmu_registers instances)
+so the abstraction is not needed and can be removed.
 
 There should be no functional changes caused by this patch.
 
@@ -54,56 +54,63 @@ Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
  drivers/thermal/samsung/exynos_tmu.c      | 2 +-
- drivers/thermal/samsung/exynos_tmu.h      | 3 ---
- drivers/thermal/samsung/exynos_tmu_data.c | 1 -
+ drivers/thermal/samsung/exynos_tmu.h      | 2 --
+ drivers/thermal/samsung/exynos_tmu_data.c | 2 --
  3 files changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index ac43637..12e6f16 100644
+index 160e7fa..c8d6cdde 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -219,7 +219,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 		/* Write temperature code for threshold */
- 		threshold_code = temp_to_code(data, pdata->threshold);
- 		writeb(threshold_code,
--			data->base + reg->threshold_temp);
-+			data->base + EXYNOS4210_TMU_REG_THRESHOLD_TEMP);
- 		for (i = 0; i < pdata->non_hw_trigger_levels; i++)
- 			writeb(pdata->trigger_levels[i], data->base +
- 			reg->threshold_th0 + i * sizeof(reg->threshold_th0));
+@@ -295,7 +295,7 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+ 	con = readl(data->base + reg->tmu_ctrl);
+ 
+ 	if (pdata->test_mux)
+-		con |= (pdata->test_mux << reg->test_mux_addr_shift);
++		con |= (pdata->test_mux << EXYNOS4412_MUX_ADDR_SHIFT);
+ 
+ 	con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK << EXYNOS_TMU_REF_VOLTAGE_SHIFT);
+ 	con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
 diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 7849d8f..d693215 100644
+index cee81a1..0fb10d1 100644
 --- a/drivers/thermal/samsung/exynos_tmu.h
 +++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -84,7 +84,6 @@ enum soc_type {
+@@ -77,7 +77,6 @@ enum soc_type {
+  * bitfields. The register validity, offsets and bitfield values may vary
+  * slightly across different exynos SOC's.
+  * @tmu_ctrl: TMU main controller register.
+- * @test_mux_addr_shift: shift bits of test mux address.
+  * @therm_trip_mode_shift: shift bits of tripping mode in tmu_ctrl register.
   * @therm_trip_mode_mask: mask bits of tripping mode in tmu_ctrl register.
   * @therm_trip_en_shift: shift bits of tripping enable in tmu_ctrl register.
-  * @tmu_cur_temp: register containing the current temperature of the TMU.
-- * @threshold_temp: register containing the base threshold level.
-  * @threshold_th0: Register containing first set of rising levels.
-  * @threshold_th1: Register containing second set of rising levels.
-  * @threshold_th2: Register containing third set of rising levels.
-@@ -116,8 +115,6 @@ struct exynos_tmu_registers {
- 
- 	u32	tmu_cur_temp;
- 
--	u32	threshold_temp;
--
- 	u32	threshold_th0;
- 	u32	threshold_th1;
- 	u32	threshold_th2;
+@@ -103,7 +102,6 @@ enum soc_type {
+  */
+ struct exynos_tmu_registers {
+ 	u32	tmu_ctrl;
+-	u32     test_mux_addr_shift;
+ 	u32	therm_trip_mode_shift;
+ 	u32	therm_trip_mode_mask;
+ 	u32	therm_trip_en_shift;
 diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 49c8142..8153c41 100644
+index d4b9a68..4ca1283 100644
 --- a/drivers/thermal/samsung/exynos_tmu_data.c
 +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -28,7 +28,6 @@
- static const struct exynos_tmu_registers exynos4210_tmu_registers = {
+@@ -83,7 +83,6 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ #if defined(CONFIG_SOC_EXYNOS3250)
+ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
- 	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
--	.threshold_temp = EXYNOS4210_TMU_REG_THRESHOLD_TEMP,
- 	.threshold_th0 = EXYNOS4210_TMU_REG_TRIG_LEVEL0,
- 	.tmu_inten = EXYNOS_TMU_REG_INTEN,
- 	.inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
+-	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+ 	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
+ 	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
+ 	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+@@ -159,7 +158,6 @@ struct exynos_tmu_init_data const exynos3250_default_tmu_data = {
+ #if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
+ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+-	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+ 	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
+ 	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
+ 	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
 -- 
 1.8.2.3
 
