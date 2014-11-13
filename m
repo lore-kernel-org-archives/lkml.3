@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802AbaKMLc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:32:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38742 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932610AbaKMLcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:32:53 -0500
-Message-ID: <5464969F.30708@ti.com>
-Date: Thu, 13 Nov 2014 13:31:43 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932816AbaKMLdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:33:32 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57456 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932560AbaKMLcn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 06:32:43 -0500
+Date: Thu, 13 Nov 2014 11:32:34 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Simek <monstr@monstr.eu>,
+        Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: Re: [PATCH RFC v2 1/2] drivers: pci: fix pci_mmap_fits()
+ implementation for procfs mmap
+Message-ID: <20141113113233.GA8973@red-moon>
+References: <1414168089-8130-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1414168089-8130-2-git-send-email-lorenzo.pieralisi@arm.com>
+ <20141110230454.GA21470@google.com>
+ <20141111114825.GA4135@red-moon>
+ <CAErSpo4nWpN0xDb3h7FCpExM-Q5fmr5oyuOLf6Y_w55HEQZP4w@mail.gmail.com>
+ <20141111155744.GB4419@red-moon>
+ <CAErSpo4bZn20LZjrayx=B51eHnNyrHHWFQMB3J_+EQF8ntg0Kw@mail.gmail.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Marek Belisko <marek@goldelico.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
-        <plagnioj@jcrosoft.com>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-fbdev@vger.kernel.org>, <hns@goldelico.com>
-Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
- devconf1 register
-References: <1415051968-4878-1-git-send-email-marek@goldelico.com> <1415051968-4878-5-git-send-email-marek@goldelico.com> <5463585D.9070209@ti.com> <20141112150210.GC26481@atomide.com>
-In-Reply-To: <20141112150210.GC26481@atomide.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4bZn20LZjrayx=B51eHnNyrHHWFQMB3J_+EQF8ntg0Kw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 11, 2014 at 05:19:31PM +0000, Bjorn Helgaas wrote:
 
-On 12/11/14 17:02, Tony Lindgren wrote:
+[...]
 
->> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
->> places in the kernel. I wonder if adding a pinmux entry for it could
->> cause some rather odd problems.
->=20
-> They can all use pinctrl-single no problem.
+> > I read your comment as an agreement on the approach I took in my patch,
+> > except for the current pci_resource_to_user() implementation(s), which I did
+> > not touch.
+> 
+> Yes.  I have two things I'd like to clear up:
+> 
+>   1) Your patch changes behavior on platforms that implement their own
+> pci_resource_to_user().  So I'd like to mention the details of that in
+> the changelog, e.g., "procfs mmap on arches X, Y, Z has been broken
+> since commit C, and this change fixes them."  ARM doesn't implement
+> pci_resource_to_user(), so I don't think ARM is one of those arches.
+> But I'd really like to include specifics on what those arches are, and
+> what we think is currently broken, so their maintainers at least get a
+> heads-up and can look for that  breakage.
 
-Can, but don't. That's my worry. If we touch the DEVCONF1 via pinmux,
-and we have code in mach-omap2 that also touch DEVCONF1, without any
-knowledge (and locking) between those...
+I posted a v3, where I *tried* to bisect the commits that actually broke
+the procfs interface and I added a commit log to explain why, it is very
+hard to bisect a specific commit (given the dependency on the arch code)
+and I do not have HW to test the fix on apart from ARM machines so there
+is not much I can do on that side.
 
-So _maybe_ that's not an issue, as the pinmux config we have here is
-fixed, and done once at boot time, and maybe the code in mach-omap2 that
-touch DEVCONF1 is also ran just once and not at the same time as the
-pinmux. But I don't know if that's so.
+Please let me know what you think, thanks for having a look.
 
- Tomi
-
-
-
---DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUZJafAAoJEPo9qoy8lh71jJgP/3qSP8qsUyziPLpWjcX37leM
-NlMTt9xjQ6B8aNIUWDaso5CpfJmsO47I5S5coKcCDAtnyyRZdp1bGg6MtEhxWOoy
-mP0WfoZDzMrQh/j7IASwHe8R9MlHPCSa/+IBmG5BsqRCPaxrDULM8E6aGn3noKo1
-uI7XCossptOUjKhR6NxXaXKR0uqDZfkmCHvsVwNLj1mQiQAuns271AGkCVSUHlWN
-SN+gzxpg367m5DSAXuodLJZ8Vv+fC7Bkl1iDYrSO6zHAPlcPchxCeM9/iFZRzC12
-EAeSYTEQ1jrxiE3XReqNcqDP+/Pb2PDL6lapPMdawhuuFVRKF5X4yKpiNsdMQ8Uf
-qz1uiJN9E+fvewd0AVcndkLhkqwrWDDsFlgNHXM4xIpUHlSofurAhUMOtsy3OTse
-FErYnbNwz5Ls0XWta1OYmXUpwlc6Uy0JFaXdpCiIEpryzqbqYoVpuVuFreciFuGk
-VkoD1n1UkYRqaJW+phdfQxn+OFW/MO/m496rYvoQtCRqd4GRrh5mCVePYQ5ALZD2
-TUwtC+b41ynOO41SBMMAIHLMF0b8nxv4jv6fm1HXT1OI45ba6wxN8UTz0rzat5nE
-UQuvXYRDu+cssCiZq2OXRndj46cai21CZ8w6xpaaQDWbnBNKc3RRTjHHeHc1uKWu
-Xh0V0i2cC29uQe+PqAcE
-=U/8Y
------END PGP SIGNATURE-----
-
---DMCMabk2ehAkTPpWcefgGcbx1ANQjpQ4x--
+Lorenzo
