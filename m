@@ -1,80 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356AbaKMJkl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:40:41 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:63129 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136AbaKMJkj (ORCPT
+	id S932404AbaKMJop (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:44:45 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:37044 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932136AbaKMJon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:40:39 -0500
+	Thu, 13 Nov 2014 04:44:43 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="43329996"
+From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
+To: Richard Weinberger <richard@nod.at>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Oleg Nesterov" <oleg@redhat.com>
+CC: "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        "Richard Weinberger" <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
+Subject: RE: [PATCH v7 1/2] procfs: show hierarchy of pid namespace
+Thread-Topic: [PATCH v7 1/2] procfs: show hierarchy of pid namespace
+Thread-Index: AQHP/mn1Cs5YgZRQ9k+SS5toqqvYLJxeSLwg
+Date: Thu, 13 Nov 2014 09:44:41 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E63280E@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <1415786899-13392-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <1415786899-13392-2-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <5463413E.6000800@nod.at>
+In-Reply-To: <5463413E.6000800@nod.at>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.240]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <1415809894-24084-1-git-send-email-martink@posteo.de>
-References: <20141112112643.GA30821@ulmo.nvidia.com>
-	<1415809894-24084-1-git-send-email-martink@posteo.de>
-Date: Thu, 13 Nov 2014 10:40:38 +0100
-Message-ID: <CAJfpegt2Xz0tGUygpN4eyb3g8EsFNWomsUUOmGBMj03ocOPVng@mail.gmail.com>
-Subject: Re: [PATCH] fuse: don't check for file->private_data on open().
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>, thierry.reding@gmail.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        giedriuswork@gmail.com,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Wed, Nov 12, 2014 at 5:31 PM, Martin Kepplinger <martink@posteo.de> wrote:
-> The miscdevice core now sets file->private_data to the struct miscdevice
-> so don't fail when this is not NULL.
-
-Does it?  Look:
-
-static int misc_open(struct inode * inode, struct file * file)
-{
-    ...
-    if (file->f_op->open) {
-        file->private_data = c;
-        err = file->f_op->open(inode,file);
-    }
-
-It only sets ->private_data if the device provides an open method.
-Fuse doesn't, so it's not clear what this patch is trying to fix.
-
-Thanks,
-Miklos
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD9iqxd022824
 
 
->
-> Reported-by: Thierry Reding <thierry.reding@gmail.com>
-> Signed-off-by: Martin Kepplinger <martink@posteo.de>
-> ---
-> This is a question: what does this check provide and does overwriting
-> file->private_data make any difference?
->
-> Is open() by the user not allowed here, if file->private_data is set?
->
-> thanks!!
->
->  fs/fuse/inode.c |    3 ---
->  1 file changed, 3 deletions(-)
->
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index 03246cd..562407e 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -1092,9 +1092,6 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
->         }
->
->         mutex_lock(&fuse_mutex);
-> -       err = -EINVAL;
-> -       if (file->private_data)
-> -               goto err_unlock;
->
->         err = fuse_ctl_add_conn(fc);
->         if (err)
-> --
-> 1.7.10.4
->
+
+> -----Original Message-----
+> From: Richard Weinberger [mailto:richard@nod.at]
+> Sent: Wednesday, November 12, 2014 7:15 PM
+> To: Chen, Hanxiao/é™ˆ æ™—éœ„; Eric W. Biederman; Serge Hallyn; Oleg Nesterov
+> Cc: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org; David
+> Howells; Richard Weinberger; Pavel Emelyanov; Vasiliy Kulikov; Mateusz Guzik
+> Subject: Re: [PATCH v7 1/2] procfs: show hierarchy of pid namespace
+> 
+> Am 12.11.2014 um 11:08 schrieb Chen Hanxiao:
+> > We lack of pid hierarchy information, and this will lead to:
+> > a) we don't know pids' relationship, who is whose child:
+> >    /proc/PID/ns/pid only tell us whether two pids live in different ns
+> > b) bring trouble to nested lxc container check/restore/migration
+> > c) bring trouble to pid translation between containers;
+> >
+> > This patch will show the hierarchy of pid namespace
+> > by pidns_hierarchy like:
+> >
+> > <init_PID> <parent_of_init_PID> <relative PID level>
+> >
+> > Ex:
+> > [root@localhost ~]#cat /proc/pidns_hierarchy
+> > 18060 1 1
+> > 18102 18060 2
+> > 1534  18102 3
+> > 1600  18102 3
+> > 1550  1 1
+> > *Note: numbers represent the pid 1 in different ns
+> >
+[snip]
+> > +
+> > +#define NS_HIERARCHY	"pidns_hierarchy"
+> > +#define MAX(a, b) ((a) > (b) ? (a) : (b))
+> 
+> Please use max() from kernel.h, there is no need to reinvent the wheel.
+> 
+
+Thanks for your reminding.
+
+> > +
+> > +/* list for host pid collection */
+> > +struct pidns_list {
+> > +	struct list_head list;
+> > +	struct pid *pid;
+> > +	int show_level;
+> 
+> s/show_level/level, to keep it easy. :-)
+
+Sure, also change the type to unsigned int 
+for making max() happy.
+
+[snip]
+> > +}
+> > +
+> > +/*
+> > + * collect pids and stored in pidns_pid_list,
+> 
+> s/stored/store
+Oops...
+
+> 
+> > + * then remove duplicated ones,
+> > + * add the rest to pidns_pid_tree
+> > + */
+> 
+> This comment is a bit confusing.
+> 
+> What about "proc_pidns_list_refresh - Finds all init pids, places them into
+> pidns_pid_list
+> and then stores the hirarchy into pidns_pid_tree."?
+> 
+That's much more clear.
+
+> Beside of my minor comments I like the patch. :-)
+> Thanks a lot for doing this work!
+> 
+
+Thanks for your kindly help. :)
+
+- Chen
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
