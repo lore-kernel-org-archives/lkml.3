@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372AbaKMKDV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:03:21 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45671 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102AbaKMKDS (ORCPT
+	id S932472AbaKMKDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:03:46 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:56039 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932351AbaKMKDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:03:18 -0500
-Date: Thu, 13 Nov 2014 11:03:14 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tony Lindgren <tony@atomide.com>
-cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
-        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
-        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
-In-Reply-To: <20141106204629.GF31454@atomide.com>
-Message-ID: <alpine.DEB.2.11.1411131053050.3935@nanos>
-References: <1411067086-16613-1-git-send-email-nm@ti.com> <1411067086-16613-4-git-send-email-nm@ti.com> <alpine.DEB.2.10.1409181749170.4206@nanos> <20140919030333.GA6088@kahuna> <alpine.DEB.2.10.1409190710320.5612@nanos> <20140919161927.GA28613@kahuna>
- <alpine.DEB.2.10.1409191027330.5612@nanos> <20140919191649.GQ14505@atomide.com> <alpine.DEB.2.10.1409191233590.4213@nanos> <20141002034345.GH3122@atomide.com> <20141106204629.GF31454@atomide.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 13 Nov 2014 05:03:43 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Originating-IP: [46.116.100.67]
+In-Reply-To: <5463B5B6.8040709@ti.com>
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
+ <1410553499-55951-5-git-send-email-s-anna@ti.com> <CAK=WgbamdqAufjC4Xb5moERRBSB-cO6c1RPTE=f+dp75F+Eh7A@mail.gmail.com>
+ <5463B5B6.8040709@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 13 Nov 2014 12:03:20 +0200
+Message-ID: <CAK=WgbbatPTiz3efDWHVEcuug_UQfkCViMoK0zcfUg3JwB2oTA@mail.gmail.com>
+Subject: Re: [PATCHv6 4/5] hwspinlock/core: add common OF helpers
+To: Suman Anna <s-anna@ti.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony,
+Hi Suman,
 
-On Thu, 6 Nov 2014, Tony Lindgren wrote:
-> 
-> Any comments on the patch below? Let me know if you want to keep the
-> devm stuff out of kernel/irq/manage.c.
+On Wed, Nov 12, 2014 at 9:32 PM, Suman Anna <s-anna@ti.com> wrote:
+>> Is this the validation you mentioned which requires the existence of
+>> "hwspinlock/core: maintain a list of registered hwspinlock banks" ?
+>
+> Well, not exactly. The validation is on the following segment,
+>
+> +       id = of_hwspin_lock_simple_xlate(bank, &args);
+> +       if (id < 0 || id >= bank->num_locks) {
+> +               ret = -EINVAL;
+> +               goto out;
+> +       }
 
-Sorry, this slipped through the cracks.
- 
-> > +static int setup_wakeirq(struct device *dev, unsigned int wakeirq,
-> > +			 unsigned long wakeflags, bool devm)
-> > +{
-> > +	int ret;
-> > +
-> > +	if (!(dev && wakeirq)) {
-> > +		pr_err("Missing device or wakeirq for %s irq %d\n",
-> > +		       dev_name(dev), wakeirq);
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	if (!(wakeflags &
-> > +	      (IRQF_TRIGGER_LOW | IRQF_TRIGGER_HIGH | IRQF_ONESHOT))) {
-> > +		pr_err("Invalid wakeirq for %s irq %d, must be level oneshot\n",
-> > +		       dev_name(dev), wakeirq);
+I'm not entirely convinced that this justifies adding the proposed
+linked list. Can't we can get the base_id and number of locks by
+traversing the DT?
 
-This looks odd.
+> That said, it is also needed to provide the support for deferred probing
+> without changing the return code conventions on the existing API.
 
-Why do you want to enforce LEVEL and ONESHOT?  I can see the point for
-ONESHOT, but I'm wondering about the requirement for level.
+Here too, adding a data structure maintaining memory objects and
+taking care of it life cycle seems a bit overkill for anything to do
+with return values.
 
-Now if you really want to enforce level AND oneshot, your check is
-wrong as it will not trigger on
+> Yes, and wouldn't that require that the id is validated? It just cannot
+> return any return value, and expect it will be verified somewhere else
+> or in a following API call. Not doing the validation unnecessarily
+> complicates the system usage of a lock as you are sharing an invalid
+> lock to a remote processor and then you have two validation failure
+> paths on different processors.
 
-      wakeflags = IRQF_TRIGGER_LOW;
-      wakeflags = IRQF_TRIGGER_HIGH;
-      wakeflags = IRQF_ONESHOT;
+Validation is great but I'm still not convinced it can't be done
+without maintaining another data structure.
 
-Not what you really want, right?
-
-> > +int request_wake_irq(struct device *dev, unsigned int wakeirq,
-> > +		     unsigned long wakeflags)
-> > +{
-> > +	return setup_wakeirq(dev, wakeirq, wakeflags, false);
-> > +}
-> > +EXPORT_SYMBOL(request_wake_irq);
-
-  _GPL please
-
-> > +
-> > +int devm_request_wake_irq(struct device *dev, unsigned int wakeirq,
-> > +			  unsigned long wakeflags)
-> > +{
-> > +	return setup_wakeirq(dev, wakeirq, wakeflags, false);
-
-Shouldnt that have devm = true?
+Please show me specific technical issues that can't be resolved
+without adding the proposed linked list.
 
 Thanks,
-
-	tglx
+Ohad.
