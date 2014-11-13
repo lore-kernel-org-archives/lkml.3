@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293AbaKMIyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 03:54:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932069AbaKMIya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 03:54:30 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, jasowang@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH net-next] tun: fix issues of iovec iterators using in tun_put_user()
-Date: Thu, 13 Nov 2014 16:54:14 +0800
-Message-Id: <1415868854-4913-1-git-send-email-jasowang@redhat.com>
+	id S932204AbaKMI40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 03:56:26 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:40144 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849AbaKMI4Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 03:56:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415452601-13078-1-git-send-email-amit.daniel@samsung.com>
+References: <1415452601-13078-1-git-send-email-amit.daniel@samsung.com>
+Date: Thu, 13 Nov 2014 14:26:23 +0530
+X-Google-Sender-Auth: X3VmTfOwsK5qJWwYUADIorKDZyU
+Message-ID: <CADGdYn46=X1FS7TWp=qCDsm3J9Xg=pEZb945X8tfwc0k6thfvQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/6] exynos: Move pmu driver to driver/soc folder and
+ add exynos7 support
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes two issues after using iovec iterators:
-- vlan_offset should be initialized to zero, otherwise unexpected offset
-  will be used in skb_copy_datagram_iter()
-- advance iovec iterator when vnet_hdr_sz is greater than sizeof(gso), this
-  is the case when mergeable rx buffer were enabled for a virt guest.
+On Sat, Nov 8, 2014 at 6:46 PM, Amit Daniel Kachhap
+<amit.daniel@samsung.com> wrote:
+> This patch series[1 - 6] performs,
+>
+> 1) Moves pmu driver to driver/soc/samsung folder. Some discussion happened about
+>    this in the v1 version. Finally adding it in driver/soc folder as it too SoC
+>    specific and not a general driver. Entire discussion can be found here (A).
+> 2) Registers this driver as MFD client driver. This will be used by clients like exynos pm
+>    sleep and pm domain driver.
+> 3) Add exynos7 PMU support.
+>
+> Changes from V1:
+> * Move pmu driver in driver/soc/samsung folder
+> * Removed the power domain features. They will posted as a separate series.
+> * Added exynos7 PMU support.
+> * Link to v1 can be found here (B)
+>
+> This patch has dependency on following patches posted earlier by Pankaj (C),
+> which is accepted by maintainer.
+>
+> Patch 6 was earlier posted by Abhilash (D) which has been reposted here with some
+> extra changes.
+>
+> This complete patch series is rebased on linux-next.
+>
+> (A) - http://www.spinics.net/lists/linux-samsung-soc/msg38444.html
+> (B) - http://www.spinics.net/lists/linux-samsung-soc/msg38442.html
+> (C) - https://lkml.org/lkml/2014/10/6/581
+> (D) - http://www.spinics.net/lists/arm-kernel/msg358230.html
+>
+> Amit Daniel Kachhap (6):
+>   ARM: EXYNOS: Move pmu specific header files under "linux/soc/samsung"
+>   drivers: soc: Add support for Exynos PMU driver
+>   drivers: soc: samsung: Fix a spelling mistake
+>   soc: samsung: exynos-pmu: Register exynos-pmu driver as a mfd driver
+>   driver: soc: exynos-pmu: Add an API to be called after wakeup
+>   drivers: soc: samsung: Add support for Exynos7 pmu
+>
+>  .../devicetree/bindings/arm/samsung/pmu.txt        |    1 +
+>  arch/arm/mach-exynos/Makefile                      |    2 +-
+>  arch/arm/mach-exynos/exynos.c                      |    2 +-
+>  arch/arm/mach-exynos/mcpm-exynos.c                 |    2 +-
+>  arch/arm/mach-exynos/platsmp.c                     |    2 +-
+>  arch/arm/mach-exynos/pm.c                          |    4 +-
+>  arch/arm/mach-exynos/regs-pmu.h                    |  335 -----------
+>  arch/arm/mach-exynos/suspend.c                     |    3 +-
+>  drivers/soc/Kconfig                                |    1 +
+>  drivers/soc/Makefile                               |    1 +
+>  drivers/soc/samsung/Kconfig                        |   19 +
+>  drivers/soc/samsung/Makefile                       |    1 +
+>  .../pmu.c => drivers/soc/samsung/exynos-pmu.c      |  471 ++++++++++++++-
 
-Fixes e0b46d0ee9c240c7430a47e9b0365674d4a04522 ("tun: Use iovec iterators")
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Hi Olof/Kukjin,
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 2ff769b..e3fa65a 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1235,7 +1235,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- {
- 	struct tun_pi pi = { 0, skb->protocol };
- 	ssize_t total;
--	int vlan_offset;
-+	int vlan_offset = 0;
- 	int vlan_hlen = 0;
- 	int vnet_hdr_sz = 0;
- 
-@@ -1304,6 +1304,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 
- 		if (copy_to_iter(&gso, sizeof(gso), iter) != sizeof(gso))
- 			return -EFAULT;
-+
-+		iov_iter_advance(iter, vnet_hdr_sz - sizeof(gso));
- 	}
- 
- 	if (vlan_hlen) {
--- 
-1.9.1
+I am not sure that driver/soc/samsung/* shall go in whose tree.
+I am preparing the next version so if any comment from your side
+please let me know.
 
+Regards,
+Amit
+
+>  .../linux/soc/samsung}/exynos-pmu.h                |    6 +
+>  include/linux/soc/samsung/exynos-regs-pmu.h        |  608 ++++++++++++++++++++
+>  15 files changed, 1109 insertions(+), 349 deletions(-)
+>  delete mode 100644 arch/arm/mach-exynos/regs-pmu.h
+>  create mode 100644 drivers/soc/samsung/Kconfig
+>  create mode 100644 drivers/soc/samsung/Makefile
+>  rename arch/arm/mach-exynos/pmu.c => drivers/soc/samsung/exynos-pmu.c (50%)
+>  rename {arch/arm/mach-exynos => include/linux/soc/samsung}/exynos-pmu.h (78%)
+>  create mode 100644 include/linux/soc/samsung/exynos-regs-pmu.h
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
