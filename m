@@ -1,122 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414AbaKMJM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:12:57 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:56884 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108AbaKMJMx (ORCPT
+	id S932306AbaKMJPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:15:12 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:48238 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098AbaKMJPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:12:53 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 2/2] memcg: turn memcg_kmem_skip_account into a bit field
-Date: Thu, 13 Nov 2014 12:12:43 +0300
-Message-ID: <f1fc9fefd7f140daadcf33f806fce29a30120fbe.1415868622.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <c07e576c9b76c00fbcc1978f9659bf5b83513d14.1415868622.git.vdavydov@parallels.com>
-References: <c07e576c9b76c00fbcc1978f9659bf5b83513d14.1415868622.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 13 Nov 2014 04:15:02 -0500
+Date: Thu, 13 Nov 2014 10:14:56 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/2] virito: introduce methods of fixing device features
+Message-ID: <20141113101456.43acfdb7.cornelia.huck@de.ibm.com>
+In-Reply-To: <546475C2.50606@redhat.com>
+References: <1415857974-23326-1-git-send-email-jasowang@redhat.com>
+	<20141113094604.1f248c3d.cornelia.huck@de.ibm.com>
+	<546475C2.50606@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111309-0041-0000-0000-0000021AC6F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It isn't supposed to stack, so turn it into a bit-field to save 4 bytes
-on the task_struct.
+On Thu, 13 Nov 2014 17:11:30 +0800
+Jason Wang <jasowang@redhat.com> wrote:
 
-Also, remove the memcg_stop/resume_kmem_account helpers - it is clearer
-to set/clear the flag inline. Regarding the overwhelming comment to the
-helpers, which is removed by this patch too, we already have a compact
-yet accurate explanation in memcg_schedule_cache_create, no need in yet
-another one.
+> On 11/13/2014 04:46 PM, Cornelia Huck wrote:
+> > On Thu, 13 Nov 2014 13:52:53 +0800
+> > Jason Wang <jasowang@redhat.com> wrote:
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- include/linux/sched.h |    7 +++++--
- mm/memcontrol.c       |   35 ++---------------------------------
- 2 files changed, 7 insertions(+), 35 deletions(-)
+> >> +static inline void virtio_disable_feature(struct virtio_device *vdev,
+> >> +                                          unsigned int fbit)
+> >> +{
+> >> +	BUG_ON(fbit >= VIRTIO_TRANSPORT_F_START);
+> >> +	BUG_ON(vdev->config->get_status(vdev) &
+> >> +	       ~(VIRTIO_CONFIG_S_ACKNOWLEDGE | VIRTIO_CONFIG_S_DRIVER));
+> > When we add virtio-1 support, we can add a check for FEATURES_OK here,
+> > so we're really on the safe side.
+> >
+> 
+> If I read the spec correctly, FEATURES_OK was set only after writing the
+> features bits to device. But we want to sanitize the them before.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index ffd1444b087c..8db31ef98d2f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1364,6 +1364,10 @@ struct task_struct {
- 	unsigned sched_reset_on_fork:1;
- 	unsigned sched_contributes_to_load:1;
- 
-+#ifdef CONFIG_MEMCG_KMEM
-+	unsigned memcg_kmem_skip_account:1;
-+#endif
-+
- 	unsigned long atomic_flags; /* Flags needing atomic access. */
- 
- 	pid_t pid;
-@@ -1679,8 +1683,7 @@ struct task_struct {
- 	/* bitmask and counter of trace recursion */
- 	unsigned long trace_recursion;
- #endif /* CONFIG_TRACING */
--#ifdef CONFIG_MEMCG /* memcg uses this to do batch job */
--	unsigned int memcg_kmem_skip_account;
-+#ifdef CONFIG_MEMCG
- 	struct memcg_oom_info {
- 		struct mem_cgroup *memcg;
- 		gfp_t gfp_mask;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index d9fab72da52e..11cbfde4dc6d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2673,37 +2673,6 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
- 	css_put(&memcg->css);
- }
- 
--/*
-- * During the creation a new cache, we need to disable our accounting mechanism
-- * altogether. This is true even if we are not creating, but rather just
-- * enqueing new caches to be created.
-- *
-- * This is because that process will trigger allocations; some visible, like
-- * explicit kmallocs to auxiliary data structures, name strings and internal
-- * cache structures; some well concealed, like INIT_WORK() that can allocate
-- * objects during debug.
-- *
-- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
-- * to it. This may not be a bounded recursion: since the first cache creation
-- * failed to complete (waiting on the allocation), we'll just try to create the
-- * cache again, failing at the same point.
-- *
-- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
-- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
-- * inside the following two functions.
-- */
--static inline void memcg_stop_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account++;
--}
--
--static inline void memcg_resume_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account--;
--}
--
- int __memcg_cleanup_cache_params(struct kmem_cache *s)
- {
- 	struct kmem_cache *c;
-@@ -2798,9 +2767,9 @@ static void memcg_schedule_register_cache(struct mem_cgroup *memcg,
- 	 * this point we can't allow ourselves back into memcg_kmem_get_cache,
- 	 * the safest choice is to do it like this, wrapping the whole function.
- 	 */
--	memcg_stop_kmem_account();
-+	current->memcg_kmem_skip_account = 1;
- 	__memcg_schedule_register_cache(memcg, cachep);
--	memcg_resume_kmem_account();
-+	current->memcg_kmem_skip_account = 0;
- }
- 
- int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
--- 
-1.7.10.4
+I meant doing a BUG when FEATURES_OK is set - sorry for not being clear.
 
