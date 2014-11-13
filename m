@@ -1,126 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726AbaKML1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:27:52 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:39672 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396AbaKML1t convert rfc822-to-8bit (ORCPT
+	id S932733AbaKMLaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:30:22 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:51029 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932329AbaKMLaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:27:49 -0500
-Message-ID: <546495AB.9050308@arm.com>
-Date: Thu, 13 Nov 2014 11:27:39 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 13 Nov 2014 06:30:21 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: suravee.suthikulpanit@amd.com, mark.rutland@arm.com, will.deacon@arm.com,
+        catalin.marinas@arm.com, Thomas Lendacky <Thomas.Lendacky@amd.com>,
+        Joel Schopp <Joel.Schopp@amd.com>, marc.zyngier@arm.com,
+        liviu.dudau@arm.com, linux-kernel@vger.kernel.org,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH V3] arm64: amd-seattle: Adding device tree for AMD Seattle platform
+Date: Thu, 13 Nov 2014 12:29:40 +0100
+Message-ID: <8642876.4lpJWZTuhf@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414503414-3863-1-git-send-email-suravee.suthikulpanit@amd.com>
+References: <1414503414-3863-1-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jiang Liu <jiang.liu@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC Part4 v1 00/17] Refine support of non-PCI-compliant Message
-References: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com> <546364FA.7010806@arm.com> <alpine.DEB.2.11.1411121512270.3935@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411121512270.3935@nanos>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 13 Nov 2014 11:27:40.0827 (UTC) FILETIME=[D5DA4EB0:01CFFF34]
-X-MC-Unique: 114111311274300201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:VJ3JLM5/LKM14WH7bcdCvCEoojOxi2rTYH54NEAVrdg
+ ts8a/RHJPYVcOg1vW7RALQYRHoMIV1P2HmfzTwhhyihOPX7mhE
+ KlRcvP6bH2cdF3q9UCm2Q2Uwz5c0ResE8TnY3n3kFBGgruGuYR
+ VGwQvU7ClOMUDtlYs5MCF2ZNf0BJpMgtoK4fC5j+ME3z7FxLEv
+ MD8waORbyWmld9RzlXepHQIKj49MuXzdgsO8Luad77gTMMZcca
+ JCEIkztY7M1IhdvHO3NnnJFo/3ijO14AMDfw2f8el2P7mYExzZ
+ Dff76MrZo9bCmaGqSPUeYtCDNnhaRx7ahadUGEQaL7659r1BOs
+ YwdykKD1xoyl06ULVOXQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-On 12/11/14 14:46, Thomas Gleixner wrote:
-> On Wed, 12 Nov 2014, Marc Zyngier wrote:
->> This patch introduces two optionnal fields to the msi_chip structure:
->> - a pointer to an irq domain, describing the MSI domain associated
->>   with this msi_chip. To be populated with msi_create_irq_domain.
->> - a domain_alloc_irqs() callback that has the same purpose as
->>   arch_setup_msi_irqs(), with the above domain as an additional
->>   parameter.
->>
->> If both of these fields are non-NULL, then domain_alloc_irqs() is
->> called, bypassing the setup_irq callback. This allows the MSI driver
->> to use the domain stacking feature without mandating core support in
->> the architecture.
+On Tuesday 28 October 2014 08:36:54 suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 > 
-> I'd rather have the callback in the irqdomain itself. Along with a
-> callback to free the interrupts.
-> 
-> AFAICT is msi_chip more or less a wrapper around the actual MSI irq
-> domain. So we rather move towards assigning irqdomain to the pci bus
-> and get rid of msi_chip instead of adding another level of obscure
-> indirection through msi_chip.
+> Initial revision of device tree for AMD Seattle platform
 
-I can see that putting the irq domain at the bus level makes a lot of 
-sense (assuming nobody tries to have multiple MSI controllers per bus...).
+Sorry for not looking at this earlier in enough detail.
 
-So I'm starting with something like this:
+> +	dma0: dma@0500000 {
+> +		compatible = "arm,pl330", "arm,primecell";
+> +		reg = <0 0x0500000 0 0x1000>;
+> +		interrupts =
+> +			<0 368 4>,
+> +			<0 369 4>,
+> +			<0 370 4>,
+> +			<0 371 4>,
+> +			<0 372 4>,
+> +			<0 373 4>,
+> +			<0 374 4>,
+> +			<0 375 4>;
+> +		clocks = <&dmaclk_500mhz>;
+> +		clock-names = "apb_pclk";
+> +		#dma-cells = <1>;
+> +	};
 
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 640a1ec..07e50fc 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -41,6 +41,7 @@ struct irq_domain;
- struct of_device_id;
- struct irq_chip;
- struct irq_data;
-+struct device;
- 
- /* Number of irqs reserved for a legacy isa controller */
- #define NUM_ISA_INTERRUPTS	16
-@@ -76,6 +77,10 @@ struct irq_domain_ops {
- 		     unsigned int nr_irqs);
- 	void (*activate)(struct irq_domain *d, struct irq_data *irq_data);
- 	void (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
-+	int (*prepare_alloc_irqs)(struct irq_domain *d, struct device *dev,
-+				  unsigned int nr_irqs, int type);
-+	int (*cleanup_free_irqs)(struct irq_domain *d, struct device *dev,
-+				 unsigned int virq, unsigned int nr_irqs);
- #endif
- };
+Is this device cache-coherent?
 
-How do you see this behaving? At the moment, I have the "prepare" callback
-directly calling into pci_msi_domain_alloc_irqs() so that the irqs get
-created, but I have the nagging feeling that it's not what you want... ;-)
-The main issue I can see is that if more than one domain in the stack
-implements that, who gets to call pci_msi_domain_alloc_irqs?
+Does it support larger than 32-bit DMA addresses?
 
-If we try to decouple those two, there is a problem with the creation of
-the intermediate structure (the irq_alloc_info that's in Jiang's patches),
-as this is a arch/driver/whatever specific structure.
+> +	sata0: sata@00300000 {
+> +		compatible = "snps,dwc-ahci";
+> +		reg = <0 0x300000 0 0x800>;
+> +		interrupts = <0 355 4>;
+> +		clocks = <&sataclk_333mhz>;
+> +		clock-names = "apb_pclk";
+> +		dma-coherent;
+> +	};
 
-For reference, I've pushed out my current branch (very much a work in
-progress):
-http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/log/?h=irq/branch-from-hell
+Same here: you list it as coherent, but not 64-bit DMA capable.
+Is that intentional?
 
-The commits related to this discussion are:
-http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/commit/?h=irq/branch-from-hell&id=56ea48e6389fe461cb3ddf01e19afcdcd8f12f66
-and
-http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/commit/?h=irq/branch-from-hell&id=855ab8b937967854dd070de2d0aaa07639e19526
+> +	i2c@1000000 {
+> +		compatible = "snps,designware-i2c";
+> +		reg = <0 0x01000000 0 0x1000>;
+> +		interrupts = <0 357 4>;
+> +		clocks = <&uartspiclk_100mhz>;
+> +		clock-names = "apb_pclk";
+> +	};
+> +
+> +	serial0: serial@1010000 {
+> +		compatible = "arm,pl011", "arm,primecell";
+> +		reg = <0 0x1010000 0 0x1000>;
+> +		interrupts = <0 328 4>;
+> +		clocks = <&uartspiclk_100mhz>, <&uartspiclk_100mhz>;
+> +		clock-names = "uartclk", "apb_pclk";
+> +	};
+> +
+> +	ssp@1020000 {
+> +		compatible = "arm,pl022", "arm,primecell";
+> +		#gpio-cells = <2>;
+> +		reg = <0 0x1020000 0 0x1000>;
+> +		spi-controller;
+> +		interrupts = <0 330 4>;
+> +		clocks = <&uartspiclk_100mhz>;
+> +		clock-names = "apb_pclk";
+> +	};
 
-as well as the code making use of that:
-http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3-its.c?h=irq/branch-from-hell&id=9f8ed988c2411831b7512006642e484c151e9a7a#n1184
+Should these three be connected to the DMA engine?
 
-Thanks,
+> +	ccp: ccp@00100000 {
+> +		compatible = "amd,ccp-seattle-v1a";
+> +		reg = <0 0x00100000 0 0x10000>;
+> +		interrupts = <0 3 4>;
+> +		dma-coherent;
+> +	};
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+I see the driver hacks an 48-bit DMA mask into this one.
+Please fix the driver and add an appropriate dma-ranges property.
 
+> +	/* This entry is modified by UEFI */
+
+Can you explain which parts are modified by UEFI?
+
+> +	pcie0: pcie-controller{
+> +		compatible = "pci-host-ecam-generic";
+> +		#address-cells = <3>;
+> +		#size-cells = <2>;
+> +		device_type = "pci";
+> +		bus-range = <0 0xff>;
+> +		reg = <0 0xf0000000 0 0x10000000>;
+> +		dma-coherent;
+> +		msi-parent = <&v2m0>;
+
+This surely needs a dma-ranges property to allow larger than 32-bit DMA.
+
+
+
+> +		interrupts =
+> +			<0 320 4>, /* ioc_soc_serr */
+> +			<0 321 4>; /* ioc_soc_sci */
+
+The pci-host-ecam-generic binding does not allow an interrupts property.
+
+You seem to be missing an interrupt-map property.
+
+
+> +		ranges =
+> +			/* I/O Memory (size=64K) */
+> +			<0x01000000 0x00 0xefff0000 0x00 0xefff0000 0x00 0x00010000>,
+
+Are you able to map the I/O space to bus address zero instead in the
+firmware? This looks like a firmware bug, I/O space should not
+be identity-mapped but is normally expected to have low port numbers.
+
+> +			/* Non-Pref 32-bit MMIO (size=512M) */
+> +			<0x02000000 0x00 0x40000000 0x00 0x40000000 0x00 0x20000000>,
+> +
+> +			/* Non-Pref 32-bit MMIO (size=512M) */
+> +			<0x02000000 0x00 0x60000000 0x00 0x60000000 0x00 0x20000000>,
+> +
+> +			/* Non-Pref 32-bit MMIO (size=512M) */
+> +			<0x02000000 0x00 0x80000000 0x00 0x80000000 0x00 0x20000000>,
+> +
+> +			/* Non-Pref 32-bit MMIO (size=512M) */
+> +			<0x02000000 0x00 0xa0000000 0x00 0xa0000000 0x00 0x20000000>,
+
+I don't understand why you use distinct ranges here and below. These are all
+contiguous, so why not collapse them into one logical range.
+
+> +	smb {
+> +		compatible = "simple-bus";
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		ranges = <0 0 0 0xE0000000 0 0x01300000>;
+> +
+> +		/include/ "amd-seattle-periph.dtsi"
+> +	};
+
+I would put the smb node into the other file and move the include statement to the
+top level.
+
+Please use lowercase characters for the address.
+
+	Arnd
