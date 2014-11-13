@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252AbaKMRDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:03:35 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:50827 "EHLO
+	id S933458AbaKMRDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:03:47 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:50854 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543AbaKMRDb (ORCPT
+	with ESMTP id S933395AbaKMRDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:03:31 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-d6-5464e461fe33
+	Thu, 13 Nov 2014 12:03:42 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-e0-5464e46d7779
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
 Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
@@ -22,65 +22,63 @@ Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         Thierry Reding <thierry.reding@gmail.com>,
         Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing for
- tegra driver
-Date: Thu, 13 Nov 2014 18:02:42 +0100
-Message-id: <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH 7/8] thermal:core:fix: Initialize the max_state variable to 0
+Date: Thu, 13 Nov 2014 18:02:44 +0100
+Message-id: <1415898165-27406-8-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
 References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
  <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jQd3EJykhBlNfWFpsnLGe1WL+lWus
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t9jQd3cJykhBqtnCllsnLGe1WL+lWus
 	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbfHm4WZGi8u75rBZfO49wmjR+WUWm8WDq9PYLJ48
 	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5LFu2ltmjwOTz7F69Da/Y/P4
-	dmYii0ffllWMHk9/7GX2+LxJzmPj3NAA7igum5TUnMyy1CJ9uwSujOMbFrMVfOKoeLxtO2MD
-	4272LkYODgkBE4kD91K7GDmBTDGJC/fWs4HYQgLTGSU6jtZ3MXIB2V1MEqc/32MHSbAJ6El8
-	vvuUCcQWEfCWeL1vOiNIEbPAaxaJQz8awIYKC0RLvGyqBalhEVCVWLPmFyOIzSvgJnHz6VU2
-	iGWKEt3PJoDZnALuEkdPfGKHWNbMKPG5bxbrBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1
-	kvNzNzGCg/yZ9A7GVQ0WhxgFOBiVeHhfsKSECLEmlhVX5h5ilOBgVhLhrb4PFOJNSaysSi3K
-	jy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cAoM1no4P49i+yfVrq1yT1M
-	WttrHnNkWq/R7aDmP2WH8uMe+b5eco6pS2Gmx4wQJi/HDbGpqf47nsoFpD/5XsXo+ydk9bNH
-	65LOmykdyFjFNC+qfcGDue+zV74QmMWZYzJnwdRTLXKNQoZGNZc99xbLx5x/vNJsy4sUoUSt
-	RKfjzh9OBac93ZSsxFKckWioxVxUnAgAEOB7dW4CAAA=
+	dmYii0ffllWMHk9/7GX2+LxJzmPj3NAA7igum5TUnMyy1CJ9uwSujNYllxkLlnNXNF7ewt7A
+	uJezi5GTQ0LAROLrxL2sELaYxIV769m6GLk4hASmM0ps673PCuF0MUn0H3vFBFLFJqAn8fnu
+	UzBbRMBb4vW+6YwgRcwCr1kkDv1oYAdJCAv4SnQvb2cDsVkEVCUerugAs3kF3CQ6mn6zQKxT
+	lOh+NgEszingLnH0xCd2iG3NjBKf+2axTmDkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/
+	dxMjONSfSe9gXNVgcYhRgINRiYf3BUtKiBBrYllxZe4hRgkOZiUR3ur7QCHelMTKqtSi/Pii
+	0pzU4kOM0hwsSuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2MQqKSX9J1vR7Znvywd2auc6nu
+	SfOS4/e7RVu6j/AUW5XdWCftqfnvm2vyxucq91IYGJemu1+UPe6gWW/FnB6hbmm2rjhajNNs
+	lbStj6rPvdsKjEdYghqKD/uf2FK79HpQrFPrLZ8/93QNJuSxHJgo9dlmjU3hvUm33kzkue25
+	pTY3/+LdNwxKLMUZiYZazEXFiQCbR2xncQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CPU freq is used as a thermal zone cooling device, one needs to wait
-until cpufreq subsystem is properly initialized.
+Pointer to the uninitialized max_state variable is passed to get the
+maximal cooling state.
+For CPU cooling device (cpu_cooling.c) the cpufreq_get_max_state() is
+called, which even when error occurs will return the max_state variable
+unchanged.
+Since error for ->get_max_state() is not checked, the automatically
+allocated value of max_state is used for (upper > max_state) comparison.
+For any possible max_state value it is very unlikely that it will be less
+than upper.
+As a consequence, the cooling device is bind even without the backed
+cpufreq table initialized.
 
-This code is similar to the one already available in imx_thermal.c file.
+This initialization will prevent from accidental binding trip points to
+cpu freq cooling frequencies when cpufreq driver itself is not yet fully
+initialized.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 ---
- drivers/thermal/tegra_soctherm.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/thermal/thermal_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
-index 70f7e9e..9c5aaa4 100644
---- a/drivers/thermal/tegra_soctherm.c
-+++ b/drivers/thermal/tegra_soctherm.c
-@@ -26,6 +26,7 @@
- #include <linux/platform_device.h>
- #include <linux/reset.h>
- #include <linux/thermal.h>
-+#include <linux/cpufreq.h>
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 43b9070..413daa4 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -927,7 +927,7 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
+ 	struct thermal_instance *pos;
+ 	struct thermal_zone_device *pos1;
+ 	struct thermal_cooling_device *pos2;
+-	unsigned long max_state;
++	unsigned long max_state = 0;
+ 	int result;
  
- #include <soc/tegra/fuse.h>
- 
-@@ -346,6 +347,12 @@ static int tegra_soctherm_probe(struct platform_device *pdev)
- 
- 	const struct tegra_tsensor *tsensors = t124_tsensors;
- 
-+#ifdef CONFIG_CPU_THERMAL
-+	if (!cpufreq_get_current_driver()) {
-+		dev_dbg(&pdev->dev, "no cpufreq driver!");
-+		return -EPROBE_DEFER;
-+	}
-+#endif
- 	tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra), GFP_KERNEL);
- 	if (!tegra)
- 		return -ENOMEM;
+ 	if (trip >= tz->trips || (trip < 0 && trip != THERMAL_TRIPS_NONE))
 -- 
 2.0.0.rc2
 
