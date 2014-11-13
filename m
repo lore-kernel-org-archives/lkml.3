@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934066AbaKMTZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 14:25:30 -0500
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:46407 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934026AbaKMTZY (ORCPT
+	id S934099AbaKMTZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 14:25:38 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:49300 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933939AbaKMTZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 14:25:24 -0500
+	Thu, 13 Nov 2014 14:25:33 -0500
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        linux-kernel@vger.kernel.org (open list:PERFORMANCE EVENT...)
+To: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org (open list:SLAB ALLOCATOR),
+        linux-kernel@vger.kernel.org (open list)
 Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH 10/16] perf: Replace smp_read_barrier_depends() with lockless_dereference()
-Date: Thu, 13 Nov 2014 14:24:16 -0500
-Message-Id: <1415906662-4576-11-git-send-email-bobby.prani@gmail.com>
+Subject: [PATCH 14/16] slab: Replace smp_read_barrier_depends() with lockless_dereference()
+Date: Thu, 13 Nov 2014 14:24:20 -0500
+Message-Id: <1415906662-4576-15-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
 References: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
@@ -28,55 +30,31 @@ hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- kernel/events/core.c    | 3 +--
- kernel/events/uprobes.c | 8 ++++----
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ mm/slab.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d59fdc0..9dd5920 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3400,14 +3400,13 @@ static void perf_remove_from_owner(struct perf_event *event)
- 	struct task_struct *owner;
+diff --git a/mm/slab.h b/mm/slab.h
+index 3347fd7..1cf40054 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -209,15 +209,15 @@ cache_from_memcg_idx(struct kmem_cache *s, int idx)
  
  	rcu_read_lock();
--	owner = ACCESS_ONCE(event->owner);
+ 	params = rcu_dereference(s->memcg_params);
+-	cachep = params->memcg_caches[idx];
+-	rcu_read_unlock();
+ 
  	/*
- 	 * Matches the smp_wmb() in perf_event_exit_task(). If we observe
- 	 * !owner it means the list deletion is complete and we can indeed
- 	 * free this event, otherwise we need to serialize on
- 	 * owner->perf_event_mutex.
+ 	 * Make sure we will access the up-to-date value. The code updating
+ 	 * memcg_caches issues a write barrier to match this (see
+ 	 * memcg_register_cache()).
  	 */
 -	smp_read_barrier_depends();
-+	owner = lockless_dereference(event->owner);
- 	if (owner) {
- 		/*
- 		 * Since delayed_put_task_struct() also drops the last
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 6158a64b..c070949 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1212,8 +1212,8 @@ static struct xol_area *get_xol_area(void)
- 	if (!mm->uprobes_state.xol_area)
- 		__create_xol_area(0);
- 
--	area = mm->uprobes_state.xol_area;
--	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
-+	/* pairs with wmb in xol_add_vma() */
-+	area = lockless_dereference(mm->uprobes_state.xol_area);
- 	return area;
- }
- 
-@@ -1507,8 +1507,8 @@ static unsigned long get_trampoline_vaddr(void)
- 	struct xol_area *area;
- 	unsigned long trampoline_vaddr = -1;
- 
--	area = current->mm->uprobes_state.xol_area;
--	smp_read_barrier_depends();
-+	area = lockless_dereference(current->mm->uprobes_state.xol_area);
++	cachep = lockless_dereference(params->memcg_caches[idx]);
++	rcu_read_unlock();
 +
- 	if (area)
- 		trampoline_vaddr = area->vaddr;
+ 	return cachep;
+ }
  
 -- 
 1.9.1
