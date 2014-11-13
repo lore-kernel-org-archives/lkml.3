@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934366AbaKMWI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 17:08:28 -0500
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:36183 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065AbaKMWI0 (ORCPT
+	id S934395AbaKMWJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 17:09:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40736 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934093AbaKMWJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 17:08:26 -0500
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Thu, 13 Nov 2014 17:08:23 -0500
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 11/13] arm: dts: dra7: add DMA properties for UART
-Message-ID: <20141113220823.GK24112@csclub.uwaterloo.ca>
-References: <20141104172117.GC24112@csclub.uwaterloo.ca>
- <20141104183315.GD24112@csclub.uwaterloo.ca>
- <20141104210315.GF24112@csclub.uwaterloo.ca>
- <20141105011506.GG24112@csclub.uwaterloo.ca>
- <5459DBB7.1090702@linutronix.de>
- <20141105153307.GN24110@csclub.uwaterloo.ca>
- <20141105162024.GH24112@csclub.uwaterloo.ca>
- <545A50BB.2020307@linutronix.de>
- <20141105194323.GI24112@csclub.uwaterloo.ca>
- <5464F9A1.9080901@linutronix.de>
+	Thu, 13 Nov 2014 17:09:12 -0500
+Date: Thu, 13 Nov 2014 14:09:11 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Pieter Smith <pieter@boesman.nl>
+Cc: Josh Triplett <josh@joshtriplett.org>, Arnd Bergmann <arnd@arndb.de>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 51/56] drivers/char/mem: support compiling out splice
+Message-ID: <20141113220911.GA546@kroah.com>
+References: <pieter@boesman.nl>
+ <1415913813-362-1-git-send-email-pieter@boesman.nl>
+ <1415913813-362-52-git-send-email-pieter@boesman.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5464F9A1.9080901@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415913813-362-52-git-send-email-pieter@boesman.nl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 07:34:09PM +0100, Sebastian Andrzej Siewior wrote:
-> misaligned dma? I haven't seen any alignment requirement for SDMA/EDMA
-> and I haven't seen this error on beagle board, am335x-evm or dra7-evm.
+On Thu, Nov 13, 2014 at 10:23:28PM +0100, Pieter Smith wrote:
+> Compile out splice support from mem character driver when the splice-family of
+> syscalls is not supported by the system (i.e. CONFIG_SYSCALL_SPLICE is
+> undefined).
+> 
+> add/remove: 0/2 grow/shrink: 0/0 up/down: 0/-28 (-28)
+> function                                     old     new   delta
+> pipe_to_null                                   4       -      -4
+> splice_write_null                             24       -     -24
+> 
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> ---
+>  drivers/char/mem.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+> index 917403f..420d651 100644
+> --- a/drivers/char/mem.c
+> +++ b/drivers/char/mem.c
+> @@ -610,6 +610,7 @@ static ssize_t aio_write_null(struct kiocb *iocb, const struct iovec *iov,
+>  	return iov_length(iov, nr_segs);
+>  }
+>  
+> +#ifdef CONFIG_SYSCALL_SPLICE
+>  static int pipe_to_null(struct pipe_inode_info *info, struct pipe_buffer *buf,
+>  			struct splice_desc *sd)
+>  {
+> @@ -621,6 +622,7 @@ static ssize_t splice_write_null(struct pipe_inode_info *pipe, struct file *out,
+>  {
+>  	return splice_from_pipe(pipe, out, ppos, len, flags, pipe_to_null);
+>  }
+> +#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
+>  
 
-Well I am using the am5728, so it should be the same as the dra7-evm.
+Ick, no, not worth the #ifdef mess, sorry.
 
-> So basically what you are saying is that DMA (no matter which channel)
-> gives you this error and without DMA it works fine?
-
-Yes.
-
-I am trying to get the 3.14 kernel tree going, just as soon as I figure
-out which config setting makes the timer probe not crash (it works
-with the default config that enables every omap ever made, but I want
-a cleaner build than that).
-
--- 
-Len Sorensen
