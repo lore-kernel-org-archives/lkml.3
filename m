@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967AbaKMDIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 22:08:52 -0500
-Received: from relay.variantweb.net ([104.131.199.242]:53830 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753850AbaKMDIu (ORCPT
+	id S1753889AbaKMDI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 22:08:28 -0500
+Received: from mail-oi0-f74.google.com ([209.85.218.74]:51056 "EHLO
+	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831AbaKMDIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 22:08:50 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, trivial@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] zbud, zswap: change module author email
-Date: Wed, 12 Nov 2014 21:08:46 -0600
-Message-Id: <1415848126-9775-1-git-send-email-sjennings@variantweb.net>
-X-Mailer: git-send-email 1.9.3
+	Wed, 12 Nov 2014 22:08:25 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        James Hartley <James.Hartley@imgtec.com>,
+        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Subject: [PATCH V2 0/2] spi: IMG SPFI driver
+Date: Wed, 12 Nov 2014 19:08:14 -0800
+Message-Id: <1415848096-20079-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Old email no longer viable.
+This series adds support for the Sychronous Peripheral Flash Interface
+master found on IMG SoCs.  The controller supports up to 5 chip-select
+lines and single, dual, and optionally quad, mode transfers.
 
-Signed-off-by: Seth Jennings <sjennings@variantweb.net>
----
- mm/zbud.c  | 2 +-
- mm/zswap.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Tested on a platform using the MIPS-based Pistachio SoC with additional
+out-of-tree patches - support for Pistachio will be submitted soon.
 
-diff --git a/mm/zbud.c b/mm/zbud.c
-index db8de74..4e387be 100644
---- a/mm/zbud.c
-+++ b/mm/zbud.c
-@@ -619,5 +619,5 @@ module_init(init_zbud);
- module_exit(exit_zbud);
- 
- MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
-+MODULE_AUTHOR("Seth Jennings <sjennings@variantweb.net>");
- MODULE_DESCRIPTION("Buddy Allocator for Compressed Pages");
-diff --git a/mm/zswap.c b/mm/zswap.c
-index ea064c1..c154306 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -951,5 +951,5 @@ error:
- late_initcall(init_zswap);
- 
- MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
-+MODULE_AUTHOR("Seth Jennings <sjennings@variantweb.net>");
- MODULE_DESCRIPTION("Compressed cache for swap pages");
+Based on 3.18-rc4.
+
+Changes from v1:
+ - added runtime PM support
+ - renamed spi-img -> spi-img-spfi
+ - addressed Mark's review comments
+
+Andrew Bresticker (2):
+  spi: Add binding document for IMG SPFI controller
+  spi: Add driver for IMG SPFI controller
+
+ .../devicetree/bindings/spi/spi-img-spfi.txt       |  37 +
+ drivers/spi/Kconfig                                |   7 +
+ drivers/spi/Makefile                               |   1 +
+ drivers/spi/spi-img-spfi.c                         | 745 +++++++++++++++++++++
+ 4 files changed, 790 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-img-spfi.txt
+ create mode 100644 drivers/spi/spi-img-spfi.c
+
 -- 
-1.9.3
+2.1.0.rc2.206.gedb03e5
 
