@@ -1,151 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaKMAjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 19:39:04 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:59336 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814AbaKMAjC convert rfc822-to-8bit (ORCPT
+	id S1753493AbaKMAkw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 19:40:52 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:34809 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaKMAkv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 19:39:02 -0500
+	Wed, 12 Nov 2014 19:40:51 -0500
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-To: Chris Zhong <zyw@rock-chips.com>, heiko@sntech.de, dianders@chromium.org
+To: Doug Anderson <dianders@chromium.org>,
+        "Dmitry Torokhov" <dtor@chromium.org>
 From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1415368177-6637-2-git-send-email-zyw@rock-chips.com>
-Cc: "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Linus Walleij" <linus.walleij@linaro.org>, khilman@kernel.org,
-        linux-rockchip@lists.infradead.org, "Chris Zhong" <zyw@rock-chips.com>,
-        "Tony Xie" <xxx@rock-chips.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1415368177-6637-1-git-send-email-zyw@rock-chips.com>
- <1415368177-6637-2-git-send-email-zyw@rock-chips.com>
-Message-ID: <20141113003855.25314.67230@quantum>
+In-Reply-To: <CAD=FV=UsYWDw0wB6KSANXZYnnBFdTL9wOEqf9DoUF8aFuDpNSw@mail.gmail.com>
+Cc: "Heiko Stuebner" <heiko@sntech.de>, "Jianqun" <jay.xu@rock-chips.com>,
+        "Kever Yang" <kever.yang@rock-chips.com>,
+        "Mark yao" <mark.yao@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20141112213845.GA14153@dtor-ws>
+ <CAD=FV=UsYWDw0wB6KSANXZYnnBFdTL9wOEqf9DoUF8aFuDpNSw@mail.gmail.com>
+Message-ID: <20141113004046.25314.61598@quantum>
 User-Agent: alot/0.3.5
-Subject: Re: [PATCH v7 1/5] clk: rockchip: RK3288: add suspend and resume
-Date: Wed, 12 Nov 2014 16:38:55 -0800
+Subject: Re: [PATCH] clk: rockchip: ensure HCLK_VIO2_H2P and PCLK_VIO2_H2P stay
+ enabled
+Date: Wed, 12 Nov 2014 16:40:46 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Chris Zhong (2014-11-07 05:49:33)
-> save and restore some clks, which might be changed in suspend.
+Quoting Doug Anderson (2014-11-12 13:49:18)
+> Hi,
 > 
-> Signed-off-by: Tony Xie <xxx@rock-chips.com>
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> On Wed, Nov 12, 2014 at 1:38 PM, Dmitry Torokhov <dtor@chromium.org> wrote:
+> > Currently there is no driver owning these clocks and they have to stay
+> > up for the system to function properly, so let's mark them as
+> > CLK_IGNORE_UNUSED.
+> >
+> > Without this patch we have trouble with suspend/resume and we have
+> > trouble turning the eDP back on if it ever idles off.
+> >
+> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+> > Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+> > ---
+> >  drivers/clk/rockchip/clk-rk3288.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> I'm already on the signed-off-by (mostly because I tweaked the commit
+> message and tested this), but in case anyone cares I have reviewed
+> this and tested it.  ;)
+> 
+> ...obviously we want to get to the bottom of the right way to handle
+> all of these clocks, but since we _just_ removed the blanket "leave
+> all clocks enabled" adding a few clocks back into the fold seems sane
+> until we get all our ducks in a row.
+> 
 > Reviewed-by: Doug Anderson <dianders@chromium.org>
 > Tested-by: Doug Anderson <dianders@chromium.org>
 
-Looks good to me.
+Seems fine to me. Just to be clear, Heiko will be picking up the
+Rockchip clock patches and submitting a PR, correct? I believe last
+merge window was the first time we did that for Rockchip and it went
+well.
 
 Regards,
 Mike
-
-> 
-> ---
-> 
-> Changes in v7: None
-> Changes in v6:
-> - modify comments
-> 
-> Changes in v5:
-> - modify comments
-> 
-> Changes in v4: None
-> Changes in v3: None
-> Changes in v2:
-> - __raw_readl/__raw_writel replaced by readl_relaxed/writel_relaxed
-> 
->  drivers/clk/rockchip/clk-rk3288.c | 60 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 60 insertions(+)
-> 
-> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-> index 2327829..66a9cb0 100644
-> --- a/drivers/clk/rockchip/clk-rk3288.c
-> +++ b/drivers/clk/rockchip/clk-rk3288.c
-> @@ -16,6 +16,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
-> +#include <linux/syscore_ops.h>
->  #include <dt-bindings/clock/rk3288-cru.h>
->  #include "clk.h"
->  
-> @@ -762,6 +763,64 @@ static const char *rk3288_critical_clocks[] __initconst = {
->         "hclk_peri",
->  };
->  
-> +#ifdef CONFIG_PM_SLEEP
-> +static void __iomem *rk3288_cru_base;
-> +
-> +/* Some CRU registers will be reset in maskrom when the system
-> + * wakes up from fastboot.
-> + * So save them before suspend, restore them after resume.
-> + */
-> +static const int rk3288_saved_cru_reg_ids[] = {
-> +       RK3288_MODE_CON,
-> +       RK3288_CLKSEL_CON(0),
-> +       RK3288_CLKSEL_CON(1),
-> +       RK3288_CLKSEL_CON(10),
-> +       RK3288_CLKSEL_CON(33),
-> +       RK3288_CLKSEL_CON(37),
-> +};
-> +
-> +static u32 rk3288_saved_cru_regs[ARRAY_SIZE(rk3288_saved_cru_reg_ids)];
-> +
-> +static int rk3288_clk_suspend(void)
-> +{
-> +       int i, reg_id;
-> +
-> +       for (i = 0; i < ARRAY_SIZE(rk3288_saved_cru_reg_ids); i++) {
-> +               reg_id = rk3288_saved_cru_reg_ids[i];
-> +
-> +               rk3288_saved_cru_regs[i] =
-> +                               readl_relaxed(rk3288_cru_base + reg_id);
-> +       }
-> +       return 0;
-> +}
-> +
-> +static void rk3288_clk_resume(void)
-> +{
-> +       int i, reg_id;
-> +
-> +       for (i = ARRAY_SIZE(rk3288_saved_cru_reg_ids) - 1; i >= 0; i--) {
-> +               reg_id = rk3288_saved_cru_reg_ids[i];
-> +
-> +               writel_relaxed(rk3288_saved_cru_regs[i] | 0xffff0000,
-> +                              rk3288_cru_base + reg_id);
-> +       }
-> +}
-> +
-> +static struct syscore_ops rk3288_clk_syscore_ops = {
-> +       .suspend = rk3288_clk_suspend,
-> +       .resume = rk3288_clk_resume,
-> +};
-> +
-> +static void rk3288_clk_sleep_init(void __iomem *reg_base)
-> +{
-> +       rk3288_cru_base = reg_base;
-> +       register_syscore_ops(&rk3288_clk_syscore_ops);
-> +}
-> +
-> +#else /* CONFIG_PM_SLEEP */
-> +static void rk3288_clk_sleep_init(void __iomem *reg_base) {}
-> +#endif
-> +
->  static void __init rk3288_clk_init(struct device_node *np)
->  {
->         void __iomem *reg_base;
-> @@ -810,5 +869,6 @@ static void __init rk3288_clk_init(struct device_node *np)
->                                   ROCKCHIP_SOFTRST_HIWORD_MASK);
->  
->         rockchip_register_restart_notifier(RK3288_GLB_SRST_FST);
-> +       rk3288_clk_sleep_init(reg_base);
->  }
->  CLK_OF_DECLARE(rk3288_cru, "rockchip,rk3288-cru", rk3288_clk_init);
-> -- 
-> 1.9.1
-> 
