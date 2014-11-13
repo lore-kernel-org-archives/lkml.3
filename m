@@ -1,286 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933208AbaKMP4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:56:48 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35860 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932245AbaKMP4q (ORCPT
+	id S1754038AbaKMQIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 11:08:11 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:48151 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938AbaKMQII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:56:46 -0500
-Message-ID: <5464D4B6.5010808@hitachi.com>
-Date: Fri, 14 Nov 2014 00:56:38 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 13 Nov 2014 11:08:08 -0500
+Message-ID: <5464D726.8010408@linaro.org>
+Date: Thu, 13 Nov 2014 17:07:02 +0100
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Vojtech Pavlik <vojtech@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
-        kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Kernel Live Patching
-References: <20141106185857.GA7106@infradead.org> <20141106202423.GB2266@suse.cz> <20141107074745.GC22703@infradead.org> <20141107131153.GD4071@treble.redhat.com> <20141107140458.GA21774@suse.cz> <20141107154500.GF4071@treble.redhat.com> <20141107212735.GA21409@suse.cz> <54616533.1070301@hitachi.com> <20141111102655.GB20424@suse.cz> <546399E4.6050605@hitachi.com> <20141112214719.GA26809@suse.cz>
-In-Reply-To: <20141112214719.GA26809@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andre Przywara <andre.przywara@arm.com>,
+        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>
+CC: Christoffer Dall <christoffer.dall@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>
+Subject: Re: [RFC PATCH 1/4] ARM: KVM: on unhandled IO mem abort, route the
+ call to the KVM MMIO bus
+References: <1394726249-1547-1-git-send-email-a.motakis@virtualopensystems.com> <1394726249-1547-2-git-send-email-a.motakis@virtualopensystems.com> <20140328190913.GJ25519@cbox> <CADDJ2=Opx2d5ex0hWSXYJjs6uLifR9wZVsahUHzZ7zytSj7ZSg@mail.gmail.com> <20141110162736.GA16054@cbox> <CADDJ2=PTM0fJ0RFfWdVQ1-471xqaJmj0vP1f5-pf57xOV5jgig@mail.gmail.com> <5464BD30.7040702@linaro.org> <5464BEC9.1050401@linaro.org> <CADDJ2=OLkE36N_QyW==qL5oWu=t4YY0BZ1ekUPv_-Y7gga7xVw@mail.gmail.com> <5464CEB4.8010607@arm.com>
+In-Reply-To: <5464CEB4.8010607@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/13 6:47), Vojtech Pavlik wrote:
-> On Thu, Nov 13, 2014 at 02:33:24AM +0900, Masami Hiramatsu wrote:
->> Right. Consistency model is still same as kpatch. Btw, I think
->> we can just use the difference of consistency for classifying
->> the patches, since we have these classes, only limited combination
->> is meaningful.
->>
->>>> 	LEAVE_FUNCTION
->>>> 	LEAVE_PATCHED_SET
->>>> 	LEAVE_KERNEL
->>>>
->>>> 	SWITCH_FUNCTION
->>>> 	SWITCH_THREAD
->>>> 	SWITCH_KERNEL
->>
->> How about the below combination of consistent flags?
->>
->> <flags>
->> CONSISTENT_IN_THREAD - patching is consistent in a thread.
->> CONSISTENT_IN_TIME - patching is atomically done.
->>
->> <combination>
->> (none) - the 'null' mode? same as LEAVE_FUNCTION & SWITCH_FUNCTION
->>
->> CONSISTENT_IN_THREAD - kGraft mode. same as LEAVE_KERNEL & SWITCH_THREAD
->>
->> CONSISTENT_IN_TIME - kpatch mode. same as LEAVE_PATCHED_SET & SWITCH_KERNEL
->>
->> CONSISTENT_IN_THREAD|CONSISTENT_IN_TIME - CRIU mode. same as LEAVE_KERNEL & SWITCH_KERNEL
+On 11/13/2014 04:31 PM, Andre Przywara wrote:
 > 
-> The reason I tried to parametrize the consistency model in a more
-> flexible and fine-grained manner than just describing the existing
-> solutions was for the purpose of exploring whether any of the remaining
-> combinations make sense.
-
-I see. I don't mind the implementation of how to check the execution path.
-I just considers that we need classify consistency requirements when
-checking the "patch" itself (maybe by manual at first).
-
-And since your classification seemed mixing the consistency and switching
-timings, I thought we'd better split them into the consistency requirement
-flags and implementation of safeness checking :)
-
-Even if you can use refcounting with per-thread patching, it still switches
-per-thread basis, inconsistent among threads.
-
-> It allowed me to look at what value we're getting from the consistency
-> models: Most importantly the ability to change function prototypes and
-> still make calls work.
 > 
-> For this, the minimum requirements are LEAVE_PATCHED_SET (what
-> kpatch does) and SWITCH_THREAD (which is what kGraft does). 
-> 
-> Both kpatch and kGraft do more, but:
-> 
-> I was able to show that LEAVE_KERNEL is unnecessary and any cases where
-> it is beneficial can be augmented by just increasing the patched set.
-> 
-> I believe at this point that SWITCH_KERNEL is unnecessary and that data or
-> locking changes - the major benefit of switching at once can be done by
-> shadowing/versioning of data structures, which is what both kpatch and
-> kGraft had planned to do anyway.
-> 
-> I haven't shown yet whether the strongest consistency (LEAVE_KERNEL +
-> SWITCH_KERNEL) is possible at all. CRIU is close, but not necessarily
-> doing quite that. It might be possible to just force processes to sleep
-> at syscall entry one by one until all are asleep. Also the benefits of
-> doing that are still unclear.
-
-Of course, that is what kernel/freezer.c does :)
-So, if you need to patch with the strongest consistency, you can freeze
-them all.
-
-> 
-> The goal is to find a consistency model that is best suited for the
-> goals of both kpatch and kGraft: Reliably apply simple to
-> mid-complexity kernel patches.
-
-Same as me. I just sorted out the possible consistency requirements.
-And I've thought that the key was "consistent in a context of each thread" or
-"consistent at the moment among all threads but not in a context" or
-"consistent in contexts of all threads". What would you think, any other
-consistency model is there?
-
->> So, each patch requires consistency constrains flag and livepatch tool
->> chooses the mode based on the flag.
->>
->>>> So, I think the patch may be classified by following four types
->>>>
->>>> PATCH_FUNCTION - Patching per function. This ignores context, just
->>>>                change the function.
->>>>                User must ensure that the new function can co-exist
->>>>                with old functions on the same context (e.g. recursive
->>>>                call can cause inconsistency).
->>>>
->>>> PATCH_THREAD - Patching per thread. If a thread leave the kernel,
->>>>                changes are applied for that thread.
->>>>                User must ensure that the new functions can co-exist
->>>>                with old functions per-thread. Inter-thread shared
->>>>                data acquisition(locks) should not be involved.
->>>>
->>>> PATCH_KERNEL - Patching all threads. This wait for all threads leave the
->>>>                all target functions.
->>>>                User must ensure that the new functions can co-exist
->>>>                with old functions on a thread (note that if there is a
->>>>                loop, old one can be called first n times, and new one
->>>>                can be called afterwords).(**)
+> On 13/11/14 15:02, Nikolay Nikolaev wrote:
+>> On Thu, Nov 13, 2014 at 4:23 PM, Eric Auger <eric.auger@linaro.org> wrote:
+>>> On 11/13/2014 03:16 PM, Eric Auger wrote:
+>>>> On 11/13/2014 11:45 AM, Nikolay Nikolaev wrote:
+>>>>> On Mon, Nov 10, 2014 at 6:27 PM, Christoffer Dall
+>>>>> <christoffer.dall@linaro.org> wrote:
+>>>>>> On Mon, Nov 10, 2014 at 05:09:07PM +0200, Nikolay Nikolaev wrote:
+>>>>>>> Hello,
+>>>>>>>
+>>>>>>> On Fri, Mar 28, 2014 at 9:09 PM, Christoffer Dall
+>>>>>>> <christoffer.dall@linaro.org> wrote:
+>>>>>>>>
+>>>>>>>> On Thu, Mar 13, 2014 at 04:57:26PM +0100, Antonios Motakis wrote:
+>>>>>>>>> On an unhandled IO memory abort, use the kvm_io_bus_* API in order to
+>>>>>>>>> handle the MMIO access through any registered read/write callbacks. This
+>>>>>>>>> is a dependency for eventfd support (ioeventfd and irqfd).
+>>>>>>>>>
+>>>>>>>>> However, accesses to the VGIC are still left implemented independently,
+>>>>>>>>> since the kvm_io_bus_* API doesn't pass the VCPU pointer doing the access.
+>>>>>>>>>
+>>>>>>>>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>>>>>>>>> Signed-off-by: Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>
+>>>>>>>>> ---
+>>>>>>>>>  arch/arm/kvm/mmio.c | 32 ++++++++++++++++++++++++++++++++
+>>>>>>>>>  virt/kvm/arm/vgic.c |  5 ++++-
+>>>>>>>>>  2 files changed, 36 insertions(+), 1 deletion(-)
+>>>>>>>>>
+>>>>>>>>> diff --git a/arch/arm/kvm/mmio.c b/arch/arm/kvm/mmio.c
+>>>>>>>>> index 4cb5a93..1d17831 100644
+>>>>>>>>> --- a/arch/arm/kvm/mmio.c
+>>>>>>>>> +++ b/arch/arm/kvm/mmio.c
+>>>>>>>>> @@ -162,6 +162,35 @@ static int decode_hsr(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
+>>>>>>>>>       return 0;
+>>>>>>>>>  }
+>>>>>>>>>
+>>>>>>>>> +/**
+>>>>>>>>> + * kvm_handle_mmio - handle an in-kernel MMIO access
+>>>>>>>>> + * @vcpu:    pointer to the vcpu performing the access
+>>>>>>>>> + * @run:     pointer to the kvm_run structure
+>>>>>>>>> + * @mmio:    pointer to the data describing the access
+>>>>>>>>> + *
+>>>>>>>>> + * returns true if the MMIO access has been performed in kernel space,
+>>>>>>>>> + * and false if it needs to be emulated in user space.
+>>>>>>>>> + */
+>>>>>>>>> +static bool handle_kernel_mmio(struct kvm_vcpu *vcpu, struct kvm_run *run,
+>>>>>>>>> +             struct kvm_exit_mmio *mmio)
+>>>>>>>>> +{
+>>>>>>>>> +     int ret;
+>>>>>>>>> +     if (mmio->is_write) {
+>>>>>>>>> +             ret = kvm_io_bus_write(vcpu->kvm, KVM_MMIO_BUS, mmio->phys_addr,
+>>>>>>>>> +                             mmio->len, &mmio->data);
+>>>>>>>>> +
+>>>>>>>>> +     } else {
+>>>>>>>>> +             ret = kvm_io_bus_read(vcpu->kvm, KVM_MMIO_BUS, mmio->phys_addr,
+>>>>>>>>> +                             mmio->len, &mmio->data);
+>>>>>>>>> +     }
+>>>>>>>>> +     if (!ret) {
+>>>>>>>>> +             kvm_prepare_mmio(run, mmio);
+>>>>>>>>> +             kvm_handle_mmio_return(vcpu, run);
+>>>>>>>>> +     }
+>>>>>>>>> +
+>>>>>>>>> +     return !ret;
+>>>>>>>>> +}
+>>>>>>>>> +
+>>>>>>>>>  int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
+>>>>>>>>>                phys_addr_t fault_ipa)
+>>>>>>>>>  {
+>>>>>>>>> @@ -200,6 +229,9 @@ int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
+>>>>>>>>>       if (vgic_handle_mmio(vcpu, run, &mmio))
+>>>>>>>>>               return 1;
+>>>>>>>>>
+>>>>>>>>> +     if (handle_kernel_mmio(vcpu, run, &mmio))
+>>>>>>>>> +             return 1;
+>>>>>>>>> +
+>>>>>>>
+>>>>>>>
+>>>>>>> We're reconsidering ioeventfds patchseries and we tried to evaluate
+>>>>>>> what you suggested here.
+>>>>>>>
+>>>>>>>>
+>>>>>>>> this special-casing of the vgic is now really terrible.  Is there
+>>>>>>>> anything holding you back from doing the necessary restructure of the
+>>>>>>>> kvm_bus_io_*() API instead?
+>>>>>>>
+>>>>>>> Restructuring the kvm_io_bus_ API is not a big thing (we actually did
+>>>>>>> it), but is not directly related to the these patches.
+>>>>>>> Of course it can be justified if we do it in the context of removing
+>>>>>>> vgic_handle_mmio and leaving only handle_kernel_mmio.
+>>>>>>>
+>>>>>>>>
+>>>>>>>> That would allow us to get rid of the ugly
+>>>>>>>> Fix it! in the vgic driver as well.
+>>>>>>>
+>>>>>>> Going through the vgic_handle_mmio we see that it will require large
+>>>>>>> refactoring:
+>>>>>>>  - there are 15 MMIO ranges for the vgic now - each should be
+>>>>>>> registered as a separate device
+>>> Re-correcting Andre's address, sorry:
+>>> Hi Nikolay, Andre,
 >>>
->>> Yes, but only when the function calling it is not included in the
->>> patched set, which is only a problem for semantic changes accompanied by
->>> no change in the function prototyppe. This can be avoided by changing
->>> the prototype deliberately.
+>>> what does mandate to register 15 devices? Isn't possible to register a
+>>> single kvm_io_device covering the whole distributor range [base, base +
+>>> KVM_VGIC_V2_DIST_SIZE] (current code) and in associated
+>>> kvm_io_device_ops read/write locate the addressed range and do the same
+>>> as what is done in current vgic_handle_mmio? Isn't it done that way for
 >>
->> Hmm, but what would you think about following simple case?
->>
->> ----
->> int func(int a) {
->>   return a + 1;
->> }
->>
->> ...
->>   b = 0;
->>   for (i = 0; i < 10; i++)
->>     b = func(b);
->> ...
->> ----
->> ----
->> int func(int a) {
->>   return a + 2; /* Changed */
->> }
->>
->> ...
->>   b = 0;
->>   for (i = 0; i < 10; i++)
->>     b = func(b);
->> ...
->> ----
->>
->> So, after the patch, "b" will be in a range of 10 to 20, not 10 or 20.
->> Of course CONSISTENT_IN_THREAD can ensure it should be 10 or 20 :)
+>> Well, then we'll actually get slower mmio processing. Instead of calling
+>> vgic_handle_mmio in io_mem_abort, we'll be calling kvm_io_bus_write.
+>> This just adds another level of translation (i.e. find the kvm_io_ device)
+>> and the underlying vgic code will remain almost the same.
 > 
-> If you force a prototype change, eg by changing func() to an unsigned
-> int, or simply add a parameter, the place where it is called from will
-> also be changed and will be included in the patched set. (Or you can
-> just include it manually in the set.)
+> Agreed. That was one possibility I came around also, but I think it
+> defeats the purpose of the rework, which is mostly to get rid of the
+> GIC's private MMIO dispatching code, right?
+Hi Andre, Nikolay,
 
-Yes.
+Well my feeling is one of your primary goal was to split in a clean way
+v2 and v3 MMIO regions. This may be achieved by creating either
+io_device. Also in the future don't we have ITS &  redistributors
+showing up that could match io_devices too - but all that stuff still
+are very fuzzy for me ;-) - ?
 
-> Then, you can be sure that the place which calls func() is not on the
-> stack when patching. This way, in your classification, PATCH_KERNEL can
-> be as good as PATCH_THREAD. In my classification, I'm saying that
-> LEAVE_PATCHED_SET is as good as LEAVE_KERNEL.
+with respect to vcpu, we could add an opaque void * in kvm_io_device and
+pass the vcpu when calling kvm_iodevice_init().
 
-OK, but again, to be sure that, we need to dump stack for each kernel
-as I did.
+I also think we must resume integration of ioeventfd, whatever the
+chosen solution all the more so there seems to be some momentum on this now.
 
->>>> (*) Instead of checking stacks, at first, wait for all threads leaving
->>>> the kernel once, after that, wait for refcount becomes zero and switch
->>>> all the patched functions.
+Best Regards
+
+Eric
+> 
+> But honestly I would happily sacrifice "performance" for easier VGIC
+> code - especially if one thinks about security for instance. Though I
+> think that another memory reference doesn't really matter in this
+> context ;-)
+> 
+>>> the ioapic? what do I miss?
+>> I looked quickly in the ioapic code, and if I get it right there are no "ranges'
+>> like what we have with the GIC. They have this regselect/regwindow concept
+>> and they seem to have much less "registers" to handle. GIC seems a lot more
+>> complex in terms of MMIO interface.
+> 
+> Right, that was my impression, too. IOAPIC isn't really comparable to
+> the GIC in this respect. That's why I was going away from this rework,
+> since I thought that the kvm_io_bus API wasn't really meant for such
+> beasts as the GIC.
+> 
+> Cheers,
+> Andre.
+> 
+>>
+>> regards,
+>> Nikolay Nikolaev
+>>
 >>>
->>> This is a very beautiful idea.
+>>> Thanks
 >>>
->>> It does away with both the stack parsing and the kernel stopping,
->>> achieving kGraft's goals, while preserving kpatch's consistency model.
+>>> Best Regards
 >>>
->>> Sadly, it combines the disadvantages of both kpatch and kGraft: From
->>> kpatch it takes the inability to patch functions where threads are
->>> sleeping often and as such never leave them at once. From kGraft it
->>> takes the need to annotate kernel threads and wake sleepers from
->>> userspace.
+>>> Eric
+>>>>>>>  - the handler of each range should be split into read and write
+>>>>>>>  - all handlers take 'struct kvm_exit_mmio', and pass it to
+>>>>>>> 'vgic_reg_access', 'mmio_data_read' and 'mmio_data_read'
+>>>>>>>
+>>>>>>> To sum up - if we do this refactoring of vgic's MMIO handling +
+>>>>>>> kvm_io_bus_ API getting 'vcpu" argument we'll get a 'much' cleaner
+>>>>>>> vgic code and as a bonus we'll get 'ioeventfd' capabilities.
+>>>>>>>
+>>>>>>> We have 3 questions:
+>>>>>>>  - is the kvm_io_bus_ getting 'vcpu' argument acceptable for the other
+>>>>>>> architectures too?
+>>>>>>>  - is this huge vgic MMIO handling redesign acceptable/desired (it
+>>>>>>> touches a lot of code)?
+>>>>>>>  - is there a way that ioeventfd is accepted leaving vgic.c in it's
+>>>>>>> current state?
+>>>>>>>
+>>>>>> Not sure how the latter question is relevant to this, but check with
+>>>>>> Andre who recently looked at this as well and decided that for GICv3 the
+>>>>>> only sane thing was to remove that comment for the gic.
+>>>>> @Andre - what's your experience with the GICv3 and MMIO handling,
+>>>>> anything specific?
+>>>>>>
+>>>>>> I don't recall the details of what you were trying to accomplish here
+>>>>>> (it's been 8 months or so) but the surely the vgic handling code should
+>>>>>> *somehow* be integrated into the handle_kernel_mmio (like Paolo
+>>>>>> suggested), unless you come back and tell me that that would involve a
+>>>>>> complete rewrite of the vgic code.
+>>>>> I'm experimenting now - it's not exactly rewrite of whole vgic code,
+>>>>> but it will touch a lot of it  - all MMIO access handlers and the
+>>>>> supporting functions.
+>>>>> We're ready to spend the effort. My question is  - is this acceptable?
+>>>>>
+>>>>> regards,
+>>>>> Nikolay Nikolaev
+>>>>> Virtual Open Systems
+>>>>>>
+>>>>>> -Christoffer
+>>>>> _______________________________________________
+>>>>> kvmarm mailing list
+>>>>> kvmarm@lists.cs.columbia.edu
+>>>>> https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
+>>>>>
+>>>>
+>>>
 >>
->> But how frequently the former case happens? It seems very very rare.
->> And if we aim to enable both kpatch mode and kGraft mode in the kernel,
->> anyway we'll have something for the latter cases.
-> 
-> The kpatch problem case isn't that rare. It just happened with a CVE in
-> futexes recently. It will happen if you try to patch anything that is on
-> the stack when a TTY or TCP read is waiting for data as another example. 
-
-Oh, I see. this should be solved then... perhaps, we can freeze those
-tasks and thaw it again.
-
-> The kGraft problem case will happen when you load a 3rd party module
-> with a non-annotated kernel thread. Or a different problem will happen
-> when you have an application sleeping that will exit when receiving any
-> signal.
-
-Ah, yes. especially latter case is serious. maybe freezer can handle
-this too...
-
-> Both the cases can be handled with tricks and workarounds. But it'd be
-> much nicer to have a patching engine that is reliable.
-> 
->>> So while it is beautiful, it's less practical than either kpatch or
->>> kGraft alone. 
->>
->> Ah, sorry for confusing, I don't tend to integrate kpatch and kGraft.
->> Actually, it is just about modifying kpatch, since it may shorten
->> stack-checking time.
->> This means that does not change the consistency model.
->> We certainly need both of kGraft mode and kpatch mode.
-> 
-> What I'm proposing is a LEAVE_PATCHED_SET + SWITCH_THREAD mode. It's
-> less consistency, but it is enough. And it is more reliable (likely to
-> succeed in finite time) than either kpatch or kGraft.
-
-Yeah, that is actual merge of kpatch and kGraft, and also can avoid
-stop_machine (yes, that is important for me :)).
-
-> It'd be mostly based on your refcounting code, including stack
-> checking (when a process sleeps, counter gets set based on number of
-> patched functions on the stack), possibly including setting the counter
-> to 0 on syscall entry/exit, but it'd make the switch per-thread like
-> kGraft does, not for the whole system, when the respective counters
-> reach zero.
-
-I'm not sure what happens if a process sleeps on the patched-set?
-If we switch the other threads, when this sleeping thread wakes up
-that will see the old functions (and old data). So I think we need
-both SWITCH_THREAD and SWITCH_KERNEL options in that case.
-What I'm thinking is to merge the code (technique) of both and
-allow to choose the "switch-timing" based on the patch's consistency
-requirement.
-
-> 
-> This handles the frequent sleeper case, it doesn't need annotated kernel
-> thread main loops, it will not need the user to wake up every process in
-> the system unless it sleeps in a patched function.
-> 
-> And it can handle all the patches that kpatch and kGraft can (it needs
-> shadowing for some).
-> 
->>> Yes, this is what I call 'extending the patched set'. You can do that
->>> either by deliberately changing the prototype of the patched function
->>> being called, which causes the calling function to be considered
->>> different, or just add it to the set of functions considered manually.
->>
->> I'd prefer latter one :) or just gives hints of watching targets.
-> 
-> Me too.
-> 
-
-Anyway, I'd like to support for this effort from kernel side.
-At least I have to solve ftrace regs conflict by IPMODIFY flag and
-a headache kretprobe failure case by sharing per-thread retstack
-with ftrace-callgraph.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
 
