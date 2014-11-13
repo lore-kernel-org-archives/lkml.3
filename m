@@ -1,87 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176AbaKMURI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 15:17:08 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:40846 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933645AbaKMURF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 15:17:05 -0500
-From: Benson Leung <bleung@chromium.org>
-To: johan@kernel.org, jkosina@suse.cz, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: snanda@chromium.org, Benson Leung <bleung@chromium.org>
-Subject: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
-Date: Thu, 13 Nov 2014 12:16:46 -0800
-Message-Id: <1415909806-23848-1-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S934200AbaKMURw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 15:17:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933296AbaKMURv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 15:17:51 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1415906662-4576-17-git-send-email-bobby.prani@gmail.com>
+References: <1415906662-4576-17-git-send-email-bobby.prani@gmail.com> <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: dhowells@redhat.com, "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        netdev@vger.kernel.org (open list:NETWORKING [GENERAL]),
+        linux-kernel@vger.kernel.org (open list), paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 16/16] rxrpc: Replace smp_read_barrier_depends() with lockless_dereference()
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <24349.1415909859.1@warthog.procyon.org.uk>
+Date: Thu, 13 Nov 2014 20:17:39 +0000
+Message-ID: <24350.1415909859@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usbhid->intf->needs_remote_wakeup is set when a device is
-opened, and is cleared when a device is closed.
+Pranith Kumar <bobby.prani@gmail.com> wrote:
 
-When a usbhid device that does not support remote wake
-( i.e. !device_can_wakeup() ) is closed, we fail out of
-autosuspend_check() because the autosuspend check is called
-before the flag is cleared as a result of usb_kill_urb(usbhid->urbin);
+>  	     loop != call->acks_head || stop;
+>  	     loop = (loop + 1) &  (call->acks_winsz - 1)
+>  	     ) {
+> -		p_txb = call->acks_window + loop;
+> -		smp_read_barrier_depends();
+> +		p_txb = lockless_dereference(call)->acks_window + loop;
 
-The result is that a device that may otherwise autosuspend will
-fail to enter suspend again after all handles to it are closed.
+Nack.  You've stuck an implicit barrier on a dereference that doesn't matter.
+And similar for other hunks of this patch.
 
-In usbhid_open, usb_autopm_get_interface is called
-before setting the needs_remote_wakeup flag, and
-usb_autopm_put_interface is called after hid_start_in.
-
-However, when the device is closed in usbhid_close, the same
-protection isn't there when clearing needs_remote_wakeup. This will
-add that to usbhid_close as well as usbhid_stop.
-
-Signed-off-by: Benson Leung <bleung@chromium.org>
----
- drivers/hid/usbhid/hid-core.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 04e34b9..2a0b91d 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -734,8 +734,15 @@ void usbhid_close(struct hid_device *hid)
- 		spin_unlock_irq(&usbhid->lock);
- 		hid_cancel_delayed_stuff(usbhid);
- 		if (!(hid->quirks & HID_QUIRK_ALWAYS_POLL)) {
-+			int autopm_error;
-+
-+			autopm_error = usb_autopm_get_interface(usbhid->intf);
-+
- 			usb_kill_urb(usbhid->urbin);
- 			usbhid->intf->needs_remote_wakeup = 0;
-+
-+			if (!autopm_error)
-+				usb_autopm_put_interface(usbhid->intf);
- 		}
- 	} else {
- 		spin_unlock_irq(&usbhid->lock);
-@@ -1179,9 +1186,17 @@ static void usbhid_stop(struct hid_device *hid)
- 	if (WARN_ON(!usbhid))
- 		return;
- 
--	if (hid->quirks & HID_QUIRK_ALWAYS_POLL)
-+	if (hid->quirks & HID_QUIRK_ALWAYS_POLL) {
-+		int autopm_error;
-+
-+		autopm_error = usb_autopm_get_interface(usbhid->intf);
-+
- 		usbhid->intf->needs_remote_wakeup = 0;
- 
-+		if (!autopm_error)
-+			usb_autopm_put_interface(usbhid->intf);
-+	}
-+
- 	clear_bit(HID_STARTED, &usbhid->iofl);
- 	spin_lock_irq(&usbhid->lock);	/* Sync with error and led handlers */
- 	set_bit(HID_DISCONNECTED, &usbhid->iofl);
--- 
-2.1.0.rc2.206.gedb03e5
-
+David
