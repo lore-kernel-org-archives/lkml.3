@@ -1,152 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaKMD2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 22:28:30 -0500
-Received: from smtp2.tech.numericable.fr ([82.216.111.38]:43965 "EHLO
-	smtp2.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586AbaKMD23 (ORCPT
+	id S1753879AbaKMDbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 22:31:50 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49982 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586AbaKMDbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 22:28:29 -0500
-Message-ID: <54642541.9080302@laposte.net>
-Date: Thu, 13 Nov 2014 04:28:01 +0100
-From: Barto <mister.freeman@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: BUG in scsi_lib.c due to a bad commit
-References: <54629CAE.2000207@laposte.net> <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com> <5462CB90.1080303@roeck-us.net>
-In-Reply-To: <5462CB90.1080303@roeck-us.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrieelgdduvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfpfgfogfftkfevteeunffgnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfjughrpefkfffhfgggvffufhgjtgfgsehtkegrtddtfeejnecuhfhrohhmpeeurghrthhouceomhhishhtvghrrdhfrhgvvghmrghnsehlrghpohhsthgvrdhnvghtqeenucffohhmrghinhepthhugidrohhrghdpkhgvrhhnvghlrdhorhhg
+	Wed, 12 Nov 2014 22:31:49 -0500
+Date: Wed, 12 Nov 2014 22:31:46 -0500 (EST)
+Message-Id: <20141112.223146.2221136950144767962.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2ECE8EF@RTITMBSV03.realtek.com.tw>
+References: <0835B3720019904CB8F7AA43166CEEB2ECE46C@RTITMBSV03.realtek.com.tw>
+	<20141112.144949.645590790916569141.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2ECE8EF@RTITMBSV03.realtek.com.tw>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Nov 2014 19:31:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-reverting your commit 045065d8a300a37218c is a solution, but it's just a
-temporary solution,
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Thu, 13 Nov 2014 02:31:14 +0000
 
-it's better to search why your commit can create a random hang on boot
-on some PC configurations,
+> My last method which I mentioned yesterday is similar to
+> this one. The difference is that I would re-use the rx
+> buffers, so I have to add them to the list for re-submitting,
+> not alwayes allocate new one.
+> 
+> Although one rx buffer could contain many packets, I don't
+> think the whole size of the rx buffer is alwayes used.
+> Therefore, I re-use the rx buffers to avoid allocating
+> the 16K bytes rx buffer alwayes. This also makes sure that
+> I always have the buffers to submit without allocating new
+> one.
+> 
+> If you could accept this, I would modify this patch by
+> this way.
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct request_queue *q)
-blk_requeue_request(q, req);
-atomic_dec(&sdev->device_busy);
-out_delay:
-- if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
-+ if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
-blk_delay_queue(q, SCSI_QUEUE_DELAY);
-}
+I'll reread your original patch and think some more about this.
 
-perhaps the atomic_read() function doesn't make the expected job on some
-rare circonstances, I have the same doubts about the blk_delay_queue()
-function
-
-
-Le 12/11/2014 03:53, Guenter Roeck a écrit :> On 11/11/2014 04:17 PM,
-Bjorn Helgaas wrote:
->> [+cc Guenter, linux-scsi]
->>
->> On Tue, Nov 11, 2014 at 4:33 PM, Barto <mister.freeman@laposte.net>
->> wrote:
->>> Hello everyone,
->>>
->>> I notice a bug since kernel 3.17 ( and also with 3.18 branch ), a random
->>> hang at boot on some PC configurations, I did a "git bisect" and I found
->>> that the culprit is  :
->>>
->>> [045065d8a300a37218c548e9aa7becd581c6a0e8] [SCSI] fix qemu boot hang
->>> problem
->>>
->>>
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=045065d8a300a37218c548e9aa7becd581c6a0e8
->>>
->>>
->>> the author of this commit has choosen to inverse the logic of the if
->>> statement in the file  drivers/scsi/scsi_lib.c in order to solve an
->>> issue with qemu :
->>>
->>> --- a/drivers/scsi/scsi_lib.c
->>> +++ b/drivers/scsi/scsi_lib.c
->>> @@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct
->>> request_queue *q)
->>> blk_requeue_request(q, req);
->>> atomic_dec(&sdev->device_busy);
->>> out_delay:
->>> - if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->>> + if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->>> blk_delay_queue(q, SCSI_QUEUE_DELAY);
->>> }
->>>
->
-> The above commit was a follow-up to commit 71e75c97f97a, which did the
-> following:
->
-> -       if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
-> +       if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->
-> meaning it reversed the polarity of the check in the original code.
-> Since that commit created problems as observed in qemu, I thought it
-> would be obvious that restoring the original polarity would make sense.
-> This is explained in my patch, so I am somewhat at loss why ...
->
->>> this change triggers a bug on my PC ( I don't have SCSI devices, but
->>> only 3 SATA harddisks and 2 IDE harddisks, SATA disks are on an ICH7
->>> sata controler on the motherboard gigabyte GA-P31-DS3L, and IDE disk on
->>> a JMicron JMB363/368 Sata/IDE PCIe card ), every 5~10 boots the boot
->>> stops suddenly because of this commit,
->>>
->>> If I revert this commit then the bug is gone, more details can be found
->>> here, where I created a patch who reverts commit 045065d8 :
->>>
->>> https://bugzilla.kernel.org/show_bug.cgi?id=87581
->>>
->>> my question: why Guenter Roeck ( the author of the bad commit ) has
->>> choosen to inverse the logic in the if statement ?
->
-> this question is asked.
->
-> Having said that, I don't really care one way or another. I am fine
-> with reverting my commit; if that is done, I'll simply remove the
-> related scsi tests from my qemu test runs.
->
-> Guenter
->
->>> before his commit the if statement was like this :
->>>
->>> if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->>> blk_delay_queue(q, SCSI_QUEUE_DELAY);
->>>
->>> if his decision to inverse the logic of
->>> "atomic_read(&sdev->device_busy)" is acceptable then the real bug is
->>> probably located elsewhere in the scsi source code, and we must solve
->>> this mistery because there is obviously a bug regression in SCSI code
->>> because with older kernels ( 3.16.7 and lower ) I don't have the random
->>> hang boot bug with my configuration,
->>>
->>> another user in archlinux forums has also this bug and he has a more
->>> modern PC ( intel i7 core cpu, SSD device ), my fear is when linux
->>> distros will move to kernel 3.17 then more users will have this weird
->>> random bug who can occur only on boot and only with a specific PC
->>> configuration, if the boot step is passed despite the random bug then
->>> the bug will not occur, it occurs only during the boot process, which
->>> probably means that the faulty source code is only called during the
->>> boot process,
->>>
->>> thanks for anyone who wants to dig this problem with me
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe
->>> linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
+Thanks.
