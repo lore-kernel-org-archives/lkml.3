@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455AbaKMKBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:01:05 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:41442 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932304AbaKMKBB (ORCPT
+	id S932372AbaKMKDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:03:21 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45671 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102AbaKMKDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:01:01 -0500
-Message-ID: <54648159.8070402@gmail.com>
-Date: Thu, 13 Nov 2014 18:00:57 +0800
-From: Charles Chiou <ch1102chiou@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 13 Nov 2014 05:03:18 -0500
+Date: Thu, 13 Nov 2014 11:03:14 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Lindgren <tony@atomide.com>
+cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
+In-Reply-To: <20141106204629.GF31454@atomide.com>
+Message-ID: <alpine.DEB.2.11.1411131053050.3935@nanos>
+References: <1411067086-16613-1-git-send-email-nm@ti.com> <1411067086-16613-4-git-send-email-nm@ti.com> <alpine.DEB.2.10.1409181749170.4206@nanos> <20140919030333.GA6088@kahuna> <alpine.DEB.2.10.1409190710320.5612@nanos> <20140919161927.GA28613@kahuna>
+ <alpine.DEB.2.10.1409191027330.5612@nanos> <20140919191649.GQ14505@atomide.com> <alpine.DEB.2.10.1409191233590.4213@nanos> <20141002034345.GH3122@atomide.com> <20141106204629.GF31454@atomide.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V2 PATCH 1/4] scsi:stex.c Support to Pegasus series.
-References: <5462D366.5030106@gmail.com> <20141112104300.GA31213@infradead.org>
-In-Reply-To: <20141112104300.GA31213@infradead.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tony,
 
+On Thu, 6 Nov 2014, Tony Lindgren wrote:
+> 
+> Any comments on the patch below? Let me know if you want to keep the
+> devm stuff out of kernel/irq/manage.c.
 
-On 11/12/2014 06:43 PM, Christoph Hellwig wrote:
->> +	u8  yellowstone;
->
-> Calling this flag yellowstone seems a bit confusing as there already
-> is a st_yel card type, and this only seems a subset of those.  Maybe
-> a ->support_pm flag or similar would be useful?
->
+Sorry, this slipped through the cracks.
+ 
+> > +static int setup_wakeirq(struct device *dev, unsigned int wakeirq,
+> > +			 unsigned long wakeflags, bool devm)
+> > +{
+> > +	int ret;
+> > +
+> > +	if (!(dev && wakeirq)) {
+> > +		pr_err("Missing device or wakeirq for %s irq %d\n",
+> > +		       dev_name(dev), wakeirq);
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (!(wakeflags &
+> > +	      (IRQF_TRIGGER_LOW | IRQF_TRIGGER_HIGH | IRQF_ONESHOT))) {
+> > +		pr_err("Invalid wakeirq for %s irq %d, must be level oneshot\n",
+> > +		       dev_name(dev), wakeirq);
 
-OK, I'll modify it.
+This looks odd.
 
->> +	u32 subID;
->
-> We don't use camelCaps, but I don't think you even need this variable at
-> all..
->
->>
->>   	hba->cardtype = (unsigned int) id->driver_data;
->>   	ci = &stex_card_info[hba->cardtype];
->> +	subID = id->subdevice;
->> +	if ((subID == 0x4221 || subID == 0x4222 ||
->> +	    subID == 0x4223 || subID == 0x4224 ||
->> +	    subID == 0x4225 || subID == 0x4226 ||
->> +	    subID == 0x4227 || subID == 0x4261 ||
->> +	    subID == 0x4262 || subID == 0x4263 ||
->> +	    subID == 0x4264 || subID == 0x4265) &&
->> +	    (hba->cardtype == st_yel)) {
->> +		hba->yellowstone = 1;
->> +	} else if (hba->cardtype == st_yel) {
->> +		hba->yellowstone = 0;
->> +	}
->
-> Just write this as
->
-> 	switch (id->subdevice) {
-> 	case 0x4221:
-> 	case 0x4222:
-> 	case 0x4223:
-> 	case 0x4224:
-> 	case 0x4225:
-> 	case 0x4226:
-> 	case 0x4227:
-> 	case 0x4261:
-> 	case 0x4262:
-> 	case 0x4263:
-> 	case 0x4264:
-> 	case 0x4265:
-> 		if (hba->cardtype == st_yel) {
-> 			hba->supports_pm = 1;
-> 			break;
-> 		}
-> 	default:
-> 		hba->supports_pm = 0;
-> 	}
->
+Why do you want to enforce LEVEL and ONESHOT?  I can see the point for
+ONESHOT, but I'm wondering about the requirement for level.
 
-OK, I'll correct this. Thank you!
+Now if you really want to enforce level AND oneshot, your check is
+wrong as it will not trigger on
 
+      wakeflags = IRQF_TRIGGER_LOW;
+      wakeflags = IRQF_TRIGGER_HIGH;
+      wakeflags = IRQF_ONESHOT;
+
+Not what you really want, right?
+
+> > +int request_wake_irq(struct device *dev, unsigned int wakeirq,
+> > +		     unsigned long wakeflags)
+> > +{
+> > +	return setup_wakeirq(dev, wakeirq, wakeflags, false);
+> > +}
+> > +EXPORT_SYMBOL(request_wake_irq);
+
+  _GPL please
+
+> > +
+> > +int devm_request_wake_irq(struct device *dev, unsigned int wakeirq,
+> > +			  unsigned long wakeflags)
+> > +{
+> > +	return setup_wakeirq(dev, wakeirq, wakeflags, false);
+
+Shouldnt that have devm = true?
+
+Thanks,
+
+	tglx
