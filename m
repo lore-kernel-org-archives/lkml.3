@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115AbaKMUIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 15:08:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58828 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933383AbaKMUIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 15:08:39 -0500
-Date: Thu, 13 Nov 2014 17:08:33 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 02/10] perf, tools: Support handling complete branch
- stacks as histograms
-Message-ID: <20141113200833.GI3612@kernel.org>
-References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
- <1415844328-4884-3-git-send-email-andi@firstfloor.org>
- <20141113191417.GC3612@kernel.org>
- <20141113195208.GS12538@two.firstfloor.org>
+	id S934135AbaKMUKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 15:10:09 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50249 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933383AbaKMUKH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 15:10:07 -0500
+Date: Thu, 13 Nov 2014 12:10:01 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Horia Geanta <horia.geanta@freescale.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        "open list:CRYPTO API" <linux-crypto@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/16] crypto: caam - Remove unnecessary
+ smp_read_barrier_depends()
+Message-ID: <20141113201001.GQ4460@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
+ <1415906662-4576-2-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141113195208.GS12538@two.firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415906662-4576-2-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111320-0025-0000-0000-000006156572
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 13, 2014 at 08:52:08PM +0100, Andi Kleen escreveu:
-> On Thu, Nov 13, 2014 at 04:14:17PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Nov 12, 2014 at 06:05:20PM -0800, Andi Kleen escreveu:
-> > > +static int remove_loops(struct branch_entry *l, int nr)
-> > > +{
-> > > +	int i, j, off;
-> > > +	unsigned char chash[CHASHSZ];
-> > > +
-> > > +	memset(chash, NO_ENTRY, sizeof(chash));
-> > > +
-> > > +	BUG_ON(nr >= 256);
-> > 
-> > What is wrong with return -1 and propagating the error, so that the user
-> > is informed if the data being processed is bogus, stop processing with a
-> > warning or continue processing if finding the next valid record is
-> > possible?
+On Thu, Nov 13, 2014 at 02:24:07PM -0500, Pranith Kumar wrote:
+> Recently lockless_dereference() was added which can be used in place of
+> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
 > 
-> The error doesn't depend on the record. There is a check for the record
-> being < 127 in front of this. This is merely to catch that 
-> if someone increases PERF_MAX_BRANCH_DEPTH to below 255 they need
-> to increase the type of the hash table from u8.
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> ---
+>  drivers/crypto/caam/jr.c | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/crypto/caam/jr.c b/drivers/crypto/caam/jr.c
+> index bae20d8..9b3ef1bc 100644
+> --- a/drivers/crypto/caam/jr.c
+> +++ b/drivers/crypto/caam/jr.c
+> @@ -181,8 +181,6 @@ static void caam_jr_dequeue(unsigned long devarg)
+>  		for (i = 0; CIRC_CNT(head, tail + i, JOBR_DEPTH) >= 1; i++) {
+>  			sw_idx = (tail + i) & (JOBR_DEPTH - 1);
+> 
+> -			smp_read_barrier_depends();
+> -
 
-Ok, so this would be better as a BUILD_BUG_ON? 
+Did you mean to add a lockless_dereference() somewhere?  I would guess
+that one is required on the load into sw_idx before the "for" loop,
+but I cannot claim to be familiar with this code.
 
-Like:
+							Thanx, Paul
 
-#define CHASHSZ 127
-#define CHASHBITS 7
-#define NO_ENTRY 0xff
+>  			if (jrp->outring[hw_idx].desc ==
+>  			    jrp->entinfo[sw_idx].desc_addr_dma)
+>  				break; /* found */
+> @@ -218,7 +216,6 @@ static void caam_jr_dequeue(unsigned long devarg)
+>  		if (sw_idx == tail) {
+>  			do {
+>  				tail = (tail + 1) & (JOBR_DEPTH - 1);
+> -				smp_read_barrier_depends();
+>  			} while (CIRC_CNT(head, tail, JOBR_DEPTH) >= 1 &&
+>  				 jrp->entinfo[tail].desc_addr_dma == 0);
+> 
+> -- 
+> 1.9.1
+> 
 
-#define PERF_MAX_BRANCH_DEPTH 127
-
-/* Remove loops. */
-static int remove_loops(struct branch_entry *l, int nr)
-{
-	int i, j, off;
-	unsigned char chash[CHASHSZ];
-
-	memset(chash, NO_ENTRY, sizeof(chash));
-
-	/* Change the type of the chash table, u8 is not enough now */
-	BUILD_BUG_ON(PERF_MAX_BRANCH_DEPTH >= 256);
-	for (i = 0; i < nr; i++) {
-		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
-
--------------------------------------
-
-- Arnaldo
