@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315AbaKMOQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:16:12 -0500
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:57924 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932910AbaKMOQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:16:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141113025544.GB9068@medulla.variantweb.net>
-References: <1415535832-4822-1-git-send-email-opensource.ganesh@gmail.com>
-	<20141113025544.GB9068@medulla.variantweb.net>
-Date: Thu, 13 Nov 2014 22:16:10 +0800
-Message-ID: <CADAEsF-LvMCm0SA4PY4f66rwJGWiyR6OWHG2vaagSPQ1LrQ0GQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: add __init to some functions in zswap
-From: Ganesh Mahendran <opensource.ganesh@gmail.com>
-To: Seth Jennings <sjennings@variantweb.net>
-Cc: Minchan Kim <minchan@kernel.org>, ddstreet@ieee.org, linux-mm@kvack.org,
+	id S933179AbaKMO0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:26:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932910AbaKMO0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 09:26:20 -0500
+Date: Thu, 13 Nov 2014 09:25:48 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "HATAYAMA, Daisuke" <d.hatayama@jp.fujitsu.com>
+Cc: Petr Tesarik <ptesarik@suse.cz>, kumagai-atsushi@mxc.nes.nec.co.jp,
+        anderson@redhat.com, kexec@lists.infradead.org, ebiederm@xmission.com,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in
+ VMCOREINFO
+Message-ID: <20141113142548.GA1978@redhat.com>
+References: <20141112.154042.59640143160036130.d.hatayama@jp.fujitsu.com>
+ <20141112221205.GB5265@redhat.com>
+ <20141113.091709.520211949477822929.d.hatayama@jp.fujitsu.com>
+ <20141113090657.2578f087@hananiah.suse.cz>
+ <54646C1D.1050102@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54646C1D.1050102@jp.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-13 10:55 GMT+08:00 Seth Jennings <sjennings@variantweb.net>:
-> On Sun, Nov 09, 2014 at 08:23:52PM +0800, Mahendran Ganesh wrote:
->> zswap_cpu_init/zswap_comp_exit/zswap_entry_cache_create is only
->> called by __init init_zswap()
->
-> Thanks for the cleanup!
->
-> Acked-by: Seth Jennings <sjennings@variantweb.net>
+On Thu, Nov 13, 2014 at 05:30:21PM +0900, HATAYAMA, Daisuke wrote:
+> 
+> 
+> (2014/11/13 17:06), Petr Tesarik wrote:
+> >On Thu, 13 Nov 2014 09:17:09 +0900 (JST)
+> >HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+> >
+> >>From: Vivek Goyal <vgoyal@redhat.com>
+> >>Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
+> >>Date: Wed, 12 Nov 2014 17:12:05 -0500
+> >>
+> >>>On Wed, Nov 12, 2014 at 03:40:42PM +0900, HATAYAMA Daisuke wrote:
+> >>>>Currently, VMCOREINFO note information reports the virtual address of
+> >>>>phys_base that is assigned to symbol phys_base. But this doesn't make
+> >>>>sense because to refer to value of the phys_base, it's necessary to
+> >>>>get the value of phys_base itself we are now about to refer to.
+> >>>>
+> >>>
+> >>>Hi Hatayama,
+> >>>
+> >>>/proc/vmcore ELF headers have virtual address information and using
+> >>>that you should be able to read actual value of phys_base. gdb deals
+> >>>with virtual addresses all the time and can read value of any symbol
+> >>>using those headers.
+> >>>
+> >>>So I am not sure what's the need for exporting actual value of
+> >>>phys_base.
+> >>>
+> >>
+> >>Sorry, my logic in the patch description was wrong. For /proc/vmcore,
+> >>there's enough information for makedumpdile to get phys_base. It's
+> >>correct. The problem here is that other crash dump mechanisms that run
+> >>outside Linux kernel independently don't have information to get
+> >>phys_base.
+> >
+> >Yes, but these mechanisms won't be able to read VMCOREINFO either, will
+> >they?
+> >
+> 
+> I don't intend such sophisticated function only by VMCOREINFO.
+> Search vmcore for VMCOREINFO using strings + grep before opening it by crash.
+> I intend that only here.
 
-Thanks very much!
+I think this is very crude and not proper way to get to vmcoreinfo. Can
+you give more context. What are those mechanisms and what are you trying
+to do.
 
->
->>
->> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
->> ---
->>  mm/zswap.c |    6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/mm/zswap.c b/mm/zswap.c
->> index 51a2c45..2e621fa 100644
->> --- a/mm/zswap.c
->> +++ b/mm/zswap.c
->> @@ -149,7 +149,7 @@ static int __init zswap_comp_init(void)
->>       return 0;
->>  }
->>
->> -static void zswap_comp_exit(void)
->> +static void __init zswap_comp_exit(void)
->>  {
->>       /* free percpu transforms */
->>       if (zswap_comp_pcpu_tfms)
->> @@ -206,7 +206,7 @@ static struct zswap_tree *zswap_trees[MAX_SWAPFILES];
->>  **********************************/
->>  static struct kmem_cache *zswap_entry_cache;
->>
->> -static int zswap_entry_cache_create(void)
->> +static int __init zswap_entry_cache_create(void)
->>  {
->>       zswap_entry_cache = KMEM_CACHE(zswap_entry, 0);
->>       return zswap_entry_cache == NULL;
->> @@ -389,7 +389,7 @@ static struct notifier_block zswap_cpu_notifier_block = {
->>       .notifier_call = zswap_cpu_notifier
->>  };
->>
->> -static int zswap_cpu_init(void)
->> +static int __init zswap_cpu_init(void)
->>  {
->>       unsigned long cpu;
->>
->> --
->> 1.7.9.5
->>
+Thanks
+Vivek
