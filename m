@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaKMPgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:36:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33054 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaKMPgP (ORCPT
+	id S1754112AbaKMPhe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:37:34 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:46353 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753973AbaKMPha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:36:15 -0500
-Date: Thu, 13 Nov 2014 07:34:58 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        thierry.reding@gmail.com, giedriuswork@gmail.com,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fuse: don't check for file->private_data on open().
-Message-ID: <20141113153458.GB26905@kroah.com>
-References: <20141112112643.GA30821@ulmo.nvidia.com>
- <1415809894-24084-1-git-send-email-martink@posteo.de>
- <CAJfpegt2Xz0tGUygpN4eyb3g8EsFNWomsUUOmGBMj03ocOPVng@mail.gmail.com>
- <B51BC89F-99DB-4F9A-A1E3-14D9627E2496@posteo.de>
- <CAJfpegud-NAbDroWAr+mROUGLPviCaQKa8P5n6bZmA+0GF_qMA@mail.gmail.com>
- <0198135B-B7F1-4E40-A9E2-C9D56C421B6F@posteo.de>
+	Thu, 13 Nov 2014 10:37:30 -0500
+X-Listener-Flag: 11101
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yijing Wang <wangyijing@huawei.com>, <srv_heupstream@mediatek.com>,
+        <yingjoe.chen@gmail.com>, <hc.yen@mediatek.com>,
+        <eddie.huang@mediatek.com>, <nathan.chung@mediatek.com>,
+        <yh.chen@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>
+Subject: [PATCH v6 2/6] genirq: Add more helper functions to support stacked irq_chip
+Date: Thu, 13 Nov 2014 23:37:05 +0800
+Message-ID: <1415893029-2971-3-git-send-email-yingjoe.chen@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
+In-Reply-To: <1415893029-2971-1-git-send-email-yingjoe.chen@mediatek.com>
+References: <1415893029-2971-1-git-send-email-yingjoe.chen@mediatek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0198135B-B7F1-4E40-A9E2-C9D56C421B6F@posteo.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 12:13:32PM +0100, Martin Kepplinger wrote:
-> Am 13. November 2014 11:53:29 MEZ, schrieb Miklos Szeredi <miklos@szeredi.hu>:
-> >On Thu, Nov 13, 2014 at 11:05 AM, Martin Kepplinger <martink@posteo.de>
-> >wrote:
-> >
-> >> In this week's -next this should have changed. My SSD broke down so i
-> >have to delay further work for a few days, i'm sorry.
-> >
-> >Please be more careful with such patches.  Have you audited all of the
-> >(ca. 200) misc drivers?  If not, this might be a good time to do so.
-> >If it turns out to be too much, then consider not doing the change.
-> >The gain might not be worth the cost.
-> >
-> >NACK in this form.
-> >
-> >Thanks,
-> >Miklos
-> 
-> Definitely should have been more careful as I checked fs too late now. I totally unnecessarily broke -next.
-> 
-> But If fuse-devel is ok with a fix like the one i sent (still has to get tested too) i believe we're covered. I still call for independent review though.
+Add more helper function for stacked irq_chip to just call parent's
+function.
 
-I don't think it's worth it anymore, I'm going to revert the original
-patch that caused these problems, as it has the potential to break other
-drivers in ways that are not obvious (i.e. not at build time.)
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+---
+ include/linux/irq.h |  6 ++++++
+ kernel/irq/chip.c   | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
 
-Sorry,
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index d88a28a..aa0703b 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -452,6 +452,12 @@ extern void handle_nested_irq(unsigned int irq);
+ extern int irq_chip_compose_msi_msg(struct irq_data *data, struct msi_msg *msg);
+ #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+ extern void irq_chip_ack_parent(struct irq_data *data);
++extern void irq_chip_mask_parent(struct irq_data *data);
++extern void irq_chip_unmask_parent(struct irq_data *data);
++extern void irq_chip_eoi_parent(struct irq_data *data);
++extern int irq_chip_set_affinity_parent(struct irq_data *data,
++					const struct cpumask *dest,
++					bool force);
+ extern int irq_chip_retrigger_hierarchy(struct irq_data *data);
+ #endif
+ 
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 8f362db..7abdef5 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -858,6 +858,34 @@ void irq_chip_ack_parent(struct irq_data *data)
+ 	data->chip->irq_ack(data);
+ }
+ 
++void irq_chip_mask_parent(struct irq_data *data)
++{
++	data = data->parent_data;
++	data->chip->irq_mask(data);
++}
++
++void irq_chip_unmask_parent(struct irq_data *data)
++{
++	data = data->parent_data;
++	data->chip->irq_unmask(data);
++}
++
++void irq_chip_eoi_parent(struct irq_data *data)
++{
++	data = data->parent_data;
++	data->chip->irq_eoi(data);
++}
++
++int irq_chip_set_affinity_parent(struct irq_data *data,
++				 const struct cpumask *dest, bool force)
++{
++	data = data->parent_data;
++	if (data->chip->irq_set_affinity)
++		return data->chip->irq_set_affinity(data, dest, force);
++
++	return -ENOSYS;
++}
++
+ int irq_chip_retrigger_hierarchy(struct irq_data *data)
+ {
+ 	for (data = data->parent_data; data; data = data->parent_data)
+-- 
+1.8.1.1.dirty
 
-greg k-h
