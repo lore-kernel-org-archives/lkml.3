@@ -1,90 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaKMRC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:02:58 -0500
-Received: from smtprelay0048.hostedemail.com ([216.40.44.48]:33352 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753543AbaKMRC4 (ORCPT
+	id S1754144AbaKMRDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:03:08 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:48873 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543AbaKMRDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:02:56 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2902:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:4250:4321:5007:6119:6261:7903:10004:10400:10848:10946:11026:11232:11658:11914:12296:12438:12517:12519:12555:12740:13069:13255:13311:13357:13870:14093:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wind61_195419307ab54
-X-Filterd-Recvd-Size: 2835
-Message-ID: <1415898172.4223.1.camel@perches.com>
-Subject: Re: [PATCH] dmaengine: pl330: Fix linker error "undefined reference
- to `__aeabi_uldivmod'"
-From: Joe Perches <joe@perches.com>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 13 Nov 2014 09:02:52 -0800
-In-Reply-To: <1415896047.1787.4.camel@linaro.org>
-References: <1415896047.1787.4.camel@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Nov 2014 12:03:04 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-44-5464e44579e8
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
+Subject: [PATCH 0/8] thermal:cpu cooling:fix: Provide thermal core fixes with
+ deferred probe for several drivers
+Date: Thu, 13 Nov 2014 18:02:37 +0100
+Message-id: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jQV3XJykhBmuXK1tsnLGe1WL+lWus
+	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbfHm4WZGi8u75rBZfO49wmjR+WUWm8WDq9PYLJ48
+	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5LFu2ltmjwOTz7F69Da/Y/P4
+	dmYii0ffllWMHk9/7GX2+LxJzmPj3NAA7igum5TUnMyy1CJ9uwSujCundjIVTJWpuLHjOFMD
+	41TRLkZODgkBE4n3n84xQdhiEhfurWfrYuTiEBKYzigxZ9dfKKeLSeL/43dsIFVsAnoSn+8+
+	BesQEfCWeL1vOiNIEbPAaxaJQz8a2EESwgJFEiveXmQGsVkEVCV+z1/JCGLzCrhJTFm2jxli
+	naJE97MJYEM5Bdwlbv5+BtYrBFRz8NdB9gmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn
+	525iBAf6M6kdjCsbLA4xCnAwKvHwvmBJCRFiTSwrrsw9xCjBwawkwlt9HyjEm5JYWZValB9f
+	VJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBMXRphLAq+5GstYbWz2xSzp61
+	LrJ7552c2d9ltLlqSdaa7JQjkhYrTl7lfXBm90IVbonwft/ez57WX/xTN2vwL+L6cW2ifHhi
+	1Hf12qVxbA4G+ifPr1XdlbGQdcrW1ojNzYqXdhxbtKWk8kHLbDHhl2sWH/sZLrY1bs+Zpef3
+	Vs9/7F+zzKNMTomlOCPRUIu5qDgRAIdfMTZwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-13 at 16:27 +0000, Jon Medhurst (Tixy) wrote:
-> 32-bit ARM kernels may have a 64-bit dma_addr_t but have no
-> implementation of the compiler helper for 64-bit unsigned division,
-> therefore the use of the modulo operator in pl330_prep_dma_memcpy causes
-> the link error "undefined reference to `__aeabi_uldivmod'"
-> 
-> As the burst value is always a power of two we can fix the problem, and
-> make the code more efficient, by replacing "% burst" with "& (burst-1)".
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Jon Medhurst <tixy@linaro.org>
-> ---
-> 
-> Vinod. I haven't added a 'Fixes:' line because I was unsure if the patch
-> in linux-next is part of a stable branch or if the SHA1 might change
-> before hitting mainline. If it stable then the line should be...
-> 
-> Fixes: 63369d0a96dc ("dmaengine: pl330: Align DMA memcpy operations to MFIFO width")
-> 
-> 
->  drivers/dma/pl330.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 38c9617..52c4c62 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2464,11 +2464,8 @@ pl330_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dst,
->  	 * parameters because our DMA programming algorithm doesn't cope with
->  	 * transfers which straddle an entry in the DMA device's MFIFO.
->  	 */
-> -	while (burst > 1) {
-> -		if (!((src | dst | len) % burst))
-> -			break;
-> +	while ((src | dst | len) & (burst - 1))
->  		burst /= 2;
-> -	}
+Presented fixes are a response for problem described below:
+http://thread.gmane.org/gmane.linux.kernel/1793821/match=thermal+core+fix+initialize+max_state+variable+0
 
-Maybe something like:
+In short - it turned out that two trivial fixes (included in this patch set)
+require support for deferred probe in thermal drivers.
 
-	div = ffs(src | dst | len);
-	if (burst > 1 && div)
-		burst >>= div;
+This situation shows up when CPU frequency reduction is used as a thermal cooling
+device for a thermal zone.
+It happens that during initialization, the call to thermal probe will be executed
+before cpufreq probe (it can be observed at ./drivers/Makefile).
+In such a situation thermal will not be properly configured until cpufreq policy
+is setup.
 
-?
+In the current code (without included fixes) there is a time window in which thermal
+can try to use not configured cpufreq and possibly crash the system.
 
-dunno if dma_addr_t src or dst can ever be a 64 bit value
-for AMBA or not.  If so, the ffs would need to be different.
 
-Maybe:
+Proposed solution was based on the code already available in the imx_thermal.c file.
 
-	if (sizeof(dma_addr_t) == sizeof(u64))
-		div = __ffs64(src | dst | len);
-	else
-		div = ffs(src | dst | len);
-	if (burst > 1 && div)
-		burst >>= div;
+/db8500_thermal.c:                      -> NOT NEEDED
+/intel_powerclamp.c:                    -> NOT NEEDED - INTEL (x86)
+/intel_powerclamp.c:                    -> NOT NEEDED - INTEL (x86)
+/ti-soc-thermal/ti-bandgap.c:           -> FIXED  [omap2plus_defconfig]
+/dove_thermal.c:                        -> NOT NEEDED - CPU_COOLING NOT AVAILABLE
+                                                        [dove_defconfig]
+/spear_thermal.c:                       -> FIXED  [spear3xx_defconfig]
+/samsung/exynos_tmu.c:                  -> NOT NEEDED (nasty hack - will be reworked in later patches)
+/imx_thermal.c:                         -> OK (deferred probe already in place)
+/int340x_thermal/int3402_thermal.c:     -> NOT NEEDED - ACPI x86 - Intel specific
+/int340x_thermal/int3400_thermal.c:     -> NOT NEEDED - ACPI x86 - Intel specific
+/tegra_soctherm.c:                      -> FIXED  [tegra_defconfig]
+/kirkwood_thermal.c:                    -> FIXED  [multi_v5_defconfig]
+/armada_thermal.c:                      -> FIXED  [multi_v7_defconfig]
+/rcar_thermal.c:                        -> FIXED  [shmobile_defconfig]
+/db8500_cpufreq_cooling.c:              -> OK (deferred probe already in place) [multi_v7_defconfig]
+/st/st_thermal_syscfg.c:                -> NOT NEEDED (Those two are enabled by e.g. ARMADA)
+/st/st_thermal_memmap.c:
 
+
+I only possess Exynos boards and Beagle Bone Black, so I'd be grateful for
+testing proposed solution on other boards. The posted code is compile tested.
+
+This code applies on Eduardo's ti-soc-thermal-next tree:
+SHA1: 208a97042d66d9bfbcfab0d4a00c9fe317bb73d3
+
+Lukasz Majewski (8):
+  thermal:cpu cooling:armada: Provide deferred probing for armada driver
+  thermal:cpu cooling:kirkwood: Provide deferred probing for kirkwood
+    driver
+  thermal:cpu cooling:rcar: Provide deferred probing for rcar driver
+  thermal:cpu cooling:spear: Provide deferred probing for spear driver
+  thermal:cpu cooling:tegra: Provide deferred probing for tegra driver
+  thermal:cpu cooling:ti: Provide deferred probing for ti drivers
+  thermal:core:fix: Initialize the max_state variable to 0
+  thermal:core:fix: Check return code of the ->get_max_state() callback
+
+ drivers/thermal/armada_thermal.c            | 7 +++++++
+ drivers/thermal/kirkwood_thermal.c          | 7 +++++++
+ drivers/thermal/rcar_thermal.c              | 7 +++++++
+ drivers/thermal/spear_thermal.c             | 7 +++++++
+ drivers/thermal/tegra_soctherm.c            | 7 +++++++
+ drivers/thermal/thermal_core.c              | 8 +++++---
+ drivers/thermal/ti-soc-thermal/ti-bandgap.c | 7 +++++++
+ 7 files changed, 47 insertions(+), 3 deletions(-)
+
+-- 
+2.0.0.rc2
 
