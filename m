@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472AbaKMKDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:03:46 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:56039 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932351AbaKMKDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:03:43 -0500
+	id S932320AbaKMKFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:05:47 -0500
+Received: from mx02.posteo.de ([89.146.194.165]:60320 "EHLO mx02.posteo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932224AbaKMKFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 05:05:45 -0500
+In-Reply-To: <CAJfpegt2Xz0tGUygpN4eyb3g8EsFNWomsUUOmGBMj03ocOPVng@mail.gmail.com>
+References: <20141112112643.GA30821@ulmo.nvidia.com> <1415809894-24084-1-git-send-email-martink@posteo.de> <CAJfpegt2Xz0tGUygpN4eyb3g8EsFNWomsUUOmGBMj03ocOPVng@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.100.67]
-In-Reply-To: <5463B5B6.8040709@ti.com>
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
- <1410553499-55951-5-git-send-email-s-anna@ti.com> <CAK=WgbamdqAufjC4Xb5moERRBSB-cO6c1RPTE=f+dp75F+Eh7A@mail.gmail.com>
- <5463B5B6.8040709@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 13 Nov 2014 12:03:20 +0200
-Message-ID: <CAK=WgbbatPTiz3efDWHVEcuug_UQfkCViMoK0zcfUg3JwB2oTA@mail.gmail.com>
-Subject: Re: [PATCHv6 4/5] hwspinlock/core: add common OF helpers
-To: Suman Anna <s-anna@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] fuse: don't check for file->private_data on open().
+From: Martin Kepplinger <martink@posteo.de>
+Date: Thu, 13 Nov 2014 11:05:01 +0100
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: fuse-devel <fuse-devel@lists.sourceforge.net>, thierry.reding@gmail.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        giedriuswork@gmail.com,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <B51BC89F-99DB-4F9A-A1E3-14D9627E2496@posteo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman,
-
-On Wed, Nov 12, 2014 at 9:32 PM, Suman Anna <s-anna@ti.com> wrote:
->> Is this the validation you mentioned which requires the existence of
->> "hwspinlock/core: maintain a list of registered hwspinlock banks" ?
+Am 13. November 2014 10:40:38 MEZ, schrieb Miklos Szeredi <miklos@szeredi.hu>:
+>On Wed, Nov 12, 2014 at 5:31 PM, Martin Kepplinger <martink@posteo.de>
+>wrote:
+>> The miscdevice core now sets file->private_data to the struct
+>miscdevice
+>> so don't fail when this is not NULL.
 >
-> Well, not exactly. The validation is on the following segment,
+>Does it?  Look:
 >
-> +       id = of_hwspin_lock_simple_xlate(bank, &args);
-> +       if (id < 0 || id >= bank->num_locks) {
-> +               ret = -EINVAL;
-> +               goto out;
-> +       }
+>static int misc_open(struct inode * inode, struct file * file)
+>{
+>    ...
+>    if (file->f_op->open) {
+>        file->private_data = c;
+>        err = file->f_op->open(inode,file);
+>    }
+>
+>It only sets ->private_data if the device provides an open method.
+>Fuse doesn't, so it's not clear what this patch is trying to fix.
+>
+>Thanks,
+>Miklos
+>
+>
+>>
+>> Reported-by: Thierry Reding <thierry.reding@gmail.com>
+>> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+>> ---
+>> This is a question: what does this check provide and does overwriting
+>> file->private_data make any difference?
+>>
+>> Is open() by the user not allowed here, if file->private_data is set?
+>>
+>> thanks!!
+>>
+>>  fs/fuse/inode.c |    3 ---
+>>  1 file changed, 3 deletions(-)
+>>
+>> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+>> index 03246cd..562407e 100644
+>> --- a/fs/fuse/inode.c
+>> +++ b/fs/fuse/inode.c
+>> @@ -1092,9 +1092,6 @@ static int fuse_fill_super(struct super_block
+>*sb, void *data, int silent)
+>>         }
+>>
+>>         mutex_lock(&fuse_mutex);
+>> -       err = -EINVAL;
+>> -       if (file->private_data)
+>> -               goto err_unlock;
+>>
+>>         err = fuse_ctl_add_conn(fc);
+>>         if (err)
+>> --
+>> 1.7.10.4
+>>
 
-I'm not entirely convinced that this justifies adding the proposed
-linked list. Can't we can get the base_id and number of locks by
-traversing the DT?
-
-> That said, it is also needed to provide the support for deferred probing
-> without changing the return code conventions on the existing API.
-
-Here too, adding a data structure maintaining memory objects and
-taking care of it life cycle seems a bit overkill for anything to do
-with return values.
-
-> Yes, and wouldn't that require that the id is validated? It just cannot
-> return any return value, and expect it will be verified somewhere else
-> or in a following API call. Not doing the validation unnecessarily
-> complicates the system usage of a lock as you are sharing an invalid
-> lock to a remote processor and then you have two validation failure
-> paths on different processors.
-
-Validation is great but I'm still not convinced it can't be done
-without maintaining another data structure.
-
-Please show me specific technical issues that can't be resolved
-without adding the proposed linked list.
-
-Thanks,
-Ohad.
+In this week's -next this should have changed. My SSD broke down so i have to delay further work for a few days, i'm sorry.
+-- 
+Martin Kepplinger
+http://martinkepplinger.com
+sent from mobile
