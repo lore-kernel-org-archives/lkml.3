@@ -1,70 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaKMETP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 23:19:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123AbaKMETO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 23:19:14 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Audit fixes for 3.18
-Date: Wed, 12 Nov 2014 23:19:11 -0500
-Message-ID: <4297973.SuVNDTyoQA@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.2 (Linux/3.16.7-gentoo; KDE/4.14.2; x86_64; ; )
+	id S1753787AbaKME2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 23:28:46 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:45498 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123AbaKME2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 23:28:44 -0500
+Date: Wed, 12 Nov 2014 23:28:21 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        joro@8bytes.org, Mel Gorman <mgorman@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>, linux-fsdevel@vger.kernel.org,
+        Linda Wang <lwang@redhat.com>, Kevin E Martin <kem@redhat.com>,
+        Jerome Glisse <jglisse@redhat.com>, Jeff Law <law@redhat.com>,
+        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Sagi Grimberg <sagig@mellanox.com>
+Subject: Re: HMM (heterogeneous memory management) v6
+Message-ID: <20141113042819.GB7720@gmail.com>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+ <alpine.DEB.2.11.1411111259560.6657@gentwo.org>
+ <20141112200911.GA7720@gmail.com>
+ <alpine.DEB.2.11.1411121703200.17784@gentwo.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.11.1411121703200.17784@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Nov 12, 2014 at 05:08:47PM -0600, Christoph Lameter wrote:
+> On Wed, 12 Nov 2014, Jerome Glisse wrote:
+> 
+> > > Could we define a new NUMA node that maps memory from the GPU and
+> > > then simply use the existing NUMA features to move a process over there.
+> >
+> > So GPU process will never run on CPU nor will they have a kernel task struct
+> > associated with them. From core kernel point of view they do not exist. I
+> > hope that at one point down the line the hw will allow for better integration
+> > with kernel core but it's not there yet.
+> 
+> Right. So all of this is not relevant because the GPU manages it. You only
+> need access from the regular processors from Linux which has and uses Page
+> tables.
+> 
+> > So the NUMA idea was considered early on but was discarded as it's not really
+> > appropriate. You can have several CPU thread working with several GPU thread
+> > at the same time and they can either access disjoint memory or some share
+> > memory. Usual case will be few kbytes of share memory for synchronization
+> > btw CPU and GPU threads.
+> 
+> It is possible to ahve several threads accessing the memory in Linux. The
+> GPU threads run on the gpu and therefore are not a Linux issue. Where did
+> you see the problem?
 
-After he sent the initial audit pull request for 3.18, Eric asked me to take 
-over the management of the audit tree, hence this pull request to fix a couple 
-of problems with audit.  As you can see below, the changes are minimal: adding 
-some whitespace to a string so userspace parses it correctly, and fixing a 
-problem with audit's usage of fsnotify that was causing audit watch rules to 
-be lost.  Neither of these patches were very controversial on the mailing 
-lists and they fix real problems, getting them into 3.18 would be a good 
-thing.
+When they both use system memory there is no issue but if you want to leverage
+GPU to its full potential you need to migrate memory from system memory to GPU
+memory for the duration of the GPU computation (might be several minutes/hours
+or more). But at the same time you do not want CPU access to be forbiden thus
+if CPU access does happen you want to catch the CPU fault schedule a migration
+of GPU memory back to system memory and resume the CPU thread that faulted.
 
-As of about ten minutes ago, the audit tree applied cleanly on top of your 
-tree.
+So from CPU point of view this GPU memory is like a swap, the memory is swaped
+in the GPU memory and this is exactly how i implemented in, using a special swap
+type. Refer to the v1 of my patchset where i show case implementation of most
+of the features.
 
-Thanks,
--Paul
+> 
+> > But when a GPU job is launch we want most of the memory it will use to be
+> > migrated to device memory. Issue is that the device memory is not accessible
+> > from the CPU (PCIE bar are too small). So there is no way to keep the memory
+> > mapped for the CPU. We do need to mark the memory as unaccessible to the CPU
+> > and then migrate it to the GPU memory.
+> 
+> Ok so this is transfer issue? Isnt this like block I/O? Write to a device?
+> 
 
----
-The following changes since commit 2991dd2b0117e864f394c826af6df144206ce0db:
+It can be as slow as block I/O but it's unlike a block device, it's closer to
+NUMA in theory because it's just about having memory close to the compute unit
+(ie GPU memory in this case) but nothing else beside that match NUMA.
 
-  audit: rename audit_log_remove_rule to disambiguate for trees (2014-10-10 
-15:30:25 -0400)
+> 
+> > Now when there is a CPU page fault on some migrated memory we need to migrate
+> > memory back to system memory. Hence why i need to tie HMM with some core MM
+> > code so that on this kind of fault core kernel knows it needs to call into
+> > HMM which will perform housekeeping and starts migration back to system
+> > memory.
+> 
+> 
+> Sounds like a read operation and like a major fault if you would use
+> device semantics. You write the pages to the device and then evict them
+> from memory (madvise can do that for you). An access then causes a page
+> fault which leads to a read operation from the device.
 
-are available in the git repository at:
+Yes it's a major fault case but we do not want to use this with any special
+syscall think existing application that link against library. Now you port
+the library to use GPU but application is ignorant of this and thus any CPU
+access it does will be through usual mmaped range that did not go through any
+special syscall.
 
-  git://git.infradead.org/users/pcmoore/audit stable-3.18
+> 
+> > So technicaly there is no task migration only memory migration.
+> >
+> >
+> > Is there something i missing inside NUMA or some NUMA work in progress that
+> > change NUMA sufficiently that it might somehow address the use case i am
+> > describing above ?
+> 
+> I think you need to be looking at treating GPU memory as a block device
+> then you have the semantics you need.
 
-for you to fetch changes up to 799b601451b21ebe7af0e6e8f6e2ccd4683c5064:
+This was explored too but block device does not match what we want. Block device
+is nice for file backed memory and we could have special file that would be backed
+by GPU memory and process would open those special file and write to it. But this
+is not how we want to use this, we do really want to mirror process address space,
+ie any kind of existing CPU mapping can be use by GPU (except mmaped IO) and we
+want to be able to migrate any of those existing CPU mapping to GPU memory while
+still being able to service CPU page fault on range migrated to GPU memory.
 
-  audit: keep inode pinned (2014-11-11 14:20:22 -0500)
+So unless there is something i am completely oblivious too in the block device
+model in the linux kernel, i fail to see how it could apply to what we want to
+achieve.
 
-----------------------------------------------------------------
-Miklos Szeredi (1):
-      audit: keep inode pinned
-
-Richard Guy Briggs (1):
-      audit: AUDIT_FEATURE_CHANGE message format missing delimiting space
-
- kernel/audit.c      | 2 +-
- kernel/audit_tree.c | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
-
--- 
-paul moore
-security and virtualization @ redhat
-
+Cheers,
+Jérôme
