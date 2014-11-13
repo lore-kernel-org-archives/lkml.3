@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaKMRZh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:25:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50668 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753906AbaKMRZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:25:36 -0500
-Date: Thu, 13 Nov 2014 18:25:07 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf tools: Fix ftrace:function event recording
-Message-ID: <20141113172506.GB22994@krava.redhat.com>
-References: <1415899263-24820-1-git-send-email-jolsa@kernel.org>
+	id S1754156AbaKMR0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:26:31 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:37471 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004AbaKMR03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 12:26:29 -0500
+Date: Thu, 13 Nov 2014 10:26:25 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] PCI: Apply _HPX link control for all supported pcie
+ device
+Message-ID: <20141113172625.GH5064@google.com>
+References: <1415736586-16044-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415899263-24820-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415736586-16044-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 06:21:03PM +0100, Jiri Olsa wrote:
-> Following patch fails (-EINVAL) ftrace:function with enabled user
-> space callchains:
->   cfa77bc4af2c perf: Disallow user-space callchains for function trace events
+On Tue, Nov 11, 2014 at 12:09:46PM -0800, Yinghai Lu wrote:
+> With commit 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
+> and following commits, we apply _HPX for pci devices.
 > 
-> We need to follow in perf tool itself and explicitly set the
-> perf_event_attr::exclude_callchain_user flag for ftrace:function
-> event.
-
-forgot:
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-
-thanks,
-jirka
-
+> that is called via pci_scan_slot
+> 			==>pci_scan_single_device
+> 				==>pci_device_add
+> 					==>pci_configure_device
+> 						==>program_hpp_type2
+> and dev->subordinate is not allocated yet.
 > 
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> So that link control setup get skipped.
+> 
+> Acoording to ACPI spec, there is no requirement that need to be set to pcie
+> root port or downstream port.
+> 
+> We could just change to pcie_cap_has_lnkctl to cover all pcie devices with
+> link control cap.
+> 
+> -v2: Do not move pcie_cap_has_lnkctl() out of pci/access.c according to Bjorn.
+> 
+> Fixes: 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+Applied to for-linus for v3.18, thanks!
+
 > ---
->  tools/perf/util/evsel.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
+>  drivers/pci/access.c |    2 +-
+>  drivers/pci/pci.h    |    2 ++
+>  drivers/pci/probe.c  |    2 +-
+>  3 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index ec5eb8033296..a3baaa31231e 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -658,6 +658,14 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
->  		attr->mmap_data = track;
->  	}
+> Index: linux-2.6/drivers/pci/probe.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/probe.c
+> +++ linux-2.6/drivers/pci/probe.c
+> @@ -1323,7 +1323,7 @@ static void program_hpp_type2(struct pci
+>  			~hpp->pci_exp_devctl_and, hpp->pci_exp_devctl_or);
 >  
-> +	/*
-> +	 * We don't allow user space callchains for  function trace
-> +	 * event, due to issues with page faults while tracing page
-> +	 * fault handler and its overall trickiness nature.
-> +	 */
-> +	if (perf_evsel__is_function_event(evsel))
-> +		evsel->attr.exclude_callchain_user = 1;
+>  	/* Initialize Link Control Register */
+> -	if (dev->subordinate)
+> +	if (pcie_cap_has_lnkctl(dev))
+>  		pcie_capability_clear_and_set_word(dev, PCI_EXP_LNKCTL,
+>  			~hpp->pci_exp_lnkctl_and, hpp->pci_exp_lnkctl_or);
+>  
+> Index: linux-2.6/drivers/pci/pci.h
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/pci.h
+> +++ linux-2.6/drivers/pci/pci.h
+> @@ -6,6 +6,8 @@
+>  
+>  extern const unsigned char pcie_link_speed[];
+>  
+> +bool pcie_cap_has_lnkctl(const struct pci_dev *dev);
 > +
->  	if (callchain_param.enabled && !evsel->no_aux_samples)
->  		perf_evsel__config_callgraph(evsel);
+>  /* Functions internal to the PCI core code */
 >  
-> -- 
-> 1.9.3
-> 
+>  int pci_create_sysfs_dev_files(struct pci_dev *pdev);
+> Index: linux-2.6/drivers/pci/access.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/access.c
+> +++ linux-2.6/drivers/pci/access.c
+> @@ -444,7 +444,7 @@ static inline int pcie_cap_version(const
+>  	return pcie_caps_reg(dev) & PCI_EXP_FLAGS_VERS;
+>  }
+>  
+> -static inline bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
+> +bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
+>  {
+>  	int type = pci_pcie_type(dev);
+>  
