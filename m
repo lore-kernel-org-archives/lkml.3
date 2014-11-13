@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934495AbaKMW0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 17:26:19 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:57965 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065AbaKMW0R (ORCPT
+	id S934523AbaKMW0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 17:26:24 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:58041 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933065AbaKMW0W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 17:26:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-Cc: Andreas Krebbel1 <Andreas.Krebbel@de.ibm.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        linaro-kernel@lists.linaro.org,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "roland@hack.frob.com" <roland@hack.frob.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
-Date: Thu, 13 Nov 2014 23:25:29 +0100
-Message-ID: <1472197.o98pKNTkBz@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <OF152076B7.38277C08-ONC1257D8F.0050C2DF-C1257D8F.00516BF2@de.ibm.com>
-References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org> <3899236.yrOvvrZHD6@wuerfel> <OF152076B7.38277C08-ONC1257D8F.0050C2DF-C1257D8F.00516BF2@de.ibm.com>
+	Thu, 13 Nov 2014 17:26:22 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cA0ll1yu12l4nf+msz++qB5dD8VH6zFwZxx0K23m2J5
- 2df9CGokcY68txjZoPjatPYGA1/Mh5toXr1M8gQ7N7T5QV7AF9
- Q2YOEnsjT0KSoIFsiMA+qYhdTCjTRFpODz9RzmuZgHp6EDtoG6
- N4EwaRzHXEwvZSsipd7nZr3Kzp3ySxn8RdmXfDADY8JZ/PEIC4
- LESK0a1yanCDuW1TgDxi0BH+jntau53UFqJ+zQDxlkDtrWvG1L
- v4OQ/3FYD1qtz9lr+MwXLdXkh7Qcrgz2nZg1eQBwrKREs1LC//
- 2lyu1pGMHWglqOkJ1+KmFjAWp7BHAAmypomLFx+n/YKbvcDU/G
- PYZ5m+8KEwLPTxIV0L1Q=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CALCETrVx7hGZodWfAoU1oee1SW7XXSn3Lr8Vs9JTOUMNtLXY4A@mail.gmail.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com> <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292CB9A@ORSMSX114.amr.corp.intel.com> <CALCETrVx7hGZodWfAoU1oee1SW7XXSn3Lr8Vs9JTOUMNtLXY4A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Nov 2014 14:25:59 -0800
+Message-ID: <CALCETrUQUyv-nHBo60ocq6VovCm7OEnuXqsNa1qgBO39JVJNsA@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 November 2014 15:49:20 Ulrich Weigand wrote:
-> Arnd Bergmann <arnd@arndb.de> wrote on 13.11.2014 11:21:28:
-> 
-> > I have to admit that I don't really understand gdb internals, but from
-> > a first look I get the impression that it will just do the right thing
-> > if you reuse NT_S390_SYSTEM_CALL on ARM64 with the same semantics.
-> 
-> There's an interface between BFD and GDB proper involved here.  BFD will
-> detect the presence of register set notes in the core dump, and will
-> translate them into virtual sections; GDB will then simply look up such
-> sections under well-known names.
-> 
-> In particular, the NT_S390_SYSTEM_CALL note will be translated by BFD
-> into a virtual section named ".reg-s390-system-call"; GDB platform-
-> specific code will look for sections of this particular name.
-> 
-> So if you were to create notes using the same note type, by default it
-> would do nothing on ARM64.  You might add code to the ARM64 back-end
-> to also look for a section ".reg-s390-system-call", but that would be
-> somewhat confusing.  Using a new, platform-specific note type for ARM64
-> would appear to fit better with existing precedent.
+On Thu, Nov 13, 2014 at 2:23 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Nov 13, 2014 at 10:43 AM, Luck, Tony <tony.luck@intel.com> wrote:
+>>> printk seems to work just fine in do_machine_check.  Any chance you
+>>> can instrument, for each cpu, all entries to do_machine_check, all
+>>> calls to do_machine_check, all returns, and everything that tries to
+>>> do memory_failure?
+>>
+>> I first added a printk() just for the cpu that calls do_machine_check()
+>>
+>>    printk("MCE: regs = %p\n", regs);
+>>
+>> to see if something went wonky when jumping to the kernel stack.
+>> But that printed the same value every time (same process is consuming
+>> and recovering from errors).  Maybe this took longer to hit the problem
+>> case - I ran to 1500ish errors instead of just 400 in the previous two tests.
+>> But not sure if that is a significant change.
+>>
+>> Then I added printk() for every entry/return on all cpus.  This just locked
+>> up on the third injection.  Serial console looked to have stopped printing
+>> after the first - so I put in bigger delays into my test program between injection
+>> and consumption, and before looping around for the next cycle to give
+>> time for all the messages (4-socket HSW-EX  ... there are a lot of cpus
+>> printing messages). But now it is taking a lot longer to get through
+>> injection/consumption iterations. At 226 now and counting.
+>>
+>>> Also, shouldn't there be a local_irq_enable before memory_failure and
+>>> a local_irq_disable after it?  It wouldn't surprise me if you've
+>>> deadlocked somewhere.  Lockdep could also have something interesting
+>>> to say.
+>> Added enable/disable.
+>>
+>>> should still be deliverable.  Is it possible that we really need an
+>>> IRET to unmask NMIs?  This seems unlikely.)
+>>
+>> If that were the problem, wouldn't we fail on iteration 2, instead of
+>> 400+ ?
+>>
+>> -Tony
+>
+> There could be a timer interrupt or something.  But I agree, it seems
+> implausible.
+>
+> Are you sure that this works in an unmodified kernel?  The timeout
+> code seems highly questionable to me.  For example, there's this:
+>
+>         if ((c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xe)) &&
+>             cfg->monarch_timeout < 0)
+>             cfg->monarch_timeout = USEC_PER_SEC;
+>
+> which presumably determines monarch_timeout on your system and sets it
+> to 1000000.  But then there's this:
+>
+> #define SPINUNIT 100    /* 100ns */
+>
+> which smells like unit error to me.  On top of that, it seems likely
+> to me that the cpu could execute a loop iteration in much less than
+> 100ns, since the only thing that should be anything other than an L1
+> hit or a correctly predicted branch is the rmb(), which is lfence,
+> which is probably just a few ns.  So you have 10k iterations at, say,
+> 10ns each, allowing about 100µs to synchronize, and if an SMI hits at
+> an inopportune time, boom.
 
-Ok, thanks a lot for your insight and for confirming what Takahiro AKASHI
-said. Let's use a new NT_ARM64_SYSTEM_CALL type with a different
-number then.
+This theory is consistent with the very quick failure with an extra
+printk on entry.
 
-	Arnd
+--Andy
+
+>
+> Also, rmb, seriously?  I would understand smp_rmb() or cpu_relax() or
+> even barrier(), but rmb() seems completely bogus if harmless.
+>
+> --Andy
+>
+> --
+> Andy Lutomirski
+> AMA Capital Management, LLC
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
