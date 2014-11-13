@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208AbaKMIrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 03:47:25 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:12090 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753629AbaKMIrY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 03:47:24 -0500
-X-IronPort-AV: E=Sophos;i="5.07,375,1413237600"; 
-   d="scan'208";a="106531190"
-Date: Thu, 13 Nov 2014 09:47:01 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH v2 1/2] staging: rtl8188eu: Deletion of unnecessary checks
- before three function calls
-In-Reply-To: <5463C22B.7060405@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1411130945151.2389@hadrien>
-References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net>
- <alpine.DEB.2.10.1410311900201.2481@hadrien> <5463C10D.6020409@users.sourceforge.net> <5463C22B.7060405@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932220AbaKMIsA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 03:48:00 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10846 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932098AbaKMIr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 03:47:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,375,1413270000"; 
+   d="scan'208";a="631263192"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH] sched/rt: fix rt runtime corrupt when dl refuse a smaller bandwidth
+Date: Thu, 13 Nov 2014 16:47:39 +0800
+Message-Id: <1415868459-7043-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dl class will refuse the bandwidth being set to some value smaller 
+than the currently allocated bandwidth in any of the root_domains 
+through sched_rt_runtime_us and sched_rt_period_us. RT runtime will 
+be set according to sched_rt_runtime_us before dl class verify if 
+the new bandwidth is suitable in the case of !CONFIG_RT_GROUP_SCHED.
 
+However, rt runtime will be corrupt if dl refuse the new bandwidth 
+since there is no undo to reset the rt runtime to the old value. 
 
-On Wed, 12 Nov 2014, SF Markus Elfring wrote:
+This patch fix it by setting rt runtime after all kinds of rational 
+checking in the case of !CONFIG_RT_GROUP_SCHED.
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Wed, 12 Nov 2014 20:25:49 +0100
->
-> The functions kfree(), rtw_free_netdev() and vfree() test whether their
-> argument is NULL and then return immediately. Thus the test around the call
-> is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  drivers/staging/rtl8188eu/core/rtw_efuse.c   | 3 +--
->  drivers/staging/rtl8188eu/core/rtw_mlme.c    | 3 +--
->  drivers/staging/rtl8188eu/core/rtw_sta_mgt.c | 3 +--
->  drivers/staging/rtl8188eu/core/rtw_xmit.c    | 6 ++----
->  drivers/staging/rtl8188eu/os_dep/usb_intf.c  | 6 +++---
->  5 files changed, 8 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-> index 5b997b2..697876b 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-> @@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16 _size_byte, u8  *pbuf)
->  exit:
->  	kfree(efuseTbl);
->
-> -	if (eFuseWord)
-> -		kfree(eFuseWord);
-> +	kfree(eFuseWord);
->  }
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ kernel/sched/core.c | 30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
-As far as I can tell, the 2/2 patch in this series proposes a completely
-different fix for this code.  When you send a series, patch n+1/m is
-supposed to apply to the result of patch n/m.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2e7578a..355dde3 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7795,20 +7795,7 @@ static int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
+ #else /* !CONFIG_RT_GROUP_SCHED */
+ static int sched_rt_global_constraints(void)
+ {
+-	unsigned long flags;
+-	int i, ret = 0;
+-
+-	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+-	for_each_possible_cpu(i) {
+-		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+-
+-		raw_spin_lock(&rt_rq->rt_runtime_lock);
+-		rt_rq->rt_runtime = global_rt_runtime();
+-		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+-	}
+-	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+-
+-	return ret;
++	return 0;
+ }
+ #endif /* CONFIG_RT_GROUP_SCHED */
+ 
+@@ -7890,6 +7877,21 @@ static int sched_rt_global_validate(void)
+ 
+ static void sched_rt_do_global(void)
+ {
++#ifndef CONFIG_RT_GROUP_SCHED
++	unsigned long flags;
++	int i;
++
++	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
++	for_each_possible_cpu(i) {
++		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
++
++		raw_spin_lock(&rt_rq->rt_runtime_lock);
++		rt_rq->rt_runtime = global_rt_runtime();
++		raw_spin_unlock(&rt_rq->rt_runtime_lock);
++	}
++	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
++#endif
++
+ 	def_rt_bandwidth.rt_runtime = global_rt_runtime();
+ 	def_rt_bandwidth.rt_period = ns_to_ktime(global_rt_period());
+ }
+-- 
+1.9.1
 
-In any case, you can let this one go, because the problem has been fixed
-already.
-
-julia
