@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbaKMCeL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 21:34:11 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:62401 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598AbaKMCeK (ORCPT
+	id S1753629AbaKMChp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 21:37:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56330 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753372AbaKMCho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 21:34:10 -0500
-Message-ID: <5464189B.1020305@samsung.com>
-Date: Thu, 13 Nov 2014 11:34:03 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Wed, 12 Nov 2014 21:37:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Andi Kleen (ak@linux.intel.com)" <ak@linux.intel.com>
+Subject: Re: [PATCH 5/6] ACPI/EC: Cleanup QR_SC command processing by adding a kernel thread to poll EC events.
+Date: Thu, 13 Nov 2014 03:58:39 +0100
+Message-ID: <1961414.bGx3EdA0yT@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026A0706@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1414988981.git.lv.zheng@intel.com> <2277351.09XTT17U9b@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E88026A0706@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        ben-linux@fluff.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 0/2] ARM: dts: Fix the number of DMA channels for Exynos3250/4
-References: <1415760629-1531-1-git-send-email-cw00.choi@samsung.com> <5462F24E.7030100@samsung.com>
-In-Reply-To: <5462F24E.7030100@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/14 14:38, Chanwoo Choi wrote:
-> Dear Kukjin,
->
-> Please ignore this patchset because this patchset are wrong.
->
-OK.
+On Thursday, November 13, 2014 02:31:08 AM Zheng, Lv wrote:
+> Hi, Rafael
+> 
+> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > Sent: Wednesday, November 12, 2014 9:17 AM
 
-- Kukjin
+[cut]
 
-> Best Regards,
-> Chanwoo Choi
->
-> On 11/12/2014 11:50 AM, Chanwoo Choi wrote:
->> This patch fix minor issuse to correct the number of DMA channels for
->> Exynos3250 and Exynos4 series. The PL330 DMA of Exynos3250/Exynos4 support
->> 16 channels simultaneously but, PL330 DMA driver don't use 'dma-channels'
->> property directly. This patchset fix the correct information
->> of Exynos3250/Exynos4's PL330 DMA simply.
->>
->> Changes from v1:
->> - Fix the nubmer for DMA channesl for Exynos4415
->>
->> Chanwoo Choi (2):
->>    ARM: dts: Fix the number of DMA channels for Exynos3250
->>    ARM: dts: Fix the number of DMA channels for Exynos4
->>
->>   arch/arm/boot/dts/exynos3250.dtsi | 4 ++--
->>   arch/arm/boot/dts/exynos4.dtsi    | 4 ++--
->>   arch/arm/boot/dts/exynos4415.dtsi | 4 ++--
->>   3 files changed, 6 insertions(+), 6 deletions(-)
+> > > +
+> > > +static int ec_create_event_poller(struct acpi_ec *ec)
+> > > +{
+> > > +	struct task_struct *t;
+> > > +
+> > > +	t = kthread_run(acpi_ec_event_poller, ec, "ec/gpe-%lu", ec->gpe);
+> > 
+> > Does it have to be a kernel thread?
+> > 
+> > What about using a workqueue instead?
+> 
+> Actually I just want to use threaded IRQ here in response to Andi Kleen's comment.
+> If acpi_irq is registered as threaded IRQ, then acpi_ec_event_poller() will be the
+> callback from it.
+
+How so?
+
+> Since ACPICA is not ready for threaded IRQ currently, we cannot proceed at this point.
+> So I copied the threaded IRQ code from kernel/irq/manage.c here to prepare threaded IRQ logics.
+
+Oh dear, no.
+
+This isn't the way forward here.
+
+> Using a separate work queue, we didn't decrease the kernel thread count.
+
+Why does that matter at all?
+
+> And the code written for the work item cannot be derived when things are
+> switched to the threaded IRQ.
+> So I used kthread here.
+
+Please use a workqueue instead.  If/when we need to switch over to threaded
+IRQs, we'll do the work then.  For now, let's not complicate things more
+than necessary.
+
+Rafael
+
