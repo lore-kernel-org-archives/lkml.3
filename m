@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934670AbaKMXVZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:21:25 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:57594 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933928AbaKMXVX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:21:23 -0500
+	id S934609AbaKMXZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:25:43 -0500
+Received: from ozlabs.org ([103.22.144.67]:52735 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934023AbaKMXZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 18:25:42 -0500
+Date: Fri, 14 Nov 2014 10:25:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Metcalf <cmetcalf@ezchip.com>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: change of contact address for the tile tree?
+Message-ID: <20141114102533.5a1979c5@canb.auug.org.au>
+In-Reply-To: <F21E5D8A-0990-47F3-A89A-01EBA24208DF@ezchip.com>
+References: <20141114100426.6bfa92f8@canb.auug.org.au>
+	<F21E5D8A-0990-47F3-A89A-01EBA24208DF@ezchip.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411132334400.3935@nanos>
-References: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com>
-	<20141110095325.GC12126@ulmo>
-	<CAOMFOmXpAm5iKCLFyorTW+n9YmgZMmrDGGe736tJX8C6BYQv-A@mail.gmail.com>
-	<alpine.DEB.2.11.1411132334400.3935@nanos>
-Date: Thu, 13 Nov 2014 15:21:22 -0800
-Message-ID: <CALAqxLXYVLXZafNH_ag3WDFHkhMe5t23zLbvg7Sq+4_rTfy+Kw@mail.gmail.com>
-Subject: Re: [PATCH] timekeeping: Move persistent clock registration code from
- ARM to kernel
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Q=qZpytGPM70orkhdySSs/E"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 2:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 10 Nov 2014, Anatol Pomozov wrote:
->> On Mon, Nov 10, 2014 at 1:53 AM, Thierry Reding
->> <thierry.reding@gmail.com> wrote:
->> > On Fri, Nov 07, 2014 at 11:34:15AM -0800, Anatol Pomozov wrote:
->> >> ARM timekeeping functionality allows to register persistent/boot clock dynamically.
->> >> This code is arch-independent and can be useful on other plaforms as well.
->> >>
->> >> As a byproduct of this change, tegra20_timer becomes ARM64 compatible.
->> >>
->> >> Tested: backported the change to chromeos-3.14 kernel ran on tegra 64bit
->> >> board, made sure high-resolution clock works.
->> >
->> > Using this on an upstream kernel doesn't work, though, because 64-bit
->> > ARM doesn't implement struct delay_timer which the driver needs since
->> > v3.17.
->> >
->> > But I suppose the delay timer infrastructure could be moved into the
->> > core similar to the persistent and boot clock as this patch does.
->>
->> Thanks. It makes sense, I will send it in a separate patch, once this
->> one will be reviewed. On our kernel I haven't seen this issue as we
->> still use 3.14.
->
-> That's why you should test/compile your stuff on latest greatest and
-> not on a year old conglomorate of unknown provenance. :)
->
-> Aside of that I really wonder why we need that persistent_clock stuff
-> at all. We already have mechanisms to register persistent clocks AKA
-> RTCs after the early boot process and update the wall clock time
-> before we actually need it. Nothing in early boot depends on correct
-> wall clock at all.
->
-> So instead of adding more extra persistent clock nonsense, can we just
-> move all of that to the place where it belongs, i.e. RTC?
+--Sig_/Q=qZpytGPM70orkhdySSs/E
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Sigh.. I've got this on an eventual todo list.. The big problem though
-is that the RTC infrastructure can't be called with irqs off, so its
-not as optimal for measuring suspend time. Some of the suspend-time
-measurement with clocksources that don't halt is interesting here.
+Hi Chris,
 
-So we need to add to the RTC infrastructure special accessors that are
-safe when irqs are off, and we can then deprecate the persistent clock
-bits. There's still evaluation quirks with setting the time earlier in
-boot or not (possibly some rng effects as well there), but that could
-be worked out if we had the suspend timing via safe RTC interfaces
-sorted.
+On Thu, 13 Nov 2014 23:05:58 +0000 Chris Metcalf <cmetcalf@ezchip.com> wrot=
+e:
+>
+> > On Nov 13, 2014, at 6:04 PM, Stephen Rothwell <sfr@canb.auug.org.au> wr=
+ote:
+> >=20
+> > I noticed commit c47b15c4928c ("arch/tile: update MAINTAINERS email to
+> > EZchip") in the tile tree today.  Should I update the contact address I
+> > have for you?
+>=20
+> Yes thanks!
 
-thanks
--john
+Done.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/Q=qZpytGPM70orkhdySSs/E
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUZT30AAoJEMDTa8Ir7ZwVb0gP+gO48vLEhruD7HXJ87mWOwyq
+BNeVTsLMImJlm7QTA3vEXAG0SdGFejFk9xujK2n41qK8+Wt8871+jKdXPUNZ91U0
+xsC2ohl6cjexh27dRhQ4OjSvuS9ypf7ZmSo5bGUo3jIGYOQEF2vGIo3Tnz7oTMIp
+Bb/GZ65vh8QkG9lfUuVR9Y/eIba2rbqWJZGA6qm2qp2ZqfPRz6TkG0f7ihOzl1jH
+jeDPQftjkYcSGSILmhr/9P6mGxRezajjRNk0A/fJEWxFGVkdbR3uLcCWiNUJxIpy
+3frj06BEn/D5Cdn6ARIwTLEIaVUzcXnKDvLbfqoBc4F330rmYZeM28HfHLynRFkA
+zRiQOKGg6sxDgD9+H+f8WmDWpHdRckB5dtE3QqKomu7i8oOYL31gqCxhbQbizEtI
+VBEYbgJd5Xz8n0ovGCbzezkkd+rA/2Iof16NZ7hL0gnK4lzSOopPxTaNThb2IVnw
+4+x5wzrzXL+Nu5enfbkCeLRrqCOiFI+LNeIMEMBtID2f/OGpaZB5fUNn/ht17+ML
+S38HRurh0IJ0cw1qSU7PftGxFugN2mkSnLyQuRpAzpbThzlFkhEB31SB9iY/AHTs
+HPgRglkCBbR1iwIKk5HPPKfE5BG1c0V8xF0XyUwljaovoKKq1Fg7cJbQKcLDSrJq
+ViHjIU2xwNLBH+vNfIYI
+=vOip
+-----END PGP SIGNATURE-----
+
+--Sig_/Q=qZpytGPM70orkhdySSs/E--
