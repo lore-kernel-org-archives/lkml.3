@@ -1,65 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762AbaKMBsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 20:48:06 -0500
-Received: from ozlabs.org ([103.22.144.67]:59321 "EHLO ozlabs.org"
+	id S1753796AbaKMBt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 20:49:56 -0500
+Received: from mga03.intel.com ([134.134.136.65]:50579 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439AbaKMBsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 20:48:04 -0500
-Date: Thu, 13 Nov 2014 12:47:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: linux-next: manual merge of the mfd tree with Linus' tree
-Message-ID: <20141113124756.6d5d8e96@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753437AbaKMBty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 20:49:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
+   d="scan'208";a="606982686"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "Alex Williamson" <alex.williamson@redhat.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLgAyIb0DAAAcBYD//4ReAP/+e7+A//z07vD/+eZFQP/zyH6A
+Date: Thu, 13 Nov 2014 01:46:20 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5AC5@SHSMSX104.ccr.corp.intel.com>
+References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
+ <5461EC99.1000101@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
+ <546324F4.8010002@redhat.com>
+ <E959C4978C3B6342920538CF579893F00227680F@SHSMSX104.ccr.corp.intel.com>
+ <54632ECA.4070903@redhat.com>
+ <E959C4978C3B6342920538CF579893F002284398@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5A68@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00228443D@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F00228443D@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/C2rMn0WO_ZPOVhFya5Rdukp"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD1o22a020907
 
---Sig_/C2rMn0WO_ZPOVhFya5Rdukp
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Wu, Feng wrote on 2014-11-13:
+> 
+> 
+> Zhang, Yang Z wrote on 2014-11-13:
+>> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
+>> linux-kernel@vger.kernel.org
+>> Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest
+>> interrupt configuration changes
+>> 
+>> Wu, Feng wrote on 2014-11-13:
+>>> 
+>>> 
+>>> kvm-owner@vger.kernel.org wrote on 2014-11-12:
+>>>> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
+>>>> linux-kernel@vger.kernel.org
+>>>> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest
+>>>> interrupt configuration changes
+>>>> 
+>>>> 
+>>>> 
+>>>> On 12/11/2014 10:19, Wu, Feng wrote:
+>>>>>> You can certainly backport these patches to distros that do not
+>>>>>> have VFIO.  But upstream we should work on VFIO first.  VFIO
+>>>>>> has feature parity with legacy device assignment, and adding a
+>>>>>> new feature that is not in VFIO would be a bad idea.
+>>>>>> 
+>>>>>> By the way, do you have benchmark results for it?  We have not
+>>>>>> been able to see any performance improvement for APICv on e.g.
+> netperf.
+>>>>> 
+>>>>> Do you mean benchmark results for APICv itself or VT-d
+> Posted-Interrtups?
+>>>> 
+>>>> Especially for VT-d posted interrupts---but it'd be great to know
+>>>> which workloads see the biggest speedup from APICv.
+>>> 
+>>> We have some draft performance data internally, please see the
+>>> attached. For VT-d PI, I think we can get the biggest performance gain
+>>> if the VCPU is running in non-root mode for most of the time (not in
+>>> HLT state), since external interrupt from assigned devices will be
+>>> delivered by guest directly in this case. That means we can run some
+>>> cpu intensive workload in the guests.
+>> 
+>> Have you check that the CPU side posted interrupt is taking effect
+>> in w/o VT-D PI case? Per my understanding, the performance gap
+>> should be so large if you use CPU side posted interrupt. This data
+>> more like the VT-d PI vs non PI(both VT-d and CPU).
+> 
+> Yes, this data is VT-d PI vs Non VT-d PI. The CPU side APICv mechanism
+> (including CPU side Posted-Interrtups) is enabled.
 
-Hi Lee,
+>From the CPU utilization data, it seems the environment of APICv is not reasonable to me. with current APICv, the interrupt should not deliver to the PCPU where vcpu is running. Otherwise, it will force the vcpu vmexit and the CPU side posted interrupt cannot take effect. Do you set the interrupt affinity manually?
 
-Today's linux-next merge of the mfd tree got a conflict in
-drivers/mfd/viperboard.c between commit b6684228726c ("mfd: viperboard:
-Fix platform-device id collision") from Linus' tree and commit
-5e65ea8c48e6 ("mfd: Use mfd_add_hotplug_devices() helper") from the mfd
-tree.
+> 
+> Thanks,
+> Feng
+> 
+>> 
+>>> 
+>>> Thanks,
+>>> Feng
+>>> 
+>>>> 
+>>>> Paolo
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>>>> the body of a message to majordomo@vger.kernel.org More majordomo
+>>>> info at http://vger.kernel.org/majordomo-info.html
+>> 
+>> 
+>> Best regards,
+>> Yang
+>>
 
-I fixed it up (I just used the version from the mfd tree) and can carry
-the fix as necessary (no action is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best regards,
+Yang
 
---Sig_/C2rMn0WO_ZPOVhFya5Rdukp
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUZA3RAAoJEMDTa8Ir7ZwVlo0P/2fq+mBDHse3DIfF+TmiwZpe
-Te/21BEE1f73dQ7kEX1FxzXsGta0XiOUviv++Gns8Ps+gUtc8Ba5rtJ//Ao8JAOf
-w0r9pcnbhdMM9W5+2l6xYuTG2DQly9t1tWV4xjxQaVfUgEMdzbcUs90sIDWv8LMl
-JZzaojqKNriTTLZexEGSYpFUs+R4lmp2UbuOOSqZIeppZouljez9rFMnE1Jrapqm
-SIpnzAMkGoWNVLU6DQ/BNMQpsvOFdpEZ23UwqMDjm1XhRgEvzIvunZ/UNWTT8hI1
-DxNPuhEQalleyjEWhK4JzF1f18M2eX7eYCgMWa+NwGCx/EEVg43hAazDWqxaAGm7
-CnjiQIy0RQhCUS7t14+RP9SeTFT4f5tye5Y7cu5nWuWkSTgyc4YXYO3pNMX+g9w8
-KXa9nGWNLOPi1NroM09NO5qkUeDECexoEyfMSEaLi4HlSeEjPlinYR9D4Bz0avTx
-LYf+dfV3LgMoSls9sXHMMkHUz0hI1m8Qm6cuDevJBCbbsbo2helzKVs1n/rXblSa
-WTmaVY4Xv7v2o/AGRr+L7eQ+S0GkoA0QoWFTPgKQ0ehL5Sl7U+MhYSQ3tCnCiZ/T
-amj8Lff2EQkFHy9DrKPW1dxg5JTj9Xddkgp68/ozUQ1BRx8M72czeXHzGFgkj1OO
-2xXYLoR3A3le9DwXsBH5
-=UPbH
------END PGP SIGNATURE-----
-
---Sig_/C2rMn0WO_ZPOVhFya5Rdukp--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
