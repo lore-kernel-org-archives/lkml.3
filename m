@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830AbaKMSpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 13:45:17 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:58110 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933512AbaKMSpO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 13:45:14 -0500
-Message-ID: <5464FC37.9010305@suse.cz>
-Date: Thu, 13 Nov 2014 19:45:11 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S933860AbaKMSqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 13:46:40 -0500
+Received: from mga03.intel.com ([134.134.136.65]:20170 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933512AbaKMSqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 13:46:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,379,1413270000"; 
+   d="scan'208";a="607410773"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Andi Kleen" <andi@firstfloor.org>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/s7+MsolZCiViEiCPzqCVeTRAJxdoOwAgACR1oD//3yvMIAAtdCAgAB2NOA=
+Date: Thu, 13 Nov 2014 18:43:24 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292CB9A@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com>
+ <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
+In-Reply-To: <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.17 023/319] drivers/net: Disable UFO through virtio
-References: <20141112010952.553519040@linuxfoundation.org>		 <20141112010956.540146480@linuxfoundation.org>	 <1415826239.3398.113.camel@decadent.org.uk> <5464EF03.9020002@suse.cz> <1415903703.3398.115.camel@decadent.org.uk>
-In-Reply-To: <1415903703.3398.115.camel@decadent.org.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sADIkjsL026386
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+> printk seems to work just fine in do_machine_check.  Any chance you
+> can instrument, for each cpu, all entries to do_machine_check, all
+> calls to do_machine_check, all returns, and everything that tries to
+> do memory_failure?
 
-On 11/13/2014, 07:35 PM, Ben Hutchings wrote:
-> On Thu, 2014-11-13 at 18:48 +0100, Jiri Slaby wrote:
->> On 11/12/2014, 10:03 PM, Ben Hutchings wrote:
->>> On Wed, 2014-11-12 at 10:12 +0900, Greg Kroah-Hartman wrote:
->>>> 3.17-stable review patch.  If anyone has any objections,
->>>> please let me know.
->>>> 
->>>> ------------------
->>>> 
->>>> From: Ben Hutchings <ben@decadent.org.uk>
->>>> 
->>>> [ Upstream commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 ]
->>>> 
->>>> IPv6 does not allow fragmentation by routers, so there is no
->>>>  fragmentation ID in the fixed header.  UFO for IPv6 requires
->>>> the ID to be passed separately, but there is no provision for
->>>> this in the virtio net protocol.
->>>> 
->>>> Until recently our software implementation of UFO/IPv6
->>>> generated a new ID, but this was a bug.  Now we will use ID=0
->>>> for any UFO/IPv6 packet passed through a tap, which is even
->>>> worse.
->>>> 
->>>> Unfortunately there is no distinction between UFO/IPv4 and v6
->>>>  features, so disable UFO on taps and virtio_net completely
->>>> until we have a proper solution.
->>> [...]
->>> 
->>> Please drop this patch for 3.14 and 3.17.  It causes problems
->>> for migration of VMs and we're probably going to revert part of
->>> this. The following patch ("drivers/net, ipv6: Select IPv6
->>> fragment idents for virtio UFO packets") might no longer apply,
->>> in which case you can drop that as well until we have this
->>> sorted out upstream.
->> 
->> The same holds for 3.12, I suppose?
-> 
-> Right.
+I first added a printk() just for the cpu that calls do_machine_check()
 
-Great, I dropped that one.
+   printk("MCE: regs = %p\n", regs);
 
-Thanks!
+to see if something went wonky when jumping to the kernel stack.
+But that printed the same value every time (same process is consuming
+and recovering from errors).  Maybe this took longer to hit the problem
+case - I ran to 1500ish errors instead of just 400 in the previous two tests.
+But not sure if that is a significant change.
 
-- -- 
-js
-suse labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Then I added printk() for every entry/return on all cpus.  This just locked
+up on the third injection.  Serial console looked to have stopped printing
+after the first - so I put in bigger delays into my test program between injection
+and consumption, and before looping around for the next cycle to give
+time for all the messages (4-socket HSW-EX  ... there are a lot of cpus
+printing messages). But now it is taking a lot longer to get through
+injection/consumption iterations. At 226 now and counting.
 
-iQIcBAEBAgAGBQJUZPw3AAoJEL0lsQQGtHBJuegP/R1DEoyC2tBsWD78lPFirrF7
-bMgXR/KWruqMa2UL9heWgaJOhrFtsmUiaRWgkFapuGyjpMmWm5ZH1qpZTsBo9Y0u
-rXFsxJgPF3X2OCBLj7AcaKPsGahYSTpBMY665e+lhO5uqYDx/2B84QqWsLlm3yls
-JuWNdMmct/6h8mkGbwTGQ+iM9ancqF2vwNd70Rax1KwydowOxN5/uQfWrkUGUJga
-Hh2PKF0OB7goI5MlYPeLiFPLqTigB0k7Rs4G1bFElM8ATTxQ5Fz89rMjd7KXN6kD
-ND8mtlMXIvOuTQN1w14Zrke11RFsy2OG5qHDt6xw0Z2dvoflUHdzRAdW3u1ikpI0
-7q36uHeokdAI45iqQEmFdSjJmpS1dsSpVNIirrugePi0HSE5oz/wma4762V3mTfk
-C1QAkOVxGW8WiwSvmKzqMHeCXIHxekxuaHtQlHPXmZ8foTtliU74jbp8RAZiwyZW
-Onaj6cU6K1KWAqgZBsSRmz8YP6yU0xKxjD1b/QK47drEJtHQmog7hfx9bYi+Jd9v
-47PL38ZYI0ncwQBtybFbOMtqCjHnK5eQowZJY/1fQlaffQf4cZf5dIiU7lAdLsad
-torFKi0drQsLkT5mCTHYGGC/UbyxM4BC/XSaBWXDOvXHPIdr4gC+YYDCS2ZSR4oo
-6XJG/XuyKEAkIkgl5bwJ
-=qzaW
------END PGP SIGNATURE-----
+> Also, shouldn't there be a local_irq_enable before memory_failure and
+> a local_irq_disable after it?  It wouldn't surprise me if you've
+> deadlocked somewhere.  Lockdep could also have something interesting
+> to say.
+Added enable/disable.
+
+> should still be deliverable.  Is it possible that we really need an
+> IRET to unmask NMIs?  This seems unlikely.)
+
+If that were the problem, wouldn't we fail on iteration 2, instead of
+400+ ?
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
