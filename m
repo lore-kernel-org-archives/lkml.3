@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863AbaKMM6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:58:34 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:41486 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933191AbaKMM45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:56:57 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <chris@printf.net>, <ulf.hansson@linaro.org>, <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <afenkart@gmail.com>, <nsekhar@ti.com>,
-        <kishon@ti.com>
-Subject: [RFC PATCH 1/3] mmc: omap_hsmmc: set host capabilities by reading MMCHS_CAPA2 register
-Date: Thu, 13 Nov 2014 18:26:17 +0530
-Message-ID: <1415883379-19654-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1415883379-19654-1-git-send-email-kishon@ti.com>
-References: <1415883379-19654-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S933275AbaKMM5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:57:42 -0500
+Received: from regular1.263xmail.com ([211.150.99.133]:35844 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933195AbaKMM46 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 07:56:58 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <1c97ffa66988b810a0b8fcda4319af76>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v9 8/9] dt-bindings: Add documentation for rockchip dw hdmi
+Date: Thu, 13 Nov 2014 20:56:41 +0800
+Message-Id: <1415883401-3708-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viswanath Puttagunta <vishp@ti.com>
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-set SDR104, SDR50, DDR50 and HS200 capability flags to caps/caps2 by reading
-MMCHS_CAPA2 register.
-
-Signed-off-by: Viswanath Puttagunta <vishp@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Suggested-by: Misael Lopez Cruz <misael.lopez@ti.com>
 ---
- drivers/mmc/host/omap_hsmmc.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index df27bb4..2e42ed3 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -64,6 +64,7 @@
- #define OMAP_HSMMC_ISE		0x0138
- #define OMAP_HSMMC_AC12		0x013C
- #define OMAP_HSMMC_CAPA		0x0140
-+#define OMAP_HSMMC_CAPA2	0x0144
- 
- #define VS18			(1 << 26)
- #define VS30			(1 << 25)
-@@ -139,6 +140,10 @@
- #define ACTO	(1 << 1)
- #define ACNE	(1 << 0)
- 
-+#define SDR50	(1 << 0)
-+#define SDR104	(1 << 1)
-+#define DDR50	(1 << 2)
+Changes in v9: None
+Changes in v8:
+- Add documentation for rockchip dw hdmi
+
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
+
+ .../devicetree/bindings/video/dw_hdmi-rockchip.txt | 43 ++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+
+diff --git a/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+new file mode 100644
+index 0000000..6ea6764
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+@@ -0,0 +1,43 @@
++Rockchip specific extensions to the Synopsys Designware HDMI
++================================
 +
- #define MMC_AUTOSUSPEND_DELAY	100
- #define MMC_TIMEOUT_MS		20		/* 20 mSec */
- #define MMC_TIMEOUT_US		20000		/* 20000 micro Sec */
-@@ -2028,6 +2033,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	unsigned tx_req, rx_req;
- 	const struct omap_mmc_of_data *data;
- 	void __iomem *base;
-+	u32 reg;
- 
- 	match = of_match_device(of_match_ptr(omap_mmc_of_match), &pdev->dev);
- 	if (match) {
-@@ -2153,6 +2159,19 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- 	mmc->pm_caps = mmc_slot(host).pm_caps;
- 
-+	reg = OMAP_HSMMC_READ(host->base, OMAP_HSMMC_CAPA2);
++Required properties:
++- compatible: "rockchip,rk3288-dw-hdmi";
++- reg: physical base address of the controller and length
++- ddc-i2c-bus:  phandle of an I2C controller used for DDC EDID probing
++- clocks: from common clock binding: handle to hdmi clock.
++- clock-names: should be "clk" "hdcp_clk"
++- rockchip,grf: this soc should set GRF regs to mux vopl/vopb.
++- interrupts: HDMI interrupt number
++- ports: contain a port node with endpoint definitions as defined in
++  Documentation/devicetree/bindings/media/video-interfaces.txt. For
++  vopb,set the reg = <0> and set the reg = <1> for vopl.
++- reg-io-width: the width of the reg:1,4, the value should be 4 on
++  rk3288 platform
 +
-+	if (reg & SDR50)
-+		mmc->caps |= MMC_CAP_UHS_DDR50;
-+
-+	if (reg & SDR104) {
-+		mmc->caps |= MMC_CAP_UHS_SDR104;
-+		mmc->caps2 |= MMC_CAP2_HS200;
-+	}
-+
-+	if (reg & DDR50)
-+		mmc->caps |= MMC_CAP_UHS_DDR50;
-+
- 	omap_hsmmc_conf_bus_power(host);
- 
- 	if (!pdev->dev.of_node) {
++Example:
++hdmi: hdmi@ff980000 {
++	compatible = "rockchip,rk3288-dw-hdmi";
++	reg = <0xff980000 0x20000>;
++	reg-io-width = <4>;
++	ddc-i2c-bus = <&i2c5>;
++	rockchip,grf = <&grf>;
++	interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cru  PCLK_HDMI_CTRL>, <&cru SCLK_HDMI_HDCP>;
++	clock-names = "clk", "hdcp_clk";
++	status = "disabled";
++	ports {
++		hdmi_in: port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			hdmi_in_vopb: endpoint@0 {
++				reg = <0>;
++				remote-endpoint = <&vopb_out_hdmi>;
++			};
++			hdmi_in_vopl: endpoint@1 {
++				reg = <1>;
++				remote-endpoint = <&vopl_out_hdmi>;
++			};
++		};
++	};
++};
 -- 
-1.7.9.5
+1.9.1
+
 
