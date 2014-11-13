@@ -1,118 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaKMGyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 01:54:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54363 "EHLO mx2.suse.de"
+	id S1753785AbaKMGzB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 01:55:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54374 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013AbaKMGyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 01:54:52 -0500
-In-Reply-To: <20141111.214752.266800170368088905.davem@davemloft.net>
-References: <20141111.214752.266800170368088905.davem@davemloft.net>
-From: Michal Kubecek <mkubecek@suse.cz>
-Subject: [PATCH net-next v2] net: generic dev_disable_lro() stacked device
- handling
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jay Vosburgh <j.vosburgh@gmail.com>,
-        Veaceslav Falico <vfalico@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>, Jiri Pirko <jiri@resnulli.us>
-Message-Id: <20141113065450.1645FA0BEF@unicorn.suse.cz>
-Date: Thu, 13 Nov 2014 07:54:50 +0100 (CET)
+	id S1751090AbaKMGy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 01:54:59 -0500
+Message-ID: <546455C1.6000405@suse.com>
+Date: Thu, 13 Nov 2014 07:54:57 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 5/8] x86: Introduce function to get pmd entry pointer
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-6-git-send-email-jgross@suse.com> <20141112221204.GD7549@laptop.dumpdata.com>
+In-Reply-To: <20141112221204.GD7549@laptop.dumpdata.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Large receive offloading is known to cause problems if received packets
-are passed to other host. Therefore the kernel disables it by calling
-dev_disable_lro() whenever a network device is enslaved in a bridge or
-forwarding is enabled for it (or globally). For virtual devices we need
-to disable LRO on the underlying physical device (which is actually
-receiving the packets).
+On 11/12/2014 11:12 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Nov 11, 2014 at 06:43:43AM +0100, Juergen Gross wrote:
+>> Introduces lookup_pmd_address() to get the address of the pmd entry
+>> related to a virtual address in the current address space. This
+>> function is needed for support of a virtual mapped sparse p2m list
+>> in xen pv domains.
+>>
+> What is wrong with using 'lookup_address' ?
 
-Current dev_disable_lro() code handles this  propagation for a vlan
-(including 802.1ad nested vlan), macvlan or a vlan on top of a macvlan.
-It doesn't handle other stacked devices and their combinations, in
-particular propagation from a bond to its slaves which often causes
-problems in virtualization setups.
+It doesn't return the needed information. I need a pmd entry here, not
+a pte entry.
 
-As we now have generic data structures describing the upper-lower device
-relationship, dev_disable_lro() can be generalized to disable LRO also
-for all lower devices (if any) once it is disabled for the device
-itself.
 
-For bonding and teaming devices, it is necessary to disable LRO not only
-on current slaves at the moment when dev_disable_lro() is called but
-also on any slave (port) added later.
-
-v2: use lower device links for all devices (including vlan and macvlan)
-
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
----
- drivers/net/bonding/bond_main.c |  3 +++
- drivers/net/team/team.c         |  3 +++
- net/core/dev.c                  | 15 +++++----------
- 3 files changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index b9b3456..8575fee 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1526,6 +1526,9 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 	}
- #endif
- 
-+	if (!(bond_dev->features & NETIF_F_LRO))
-+		dev_disable_lro(slave_dev);
-+
- 	res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
- 					 new_slave);
- 	if (res) {
-diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index 2368395..93e2242 100644
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1179,6 +1179,9 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
- 		goto err_enable_netpoll;
- 	}
- 
-+	if (!(dev->features & NETIF_F_LRO))
-+		dev_disable_lro(port_dev);
-+
- 	err = netdev_rx_handler_register(port_dev, team_handle_frame,
- 					 port);
- 	if (err) {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index bb09b03..1ab168e 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1437,22 +1437,17 @@ EXPORT_SYMBOL(dev_close);
-  */
- void dev_disable_lro(struct net_device *dev)
- {
--	/*
--	 * If we're trying to disable lro on a vlan device
--	 * use the underlying physical device instead
--	 */
--	if (is_vlan_dev(dev))
--		dev = vlan_dev_real_dev(dev);
--
--	/* the same for macvlan devices */
--	if (netif_is_macvlan(dev))
--		dev = macvlan_dev_real_dev(dev);
-+	struct net_device *lower_dev;
-+	struct list_head *iter;
- 
- 	dev->wanted_features &= ~NETIF_F_LRO;
- 	netdev_update_features(dev);
- 
- 	if (unlikely(dev->features & NETIF_F_LRO))
- 		netdev_WARN(dev, "failed to disable LRO!\n");
-+
-+	netdev_for_each_lower_dev(dev, lower_dev, iter)
-+		dev_disable_lro(lower_dev);
- }
- EXPORT_SYMBOL(dev_disable_lro);
- 
--- 
-1.8.4.5
-
+Juergen
