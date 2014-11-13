@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaKMOy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:54:26 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:61308 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaKMOyY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:54:24 -0500
-Date: Thu, 13 Nov 2014 14:54:19 +0000
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, srinivas.kandagatla@gmail.com,
-        patrice.chotard@st.com, devicetree@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH v2 13/14] ARM: STi: DT: STiH410: Add usb2 picophy dt nodes
-Message-ID: <20141113145419.GA30296@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1415876417-28728-1-git-send-email-peter.griffin@linaro.org>
- <1415876417-28728-14-git-send-email-peter.griffin@linaro.org>
- <3348806.YN8XP4V4uc@wuerfel>
+	id S1754053AbaKMOyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:54:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46453 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027AbaKMOye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 09:54:34 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <chris@printf.net>, <ulf.hansson@linaro.org>, <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <afenkart@gmail.com>, <nsekhar@ti.com>, <kishon@ti.com>
+Subject: [RFC PATCH 1/3] mmc: omap_hsmmc: set host capabilities by reading MMCHS_CAPA2 register
+Date: Thu, 13 Nov 2014 20:24:16 +0530
+Message-ID: <1415890458-20436-2-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1415890458-20436-1-git-send-email-kishon@ti.com>
+References: <1415890458-20436-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3348806.YN8XP4V4uc@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+From: Viswanath Puttagunta <vishp@ti.com>
 
-Thanks for reviewing.
+set SDR104, SDR50, DDR50 and HS200 capability flags to caps/caps2 by reading
+MMCHS_CAPA2 register.
 
-On Thu, 13 Nov 2014, Arnd Bergmann wrote:
+Signed-off-by: Viswanath Puttagunta <vishp@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Suggested-by: Misael Lopez Cruz <misael.lopez@ti.com>
+---
+ drivers/mmc/host/omap_hsmmc.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-> On Thursday 13 November 2014 11:00:16 Peter Griffin wrote:
-> > +       soc {
-> > +               usb2_picophy0: usbpicophy@0 {
-> > +                       compatible = "st,stih407-usb2-phy";
-> > +                       reg = <0xf8 0x04>,      /* syscfg 5062 */
-> > +                             <0xf4 0x04>;      /* syscfg 5061 */
-> > 
-> 
-> I think the node name for the phy should be "phy@f8" instead of usbpicophy@0
-> by common convention. I notice that there are some existing instances of
-> this, you can probably change them as well. Linux doesn't normally care
-> about the node names.
-
-Ok will fix in v3
-
-> 
-> It also seems that you have put the node in the wrong place, as the reg
-> property apparently refers to a different address space. Did you mean
-> to put this under the syscfg_core node?
-
-Your correct in that it refers to the syscfg_core address space.
-However I intentionaly didn't put it under the syscfg_core node.
-
-The phy is more unique than most other devices in that in this instance it
-is only controlled from two syscfg_core registers which happen to be in the same
-sysconf bank.
-
-However most other devices tend to have a combination of some memory mapped
-registers and also some sysconfig registers which does then create a conflict
-over where the dt node should live.
-
-Currently I can't find an example but there is also no guarentee that a
-device will not have some configuration bits in syscfg_core and some
-other bits in syscfg_rear/front registers. The phy for example could
-have had one register in each, which would make deciding where to put
-it difficult.
-
-So to create coherency / conformity we decided to put all the IP blocks under the soc node.
-
-Also its worth pointing if your not already aware that sysconf_core/rear/front isn't
-really a device, it's just a regmap abstraction of some memory mapped configuration
-registers where a bunch of seemingly random control bits get stuffed.
-
-Of course if you feel strongly about it I can of course change it like you suggested,
-but that is the reasoning / rationale of why it was done like this initially.
-
-regards,
-
-Peter.
-
-
-
-
-
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index df27bb4..2e42ed3 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -64,6 +64,7 @@
+ #define OMAP_HSMMC_ISE		0x0138
+ #define OMAP_HSMMC_AC12		0x013C
+ #define OMAP_HSMMC_CAPA		0x0140
++#define OMAP_HSMMC_CAPA2	0x0144
+ 
+ #define VS18			(1 << 26)
+ #define VS30			(1 << 25)
+@@ -139,6 +140,10 @@
+ #define ACTO	(1 << 1)
+ #define ACNE	(1 << 0)
+ 
++#define SDR50	(1 << 0)
++#define SDR104	(1 << 1)
++#define DDR50	(1 << 2)
++
+ #define MMC_AUTOSUSPEND_DELAY	100
+ #define MMC_TIMEOUT_MS		20		/* 20 mSec */
+ #define MMC_TIMEOUT_US		20000		/* 20000 micro Sec */
+@@ -2028,6 +2033,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 	unsigned tx_req, rx_req;
+ 	const struct omap_mmc_of_data *data;
+ 	void __iomem *base;
++	u32 reg;
+ 
+ 	match = of_match_device(of_match_ptr(omap_mmc_of_match), &pdev->dev);
+ 	if (match) {
+@@ -2153,6 +2159,19 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 
+ 	mmc->pm_caps = mmc_slot(host).pm_caps;
+ 
++	reg = OMAP_HSMMC_READ(host->base, OMAP_HSMMC_CAPA2);
++
++	if (reg & SDR50)
++		mmc->caps |= MMC_CAP_UHS_DDR50;
++
++	if (reg & SDR104) {
++		mmc->caps |= MMC_CAP_UHS_SDR104;
++		mmc->caps2 |= MMC_CAP2_HS200;
++	}
++
++	if (reg & DDR50)
++		mmc->caps |= MMC_CAP_UHS_DDR50;
++
+ 	omap_hsmmc_conf_bus_power(host);
+ 
+ 	if (!pdev->dev.of_node) {
+-- 
+1.7.9.5
 
