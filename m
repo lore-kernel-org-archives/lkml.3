@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933848AbaKMRst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:48:49 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38135 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933619AbaKMRsr (ORCPT
+	id S933871AbaKMRs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:48:58 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:37013 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933619AbaKMRsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:48:47 -0500
-Date: Thu, 13 Nov 2014 17:48:37 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: b.L: fix unmet dependency for CPU_PM
-Message-ID: <20141113174837.GB4042@n2100.arm.linux.org.uk>
-References: <1415857098-16928-1-git-send-email-pankaj.dubey@samsung.com>
- <alpine.LFD.2.11.1411131231060.11690@knanqh.ubzr>
+	Thu, 13 Nov 2014 12:48:55 -0500
+Message-ID: <5464EF03.9020002@suse.cz>
+Date: Thu, 13 Nov 2014 18:48:51 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1411131231060.11690@knanqh.ubzr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 3.17 023/319] drivers/net: Disable UFO through virtio
+References: <20141112010952.553519040@linuxfoundation.org>	 <20141112010956.540146480@linuxfoundation.org> <1415826239.3398.113.camel@decadent.org.uk>
+In-Reply-To: <1415826239.3398.113.camel@decadent.org.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 12:44:22PM -0500, Nicolas Pitre wrote:
-> On Thu, 13 Nov 2014, Pankaj Dubey wrote:
-> 
-> > If BL_SWITCHER is enabled but SUSPEND and CPU_IDLE is not enabled
-> > we are getting following config warning.
-> > 
-> > warning: (BL_SWITCHER) selects CPU_PM which has unmet direct
-> > dependencies (SUSPEND || CPU_IDLE)
-> > 
-> > So BL_SWITCHER should enable CPU_PM only if either of SUSPEND or
-> > CPU_IDLE is selected.
-> > 
-> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > ---
-> >  arch/arm/Kconfig |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index 9d580d0..fe3d969 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -1417,7 +1417,7 @@ config BL_SWITCHER
-> >  	bool "big.LITTLE switcher support"
-> >  	depends on BIG_LITTLE && MCPM && HOTPLUG_CPU
-> >  	select ARM_CPU_SUSPEND
-> > -	select CPU_PM
-> > +	select CPU_PM if (SUSPEND || CPU_IDLE)
-> 
-> NAK.  You just broke the code by doing this. CPU_PM is a requirement 
-> here.  The dependencies for CPU_PM is lacking.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Is there any real technical reason that CPU_PM depends on SUSPEND ||
-CPU_IDLE ?  If not, those dependencies should be killed.
+On 11/12/2014, 10:03 PM, Ben Hutchings wrote:
+> On Wed, 2014-11-12 at 10:12 +0900, Greg Kroah-Hartman wrote:
+>> 3.17-stable review patch.  If anyone has any objections, please
+>> let me know.
+>> 
+>> ------------------
+>> 
+>> From: Ben Hutchings <ben@decadent.org.uk>
+>> 
+>> [ Upstream commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 ]
+>> 
+>> IPv6 does not allow fragmentation by routers, so there is no 
+>> fragmentation ID in the fixed header.  UFO for IPv6 requires the
+>> ID to be passed separately, but there is no provision for this in
+>> the virtio net protocol.
+>> 
+>> Until recently our software implementation of UFO/IPv6 generated
+>> a new ID, but this was a bug.  Now we will use ID=0 for any
+>> UFO/IPv6 packet passed through a tap, which is even worse.
+>> 
+>> Unfortunately there is no distinction between UFO/IPv4 and v6 
+>> features, so disable UFO on taps and virtio_net completely until
+>> we have a proper solution.
+> [...]
+> 
+> Please drop this patch for 3.14 and 3.17.  It causes problems for 
+> migration of VMs and we're probably going to revert part of this.
+> The following patch ("drivers/net, ipv6: Select IPv6 fragment
+> idents for virtio UFO packets") might no longer apply, in which
+> case you can drop that as well until we have this sorted out
+> upstream.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+The same holds for 3.12, I suppose?
+
+thanks,
+- -- 
+js
+suse labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUZO8DAAoJEL0lsQQGtHBJ6m0QAKtFdrlbdrBszq6o7pR5B+Jz
+7ULH2GpXb+s0eGK5jf2Wfrz3IGnpStPZa8wpOVVrCLX/sggccEwgTfTIN9LgDS84
+juNP1aHKVMXc62Mf/ZTJpZF7+k1HbRp/M5EnZpFy/QrwHjbn1s+KGtepkLtt7Lsg
+QHtmU+kvfoJKI1yOrStwuNYoOVLHl8cfG8gIB/8JLSuii9IzEO5nt4pHLbemW7s1
+cwICvtRlQJkRDf7wWLPvy77pvBdlMERg5zqANQPZTyopQvn2nMs9V4h8JMiZYx0l
+YR1aw8CrYm1BiOSCscNSCla5ypU3VcWLaNLHGhsaJwMwl12FhR4+4biNrobfHjU7
+1dvWTA5VD9Hdz0rf/iqMpOrA7qbyp/ucmYkcpPe+y6BCT7f8VapnsUWrQxPU37N8
+WdLYa4D9dgA1uL4zQICiQQpQqoJVTRZRep5W07zuMkjWiQnSVwRbOMiWD3bpee20
+wrppKHKSwRskKK25J9wXWgLu+EfgqvskqB5RjzmDU2jZv/bkBqfTf00JY6ar4rlr
+lAQHXnVaBHA3agY7yOvRc/95vNGW1BN/z+/fDu0sl/h5JCmapzN7mr5eSLWLQK8N
+aVgc+y/z5rYsID2SKPI3gCKTCfIiASYAedNn+e67OiTTrTcNg2d9SWKJctVcsAD+
+nBEnS4azRHV/9tyMKIFS
+=6NLa
+-----END PGP SIGNATURE-----
