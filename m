@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaKMIOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 03:14:10 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47103 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaKMIOH (ORCPT
+	id S1753879AbaKMIan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 03:30:43 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36714 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088AbaKMIam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 03:14:07 -0500
-From: Kever Yang <kever.yang@rock-chips.com>
-To: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>
-Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
-        cf@rock-chips.com, dkl@rock-chips.com, huangtao@rock-chips.com,
-        linux-rockchip@lists.infradead.org,
-        Kever Yang <kever.yang@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: rockchip: fix clock select order for usbphy480m_src
-Date: Thu, 13 Nov 2014 16:11:49 +0800
-Message-Id: <1415866309-3277-1-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 13 Nov 2014 03:30:42 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <54646C1D.1050102@jp.fujitsu.com>
+Date: Thu, 13 Nov 2014 17:30:21 +0900
+From: "HATAYAMA, Daisuke" <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Petr Tesarik <ptesarik@suse.cz>
+CC: vgoyal@redhat.com, kumagai-atsushi@mxc.nes.nec.co.jp, anderson@redhat.com,
+        kexec@lists.infradead.org, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
+References: <20141112.154042.59640143160036130.d.hatayama@jp.fujitsu.com>	<20141112221205.GB5265@redhat.com>	<20141113.091709.520211949477822929.d.hatayama@jp.fujitsu.com> <20141113090657.2578f087@hananiah.suse.cz>
+In-Reply-To: <20141113090657.2578f087@hananiah.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to rk3288 trm, the mux selector locate at bit[12:11]
-of CRU_CLKSEL13_CON shows:
-2'b00: select HOST0 USB pll clock (clk_otgphy1)
-2'b01: select HOST1 USB pll clock (clk_otgphy2)
-2'b10: select OTG USB pll clock   (clk_otgphy0)
 
-The clock map is in Fig. 3-4 CRU Clock Architecture Diagram 3
-- clk_otgphy0 -> USB PHY OTG
-- clk_otgphy1 -> USB PHY host0
-- clk_otgphy2 -> USB PHY host1
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
----
+(2014/11/13 17:06), Petr Tesarik wrote:
+> On Thu, 13 Nov 2014 09:17:09 +0900 (JST)
+> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+>
+>> From: Vivek Goyal <vgoyal@redhat.com>
+>> Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
+>> Date: Wed, 12 Nov 2014 17:12:05 -0500
+>>
+>>> On Wed, Nov 12, 2014 at 03:40:42PM +0900, HATAYAMA Daisuke wrote:
+>>>> Currently, VMCOREINFO note information reports the virtual address of
+>>>> phys_base that is assigned to symbol phys_base. But this doesn't make
+>>>> sense because to refer to value of the phys_base, it's necessary to
+>>>> get the value of phys_base itself we are now about to refer to.
+>>>>
+>>>
+>>> Hi Hatayama,
+>>>
+>>> /proc/vmcore ELF headers have virtual address information and using
+>>> that you should be able to read actual value of phys_base. gdb deals
+>>> with virtual addresses all the time and can read value of any symbol
+>>> using those headers.
+>>>
+>>> So I am not sure what's the need for exporting actual value of
+>>> phys_base.
+>>>
+>>
+>> Sorry, my logic in the patch description was wrong. For /proc/vmcore,
+>> there's enough information for makedumpdile to get phys_base. It's
+>> correct. The problem here is that other crash dump mechanisms that run
+>> outside Linux kernel independently don't have information to get
+>> phys_base.
+>
+> Yes, but these mechanisms won't be able to read VMCOREINFO either, will
+> they?
+>
 
- drivers/clk/rockchip/clk-rk3288.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I don't intend such sophisticated function only by VMCOREINFO.
+Search vmcore for VMCOREINFO using strings + grep before opening it by crash.
+I intend that only here.
 
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index 157b60b..4d70518 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -195,8 +195,8 @@ PNAME(mux_hsadcout_p)	= { "hsadc_src", "ext_hsadc" };
- PNAME(mux_edp_24m_p)	= { "ext_edp_24m", "xin24m" };
- PNAME(mux_tspout_p)	= { "cpll", "gpll", "npll", "xin27m" };
- 
--PNAME(mux_usbphy480m_p)		= { "sclk_otgphy0", "sclk_otgphy1",
--				    "sclk_otgphy2" };
-+PNAME(mux_usbphy480m_p)		= { "sclk_otgphy1", "sclk_otgphy2",
-+				    "sclk_otgphy0" };
- PNAME(mux_hsicphy480m_p)	= { "cpll", "gpll", "usbphy480m_src" };
- PNAME(mux_hsicphy12m_p)		= { "hsicphy12m_xin12m", "hsicphy12m_usbphy" };
- 
 -- 
-1.9.1
+Thanks.
+HATAYAMA, Daisuke
 
