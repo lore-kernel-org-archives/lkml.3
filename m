@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003AbaKMNGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 08:06:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46877 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914AbaKMNGY (ORCPT
+	id S933036AbaKMNGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 08:06:46 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:40085 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932914AbaKMNGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 08:06:24 -0500
-Date: Thu, 13 Nov 2014 14:06:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Brown, Len" <len.brown@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        "linux-pm@vger.kernel.org >> Linux PM list" 
-	<linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v2] PM / Sleep: Timer quiesce in freeze state
-In-Reply-To: <54648C50.2060104@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1411131405370.3935@nanos>
-References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net> <544DE5CF.9040501@linux.intel.com> <20141027074419.GE10501@worktop.programming.kicks-ass.net> <544F4B31.7050308@linux.intel.com>
- <20141028082503.GN3337@twins.programming.kicks-ass.net> <5450253B.5020802@linux.intel.com> <20141029082432.GV3337@twins.programming.kicks-ass.net> <5451A94F.1090200@linux.intel.com> <alpine.DEB.2.11.1411121558280.3935@nanos> <20141113013707.GQ29390@twins.programming.kicks-ass.net>
- <alpine.DEB.2.11.1411131008280.3935@nanos> <54648C50.2060104@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 13 Nov 2014 08:06:44 -0500
+Date: Thu, 13 Nov 2014 14:06:36 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: "Kishon Vijay Abraham I" <kishon@ti.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 4/7] phy: add support for USB cluster on the Armada
+ 375 SoC
+Message-ID: <20141113140636.21226234@free-electrons.com>
+In-Reply-To: <1415879269-29711-5-git-send-email-gregory.clement@free-electrons.com>
+References: <1415879269-29711-1-git-send-email-gregory.clement@free-electrons.com>
+	<1415879269-29711-5-git-send-email-gregory.clement@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, Li, Aubrey wrote:
+Dear Gregory CLEMENT,
 
-> On 2014/11/13 17:10, Thomas Gleixner wrote:
-> > On Thu, 13 Nov 2014, Peter Zijlstra wrote:
-> >> On Wed, Nov 12, 2014 at 10:09:47PM +0100, Thomas Gleixner wrote:
-> >> But sure, we can add suspend notifiers to stuff to shut down timers; I
-> >> should have a patch for at least one of the offenders somewhere. But I
-> >> really think that we should not be looking at the individual timers for
-> >> this, none of the other suspend modes care about active timers.
-> > 
-> > Fair enough.
-> >  
+On Thu, 13 Nov 2014 12:47:46 +0100, Gregory CLEMENT wrote:
+> The Armada 375 SoC comes with an USB2 host and device controller and
+> an USB3 controller. The USB cluster control register allows to manage
+> common features of both USB controllers.
 > 
-> If you are okay with the current method to suspend timekeeping entirely,
-> then we can go further to fix the rest concerns.
+> This commit adds a driver integrated in the generic PHY framework to
+> control this USB cluster feature.
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> ---
+>  drivers/phy/Kconfig              |   6 ++
+>  drivers/phy/Makefile             |   1 +
+>  drivers/phy/phy-armada375-usb2.c | 158 +++++++++++++++++++++++++++++++++++++++
+>  include/dt-bindings/phy/phy.h    |   1 +
+>  4 files changed, 166 insertions(+)
+>  create mode 100644 drivers/phy/phy-armada375-usb2.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 2a436e607f99..625adb0abd43 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -21,6 +21,12 @@ config PHY_BERLIN_SATA
+>  	select GENERIC_PHY
+>  	help
+>  	  Enable this to support the SATA PHY on Marvell Berlin SoCs.
+> +config ARMADA375_USBCLUSTER_PHY
 
-I'm fine with that when it's done proper :)
+Missing new line here.
 
-Thanks,
+> +	def_bool y
+> +	depends on MACH_ARMADA_375 || COMPILE_TEST
+> +	depends on OF
+> +	select GENERIC_PHY
+> +
+>  
 
-	tglx
+One too many new line.
+
+
+> +	cluster_phy = dev_get_drvdata(phy->dev.parent);
+> +	if (!cluster_phy)
+> +		return -ENOMEM;
+
+Is ENOMEM really the appropriate error code here?
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
