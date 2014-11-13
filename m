@@ -1,128 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaKMHQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 02:16:03 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46143 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaKMHQB (ORCPT
+	id S1753866AbaKMHSV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 02:18:21 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53037 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674AbaKMHST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 02:16:01 -0500
-Date: Thu, 13 Nov 2014 08:15:55 +0100
-From: Veaceslav Falico <vfalico@gmail.com>
-To: Michal Kubecek <mkubecek@suse.cz>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jay Vosburgh <j.vosburgh@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>, Jiri Pirko <jiri@resnulli.us>
-Subject: Re: [PATCH net-next v2] net: generic dev_disable_lro() stacked
- device handling
-Message-ID: <20141113071555.GA28547@raspberrypi>
-References: <20141111.214752.266800170368088905.davem@davemloft.net>
- <20141113065450.1645FA0BEF@unicorn.suse.cz>
+	Thu, 13 Nov 2014 02:18:19 -0500
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <54645B38.10603@lge.com>
+Date: Thu, 13 Nov 2014 16:18:16 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20141113065450.1645FA0BEF@unicorn.suse.cz>
+To: Colin Cross <ccross@android.com>, Joonsoo Kim <js1304@gmail.com>
+CC: John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, lauraa@codeaurora.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?EUC-KR?B?IsDMsMfIoy/DpcDTv6yxuL/4L1NXIFBs?=
+	 =?EUC-KR?B?YXRmb3JtKL+sKUFPVMbAKGd1bmhvLmxlZUBsZ2UuY29tKSI=?= 
+	<gunho.lee@lge.com>
+Subject: Why does ion_cma_allocate need GFP_HIGHUSER | __GFP_ZERO flags?
+Content-Type: text/plain; charset=euc-kr
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 07:54:50AM +0100, Michal Kubecek wrote:
->Large receive offloading is known to cause problems if received packets
->are passed to other host. Therefore the kernel disables it by calling
->dev_disable_lro() whenever a network device is enslaved in a bridge or
->forwarding is enabled for it (or globally). For virtual devices we need
->to disable LRO on the underlying physical device (which is actually
->receiving the packets).
->
->Current dev_disable_lro() code handles this  propagation for a vlan
->(including 802.1ad nested vlan), macvlan or a vlan on top of a macvlan.
->It doesn't handle other stacked devices and their combinations, in
->particular propagation from a bond to its slaves which often causes
->problems in virtualization setups.
->
->As we now have generic data structures describing the upper-lower device
->relationship, dev_disable_lro() can be generalized to disable LRO also
->for all lower devices (if any) once it is disabled for the device
->itself.
->
->For bonding and teaming devices, it is necessary to disable LRO not only
->on current slaves at the moment when dev_disable_lro() is called but
->also on any slave (port) added later.
->
->v2: use lower device links for all devices (including vlan and macvlan)
->
->Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Hi,
 
-Seems ok to me.
+I'm wondering why dma_alloc_coherent needs GFP_HIGHUSER | __GFP_ZERO flags in ion_cma_allocate().
 
-Acked-by: Veaceslav Falico <vfalico@gmail.com>
+I think dma_alloc_coherent can go to __dma_alloc if the system has CMA area.
+If __GFP_WAIT flag is set, it allocates memory from atomic pool.
+So I think calling dma_alloc_coherent with __GFP_WAIT is enough.
 
->---
-> drivers/net/bonding/bond_main.c |  3 +++
-> drivers/net/team/team.c         |  3 +++
-> net/core/dev.c                  | 15 +++++----------
-> 3 files changed, 11 insertions(+), 10 deletions(-)
->
->diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->index b9b3456..8575fee 100644
->--- a/drivers/net/bonding/bond_main.c
->+++ b/drivers/net/bonding/bond_main.c
->@@ -1526,6 +1526,9 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
-> 	}
-> #endif
->
->+	if (!(bond_dev->features & NETIF_F_LRO))
->+		dev_disable_lro(slave_dev);
->+
-> 	res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
-> 					 new_slave);
-> 	if (res) {
->diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
->index 2368395..93e2242 100644
->--- a/drivers/net/team/team.c
->+++ b/drivers/net/team/team.c
->@@ -1179,6 +1179,9 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
-> 		goto err_enable_netpoll;
-> 	}
->
->+	if (!(dev->features & NETIF_F_LRO))
->+		dev_disable_lro(port_dev);
->+
-> 	err = netdev_rx_handler_register(port_dev, team_handle_frame,
-> 					 port);
-> 	if (err) {
->diff --git a/net/core/dev.c b/net/core/dev.c
->index bb09b03..1ab168e 100644
->--- a/net/core/dev.c
->+++ b/net/core/dev.c
->@@ -1437,22 +1437,17 @@ EXPORT_SYMBOL(dev_close);
->  */
-> void dev_disable_lro(struct net_device *dev)
-> {
->-	/*
->-	 * If we're trying to disable lro on a vlan device
->-	 * use the underlying physical device instead
->-	 */
->-	if (is_vlan_dev(dev))
->-		dev = vlan_dev_real_dev(dev);
->-
->-	/* the same for macvlan devices */
->-	if (netif_is_macvlan(dev))
->-		dev = macvlan_dev_real_dev(dev);
->+	struct net_device *lower_dev;
->+	struct list_head *iter;
->
-> 	dev->wanted_features &= ~NETIF_F_LRO;
-> 	netdev_update_features(dev);
->
-> 	if (unlikely(dev->features & NETIF_F_LRO))
-> 		netdev_WARN(dev, "failed to disable LRO!\n");
->+
->+	netdev_for_each_lower_dev(dev, lower_dev, iter)
->+		dev_disable_lro(lower_dev);
-> }
-> EXPORT_SYMBOL(dev_disable_lro);
->
->-- 
->1.8.4.5
->
+And can I get zero-filled-memory from CMA if I set __GFP_ZERO?
+
+
+-- 
+Thanks,
+Gioh Kim
