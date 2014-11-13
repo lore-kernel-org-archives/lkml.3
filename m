@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaKMRDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:03:18 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:48897 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543AbaKMRDO (ORCPT
+	id S1754252AbaKMRDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:03:35 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:50827 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543AbaKMRDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:03:14 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-52-5464e450fabd
+	Thu, 13 Nov 2014 12:03:31 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-d6-5464e461fe33
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
 Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
@@ -22,26 +22,26 @@ Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         Thierry Reding <thierry.reding@gmail.com>,
         Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH 2/8] thermal:cpu cooling:kirkwood: Provide deferred probing for
- kirkwood driver
-Date: Thu, 13 Nov 2014 18:02:39 +0100
-Message-id: <1415898165-27406-3-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing for
+ tegra driver
+Date: Thu, 13 Nov 2014 18:02:42 +0100
+Message-id: <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
 References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
  <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jQd2AJykhBqs7jC02zljPajH/yjVW
-	i9OnFrBanHv1iMXibXOxxavDuxgt3jzitnjzcDOjxeVdc9gsPvceYbTo/DKLzeLB1WlsFk8e
-	9rFZvDrYxmLxc9c8FotjJ2awOgh4PNl0kdFj56y77B6L97xk8lg37S2zx4HJ51g9epvfsXl8
-	OzORxaNvyypGj6c/9jJ7fN4k57FxbmgAdxSXTUpqTmZZapG+XQJXxup3q5kLNnJWHNo4k7GB
-	8Tt7FyMnh4SAicSkuZNYIWwxiQv31rN1MXJxCAlMZ5T4d7KFEcLpYpL4eOAOWBWbgJ7E57tP
-	mUBsEQFvidf7poMVMQu8ZpE49KMBaCwHh7BAosTGOSUgNSwCqhJPVzUwg9i8Am4SXTdXskFs
-	U5TofjYBzOYUcJc4euITO8SyZkaJz32zWCcw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpec
-	n7uJERzoz6R2MK5ssDjEKMDBqMTD+4IlJUSINbGsuDL3EKMEB7OSCG/1faAQb0piZVVqUX58
-	UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxrkxwqapjDoST1wKb7+ZHBo8
-	32N345njmZP/3bKzWhymqmV1cdK6b/feK8SdcBHUM9Zdzp8ivsPmOZO+3Qvh0y9nMfxNe+yu
-	fDZyhfB2B4cr/zZ0n5L723rMxvGVUlvmn8gHi99OuWlm17JHWan7O9/nOHt9a+lLi4r2CFrb
-	Vi6+ffju/VW5FkosxRmJhlrMRcWJAD2tgtZwAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jQd3EJykhBlNfWFpsnLGe1WL+lWus
+	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbfHm4WZGi8u75rBZfO49wmjR+WUWm8WDq9PYLJ48
+	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5LFu2ltmjwOTz7F69Da/Y/P4
+	dmYii0ffllWMHk9/7GX2+LxJzmPj3NAA7igum5TUnMyy1CJ9uwSujOMbFrMVfOKoeLxtO2MD
+	4272LkYODgkBE4kD91K7GDmBTDGJC/fWs4HYQgLTGSU6jtZ3MXIB2V1MEqc/32MHSbAJ6El8
+	vvuUCcQWEfCWeL1vOiNIEbPAaxaJQz8awIYKC0RLvGyqBalhEVCVWLPmFyOIzSvgJnHz6VU2
+	iGWKEt3PJoDZnALuEkdPfGKHWNbMKPG5bxbrBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1
+	kvNzNzGCg/yZ9A7GVQ0WhxgFOBiVeHhfsKSECLEmlhVX5h5ilOBgVhLhrb4PFOJNSaysSi3K
+	jy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cAoM1no4P49i+yfVrq1yT1M
+	WttrHnNkWq/R7aDmP2WH8uMe+b5eco6pS2Gmx4wQJi/HDbGpqf47nsoFpD/5XsXo+ydk9bNH
+	65LOmykdyFjFNC+qfcGDue+zV74QmMWZYzJnwdRTLXKNQoZGNZc99xbLx5x/vNJsy4sUoUSt
+	RKfjzh9OBac93ZSsxFKckWioxVxUnAgAEOB7dW4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -53,24 +53,24 @@ This code is similar to the one already available in imx_thermal.c file.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 ---
- drivers/thermal/kirkwood_thermal.c | 7 +++++++
+ drivers/thermal/tegra_soctherm.c | 7 +++++++
  1 file changed, 7 insertions(+)
 
-diff --git a/drivers/thermal/kirkwood_thermal.c b/drivers/thermal/kirkwood_thermal.c
-index 3b034a0..e938291 100644
---- a/drivers/thermal/kirkwood_thermal.c
-+++ b/drivers/thermal/kirkwood_thermal.c
-@@ -21,6 +21,7 @@
- #include <linux/module.h>
+diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
+index 70f7e9e..9c5aaa4 100644
+--- a/drivers/thermal/tegra_soctherm.c
++++ b/drivers/thermal/tegra_soctherm.c
+@@ -26,6 +26,7 @@
  #include <linux/platform_device.h>
+ #include <linux/reset.h>
  #include <linux/thermal.h>
 +#include <linux/cpufreq.h>
  
- #define KIRKWOOD_THERMAL_VALID_OFFSET	9
- #define KIRKWOOD_THERMAL_VALID_MASK	0x1
-@@ -75,6 +76,12 @@ static int kirkwood_thermal_probe(struct platform_device *pdev)
- 	struct kirkwood_thermal_priv *priv;
- 	struct resource *res;
+ #include <soc/tegra/fuse.h>
+ 
+@@ -346,6 +347,12 @@ static int tegra_soctherm_probe(struct platform_device *pdev)
+ 
+ 	const struct tegra_tsensor *tsensors = t124_tsensors;
  
 +#ifdef CONFIG_CPU_THERMAL
 +	if (!cpufreq_get_current_driver()) {
@@ -78,8 +78,8 @@ index 3b034a0..e938291 100644
 +		return -EPROBE_DEFER;
 +	}
 +#endif
- 	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
- 	if (!priv)
+ 	tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra), GFP_KERNEL);
+ 	if (!tegra)
  		return -ENOMEM;
 -- 
 2.0.0.rc2
