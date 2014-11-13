@@ -1,92 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934782AbaKMXiD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:38:03 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:44796 "HELO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S934539AbaKMXh6 (ORCPT
+	id S964878AbaKMXiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:38:20 -0500
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:37696 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934432AbaKMXiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:37:58 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: netdev@vger.kernel.org
-Cc: matthew.vick@intel.com, jeffrey.t.kirsher@intel.com, linux.nics@intel.com,
-        therbert@google.com, gerlitz.or@gmail.com, alexander.duyck@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2 net 2/2] fm10k: Implement ndo_gso_check()
-Date: Thu, 13 Nov 2014 15:36:41 -0800
-Message-Id: <1415921801-10452-2-git-send-email-joestringer@nicira.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415921801-10452-1-git-send-email-joestringer@nicira.com>
-References: <1415921801-10452-1-git-send-email-joestringer@nicira.com>
+	Thu, 13 Nov 2014 18:38:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141113152247.GB1408@swordfish>
+References: <1415885857-5283-1-git-send-email-opensource.ganesh@gmail.com>
+	<20141113152247.GB1408@swordfish>
+Date: Fri, 14 Nov 2014 07:38:16 +0800
+Message-ID: <CADAEsF80gaDH=uctJeU7_uRBXvL4D_vX_y6Jiw71-u+uErB7ZQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm/zsmalloc: avoid unregister a NOT-registered
+ zsmalloc zpool driver
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        ddstreet@ieee.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ndo_gso_check() was recently introduced to allow NICs to report the
-offloading support that they have on a per-skb basis. Add an
-implementation for this driver which checks for something that looks
-like VXLAN.
+Hello
 
-Signed-off-by: Joe Stringer <joestringer@nicira.com>
----
-v2: Reuse fm10k_tx_encap_offload().
----
- drivers/net/ethernet/intel/fm10k/fm10k.h        |    1 +
- drivers/net/ethernet/intel/fm10k/fm10k_main.c   |    2 +-
- drivers/net/ethernet/intel/fm10k/fm10k_netdev.c |    8 ++++++++
- 3 files changed, 10 insertions(+), 1 deletion(-)
+2014-11-13 23:22 GMT+08:00 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>:
+> On (11/13/14 21:37), Mahendran Ganesh wrote:
+>> Now zsmalloc can be registered as a zpool driver into zpool when
+>> CONFIG_ZPOOL is enabled. During the init of zsmalloc, when error happens,
+>> we need to do cleanup. But in current code, it will unregister a not yet
+>> registered zsmalloc zpool driver(*zs_zpool_driver*).
+>>
+>> This patch puts the cleanup in zs_init() instead of calling zs_exit()
+>> where it will unregister a not-registered zpool driver.
+>>
+>> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
+>> ---
+>>  mm/zsmalloc.c |   12 ++++++++----
+>>  1 file changed, 8 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+>> index 839a48c..3d2bb36 100644
+>> --- a/mm/zsmalloc.c
+>> +++ b/mm/zsmalloc.c
+>> @@ -907,10 +907,8 @@ static int zs_init(void)
+>>       __register_cpu_notifier(&zs_cpu_nb);
+>>       for_each_online_cpu(cpu) {
+>>               ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+>> -             if (notifier_to_errno(ret)) {
+>> -                     cpu_notifier_register_done();
+>> +             if (notifier_to_errno(ret))
+>>                       goto fail;
+>> -             }
+>>       }
+>>
+>>       cpu_notifier_register_done();
+>> @@ -920,8 +918,14 @@ static int zs_init(void)
+>>  #endif
+>>
+>>       return 0;
+>> +
+>>  fail:
+>> -     zs_exit();
+>> +     for_each_online_cpu(cpu)
+>> +             zs_cpu_notifier(NULL, CPU_UP_CANCELED, (void *)(long)cpu);
+>> +     __unregister_cpu_notifier(&zs_cpu_nb);
+>> +
+>> +     cpu_notifier_register_done();
+>> +
+>>       return notifier_to_errno(ret);
+>
+> so we duplicate same code, and there is a bit confusing part
+> now: zs_cpu_notifier(CPU_UP_CANCELED) and zs_cpu_notifier(CPU_DEAD)
+> calls.
 
-diff --git a/drivers/net/ethernet/intel/fm10k/fm10k.h b/drivers/net/ethernet/intel/fm10k/fm10k.h
-index 42eb434..d38f088 100644
---- a/drivers/net/ethernet/intel/fm10k/fm10k.h
-+++ b/drivers/net/ethernet/intel/fm10k/fm10k.h
-@@ -443,6 +443,7 @@ netdev_tx_t fm10k_xmit_frame_ring(struct sk_buff *skb,
- 				  struct fm10k_ring *tx_ring);
- void fm10k_tx_timeout_reset(struct fm10k_intfc *interface);
- bool fm10k_check_tx_hang(struct fm10k_ring *tx_ring);
-+__be16 fm10k_tx_encap_offload(struct sk_buff *skb);
- void fm10k_alloc_rx_buffers(struct fm10k_ring *rx_ring, u16 cleaned_count);
- 
- /* PCI */
-diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_main.c b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-index 3a85291..1144e14 100644
---- a/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-+++ b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-@@ -727,7 +727,7 @@ static struct ethhdr *fm10k_gre_is_nvgre(struct sk_buff *skb)
- 	return (struct ethhdr *)(&nvgre_hdr->tni);
- }
- 
--static __be16 fm10k_tx_encap_offload(struct sk_buff *skb)
-+__be16 fm10k_tx_encap_offload(struct sk_buff *skb)
- {
- 	struct ethhdr *eth_hdr;
- 	u8 l4_hdr = 0;
-diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c b/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-index 8811364..6e8630a 100644
---- a/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-+++ b/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-@@ -1350,6 +1350,13 @@ static void fm10k_dfwd_del_station(struct net_device *dev, void *priv)
- 	}
- }
- 
-+static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)
-+{
-+	return (!(skb_shinfo(skb)->gso_type &
-+		  (SKB_GSO_UDP_TUNNEL | SKB_GSO_GRE)) ||
-+		fm10k_tx_encap_offload(skb));
-+}
-+
- static const struct net_device_ops fm10k_netdev_ops = {
- 	.ndo_open		= fm10k_open,
- 	.ndo_stop		= fm10k_close,
-@@ -1372,6 +1379,7 @@ static const struct net_device_ops fm10k_netdev_ops = {
- 	.ndo_do_ioctl		= fm10k_ioctl,
- 	.ndo_dfwd_add_station	= fm10k_dfwd_add_station,
- 	.ndo_dfwd_del_station	= fm10k_dfwd_del_station,
-+	.ndo_gso_check		= fm10k_gso_check,
- };
- 
- #define DEFAULT_DEBUG_LEVEL_SHIFT 3
--- 
-1.7.10.4
+Thanks for your review.
 
+CPU_UP_CANCELED and CPU_DEAD have different scenario.
+CPU_UP_CANCELED is better for fail to complete initialization. While
+CPU_DEAD is better for exit(such as removing module)
+
+Thanks.
+
+>
+> how about something like this?
+>
+> Factor out zsmalloc cpu notifier unregistration code and call
+> it from both zs_exit() and zs_init() error path.
+>
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>
+> ---
+>
+>  mm/zsmalloc.c | 20 +++++++++++---------
+>  1 file changed, 11 insertions(+), 9 deletions(-)
+>
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index b3b57ef..c4d2d60 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -881,14 +881,10 @@ static struct notifier_block zs_cpu_nb = {
+>         .notifier_call = zs_cpu_notifier
+>  };
+>
+> -static void zs_exit(void)
+> +static inline void zs_unregister_cpu_notifier()
+>  {
+>         int cpu;
+>
+> -#ifdef CONFIG_ZPOOL
+> -       zpool_unregister_driver(&zs_zpool_driver);
+> -#endif
+> -
+>         cpu_notifier_register_begin();
+>
+>         for_each_online_cpu(cpu)
+> @@ -898,6 +894,14 @@ static void zs_exit(void)
+>         cpu_notifier_register_done();
+>  }
+>
+> +static void zs_exit(void)
+> +{
+> +#ifdef CONFIG_ZPOOL
+> +       zpool_unregister_driver(&zs_zpool_driver);
+> +#endif
+> +       zs_unregister_cpu_notifier();
+> +}
+> +
+>  static int zs_init(void)
+>  {
+>         int cpu, ret;
+> @@ -907,10 +911,8 @@ static int zs_init(void)
+>         __register_cpu_notifier(&zs_cpu_nb);
+>         for_each_online_cpu(cpu) {
+>                 ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+> -               if (notifier_to_errno(ret)) {
+> -                       cpu_notifier_register_done();
+> +               if (notifier_to_errno(ret))
+>                         goto fail;
+> -               }
+>         }
+>
+>         cpu_notifier_register_done();
+> @@ -921,7 +923,7 @@ static int zs_init(void)
+>
+>         return 0;
+>  fail:
+> -       zs_exit();
+> +       zs_unregister_cpu_notifier();
+>         return notifier_to_errno(ret);
+>  }
+>
