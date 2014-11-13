@@ -1,124 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934194AbaKMVCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:02:32 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34409 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933636AbaKMVCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:02:30 -0500
-Message-ID: <54651C48.90809@ti.com>
-Date: Thu, 13 Nov 2014 15:02:00 -0600
-From: Suman Anna <s-anna@ti.com>
+	id S934147AbaKMVLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:11:13 -0500
+Received: from mail-bn1on0132.outbound.protection.outlook.com ([157.56.110.132]:56622
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933636AbaKMVLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 16:11:12 -0500
+X-WSS-ID: 0NEZXIG-07-T2T-02
+X-M-MSG: 
+Message-ID: <54651E61.8030500@amd.com>
+Date: Thu, 13 Nov 2014 23:10:57 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>
-CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv6 4/5] hwspinlock/core: add common OF helpers
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com> <1410553499-55951-5-git-send-email-s-anna@ti.com> <CAK=WgbamdqAufjC4Xb5moERRBSB-cO6c1RPTE=f+dp75F+Eh7A@mail.gmail.com> <5463B5B6.8040709@ti.com> <CAK=WgbbatPTiz3efDWHVEcuug_UQfkCViMoK0zcfUg3JwB2oTA@mail.gmail.com> <5464EC7A.7050603@ti.com> <CAK=WgbbodS8GsUxQbkyCp6hAG+Ko4LMirx+pUa8_fUdxWFasvw@mail.gmail.com>
-In-Reply-To: <CAK=WgbbodS8GsUxQbkyCp6hAG+Ko4LMirx+pUa8_fUdxWFasvw@mail.gmail.com>
+To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        "John Bridgman" <John.Bridgman@amd.com>,
+        Oded Gabbay <oded.gabbay@amd.com>
+Subject: HSA RT is now Open Source
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(15975445006)(59896002)(83506001)(46102003)(64706001)(92726001)(15202345003)(47776003)(86362001)(20776003)(92566001)(99136001)(101416001)(84676001)(80316001)(64126003)(4396001)(50466002)(44976005)(68736004)(23676002)(19580395003)(102836001)(31966008)(65806001)(65956001)(33656002)(65816999)(107046002)(105586002)(36756003)(54356999)(87266999)(77156002)(87936001)(62966003)(50986999)(95666004)(120916001)(106466001)(21056001)(97736003)(229853001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Forefront-PRVS: 0394259C80
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+Hi,
 
-On 11/13/2014 01:45 PM, Ohad Ben-Cohen wrote:
-> Hi Suman,
-> 
-> On Thu, Nov 13, 2014 at 7:38 PM, Suman Anna <s-anna@ti.com> wrote:
->> No, not always, because, either of them can be optional between
->> different platform implementations. For example, on OMAP, the number of
->> locks is read from an IP register, and not coded in DT. Similarly,
->> base_id can be optional on SoCs that don't have multiple IP instances.
-> 
-> It can, but base_id isn't optional today --- it must be provided via
-> platform_data --- 
+I'm pleased to announce that AMD has published the full code of the HSA
+Runtime library.
 
-That was the case before DT, right. As it is, the hwspinlock core has no
-knowledge of platform_data, it was used by the individual implementation
-drivers to supply the base_id in the registration API.
-The platform_data will/should become obsolete with DT devices.
+The code can be found at:
+https://github.com/HSAFoundation/HSA-Runtime-Reference-Source
 
-and I'm not sure we should implicitly change this
-> semantics while moving to DT. We never guessed the base_id before,
-> even if there was only a single IP instance, and I'm not convinced we
-> should start doing it now.
+As I stated in the amdkfd v5 cover letter, this release, coupled with the r600
+LLVM back-end, provides a complete userspace Open Source stack/solution for
+running HSA applications using kernels written in OpenCL C99 on top of amdkfd.
 
-OK, if we make hwlock-base-id mandatory in DT, we will get past 1
-problem (that of looking up base-id for a specific device).
+As promised, the git repository also contains an HSA port of the OpenCL
+MatrixMultiplication application, which can be used to demonstrate how the
+compiler, stack, libhsakmt and, of course, amdkfd work together. Together with
+the c file of the application, we have provided the source of the OpenCL kernel
+and a binary version of that kernel.
 
-> 
-> About the number of locks - why do we even need it at this point? the
-> global lock id should just be base_id + the lock index.
+There are complete instructions in the git repo on how to build the HSA RT and
+the HSA application from source. In addition, if someone wishes to compile the
+OpenCL kernel, there are instructions on how to do it (using the modified r600
+LLVM).
 
-The number of locks would still be needed for validation purposes.
+If anyone is interested in running the sample HSA application on Kaveri H/W,
+please take my latest amdkfd-v6 branch and together with the updated Kaveri
+firmware files.
 
-OK, lets take an example. I have say 2 device instances, say
-	hwlock1: hwlock@0 {
-		hwlock-num-locks = <32>
-		hwlock-base-id = <0>;
-		#hwlock-cells = <1>;
-	};
-	hwlock2: hwlock@0 {
-		hwlock-num-locks = <32>
-		hwlock-base-id = <32>;
-		#hwlock-cells = <1>;
-	};
+The amdkfd-v6 branch can be found at:
+http://cgit.freedesktop.org/~gabbayo/linux/?h=amdkfd-v6
 
-	some-client {
-		hwlocks = <&hwlock1 32>, <&hwlock2 0>;
-	};
+The firmware can be found at :
+http://people.freedesktop.org/~gabbayo/firmware/ucode.tar.gz
 
-The first args value is incorrect, and I expect the API to return an
-error. I don't think the API can make assumptions that all passed in
-values will be correct. What do you suggest that the API do here?
-The above locks are equivalent if we forgo checking.
+Finally, I would like to thank the HSA RT team, the Finalizer team, the Open
+Source graphics team and last but not least, John Bridgman, for helping with
+this release.
 
-> 
->> IMHO, this life cycle management is not that complicated
-> 
-> It's always very easy to add code, really. It is never complicated.
-> But then gradually the code becomes harder to maintain, debug, and
-> change.
-> 
-> On the contrary, achieving the same functionality with less code is
-> always harder. But when we get there, the results are pretty
-> satisfying.
-> 
-> In this case I still feel the extra linked list is redundant.
-> 
-> Please try it: ditch the "hwspinlock/core: maintain a list of
-> registered hwspinlock banks" patch, and replace of_hwspin_lock_get_id
-> with a slim method that just returns the base_id + the lock index. Let
-> me know if it works for you.
-
-Yeah, it will work (provided base-id is mandatory) and we drop the
-support for
-1. phandle args-specifier validation
-2. Deferred probing
-
-One solution to handle #1 is to also make the hwlock-num-locks property
-also mandatory (even though it could have been read from a register and
-I wonder what implementations should do if there is a mismatch between
-DT provided value and the value read from IP register). I am not sure
-what the DT maintainers' stance is on this, as we are forcing that to
-solve an implementation detail in the hwspinlock core.
-
-And, how do you propose we solve the problem of deferred probing? This
-was the solution that is resolving both the problems without changing
-return codes on existing API (that was my first attempt, but you
-preferred not to change API return convention).
-
-Kumar, Mark,
-Any comments here?
-
-regards
-Suman
+	-Oded
