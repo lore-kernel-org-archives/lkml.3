@@ -1,114 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672AbaKMSkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 13:40:22 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51462 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933526AbaKMSkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 13:40:21 -0500
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ia64: Be consistent in the type of the PCI_CONTROLLER() macro argument.
-Date: Thu, 13 Nov 2014 18:39:43 +0000
-Message-Id: <1415903983-32588-1-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 2.1.3
+	id S933720AbaKMSoE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 13:44:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62678 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932648AbaKMSoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 13:44:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,379,1413270000"; 
+   d="scan'208";a="621952520"
+Date: Thu, 13 Nov 2014 20:43:53 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andy Lutomirski <luto@amacapital.net>, intel-gfx@lists.freedesktop.org,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>, Ingo Molnar <mingo@kernel.org>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        H Peter Anvin <h.peter.anvin@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] x86: Use clwb in drm_clflush_virt_range
+Message-ID: <20141113184353.GV10649@intel.com>
+References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1415731396-19364-7-git-send-email-ross.zwisler@linux.intel.com>
+ <5464220D.6090204@amacapital.net>
+ <20141113112017.GA14416@pd.tnic>
+ <CALCETrV2E-LBHLTV6zJ=nfw8ijjV8VZoYAinXdg9ZaOryfqquw@mail.gmail.com>
+ <20141113171133.GD14070@pd.tnic>
+ <20141113173354.GT10649@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141113173354.GT10649@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI_CONTROLLER() macro in include/asm/pci.h expects an argument "busdev"
-which implies a 'struct pci_bus *' type of variable (or at least that
-is the type of most of the invocations). Correct the cases where the
-macro is called with a 'struct pci_dev *' variable as argument.
+On Thu, Nov 13, 2014 at 07:33:54PM +0200, Ville Syrjälä wrote:
+> On Thu, Nov 13, 2014 at 06:11:33PM +0100, Borislav Petkov wrote:
+> > On Thu, Nov 13, 2014 at 08:38:23AM -0800, Andy Lutomirski wrote:
+> > > On Nov 13, 2014 3:20 AM, "Borislav Petkov" <bp@alien8.de> wrote:
+> > > >
+> > > > On Wed, Nov 12, 2014 at 07:14:21PM -0800, Andy Lutomirski wrote:
+> > > > > On 11/11/2014 10:43 AM, Ross Zwisler wrote:
+> > > > > > If clwb is available on the system, use it in drm_clflush_virt_range.
+> > > > > > If clwb is not available, fall back to clflushopt if you can.
+> > > > > > If clflushopt is not supported, fall all the way back to clflush.
+> > > > >
+> > > > > I don't know exactly what drm_clflush_virt_range (and the other
+> > > > > functions you're modifying similarly) are for, but it seems plausible to
+> > > > > me that they're used before reads to make sure that non-coherent memory
+> > > > > sees updated data.  If that's true, then this will break it.
+> > > >
+> > > > Why would it break it? The updated cachelines will be in memory and
+> > > > subsequent reads will be serviced from the cache instead from going to
+> > > > memory as it is not invalidated as it would be by CLFLUSH.
+> > > >
+> > > > /me is puzzled.
+> > > 
+> > > Suppose you map some device memory WB, and then the device
+> > > non-coherently updates.  If you want the CPU to see it, you need
+> > > clflush or clflushopt.  Some architectures might do this for
+> > > dma_sync_single_for_cpu with DMA_FROM_DEVICE.
+> > 
+> > Ah, you're talking about the other way around - the device does the
+> > writes. Well, the usage sites are all in i915*, maybe we should ask
+> > them - it looks to me like this is only the CPU making stuff visible in
+> > the shared buffer but I don't know that code... intel-gfx CCed although
+> > dri-devel is already on CC.
+> 
+> We use it both ways in i915. So please don't break it.
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
----
- arch/ia64/hp/common/sba_iommu.c    | 2 +-
- arch/ia64/sn/kernel/io_acpi_init.c | 9 +++++----
- arch/ia64/sn/kernel/io_common.c    | 2 +-
- arch/ia64/sn/kernel/io_init.c      | 2 +-
- 4 files changed, 8 insertions(+), 7 deletions(-)
+Actually to clarify a bit, I think we shouldn't actually need the
+invalidate part for any modern platform with shared LLC. Apart from the
+display those tend to be fully coherent, so we only have to care about
+the display controller not seeing stale data in memory.
 
-diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
-index 344387a..fb5b085 100644
---- a/arch/ia64/hp/common/sba_iommu.c
-+++ b/arch/ia64/hp/common/sba_iommu.c
-@@ -256,7 +256,7 @@ static u64 prefetch_spill_page;
- 
- #ifdef CONFIG_PCI
- # define GET_IOC(dev)	((dev_is_pci(dev))						\
--			 ? ((struct ioc *) PCI_CONTROLLER(to_pci_dev(dev))->iommu) : NULL)
-+			 ? ((struct ioc *) PCI_CONTROLLER((to_pci_dev(dev))->bus)->iommu) : NULL)
- #else
- # define GET_IOC(dev)	NULL
- #endif
-diff --git a/arch/ia64/sn/kernel/io_acpi_init.c b/arch/ia64/sn/kernel/io_acpi_init.c
-index 0640739..426ea8e 100644
---- a/arch/ia64/sn/kernel/io_acpi_init.c
-+++ b/arch/ia64/sn/kernel/io_acpi_init.c
-@@ -358,18 +358,19 @@ sn_acpi_get_pcidev_info(struct pci_dev *dev, struct pcidev_info **pcidev_info,
- 	acpi_handle rootbus_handle;
- 	unsigned long long segment;
- 	acpi_status status;
-+	struct pci_bus *bus = dev->bus;
- 	struct acpi_buffer name_buffer = { ACPI_ALLOCATE_BUFFER, NULL };
- 
--	rootbus_handle = acpi_device_handle(PCI_CONTROLLER(dev)->companion);
-+	rootbus_handle = acpi_device_handle(PCI_CONTROLLER(bus)->companion);
-         status = acpi_evaluate_integer(rootbus_handle, METHOD_NAME__SEG, NULL,
-                                        &segment);
-         if (ACPI_SUCCESS(status)) {
--		if (segment != pci_domain_nr(dev)) {
-+		if (segment != pci_domain_nr(bus)) {
- 			acpi_get_name(rootbus_handle, ACPI_FULL_PATHNAME,
- 				&name_buffer);
- 			printk(KERN_ERR
- 			       "%s: Segment number mismatch, 0x%llx vs 0x%x for: %s\n",
--			       __func__, segment, pci_domain_nr(dev),
-+			       __func__, segment, pci_domain_nr(bus),
- 			       (char *)name_buffer.pointer);
- 			kfree(name_buffer.pointer);
- 			return 1;
-@@ -407,7 +408,7 @@ sn_acpi_get_pcidev_info(struct pci_dev *dev, struct pcidev_info **pcidev_info,
- 	/* Build up the pcidev_info.pdi_slot_host_handle */
- 	host_devfn = get_host_devfn(pcidev_match.handle, rootbus_handle);
- 	(*pcidev_info)->pdi_slot_host_handle =
--			((unsigned long) pci_domain_nr(dev) << 40) |
-+			((unsigned long) pci_domain_nr(bus) << 40) |
- 					/* bus == 0 */
- 					host_devfn;
- 	return 0;
-diff --git a/arch/ia64/sn/kernel/io_common.c b/arch/ia64/sn/kernel/io_common.c
-index 11f2275..e7d5d07 100644
---- a/arch/ia64/sn/kernel/io_common.c
-+++ b/arch/ia64/sn/kernel/io_common.c
-@@ -108,7 +108,7 @@ sn_pcidev_info_get(struct pci_dev *dev)
- 	struct pcidev_info *pcidev;
- 
- 	list_for_each_entry(pcidev,
--			    &(SN_PLATFORM_DATA(dev)->pcidev_info), pdi_list) {
-+			    &(SN_PLATFORM_DATA(dev->bus)->pcidev_info), pdi_list) {
- 		if (pcidev->pdi_linux_pcidev == dev)
- 			return pcidev;
- 	}
-diff --git a/arch/ia64/sn/kernel/io_init.c b/arch/ia64/sn/kernel/io_init.c
-index 0b5ce82..eaff214 100644
---- a/arch/ia64/sn/kernel/io_init.c
-+++ b/arch/ia64/sn/kernel/io_init.c
-@@ -164,7 +164,7 @@ sn_io_slot_fixup(struct pci_dev *dev)
- 		panic("%s: Unable to alloc memory for sn_irq_info", __func__);
- 
- 	/* Call to retrieve pci device information needed by kernel. */
--	status = sal_get_pcidev_info((u64) pci_domain_nr(dev),
-+	status = sal_get_pcidev_info((u64) pci_domain_nr(dev->bus),
- 		(u64) dev->bus->number,
- 		dev->devfn,
- 		(u64) __pa(pcidev_info),
+I have no idea which platforms support this instruction. If
+Baytrail/Braswell/Cherrytrail are on the list, then we have a problem.
+Otherwise we should probably be fine with it. But I'm not 100% sure
+about any future platforms that are still under wraps.
+
+Also ttm seems to use some of this stuff. Not sure what they expect
+from it.
+
 -- 
-2.1.3
-
+Ville Syrjälä
+Intel OTC
