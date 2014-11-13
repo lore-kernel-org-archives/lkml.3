@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaKMDIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 22:08:30 -0500
-Received: from mail-yk0-f201.google.com ([209.85.160.201]:43974 "EHLO
-	mail-yk0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaKMDI0 (ORCPT
+	id S1753967AbaKMDIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 22:08:52 -0500
+Received: from relay.variantweb.net ([104.131.199.242]:53830 "EHLO
+	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753850AbaKMDIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 22:08:26 -0500
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        James Hartley <James.Hartley@imgtec.com>,
-        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Subject: [PATCH V2 1/2] spi: Add binding document for IMG SPFI controller
-Date: Wed, 12 Nov 2014 19:08:15 -0800
-Message-Id: <1415848096-20079-2-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1415848096-20079-1-git-send-email-abrestic@chromium.org>
-References: <1415848096-20079-1-git-send-email-abrestic@chromium.org>
+	Wed, 12 Nov 2014 22:08:50 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, trivial@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] zbud, zswap: change module author email
+Date: Wed, 12 Nov 2014 21:08:46 -0600
+Message-Id: <1415848126-9775-1-git-send-email-sjennings@variantweb.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Synchronous Peripheral Flash Interface (SPFI) controller found
-on IMG SoCs supports single, dual, and (optionally) quad mode SPI
-transfers.
+Old email no longer viable.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Signed-off-by: Seth Jennings <sjennings@variantweb.net>
 ---
-Changes from v1:
- - spi-img.txt -> spi-img-spfi.txt
- - fixed commit subject
----
- .../devicetree/bindings/spi/spi-img-spfi.txt       | 37 ++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-img-spfi.txt
+ mm/zbud.c  | 2 +-
+ mm/zswap.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-img-spfi.txt b/Documentation/devicetree/bindings/spi/spi-img-spfi.txt
-new file mode 100644
-index 0000000..c7dd50f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-img-spfi.txt
-@@ -0,0 +1,37 @@
-+IMG Synchronous Peripheral Flash Interface (SPFI) controller
-+
-+Required properties:
-+- compatible: Must be "img,spfi".
-+- reg: Must contain the base address and length of the SPFI registers.
-+- interrupts: Must contain the SPFI interrupt.
-+- clocks: Must contain an entry for each entry in clock-names.
-+  See ../clock/clock-bindings.txt for details.
-+- clock-names: Must include the following entries:
-+  - spfi: SPI operating clock
-+  - sys: SPI system interface clock
-+- dmas: Must contain an entry for each entry in dma-names.
-+  See ../dma/dma.txt for details.
-+- dma-names: Must include the following entries:
-+  - rx
-+  - tx
-+- #address-cells: Must be 1.
-+- #size-cells: Must be 0.
-+
-+Optional properties:
-+- img,supports-quad-mode: Should be set if the interface supports quad mode
-+  SPI transfers.
-+
-+Example:
-+
-+spi@18100f00 {
-+	compatible = "img,spfi";
-+	reg = <0x18100f00 0x100>;
-+	interrupts = <GIC_SHARED 22 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&spi_clk>, <&system_clk>;
-+	clock-names = "spfi", "sys";
-+	dmas = <&mdc 9 0xffffffff 0>, <&mdc 10 0xffffffff 0>;
-+	dma-names = "rx", "tx";
-+
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+};
+diff --git a/mm/zbud.c b/mm/zbud.c
+index db8de74..4e387be 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -619,5 +619,5 @@ module_init(init_zbud);
+ module_exit(exit_zbud);
+ 
+ MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
++MODULE_AUTHOR("Seth Jennings <sjennings@variantweb.net>");
+ MODULE_DESCRIPTION("Buddy Allocator for Compressed Pages");
+diff --git a/mm/zswap.c b/mm/zswap.c
+index ea064c1..c154306 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -951,5 +951,5 @@ error:
+ late_initcall(init_zswap);
+ 
+ MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
++MODULE_AUTHOR("Seth Jennings <sjennings@variantweb.net>");
+ MODULE_DESCRIPTION("Compressed cache for swap pages");
 -- 
-2.1.0.rc2.206.gedb03e5
+1.9.3
 
