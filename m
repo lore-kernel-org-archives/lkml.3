@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640AbaKML1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:27:13 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:58692 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328AbaKML1K (ORCPT
+	id S932726AbaKML1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:27:52 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:39672 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396AbaKML1t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:27:10 -0500
-Date: Thu, 13 Nov 2014 12:27:07 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        gregkh@linux-foundation.org
-Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
-Message-ID: <20141113112706.GC23422@ulmo>
-References: <1415738970-7963-1-git-send-email-olof@lixom.net>
- <20141112122017.GC30821@ulmo.nvidia.com>
- <CAOesGMjmVJuaiFZf6msFtsGiQn6TOPatZ7V3p-KfaPqpXnrYmA@mail.gmail.com>
+	Thu, 13 Nov 2014 06:27:49 -0500
+Message-ID: <546495AB.9050308@arm.com>
+Date: Thu, 13 Nov 2014 11:27:39 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pAwQNkOnpTn9IO2O"
-Content-Disposition: inline
-In-Reply-To: <CAOesGMjmVJuaiFZf6msFtsGiQn6TOPatZ7V3p-KfaPqpXnrYmA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jiang Liu <jiang.liu@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC Part4 v1 00/17] Refine support of non-PCI-compliant Message
+References: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com> <546364FA.7010806@arm.com> <alpine.DEB.2.11.1411121512270.3935@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411121512270.3935@nanos>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 13 Nov 2014 11:27:40.0827 (UTC) FILETIME=[D5DA4EB0:01CFFF34]
+X-MC-Unique: 114111311274300201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thomas,
 
---pAwQNkOnpTn9IO2O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/11/14 14:46, Thomas Gleixner wrote:
+> On Wed, 12 Nov 2014, Marc Zyngier wrote:
+>> This patch introduces two optionnal fields to the msi_chip structure:
+>> - a pointer to an irq domain, describing the MSI domain associated
+>>   with this msi_chip. To be populated with msi_create_irq_domain.
+>> - a domain_alloc_irqs() callback that has the same purpose as
+>>   arch_setup_msi_irqs(), with the above domain as an additional
+>>   parameter.
+>>
+>> If both of these fields are non-NULL, then domain_alloc_irqs() is
+>> called, bypassing the setup_irq callback. This allows the MSI driver
+>> to use the domain stacking feature without mandating core support in
+>> the architecture.
+> 
+> I'd rather have the callback in the irqdomain itself. Along with a
+> callback to free the interrupts.
+> 
+> AFAICT is msi_chip more or less a wrapper around the actual MSI irq
+> domain. So we rather move towards assigning irqdomain to the pci bus
+> and get rid of msi_chip instead of adding another level of obscure
+> indirection through msi_chip.
 
-On Wed, Nov 12, 2014 at 09:07:20AM -0800, Olof Johansson wrote:
-> Hi Thierry,
->=20
->=20
->=20
-> On Wed, Nov 12, 2014 at 4:20 AM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
-> > On Tue, Nov 11, 2014 at 12:49:30PM -0800, Olof Johansson wrote:
-> >> There are general changes pending to make the /aliases/serial* entries
-> >> number the serial ports on the system. On tegra, so far the ports have=
- been
-> >> just numbered dynamically as they are configured so that makes them ch=
-ange.
-> >>
-> >> To avoid this, add specific aliases per board to keep the old numbers.=
- This
-> >> allows us to change the numbering by default on future SoCs while keep=
-ing the
-> >> numbering on existing boards.
-> >>
-> >> Signed-off-by: Olof Johansson <olof@lixom.net>
-> >> ---
-> >>
-> >> Stephen/Thierry/Alex, as noticed this week we really should try to get
-> >> this in before the 3.19 merge window so that the global aliases change
-> >> can happen there without regression.
-> >>
-> >> If you have more fixes queued up, feel free to add this to the next pu=
-ll
-> >> request. If not, a review and ack would be appreciated.
-> >>
-> >>  arch/arm/boot/dts/tegra114-dalmore.dts        |    1 +
-> >>  arch/arm/boot/dts/tegra114-roth.dts           |    4 ++++
-> >>  arch/arm/boot/dts/tegra114-tn7.dts            |    4 ++++
-> >>  arch/arm/boot/dts/tegra114.dtsi               |    7 -------
-> >>  arch/arm/boot/dts/tegra124-jetson-tk1.dts     |    1 +
-> >>  arch/arm/boot/dts/tegra124-nyan-big.dts       |    1 +
-> >>  arch/arm/boot/dts/tegra124-venice2.dts        |    1 +
-> >>  arch/arm/boot/dts/tegra124.dtsi               |    7 -------
-> >>  arch/arm/boot/dts/tegra20-harmony.dts         |    1 +
-> >>  arch/arm/boot/dts/tegra20-iris-512.dts        |    5 +++++
-> >>  arch/arm/boot/dts/tegra20-medcom-wide.dts     |    4 ++++
-> >>  arch/arm/boot/dts/tegra20-paz00.dts           |    2 ++
-> >>  arch/arm/boot/dts/tegra20-seaboard.dts        |    1 +
-> >>  arch/arm/boot/dts/tegra20-tamonten.dtsi       |    1 +
-> >>  arch/arm/boot/dts/tegra20-trimslice.dts       |    1 +
-> >>  arch/arm/boot/dts/tegra20-ventana.dts         |    1 +
-> >>  arch/arm/boot/dts/tegra20-whistler.dts        |    1 +
-> >>  arch/arm/boot/dts/tegra20.dtsi                |    8 --------
-> >>  arch/arm/boot/dts/tegra30-apalis-eval.dts     |    4 ++++
-> >>  arch/arm/boot/dts/tegra30-beaver.dts          |    1 +
-> >>  arch/arm/boot/dts/tegra30-cardhu.dtsi         |    2 ++
-> >>  arch/arm/boot/dts/tegra30-colibri-eval-v3.dts |    3 +++
-> >>  arch/arm/boot/dts/tegra30.dtsi                |    8 --------
-> >>  23 files changed, 39 insertions(+), 30 deletions(-)
-> >
-> > I have applied this to the for-3.19/dt branch.
->=20
-> Maybe I wasn't entirely clear -- I was proposing to include this in
-> the next batch of fixes for 3.18 so that the aliases processing code
-> can go in for 3.19. If we hold this until the merge window we run the
-> risk of having largeish parts of the merge window unbisectable (more
-> than if we merge this as part of the next/dt contents).
+I can see that putting the irq domain at the bus level makes a lot of 
+sense (assuming nobody tries to have multiple MSI controllers per bus...).
 
-Alex sent out two patches today that should go into 3.18, so let me
-prepare a pull request include those and your patch.
+So I'm starting with something like this:
 
-Thierry
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 640a1ec..07e50fc 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -41,6 +41,7 @@ struct irq_domain;
+ struct of_device_id;
+ struct irq_chip;
+ struct irq_data;
++struct device;
+ 
+ /* Number of irqs reserved for a legacy isa controller */
+ #define NUM_ISA_INTERRUPTS	16
+@@ -76,6 +77,10 @@ struct irq_domain_ops {
+ 		     unsigned int nr_irqs);
+ 	void (*activate)(struct irq_domain *d, struct irq_data *irq_data);
+ 	void (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
++	int (*prepare_alloc_irqs)(struct irq_domain *d, struct device *dev,
++				  unsigned int nr_irqs, int type);
++	int (*cleanup_free_irqs)(struct irq_domain *d, struct device *dev,
++				 unsigned int virq, unsigned int nr_irqs);
+ #endif
+ };
 
---pAwQNkOnpTn9IO2O
-Content-Type: application/pgp-signature
+How do you see this behaving? At the moment, I have the "prepare" callback
+directly calling into pci_msi_domain_alloc_irqs() so that the irqs get
+created, but I have the nagging feeling that it's not what you want... ;-)
+The main issue I can see is that if more than one domain in the stack
+implements that, who gets to call pci_msi_domain_alloc_irqs?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+If we try to decouple those two, there is a problem with the creation of
+the intermediate structure (the irq_alloc_info that's in Jiang's patches),
+as this is a arch/driver/whatever specific structure.
 
-iQIcBAEBAgAGBQJUZJWKAAoJEN0jrNd/PrOhw0UP/joUlwvdWbrpyImPDifXe7kH
-Fu1XVj7CNgxE9QE3PgFY1BcW29NZ+QBPlgWyKZ50BXTlQDkgAcmW0/16nqScUOCm
-NVAupEvP1+wEPrsXV9QJWkDKUADTljozvHt8IbTwpjzlxGJz0VwIeQfooPptsxth
-iKDQyGvOIUMeKbZQ+DIsokymtmLMSIiGw9Kc6cfC6dF/rbhP/BJtWBCdCeQuqZKf
-3Zz0lLN/vazCquXG+mc26nQVZ4xPPLq45omNq6No7YHVbYfFECBzjExR1jkPZBdY
-lfLVUE4KCDjVIoymNGlvLD3sCDUfCbAMtsCGfRe6vfAP+pg3q8yYXvmxmJ9feE4Y
-qmWfP2MC5h1kpTM/sPj8MLllak0OR/K5oM1D8rkBBO5QTKPr5i6YOpFTcBrR7+gV
-Dt1PbjgKq11CJ94pqdr15028qbt2vx0+QQ8Uh/YcxxZGWjxwUAneC2uTdz5CWExa
-Dd5jqjWgzLqsi3BgbOrNJMOvl7HWhgbVtBIQjtGL/DBag719tK6QlHDEtW4PsU/T
-UFjrK7Hg/A+C19QVv3ZHYKVajFh0nZ+r0Qx7o3lnlJkcXo4wI0RrobTw0qkb5xb9
-wWRXtQkLPlcHIRq2KqlQuUzdL48YTdqBgMEmJt88NwLu6k+m4In4QYV0bvpCJwAS
-oiEATliDEMdMt7UyVc66
-=K5s3
------END PGP SIGNATURE-----
+For reference, I've pushed out my current branch (very much a work in
+progress):
+http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/log/?h=irq/branch-from-hell
 
---pAwQNkOnpTn9IO2O--
+The commits related to this discussion are:
+http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/commit/?h=irq/branch-from-hell&id=56ea48e6389fe461cb3ddf01e19afcdcd8f12f66
+and
+http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/commit/?h=irq/branch-from-hell&id=855ab8b937967854dd070de2d0aaa07639e19526
+
+as well as the code making use of that:
+http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3-its.c?h=irq/branch-from-hell&id=9f8ed988c2411831b7512006642e484c151e9a7a#n1184
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
+
