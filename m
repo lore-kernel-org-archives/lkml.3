@@ -1,120 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964776AbaKMWNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 17:13:31 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:54070 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933765AbaKMWNa (ORCPT
+	id S934469AbaKMWOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 17:14:49 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42691 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933765AbaKMWOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 17:13:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        James Hartley <james.hartley@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        Damien Horsley <Damien.Horsley@imgtec.com>, dmaengine@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] dmaengine: Add driver for IMG MDC
-Date: Thu, 13 Nov 2014 23:13:10 +0100
-Message-ID: <11336807.gWpZoH7Aih@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415912288-26926-3-git-send-email-abrestic@chromium.org>
-References: <1415912288-26926-1-git-send-email-abrestic@chromium.org> <1415912288-26926-3-git-send-email-abrestic@chromium.org>
+	Thu, 13 Nov 2014 17:14:47 -0500
+Date: Thu, 13 Nov 2014 22:14:41 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Martin Kepplinger <martink@posteo.de>
+Cc: Chris Mason <clm@fb.com>, linux-btrfs@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs: Don't check for file->private_data on open(). It
+ is set by the core.
+Message-ID: <20141113221441.GL7996@ZenIV.linux.org.uk>
+References: <1415810308-24243-1-git-send-email-martink@posteo.de>
+ <1415815173.25389.2@mail.thefacebook.com>
+ <5463A84A.8010606@posteo.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:AjWcn0+IRpm4BJzwRAAmHoHBVak8o/oSYAOhcZiYWyG
- 3zDJRyP8RAofHgDWYpK1VGsB7fccTpz18Ge3JnhdDbZbJ2vfpO
- UhlJkD8flMpDYZesyUBVTPRBUx00dSkGRfRLFBrjkW9W4/SqCh
- tnWhnOG/qv5OOLKD0VVliFE482UYXN/5btEkm1nkC/GtfxWqYs
- vJkCW+2hNhkA7alQ2DkEJlPA7WzA9YR/ksnwrFKHXgDha0gI6b
- pfcr7IM8kfTu/WWQ9/yzQXYHGMxfp6wmNqPfQCTYkBXWAQnm/i
- ppHR+5ZttzEcaBvHJVndkKsjvSKdksSj1ApRu2QNdhGwQ6jOVH
- sKhP4XU8l7sBRyZnit+w=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5463A84A.8010606@posteo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 November 2014 12:58:08 Andrew Bresticker wrote:
-> +
-> +static bool mdc_filter_fn(struct dma_chan *chan, void *fn_param)
-> +{
-> +       struct mdc_filter_data *data = fn_param;
-> +       struct mdc_chan *mchan;
-> +
-> +       if (chan->device->dev->driver == &mdc_dma_driver.driver) {
-> +               mchan = to_mdc_chan(chan);
-> +               if (!(data->mask & BIT(mchan->chan_nr)))
-> +                       return false;
-> +               mchan->periph = data->periph;
-> +               mchan->thread = data->thread;
-> +               return true;
-> +       }
-> +       return false;
-> +}
-> +
-> +static struct dma_chan *mdc_of_xlate(struct of_phandle_args *dma_spec,
-> +                                    struct of_dma *ofdma)
-> +{
-> +       struct mdc_dma *mdma = ofdma->of_dma_data;
-> +       struct mdc_filter_data data;
-> +
-> +       if (dma_spec->args_count != 3)
-> +               return NULL;
-> +
-> +       data.periph = dma_spec->args[0];
-> +       data.mask = dma_spec->args[1];
-> +       data.thread = dma_spec->args[2];
-> +
-> +       return dma_request_channel(mdma->dma_dev.cap_mask, mdc_filter_fn,
-> +                                  &data);
-> +}
+On Wed, Nov 12, 2014 at 07:34:50PM +0100, Martin Kepplinger wrote:
 
-The filter function is broken if you ever have multiple instances
-of the device. Better avoid calling dma_request_channel and scan
-the channels that the device knows about.
+> > Btrfs uses this in the transaction start ioctl to record the transaction
+> > handle being started.  Ceph is the main user of the ioctl, and we could
+> > setup a hash table if needed.  But which call path in miscdevice is
+> > doing this?
+> > 
+> > With your patch in place, btrfs would end up overwriting the miscdevice
+> > private_data field, which would probably cause problems.
+> > 
+> > -chris
+> > 
+> 
+> I think i was mistaken, sorry. misc_open() used to set
+> file->private_data _only_ if you use set .open in struct file_operations.
+> 
+> In current -next this changed and file->private_data is set to struct
+> miscdevice on a (userspace's) open call (misc_open()) just in any case.
+> 
+> You do set .open so this wouldn't affect you and this patch can be ignored.
 
-> +
-> +#define PISTACHIO_CR_PERIPH_DMA_ROUTE(ch)      (0x120 + 0x4 * ((ch) / 4))
-> +#define PISTACHIO_CR_PERIPH_DMA_ROUTE_SHIFT(ch) (8 * ((ch) % 4))
-> +#define PISTACHIO_CR_PERIPH_DMA_ROUTE_MASK     0x3f
-> +
-> +static void pistachio_mdc_enable_chan(struct mdc_chan *mchan)
-> +{
-> +       struct mdc_dma *mdma = mchan->mdma;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&mdma->lock, flags);
-> +       regmap_update_bits(mdma->periph_regs,
-> +                          PISTACHIO_CR_PERIPH_DMA_ROUTE(mchan->chan_nr),
-> +                          PISTACHIO_CR_PERIPH_DMA_ROUTE_MASK <<
-> +                          PISTACHIO_CR_PERIPH_DMA_ROUTE_SHIFT(mchan->chan_nr),
-> +                          mchan->periph <<
-> +                          PISTACHIO_CR_PERIPH_DMA_ROUTE_SHIFT(mchan->chan_nr));
-> +       spin_unlock_irqrestore(&mdma->lock, flags);
-> +}
-> +
-> +static void pistachio_mdc_disable_chan(struct mdc_chan *mchan)
-> +{
-> +       struct mdc_dma *mdma = mchan->mdma;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&mdma->lock, flags);
-> +       regmap_update_bits(mdma->periph_regs,
-> +                          PISTACHIO_CR_PERIPH_DMA_ROUTE(mchan->chan_nr),
-> +                          PISTACHIO_CR_PERIPH_DMA_ROUTE_MASK <<
-> +                          PISTACHIO_CR_PERIPH_DMA_ROUTE_SHIFT(mchan->chan_nr),
-> +                          0);
-> +       spin_unlock_irqrestore(&mdma->lock, flags);
-> +}
-
-Regmap has its own locking, no need to add another level.
-
-	Arnd
+More to the point, this function is not reachable from anything in
+file_operations of any miscdevice.  btrfs_ioctl != btrfs_control_ioctl...
