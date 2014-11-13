@@ -1,133 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaKMBt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 20:49:56 -0500
-Received: from mga03.intel.com ([134.134.136.65]:50579 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437AbaKMBty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 20:49:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,372,1413270000"; 
-   d="scan'208";a="606982686"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "Alex Williamson" <alex.williamson@redhat.com>
-CC: "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLgAyIb0DAAAcBYD//4ReAP/+e7+A//z07vD/+eZFQP/zyH6A
-Date: Thu, 13 Nov 2014 01:46:20 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5AC5@SHSMSX104.ccr.corp.intel.com>
-References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
- <5461EC99.1000101@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0ABDBB25@SHSMSX104.ccr.corp.intel.com>
- <546324F4.8010002@redhat.com>
- <E959C4978C3B6342920538CF579893F00227680F@SHSMSX104.ccr.corp.intel.com>
- <54632ECA.4070903@redhat.com>
- <E959C4978C3B6342920538CF579893F002284398@SHSMSX104.ccr.corp.intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0ABE5A68@SHSMSX104.ccr.corp.intel.com>
- <E959C4978C3B6342920538CF579893F00228443D@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <E959C4978C3B6342920538CF579893F00228443D@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753654AbaKMB4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 20:56:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39724 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454AbaKMB4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 20:56:09 -0500
 MIME-Version: 1.0
+In-Reply-To: <20141112123232.GE6759@red-moon>
+References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
+	<20141111122901.GA4419@red-moon>
+	<CACVXFVNAc9axtESmo1zGZ3GMquTzjzWR3jx-b3tbhhLfQDDRcg@mail.gmail.com>
+	<20141111182418.GA5507@red-moon>
+	<CACVXFVPzo2qNGa5DWESS3TXor=u82_SxHb+xzrBCRXtcQxq4Cg@mail.gmail.com>
+	<20141112095846.GA6759@red-moon>
+	<CACVXFVNn=mDuJ9h3wavvo=H29hzFNisKAYEoF0OiFgm4wVAaLw@mail.gmail.com>
+	<20141112123232.GE6759@red-moon>
+Date: Thu, 13 Nov 2014 09:56:06 +0800
+Message-ID: <CACVXFVOpBh8eZ79XWa7QwFDeDyMXcjsXbXNh6U_JzqtGqP=3fQ@mail.gmail.com>
+Subject: Re: [PATCH] pci: generic host: make it more generic
+From: Ming Lei <ming.lei@canonical.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        alvise rigo <a.rigo@virtualopensystems.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAD1o22a020907
 
-Wu, Feng wrote on 2014-11-13:
-> 
-> 
-> Zhang, Yang Z wrote on 2014-11-13:
->> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
->> linux-kernel@vger.kernel.org
->> Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest
->> interrupt configuration changes
->> 
->> Wu, Feng wrote on 2014-11-13:
->>> 
->>> 
->>> kvm-owner@vger.kernel.org wrote on 2014-11-12:
->>>> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
->>>> linux-kernel@vger.kernel.org
->>>> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest
->>>> interrupt configuration changes
->>>> 
->>>> 
->>>> 
->>>> On 12/11/2014 10:19, Wu, Feng wrote:
->>>>>> You can certainly backport these patches to distros that do not
->>>>>> have VFIO.  But upstream we should work on VFIO first.  VFIO
->>>>>> has feature parity with legacy device assignment, and adding a
->>>>>> new feature that is not in VFIO would be a bad idea.
->>>>>> 
->>>>>> By the way, do you have benchmark results for it?  We have not
->>>>>> been able to see any performance improvement for APICv on e.g.
-> netperf.
->>>>> 
->>>>> Do you mean benchmark results for APICv itself or VT-d
-> Posted-Interrtups?
->>>> 
->>>> Especially for VT-d posted interrupts---but it'd be great to know
->>>> which workloads see the biggest speedup from APICv.
->>> 
->>> We have some draft performance data internally, please see the
->>> attached. For VT-d PI, I think we can get the biggest performance gain
->>> if the VCPU is running in non-root mode for most of the time (not in
->>> HLT state), since external interrupt from assigned devices will be
->>> delivered by guest directly in this case. That means we can run some
->>> cpu intensive workload in the guests.
->> 
->> Have you check that the CPU side posted interrupt is taking effect
->> in w/o VT-D PI case? Per my understanding, the performance gap
->> should be so large if you use CPU side posted interrupt. This data
->> more like the VT-d PI vs non PI(both VT-d and CPU).
-> 
-> Yes, this data is VT-d PI vs Non VT-d PI. The CPU side APICv mechanism
-> (including CPU side Posted-Interrtups) is enabled.
-
->From the CPU utilization data, it seems the environment of APICv is not reasonable to me. with current APICv, the interrupt should not deliver to the PCPU where vcpu is running. Otherwise, it will force the vcpu vmexit and the CPU side posted interrupt cannot take effect. Do you set the interrupt affinity manually?
-
-> 
-> Thanks,
-> Feng
-> 
->> 
->>> 
->>> Thanks,
->>> Feng
->>> 
->>>> 
->>>> Paolo
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>>> the body of a message to majordomo@vger.kernel.org More majordomo
->>>> info at http://vger.kernel.org/majordomo-info.html
->> 
->> 
->> Best regards,
->> Yang
+On Wed, Nov 12, 2014 at 8:32 PM, Lorenzo Pieralisi
+<lorenzo.pieralisi@arm.com> wrote:
+> On Wed, Nov 12, 2014 at 10:51:31AM +0000, Ming Lei wrote:
+>> On Wed, Nov 12, 2014 at 5:58 PM, Lorenzo Pieralisi
+>> <lorenzo.pieralisi@arm.com> wrote:
+>> > On Wed, Nov 12, 2014 at 02:12:12AM +0000, Ming Lei wrote:
+>> >> On Wed, Nov 12, 2014 at 2:24 AM, Lorenzo Pieralisi
+>> >> <lorenzo.pieralisi@arm.com> wrote:
+>> >> > On Tue, Nov 11, 2014 at 02:02:20PM +0000, Ming Lei wrote:
+>> >> >
+>> >> > [...]
+>> >> >
+>> >> >> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296535.html
+>> >> >> >
+>> >> >> > Patch above is already queued and applies most of the changes you have posted
+>> >> >> > above.
+>> >> >>
+>> >> >> I should have looked at list first before writing the patch, :-(
+>> >> >>
+>> >> >> Could you make it more generic so that other ARCHs(at least ARM64)
+>> >> >> can benefit from it too?
+>> >> >
+>> >> > That's our current goal, we are carrying out clean-ups to remove arch
+>> >> > dependency and move code to the generic layer PCI layer.
+>> >>
+>> >> OK, I am glad to test them after you post them out.
+>> >>
+>> >> At least, the 'struct gen_pci' pointer can be put in driver data
+>> >> of the platform_device now, which may remove dependency on
+>> >> pci_sysdata in this driver.  But ARCH's pcibios code still may
+>> >> access 'pci_sysdata', do you have patches or solution to handle
+>> >> this issue?
+>> >
+>> > I will consider adding struct gen_pci pointer as platform device
+>> > driver data, we are working on removing pci_sys_data dependency in the ARM
+>> > pcibios backend, and I do not think we are far from achieving that.
 >>
+>> Other ARCHs has sort of pcibios backend too, so that said it still
+>> depends on ARM or ARM64, doesn't it?
+>
+> Yes, so ? If you think there is a way to make this host controller work
 
+I mean suppose the driver/device is only for ARM and ARM64, it
+should be easy to support, and it may not be necessary to remove
+pci_sys_data dependency in the ARM, such as:
 
-Best regards,
-Yang
+- make a different code path for ARM64
+- or like this patch to fake sysdata for ARM
+- or what ever
 
+> on all arches you fancy using it on with no arch dependency in a proper
+> way step up to the plate and post the code, we will duly review it.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The only way I thought of is to bypass pcibios handling for the
+generic host controller, but it may not be agreed.
+
+Thanks,
+Ming Lei
