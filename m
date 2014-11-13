@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934123AbaKMVSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:18:18 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:42913 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906AbaKMVSR (ORCPT
+	id S934323AbaKMVSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:18:52 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:37301 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934175AbaKMVSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:18:17 -0500
-Date: Thu, 13 Nov 2014 13:18:16 -0800 (PST)
-From: Sage Weil <sweil@redhat.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for -rc5
-Message-ID: <alpine.DEB.2.00.1411131314460.10048@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 13 Nov 2014 16:18:49 -0500
+Date: Thu, 13 Nov 2014 16:18:47 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Benson Leung <bleung@chromium.org>
+cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        <linux-usb@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sameer Nanda <snanda@chromium.org>
+Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
+In-Reply-To: <CANLzEksGg0KyWOS+WYv_U8GzSJ4C_H0LTpdXvz8Ae-8mH6K41w@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1411131611001.945-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 13 Nov 2014, Benson Leung wrote:
 
-Please pull the following Ceph fixes from
+> On Thu, Nov 13, 2014 at 12:41 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > usbhid_stop probably doesn't need it.  And it should be possible to fix
+> > usbhid_close more easily just by interchanging the two lines:
+> >
+> > -                       usb_kill_urb(usbhid->urbin);
+> >                         usbhid->intf->needs_remote_wakeup = 0;
+> > +                       usb_kill_urb(usbhid->urbin);
+> >
+> > Have you tried this?
+> 
+> Yes, I tried that as well, and that does work.
+> 
+> I used the get/put because that's the way it was done in other
+> drivers, for example in synusb_close() in
+> drivers/input/mouse/synaptics_usb.c
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+In the patch description, you wrote:
 
-There is an overflow bug fix for cephfs from Zheng, a fix for handling 
-large authentication ticket buffers in libceph from Ilya, and a few fixes 
-for the request handling code from Ilya that affect RBD volumes.
+> When a usbhid device that does not support remote wake
+> ( i.e. !device_can_wakeup() ) is closed, we fail out of
+> autosuspend_check() because the autosuspend check is called
+> before the flag is cleared as a result of usb_kill_urb(usbhid->urbin);
 
-Thanks!
-sage
+If you interchange the two lines then the flag _will_ be cleared before
+usb_kill_urb() and autosuspend_check() can run.  This means your patch
+description is bogus.
 
-----------------------------------------------------------------
-Ilya Dryomov (4):
-      libceph: do not crash on large auth tickets
-      libceph: unlink from o_linger_requests when clearing r_osd
-      libceph: clear r_req_lru_item in __unregister_linger_request()
-      libceph: change from BUG to WARN for __remove_osd() asserts
+Alan Stern
 
-Yan, Zheng (1):
-      ceph: fix flush tid comparision
-
- fs/ceph/caps.c        |    2 +-
- net/ceph/crypto.c     |  169 ++++++++++++++++++++++++++++++++++++++-----------
- net/ceph/osd_client.c |    7 +-
- 3 files changed, 138 insertions(+), 40 deletions(-)
