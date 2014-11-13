@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286AbaKMJbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:31:13 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:14057 "EHLO
+	id S932381AbaKMJdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:33:13 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46643 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074AbaKMJbI (ORCPT
+	with ESMTP id S932197AbaKMJdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:31:08 -0500
-Message-ID: <54647A59.6080709@atmel.com>
-Date: Thu, 13 Nov 2014 10:31:05 +0100
+	Thu, 13 Nov 2014 04:33:11 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <pebolle@tiscali.nl>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91: remove unused CONFIG_ARCH_AT91SAM9G45 option
+Date: Thu, 13 Nov 2014 10:33:10 +0100
+Message-ID: <1415871190-32244-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1415617517.4862.44.camel@x220>
+References: <1415617517.4862.44.camel@x220>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: at91: remove CONFIG_MACH_SAMA5_DT
-References: <1415652353-15985-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1415652353-15985-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2014 21:45, Alexandre Belloni :
-> CONFIG_MACH_SAMA5_DT is useless as the only way to boot on sama5 based boards is
-> to use device tree.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+The CONFIG_ARCH_AT91SAM9G45 config option was removed by ("ARM: at91: remove
+at91sam9g45/9m10 legacy board support") so cleanup the use of it.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/Makefile.boot | 6 ------
+ arch/arm/mach-at91/board.h       | 4 ----
+ 2 files changed, 10 deletions(-)
 
-queued on at91-3.19-cleanup. Thanks.
-
-> ---
->  arch/arm/configs/sama5_defconfig |  1 -
->  arch/arm/mach-at91/Kconfig       | 10 +---------
->  arch/arm/mach-at91/Makefile      |  2 +-
->  3 files changed, 2 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
-> index c9089c927daf..299ca18bbd75 100644
-> --- a/arch/arm/configs/sama5_defconfig
-> +++ b/arch/arm/configs/sama5_defconfig
-> @@ -20,7 +20,6 @@ CONFIG_ARCH_AT91=y
->  CONFIG_SOC_SAM_V7=y
->  CONFIG_SOC_SAMA5D3=y
->  CONFIG_SOC_SAMA5D4=y
-> -CONFIG_MACH_SAMA5_DT=y
->  CONFIG_AEABI=y
->  CONFIG_UACCESS_WITH_MEMCPY=y
->  CONFIG_ZBOOT_ROM_TEXT=0x0
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 0e6d548b70d9..81ddd7d31d1e 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -58,6 +58,7 @@ config SOC_SAMA5
->  	select USE_OF
->  	select MEMORY
->  	select ATMEL_SDRAMC
-> +	select PHYLIB if NETDEVICES
->  
->  menu "Atmel AT91 System-on-Chip"
->  
-> @@ -221,15 +222,6 @@ config MACH_AT91SAM9_DT
->  	  Select this if you want to experiment device-tree with
->  	  an Atmel Evaluation Kit.
->  
-> -config MACH_SAMA5_DT
-> -	bool "Atmel SAMA5 Evaluation Kits with device-tree support"
-> -	depends on SOC_SAMA5
-> -	select USE_OF
-> -	select PHYLIB if NETDEVICES
-> -	help
-> -	  Select this if you want to experiment device-tree with
-> -	  an Atmel Evaluation Kit.
-> -
->  # ----------------------------------------------------------
->  
->  comment "AT91 Feature Selections"
-> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-> index 1b9ae0257a6e..25ae74837d23 100644
-> --- a/arch/arm/mach-at91/Makefile
-> +++ b/arch/arm/mach-at91/Makefile
-> @@ -80,7 +80,7 @@ obj-$(CONFIG_MACH_AT91RM9200_DT) += board-dt-rm9200.o
->  obj-$(CONFIG_MACH_AT91SAM9_DT) += board-dt-sam9.o
->  
->  # SAMA5 board with device-tree
-> -obj-$(CONFIG_MACH_SAMA5_DT) += board-dt-sama5.o
-> +obj-$(CONFIG_SOC_SAMA5)		+= board-dt-sama5.o
->  
->  # AT91X40 board-specific support
->  obj-$(CONFIG_MACH_AT91EB01)	+= board-eb01.o
-> 
-
-
+diff --git a/arch/arm/mach-at91/Makefile.boot b/arch/arm/mach-at91/Makefile.boot
+index 5309f9b6aabc..29ed0fa374ca 100644
+--- a/arch/arm/mach-at91/Makefile.boot
++++ b/arch/arm/mach-at91/Makefile.boot
+@@ -3,12 +3,6 @@
+ #   PARAMS_PHYS must be within 4MB of ZRELADDR
+ #   INITRD_PHYS must be in RAM
+ 
+-ifeq ($(CONFIG_ARCH_AT91SAM9G45),y)
+-   zreladdr-y	+= 0x70008000
+-params_phys-y	:= 0x70000100
+-initrd_phys-y	:= 0x70410000
+-else
+    zreladdr-y	+= 0x20008000
+ params_phys-y	:= 0x20000100
+ initrd_phys-y	:= 0x20410000
+-endif
+diff --git a/arch/arm/mach-at91/board.h b/arch/arm/mach-at91/board.h
+index 836e9a537e0c..d268ec3781dd 100644
+--- a/arch/arm/mach-at91/board.h
++++ b/arch/arm/mach-at91/board.h
+@@ -56,11 +56,7 @@ extern void __init at91_add_device_usbh_ehci(struct at91_usbh_data *data);
+ extern void __init at91_add_device_nand(struct atmel_nand_data *data);
+ 
+  /* I2C*/
+-#if defined(CONFIG_ARCH_AT91SAM9G45)
+-extern void __init at91_add_device_i2c(short i2c_id, struct i2c_board_info *devices, int nr_devices);
+-#else
+ extern void __init at91_add_device_i2c(struct i2c_board_info *devices, int nr_devices);
+-#endif
+ 
+  /* SPI */
+ extern void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices);
 -- 
-Nicolas Ferre
+1.8.2.2
+
