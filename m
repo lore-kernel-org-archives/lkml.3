@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507AbaKMAcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 19:32:01 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60303 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaKMAcA (ORCPT
+	id S1753574AbaKMAcb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 19:32:31 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53826 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752462AbaKMAc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 19:32:00 -0500
-X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 19:32:00 EST
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Date: Thu, 13 Nov 2014 09:32:52 +0900 (JST)
-Message-Id: <20141113.093252.798119849293775436.d.hatayama@jp.fujitsu.com>
-To: ptesarik@suse.cz
-Cc: ebiederm@xmission.com, vgoyal@redhat.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, anderson@redhat.com
-Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in
- VMCOREINFO
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20141112091434.0427bcc6@hananiah.suse.cz>
-References: <20141112.154042.59640143160036130.d.hatayama@jp.fujitsu.com>
-	<20141112091434.0427bcc6@hananiah.suse.cz>
-X-Mailer: Mew version 6.6 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Nov 2014 19:32:28 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Aaron Lu <aaron.lu@intel.com>, linux-acpi@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and XPower
+Date: Thu, 13 Nov 2014 01:53:23 +0100
+Message-ID: <1668657.Fqph6NyFNz@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141112094419.GC24004@x1>
+References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com> <3052882.EdcZmghHR3@vostro.rjw.lan> <20141112094419.GC24004@x1>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Tesarik <ptesarik@suse.cz>
-Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-Date: Wed, 12 Nov 2014 09:14:34 +0100
+On Wednesday, November 12, 2014 09:44:19 AM Lee Jones wrote:
+> On Wed, 12 Nov 2014, Rafael J. Wysocki wrote:
+> 
+> > On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
+> > > On Tue, 11 Nov 2014, Aaron Lu wrote:
+> > > 
+> > > > On 10/31/2014 02:08 PM, Aaron Lu wrote:
+> > > > > On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
+> > > > > ACPI operation regions defined for the Power Management Integrated Circuit
+> > > > > device, one is for power resource handling and one is for thermal: sensor
+> > > > > temperature reporting, trip point setting, etc. There are different PMIC
+> > > > > chips used on those platforms and though each has the same two operation
+> > > > > regions and functionality, their implementation is different so every PMIC
+> > > > > will need a driver. But since their functionality is similar, some common
+> > > > > code is abstracted into the intel_soc_pmic_opregion.c.
+> > > > > 
+> > > > > The last version is posted here:
+> > > > > https://lkml.org/lkml/2014/9/8/801
+> > > > > 
+> > > > > Changes since then:
+> > > > > 1 Move to drivers/acpi as discussed on the above thread;
+> > > > > 2 Added support for XPower AXP288 PMIC operation region support;
+> > > > > 3 Since operation region handler can not be removed(at the moment at least),
+> > > > >   use bool for the two operation region driver configs instead of tristate;
+> > > > >   Another reason to do this is that, with Mika's MFD ACPI support patch, all
+> > > > >   those MFD cell devices created will have the same modalias as their parent's
+> > > > >   so it doesn't make much sense to compile these drivers into modules.
+> > > > > 
+> > > > > Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
+> > > > > patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
+> > > > > driver XPower AXP288 and iio driver axp288_adc is located.
+> > > > 
+> > > > Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
+> > > > would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
+> > > > 
+> > > > Rafael,
+> > > > Can I get your ACK for the three patches?
+> > > > 
+> > > > Lee,
+> > > > Can you please take the series if Rafael gives it ack?
+> > > 
+> > > Yes, no problem.
+> > 
+> > Well, since the code is going to reside mostly in drivers/acpi, I think I should
+> > be applying the patches and from your response it looks like you are fine with
+> > them.  Is that correct?
+> 
+> I read that this set has dependencies on patches which are already in
+> the MFD tree.  If that's not the case please go ahead and apply them
+> with my Ack for the MFD components.
 
-> On Wed, 12 Nov 2014 15:40:42 +0900 (JST)
-> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
-> 
->> Currently, VMCOREINFO note information reports the virtual address of
->> phys_base that is assigned to symbol phys_base. But this doesn't make
->> sense because to refer to value of the phys_base, it's necessary to
->> get the value of phys_base itself we are now about to refer to.
->> 
->> Userland tools related to kdump such as makedumpfile and crash utility
->> so far have made some efforts to calculate phys_base from memory
->> mapping information on a variety of crash dump formats. But there's no
->> guarantee to keep maintaining it in the future.
->> 
->> This is also useful for crash dump mechanism running outside Linux
->> kernel such as virtual machine hypervisor such as qemu dump, which
->> ordinary users use via virsh dump, or ones implemented on vendor
->> specific firmware. They cannot get phys_base without special mechanism
->> because phys_base is kernel information.
->> 
->> To get VMCOREINFO in vmcore, it's easy to use strings and grep
->> commands like this; VMCOREINFO consists of simple string:
->> 
->> $ strings vmcore-3.10.0-121.el7.x86_64 | grep -E ".*VMCOREINFO.*" -A 100
->> VMCOREINFO
->> OSRELEASE=3.10.0-121.el7.x86_64
->> PAGESIZE=4096
->> ...
->> 
->> Similarly, this is also useful to get value of phys_base in kdump 2nd
->> kernel contained in vmcore using the above-mentioned external crash
->> dump mechanism; kdump 2nd kernel is an inherently relocated kernel.
->> 
->> This commit doesn't remove VMCOREINFO_SYMBOL(phys_base) line because
->> makedumpfile refers to it and if removing it, old versions
->> makedumpfile doesn't work well.
->> 
->> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
->> ---
->>  arch/x86/kernel/machine_kexec_64.c | 1 +
->>  1 file changed, 1 insertion(+)
->> 
->> diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
->> index 4859810..e6d00a4 100644
->> --- a/arch/x86/kernel/machine_kexec_64.c
->> +++ b/arch/x86/kernel/machine_kexec_64.c
->> @@ -334,6 +334,7 @@ void arch_crash_save_vmcoreinfo(void)
->>  #endif
->>  	vmcoreinfo_append_str("KERNELOFFSET=%lx\n",
->>  			      (unsigned long)&_text - __START_KERNEL);
->> +	VMCOREINFO_LENGTH(phys_base, phys_base);
-> 
-> While I fully agree with the concept, I don't like the use of
-> VMCOREINFO_LENGTH. LENGTH(symbol) has been used to store array length
-> in VMCOREINFO.
-> 
-> OTOH there is currently no good syntax for storing a value (short of
-> VMCOREINFO_NUMBER, but that one is signed). I think it would be best to
-> extend the VMCOREINFO syntax for storing variables, preferably in
-> hexadecimal, e.g.:
-> 
-> #define VMCOREINFO_VALUE(name, value) \
-> 	vmcoreinfo_append_str("VALUE(%s)=%lx\n", #name, (unsigned long) value)
-> 
-> This interface is somewhat suboptimal, because it can only store a
-> single long value. So, maybe we should dump the complete variable in
-> hex, or something similar...
-> 
-> Anyone has a better idea?
-> 
-> Petr T
+I thought you had a branch that I could pull into my tree and apply the patches
+on top of it.  At least that was my understanding of the Aaron's message, so
+please let me know if that's not the case.
 
-Just as you say, it's natural to write value of phys_base in
-hexadecimal format.
-
-For VMCOREINFO_VALUE, looking at the current helper macros, it seems
-to me more natural to make it have more specific name:
-
-#define VMCOREINFO_PHYS_BASE(value) \
-	vmcoreinfo_append_str("PHYS_BASE=%lx\n", (unsigned long) value)
-
---
-Thanks.
-HATAYAMA, Daisuke
+Rafael
 
