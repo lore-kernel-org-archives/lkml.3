@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934845AbaKMXwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:52:30 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:51148 "HELO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S934400AbaKMXw3 (ORCPT
+	id S934854AbaKMXxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:53:36 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38847 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934400AbaKMXxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:52:29 -0500
-Date: Thu, 13 Nov 2014 15:52:19 -0800
-From: Joe Stringer <joestringer@nicira.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Shannon Nelson <shannon.nelson@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>
-Cc: netdev@vger.kernel.org, matthew.vick@intel.com, linux.nics@intel.com,
-        therbert@google.com, gerlitz.or@gmail.com, alexander.duyck@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 net 2/2] fm10k: Implement ndo_gso_check()
-Message-ID: <20141113235219.GA35957@gmail.com>
-Mail-Followup-To: Joe Stringer <joestringer@nicira.com>,
-	Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-	Shannon Nelson <shannon.nelson@intel.com>,
-	Jesse Brandeburg <jesse.brandeburg@intel.com>,
-	netdev@vger.kernel.org, matthew.vick@intel.com,
-	linux.nics@intel.com, therbert@google.com, gerlitz.or@gmail.com,
-	alexander.duyck@gmail.com, linux-kernel@vger.kernel.org
-References: <1415921801-10452-1-git-send-email-joestringer@nicira.com>
- <1415921801-10452-2-git-send-email-joestringer@nicira.com>
- <1415922116.2454.34.camel@jtkirshe-mobl>
+	Thu, 13 Nov 2014 18:53:34 -0500
+Date: Thu, 13 Nov 2014 23:53:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Will Deacon'" <will.deacon@arm.com>,
+        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'Joe Perches'" <joe@perches.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+Message-ID: <20141113235322.GC4042@n2100.arm.linux.org.uk>
+References: <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
+ <20141030120127.GC32589@arm.com>
+ <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
+ <20141030135749.GE32589@arm.com>
+ <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415922116.2454.34.camel@jtkirshe-mobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 03:41:56PM -0800, Jeff Kirsher wrote:
-> On Thu, 2014-11-13 at 15:36 -0800, Joe Stringer wrote:
-> > ndo_gso_check() was recently introduced to allow NICs to report the
-> > offloading support that they have on a per-skb basis. Add an
-> > implementation for this driver which checks for something that looks
-> > like VXLAN.
-> > 
-> > Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> > ---
-> > v2: Reuse fm10k_tx_encap_offload().
-> > ---
-> >  drivers/net/ethernet/intel/fm10k/fm10k.h        |    1 +
-> >  drivers/net/ethernet/intel/fm10k/fm10k_main.c   |    2 +-
-> >  drivers/net/ethernet/intel/fm10k/fm10k_netdev.c |    8 ++++++++
-> >  3 files changed, 10 insertions(+), 1 deletion(-)
+On Fri, Oct 31, 2014 at 01:42:44PM +0800, Wang, Yalin wrote:
+> This patch add bitrev.h file to support rbit instruction,
+> so that we can do bitrev operation by hardware.
+> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> ---
+>  arch/arm/Kconfig              |  1 +
+>  arch/arm/include/asm/bitrev.h | 21 +++++++++++++++++++++
+>  2 files changed, 22 insertions(+)
+>  create mode 100644 arch/arm/include/asm/bitrev.h
 > 
-> Same with this one as well, thanks Joe.
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 89c4b5c..be92b3b 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -28,6 +28,7 @@ config ARM
+>  	select HANDLE_DOMAIN_IRQ
+>  	select HARDIRQS_SW_RESEND
+>  	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
+> +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
 
-Thanks Jeff.
+Looking at this, this is just wrong.  Take a moment to consider what
+happens if we build a kernel which supports both ARMv6 _and_ ARMv7 CPUs.
+What happens if an ARMv6 CPU tries to execute an rbit instruction?
 
-Could you remind me, is the equivalent i40e patch on your queue or were
-we still waiting on further feedback from Shannon/Jesse?
+Second point (which isn't obvious from your submissions on-list) is that
+you've loaded the patch system up with patches for other parts of the
+kernel tree for which I am not responsible for.  As such, I can't take
+those patches without the sub-tree maintainer acking them.  Also, the
+commit text in those patches look weird:
+
+6fire: Convert byte_rev_table uses to bitrev8
+
+Use the inline function instead of directly indexing the array.
+
+This allows some architectures with hardware instructions for bit
+reversals to eliminate the array.
+
+Signed-off-by: Joe Perches <(address hidden)>
+Signed-off-by: Yalin Wang <(address hidden)>
+
+Why is Joe signing off on these patches?  As his is the first sign-off,
+one assumes that he was responsible for creating the patch in the first
+place, but there is no From: line marking him as the author.  Shouldn't
+his entry be an Acked-by: ?
+
+Confused.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
