@@ -1,143 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaKMQRp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 11:17:45 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:44304 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304AbaKMQRo (ORCPT
+	id S1754081AbaKMQRx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 11:17:53 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:65368 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304AbaKMQRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 11:17:44 -0500
-Date: Thu, 13 Nov 2014 17:17:40 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Thu, 13 Nov 2014 11:17:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415808457-4030-1-git-send-email-ibanezchen@gmail.com>
+References: <1415808457-4030-1-git-send-email-ibanezchen@gmail.com>
+Date: Thu, 13 Nov 2014 17:17:48 +0100
+Message-ID: <CABuKBeJv0S2Q4W1fqb=8BUG6AEvFsZ6sY9QXuz=CRe+qbaYzQQ@mail.gmail.com>
+Subject: Re: [PATCH v6 1/4] ARM: mediatek: Add basic support for mt6592
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Howard Chen <ibanezchen@gmail.com>
+Cc: arm@kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        gregkh@linux-foundation.org
-Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
-Message-ID: <20141113161738.GB3613@ulmo>
-References: <1415738970-7963-1-git-send-email-olof@lixom.net>
- <20141112122017.GC30821@ulmo.nvidia.com>
- <CAOesGMjmVJuaiFZf6msFtsGiQn6TOPatZ7V3p-KfaPqpXnrYmA@mail.gmail.com>
- <20141113112706.GC23422@ulmo>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PmA2V3Z32TCmWXqI"
-Content-Disposition: inline
-In-Reply-To: <20141113112706.GC23422@ulmo>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-11-12 17:07 GMT+01:00 Howard Chen <ibanezchen@gmail.com>:
+> * A dtsi for boards based on Mediatek MT6592 SoCs
+> * Compatible string in arch/arm/mach-mediatek/mediatek.c
+>
+> Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+> ---
+>  arch/arm/boot/dts/mt6592.dtsi     | 97 +++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mediatek/mediatek.c |  1 +
+>  2 files changed, 98 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/mt6592.dtsi
+>
+> diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+> new file mode 100644
+> index 0000000..65aa81b
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/mt6592.dtsi
+> @@ -0,0 +1,97 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Howard Chen <ibanezchen@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <dt-bindings/interrupt-controller/irq.h>
+> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> +#include "skeleton.dtsi"
 
---PmA2V3Z32TCmWXqI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Regarding a discussion I had with Joe and Arnd [0], I think we should
+use skeleton64.dtsi here, right?
+The datasheets states that mt6592 supports up to 8 GB.
 
-On Thu, Nov 13, 2014 at 12:27:07PM +0100, Thierry Reding wrote:
-> On Wed, Nov 12, 2014 at 09:07:20AM -0800, Olof Johansson wrote:
-> > Hi Thierry,
-> >=20
-> >=20
-> >=20
-> > On Wed, Nov 12, 2014 at 4:20 AM, Thierry Reding
-> > <thierry.reding@gmail.com> wrote:
-> > > On Tue, Nov 11, 2014 at 12:49:30PM -0800, Olof Johansson wrote:
-> > >> There are general changes pending to make the /aliases/serial* entri=
-es
-> > >> number the serial ports on the system. On tegra, so far the ports ha=
-ve been
-> > >> just numbered dynamically as they are configured so that makes them =
-change.
-> > >>
-> > >> To avoid this, add specific aliases per board to keep the old number=
-s. This
-> > >> allows us to change the numbering by default on future SoCs while ke=
-eping the
-> > >> numbering on existing boards.
-> > >>
-> > >> Signed-off-by: Olof Johansson <olof@lixom.net>
-> > >> ---
-> > >>
-> > >> Stephen/Thierry/Alex, as noticed this week we really should try to g=
-et
-> > >> this in before the 3.19 merge window so that the global aliases chan=
-ge
-> > >> can happen there without regression.
-> > >>
-> > >> If you have more fixes queued up, feel free to add this to the next =
-pull
-> > >> request. If not, a review and ack would be appreciated.
-> > >>
-> > >>  arch/arm/boot/dts/tegra114-dalmore.dts        |    1 +
-> > >>  arch/arm/boot/dts/tegra114-roth.dts           |    4 ++++
-> > >>  arch/arm/boot/dts/tegra114-tn7.dts            |    4 ++++
-> > >>  arch/arm/boot/dts/tegra114.dtsi               |    7 -------
-> > >>  arch/arm/boot/dts/tegra124-jetson-tk1.dts     |    1 +
-> > >>  arch/arm/boot/dts/tegra124-nyan-big.dts       |    1 +
-> > >>  arch/arm/boot/dts/tegra124-venice2.dts        |    1 +
-> > >>  arch/arm/boot/dts/tegra124.dtsi               |    7 -------
-> > >>  arch/arm/boot/dts/tegra20-harmony.dts         |    1 +
-> > >>  arch/arm/boot/dts/tegra20-iris-512.dts        |    5 +++++
-> > >>  arch/arm/boot/dts/tegra20-medcom-wide.dts     |    4 ++++
-> > >>  arch/arm/boot/dts/tegra20-paz00.dts           |    2 ++
-> > >>  arch/arm/boot/dts/tegra20-seaboard.dts        |    1 +
-> > >>  arch/arm/boot/dts/tegra20-tamonten.dtsi       |    1 +
-> > >>  arch/arm/boot/dts/tegra20-trimslice.dts       |    1 +
-> > >>  arch/arm/boot/dts/tegra20-ventana.dts         |    1 +
-> > >>  arch/arm/boot/dts/tegra20-whistler.dts        |    1 +
-> > >>  arch/arm/boot/dts/tegra20.dtsi                |    8 --------
-> > >>  arch/arm/boot/dts/tegra30-apalis-eval.dts     |    4 ++++
-> > >>  arch/arm/boot/dts/tegra30-beaver.dts          |    1 +
-> > >>  arch/arm/boot/dts/tegra30-cardhu.dtsi         |    2 ++
-> > >>  arch/arm/boot/dts/tegra30-colibri-eval-v3.dts |    3 +++
-> > >>  arch/arm/boot/dts/tegra30.dtsi                |    8 --------
-> > >>  23 files changed, 39 insertions(+), 30 deletions(-)
-> > >
-> > > I have applied this to the for-3.19/dt branch.
-> >=20
-> > Maybe I wasn't entirely clear -- I was proposing to include this in
-> > the next batch of fixes for 3.18 so that the aliases processing code
-> > can go in for 3.19. If we hold this until the merge window we run the
-> > risk of having largeish parts of the merge window unbisectable (more
-> > than if we merge this as part of the next/dt contents).
->=20
-> Alex sent out two patches today that should go into 3.18, so let me
-> prepare a pull request include those and your patch.
+[0] https://lkml.org/lkml/2014/11/4/192
 
-In addition to the three patches I had to pull in a partial version of
-Lucas' patch to add the DT labels on Tegra124 that your patch references
-in the aliases node.
+> +
+> +/ {
+> +       compatible = "mediatek,mt6592";
+> +       interrupt-parent = <&gic>;
+> +
+> +       cpus {
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               cpu@0 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x0>;
+> +               };
+> +               cpu@1 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x1>;
+> +               };
+> +               cpu@2 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x2>;
+> +               };
+> +               cpu@3 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x3>;
+> +               };
+> +               cpu@4 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x4>;
+> +               };
+> +               cpu@5 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x5>;
+> +               };
+> +               cpu@6 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x6>;
+> +               };
+> +               cpu@7 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x7>;
+> +               };
+> +       };
+> +
+> +       system_clk: dummy13m {
+> +               compatible = "fixed-clock";
+> +               clock-frequency = <13000000>;
+> +               #clock-cells = <0>;
+> +       };
+> +
+> +       rtc_clk: dummy32k {
+> +               compatible = "fixed-clock";
+> +               clock-frequency = <32000>;
+> +               #clock-cells = <0>;
+> +       };
+> +
+> +       timer: timer@10008000 {
+> +               compatible = "mediatek,mt6577-timer";
+> +               reg = <0x10008000 0x80>;
+> +               interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
+> +               clocks = <&system_clk>, <&rtc_clk>;
+> +               clock-names = "system-clk", "rtc-clk";
+> +       };
+> +
+> +       gic: interrupt-controller@10211000 {
+> +               compatible = "arm,cortex-a7-gic";
+> +               interrupt-controller;
+> +               #interrupt-cells = <3>;
+> +               reg = <0x10211000 0x1000>,
+> +                     <0x10212000 0x1000>;
+> +       };
+> +
+> +};
+> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
+> index f2acf07..88e4626 100644
+> --- a/arch/arm/mach-mediatek/mediatek.c
+> +++ b/arch/arm/mach-mediatek/mediatek.c
+> @@ -19,6 +19,7 @@
+>
+>  static const char * const mediatek_board_dt_compat[] = {
+>         "mediatek,mt6589",
+> +       "mediatek,mt6592",
+>         NULL,
+>  };
+>
+> --
+> 1.9.1
+>
 
-I've sent out a pull request, let me know if that doesn't match what you
-had expected.
 
-Thierry
 
---PmA2V3Z32TCmWXqI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUZNmiAAoJEN0jrNd/PrOhNMYQAKnmz9+gEbvNMXBt/W7plgWB
-Pv3nOwBS7TmzE325fNRHBufjVIOJLNiB+ZxU8aTiRrX0qjXrTZGRbct901FAEAKV
-U2pCdgYOVMJtpDAxh495vUOpgYxQHv7sfst+UQAlIFEAEO0WL2tObn8AMU1UxGiF
-jKRv8kPYxZuKONPtAOPJqYUiOM8fM7EL+tMGNhn2R2tMLXrrMFrAfErD1jABvc5/
-QvGzXJI7+7loUQ3BNaKbFX2F7ncHALJwsoVRREJPi1b+mlCj+CbXc9jokdvn2J6h
-4YYDt7ASZolRWU6lC4iljmLRJ6WvjGdAQVtllTEXeUW3VAoG7XPtWBAek9dh0vmQ
-zgbKLm8JDrFcfeJdzJY844D1U6X0o+8fJBi50MLwFbwtHsSJg3oPr/sNEyjDHn4M
-qlrgRoZDq9WulUHXRxLzdYm3ebdFb2qBhjIn9nFuL0a0YGr7YaiaJkY67h16eFVq
-EmncRJAWz3kh5CvF+KsoLc/i0fBZnmH6khPVcxbfedcWjbi4F4bi8MkvgzHMg93j
-UlYjC5VyhzxUaeddOZCixHZdDHN5iimPRdXTRqzhaJC4ytPcuh6Wm4m/DJR9iKAr
-+7DxB4OTMrGhqvTX/jv5AIlioj8XL/PMUbubRE0STpuTJbeQB0+viqFTAaqBna/W
-2rzP7G2nKXKuyaKhT586
-=gSy5
------END PGP SIGNATURE-----
-
---PmA2V3Z32TCmWXqI--
+-- 
+motzblog.wordpress.com
