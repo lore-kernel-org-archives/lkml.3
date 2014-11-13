@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484AbaKMWJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 17:09:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40755 "EHLO
+	id S934505AbaKMWJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 17:09:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934044AbaKMWJi (ORCPT
+	with ESMTP id S933765AbaKMWJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 17:09:38 -0500
-Date: Thu, 13 Nov 2014 14:09:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: linux@rasmusvillemoes.dk, gong.chen@linux.intel.com,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        " Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel@stlinux.com, eric.paire@st.com
-Subject: Re: [PATCH v4] bitops: Fix shift overflow in GENMASK macros
-Message-Id: <20141113140936.e2e45a8970b5bb4195fd5065@linux-foundation.org>
-In-Reply-To: <1415267659-10563-1-git-send-email-maxime.coquelin@st.com>
-References: <1415267659-10563-1-git-send-email-maxime.coquelin@st.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Nov 2014 17:09:49 -0500
+Date: Thu, 13 Nov 2014 14:09:49 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Pieter Smith <pieter@boesman.nl>
+Cc: Josh Triplett <josh@joshtriplett.org>, Arnd Bergmann <arnd@arndb.de>,
+        Amit Shah <amit.shah@redhat.com>,
+        "open list:VIRTIO CONSOLE DR..." 
+	<virtualization@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 52/56] drivers/char/virtio: support compiling out splice
+Message-ID: <20141113220949.GC546@kroah.com>
+References: <pieter@boesman.nl>
+ <1415913813-362-1-git-send-email-pieter@boesman.nl>
+ <1415913813-362-53-git-send-email-pieter@boesman.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415913813-362-53-git-send-email-pieter@boesman.nl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  6 Nov 2014 10:54:19 +0100 Maxime COQUELIN <maxime.coquelin@st.com> wrote:
-
-> On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
-> instead of the expected ~0UL.
+On Thu, Nov 13, 2014 at 10:23:29PM +0100, Pieter Smith wrote:
+> Compile out splice support from virtio character driver when the splice-family
+> of syscalls is not supported by the system (i.e. CONFIG_SYSCALL_SPLICE is
+> undefined).
 > 
-> This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> ---
+>  drivers/char/virtio_console.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
-> 1 << 64 for GENMASK_ULL.
-> 
-> Fixes: 10ef6b0dffe404bcc54e94cb2ca1a5b18445a66b
-> Cc: <stable@vger.kernel.org> #v3.13+
-> Reported-by: Eric Paire <eric.paire@st.com>
-> Suggested-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> index b585b47..de5e2cb 100644
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@ -870,6 +870,7 @@ struct sg_list {
+>  	struct scatterlist *sg;
+>  };
+>  
+> +#ifdef CONFIG_SYSCALL_SPLICE
+>  static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+>  			struct splice_desc *sd)
+>  {
+> @@ -976,6 +977,7 @@ error_out:
+>  	pipe_unlock(pipe);
+>  	return ret;
+>  }
+> +#endif /* #ifdef CONFIG_SYSCALL_SPLICE */
 
-Why cc:stable?  Does this bug cause some observed kernel misbehaviour? 
-If so, please fully describe that in the changelog.  This will help
-people to determine whether this patch might fix a bug they're
-observing, and will help them to decide whether they should backport
-this patch into their kernels.
-
-I'm assuming that Peter will be merging this patch.
-
+Not worth the #ifdef mess.
