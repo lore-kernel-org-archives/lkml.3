@@ -1,152 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934415AbaKMV4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 16:56:48 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:48288 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933424AbaKMV4r (ORCPT
+	id S934557AbaKMV6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 16:58:19 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:61798 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934261AbaKMV6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 16:56:47 -0500
+	Thu, 13 Nov 2014 16:58:17 -0500
+Date: Thu, 13 Nov 2014 16:58:13 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH cgroup/for-3.19 1/3] cgroup: separate out
+ cgroup_calc_child_subsys_mask() from cgroup_refresh_child_subsys_mask()
+Message-ID: <20141113215813.GA2598@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1415913389-17734-1-git-send-email-johannes@sipsolutions.net>
-References: <1415913389-17734-1-git-send-email-johannes@sipsolutions.net>
-Date: Thu, 13 Nov 2014 13:56:44 -0800
-Message-ID: <CAGXu5jL8CBPXyiZM+AQpNUOvF=rQxay7ozmEaLuRL8WSiRQ2tA@mail.gmail.com>
-Subject: Re: [PATCH] devcoredump: provide a one-way disable function
-From: Kees Cook <keescook@google.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Greg Kroah-Hartmann <gregkh@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 1:16 PM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
->
-> Since device/firmware coredumps can contain private data, it can
-> be desirable to turn them off unconditionally to be certain that
-> no such data will be collected by the system.
->
-> To achieve this, provide a "disabled" sysfs class attribute that
-> can only be changed from 0 to 1 and not back. Upon disabling,
-> discard existing coredumps and stop storing new ones.
->
-> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+cgroup_refresh_child_subsys_mask() calculates and updates the
+effective @cgrp->child_subsys_maks according to the current
+@cgrp->subtree_control.  Separate out the calculation part into
+cgroup_calc_child_subsys_mask().  This will be used to fix a bug in
+the async css offline wait logic.
 
-Great; thanks for implementing this! This will come in handy for Chrome OS. :)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c |   36 ++++++++++++++++++++++++------------
+ 1 file changed, 24 insertions(+), 12 deletions(-)
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
-
-> ---
->  drivers/base/devcoredump.c | 56 +++++++++++++++++++++++++++++++++++++++-------
->  1 file changed, 48 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/base/devcoredump.c b/drivers/base/devcoredump.c
-> index 96614b04544c..1bd120a0b084 100644
-> --- a/drivers/base/devcoredump.c
-> +++ b/drivers/base/devcoredump.c
-> @@ -31,6 +31,11 @@
->  #include <linux/fs.h>
->  #include <linux/workqueue.h>
->
-> +static struct class devcd_class;
-> +
-> +/* global disable flag, for security purposes */
-> +static bool devcd_disabled;
-> +
->  /* if data isn't read by userspace after 5 minutes then delete it */
->  #define DEVCD_TIMEOUT  (HZ * 60 * 5)
->
-> @@ -121,11 +126,51 @@ static const struct attribute_group *devcd_dev_groups[] = {
->         &devcd_dev_group, NULL,
->  };
->
-> +static int devcd_free(struct device *dev, void *data)
-> +{
-> +       struct devcd_entry *devcd = dev_to_devcd(dev);
-> +
-> +       flush_delayed_work(&devcd->del_wk);
-> +       return 0;
-> +}
-> +
-> +static ssize_t disabled_show(struct class *class, struct class_attribute *attr,
-> +                            char *buf)
-> +{
-> +       return sprintf(buf, "%d\n", devcd_disabled);
-> +}
-> +
-> +static ssize_t disabled_store(struct class *class, struct class_attribute *attr,
-> +                             const char *buf, size_t count)
-> +{
-> +       long tmp = simple_strtol(buf, NULL, 10);
-> +
-> +       /*
-> +        * This essentially makes the attribute write-once, since you can't
-> +        * go back to not having it disabled. This is intentional, it serves
-> +        * as a system lockdown feature.
-> +        */
-> +       if (tmp != 1)
-> +               return -EINVAL;
-
-Just a nit, but writing "0" is valid if devcd_disabled = false?
-
-> +
-> +       devcd_disabled = true;
-> +
-> +       class_for_each_device(&devcd_class, NULL, NULL, devcd_free);
-> +
-> +       return count;
-> +}
-> +
-> +static struct class_attribute devcd_class_attrs[] = {
-> +       __ATTR_RW(disabled),
-> +       __ATTR_NULL
-> +};
-> +
->  static struct class devcd_class = {
->         .name           = "devcoredump",
->         .owner          = THIS_MODULE,
->         .dev_release    = devcd_dev_release,
->         .dev_groups     = devcd_dev_groups,
-> +       .class_attrs    = devcd_class_attrs,
->  };
->
->  static ssize_t devcd_readv(char *buffer, loff_t offset, size_t count,
-> @@ -192,6 +237,9 @@ void dev_coredumpm(struct device *dev, struct module *owner,
->         struct devcd_entry *devcd;
->         struct device *existing;
->
-> +       if (devcd_disabled)
-> +               goto free;
-> +
->         existing = class_find_device(&devcd_class, NULL, dev,
->                                      devcd_match_failing);
->         if (existing) {
-> @@ -249,14 +297,6 @@ static int __init devcoredump_init(void)
->  }
->  __initcall(devcoredump_init);
->
-> -static int devcd_free(struct device *dev, void *data)
-> -{
-> -       struct devcd_entry *devcd = dev_to_devcd(dev);
-> -
-> -       flush_delayed_work(&devcd->del_wk);
-> -       return 0;
-> -}
-> -
->  static void __exit devcoredump_exit(void)
->  {
->         class_for_each_device(&devcd_class, NULL, NULL, devcd_free);
-> --
-> 2.1.1
->
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1019,31 +1019,30 @@ static void cgroup_put(struct cgroup *cg
+ }
+ 
+ /**
+- * cgroup_refresh_child_subsys_mask - update child_subsys_mask
++ * cgroup_calc_child_subsys_mask - calculate child_subsys_mask
+  * @cgrp: the target cgroup
++ * @subtree_control: the new subtree_control mask to consider
+  *
+  * On the default hierarchy, a subsystem may request other subsystems to be
+  * enabled together through its ->depends_on mask.  In such cases, more
+  * subsystems than specified in "cgroup.subtree_control" may be enabled.
+  *
+- * This function determines which subsystems need to be enabled given the
+- * current @cgrp->subtree_control and records it in
+- * @cgrp->child_subsys_mask.  The resulting mask is always a superset of
+- * @cgrp->subtree_control and follows the usual hierarchy rules.
++ * This function calculates which subsystems need to be enabled if
++ * @subtree_control is to be applied to @cgrp.  The returned mask is always
++ * a superset of @subtree_control and follows the usual hierarchy rules.
+  */
+-static void cgroup_refresh_child_subsys_mask(struct cgroup *cgrp)
++static unsigned int cgroup_calc_child_subsys_mask(struct cgroup *cgrp,
++						  unsigned int subtree_control)
+ {
+ 	struct cgroup *parent = cgroup_parent(cgrp);
+-	unsigned int cur_ss_mask = cgrp->subtree_control;
++	unsigned int cur_ss_mask = subtree_control;
+ 	struct cgroup_subsys *ss;
+ 	int ssid;
+ 
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
+-	if (!cgroup_on_dfl(cgrp)) {
+-		cgrp->child_subsys_mask = cur_ss_mask;
+-		return;
+-	}
++	if (!cgroup_on_dfl(cgrp))
++		return cur_ss_mask;
+ 
+ 	while (true) {
+ 		unsigned int new_ss_mask = cur_ss_mask;
+@@ -1067,7 +1066,20 @@ static void cgroup_refresh_child_subsys_
+ 		cur_ss_mask = new_ss_mask;
+ 	}
+ 
+-	cgrp->child_subsys_mask = cur_ss_mask;
++	return cur_ss_mask;
++}
++
++/**
++ * cgroup_refresh_child_subsys_mask - update child_subsys_mask
++ * @cgrp: the target cgroup
++ *
++ * Update @cgrp->child_subsys_mask according to the current
++ * @cgrp->subtree_control using cgroup_calc_child_subsys_mask().
++ */
++static void cgroup_refresh_child_subsys_mask(struct cgroup *cgrp)
++{
++	cgrp->child_subsys_mask =
++		cgroup_calc_child_subsys_mask(cgrp, cgrp->subtree_control);
+ }
+ 
+ /**
