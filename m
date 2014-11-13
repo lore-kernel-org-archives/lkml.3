@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933741AbaKMS3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 13:29:39 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:34433 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933226AbaKMS3h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 13:29:37 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18+aR7v4F/UevMDthHfp10Z
-Date: Thu, 13 Nov 2014 10:28:49 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Marek Belisko <marek@goldelico.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        bcousson@baylibre.com, linux@arm.linux.org.uk, plagnioj@jcrosoft.com,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        hns@goldelico.com, Paul Walmsley <paul@pwsan.com>,
-        Tero Kristo <t-kristo@ti.com>
-Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
- devconf1 register
-Message-ID: <20141113182848.GQ26481@atomide.com>
-References: <1415051968-4878-1-git-send-email-marek@goldelico.com>
- <1415051968-4878-5-git-send-email-marek@goldelico.com>
- <5463585D.9070209@ti.com>
- <20141112150210.GC26481@atomide.com>
- <5464969F.30708@ti.com>
+	id S933778AbaKMSaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 13:30:22 -0500
+Received: from sauhun.de ([89.238.76.85]:55747 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933226AbaKMSaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 13:30:20 -0500
+Date: Thu, 13 Nov 2014 19:31:22 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Xudong Chen <xudong.chen@mediatek.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, arm@kernel.org,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        YH Chen <yh.chen@mediatek.com>
+Subject: Re: [PATCH v2 0/3] ARM: mediatek: Add driver for Mediatek I2C
+ controller
+Message-ID: <20141113183122.GH1275@katana>
+References: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bpVaumkpfGNUagdU"
 Content-Disposition: inline
-In-Reply-To: <5464969F.30708@ti.com>
+In-Reply-To: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tomi Valkeinen <tomi.valkeinen@ti.com> [141113 03:33]:
-> On 12/11/14 17:02, Tony Lindgren wrote:
-> 
-> >> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
-> >> places in the kernel. I wonder if adding a pinmux entry for it could
-> >> cause some rather odd problems.
-> > 
-> > They can all use pinctrl-single no problem.
-> 
-> Can, but don't. That's my worry. If we touch the DEVCONF1 via pinmux,
-> and we have code in mach-omap2 that also touch DEVCONF1, without any
-> knowledge (and locking) between those...
 
-Hmm yeah the McBSP clock mux could be racy as the mux register for
-McBSP is treated as a clock. This register muxes the clock between
-external pin and internal clock. Considering that this should be
-selectable at board level as the external clock probably needs to be
-used if level shifters are being used, it should be really handled by
-pinctrl-single.
+--bpVaumkpfGNUagdU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The other use for hsmmc.c and pdata-quirks.c for the one time mux for
-MMC clock from the MMC clock pin. That can be done with pinctrl-single
-from the MMC driver too for DT based booting.
 
-Then we just have the save and restore of the registers for
-off-idle.
- 
-> So _maybe_ that's not an issue, as the pinmux config we have here is
-> fixed, and done once at boot time, and maybe the code in mach-omap2 that
-> touch DEVCONF1 is also ran just once and not at the same time as the
-> pinmux. But I don't know if that's so.
+> MTK I2C HW has some limitation.
+> 1. If the i2c_msg number is more than one, STOP will be issued instead of
+> RS(Repeat Start) between each message.
+>=20
+> 2. Mediatek I2C controller support WRRD(write then read) mode, in WRRD
+> mode the Repeat Start will be issued between 2 messages.
+> In this driver if 2 messages is first write then read, the driver will
+> combine 2 messages using Write-Read mode so the RS will be issued between
+> the 2 messages.
+> Ex: W/R/R, driver will combine first W/R and then R.
+>=20
+> 3. Due to HW limitation, in this version the max transfer data length is =
+255
+> in one message.
 
-It seems we could just do a read-only check for McBSP in the clock
-code for the mux register, or even completely drop that code from
-cclock3xxx_data.c and start using the pinctrl for that mux.
+This looks to me more like an SMBUS controller instead of I2C. Maybe you
+should populate smbus_xfer rather than master_xfer?
 
-Paul & Tero, got any comments here?
+> MT8135 and MT6589 can control I2C pins on PMIC(MT6397) by setting the i2c
+> registers in MT8135 side.
 
-Regards,
+I still didn't get this, even after reading the mail thread of old
+series. Can someone maybe draw me a nice ASCII picture showing the setup
+which is going on here?
 
-Tony
+
+--bpVaumkpfGNUagdU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUZPj6AAoJEBQN5MwUoCm298UP/i/SoKTHz4N7HOuev9WcBtwC
+XzbQo/VmY+4QNUD1O0rS+qoCDHi5x3hr46Gqn0zCLdRmfRlu0jBi2u+Ccb0m0P9I
+HgZdFz2UEJlXz0ZEuMYcVSBqA9U7tm4USF8o27zzPX6nvQsk3/JyNxm0LOPAS/Jg
+caLFXcIBkUQcdAevt/Q8O/OY6IstLsTiL2xVcGMCVWaAQoZ4/Lor7YmpYfBh5qJC
+7YD2Ww/7knl2BEy2A8p3eMQZMetdmSEnCW35XvqoFhSRi2UI84AHtkEzb+BzOW6X
+GrYyUEMbCk2hEXbUR2vp/DWofnnbz52AoghlkrUu20E84FEOpSX2jBxtM/f8k9+i
+CqPZl2Bjw4rAzCg3IOlWEad2ItbBTJcRnp3yDdpWZ6T3nlOLOKMuV9zCeLObvZNU
+7RLei4ZOtdje32H6ccPgwLv32JrStJdZYhnro0ZT1moxwvOrF2dzEwlPtMYZlIET
+37P3LkcIbTN/xUJoBi81VsYerRDYs/NVvQE6NBc1GTNGZqbqPzMYx6rushKiCR3q
+tgW/R8bp0go5GTyPUf87ebgk/hTQXcrOWOcOuxyhuuH3pOhXQmItXVm5XS0j9Naa
+UACDfqPGPU+C2TEJWjVddkOIGOX1GKzjTFe5O9W4U/gfYhX2AYWxUmEmVABFSsjo
+LoF4hHo43V6ZYiirk6nw
+=NRsk
+-----END PGP SIGNATURE-----
+
+--bpVaumkpfGNUagdU--
