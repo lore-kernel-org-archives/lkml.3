@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065AbaKMP0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:26:00 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:44783 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007AbaKMPZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:25:44 -0500
-Message-ID: <5464CD76.4040809@osg.samsung.com>
-Date: Thu, 13 Nov 2014 08:25:42 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754087AbaKMP0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:26:55 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34268 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753737AbaKMP0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 10:26:53 -0500
+Date: Thu, 13 Nov 2014 16:26:51 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] PM / Domains: Make genpd parameter of
+ pm_genpd_present() const
+Message-ID: <20141113152651.GA834@amd>
+References: <1415644659-2531-1-git-send-email-geert+renesas@glider.be>
+ <20141113140913.GC18995@amd>
+ <CAMuHMdUAN_CgWcTFz+LrRODHtBkKscG2iy0p=zZfgTJMu6ES9Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 000/123] 3.10.60-stable review
-References: <20141112011718.985171261@linuxfoundation.org>
-In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUAN_CgWcTFz+LrRODHtBkKscG2iy0p=zZfgTJMu6ES9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 06:16 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.60 release.
-> There are 123 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Thu 2014-11-13 16:12:25, Geert Uytterhoeven wrote:
+> Hi Pavel,
 > 
-> Responses should be made by Fri Nov 14 01:17:00 UTC 2014.
-> Anything received after that time might be too late.
+> On Thu, Nov 13, 2014 at 3:09 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > Acked-by: Pavel Machek <apvel@ucw.cz>
 > 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.60-rc1.gz
-> and the diffstat can be found below.
-> 
-> thanks,
-> 
-> greg k-h
-> 
+> You've got a new email address? ;-)
 
-Compiled and booted on my test system. No dmesg regressions.
+Yes, I decided to typo-squat myself :-). Just kidding.
 
--- Shuah
-
-
+Acked-by: Pavel Machek <pavel@ucw.cz>
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
