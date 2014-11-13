@@ -1,126 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397AbaKMQbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 11:31:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932752AbaKMQbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 11:31:16 -0500
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: pbonzini@redhat.com, kvm@vger.kernel.org
-Subject: [PATCH] kvm: memslots: replace heap sort with insertion sort
-Date: Thu, 13 Nov 2014 16:31:07 +0000
-Message-Id: <1415896267-2146-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <545BA09E.7040301@redhat.com>
-References: <545BA09E.7040301@redhat.com>
+	id S933437AbaKMQcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 11:32:19 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:41917 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932752AbaKMQcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 11:32:17 -0500
+Date: Thu, 13 Nov 2014 17:32:13 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Lior Amsalem <alior@marvell.com>, devicetree@vger.kernel.org,
+        Tawfik Bayouk <tawfik@marvell.com>, linux-kernel@vger.kernel.org,
+        Nadav Haklai <nadavh@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/17] irqchip: irq-armada-370-xp: suspend/resume
+ support
+Message-ID: <20141113173213.3cc93792@free-electrons.com>
+In-Reply-To: <5457BD82.3090309@free-electrons.com>
+References: <1414151970-6626-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	<1414151970-6626-5-git-send-email-thomas.petazzoni@free-electrons.com>
+	<5457BD82.3090309@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memslots is a sorted array, when slot changes in it
-with current heapsort it would take O(n log n) time
-to update array, while using insertion sort like
-algorithm on array with 1 item out of order will
-take only O(n) time.
+Dear Gregory CLEMENT,
 
-Replace current heapsort with custom sort that
-takes advantage of memslots usage pattern and known
-position of changed slot.
+On Mon, 03 Nov 2014 18:38:10 +0100, Gregory CLEMENT wrote:
 
-performance change of 128 memslots insersions with
-gradually increasing size (the worst case):
-      heap sort   custom sort
-max:  249747      15654 cycles
-min:  52536       5562 cycles
-with custom sort alg taking 90% less then original
-update time.
+> > It is worth mentioning that the affinity is lost during a
+> > suspend/resume cycle, because when a secondary CPU is brought
+> > off-line, all interrupts that are assigned to this CPU in terms of
+> > affinity gets re-assigned to a still running CPU. Therefore, right
+> > before entering suspend, all interrupts are assigned to the boot CPU.
+> 
+> So what about /proc/irq/*/smp_affinity ?
+> 
+> Do this files still represent accurate information?
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
- virt/kvm/kvm_main.c | 54 +++++++++++++++++++++++++++++------------------------
- 1 file changed, 30 insertions(+), 24 deletions(-)
+See migrate_irqs() in arch/arm/kernel/irq.c. Basically, when you do a
+suspend, the kernel hot unplugs the non-boot CPUs: in our case CPU1,
+CPU2 and CPU3. The migrate_irqs() function above makes sure that the
+affinity used for each interrupt continue to contain at least one
+online CPU. Therefore, it modifies the affinity information across
+suspend/resume.
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 25ffac9..5fcbc45 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -668,31 +668,43 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
- 	return 0;
- }
- 
--static int cmp_memslot(const void *slot1, const void *slot2)
-+static void swap_memslot(struct kvm_memory_slot *s1, struct kvm_memory_slot *s2)
- {
--	struct kvm_memory_slot *s1, *s2;
-+	struct kvm_memory_slot tmp;
- 
--	s1 = (struct kvm_memory_slot *)slot1;
--	s2 = (struct kvm_memory_slot *)slot2;
--
--	if (s1->npages < s2->npages)
--		return 1;
--	if (s1->npages > s2->npages)
--		return -1;
--
--	return 0;
-+	tmp = *s2;
-+	*s2 = *s1;
-+	*s1 = tmp;
- }
- 
- /*
-- * Sort the memslots base on its size, so the larger slots
-- * will get better fit.
-+ * Insert memslot and re-sort memslots based on their size,
-+ * so the larger slots will get better fit. Sorting algorithm
-+ * takes advantage of having initially sorted array and
-+ * known changed memslot position.
-  */
--static void sort_memslots(struct kvm_memslots *slots)
-+static void insert_memslot(struct kvm_memslots *slots,
-+			   struct kvm_memory_slot *new)
- {
--	int i;
-+	int i = slots->id_to_index[new->id];
-+	struct kvm_memory_slot *old = id_to_memslot(slots, new->id);
-+	struct kvm_memory_slot *mslots = slots->memslots;
- 
--	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
--	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
-+	if (new->npages == old->npages)
-+		return;
-+
-+	*old = *new;
-+	while (1) {
-+		if (i < (KVM_MEM_SLOTS_NUM - 1) &&
-+			mslots[i].npages < mslots[i + 1].npages) {
-+			swap_memslot(&mslots[i], &mslots[i + 1]);
-+			i++;
-+		} else if (i > 0 && mslots[i].npages > mslots[i - 1].npages) {
-+			swap_memslot(&mslots[i], &mslots[i - 1]);
-+			i--;
-+		} else
-+			break;
-+	}
- 
- 	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
- 		slots->id_to_index[slots->memslots[i].id] = i;
-@@ -702,13 +714,7 @@ static void update_memslots(struct kvm_memslots *slots,
- 			    struct kvm_memory_slot *new)
- {
- 	if (new) {
--		int id = new->id;
--		struct kvm_memory_slot *old = id_to_memslot(slots, id);
--		unsigned long npages = old->npages;
--
--		*old = *new;
--		if (new->npages != npages)
--			sort_memslots(slots);
-+		insert_memslot(slots, new);
- 	}
- }
- 
+For example, let's say you initially have an affinity of 0xf (i.e all
+CPUs can receive the interrupt) and you modify it to 0x2 (i.e only CPU1
+can take the interrupt).
+
+Then, when migrate_irqs() is called when CPU1 is brought offline, it
+will realize that the interrupt will no longer be affine to any CPU,
+and it will re-assign the affinity to the current cpu_online_mask
+(which will be 0xd, i.e all CPUs except CPU1). Therefore, when you get
+out of suspend, the affinity for this interrupt will be 0xd.
+
+Note that in this case, a message is displayed during the suspend
+procedure:
+
+	IRQ19 no longer affine to CPU1
+
+On the other hand, if you leave the affinity to its default of 0xf, it
+remains to 0xf, because there's always at least one online CPU in the
+affinity (the boot CPU). Same thing if you change the affinity to 0x3
+for example, since 0x3 is an affinity that contains the boot CPU (of
+course, assuming the boot CPU is CPU0).
+
+That's not a logic that is controlled in the irqchip driver, it's
+entirely handled by the kernel core. I hope this explanation clarifies
+the situation.
+
+Thanks,
+
+Thomas
 -- 
-1.8.3.1
-
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
