@@ -1,127 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964857AbaKMXAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:00:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36225 "EHLO mx1.redhat.com"
+	id S934486AbaKMXEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:04:36 -0500
+Received: from ozlabs.org ([103.22.144.67]:46350 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933920AbaKMXAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:00:20 -0500
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: pbonzini@redhat.com, kvm@vger.kernel.org
-Subject: [PATCH v2] kvm: memslots: replace heap sort with insertion sort
-Date: Thu, 13 Nov 2014 23:00:13 +0000
-Message-Id: <1415919613-24461-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <5464E336.7020402@redhat.com>
-References: <5464E336.7020402@redhat.com>
+	id S934003AbaKMXEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 18:04:35 -0500
+Date: Fri, 14 Nov 2014 10:04:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@ezchip.com>
+Subject: linux-next: change of contact address for the tile tree?
+Message-ID: <20141114100426.6bfa92f8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/6s4i.ZWo9V6Rwr+3ackdP+X"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memslots is a sorted array, when slot changes in it
-with current heapsort it would take O(n log n) time
-to update array, while using insertion sort like
-algorithm on array with 1 item out of order will
-take only O(n) time.
+--Sig_/6s4i.ZWo9V6Rwr+3ackdP+X
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Replace current heapsort with custom sort that
-takes advantage of memslots usage pattern and known
-position of changed slot.
+Hi Chris,
 
-performance change of 128 memslots insersions with
-gradually increasing size (the worst case):
-      heap sort   custom sort
-max:  249747      2500 cycles
-with custom sort alg taking ~98% less then original
-update time.
+I noticed commit c47b15c4928c ("arch/tile: update MAINTAINERS email to
+EZchip") in the tile tree today.  Should I update the contact address I
+have for you?
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
-v2:
-  - replace swap with slot shift, improves result 2x
-  - reprofile original/swap based and swapless 15 times
-      discarding spikes swap based takes ~5900 cycles max
-      and swapless ~2500 cycles.
----
- virt/kvm/kvm_main.c | 54 ++++++++++++++++++++++++++---------------------------
- 1 file changed, 26 insertions(+), 28 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 25ffac9..49f896a 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -668,31 +668,35 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
- 	return 0;
- }
- 
--static int cmp_memslot(const void *slot1, const void *slot2)
--{
--	struct kvm_memory_slot *s1, *s2;
--
--	s1 = (struct kvm_memory_slot *)slot1;
--	s2 = (struct kvm_memory_slot *)slot2;
--
--	if (s1->npages < s2->npages)
--		return 1;
--	if (s1->npages > s2->npages)
--		return -1;
--
--	return 0;
--}
--
- /*
-- * Sort the memslots base on its size, so the larger slots
-- * will get better fit.
-+ * Insert memslot and re-sort memslots based on their size,
-+ * so the larger slots will get better fit. Sorting algorithm
-+ * takes advantage of having initially sorted array and
-+ * known changed memslot position.
-  */
--static void sort_memslots(struct kvm_memslots *slots)
-+static void insert_memslot(struct kvm_memslots *slots,
-+			   struct kvm_memory_slot *new)
- {
--	int i;
-+	int i = slots->id_to_index[new->id];
-+	struct kvm_memory_slot *old = id_to_memslot(slots, new->id);
-+	struct kvm_memory_slot *mslots = slots->memslots;
-+
-+	if (new->npages == old->npages)
-+		return;
- 
--	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
--	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
-+	while (1) {
-+		if (i < (KVM_MEM_SLOTS_NUM - 1) &&
-+			new->npages < mslots[i + 1].npages) {
-+			mslots[i] = mslots[i + 1];
-+			i++;
-+		} else if (i > 0 && new->npages > mslots[i - 1].npages) {
-+			mslots[i] = mslots[i - 1];
-+			i--;
-+		} else {
-+			mslots[i] = *new;
-+			break;
-+		}
-+	}
- 
- 	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
- 		slots->id_to_index[slots->memslots[i].id] = i;
-@@ -702,13 +706,7 @@ static void update_memslots(struct kvm_memslots *slots,
- 			    struct kvm_memory_slot *new)
- {
- 	if (new) {
--		int id = new->id;
--		struct kvm_memory_slot *old = id_to_memslot(slots, id);
--		unsigned long npages = old->npages;
--
--		*old = *new;
--		if (new->npages != npages)
--			sort_memslots(slots);
-+		insert_memslot(slots, new);
- 	}
- }
- 
--- 
-1.8.3.1
+--Sig_/6s4i.ZWo9V6Rwr+3ackdP+X
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUZTj/AAoJEMDTa8Ir7ZwVZsoP/3sCCYKYKU9C7kkKB68GdSb+
+FNmzDS6BvCtGtntFLvgppgDzlBewpvyggCCHz2amwkONL1Z1XEjmejpYWpq8B7L8
+OR6QaopfvmMFfwS1lRkBClHZDprB2qU1drFFSW3gOKV7QcrePazr13gOKNR/8ndM
+7eGum5zFjb7v7zgcdnrItKFv/G/6msinheaM8hu/aU0g5EwGVQDyip7UTm62iJ4l
+cLWqu0WxqzCJl5wu4JRiHeciYDmMtszxOHFn1GvHOQg6QhyJUPk3zcrZEawkmqUk
+DtQUnqc3v0X+xIIgb1JjwnGVlellmx9TFopTKYS6JE1vhmogSGfHbBRq/yuthCnT
+n3AjVfhhqcrW2HF3ka2zzK5rlXSNMJqg2H1Sim/FKIotqvOlmwNXYTYN+q6LkyGS
+ZEf2MKx+2YayqyTLmTIWD9bj7ZVB2FnA9TUUkrvK8g1d3P3KE22fDMBg9suX2EgN
+cdYz0qQ3o8YKNVM7HgbHaaG/TMABiwH80zmzFaOkhVaDahNWMEfm4ksOSVOSpVk1
+V+xIZz9SeUfoFGSytK5cKN18EnaxTpCXMAbozthXNZFB/s89RlgNwX4BY2M2fEwf
+he9vGEic7CHY/csSz/ONR/XdHnCRvAPXUO7Hrmva1LPtxANOBbKeLEbL+0Xv7XDj
+qWpn9p8gxGoin2ajw2OU
+=3E6N
+-----END PGP SIGNATURE-----
+
+--Sig_/6s4i.ZWo9V6Rwr+3ackdP+X--
