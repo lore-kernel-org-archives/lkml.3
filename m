@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaKMIxf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 03:53:35 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:43262 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaKMIxd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 03:53:33 -0500
-Date: Thu, 13 Nov 2014 09:53:26 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] virtio-net: fix buggy features advertised by host
-Message-ID: <20141113095326.3e296c77.cornelia.huck@de.ibm.com>
-In-Reply-To: <1415857974-23326-2-git-send-email-jasowang@redhat.com>
-References: <1415857974-23326-1-git-send-email-jasowang@redhat.com>
-	<1415857974-23326-2-git-send-email-jasowang@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111308-0005-0000-0000-0000021110F6
+	id S932293AbaKMIyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 03:54:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932069AbaKMIya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 03:54:30 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, jasowang@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mst@redhat.com, Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH net-next] tun: fix issues of iovec iterators using in tun_put_user()
+Date: Thu, 13 Nov 2014 16:54:14 +0800
+Message-Id: <1415868854-4913-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014 13:52:54 +0800
-Jason Wang <jasowang@redhat.com> wrote:
+This patch fixes two issues after using iovec iterators:
+- vlan_offset should be initialized to zero, otherwise unexpected offset
+  will be used in skb_copy_datagram_iter()
+- advance iovec iterator when vnet_hdr_sz is greater than sizeof(gso), this
+  is the case when mergeable rx buffer were enabled for a virt guest.
 
-> This patch tries to detect the possible buggy features advertised by host
-> and fix them. One example is booting virtio-net with only ctrl_vq disabled,
-> qemu may still advertise many features which depends on it. This will
-> trigger several BUG()s in virtnet_send_command().
-> 
-> This patch utilizes the fix_features() method, and disables all features that
-> depends on ctrl_vq if it was not advertised.
-> 
-> This fixes the crash when booting with ctrl_vq=off.
+Fixes e0b46d0ee9c240c7430a47e9b0365674d4a04522 ("tun: Use iovec iterators")
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/tun.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-That's a qemu device property, right? Might want to mention that, as
-this line sounds like it is a kernel parameter.
-
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Changes from V1:
-> - fix the cut-and-paste error
-> ---
->  drivers/net/virtio_net.c | 35 +++++++++++++++++++++++++++++++++++
->  1 file changed, 35 insertions(+)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index ec2a8b4..6ce125e 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1948,6 +1948,40 @@ static int virtnet_restore(struct virtio_device *vdev)
->  }
->  #endif
-> 
-> +static void virtnet_fix_features(struct virtio_device *dev)
-> +{
-> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
-> +		if (virtio_has_feature(dev, VIRTIO_NET_F_CTRL_RX)) {
-> +			pr_warning("Disable VIRTIO_NET_F_CTRL_RX since host "
-> +				   "does not advertise VIRTIO_NET_F_CTRL_VQ");
-> +			virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
-> +		}
-
-You should probably use dev_warn() or so, so that the user can figure
-out which device the message is for. And perhaps add "buggy hypervisor"
-to the message to make clear that it's not a guest problem.
-
-I also like the suggestion to use a dependency array.
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 2ff769b..e3fa65a 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1235,7 +1235,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ {
+ 	struct tun_pi pi = { 0, skb->protocol };
+ 	ssize_t total;
+-	int vlan_offset;
++	int vlan_offset = 0;
+ 	int vlan_hlen = 0;
+ 	int vnet_hdr_sz = 0;
+ 
+@@ -1304,6 +1304,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 
+ 		if (copy_to_iter(&gso, sizeof(gso), iter) != sizeof(gso))
+ 			return -EFAULT;
++
++		iov_iter_advance(iter, vnet_hdr_sz - sizeof(gso));
+ 	}
+ 
+ 	if (vlan_hlen) {
+-- 
+1.9.1
 
