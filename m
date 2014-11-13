@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638AbaKMLlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:41:01 -0500
-Received: from mga03.intel.com ([134.134.136.65]:4656 "EHLO mga03.intel.com"
+	id S932774AbaKMLlK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:41:10 -0500
+Received: from mga03.intel.com ([134.134.136.65]:38746 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932328AbaKMLk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:40:58 -0500
+	id S932729AbaKMLlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 06:41:06 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,376,1413270000"; 
-   d="scan'208";a="607188233"
+   d="scan'208";a="607188304"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
@@ -21,9 +21,9 @@ To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Alexander Gordeev <agordeev@redhat.com>
 Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [Patch V1 3/6] genirq: Introduce msi_domain_{alloc|free}_irqs()
-Date: Thu, 13 Nov 2014 19:43:45 +0800
-Message-Id: <1415879029-20098-4-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch V1 3/6] genirq: Introduce msi_irq_domain_{alloc|free}_irqs()
+Date: Thu, 13 Nov 2014 19:43:46 +0800
+Message-Id: <1415879029-20098-5-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com>
@@ -31,8 +31,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce msi_domain_{alloc|free}_irqs() to alloc/free interrupts
-from generic MSI irqdomain.
+Introduce msi_irq_domain_{alloc|free}_irqs() to alloc/free interrupts
+from irqdomain for generic MSI interrupts.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
