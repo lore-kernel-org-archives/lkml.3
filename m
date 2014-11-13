@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300AbaKMOeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 09:34:11 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:50367 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932959AbaKMOeJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 09:34:09 -0500
-Date: Thu, 13 Nov 2014 22:33:35 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Marek Vasut <marex@denx.de>, "David S. Miller" <davem@davemloft.net>,
-        Jason Cooper <cryptography@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
-        "Joy M. Latten" <jmlatten@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v3 00/13] crypto: Documentation of kernel crypto API
-Message-ID: <20141113143335.GA6193@gondor.apana.org.au>
-References: <1800066.efQ8hkST4U@tachyon.chronox.de>
+	id S932890AbaKMOiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 09:38:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913AbaKMOiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 09:38:18 -0500
+Date: Thu, 13 Nov 2014 08:38:10 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        jslaby@suse.cz, pmladek@suse.cz, live-patching@vger.kernel.org,
+        kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+Message-ID: <20141113143810.GA502@treble.redhat.com>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411131105290.10080@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1800066.efQ8hkST4U@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1411131105290.10080@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 05:22:00AM +0100, Stephan Mueller wrote:
+On Thu, Nov 13, 2014 at 11:16:00AM +0100, Miroslav Benes wrote:
+> 
 > Hi,
 > 
-> The following patch set adds documentation files under Documentation/crypto/
-> covering the high-level description of the API. In addition, it contains
-> source code comments added to the header files of the kernel crypto API
-> documenting the API functions.
+> thank you for the first version of the united live patching core.
 > 
-> The documentation is provided in a DocBook whose output can be reviewed at:
+> The patch below implements some of our review objections. Changes are 
+> described in the commit log. It simplifies the hierarchy of data 
+> structures, removes data duplication (lp_ and lpc_ structures) and 
+> simplifies sysfs directory.
 > 
-> http://www.chronox.de/crypto-API/index.html
+> I did not try to repair other stuff (races, function names, function 
+> prefix, api symmetry etc.). It should serve as a demonstration of our 
+> point of view.
 > 
-> Changes v2:
+> There are some problems with this. try_module_get and module_put may be 
+> called several times for each kernel module where some function is 
+> patched in. This should be fixed with module going notifier as suggested 
+> by Petr. 
+> 
+> The modified core was tested with modified testing live patch originally 
+> from Seth's github. It worked as expected.
+> 
+> Please take a look at these changes, so we can discuss them in more 
+> detail.
 
-All applied.  Thanks everyone!
+Hi Miroslav,
+
+Thanks for the code suggestions.
+
+This is a single patch with three major changes, which makes it hard to
+discuss each individual change on its own merits.
+
+Also, Seth has already made a lot of changes already based on previous
+comments, and is very close to having a v2 patch.  Because this patch is
+so big, there are a lot of conflicts.
+
+Can you wait for the v2 patch set and then post your own patch set
+against it, with the patches split out so we can discuss them
+individually?
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Josh
