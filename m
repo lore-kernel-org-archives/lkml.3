@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaKMTVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 14:21:21 -0500
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:54220 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171AbaKMTVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 14:21:19 -0500
+	id S1754233AbaKMTXG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 14:23:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:55736 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754171AbaKMTXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 14:23:04 -0500
+Date: Thu, 13 Nov 2014 16:22:58 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 07/10] perf, tools: Only print base source file for
+ srcline
+Message-ID: <20141113192258.GH3612@kernel.org>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <1415844328-4884-8-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3292CD43@ORSMSX114.amr.corp.intel.com>
-References: <CA+r1ZhjO=kxcyjRb3=d7ozZ_VT9a+iCUy27zPZ2WGVMMzP6OVA@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F3292CD43@ORSMSX114.amr.corp.intel.com>
-Date: Thu, 13 Nov 2014 11:21:18 -0800
-X-Google-Sender-Auth: cOtNp_jdkvvX9InLj0J6RpAFBCI
-Message-ID: <CAGXu5jLsd3G3+PCwFSUGDxxbfnJwx8G8X4chH0WK21-kv+_ecA@mail.gmail.com>
-Subject: Re: randconfig build error with next-20141113, in fs/pstore/inode.c
-From: Kees Cook <keescook@chromium.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "yath@yath.de" <yath@yath.de>, "ccross@android.com" <ccross@android.com>,
-        "anton@enomsg.org" <anton@enomsg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jim Davis <jim.epost@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415844328-4884-8-git-send-email-andi@firstfloor.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 11:18 AM, Luck, Tony <tony.luck@intel.com> wrote:
->> Building with the attached random configuration file,
->>
->> fs/built-in.o: In function `pstore_check_syslog_permissions':
->> inode.c:(.text+0x13a1bd): undefined reference to `check_syslog_permissions'
->> make: *** [vmlinux] Error 1
->
-> Sebastian,
->
-> This looks to come from your "Honor dmesg_restrict sysctl on dmesg dumps" patch
->
-> The randconfig doesn't have CONFIG_PRINTK.  I guess we need to provide a stub
-> in <linux/syslog.h> to cover this.
+Em Wed, Nov 12, 2014 at 06:05:25PM -0800, Andi Kleen escreveu:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> For perf report with --sort srcline only print the base source file
+> name. This makes the results generally fit much better to the
+> screen. The path is usually not that useful anyways because it is
+> often from different systems.
 
-Without CONFIG_PRINTK, check_syslog_permissions should probably fail.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Applied
+ 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  tools/perf/util/srcline.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+> index c6a7cdc..ac877f9 100644
+> --- a/tools/perf/util/srcline.c
+> +++ b/tools/perf/util/srcline.c
+> @@ -274,7 +274,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+>  	if (!addr2line(dso_name, addr, &file, &line, dso))
+>  		goto out;
+>  
+> -	if (asprintf(&srcline, "%s:%u", file, line) < 0) {
+> +	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
+>  		free(file);
+>  		goto out;
+>  	}
+> -- 
+> 1.9.3
