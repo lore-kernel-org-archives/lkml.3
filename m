@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933789AbaKMRsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:48:14 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57736 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933644AbaKMRsL (ORCPT
+	id S933834AbaKMRs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:48:26 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:21265 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933673AbaKMRsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:48:11 -0500
-Date: Thu, 13 Nov 2014 17:48:00 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <Will.Deacon@arm.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "ghackmann@google.com" <ghackmann@google.com>,
-        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
-        Serban Constantinescu <Serban.Constantinescu@arm.com>,
-        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/1] arm64: Fix /proc/cpuinfo
-Message-ID: <20141113174800.GD22361@e104818-lin.cambridge.arm.com>
-References: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
- <20141106164311.GD19702@e104818-lin.cambridge.arm.com>
- <20141106165430.GH31605@arm.com>
- <20141106170548.GF19702@e104818-lin.cambridge.arm.com>
+	Thu, 13 Nov 2014 12:48:13 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: cleanup for 3.19 #2
+Date: Thu, 13 Nov 2014 18:48:12 +0100
+Message-ID: <1415900892-20970-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1415900716-20882-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1415900716-20882-1-git-send-email-nicolas.ferre@atmel.com>
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106170548.GF19702@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 05:05:48PM +0000, Catalin Marinas wrote:
-> On Thu, Nov 06, 2014 at 04:54:31PM +0000, Will Deacon wrote:
-> > On Thu, Nov 06, 2014 at 04:43:12PM +0000, Catalin Marinas wrote:
-> > > On Fri, Oct 24, 2014 at 02:56:39PM +0100, Mark Rutland wrote:
-> > > > [d] Print different hwcaps dependent on the personality.
-> > > > 
-> > > >     This would allow for 32-bit and 64-bit applications to function
-> > > >     correctly, but for some 32-bit applications the personality would
-> > > >     need to be set explicitly by the user.
-> > > 
-> > > Which makes this option actually in line with the uname -m behaviour. My
-> > > vote goes for [d] with option [b] as a close alternative.
-> > > 
-> > > > [1] arm, v3.17, Versatile Express A15x2 A7x3 coretile
-> > > > Features        : half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae evtstrm 
-> > > [...]
-> > > > [2] arm64, v3.17, Juno platform
-> > > > Features        : fp asimd evtstrm aes pmull sha1 sha2 crc32 
-> > > 
-> > > As an exercise, I'm trying to see what option [b] would look like when
-> > > CONFIG_COMPAT is enabled:
-> > > 
-> > > Features        : fp asimd evtstrm aes pmull sha1 sha2 crc32 half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae
-> > > 
-> > > The duplicate strings would only be listed once (evtstrm, aes, pmull,
-> > > sha1, sha2, crc32). New AArch64 features that we may expect to be
-> > > optional on AArch32 could be prefixed with "a64". If they are missing
-> > > entirely from AArch32, (like asimd), no need for the prefix.
-> > > 
-> > > The advantage is that we don't need to check the personality but we have
-> > > to assume that scripts would not search for substrings (sane people
-> > > shouldn't do this anyway as the Features string can always be extended).
-> > 
-> > And a big disadvantage is that I can imagine AArch64 applications checking
-> > for "neon" instead of "asimd", which will break if they're run under kernels
-> > without COMPAT support enabled.
-[...]
-> > So I'm inclined to stick with Mark's patch as it is.
-> 
-> If we don't hear otherwise, I propose sometime next week we queue Mark's
-> patch for -next.
+(supersedes the previous malformed email: s/3.18/3.19/)
 
-As we haven't heard otherwise:
+Arnd, Olof, Kevin,
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Little pull-request with some fixes following the legacy board removal done
+earlier. I integrated the patch that Olof wrote in this branch before this series:
+please tell me if it works on your side or if I need to do things differently.
+The move of header files out of include/mach is useful for reset and memory
+drivers.
+More legacy code removal is in progress, but I didn't want to mix with this.
+So, bigger cleanup to come...
+
+Thanks, best regards,
+
+The following changes since commit 7d7ef547d3fa47ac0df667a6e399eb1ebc60ec2d:
+
+  ARM: at91: fix build breakage due to legacy board removals (2014-11-10 10:38:00 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup2
+
+for you to fetch changes up to f0a0a58e6f46c2dded813ee860b9cbd795b4e571:
+
+  ARM: at91: move sdramc/ddrsdr header to include/soc/at91 (2014-11-13 12:03:44 +0100)
+
+----------------------------------------------------------------
+Second batch of cleanup/SoC for 3.19:
+- fixes following legacy board removal
+- removal of an unused config option CONFIG_MACH_SAMA5_DT
+- move of some header files out of include/mach directory
+
+----------------------------------------------------------------
+Alexandre Belloni (2):
+      ARM: at91: remove CONFIG_MACH_SAMA5_DT
+      ARM: at91: move sdramc/ddrsdr header to include/soc/at91
+
+Boris Brezillon (1):
+      ARM: at91: remove useless init_time for DT-only SoCs
+
+Nicolas Ferre (1):
+      ARM: at91: remove unused CONFIG_ARCH_AT91SAM9G45 option
+
+ MAINTAINERS                                                    |  1 +
+ arch/arm/configs/sama5_defconfig                               |  1 -
+ arch/arm/mach-at91/Kconfig                                     | 10 +---------
+ arch/arm/mach-at91/Makefile                                    |  2 +-
+ arch/arm/mach-at91/Makefile.boot                               |  6 ------
+ arch/arm/mach-at91/at91sam9g45.c                               |  7 -------
+ arch/arm/mach-at91/at91sam9rl.c                                |  7 -------
+ arch/arm/mach-at91/board.h                                     |  4 ----
+ arch/arm/mach-at91/include/mach/at91_ramc.h                    |  6 +++---
+ arch/arm/mach-at91/pm.h                                        |  1 -
+ drivers/power/reset/at91-reset.c                               |  4 ++--
+ .../include/mach => include/soc/at91}/at91rm9200_sdramc.h      |  0
+ .../include/mach => include/soc/at91}/at91sam9_ddrsdr.h        |  0
+ .../include/mach => include/soc/at91}/at91sam9_sdramc.h        |  0
+ 14 files changed, 8 insertions(+), 41 deletions(-)
+ rename {arch/arm/mach-at91/include/mach => include/soc/at91}/at91rm9200_sdramc.h (100%)
+ rename {arch/arm/mach-at91/include/mach => include/soc/at91}/at91sam9_ddrsdr.h (100%)
+ rename {arch/arm/mach-at91/include/mach => include/soc/at91}/at91sam9_sdramc.h (100%)
+
+-- 
+Nicolas Ferre
