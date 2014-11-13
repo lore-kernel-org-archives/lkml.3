@@ -1,162 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaKMJHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:07:35 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:36037 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaKMJHa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:07:30 -0500
-Message-ID: <546474AF.2030902@hp.com>
-Date: Thu, 13 Nov 2014 17:06:55 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932211AbaKMJJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:09:37 -0500
+Received: from darkcity.gna.ch ([195.226.6.51]:32876 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753709AbaKMJJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 04:09:35 -0500
+Message-ID: <54647543.50902@daenzer.net>
+Date: Thu, 13 Nov 2014 18:09:23 +0900
+From: =?UTF-8?Q?Michel_D=c3=a4nzer?= <michel@daenzer.net>
+User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:32.0) Gecko/20100101 Icedove/32.0
 MIME-Version: 1.0
-To: Minfei Huang <mhuang@redhat.com>
-CC: joro@8bytes.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH 1/1] x86/iommu: fix incorrect bit operations in setting
- values
-References: <1415172619-4801-1-git-send-email-zhen-hual@hp.com> <20141112112832.GA3334@dhcp-17-108.nay.redhat.com>
-In-Reply-To: <20141112112832.GA3334@dhcp-17-108.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Marcus Overhagen <marcus.overhagen@gmail.com>
+CC: dri-devel@lists.freedesktop.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: Crash of radeon_ttm_tt_unpopulate in ttm_dma_unpopulate with
+References: <CAJBHPoiYce87At_DKiGbj6WnkcuuS0zEdGvdaYTDUUcq2gn6AA@mail.gmail.com>
+In-Reply-To: <CAJBHPoiYce87At_DKiGbj6WnkcuuS0zEdGvdaYTDUUcq2gn6AA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minfei,
-Thanks for your testing.
-On my system, I got error messages:
+On 12.11.2014 02:54, Marcus Overhagen wrote:
+> This crash occured after about a day  with 3.18.0-rc3
 
-[    8.019096] usb usb2: New USB device strings: Mfr=3, Product=2, 
-SerialNumber=1
-[    8.019617] dmar: DRHD: handling fault status reg 102
-[    8.019621] dmar: DMAR:[DMA Read] Request device [01:00.0] fault addr 
-fff6a000
-[    8.019621] DMAR:[fault reason 06] PTE Read access is not set
-[    8.019627] dmar: DRHD: handling fault status reg 202
-[    8.019631] dmar: DMAR:[DMA Read] Request device [21:00.0] fault addr 
-fff6a000
-[    8.019631] DMAR:[fault reason 06] PTE Read access is not set
-[    8.019638] dmar: DRHD: handling fault status reg 202
-[    8.019641] dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr 
-fff6a000
-[    8.019641] DMAR:[fault reason 06] PTE Read access is not set
-[    8.019647] dmar: DRHD: handling fault status reg 202
-[    8.019651] dmar: DMAR:[DMA Read] Request device [61:00.0] fault addr 
-fff6a000
-[    8.019651] DMAR:[fault reason 06] PTE Read access is not set
-
-And this patch can fix this.
+Is it a regression? If yes, can you bisect?
 
 
-The reason you do not get error messages may be there is no ongoing DMA
-request on your PCI devices when kdump kernel boots, I am not sure of
-this.
-
-Zhenhua
-On 11/12/2014 07:28 PM, Minfei Huang wrote:
-> The kdump starts 2nd kernel without any error message when I use
-> 3.18.0-rc4 merged last 6 patchs. The following is the message which 2nd
-> kernel prints during booting.
->
-> Patchset:
-> 	0001-iommu-vt-d-Update-iommu_attach_domain-and-its-caller.patch
-> 	0002-iommu-vt-d-Items-required-for-kdump.patch
-> 	0003-iommu-vt-d-data-types-and-functions-used-for-kdump.patch
-> 	0004-iommu-vt-d-Add-domain-id-functions.patch
-> 	0005-iommu-vt-d-enable-kdump-support-in-iommu-module.patch
-> 	0006-x86-iommu-fix-incorrect-bit-operations-in-setting-va.patch
->
-> log:
-> [    1.689604] IOMMU intel_iommu_in_crashdump = true
-> [    1.694310] IOMMU Skip disabling iommu hardware translations
-> [    1.699987] DMAR: No ATSR found
-> [    1.703151] IOMMU Copying translate tables from panicked kernel
-> [    1.710786] IOMMU: root_new_virt:0xffff8800296ec000 phys:0x0000296ec000
-> [    1.717401] IOMMU:0 Domain ids from panicked kernel:
-> [    1.722364] DID did:13(0x000d)
-> [    1.725424] DID did:12(0x000c)
-> [    1.728482] DID did:11(0x000b)
-> [    1.731542] DID did:10(0x000a)
-> [    1.734603] DID did:6(0x0006)
-> [    1.737574] DID did:7(0x0007)
-> [    1.740549] DID did:5(0x0005)
-> [    1.743522] DID did:9(0x0009)
-> [    1.746495] DID did:8(0x0008)
-> [    1.749467] DID did:4(0x0004)
-> [    1.752439] DID did:3(0x0003)
-> [    1.755413] DID did:2(0x0002)
-> [    1.758385] DID did:0(0x0000)
-> [    1.761357] DID did:1(0x0001)
-> [    1.764331] ----------------------------------------
-> [    1.769302] IOMMU 0 0xfed50000: using Queued invalidation
->
-> On 11/05/14 at 03:30pm, Li, Zhen-Hua wrote:
->> The function context_set_address_root() and set_root_value are setting new
->> address in a wrong way, and this patch is trying to fix this problem.
->>
->> According to Intel Vt-d specs(Feb 2011, Revision 1.3), Chapter 9.1 and 9.2,
->> field ctp in root entry is using bits 12:63, field asr in context entry is
->> using bits 12:63.
->>
->> To set these fields, the following functions are used:
->> static inline void context_set_address_root(struct context_entry *context,
->>          unsigned long value);
->> and
->> static inline void set_root_value(struct root_entry *root, unsigned long value)
->>
->> But they are using an invalid method to set these fields, in current code, only
->> a '|' operator is used to set it. This will not set the asr to the expected
->> value if it has an old value.
->>
->> For example:
->> Before calling this function,
->> 	context->lo = 0x3456789012111;
->> 	value = 0x123456789abcef12;
->>
->> After we call context_set_address_root(context, value), expected result is
->> 	context->lo == 0x123456789abce111;
->>
->> But the actual result is:
->> 	context->lo == 0x1237577f9bbde111;
->>
->> So we need to clear bits 12:63 before setting the new value, this will fix
->> this problem.
->>
->> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->> ---
->>   drivers/iommu/intel-iommu.c | 2 ++
->>   1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->> index a27d6cb..11ac47b 100644
->> --- a/drivers/iommu/intel-iommu.c
->> +++ b/drivers/iommu/intel-iommu.c
->> @@ -195,6 +195,7 @@ static inline void set_root_present(struct root_entry *root)
->>   }
->>   static inline void set_root_value(struct root_entry *root, unsigned long value)
->>   {
->> +	root->val &= ~VTD_PAGE_MASK;
->>   	root->val |= value & VTD_PAGE_MASK;
->>   }
->>
->> @@ -247,6 +248,7 @@ static inline void context_set_translation_type(struct context_entry *context,
->>   static inline void context_set_address_root(struct context_entry *context,
->>   					    unsigned long value)
->>   {
->> +	context->lo &= ~VTD_PAGE_MASK;
->>   	context->lo |= value & VTD_PAGE_MASK;
->>   }
->>
->> --
->> 2.0.0-rc0
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+Earthling Michel Dänzer            |                  http://www.amd.com
+Libre software enthusiast          |                Mesa and X developer
