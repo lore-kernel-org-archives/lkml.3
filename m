@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743AbaKMLTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 06:19:23 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57410 "EHLO
+	id S932770AbaKMLTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 06:19:33 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57424 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394AbaKMLTW (ORCPT
+	with ESMTP id S932394AbaKMLTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 06:19:22 -0500
+	Thu, 13 Nov 2014 06:19:31 -0500
 From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
         Linux PCI <linux-pci@vger.kernel.org>
-Subject: [RFC PATCH v3 0/2] Fix procfs PCI resources mmap
-Date: Thu, 13 Nov 2014 11:19:14 +0000
-Message-Id: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
+Subject: [RFC PATCH v3 2/2] arm: kernel: fix pci_mmap_page_range() offset calculation
+Date: Thu, 13 Nov 2014 11:19:16 +0000
+Message-Id: <1415877558-8906-3-git-send-email-lorenzo.pieralisi@arm.com>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
+References: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way PCI memory resources are exported to user space through procfs
-is not uniform across architectures. In particular, some architectures
-(ie SPARC) export the resource PCI bus address to user space, whereas
-others (ARM, PowerPC, Microblaze) export the resource CPU physical address.
-This convention should be followed when it comes to passing the pgoff
-values to the mmap syscall to map the resource in question.
+The pci_mmap_page_range() API should be written to expect offset
+values representing PCI memory resource addresses as seen by user
+space, through the pci_resource_to_user() API.
 
-Consequently, the checks applied to the offset passed to the mmap syscall
-(in pci_mmap_fits()) are to be interpreted differently on different
-architectures, and in particular they should match the values exported to
-user space through the pci_resource_to_user() conversion function.
+ARM relies on the standard implementation of pci_resource_to_user()
+which actually is an identity map and exports to user space
+PCI memory resources as they are stored in PCI devices resources
+structures, which represent CPU physical addresses (fixed-up using
+BUS to CPU address conversions) not PCI bus addresses.
 
-This patch series addresses two issues. First patch applies the
-pci_resource_to_user() filter to the PCI resource that is being
-mapped in order to carry out a proper check against the pgoff passed
-from user space. Second patch fixes the way the pgoff is handled in
-the ARM pci_mmap_page_range() implementation.
+Therefore, on ARM platforms where the mapping between CPU and BUS
+address is not a 1:1 the current pci_mmap_page_range() implementation is
+erroneous, in that an additional shift is applied to an already fixed-up
+offset passed from userspace.
 
-v2 posting:
+Hence, this patch removes the mem_offset from the pgoff calculation
+since the offset as passed from user space already represents the CPU
+physical address corresponding to the resource to be mapped, ie no
+additional offset should be applied.
 
-http://marc.info/?l=linux-kernel&m=141416813409829&w=2
-
-v2 => v3
-- Reworded commit log in order to try to bisect the breakage
-  and provide insights into the commit history that led to the
-  current interface
-
-v1 => v2
-- Reworded commit log as per RMK comments
-
-Lorenzo Pieralisi (2):
-  drivers: pci: fix pci_mmap_fits() implementation for procfs mmap
-  arm: kernel: fix pci_mmap_page_range() offset calculation
-
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+---
  arch/arm/kernel/bios32.c | 10 ++--------
- drivers/pci/pci-sysfs.c  | 13 ++++++++-----
- 2 files changed, 10 insertions(+), 13 deletions(-)
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c1..b56fa2d 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -626,21 +626,15 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+ int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
+ 			enum pci_mmap_state mmap_state, int write_combine)
+ {
+-	struct pci_sys_data *root = dev->sysdata;
+-	unsigned long phys;
+-
+-	if (mmap_state == pci_mmap_io) {
++	if (mmap_state == pci_mmap_io)
+ 		return -EINVAL;
+-	} else {
+-		phys = vma->vm_pgoff + (root->mem_offset >> PAGE_SHIFT);
+-	}
+ 
+ 	/*
+ 	 * Mark this as IO
+ 	 */
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 
+-	if (remap_pfn_range(vma, vma->vm_start, phys,
++	if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+ 			     vma->vm_end - vma->vm_start,
+ 			     vma->vm_page_prot))
+ 		return -EAGAIN;
 -- 
 2.1.2
 
