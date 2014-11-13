@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509AbaKMKlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:41:35 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:49578 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379AbaKMKlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:41:32 -0500
-Date: Thu, 13 Nov 2014 10:41:26 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Aaron Lu <aaron.lu@intel.com>, linux-acpi@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and
- XPower
-Message-ID: <20141113104126.GM24004@x1>
-References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com>
- <3052882.EdcZmghHR3@vostro.rjw.lan>
- <20141112094419.GC24004@x1>
- <1668657.Fqph6NyFNz@vostro.rjw.lan>
+	id S932545AbaKMKoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:44:16 -0500
+Received: from tundra.namei.org ([65.99.196.166]:51185 "EHLO namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932354AbaKMKoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 05:44:13 -0500
+Date: Thu, 13 Nov 2014 21:44:08 +1100 (AEDT)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Moore <paul@paul-moore.com>
+Subject: [GIT PULL] SELinux: make selinux_nlmsg_perm() less alarmist
+Message-ID: <alpine.LRH.2.11.1411132135540.1060@namei.org>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1668657.Fqph6NyFNz@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, Rafael J. Wysocki wrote:
+WARN_ONCE() here will unnecessarily terrify users.  Please pull for 
+v.3.18.
 
-> On Wednesday, November 12, 2014 09:44:19 AM Lee Jones wrote:
-> > On Wed, 12 Nov 2014, Rafael J. Wysocki wrote:
-> > 
-> > > On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
-> > > > On Tue, 11 Nov 2014, Aaron Lu wrote:
-> > > > 
-> > > > > On 10/31/2014 02:08 PM, Aaron Lu wrote:
-> > > > > > On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
-> > > > > > ACPI operation regions defined for the Power Management Integrated Circuit
-> > > > > > device, one is for power resource handling and one is for thermal: sensor
-> > > > > > temperature reporting, trip point setting, etc. There are different PMIC
-> > > > > > chips used on those platforms and though each has the same two operation
-> > > > > > regions and functionality, their implementation is different so every PMIC
-> > > > > > will need a driver. But since their functionality is similar, some common
-> > > > > > code is abstracted into the intel_soc_pmic_opregion.c.
-> > > > > > 
-> > > > > > The last version is posted here:
-> > > > > > https://lkml.org/lkml/2014/9/8/801
-> > > > > > 
-> > > > > > Changes since then:
-> > > > > > 1 Move to drivers/acpi as discussed on the above thread;
-> > > > > > 2 Added support for XPower AXP288 PMIC operation region support;
-> > > > > > 3 Since operation region handler can not be removed(at the moment at least),
-> > > > > >   use bool for the two operation region driver configs instead of tristate;
-> > > > > >   Another reason to do this is that, with Mika's MFD ACPI support patch, all
-> > > > > >   those MFD cell devices created will have the same modalias as their parent's
-> > > > > >   so it doesn't make much sense to compile these drivers into modules.
-> > > > > > 
-> > > > > > Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
-> > > > > > patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
-> > > > > > driver XPower AXP288 and iio driver axp288_adc is located.
-> > > > > 
-> > > > > Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
-> > > > > would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
-> > > > > 
-> > > > > Rafael,
-> > > > > Can I get your ACK for the three patches?
-> > > > > 
-> > > > > Lee,
-> > > > > Can you please take the series if Rafael gives it ack?
-> > > > 
-> > > > Yes, no problem.
-> > > 
-> > > Well, since the code is going to reside mostly in drivers/acpi, I think I should
-> > > be applying the patches and from your response it looks like you are fine with
-> > > them.  Is that correct?
-> > 
-> > I read that this set has dependencies on patches which are already in
-> > the MFD tree.  If that's not the case please go ahead and apply them
-> > with my Ack for the MFD components.
-> 
-> I thought you had a branch that I could pull into my tree and apply the patches
-> on top of it.  At least that was my understanding of the Aaron's message, so
-> please let me know if that's not the case.
 
-That is absolutely the case.  'mfd/ib-mfd-iio-3.19' is good to go.
+The following changes since commit 04689e749b7ec156291446028a0ce2e685bf3855:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+  Merge tag 'for-linus' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2014-11-12 15:29:28 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+James Morris (1):
+      Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus
+
+Richard Guy Briggs (1):
+      selinux: convert WARN_ONCE() to printk() in selinux_nlmsg_perm()
+
+ security/selinux/hooks.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+---
+
+commit 09c626892772e6fe03f768b3492fbb126f465fe6
+Merge: 04689e7 d950f84
+Author: James Morris <james.l.morris@oracle.com>
+Date:   Thu Nov 13 21:49:53 2014 +1100
+
+    Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus
+
+
+commit d950f84c1c6658faec2ecbf5b09f7e7191953394
+Author: Richard Guy Briggs <rgb@redhat.com>
+Date:   Wed Nov 12 14:01:34 2014 -0500
+
+    selinux: convert WARN_ONCE() to printk() in selinux_nlmsg_perm()
+    
+    Convert WARN_ONCE() to printk() in selinux_nlmsg_perm().
+    
+    After conversion from audit_log() in commit e173fb26, WARN_ONCE() was
+    deemed too alarmist, so switch it to printk().
+    
+    Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+    [PM: Changed to printk(WARNING) so we catch all of the different
+     invalid netlink messages.  In Richard's defense, he brought this
+     point up earlier, but I didn't understand his point at the time.]
+    Signed-off-by: Paul Moore <pmoore@redhat.com>
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 2478976..654f071 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4727,9 +4727,10 @@ static int selinux_nlmsg_perm(struct sock *sk, struct sk_buff *skb)
+ 	err = selinux_nlmsg_lookup(sksec->sclass, nlh->nlmsg_type, &perm);
+ 	if (err) {
+ 		if (err == -EINVAL) {
+-			WARN_ONCE(1, "selinux_nlmsg_perm: unrecognized netlink message:"
+-				  " protocol=%hu nlmsg_type=%hu sclass=%hu\n",
+-				  sk->sk_protocol, nlh->nlmsg_type, sksec->sclass);
++			printk(KERN_WARNING
++			       "SELinux: unrecognized netlink message:"
++			       " protocol=%hu nlmsg_type=%hu sclass=%hu\n",
++			       sk->sk_protocol, nlh->nlmsg_type, sksec->sclass);
+ 			if (!selinux_enforcing || security_get_allow_unknown())
+ 				err = 0;
+ 		}
