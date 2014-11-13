@@ -1,73 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934609AbaKMXZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:25:43 -0500
-Received: from ozlabs.org ([103.22.144.67]:52735 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934023AbaKMXZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:25:42 -0500
-Date: Fri, 14 Nov 2014 10:25:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Metcalf <cmetcalf@ezchip.com>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: change of contact address for the tile tree?
-Message-ID: <20141114102533.5a1979c5@canb.auug.org.au>
-In-Reply-To: <F21E5D8A-0990-47F3-A89A-01EBA24208DF@ezchip.com>
-References: <20141114100426.6bfa92f8@canb.auug.org.au>
-	<F21E5D8A-0990-47F3-A89A-01EBA24208DF@ezchip.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S934652AbaKMX1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 18:27:35 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:36037 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934023AbaKMX1d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 18:27:33 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Q=qZpytGPM70orkhdySSs/E"; protocol="application/pgp-signature"
+In-Reply-To: <1641362.yfrjtMOWge@diego>
+References: <1415884826-7877-1-git-send-email-kever.yang@rock-chips.com>
+	<1415884826-7877-2-git-send-email-kever.yang@rock-chips.com>
+	<1641362.yfrjtMOWge@diego>
+Date: Thu, 13 Nov 2014 15:27:32 -0800
+X-Google-Sender-Auth: PBj42ycoay5OPodgFnNmVHK6gOc
+Message-ID: <CAD=FV=WSDtxjtGD3c22OqXsSqaphKcmup9rAfonbeC-bUWHmSQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] clk: add property for force to update clock setting
+From: Doug Anderson <dianders@chromium.org>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Kever Yang <kever.yang@rock-chips.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Q=qZpytGPM70orkhdySSs/E
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Chris,
-
-On Thu, 13 Nov 2014 23:05:58 +0000 Chris Metcalf <cmetcalf@ezchip.com> wrot=
-e:
+On Thu, Nov 13, 2014 at 6:53 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Donnerstag, 13. November 2014, 21:20:25 schrieb Kever Yang:
+>> Usually we assigned a clock to a default rate in dts,
+>> there is a situation that the clock already initialized to the rate
+>> we intend to set before kernel(hardware default or init in uboot etc).
+>> For the PLLs we can get a rate from different PLL parameter configure,
+>> we can't change the PLL parameter if the rate is not changed by now.
+>>
+>> This patch adds a option property 'assigned-clock-force-rates'
+>> to make sure we update all the setting even if we don't need to
+>> update the clock rate.
+>>
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>> ---
+>>
+>>  drivers/clk/clk-conf.c | 33 ++++++++++++++++++++++++++++++++-
+>>  1 file changed, 32 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
+>> index aad4796..0c9df48 100644
+>> --- a/drivers/clk/clk-conf.c
+>> +++ b/drivers/clk/clk-conf.c
+>> @@ -84,7 +84,7 @@ static int __set_clk_rates(struct device_node *node, bool
+>> clk_supplier) struct clk *clk;
+>>       u32 rate;
+>>
+>> -     of_property_for_each_u32(node, "assigned-clock-rates", prop, cur, rate) {
+>> +     of_property_for_each_u32(node, "assigned-force-rates", prop, cur, rate) {
+>>               if (rate) {
+>>                       rc = of_parse_phandle_with_args(node, "assigned-clocks",
+>>                                       "#clock-cells", index, &clkspec);
+>> @@ -104,7 +104,38 @@ static int __set_clk_rates(struct device_node *node,
+>> bool clk_supplier) index, node->full_name);
+>>                               return PTR_ERR(clk);
+>>                       }
+>> +                     /* change the old rate to 0 to make sure we can get into
+>> +                      * clk_change_rate */
+>> +                     clk->rate = 0;
+>> +                     rc = clk_set_rate(clk, rate);
+>> +                     if (rc < 0)
+>> +                             pr_err("clk: couldn't set %s clock rate: %d\n",
+>> +                                    __clk_get_name(clk), rc);
+>> +                     clk_put(clk);
 >
-> > On Nov 13, 2014, at 6:04 PM, Stephen Rothwell <sfr@canb.auug.org.au> wr=
-ote:
-> >=20
-> > I noticed commit c47b15c4928c ("arch/tile: update MAINTAINERS email to
-> > EZchip") in the tile tree today.  Should I update the contact address I
-> > have for you?
->=20
-> Yes thanks!
+> Forcing clocks to 0 at first will probably create issues on some platfoms.
+> I think what Doug meant was something like [0], which would then enable
+> the clk_conf part to force the rate change. I haven't tested this yet, but it
+> seems the check in clk_set_rate is the only one checking for identical new
+> and old rates.
 
-Done.
+Hrm, I was actually not thinking of adding a new device tree property.
+I was thinking that we'd _always_ call "force" for
+"assigned-clock-rates".  Really the check in clk_set_rate() is an
+optimization (right?), not for correctness.  Thus it should be OK to
+bypass it at bootup.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Actually, maybe even better: for all clocks you should always skip the
+"clk_get_rate()" check the first time through.  Then you'd ensure that
+you aren't using some default or firmware-assigned clock settings.
+AKA, something like this untested patch:
 
---Sig_/Q=qZpytGPM70orkhdySSs/E
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 59d853d..56db138 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1618,9 +1618,10 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
+        /* prevent racing with updates to the clock topology */
+        clk_prepare_lock();
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-       /* bail early if nothing to do */
+-       if (rate == clk_get_rate(clk))
++       /* bail early if nothing to do; linux should always set the rate once */
++       if (rate == clk_get_rate(clk) && clk->did_set_rate)
+                goto out;
++       clk->did_set_rate = true;
 
-iQIcBAEBCAAGBQJUZT30AAoJEMDTa8Ir7ZwVb0gP+gO48vLEhruD7HXJ87mWOwyq
-BNeVTsLMImJlm7QTA3vEXAG0SdGFejFk9xujK2n41qK8+Wt8871+jKdXPUNZ91U0
-xsC2ohl6cjexh27dRhQ4OjSvuS9ypf7ZmSo5bGUo3jIGYOQEF2vGIo3Tnz7oTMIp
-Bb/GZ65vh8QkG9lfUuVR9Y/eIba2rbqWJZGA6qm2qp2ZqfPRz6TkG0f7ihOzl1jH
-jeDPQftjkYcSGSILmhr/9P6mGxRezajjRNk0A/fJEWxFGVkdbR3uLcCWiNUJxIpy
-3frj06BEn/D5Cdn6ARIwTLEIaVUzcXnKDvLbfqoBc4F330rmYZeM28HfHLynRFkA
-zRiQOKGg6sxDgD9+H+f8WmDWpHdRckB5dtE3QqKomu7i8oOYL31gqCxhbQbizEtI
-VBEYbgJd5Xz8n0ovGCbzezkkd+rA/2Iof16NZ7hL0gnK4lzSOopPxTaNThb2IVnw
-4+x5wzrzXL+Nu5enfbkCeLRrqCOiFI+LNeIMEMBtID2f/OGpaZB5fUNn/ht17+ML
-S38HRurh0IJ0cw1qSU7PftGxFugN2mkSnLyQuRpAzpbThzlFkhEB31SB9iY/AHTs
-HPgRglkCBbR1iwIKk5HPPKfE5BG1c0V8xF0XyUwljaovoKKq1Fg7cJbQKcLDSrJq
-ViHjIU2xwNLBH+vNfIYI
-=vOip
------END PGP SIGNATURE-----
+        if ((clk->flags & CLK_SET_RATE_GATE) && clk->prepare_count) {
+                ret = -EBUSY;
 
---Sig_/Q=qZpytGPM70orkhdySSs/E--
+I'm ducking now in case Mike decides to throw a tomato at me.
+
+-Doug
