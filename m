@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200AbaKMJCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:02:44 -0500
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:41158 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709AbaKMJCk convert rfc822-to-8bit (ORCPT
+	id S932232AbaKMJDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:03:14 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:58262 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215AbaKMJDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:02:40 -0500
-X-Greylist: delayed 2009 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Nov 2014 04:02:39 EST
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-To: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-CC: Hayato Momma <h-momma@ce.jp.nec.com>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: [PATCH] ixgbe: make VLAN filter conditional in SR-IOV case
-Thread-Topic: [PATCH] ixgbe: make VLAN filter conditional in SR-IOV case
-Thread-Index: Ac//G8Ebgt2hdo25TzufE5RPi0Crjg==
-Date: Thu, 13 Nov 2014 08:28:20 +0000
-Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05D9D336@BPXM14GP.gisp.nec.co.jp>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.5.123]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Nov 2014 04:03:10 -0500
 MIME-Version: 1.0
+In-Reply-To: <1642105.slZZIy9b79@vostro.rjw.lan>
+References: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
+	<1415802748-30530-6-git-send-email-k.kozlowski@samsung.com>
+	<1642105.slZZIy9b79@vostro.rjw.lan>
+Date: Thu, 13 Nov 2014 10:03:08 +0100
+Message-ID: <CAPDyKFqj8SuGhehR1e=qY-6fd3tPegdhaeBgAB61YjUkSVnzDg@mail.gmail.com>
+Subject: Re: [PATCH v11 5/6] dmaengine: pl330: Add PM sleep support
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+On 13 November 2014 02:37, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Wednesday, November 12, 2014 03:32:27 PM Krzysztof Kozlowski wrote:
+>> Add system suspend/resume capabilities to the pl330 driver so the amba
+>> bus clock could be also unprepared to conserve energy.
+>>
+>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> ---
+>>  drivers/dma/pl330.c | 37 +++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 37 insertions(+)
+>>
+>> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+>> index c3bd3584f261..fd71777fc565 100644
+>> --- a/drivers/dma/pl330.c
+>> +++ b/drivers/dma/pl330.c
+>> @@ -2627,6 +2627,42 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
+>>       return 0;
+>>  }
+>>
+>> +/*
+>> + * Runtime PM callbacks are provided by amba/bus.c driver.
+>> + *
+>> + * It is assumed here that IRQ safe runtime PM is chosen in probe and amba
+>> + * bus driver will only disable/enable the clock in runtime PM callbacks.
+>> + */
+>> +static int __maybe_unused pl330_suspend(struct device *dev)
+>> +{
+>> +     struct amba_device *pcdev = to_amba_device(dev);
+>> +
+>> +     if (!pm_runtime_status_suspended(dev)) {
+>
+> It generally isn't safe to call that in .suspend(), because the status may still
+> change in theory.  On the other hand, if you do that in .suspend_late(), you'll
+> be safe from that.
+>
 
-Disable hardware VLAN filtering if netdev->features VLAN flag is dropped.
+Just to clarify that statement; it's safe in a ->suspend_late()
+callback, because runtime PM has been disabled by the PM core.
 
-In SR-IOV case, there is a use case which needs to disable VLAN filter.
-For example, we need to make a network function with VF in virtualized
-environment. That network function may be a software switch, a router
-or etc. It means that that network function will be an end point which
-terminates many VLANs.
+That's also the reason why the pm_runtime_force_suspend() helper is
+disabling runtime PM, such it may be used in some of the earlier
+phases of the system PM callbacks.
 
-In the current implementation, VLAN filtering always be turned on and
-VF can receive only 63 VLANs. It means that only 63 VLANs can be used
-and it's not enough at all for building a virtual router.
-
-With this patch, if the user turns VLAN filtering off on the host, VF
-can receive every VLAN packet.
-The behavior is changed only if VLAN filtering is turned off by ethtool.
-
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-CC: Choi, Sy Jong <sy.jong.choi@intel.com>
----
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 10 ++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c |  4 ++++
- 2 files changed, 14 insertions(+)
-
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index d2df4e3..91ce3a8 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -3948,6 +3948,12 @@ void ixgbe_set_rx_mode(struct net_device *netdev)
- 		hw->addr_ctrl.user_set_promisc = false;
- 	}
- 
-+	/* Disable hardware VLAN filter if the feature flag is dropped */
-+	if (!(netdev->features & NETIF_F_HW_VLAN_CTAG_FILTER)) {
-+		dev_info(&adapter->pdev->dev, "Disable HW VLAN filter\n");
-+		vlnctrl &= ~(IXGBE_VLNCTRL_VFE | IXGBE_VLNCTRL_CFIEN);
-+	}
-+
- 	/*
- 	 * Write addresses to available RAR registers, if there is not
- 	 * sufficient space to store all the addresses then enable
-@@ -7634,6 +7640,10 @@ static int ixgbe_set_features(struct net_device *netdev,
- 	else
- 		ixgbe_vlan_strip_disable(adapter);
- 
-+	/* reset if HW VLAN filter is changed */
-+	if (changed & NETIF_F_HW_VLAN_CTAG_FILTER)
-+		need_reset = true;
-+
- 	if (changed & NETIF_F_RXALL)
- 		need_reset = true;
- 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
-index 13916d8..5508d8a 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
-@@ -776,6 +776,10 @@ static int ixgbe_set_vf_vlan_msg(struct ixgbe_adapter *adapter,
- 	u32 bits;
- 	u8 tcs = netdev_get_num_tc(adapter->netdev);
- 
-+	/* Ignore if VLAN filter is disabled */
-+	if (!(adapter->netdev->features & NETIF_F_HW_VLAN_CTAG_FILTER))
-+		return 0;
-+
- 	if (adapter->vfinfo[vf].pf_vlan || tcs) {
- 		e_warn(drv,
- 		       "VF %d attempted to override administratively set VLAN configuration\n"
--- 
-1.9.0
-
+Kind regards
+Uffe
