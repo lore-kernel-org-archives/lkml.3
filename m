@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375AbaKMJ5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:57:39 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:43613 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932225AbaKMJ5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:57:36 -0500
-X-Listener-Flag: 11101
-Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
- to reduce duplicated code
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>
-In-Reply-To: <20141112134120.393705922@linutronix.de>
-References: <20141112133941.647950773@linutronix.de>
-	 <20141112134120.393705922@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Nov 2014 17:57:29 +0800
-Message-ID: <1415872649.17958.37.camel@mtksdaap41>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
+	id S932410AbaKMJ5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:57:44 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:35943 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932225AbaKMJ5k convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Thu, 13 Nov 2014 04:57:40 -0500
+Message-Id: <54648EA202000078000471CF@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Thu, 13 Nov 2014 09:57:38 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "David Vrabel" <david.vrabel@citrix.com>
+Cc: <x86@kernel.org>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        <xen-devel@lists.xenproject.org>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        "Ingo Molnar" <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH 3/3] x86/xen: use the maximum MFN to
+ calculate the required DMA mask
+References: <1415805906-27316-1-git-send-email-david.vrabel@citrix.com>
+ <1415805906-27316-4-git-send-email-david.vrabel@citrix.com>
+ <546390FC0200007800046E50@mail.emea.novell.com>
+In-Reply-To: <546390FC0200007800046E50@mail.emea.novell.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Wed, 2014-11-12 at 13:43 +0000, Thomas Gleixner wrote:
-> plain text document attachment
-> (rfc-part4-v1-02-17-genirq-introduce-helper-irq_domain_set_info-to-reduce-duplicated-code.patch)
-> From: Jiang Liu <jiang.liu@linux.intel.com>
+>>> On 12.11.14 at 16:55, <JBeulich@suse.com> wrote:
+>>>> On 12.11.14 at 16:25, <david.vrabel@citrix.com> wrote:
+>> +u64
+>> +xen_swiotlb_get_required_mask(struct device *dev)
+>> +{
+>> +	u64 max_mfn;
+>> +
+>> +	max_mfn = HYPERVISOR_memory_op(XENMEM_maximum_ram_page, NULL);
+>> +
+>> +	return DMA_BIT_MASK(fls64(max_mfn << PAGE_SHIFT) + 1);
+>> +}
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-> Cc: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  include/linux/irqdomain.h |    5 +++++
->  kernel/irq/irqdomain.c    |   10 ++++++++++
->  2 files changed, 15 insertions(+)
-> 
-> Index: tip/include/linux/irqdomain.h
-> ===================================================================
-> --- tip.orig/include/linux/irqdomain.h
-> +++ tip/include/linux/irqdomain.h
-> @@ -33,6 +33,7 @@
->  #define _LINUX_IRQDOMAIN_H
->  
->  #include <linux/types.h>
-> +#include <linux/irqhandler.h>
->  #include <linux/radix-tree.h>
->  
->  struct device_node;
-> @@ -263,6 +264,10 @@ extern int irq_domain_set_hwirq_and_chip
->  					 irq_hw_number_t hwirq,
->  					 struct irq_chip *chip,
->  					 void *chip_data);
-> +extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
-> +				irq_hw_number_t hwirq, struct irq_chip *chip,
-> +				void *chip_data, irq_flow_handler_t handler,
-> +				void *handler_data, const char *handler_name);
->  extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
->  extern void irq_domain_free_irqs_common(struct irq_domain *domain,
->  					int virq, int nr_irqs);
-> Index: tip/kernel/irq/irqdomain.c
-> ===================================================================
-> --- tip.orig/kernel/irq/irqdomain.c
-> +++ tip/kernel/irq/irqdomain.c
-> @@ -882,6 +882,16 @@ int irq_domain_set_hwirq_and_chip(struct
->  	return 0;
->  }
->  
-> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
-> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
-> +			 void *chip_data, irq_flow_handler_t handler,
-> +			 void *handler_data, const char *handler_name)
-> +{
-> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
-> +	__irq_set_handler(virq, handler, 0, handler_name);
-> +	irq_set_handler_data(virq, handler_data);
-> +}
-> +
+> The value the hypercall returns is exclusive and an unsigned long.
 
-Hi,
+The latter has further relevance: For one, HYPERVISOR_memory_op()
+returns "int" currently - this needs to become "long" for the purpose
+here (also for eventual future uses of XENMEM_maximum_gpfn and
+XENMEM_{current,maximum}_reservation).
 
-While trying to use this function, I'm not sure about its interface.
-This function have 8 parameters but only save 3 function calls. After
-checking uses in Jiang's original patch, I think this make code harder
-to understand.
+And then, using u64 rather than unsigned long for max_mfn would
+still cause problems for 32-bit kernels on systems with memory
+extending beyond the 8Tb boundary (since the long -> u64
+conversion really goes long -> s64 -> u64).
 
-Joe.C
-
+Jan
 
