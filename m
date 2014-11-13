@@ -1,88 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545AbaKMKoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 05:44:16 -0500
-Received: from tundra.namei.org ([65.99.196.166]:51185 "EHLO namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932354AbaKMKoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 05:44:13 -0500
-Date: Thu, 13 Nov 2014 21:44:08 +1100 (AEDT)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Moore <paul@paul-moore.com>
-Subject: [GIT PULL] SELinux: make selinux_nlmsg_perm() less alarmist
-Message-ID: <alpine.LRH.2.11.1411132135540.1060@namei.org>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S932553AbaKMKqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 05:46:07 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:42283 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932254AbaKMKqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 05:46:04 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [82.146.27.14]
+In-Reply-To: <20141110162736.GA16054@cbox>
+References: <1394726249-1547-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1394726249-1547-2-git-send-email-a.motakis@virtualopensystems.com>
+ <20140328190913.GJ25519@cbox> <CADDJ2=Opx2d5ex0hWSXYJjs6uLifR9wZVsahUHzZ7zytSj7ZSg@mail.gmail.com>
+ <20141110162736.GA16054@cbox>
+From: Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>
+Date: Thu, 13 Nov 2014 12:45:42 +0200
+Message-ID: <CADDJ2=PTM0fJ0RFfWdVQ1-471xqaJmj0vP1f5-pf57xOV5jgig@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/4] ARM: KVM: on unhandled IO mem abort, route the
+ call to the KVM MMIO bus
+To: Christoffer Dall <christoffer.dall@linaro.org>,
+        Andre Przywara <andre.przywara@linaro.org>
+Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        Alexander Graf <agraf@suse.de>, marc.zyngier@arm.com,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARN_ONCE() here will unnecessarily terrify users.  Please pull for 
-v.3.18.
+On Mon, Nov 10, 2014 at 6:27 PM, Christoffer Dall
+<christoffer.dall@linaro.org> wrote:
+> On Mon, Nov 10, 2014 at 05:09:07PM +0200, Nikolay Nikolaev wrote:
+>> Hello,
+>>
+>> On Fri, Mar 28, 2014 at 9:09 PM, Christoffer Dall
+>> <christoffer.dall@linaro.org> wrote:
+>> >
+>> > On Thu, Mar 13, 2014 at 04:57:26PM +0100, Antonios Motakis wrote:
+>> > > On an unhandled IO memory abort, use the kvm_io_bus_* API in order to
+>> > > handle the MMIO access through any registered read/write callbacks. This
+>> > > is a dependency for eventfd support (ioeventfd and irqfd).
+>> > >
+>> > > However, accesses to the VGIC are still left implemented independently,
+>> > > since the kvm_io_bus_* API doesn't pass the VCPU pointer doing the access.
+>> > >
+>> > > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> > > Signed-off-by: Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>
+>> > > ---
+>> > >  arch/arm/kvm/mmio.c | 32 ++++++++++++++++++++++++++++++++
+>> > >  virt/kvm/arm/vgic.c |  5 ++++-
+>> > >  2 files changed, 36 insertions(+), 1 deletion(-)
+>> > >
+>> > > diff --git a/arch/arm/kvm/mmio.c b/arch/arm/kvm/mmio.c
+>> > > index 4cb5a93..1d17831 100644
+>> > > --- a/arch/arm/kvm/mmio.c
+>> > > +++ b/arch/arm/kvm/mmio.c
+>> > > @@ -162,6 +162,35 @@ static int decode_hsr(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
+>> > >       return 0;
+>> > >  }
+>> > >
+>> > > +/**
+>> > > + * kvm_handle_mmio - handle an in-kernel MMIO access
+>> > > + * @vcpu:    pointer to the vcpu performing the access
+>> > > + * @run:     pointer to the kvm_run structure
+>> > > + * @mmio:    pointer to the data describing the access
+>> > > + *
+>> > > + * returns true if the MMIO access has been performed in kernel space,
+>> > > + * and false if it needs to be emulated in user space.
+>> > > + */
+>> > > +static bool handle_kernel_mmio(struct kvm_vcpu *vcpu, struct kvm_run *run,
+>> > > +             struct kvm_exit_mmio *mmio)
+>> > > +{
+>> > > +     int ret;
+>> > > +     if (mmio->is_write) {
+>> > > +             ret = kvm_io_bus_write(vcpu->kvm, KVM_MMIO_BUS, mmio->phys_addr,
+>> > > +                             mmio->len, &mmio->data);
+>> > > +
+>> > > +     } else {
+>> > > +             ret = kvm_io_bus_read(vcpu->kvm, KVM_MMIO_BUS, mmio->phys_addr,
+>> > > +                             mmio->len, &mmio->data);
+>> > > +     }
+>> > > +     if (!ret) {
+>> > > +             kvm_prepare_mmio(run, mmio);
+>> > > +             kvm_handle_mmio_return(vcpu, run);
+>> > > +     }
+>> > > +
+>> > > +     return !ret;
+>> > > +}
+>> > > +
+>> > >  int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
+>> > >                phys_addr_t fault_ipa)
+>> > >  {
+>> > > @@ -200,6 +229,9 @@ int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
+>> > >       if (vgic_handle_mmio(vcpu, run, &mmio))
+>> > >               return 1;
+>> > >
+>> > > +     if (handle_kernel_mmio(vcpu, run, &mmio))
+>> > > +             return 1;
+>> > > +
+>>
+>>
+>> We're reconsidering ioeventfds patchseries and we tried to evaluate
+>> what you suggested here.
+>>
+>> >
+>> > this special-casing of the vgic is now really terrible.  Is there
+>> > anything holding you back from doing the necessary restructure of the
+>> > kvm_bus_io_*() API instead?
+>>
+>> Restructuring the kvm_io_bus_ API is not a big thing (we actually did
+>> it), but is not directly related to the these patches.
+>> Of course it can be justified if we do it in the context of removing
+>> vgic_handle_mmio and leaving only handle_kernel_mmio.
+>>
+>> >
+>> > That would allow us to get rid of the ugly
+>> > Fix it! in the vgic driver as well.
+>>
+>> Going through the vgic_handle_mmio we see that it will require large
+>> refactoring:
+>>  - there are 15 MMIO ranges for the vgic now - each should be
+>> registered as a separate device
+>>  - the handler of each range should be split into read and write
+>>  - all handlers take 'struct kvm_exit_mmio', and pass it to
+>> 'vgic_reg_access', 'mmio_data_read' and 'mmio_data_read'
+>>
+>> To sum up - if we do this refactoring of vgic's MMIO handling +
+>> kvm_io_bus_ API getting 'vcpu" argument we'll get a 'much' cleaner
+>> vgic code and as a bonus we'll get 'ioeventfd' capabilities.
+>>
+>> We have 3 questions:
+>>  - is the kvm_io_bus_ getting 'vcpu' argument acceptable for the other
+>> architectures too?
+>>  - is this huge vgic MMIO handling redesign acceptable/desired (it
+>> touches a lot of code)?
+>>  - is there a way that ioeventfd is accepted leaving vgic.c in it's
+>> current state?
+>>
+> Not sure how the latter question is relevant to this, but check with
+> Andre who recently looked at this as well and decided that for GICv3 the
+> only sane thing was to remove that comment for the gic.
+@Andre - what's your experience with the GICv3 and MMIO handling,
+anything specific?
+>
+> I don't recall the details of what you were trying to accomplish here
+> (it's been 8 months or so) but the surely the vgic handling code should
+> *somehow* be integrated into the handle_kernel_mmio (like Paolo
+> suggested), unless you come back and tell me that that would involve a
+> complete rewrite of the vgic code.
+I'm experimenting now - it's not exactly rewrite of whole vgic code,
+but it will touch a lot of it  - all MMIO access handlers and the
+supporting functions.
+We're ready to spend the effort. My question is  - is this acceptable?
 
-
-The following changes since commit 04689e749b7ec156291446028a0ce2e685bf3855:
-
-  Merge tag 'for-linus' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2014-11-12 15:29:28 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-
-James Morris (1):
-      Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus
-
-Richard Guy Briggs (1):
-      selinux: convert WARN_ONCE() to printk() in selinux_nlmsg_perm()
-
- security/selinux/hooks.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
-
----
-
-commit 09c626892772e6fe03f768b3492fbb126f465fe6
-Merge: 04689e7 d950f84
-Author: James Morris <james.l.morris@oracle.com>
-Date:   Thu Nov 13 21:49:53 2014 +1100
-
-    Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus
-
-
-commit d950f84c1c6658faec2ecbf5b09f7e7191953394
-Author: Richard Guy Briggs <rgb@redhat.com>
-Date:   Wed Nov 12 14:01:34 2014 -0500
-
-    selinux: convert WARN_ONCE() to printk() in selinux_nlmsg_perm()
-    
-    Convert WARN_ONCE() to printk() in selinux_nlmsg_perm().
-    
-    After conversion from audit_log() in commit e173fb26, WARN_ONCE() was
-    deemed too alarmist, so switch it to printk().
-    
-    Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-    [PM: Changed to printk(WARNING) so we catch all of the different
-     invalid netlink messages.  In Richard's defense, he brought this
-     point up earlier, but I didn't understand his point at the time.]
-    Signed-off-by: Paul Moore <pmoore@redhat.com>
-
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 2478976..654f071 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4727,9 +4727,10 @@ static int selinux_nlmsg_perm(struct sock *sk, struct sk_buff *skb)
- 	err = selinux_nlmsg_lookup(sksec->sclass, nlh->nlmsg_type, &perm);
- 	if (err) {
- 		if (err == -EINVAL) {
--			WARN_ONCE(1, "selinux_nlmsg_perm: unrecognized netlink message:"
--				  " protocol=%hu nlmsg_type=%hu sclass=%hu\n",
--				  sk->sk_protocol, nlh->nlmsg_type, sksec->sclass);
-+			printk(KERN_WARNING
-+			       "SELinux: unrecognized netlink message:"
-+			       " protocol=%hu nlmsg_type=%hu sclass=%hu\n",
-+			       sk->sk_protocol, nlh->nlmsg_type, sksec->sclass);
- 			if (!selinux_enforcing || security_get_allow_unknown())
- 				err = 0;
- 		}
+regards,
+Nikolay Nikolaev
+Virtual Open Systems
+>
+> -Christoffer
