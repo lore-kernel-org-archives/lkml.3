@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933033AbaKMMyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:54:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46760 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498AbaKMMyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:54:18 -0500
-Date: Thu, 13 Nov 2014 13:54:01 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: B_B_Singh@DELL.com
-cc: bp@suse.de, stuart.w.hayes@gmail.com, hpa@zytor.com, mingo@redhat.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, matt.fleming@intel.com
-Subject: RE: [PATCH] x86: Configure NX support earlier in setup_arch
-In-Reply-To: <8B2F6FFD0BD1E448853114367400A3730702007068@BLRX7MCDC203.AMER.DELL.COM>
-Message-ID: <alpine.DEB.2.11.1411131147070.3935@nanos>
-References: <53B4B627.8060903@gmail.com> <53BC7210.1000305@gmail.com> <53BC72D8.4090705@zytor.com> <53BDE4BD.50605@gmail.com> <20140714172225.GE25120@pd.tnic> <8B2F6FFD0BD1E448853114367400A3730702007068@BLRX7MCDC203.AMER.DELL.COM>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S933051AbaKMMy2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:54:28 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52650 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932498AbaKMMy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 07:54:26 -0500
+Message-ID: <1415883227.666.6.camel@kernel.crashing.org>
+Subject: Re: [PATCH] of/base: Fix PowerPC address parsing hack
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, linuxppc-dev <linuxppc-dev@ozlabs.org>
+Date: Thu, 13 Nov 2014 23:53:47 +1100
+In-Reply-To: <CACxGe6s0CXL2oRKCLhzzycOKWJStxdZsc1pn_X8fLuAqCguBMA@mail.gmail.com>
+References: <1415771461.5124.33.camel@kernel.crashing.org>
+	 <20141113091036.4e9ec43d@canb.auug.org.au>
+	 <1415833725.5124.53.camel@kernel.crashing.org>
+	 <1415839522.5124.58.camel@kernel.crashing.org>
+	 <CACxGe6s0CXL2oRKCLhzzycOKWJStxdZsc1pn_X8fLuAqCguBMA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, B_B_Singh@DELL.com wrote:
-> I feel this can be a valid scenario where user wants to disable the
-> memory protection (NX flag disable) for his requirement, in that
-> case he will hit this issue.
+On Thu, 2014-11-13 at 12:44 +0000, Grant Likely wrote:
+> On Thu, Nov 13, 2014 at 12:45 AM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+> > What about this one instead ? I want to cache it because that function
+> > can be called quite a while and doing two additional property lookup
+> > and string compares every time might hurt some platforms.
+> >
+> > ----
+> >
+> > We have a historical hack that treats missing ranges properties as the
+> > equivalent of an empty one. This is needed for ancient PowerMac "bad"
+> > device-trees, and shouldn't be enabled for any other PowerPC platform,
+> > otherwise we get some nasty layout of devices in sysfs or even
+> > duplication when a set of otherwise identically named devices is
+> > created multiple times under a different parent node with no ranges
+> > property.
+> >
+> > This fix is needed for the PowerNV i2c busses to be exposed properly
+> > and will fix a number of other embedded cases.
+> >
+> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > CC: <stable@vger.kernel.org>
+> 
+> How far back does this need to go? I assume I need to get this in for v3.18.
 
-It's not about feelings. If the user wants to disable NX he can do so
-already via the kernel command line.
+I'd like some distro to pick it up in 3.16
 
-What that patch is useful for is to prevent an hard to debug boot
-crash if the kernel happens to run on some wreckaged BIOS. But it's
-not there to support and encourage braindamaged BIOS nonsense.
+> > diff --git a/drivers/of/address.c b/drivers/of/address.c
+> > index e371825..5eae0cd 100644
+> > --- a/drivers/of/address.c
+> > +++ b/drivers/of/address.c
+> > @@ -403,6 +403,17 @@ static struct of_bus *of_match_bus(struct device_node *np)
+> >         return NULL;
+> >  }
+> >
+> > +static int of_empty_ranges_quirk(void)
+> > +{
+> > +       /* To save cycles, we cache the result */
+> > +       static int quirk_state = -1;
+> > +
+> 
+> if (IS_ENABLED(CONFIG_POWERPC)) {
+> 
+> > +       if (quirk_state < 0)
+> > +               quirk_state = of_machine_is_compatible("Power Macintosh") ||
+> > +                       of_machine_is_compatible("MacRISC");
+> > +       return quirk_state;
+> 
+> }
+> return 0;
+> 
+> So it gets compiled out for non powerpc.
 
-Thanks,
+Yeah, I'm set in my ways, keep forgetting about all the shiny new stuff.
 
-	tglx
-
-
+> > +}
+> > +
+> >  static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+> >                             struct of_bus *pbus, __be32 *addr,
+> >                             int na, int ns, int pna, const char *rprop)
+> > @@ -428,12 +439,10 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+> >          * This code is only enabled on powerpc. --gcl
+> >          */
+> >         ranges = of_get_property(parent, rprop, &rlen);
+> > -#if !defined(CONFIG_PPC)
+> > -       if (ranges == NULL) {
+> > +       if (ranges == NULL && !of_empty_ranges_quirk()) {
+> >                 pr_err("OF: no ranges; cannot translate\n");
+> >                 return 1;
+> >         }
+> > -#endif /* !defined(CONFIG_PPC) */
+> >         if (ranges == NULL || rlen == 0) {
+> >                 offset = of_read_number(addr, na);
+> >                 memset(addr, 0, pna * 4);
+> >
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
