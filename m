@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373AbaKMPTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 10:19:35 -0500
-Received: from ex.trust-in-soft.com ([188.165.147.96]:8581 "EHLO
-	ex.trust-in-soft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaKMPTe convert rfc822-to-8bit (ORCPT
+	id S1753990AbaKMPVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 10:21:31 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57631 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931AbaKMPVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 10:19:34 -0500
-X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Nov 2014 10:19:33 EST
-From: Vincent Benayoun <vincent.benayoun@trust-in-soft.com>
-To: "\"David S. Miller\"" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
-        Julian Anastasov <ja@ssi.bg>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: [PATCH] inetdevice: fixed signed integer overflow
-Thread-Topic: [PATCH] inetdevice: fixed signed integer overflow
-Thread-Index: AQHP/1CtzHM+sl7WR0ypUqqapR5lCw==
-Date: Thu, 13 Nov 2014 15:04:57 +0000
-Message-ID: <1e488fa546724140b55c8d4bd6b5a9d6@S1688.EX1688.lan>
-Accept-Language: fr-FR, en-US
-Content-Language: fr-FR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [84.14.219.2]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Nov 2014 10:21:30 -0500
+Date: Thu, 13 Nov 2014 15:21:15 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Kyle McMartin <kmcmarti@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pmatouse@redhat.com" <pmatouse@redhat.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: __clear_user: handle exceptions on strb
+Message-ID: <20141113152115.GB22361@e104818-lin.cambridge.arm.com>
+References: <20141112210744.GC6869@redacted.bos.redhat.com>
+ <20141113150624.GB18494@e104818-lin.cambridge.arm.com>
+ <20141113151407.GG6869@redacted.bos.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141113151407.GG6869@redacted.bos.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f25ff0f2645f9763552147d480f86973b7041e26 Mon Sep 17 00:00:00 2001
-From: Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>
-Date: Thu, 13 Nov 2014 13:47:26 +0100
-Subject: [PATCH] inetdevice: fixed signed integer overflow
+On Thu, Nov 13, 2014 at 03:14:08PM +0000, Kyle McMartin wrote:
+> On Thu, Nov 13, 2014 at 03:06:25PM +0000, Catalin Marinas wrote:
+> > On Wed, Nov 12, 2014 at 09:07:44PM +0000, Kyle McMartin wrote:
+> > > ARM64 currently doesn't fix up faults on the single-byte (strb) case of
+> > > __clear_user... which means that we can cause a nasty kernel panic as an
+> > > ordinary user with any multiple PAGE_SIZE+1 read from /dev/zero.
+> > > i.e.: dd if=/dev/zero of=foo ibs=1 count=1 (or ibs=65537, etc.)
+> > 
+> > Thanks for this, it's been like this for a while. Applied.
+> > 
+> 
+> Thanks Catalin, if it's not too late, I forgot to add a
+> Reported-by: Miloš Prchlík <mprchlik@redhat.com>
+> for the initial report of the panic.
 
-There could be a signed overflow in the following code.
+I'll add this, I haven't pushed it out yet.
 
-The expression, (32-logmask) is comprised between 0 and 31 included.
-It may be equal to 31.
-In such a case the left shift will produce a signed integer overflow.
-According to the C99 Standard, this is an undefined behavior.
-A simple fix is to replace the signed int 1 with the unsigned int 1U.
-
-Best Regards,
-Vincent Benayoun
-R&D engineer @ TrustInSoft
-
-Signed-off-by: Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>
----
- include/linux/inetdevice.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/inetdevice.h b/include/linux/inetdevice.h
-index 0068708..0a21fbe 100644
---- a/include/linux/inetdevice.h
-+++ b/include/linux/inetdevice.h
-@@ -242,7 +242,7 @@ static inline void in_dev_put(struct in_device *idev)
- static __inline__ __be32 inet_make_mask(int logmask)
- {
- 	if (logmask)
--		return htonl(~((1<<(32-logmask))-1));
-+		return htonl(~((1U<<(32-logmask))-1));
- 	return 0;
- }
- 
 -- 
-1.9.1
+Catalin
