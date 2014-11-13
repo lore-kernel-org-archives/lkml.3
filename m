@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134AbaKMMz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 07:55:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40411 "EHLO arroyo.ext.ti.com"
+	id S933227AbaKMM5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 07:57:00 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41484 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932603AbaKMMzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 07:55:54 -0500
+	id S932809AbaKMM4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 07:56:55 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <chris@printf.net>, <ulf.hansson@linaro.org>, <tony@atomide.com>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <afenkart@gmail.com>, <kishon@ti.com>
+        <linux-omap@vger.kernel.org>, <afenkart@gmail.com>, <nsekhar@ti.com>,
+        <kishon@ti.com>
 Subject: [RFC PATCH 0/3] DRA72: MMC HS200 support
-Date: Thu, 13 Nov 2014 18:25:21 +0530
-Message-ID: <1415883324-19591-1-git-send-email-kishon@ti.com>
+Date: Thu, 13 Nov 2014 18:26:16 +0530
+Message-ID: <1415883379-19654-1-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
