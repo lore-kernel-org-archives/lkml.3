@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaKMJaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 04:30:04 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:37494 "EHLO
+	id S932250AbaKMJbD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 04:31:03 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:40500 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102AbaKMJaA convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932074AbaKMJbB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 04:30:00 -0500
-Message-ID: <54647A28.7080901@arm.com>
-Date: Thu, 13 Nov 2014 09:30:16 +0000
+	Thu, 13 Nov 2014 04:31:01 -0500
+Message-ID: <54647A66.6020708@arm.com>
+Date: Thu, 13 Nov 2014 09:31:18 +0000
 From: Juri Lelli <juri.lelli@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
@@ -16,11 +16,11 @@ To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>
 CC: Kirill Tkhai <ktkhai@parallels.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched/deadline: fix rq->dl.pushable_tasks bug in push_dl_task()
-References: <1415258564-8573-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1415258564-8573-1-git-send-email-wanpeng.li@linux.intel.com>
-X-OriginalArrivalTime: 13 Nov 2014 09:29:56.0905 (UTC) FILETIME=[636D5990:01CFFF24]
-X-MC-Unique: 114111309295702901
+Subject: Re: [PATCH 1/2] sched/deadline: introduce start_hrtick_dl for !CONFIG_SCHED_HRTICK
+References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 13 Nov 2014 09:30:58.0311 (UTC) FILETIME=[88072970:01CFFF24]
+X-MC-Unique: 114111309305906701
 Content-Type: text/plain; charset=WINDOWS-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,57 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On 06/11/14 07:22, Wanpeng Li wrote:
-> Do not call dequeue_pushable_dl_task() when failing to push an eligible
-> task, as it remains pushable, merely not at this particular moment. 
-> Actually the patch is the same behavior as commit 311e800e16f6 ("sched, 
-> rt: Fix rq->rt.pushable_tasks bug in push_rt_task()" in -rt side.
+On 11/11/14 01:52, Wanpeng Li wrote:
+> Introduce start_hrtick_dl for !CONFIG_SCHED_HRTICK to align with
+> fair class.
 > 
 > Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 > ---
->  kernel/sched/deadline.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+>  kernel/sched/deadline.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
 > diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index f3d7776..00324af 100644
+> index 04c2cbb..56674f6 100644
 > --- a/kernel/sched/deadline.c
 > +++ b/kernel/sched/deadline.c
-> @@ -1331,6 +1331,7 @@ static int push_dl_task(struct rq *rq)
+> @@ -1013,6 +1013,10 @@ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
 >  {
->  	struct task_struct *next_task;
->  	struct rq *later_rq;
-> +	int ret = 0;
+>  	hrtick_start(rq, p->dl.runtime);
+>  }
+> +#else /* !CONFIG_SCHED_HRTICK */
+> +static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+> +{
+> +}
+>  #endif
 >  
->  	if (!rq->dl.overloaded)
->  		return 0;
-> @@ -1376,7 +1377,6 @@ retry:
->  			 * The task is still there. We don't try
->  			 * again, some other cpu will pull it when ready.
->  			 */
-> -			dequeue_pushable_dl_task(rq, next_task);
->  			goto out;
->  		}
+>  static struct sched_dl_entity *pick_next_dl_entity(struct rq *rq,
+> @@ -1066,10 +1070,8 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
+>  	/* Running task will never be pushed. */
+>         dequeue_pushable_dl_task(rq, p);
 >  
-> @@ -1392,6 +1392,7 @@ retry:
->  	deactivate_task(rq, next_task, 0);
->  	set_task_cpu(next_task, later_rq->cpu);
->  	activate_task(later_rq, next_task, 0);
-> +	ret = 1;
+> -#ifdef CONFIG_SCHED_HRTICK
+>  	if (hrtick_enabled(rq))
+>  		start_hrtick_dl(rq, p);
+> -#endif
 >  
->  	resched_curr(later_rq);
+>  	set_post_schedule(rq);
 >  
-> @@ -1400,7 +1401,7 @@ retry:
->  out:
->  	put_task_struct(next_task);
+> @@ -1088,10 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
+>  {
+>  	update_curr_dl(rq);
 >  
-> -	return 1;
-> +	return ret;
+> -#ifdef CONFIG_SCHED_HRTICK
+>  	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
+>  		start_hrtick_dl(rq, p);
+> -#endif
 >  }
 >  
->  static void push_dl_tasks(struct rq *rq)
+>  static void task_fork_dl(struct task_struct *p)
 > 
 
-This looks good.
+Looks good!
 
 Acked-by: Juri Lelli <juri.lelli@arm.com>
 
