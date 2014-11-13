@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaKMAkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 19:40:52 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34809 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaKMAkv convert rfc822-to-8bit (ORCPT
+	id S1753606AbaKMAmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 19:42:18 -0500
+Received: from regular1.263xmail.com ([211.150.99.133]:60521 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830AbaKMAmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 19:40:51 -0500
-Content-Type: text/plain; charset="utf-8"
+	Wed, 12 Nov 2014 19:42:16 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: jwerner@chromium.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <6f1fb44ae25beb134f5b726836d77942>
+X-DNS-TYPE: 0
+Message-ID: <5463FE5E.906@rock-chips.com>
+Date: Thu, 13 Nov 2014 08:42:06 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Doug Anderson <dianders@chromium.org>,
-        "Dmitry Torokhov" <dtor@chromium.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <CAD=FV=UsYWDw0wB6KSANXZYnnBFdTL9wOEqf9DoUF8aFuDpNSw@mail.gmail.com>
-Cc: "Heiko Stuebner" <heiko@sntech.de>, "Jianqun" <jay.xu@rock-chips.com>,
-        "Kever Yang" <kever.yang@rock-chips.com>,
-        "Mark yao" <mark.yao@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Doug Anderson <dianders@chromium.org>
+CC: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>, romain.perier@gmail.com,
+        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        lyz <lyz@rock-chips.com>, wulf <wulf@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
         "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20141112213845.GA14153@dtor-ws>
- <CAD=FV=UsYWDw0wB6KSANXZYnnBFdTL9wOEqf9DoUF8aFuDpNSw@mail.gmail.com>
-Message-ID: <20141113004046.25314.61598@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: rockchip: ensure HCLK_VIO2_H2P and PCLK_VIO2_H2P stay
- enabled
-Date: Wed, 12 Nov 2014 16:40:46 -0800
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jwerner@chromium.org
+Subject: Re: [PATCH v3] usb: dwc2: add bus suspend/resume for dwc2
+References: <1415624983-22413-1-git-send-email-kever.yang@rock-chips.com> <CAD=FV=V-D3qTtnwjme8k=boUkoGGPmfvcF=Jboq0qcRBzKrY6g@mail.gmail.com>
+In-Reply-To: <CAD=FV=V-D3qTtnwjme8k=boUkoGGPmfvcF=Jboq0qcRBzKrY6g@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Doug Anderson (2014-11-12 13:49:18)
-> Hi,
-> 
-> On Wed, Nov 12, 2014 at 1:38 PM, Dmitry Torokhov <dtor@chromium.org> wrote:
-> > Currently there is no driver owning these clocks and they have to stay
-> > up for the system to function properly, so let's mark them as
-> > CLK_IGNORE_UNUSED.
-> >
-> > Without this patch we have trouble with suspend/resume and we have
-> > trouble turning the eDP back on if it ever idles off.
-> >
-> > Signed-off-by: Doug Anderson <dianders@chromium.org>
-> > Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-> > ---
-> >  drivers/clk/rockchip/clk-rk3288.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> I'm already on the signed-off-by (mostly because I tweaked the commit
-> message and tested this), but in case anyone cares I have reviewed
-> this and tested it.  ;)
-> 
-> ...obviously we want to get to the bottom of the right way to handle
-> all of these clocks, but since we _just_ removed the blanket "leave
-> all clocks enabled" adding a few clocks back into the fold seems sane
-> until we get all our ducks in a row.
-> 
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
+Doug,
 
-Seems fine to me. Just to be clear, Heiko will be picking up the
-Rockchip clock patches and submitting a PR, correct? I believe last
-merge window was the first time we did that for Rockchip and it went
-well.
+On 11/13/2014 07:22 AM, Doug Anderson wrote:
+> Kever,
+>
+> On Mon, Nov 10, 2014 at 5:09 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+>> Hcd controller needs bus_suspend/resume, dwc2 controller make
+>> root hub generate suspend/resume signal with hprt0 register
+>> when work in host mode.
+>> After the root hub enter suspend, we can make controller enter
+>> low power state with PCGCTL register.
+>>
+>> We also update the lx_state for hsotg state.
+>>
+>> This patch has tested on rk3288 with suspend/resume.
+>>
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>> Acked-by: Paul Zimmerman <paulz@synopsys.com>
+>> ---
+>>
+>> Changes in v3:
+>> - remove CONFIG_PM macro for bus_suspend/resume
+>> - add PCGCTL operation for no device connect case
+>>
+>> Changes in v2:
+>> - update commit message
+>> - make dwc2 suspend/resume sourcecode work
+>>
+>>   drivers/usb/dwc2/hcd.c | 88 +++++++++++++++++++++++++++++++++++++++++++-------
+>>   1 file changed, 77 insertions(+), 11 deletions(-)
+> I would certainly appreciate confirmation, but my inclination is to
+> NAK this change due to the fact that it regresses functionality.  I
+> haven't done any serious review of it, but I've been testing it and it
+> appears to break hotplug.
+>
+> Said another way, I did this:
+>
+> 1. Without this patch, I booted with a USB stick in.  It was detected.
+> I unplugged it, waited 5 seconds, and then plugged it back in.  The
+> USB stick was redetcted.
+>
+> 2. With this patch, I did the same thing.  The USB not redected after
+> plugging it back in.
+With this patch, the dwc2 hcd/root hub will be auto suspend after device
+on port is disconnected, and it can't detect the device connect any more,
+I think that's the problem.
 
-Regards,
-Mike
+I will figure out how to make dwc2 detect the device connect after auto 
+suspend,
+or disable the auto suspend feature for the dwc2 hcd.
+
+- Kever
+
