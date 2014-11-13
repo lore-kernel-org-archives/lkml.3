@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbaKMGt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 01:49:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54323 "EHLO mx2.suse.de"
+	id S1751975AbaKMGyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 01:54:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54363 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997AbaKMGt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 01:49:27 -0500
-Message-ID: <54645474.4040605@suse.com>
-Date: Thu, 13 Nov 2014 07:49:24 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH V3 4/8] xen: Delay invalidating extra memory
-References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-5-git-send-email-jgross@suse.com> <20141112221021.GC7549@laptop.dumpdata.com>
-In-Reply-To: <20141112221021.GC7549@laptop.dumpdata.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751013AbaKMGyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 01:54:52 -0500
+In-Reply-To: <20141111.214752.266800170368088905.davem@davemloft.net>
+References: <20141111.214752.266800170368088905.davem@davemloft.net>
+From: Michal Kubecek <mkubecek@suse.cz>
+Subject: [PATCH net-next v2] net: generic dev_disable_lro() stacked device
+ handling
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jay Vosburgh <j.vosburgh@gmail.com>,
+        Veaceslav Falico <vfalico@gmail.com>,
+        Andy Gospodarek <andy@greyhouse.net>, Jiri Pirko <jiri@resnulli.us>
+Message-Id: <20141113065450.1645FA0BEF@unicorn.suse.cz>
+Date: Thu, 13 Nov 2014 07:54:50 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2014 11:10 PM, Konrad Rzeszutek Wilk wrote:
->> @@ -376,12 +374,14 @@ void __init xen_build_dynamic_phys_to_machine(void)
->>   	unsigned long max_pfn;
->>   	unsigned long pfn;
->>
->> -	 if (xen_feature(XENFEAT_auto_translated_physmap))
->> +	if (xen_feature(XENFEAT_auto_translated_physmap))
->
-> Spurious change.
+Large receive offloading is known to cause problems if received packets
+are passed to other host. Therefore the kernel disables it by calling
+dev_disable_lro() whenever a network device is enslaved in a bridge or
+forwarding is enabled for it (or globally). For virtual devices we need
+to disable LRO on the underlying physical device (which is actually
+receiving the packets).
 
-I'll remove it.
+Current dev_disable_lro() code handles this  propagation for a vlan
+(including 802.1ad nested vlan), macvlan or a vlan on top of a macvlan.
+It doesn't handle other stacked devices and their combinations, in
+particular propagation from a bond to its slaves which often causes
+problems in virtualization setups.
 
->
-> .. snip..
->> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
->> index 0e5f9b6..8d5985b 100644
->> --- a/arch/x86/xen/setup.c
->> +++ b/arch/x86/xen/setup.c
->> @@ -75,7 +75,6 @@ static unsigned long xen_remap_mfn __initdata = INVALID_P2M_ENTRY;
->>
->>   static void __init xen_add_extra_mem(u64 start, u64 size)
->>   {
->> -	unsigned long pfn;
->>   	int i;
->>
->>   	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
->> @@ -95,17 +94,74 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
->>   		printk(KERN_WARNING "Warning: not enough extra memory regions\n");
->>
->>   	memblock_reserve(start, size);
->> +}
->>
->> -	xen_max_p2m_pfn = PFN_DOWN(start + size);
->> -	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
->> -		unsigned long mfn = pfn_to_mfn(pfn);
->> +static void __init xen_del_extra_mem(u64 start, u64 size)
->> +{
->> +	int i;
->> +	u64 start_r, size_r;
->>
->> -		if (WARN_ONCE(mfn == pfn, "Trying to over-write 1-1 mapping (pfn: %lx)\n", pfn))
->> -			continue;
->> -		WARN_ONCE(mfn != INVALID_P2M_ENTRY, "Trying to remove %lx which has %lx mfn!\n",
->> -			  pfn, mfn);
->> +	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
->> +		start_r = xen_extra_mem[i].start;
->> +		size_r = xen_extra_mem[i].size;
->> +
->> +		/* Start of region. */
->> +		if (start_r == start) {
->> +			BUG_ON(size > size_r);
->> +			xen_extra_mem[i].start += size;
->> +			xen_extra_mem[i].size -= size;
->> +			break;
->> +		}
->> +		/* End of region. */
->> +		if (start_r + size_r == start + size) {
->> +			BUG_ON(size > size_r);
->> +			xen_extra_mem[i].size -= size;
->> +			break;
->> +		}
->> +		/* Mid of region. */
->> +		if (start > start_r && start < start_r + size_r) {
->> +			BUG_ON(start + size > start_r + size_r);
->> +			xen_extra_mem[i].size = start - start_r;
->> +			xen_add_extra_mem(start + size, start_r + size_r -
->> +					  (start + size));
->
-> Which ends up calling 'memblock_reserve' for an region it already has
-> reserved. Should we call memblock_free(start_r, size_r - size) before calling this?
->
-> Or is that not neccessary as memblock_* is pretty smart about this sort of thing?
+As we now have generic data structures describing the upper-lower device
+relationship, dev_disable_lro() can be generalized to disable LRO also
+for all lower devices (if any) once it is disabled for the device
+itself.
 
-Regions marked via memblock_reserve() are allowed to overlap. I can add
-a comment.
+For bonding and teaming devices, it is necessary to disable LRO not only
+on current slaves at the moment when dev_disable_lro() is called but
+also on any slave (port) added later.
 
+v2: use lower device links for all devices (including vlan and macvlan)
 
-Juergen
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+---
+ drivers/net/bonding/bond_main.c |  3 +++
+ drivers/net/team/team.c         |  3 +++
+ net/core/dev.c                  | 15 +++++----------
+ 3 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index b9b3456..8575fee 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1526,6 +1526,9 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+ 	}
+ #endif
+ 
++	if (!(bond_dev->features & NETIF_F_LRO))
++		dev_disable_lro(slave_dev);
++
+ 	res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
+ 					 new_slave);
+ 	if (res) {
+diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
+index 2368395..93e2242 100644
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -1179,6 +1179,9 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
+ 		goto err_enable_netpoll;
+ 	}
+ 
++	if (!(dev->features & NETIF_F_LRO))
++		dev_disable_lro(port_dev);
++
+ 	err = netdev_rx_handler_register(port_dev, team_handle_frame,
+ 					 port);
+ 	if (err) {
+diff --git a/net/core/dev.c b/net/core/dev.c
+index bb09b03..1ab168e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1437,22 +1437,17 @@ EXPORT_SYMBOL(dev_close);
+  */
+ void dev_disable_lro(struct net_device *dev)
+ {
+-	/*
+-	 * If we're trying to disable lro on a vlan device
+-	 * use the underlying physical device instead
+-	 */
+-	if (is_vlan_dev(dev))
+-		dev = vlan_dev_real_dev(dev);
+-
+-	/* the same for macvlan devices */
+-	if (netif_is_macvlan(dev))
+-		dev = macvlan_dev_real_dev(dev);
++	struct net_device *lower_dev;
++	struct list_head *iter;
+ 
+ 	dev->wanted_features &= ~NETIF_F_LRO;
+ 	netdev_update_features(dev);
+ 
+ 	if (unlikely(dev->features & NETIF_F_LRO))
+ 		netdev_WARN(dev, "failed to disable LRO!\n");
++
++	netdev_for_each_lower_dev(dev, lower_dev, iter)
++		dev_disable_lro(lower_dev);
+ }
+ EXPORT_SYMBOL(dev_disable_lro);
+ 
+-- 
+1.8.4.5
 
