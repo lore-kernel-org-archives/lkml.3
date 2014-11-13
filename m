@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaKMACK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 19:02:10 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51719 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201AbaKMACJ (ORCPT
+	id S1753475AbaKMADA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 19:03:00 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:40222 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830AbaKMAC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 19:02:09 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 13 Nov 2014 09:02:16 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mahendran Ganesh <opensource.ganesh@gmail.com>
-Cc: ngupta@vflare.org, weijie.yang@samsung.com, sergey.senozhatsky@gmail.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/zram: correct ZRAM_ZERO flag bit position
-Message-ID: <20141113000216.GA1074@bbox>
-References: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
+	Wed, 12 Nov 2014 19:02:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1415803038-7913-1-git-send-email-opensource.ganesh@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com> <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Nov 2014 16:02:37 -0800
+Message-ID: <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 10:37:18PM +0800, Mahendran Ganesh wrote:
-> In struct zram_table_entry, the element *value* contains obj size and
-> obj zram flags. Bit 0 to bit (ZRAM_FLAG_SHIFT - 1) represent obj size,
-> and bit ZRAM_FLAG_SHIFT to the highest bit of unsigned long represent obj
-> zram_flags. So the first zram flag(ZRAM_ZERO) should be from ZRAM_FLAG_SHIFT
-> instead of (ZRAM_FLAG_SHIFT + 1).
-> 
-> This patch fixes this issue.
-> 
-> Also this patch fixes a typo, "page in now accessed" -> "page is now accessed"
-> 
-> Signed-off-by: Mahendran Ganesh <opensource.ganesh@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+On Wed, Nov 12, 2014 at 3:41 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> v2 coming soon with these changes and some additional comment cleanups.
+>
 
-To be clear about "fixes this issue", it's not a bug but just clean up
-so it doesn't change any behavior.
+v2's not going to make a difference unless you're using uprobes at the
+same time.
 
-Thanks!
+> So v1 + do_machine_check change is not surviving some real testing.  I'm injecting and
+> consuming errors sequentially with a small delay in between - so no fancy corner cases with
+> multiple errors being processed ... we get all the way done with one error before we start
+> the next.  Test only survives about 400ish recoveries before Linux dies complaining:
+>     "Timeout synchronizing machine check over CPUs".
+> This probably means that some cpu wandered into the weeds and never showed up in the
+> handler.
 
--- 
-Kind regards,
-Minchan Kim
+In the interest of my sanity, can you add something like
+BUG_ON(!user_mode_vm(regs)) or the mce_panic equivalent before calling
+memory_failure?
+
+What happens if there's a shared bank but the actual offender has a
+higher order than the cpu that finds the error?
+
+Is this something I can try under KVM?
+
+--Andy
