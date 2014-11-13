@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934160AbaKMULg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 15:11:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40672 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933468AbaKMULe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 15:11:34 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1415906662-4576-7-git-send-email-bobby.prani@gmail.com>
-References: <1415906662-4576-7-git-send-email-bobby.prani@gmail.com> <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: dhowells@redhat.com, James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Stephen Hemminger <shemming@brocade.com>,
-        Andreea-Cristina Bernat <bernat.ada@gmail.com>,
-        linux-kernel@vger.kernel.org (open list),
-        keyrings@linux-nfs.org (open list:KEYS/KEYRINGS:),
-        linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 06/16] assoc_array: Replace smp_read_barrier_depends() with lockless_dereference()
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <24279.1415909476.1@warthog.procyon.org.uk>
-Date: Thu, 13 Nov 2014 20:11:16 +0000
-Message-ID: <24280.1415909476@warthog.procyon.org.uk>
+	id S934133AbaKMUNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 15:13:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39134 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933468AbaKMUNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 15:13:36 -0500
+Date: Thu, 13 Nov 2014 12:13:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Drysdale <drysdale@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Rich Felker <dalias@aerifal.cx>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, X86 ML <x86@kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [PATCHv7 0/3] syscalls,x86: Add execveat() system call
+Message-Id: <20141113121334.a0b73e9635f7f2f60a9e6566@linux-foundation.org>
+In-Reply-To: <CAHse=S_uQGmzz+umKDfJPOaT2+TAdzbtjZeVZaj1i4NBVWy35g@mail.gmail.com>
+References: <1415379664-31555-1-git-send-email-drysdale@google.com>
+	<20141112135009.5a887d200be262d94ba50495@linux-foundation.org>
+	<CAHse=S_uQGmzz+umKDfJPOaT2+TAdzbtjZeVZaj1i4NBVWy35g@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pranith Kumar <bobby.prani@gmail.com> wrote:
+On Thu, 13 Nov 2014 14:42:58 +0000 David Drysdale <drysdale@google.com> wrote:
 
->  static inline bool assoc_array_ptr_is_meta(const struct assoc_array_ptr *x)
->  {
-> -	return (unsigned long)x & ASSOC_ARRAY_PTR_TYPE_MASK;
-> +	return (unsigned long)lockless_dereference(x) &
-> +						ASSOC_ARRAY_PTR_TYPE_MASK;
->  }
+> On Wed, Nov 12, 2014 at 9:50 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Fri,  7 Nov 2014 17:01:01 +0000 David Drysdale <drysdale@google.com> wrote:
+> >
+> >> This patch set adds execveat(2) for x86, and is derived from Meredydd
+> >> Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
+> >>
+> >> The primary aim of adding an execveat syscall is to allow an
+> >> implementation of fexecve(3) that does not rely on the /proc
+> >> filesystem, at least for executables (rather than scripts).  The
+> >> current glibc version of fexecve(3) is implemented via /proc, which
+> >> causes problems in sandboxed or otherwise restricted environments.
+> >
+> > Have the relevant glibc people seen/reviewed/liked this?
+> 
+> I think it's been mentioned in passing but not explicitly discussed over there
+> (https://sourceware.org/ml/libc-alpha/2014-10/msg00497.html,
+> https://sourceware.org/ml/libc-alpha/2014-10/msg00509.html)
+> and a couple of the participants in that thread (Christoph Hellwig, Rich Felker)
+> were also cc:ed here.
+> 
+> It sounded like execveat might be useful for another feature (O_EXEC) but
+> I'm not sure whether that amounts to the relevant glibc folk liking this...
 
-Nack.  x is not being dereferenced here, nor in some of the other places
-you've added this.
+OK.  Could you please try to hunt down the appropriate people and give
+them a poke?  We'd be in a mess if we merged this then glibc didn't use
+it, or glibc developers required/suggested any interface modifications.
 
-David
