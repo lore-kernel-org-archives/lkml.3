@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144AbaKMRDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 12:03:08 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:48873 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543AbaKMRDE (ORCPT
+	id S1754169AbaKMRDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 12:03:12 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:50798 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543AbaKMRDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 12:03:04 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-44-5464e44579e8
+	Thu, 13 Nov 2014 12:03:09 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-4d-5464e44b8eb8
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
 Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
@@ -22,94 +22,65 @@ Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         Thierry Reding <thierry.reding@gmail.com>,
         Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH 0/8] thermal:cpu cooling:fix: Provide thermal core fixes with
- deferred probe for several drivers
-Date: Thu, 13 Nov 2014 18:02:37 +0100
-Message-id: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH 1/8] thermal:cpu cooling:armada: Provide deferred probing for
+ armada driver
+Date: Thu, 13 Nov 2014 18:02:38 +0100
+Message-id: <1415898165-27406-2-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+In-reply-to: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
 References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jQV3XJykhBmuXK1tsnLGe1WL+lWus
-	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbfHm4WZGi8u75rBZfO49wmjR+WUWm8WDq9PYLJ48
-	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5LFu2ltmjwOTz7F69Da/Y/P4
-	dmYii0ffllWMHk9/7GX2+LxJzmPj3NAA7igum5TUnMyy1CJ9uwSujCundjIVTJWpuLHjOFMD
-	41TRLkZODgkBE4n3n84xQdhiEhfurWfrYuTiEBKYzigxZ9dfKKeLSeL/43dsIFVsAnoSn+8+
-	BesQEfCWeL1vOiNIEbPAaxaJQz8a2EESwgJFEiveXmQGsVkEVCV+z1/JCGLzCrhJTFm2jxli
-	naJE97MJYEM5Bdwlbv5+BtYrBFRz8NdB9gmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn
-	525iBAf6M6kdjCsbLA4xCnAwKvHwvmBJCRFiTSwrrsw9xCjBwawkwlt9HyjEm5JYWZValB9f
-	VJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBMXRphLAq+5GstYbWz2xSzp61
-	LrJ7552c2d9ltLlqSdaa7JQjkhYrTl7lfXBm90IVbonwft/ez57WX/xTN2vwL+L6cW2ifHhi
-	1Hf12qVxbA4G+ifPr1XdlbGQdcrW1ojNzYqXdhxbtKWk8kHLbDHhl2sWH/sZLrY1bs+Zpef3
-	Vs9/7F+zzKNMTomlOCPRUIu5qDgRAIdfMTZwAgAA
+ <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jQV3vJykhBuu6hSw2zljPajH/yjVW
+	i9OnFrBanHv1iMXibXOxxavDuxgt3jzitnjzcDOjxeVdc9gsPvceYbTo/DKLzeLB1WlsFk8e
+	9rFZvDrYxmLxc9c8FotjJ2awOgh4PNl0kdFj56y77B6L97xk8lg37S2zx4HJ51g9epvfsXl8
+	OzORxaNvyypGj6c/9jJ7fN4k57FxbmgAdxSXTUpqTmZZapG+XQJXxodVN1kL/nBUvJ26krWB
+	8Qh7FyMHh4SAicT149ZdjJxAppjEhXvr2boYuTiEBKYzSvTs/c0C4XQxSfRtXMoIUsUmoCfx
+	+e5TJhBbRMBb4vW+6YwgRcwCr1kkDv1oAJsqLBArMX+FAEgNi4CqxKLpr1hAbF4BN4kPj++x
+	QWxTlOh+NgHM5hRwlzh64hM7xLJmRonPfbNYJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeu
+	l5yfu4kRHObPpHYwrmywOMQowMGoxMP7giUlRIg1say4MvcQowQHs5IIb/V9oBBvSmJlVWpR
+	fnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQbGyu9/Oy63WpcmZq4SeD3h
+	8t05bGKXjs1f+oxVcKXbZeEXr0Jqf6kYCmy+YsN+PMTux/QEEeP0+SzB3NZRM+vSW8x1t11m
+	07nM/ks9Xh0Y+Rc5VDgWGrjp/uLX2PVlwlIhk3y7m2+qD28/0PdgWdnCwANtcvvPivZMaNt/
+	J9bDVbifi1t//V8lluKMREMt5qLiRAAlYYvXbwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Presented fixes are a response for problem described below:
-http://thread.gmane.org/gmane.linux.kernel/1793821/match=thermal+core+fix+initialize+max_state+variable+0
+When CPU freq is used as a thermal zone cooling device, one needs to wait
+until cpufreq subsystem is properly initialized.
 
-In short - it turned out that two trivial fixes (included in this patch set)
-require support for deferred probe in thermal drivers.
+This code is similar to the one already available in imx_thermal.c file.
 
-This situation shows up when CPU frequency reduction is used as a thermal cooling
-device for a thermal zone.
-It happens that during initialization, the call to thermal probe will be executed
-before cpufreq probe (it can be observed at ./drivers/Makefile).
-In such a situation thermal will not be properly configured until cpufreq policy
-is setup.
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+---
+ drivers/thermal/armada_thermal.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-In the current code (without included fixes) there is a time window in which thermal
-can try to use not configured cpufreq and possibly crash the system.
-
-
-Proposed solution was based on the code already available in the imx_thermal.c file.
-
-/db8500_thermal.c:                      -> NOT NEEDED
-/intel_powerclamp.c:                    -> NOT NEEDED - INTEL (x86)
-/intel_powerclamp.c:                    -> NOT NEEDED - INTEL (x86)
-/ti-soc-thermal/ti-bandgap.c:           -> FIXED  [omap2plus_defconfig]
-/dove_thermal.c:                        -> NOT NEEDED - CPU_COOLING NOT AVAILABLE
-                                                        [dove_defconfig]
-/spear_thermal.c:                       -> FIXED  [spear3xx_defconfig]
-/samsung/exynos_tmu.c:                  -> NOT NEEDED (nasty hack - will be reworked in later patches)
-/imx_thermal.c:                         -> OK (deferred probe already in place)
-/int340x_thermal/int3402_thermal.c:     -> NOT NEEDED - ACPI x86 - Intel specific
-/int340x_thermal/int3400_thermal.c:     -> NOT NEEDED - ACPI x86 - Intel specific
-/tegra_soctherm.c:                      -> FIXED  [tegra_defconfig]
-/kirkwood_thermal.c:                    -> FIXED  [multi_v5_defconfig]
-/armada_thermal.c:                      -> FIXED  [multi_v7_defconfig]
-/rcar_thermal.c:                        -> FIXED  [shmobile_defconfig]
-/db8500_cpufreq_cooling.c:              -> OK (deferred probe already in place) [multi_v7_defconfig]
-/st/st_thermal_syscfg.c:                -> NOT NEEDED (Those two are enabled by e.g. ARMADA)
-/st/st_thermal_memmap.c:
-
-
-I only possess Exynos boards and Beagle Bone Black, so I'd be grateful for
-testing proposed solution on other boards. The posted code is compile tested.
-
-This code applies on Eduardo's ti-soc-thermal-next tree:
-SHA1: 208a97042d66d9bfbcfab0d4a00c9fe317bb73d3
-
-Lukasz Majewski (8):
-  thermal:cpu cooling:armada: Provide deferred probing for armada driver
-  thermal:cpu cooling:kirkwood: Provide deferred probing for kirkwood
-    driver
-  thermal:cpu cooling:rcar: Provide deferred probing for rcar driver
-  thermal:cpu cooling:spear: Provide deferred probing for spear driver
-  thermal:cpu cooling:tegra: Provide deferred probing for tegra driver
-  thermal:cpu cooling:ti: Provide deferred probing for ti drivers
-  thermal:core:fix: Initialize the max_state variable to 0
-  thermal:core:fix: Check return code of the ->get_max_state() callback
-
- drivers/thermal/armada_thermal.c            | 7 +++++++
- drivers/thermal/kirkwood_thermal.c          | 7 +++++++
- drivers/thermal/rcar_thermal.c              | 7 +++++++
- drivers/thermal/spear_thermal.c             | 7 +++++++
- drivers/thermal/tegra_soctherm.c            | 7 +++++++
- drivers/thermal/thermal_core.c              | 8 +++++---
- drivers/thermal/ti-soc-thermal/ti-bandgap.c | 7 +++++++
- 7 files changed, 47 insertions(+), 3 deletions(-)
-
+diff --git a/drivers/thermal/armada_thermal.c b/drivers/thermal/armada_thermal.c
+index 9d1420a..1b5d15d 100644
+--- a/drivers/thermal/armada_thermal.c
++++ b/drivers/thermal/armada_thermal.c
+@@ -23,6 +23,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/of_device.h>
+ #include <linux/thermal.h>
++#include <linux/cpufreq.h>
+ 
+ #define THERMAL_VALID_MASK		0x1
+ 
+@@ -280,6 +281,12 @@ static int armada_thermal_probe(struct platform_device *pdev)
+ 	struct armada_thermal_priv *priv;
+ 	struct resource *res;
+ 
++#ifdef CONFIG_CPU_THERMAL
++	if (!cpufreq_get_current_driver()) {
++		dev_dbg(&pdev->dev, "no cpufreq driver!");
++		return -EPROBE_DEFER;
++	}
++#endif
+ 	match = of_match_device(armada_thermal_id_table, &pdev->dev);
+ 	if (!match)
+ 		return -ENODEV;
 -- 
 2.0.0.rc2
 
