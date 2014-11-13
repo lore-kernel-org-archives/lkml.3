@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311AbaKMQir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 11:38:47 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:44274 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957AbaKMQiq (ORCPT
+	id S933411AbaKMQkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 11:40:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58824 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932955AbaKMQkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 11:38:46 -0500
+	Thu, 13 Nov 2014 11:40:19 -0500
+Date: Thu, 13 Nov 2014 16:40:17 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>, broonie@kernel.org,
+        linus.walleij@linaro.org, gnurou@gmail.com,
+        alsa-devel@alsa-project.org, tiwai@suse.de,
+        patches@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd: arizona: Add support for CS47L24
+Message-ID: <20141113164017.GA12443@opensource.wolfsonmicro.com>
+References: <20141111165227.GA24344@opensource.wolfsonmicro.com> <20141111171532.GA26106@opensource.wolfsonmicro.com> <20141113101228.GE24004@x1>
 MIME-Version: 1.0
-In-Reply-To: <20141113112017.GA14416@pd.tnic>
-References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
- <1415731396-19364-7-git-send-email-ross.zwisler@linux.intel.com>
- <5464220D.6090204@amacapital.net> <20141113112017.GA14416@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Nov 2014 08:38:23 -0800
-Message-ID: <CALCETrV2E-LBHLTV6zJ=nfw8ijjV8VZoYAinXdg9ZaOryfqquw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86: Use clwb in drm_clflush_virt_range
-To: Borislav Petkov <bp@alien8.de>
-Cc: DRI <dri-devel@lists.freedesktop.org>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>, X86 ML <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, David Airlie <airlied@linux.ie>,
-        H Peter Anvin <h.peter.anvin@intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113101228.GE24004@x1>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 13, 2014 3:20 AM, "Borislav Petkov" <bp@alien8.de> wrote:
->
-> On Wed, Nov 12, 2014 at 07:14:21PM -0800, Andy Lutomirski wrote:
-> > On 11/11/2014 10:43 AM, Ross Zwisler wrote:
-> > > If clwb is available on the system, use it in drm_clflush_virt_range.
-> > > If clwb is not available, fall back to clflushopt if you can.
-> > > If clflushopt is not supported, fall all the way back to clflush.
-> >
-> > I don't know exactly what drm_clflush_virt_range (and the other
-> > functions you're modifying similarly) are for, but it seems plausible to
-> > me that they're used before reads to make sure that non-coherent memory
-> > sees updated data.  If that's true, then this will break it.
->
-> Why would it break it? The updated cachelines will be in memory and
-> subsequent reads will be serviced from the cache instead from going to
-> memory as it is not invalidated as it would be by CLFLUSH.
->
-> /me is puzzled.
+On Thu, Nov 13, 2014 at 10:12:28AM +0000, Lee Jones wrote:
+> On Tue, 11 Nov 2014, Richard Fitzgerald wrote:
+> 
+> > Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/mfd/Kconfig              |    6 +
+> >  drivers/mfd/Makefile             |    3 +
+> >  drivers/mfd/arizona-core.c       |   91 ++-
+> >  drivers/mfd/arizona-irq.c        |   42 +-
+> >  drivers/mfd/arizona-spi.c        |    9 +
+> >  drivers/mfd/arizona.h            |    5 +
+> >  drivers/mfd/cs47l24-tables.c     | 1632 ++++++++++++++++++++++++++++++++++++++
+> 
+> No chance.
+> 
+> Please resend with these in a header file (like all of the others).
+> 
+> I'd also like Charles' Reviewed-by before accepting.
 
-Suppose you map some device memory WB, and then the device
-non-coherently updates.  If you want the CPU to see it, you need
-clflush or clflushopt.  Some architectures might do this for
-dma_sync_single_for_cpu with DMA_FROM_DEVICE.
+This looks good to me. I don't quite follow what you are
+requesting with the header file? This still uses the header file
+for the registers but just defining which are available on this
+chip.
 
-I'm not sure that such a thing exists on x86.
+Reviewed-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
---Andy
+Thanks,
+Charles
