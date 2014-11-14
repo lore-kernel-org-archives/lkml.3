@@ -1,96 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965018AbaKNBkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:40:25 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:62698 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964984AbaKNBkX (ORCPT
+	id S965039AbaKNBlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:41:04 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:57495 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964936AbaKNBhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:40:23 -0500
-Message-ID: <54655D7E.1000301@linaro.org>
-Date: Fri, 14 Nov 2014 10:40:14 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-CC: Andreas Krebbel1 <Andreas.Krebbel@de.ibm.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        linaro-kernel@lists.linaro.org,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "roland@hack.frob.com" <roland@hack.frob.com>
-Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
-References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org> <3899236.yrOvvrZHD6@wuerfel> <OF152076B7.38277C08-ONC1257D8F.0050C2DF-C1257D8F.00516BF2@de.ibm.com> <1472197.o98pKNTkBz@wuerfel>
-In-Reply-To: <1472197.o98pKNTkBz@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Nov 2014 20:37:10 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 net-next 6/7] bpf: allow eBPF programs to use maps
+Date: Thu, 13 Nov 2014 17:36:49 -0800
+Message-Id: <1415929010-9361-7-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
+References: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulrich, Arnd, thank you for your discussions:
+expose bpf_map_lookup_elem(), bpf_map_update_elem(), bpf_map_delete_elem()
+map accessors to eBPF programs
 
-On 11/14/2014 07:25 AM, Arnd Bergmann wrote:
-> On Thursday 13 November 2014 15:49:20 Ulrich Weigand wrote:
->> Arnd Bergmann <arnd@arndb.de> wrote on 13.11.2014 11:21:28:
->>
->>> I have to admit that I don't really understand gdb internals, but from
->>> a first look I get the impression that it will just do the right thing
->>> if you reuse NT_S390_SYSTEM_CALL on ARM64 with the same semantics.
->>
->> There's an interface between BFD and GDB proper involved here.  BFD will
->> detect the presence of register set notes in the core dump, and will
->> translate them into virtual sections; GDB will then simply look up such
->> sections under well-known names.
->>
->> In particular, the NT_S390_SYSTEM_CALL note will be translated by BFD
->> into a virtual section named ".reg-s390-system-call"; GDB platform-
->> specific code will look for sections of this particular name.
->>
->> So if you were to create notes using the same note type, by default it
->> would do nothing on ARM64.  You might add code to the ARM64 back-end
->> to also look for a section ".reg-s390-system-call", but that would be
->> somewhat confusing.  Using a new, platform-specific note type for ARM64
->> would appear to fit better with existing precedent.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+Note, these helpers are exposed as '.gpl_only = false', so non-GPL eBPF programs
+can use them. That was requested by AndyL and DavidL before.
 
-I implemented a regset of NT_SYSTEM_CALL(=NT_S390_SYSTEM_CALL) experimentally,
-and checked a generated core file:
+ include/linux/bpf.h      |    5 +++
+ include/uapi/linux/bpf.h |    3 ++
+ kernel/bpf/Makefile      |    2 +-
+ kernel/bpf/helpers.c     |   89 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 98 insertions(+), 1 deletion(-)
+ create mode 100644 kernel/bpf/helpers.c
 
- >$ aarch64-linux-gnu-readelf -Wn <...>/tmp/nulltest/core
- >
- >Displaying notes found at file offset 0x000003c0 with length 0x00000a68:
- >  Owner                 Data size    Description
- >  CORE                 0x00000188    NT_PRSTATUS (prstatus structure)
- >  CORE                 0x00000088    NT_PRPSINFO (prpsinfo structure)
- >  CORE                 0x00000080    NT_SIGINFO (siginfo_t data)
- >  CORE                 0x00000130    NT_AUXV (auxiliary vector)
- >  CORE                 0x000001b4    NT_FILE (mapped files)
- >    Page size: 4096
- >                 Start                 End         Page Offset
- >[snip]...
- >  CORE                 0x00000210    NT_FPREGSET (floating point registers)
- >  LINUX                0x00000008    NT_ARM_TLS (AArch TLS registers)
- >  LINUX                0x00000108    NT_ARM_HW_BREAK (AArch hardware breakpoint registers)
- >  LINUX                0x00000108    NT_ARM_HW_WATCH (AArch hardware watchpoint registers)
- >  LINUX                0x00000004    NT_S390_SYSTEM_CALL (s390 system call restart data)
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+index 51e9242e4803..75e94eaa228b 100644
+--- a/include/linux/bpf.h
++++ b/include/linux/bpf.h
+@@ -133,4 +133,9 @@ struct bpf_prog *bpf_prog_get(u32 ufd);
+ /* verify correctness of eBPF program */
+ int bpf_check(struct bpf_prog *fp, union bpf_attr *attr);
+ 
++/* verifier prototypes for helper functions called from eBPF programs */
++extern struct bpf_func_proto bpf_map_lookup_elem_proto;
++extern struct bpf_func_proto bpf_map_update_elem_proto;
++extern struct bpf_func_proto bpf_map_delete_elem_proto;
++
+ #endif /* _LINUX_BPF_H */
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 0d662fe75df5..4a3d0f84f178 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -158,6 +158,9 @@ union bpf_attr {
+  */
+ enum bpf_func_id {
+ 	BPF_FUNC_unspec,
++	BPF_FUNC_map_lookup_elem, /* void *map_lookup_elem(&map, &key) */
++	BPF_FUNC_map_update_elem, /* int map_update_elem(&map, &key, &value, flags) */
++	BPF_FUNC_map_delete_elem, /* int map_delete_elem(&map, &key) */
+ 	__BPF_FUNC_MAX_ID,
+ };
+ 
+diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+index 72ec98ba2d42..a5ae60f0b0a2 100644
+--- a/kernel/bpf/Makefile
++++ b/kernel/bpf/Makefile
+@@ -1,5 +1,5 @@
+ obj-y := core.o
+-obj-$(CONFIG_BPF_SYSCALL) += syscall.o verifier.o hashtab.o arraymap.o
++obj-$(CONFIG_BPF_SYSCALL) += syscall.o verifier.o hashtab.o arraymap.o helpers.o
+ ifdef CONFIG_TEST_BPF
+ obj-$(CONFIG_BPF_SYSCALL) += test_stub.o
+ endif
+diff --git a/kernel/bpf/helpers.c b/kernel/bpf/helpers.c
+new file mode 100644
+index 000000000000..9e3414d85459
+--- /dev/null
++++ b/kernel/bpf/helpers.c
+@@ -0,0 +1,89 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ */
++#include <linux/bpf.h>
++#include <linux/rcupdate.h>
++
++/* If kernel subsystem is allowing eBPF programs to call this function,
++ * inside its own verifier_ops->get_func_proto() callback it should return
++ * bpf_map_lookup_elem_proto, so that verifier can properly check the arguments
++ *
++ * Different map implementations will rely on rcu in map methods
++ * lookup/update/delete, therefore eBPF programs must run under rcu lock
++ * if program is allowed to access maps, so check rcu_read_lock_held in
++ * all three functions.
++ */
++static u64 bpf_map_lookup_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	/* verifier checked that R1 contains a valid pointer to bpf_map
++	 * and R2 points to a program stack and map->key_size bytes were
++	 * initialized
++	 */
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++	void *value;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	value = map->ops->map_lookup_elem(map, key);
++
++	/* lookup() returns either pointer to element value or NULL
++	 * which is the meaning of PTR_TO_MAP_VALUE_OR_NULL type
++	 */
++	return (unsigned long) value;
++}
++
++struct bpf_func_proto bpf_map_lookup_elem_proto = {
++	.func = bpf_map_lookup_elem,
++	.gpl_only = false,
++	.ret_type = RET_PTR_TO_MAP_VALUE_OR_NULL,
++	.arg1_type = ARG_CONST_MAP_PTR,
++	.arg2_type = ARG_PTR_TO_MAP_KEY,
++};
++
++static u64 bpf_map_update_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++	void *value = (void *) (unsigned long) r3;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	return map->ops->map_update_elem(map, key, value, r4);
++}
++
++struct bpf_func_proto bpf_map_update_elem_proto = {
++	.func = bpf_map_update_elem,
++	.gpl_only = false,
++	.ret_type = RET_INTEGER,
++	.arg1_type = ARG_CONST_MAP_PTR,
++	.arg2_type = ARG_PTR_TO_MAP_KEY,
++	.arg3_type = ARG_PTR_TO_MAP_VALUE,
++	.arg4_type = ARG_ANYTHING,
++};
++
++static u64 bpf_map_delete_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	return map->ops->map_delete_elem(map, key);
++}
++
++struct bpf_func_proto bpf_map_delete_elem_proto = {
++	.func = bpf_map_delete_elem,
++	.gpl_only = false,
++	.ret_type = RET_INTEGER,
++	.arg1_type = ARG_CONST_MAP_PTR,
++	.arg2_type = ARG_PTR_TO_MAP_KEY,
++};
+-- 
+1.7.9.5
 
-Looks funny:)
-
-> Ok, thanks a lot for your insight and for confirming what Takahiro AKASHI
-> said. Let's use a new NT_ARM64_SYSTEM_CALL type with a different
-> number then.
-
-We will use NT_ARM_SYSTEM_CALL(=0x404) as other NT_ARM_*, except NT_ARM_VFP,
-are also shared by arch/arm and arch/arm64.
-
-Anyhow, gdb (and/or binutils?) should be updated as well once my coming patch is merged.
-My next question is who should know this?
-
-Thanks,
--Takahiro AKASHI
-
-> 	Arnd
->
