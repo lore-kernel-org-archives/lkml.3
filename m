@@ -1,119 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964991AbaKNBVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:21:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43895 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964913AbaKNBVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:21:31 -0500
-Date: Thu, 13 Nov 2014 17:21:27 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Changman Lee <cm224.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 1/5] f2fs: disable roll-forward when
- active_logs = 2
-Message-ID: <20141114012127.GA49179@jaegeuk-mac02.mot.com>
-References: <1415518569-20626-1-git-send-email-jaegeuk@kernel.org>
- <20141110095437.GE14659@lcm>
- <20141110150759.GB25172@jaegeuk-mac02.hsd1.ca.comcast.net>
- <20141111224312.GA16657@lcm>
+	id S935026AbaKNBUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:20:34 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19427 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934695AbaKNBON (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 20:14:13 -0500
+Message-Id: <20141114011411.181812785@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 13 Nov 2014 20:12:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [RFC][PATCH 07/23 v4] kprobes/tracing: Use trace_seq_has_overflowed() for overflow checks
+References: <20141114011244.256115061@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141111224312.GA16657@lcm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0007-kprobes-tracing-Use-trace_seq_has_overflowed-for-ove.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 07:43:12AM +0900, Changman Lee wrote:
-> On Mon, Nov 10, 2014 at 07:07:59AM -0800, Jaegeuk Kim wrote:
-> > Hi Changman,
-> > 
-> > On Mon, Nov 10, 2014 at 06:54:37PM +0900, Changman Lee wrote:
-> > > On Sat, Nov 08, 2014 at 11:36:05PM -0800, Jaegeuk Kim wrote:
-> > > > The roll-forward mechanism should be activated when the number of active
-> > > > logs is not 2.
-> > > > 
-> > > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > > ---
-> > > >  fs/f2fs/file.c    | 2 ++
-> > > >  fs/f2fs/segment.c | 4 ++--
-> > > >  2 files changed, 4 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> > > > index 46311e7..54722a0 100644
-> > > > --- a/fs/f2fs/file.c
-> > > > +++ b/fs/f2fs/file.c
-> > > > @@ -132,6 +132,8 @@ static inline bool need_do_checkpoint(struct inode *inode)
-> > > >  		need_cp = true;
-> > > >  	else if (test_opt(sbi, FASTBOOT))
-> > > >  		need_cp = true;
-> > > > +	else if (sbi->active_logs == 2)
-> > > > +		need_cp = true;
-> > > >  
-> > > >  	return need_cp;
-> > > >  }
-> > > > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> > > > index 2fb3d7f..16721b5d 100644
-> > > > --- a/fs/f2fs/segment.c
-> > > > +++ b/fs/f2fs/segment.c
-> > > > @@ -1090,8 +1090,8 @@ static int __get_segment_type_4(struct page *page, enum page_type p_type)
-> > > >  		else
-> > > >  			return CURSEG_COLD_DATA;
-> > > >  	} else {
-> > > > -		if (IS_DNODE(page) && !is_cold_node(page))
-> > > > -			return CURSEG_HOT_NODE;
-> > > > +		if (IS_DNODE(page) && is_cold_node(page))
-> > > > +			return CURSEG_WARM_NODE;
-> > > 
-> > > Hi Jaegeuk,
-> > > 
-> > > We should take hot/cold seperation into account as well.
-> > > In case of dir inode, it will be mixed with COLD_NODE.
-> > > If it's trade-off, let's notice it kindly as comments.
-> > 
-> > NAK.
-> > This patch tries to fix a bug, which is not a trade-off.
-> > We should write files' direct node blocks in CURSEG_WARM_NODE for recovery.
-> > 
-> > Thanks,
-> 
-> Okay, a word of 'trade-off' is wrong. We must be able to do recovery.
-> However, we break a rule of hot/cold separation we want. So I thought we
-> should notice its negative effect.
-> Anyway, how about putting WARM and HOT together instead HOT and COLD?
-> We can distinguish enough if they are direct node and have fsync_mark at
-> recovery time although HOT/WARM are mixed.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-We know that it's hard to say any negative effect on each way, since it depends
-on the workloads.
+Instead of checking the return value of trace_seq_printf() and friends
+for overflowing of the buffer, use the trace_seq_has_overflowed() helper
+function.
 
-At least, however, we need to avoid mixing dir/files, since it increases the
-roll-forward recovery time incredibly.
-IMO, this is enough reason for not using that.
+This cleans up the code quite a bit and also takes us a step closer to
+changing the return values of trace_seq_printf() and friends to void.
 
-Thanks,
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_kprobe.c | 42 ++++++++++++++++--------------------------
+ 1 file changed, 16 insertions(+), 26 deletions(-)
 
-> Let me know if there is my misundertanding.
-> 
-> Thanks,
-> 
-> > 
-> > > 
-> > > Regards,
-> > > Changman
-> > > 
-> > > >  		else
-> > > >  			return CURSEG_COLD_NODE;
-> > > >  	}
-> > > > -- 
-> > > > 2.1.1
-> > > > 
-> > > > 
-> > > > ------------------------------------------------------------------------------
-> > > > _______________________________________________
-> > > > Linux-f2fs-devel mailing list
-> > > > Linux-f2fs-devel@lists.sourceforge.net
-> > > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 282f6e4e5539..be14b2f091c8 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1024,27 +1024,22 @@ print_kprobe_event(struct trace_iterator *iter, int flags,
+ 	field = (struct kprobe_trace_entry_head *)iter->ent;
+ 	tp = container_of(event, struct trace_probe, call.event);
+ 
+-	if (!trace_seq_printf(s, "%s: (", ftrace_event_name(&tp->call)))
+-		goto partial;
++	trace_seq_printf(s, "%s: (", ftrace_event_name(&tp->call));
+ 
+ 	if (!seq_print_ip_sym(s, field->ip, flags | TRACE_ITER_SYM_OFFSET))
+-		goto partial;
++		goto out;
+ 
+-	if (!trace_seq_puts(s, ")"))
+-		goto partial;
++	trace_seq_puts(s, ")");
+ 
+ 	data = (u8 *)&field[1];
+ 	for (i = 0; i < tp->nr_args; i++)
+ 		if (!tp->args[i].type->print(s, tp->args[i].name,
+ 					     data + tp->args[i].offset, field))
+-			goto partial;
+-
+-	if (!trace_seq_puts(s, "\n"))
+-		goto partial;
++			goto out;
+ 
+-	return TRACE_TYPE_HANDLED;
+-partial:
+-	return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_puts(s, "\n");
++ out:
++	return trace_handle_return(s);
+ }
+ 
+ static enum print_line_t
+@@ -1060,33 +1055,28 @@ print_kretprobe_event(struct trace_iterator *iter, int flags,
+ 	field = (struct kretprobe_trace_entry_head *)iter->ent;
+ 	tp = container_of(event, struct trace_probe, call.event);
+ 
+-	if (!trace_seq_printf(s, "%s: (", ftrace_event_name(&tp->call)))
+-		goto partial;
++	trace_seq_printf(s, "%s: (", ftrace_event_name(&tp->call));
+ 
+ 	if (!seq_print_ip_sym(s, field->ret_ip, flags | TRACE_ITER_SYM_OFFSET))
+-		goto partial;
++		goto out;
+ 
+-	if (!trace_seq_puts(s, " <- "))
+-		goto partial;
++	trace_seq_puts(s, " <- ");
+ 
+ 	if (!seq_print_ip_sym(s, field->func, flags & ~TRACE_ITER_SYM_OFFSET))
+-		goto partial;
++		goto out;
+ 
+-	if (!trace_seq_puts(s, ")"))
+-		goto partial;
++	trace_seq_puts(s, ")");
+ 
+ 	data = (u8 *)&field[1];
+ 	for (i = 0; i < tp->nr_args; i++)
+ 		if (!tp->args[i].type->print(s, tp->args[i].name,
+ 					     data + tp->args[i].offset, field))
+-			goto partial;
++			goto out;
+ 
+-	if (!trace_seq_puts(s, "\n"))
+-		goto partial;
++	trace_seq_puts(s, "\n");
+ 
+-	return TRACE_TYPE_HANDLED;
+-partial:
+-	return TRACE_TYPE_PARTIAL_LINE;
++ out:
++	return trace_handle_return(s);
+ }
+ 
+ 
+-- 
+2.1.1
+
+
