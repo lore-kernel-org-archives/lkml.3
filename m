@@ -1,93 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaKNHLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 02:11:38 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:60103 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323AbaKNHLg (ORCPT
+	id S1754459AbaKNHQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 02:16:15 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:56430 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754218AbaKNHQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 02:11:36 -0500
-MIME-Version: 1.0
-X-Originating-IP: [46.116.100.67]
-In-Reply-To: <54651C48.90809@ti.com>
-References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
- <1410553499-55951-5-git-send-email-s-anna@ti.com> <CAK=WgbamdqAufjC4Xb5moERRBSB-cO6c1RPTE=f+dp75F+Eh7A@mail.gmail.com>
- <5463B5B6.8040709@ti.com> <CAK=WgbbatPTiz3efDWHVEcuug_UQfkCViMoK0zcfUg3JwB2oTA@mail.gmail.com>
- <5464EC7A.7050603@ti.com> <CAK=WgbbodS8GsUxQbkyCp6hAG+Ko4LMirx+pUa8_fUdxWFasvw@mail.gmail.com>
- <54651C48.90809@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 14 Nov 2014 09:11:15 +0200
-Message-ID: <CAK=WgbYMM19-rWLOBjix+TA3fF_Pb25ia1rutDxYSUg9SV0efg@mail.gmail.com>
-Subject: Re: [PATCHv6 4/5] hwspinlock/core: add common OF helpers
-To: Suman Anna <s-anna@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Fri, 14 Nov 2014 02:16:13 -0500
+Date: Fri, 14 Nov 2014 12:45:59 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 2/2] uprobes, x86: Fix _TIF_UPROBE vs
+ _TIF_NOTIFY_RESUME
+Message-ID: <20141114071559.GC12682@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <cover.1415917623.git.luto@amacapital.net>
+ <2beb5abca257e5b5f37420f5d85361e5e197824b.1415917623.git.luto@amacapital.net>
+ <20141114060848.GB12682@linux.vnet.ibm.com>
+ <CALCETrWYCX28GwAw=D1F862zjyp_Srhc=Bb5E19m=VCo6VLnZA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <CALCETrWYCX28GwAw=D1F862zjyp_Srhc=Bb5E19m=VCo6VLnZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111407-0005-0000-0000-0000021F4780
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman,
+* Andy Lutomirski <luto@amacapital.net> [2014-11-13 23:01:12]:
 
-On Thu, Nov 13, 2014 at 11:02 PM, Suman Anna <s-anna@ti.com> wrote:
-> OK, lets take an example. I have say 2 device instances, say
->         hwlock1: hwlock@0 {
->                 hwlock-num-locks = <32>
->                 hwlock-base-id = <0>;
->                 #hwlock-cells = <1>;
->         };
->         hwlock2: hwlock@0 {
->                 hwlock-num-locks = <32>
->                 hwlock-base-id = <32>;
->                 #hwlock-cells = <1>;
->         };
->
->         some-client {
->                 hwlocks = <&hwlock1 32>, <&hwlock2 0>;
->         };
->
-> The first args value is incorrect, and I expect the API to return an
-> error. I don't think the API can make assumptions that all passed in
-> values will be correct. What do you suggest that the API do here?
+> On Thu, Nov 13, 2014 at 10:08 PM, Srikar Dronamraju
+> <srikar@linux.vnet.ibm.com> wrote:
+> > * Andy Lutomirski <luto@amacapital.net> [2014-11-13 14:31:21]:
+> >
+> >> x86 call do_notify_resume on paranoid returns if TIF_UPROBE is set
+> >> but not on non-paranoid returns.  I suspect that this is a mistake
+> >> and that the code only works because int3 is paranoid.
+> >>
+> >> Setting _TIF_NOTIFY_RESUME in the uprobe code was probably a
+> >> workaround for the x86 bug.  With that bug fixed, we can remove
+> >
+> >> _TIF_NOTIFY_RESUME from the uprobes code.
+> >>
+> >> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> >> Reported-by: Oleg Nesterov <oleg@redhat.com>
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> ---
+> >>  arch/x86/include/asm/thread_info.h | 2 +-
+> >>  kernel/events/uprobes.c            | 1 -
+> >>  2 files changed, 1 insertion(+), 2 deletions(-)
+> >>
+> >> diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+> >> index 854053889d4d..547e344a6dc6 100644
+> >> --- a/arch/x86/include/asm/thread_info.h
+> >> +++ b/arch/x86/include/asm/thread_info.h
+> >> @@ -141,7 +141,7 @@ struct thread_info {
+> >>  /* Only used for 64 bit */
+> >>  #define _TIF_DO_NOTIFY_MASK                                          \
+> >>       (_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |       \
+> >> -      _TIF_USER_RETURN_NOTIFY)
+> >> +      _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE)
+> >
+> >
+> > The comment above says only for 64 bit. So would this still work for
+> > i386?
+> >
+> 
+> i386 seems to look at _TIF_WORK_MASK (which includes _TIF_UPROBE) for
+> everything except syscalls and at _TIF_WORK_SYSCALL_EXIT for syscall
+> return (which does not include _TIF_UPROBE).  Is that okay?
+> 
 
-I think this is just one example of many potential mistakes the DT
-developer can have, and that there's nothing really special about it.
+Ok.. That expains (please add my ack to your v3)
 
-What if the '5' digit below is a typo, and the actual hardware
-assignment was supposed to be '4' ?
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-         some-client {
-                 hwlocks = <&hwlock1 5>, <&hwlock2 5>;
-         };
+> --Andy
+> 
+> >>
+> >>  /* flags to check in __switch_to() */
+> >>  #define _TIF_WORK_CTXSW                                                      \
+> >> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> >> index 1d0af8a2c646..ed8f2cde34c5 100644
+> >> --- a/kernel/events/uprobes.c
+> >> +++ b/kernel/events/uprobes.c
+> >> @@ -1640,7 +1640,6 @@ bool uprobe_deny_signal(void)
+> >>               if (__fatal_signal_pending(t) || arch_uprobe_xol_was_trapped(t)) {
+> >>                       utask->state = UTASK_SSTEP_TRAPPED;
+> >>                       set_tsk_thread_flag(t, TIF_UPROBE);
+> >> -                     set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
+> >>               }
+> >>       }
+> >>
+> >> --
+> >> 1.9.3
+> >>
+> >
+> > --
+> > Thanks and Regards
+> > Srikar Dronamraju
+> >
+> 
+> 
+> 
+> -- 
+> Andy Lutomirski
+> AMA Capital Management, LLC
+> 
 
-I don't see how much different this mistake is from the one you
-mentioned above. There's a limit to how much we can really catch DT
-mistakes in the code, just like we couldn't really catch past mistakes
-in the platform data structures.
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
-If we can easily add some validations then great, but if we have to go
-to great lengths just to gain very limited validations, then I'd vote
-against doing so.
-
-> One solution to handle #1 is to also make the hwlock-num-locks property
-> also mandatory (even though it could have been read from a register
-
-Yeah, this is awkward. We shouldn't impose this on implementations
-like OMAP which don't need it.
-
-Again I think for the very limited validation this buys us - it's not worth it.
-
-> And, how do you propose we solve the problem of deferred probing?
-
-It seems to me that hwspin_lock_request_specific failures should be
-used by clients to defer their probing. Why wouldn't such a simple
-solution work?
-
-Thanks,
-Ohad.
