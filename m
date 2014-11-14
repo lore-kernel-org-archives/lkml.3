@@ -1,68 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935110AbaKNBin (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:38:43 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34074 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934808AbaKNBil (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:38:41 -0500
-X-Original-SENDERIP: 10.186.123.76
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <54655D1D.9080109@lge.com>
-Date: Fri, 14 Nov 2014 10:38:37 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S935140AbaKNBjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:39:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935045AbaKNBiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 20:38:11 -0500
+Date: Fri, 14 Nov 2014 02:38:18 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Aaron Tomlin <atomlin@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Rik van Riel <riel@redhat.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] exit: wait: don't use zombie->real_parent
+Message-ID: <20141114013818.GA5119@redhat.com>
 MIME-Version: 1.0
-To: Laura Abbott <lauraa@codeaurora.org>, Colin Cross <ccross@android.com>,
-        Joonsoo Kim <js1304@gmail.com>
-CC: John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?EUC-KR?B?IsDMsMfIoy/DpcDTv6yxuL/4L1NXIFBsYXRmb3JtKL+sKUFPVMbAKGd1bmhvLg==?=
-	 =?EUC-KR?B?bGVlQGxnZS5jb20pIg==?= <gunho.lee@lge.com>
-Subject: Re: Why does ion_cma_allocate need GFP_HIGHUSER | __GFP_ZERO flags?
-References: <54645B38.10603@lge.com> <546559B2.4090003@codeaurora.org>
-In-Reply-To: <546559B2.4090003@codeaurora.org>
-Content-Type: text/plain; charset=euc-kr
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114013750.GA4697@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+1. wait_task_zombie() uses p->real_parent to get psig/siglock. This is
+   correct but needs tasklist_lock, ->real_parent can exit.
 
+   We can use "current" instead. This is our natural child, its parent
+   must be our sub-thread.
 
-2014-11-14 오전 10:24에 Laura Abbott 이(가) 쓴 글:
-> On 11/12/2014 11:18 PM, Gioh Kim wrote:
->> Hi,
->>
->> I'm wondering why dma_alloc_coherent needs GFP_HIGHUSER | __GFP_ZERO flags in ion_cma_allocate().
->>
->> I think dma_alloc_coherent can go to __dma_alloc if the system has CMA area.
->> If __GFP_WAIT flag is set, it allocates memory from atomic pool.
->> So I think calling dma_alloc_coherent with __GFP_WAIT is enough.
->>
->> And can I get zero-filled-memory from CMA if I set __GFP_ZERO?
->>
->>
-> 
-> If we are actually using CMA, the GFP flags don't make much of a difference. If
-> we didn't have CMA, using GFP_HIGHUSER would still be appropriate. The memory
-> is going to userspace so the user part is necessary and there should be no need
-> for a lowmem mapping so highmem can be used. __GFP_ZERO might be redundant since
-> the dma layer zeros memory anyway but it's probably safe.
+2. Read psig/sig outside of ->siglock, ->signal is no longer protected
+   by this lock.
 
-If cma-heap can be created even-if the system doesn't have CMA area, you're right.
+3. Fix the outdated comments about tasklist_lock. We can not race with
+   __exit_signal(), the whole thread group is dead, nobody but us can
+   call it.
 
-But I think cma-heap should be created only if the system has CMA area.
-I think, in no CMA system, cma-heap creation and/or allocation from cma-heap should be failed,
-not allocate memory from lowmem or highmem as you say.
+   Also clarify the usage of ->stats_lock and ->siglock.
 
-Thanks for your reply.
+Note: thread_group_cputime_adjusted() is sub-optimal in this case, we
+probably want to export cputime_adjust() to avoid thread_group_cputime().
+The comment says "all threads" but there are no other threads.
 
-> 
-> I think the flags should be fine as is.
-> 
-> Thanks,
-> Laura
-> 
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/exit.c |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 0511f1d..40d53de 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1008,8 +1008,8 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 	 * Check thread_group_leader() to exclude the traced sub-threads.
+ 	 */
+ 	if (state == EXIT_DEAD && thread_group_leader(p)) {
+-		struct signal_struct *psig;
+-		struct signal_struct *sig;
++		struct signal_struct *sig = p->signal;
++		struct signal_struct *psig = current->signal;
+ 		unsigned long maxrss;
+ 		cputime_t tgutime, tgstime;
+ 
+@@ -1021,21 +1021,20 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 		 * accumulate in the parent's signal_struct c* fields.
+ 		 *
+ 		 * We don't bother to take a lock here to protect these
+-		 * p->signal fields, because they are only touched by
+-		 * __exit_signal, which runs with tasklist_lock
+-		 * write-locked anyway, and so is excluded here.  We do
+-		 * need to protect the access to parent->signal fields,
+-		 * as other threads in the parent group can be right
+-		 * here reaping other children at the same time.
++		 * p->signal fields because the whole thread group is dead
++		 * and nobody can change them.
++		 *
++		 * psig->stats_lock also protects us from our sub-theads
++		 * which can reap other children at the same time. Until
++		 * we change k_getrusage()-like users to rely on this lock
++		 * we have to take ->siglock as well.
+ 		 *
+ 		 * We use thread_group_cputime_adjusted() to get times for
+ 		 * the thread group, which consolidates times for all threads
+ 		 * in the group including the group leader.
+ 		 */
+ 		thread_group_cputime_adjusted(p, &tgutime, &tgstime);
+-		spin_lock_irq(&p->real_parent->sighand->siglock);
+-		psig = p->real_parent->signal;
+-		sig = p->signal;
++		spin_lock_irq(&current->sighand->siglock);
+ 		write_seqlock(&psig->stats_lock);
+ 		psig->cutime += tgutime + sig->cutime;
+ 		psig->cstime += tgstime + sig->cstime;
+@@ -1060,7 +1059,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 		task_io_accounting_add(&psig->ioac, &p->ioac);
+ 		task_io_accounting_add(&psig->ioac, &sig->ioac);
+ 		write_sequnlock(&psig->stats_lock);
+-		spin_unlock_irq(&p->real_parent->sighand->siglock);
++		spin_unlock_irq(&current->sighand->siglock);
+ 	}
+ 
+ 	/*
+-- 
+1.5.5.1
+
