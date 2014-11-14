@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965906AbaKNPdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:33:07 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:61277 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965686AbaKNPdC (ORCPT
+	id S965920AbaKNPdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:33:47 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:59007 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965593AbaKNPdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:33:02 -0500
+	Fri, 14 Nov 2014 10:33:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
+        p.zabel@pengutronix.de, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 03/13] ARM: Berlin: select the reset controller
+Date: Fri, 14 Nov 2014 16:33:27 +0100
+Message-ID: <3287202.nx0cnO5WUI@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1415978763-27345-4-git-send-email-antoine.tenart@free-electrons.com>
+References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com> <1415978763-27345-4-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <1415967071.15154.9.camel@localhost>
-References: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
-	<1415929010-9361-2-git-send-email-ast@plumgrid.com>
-	<1415967071.15154.9.camel@localhost>
-Date: Fri, 14 Nov 2014 07:33:00 -0800
-Message-ID: <CAMEtUux2vuN3iNaAsxybyFwzfMRVe1+BOW-JvnvYYh+=-vpELw@mail.gmail.com>
-Subject: Re: [PATCH v2 net-next 1/7] bpf: add 'flags' attribute to
- BPF_MAP_UPDATE_ELEM command
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:beMzQsEh8aI73nPiyL0fvVuOSdkBAFuQDCMcnl+SeF6
+ ovobm8nlYRffoL2SJRL5nk3wi5IR8RsQB/9VcFRY+8FZDvu4M1
+ gcm6+tadsNOFI8wLYdlmPRetiFDUxzTzPmsPjllRUHdea94pgv
+ +EoMHXvViLiGISI3mf1Z2LI49s2AajNHxlo3FitAy8HVGPd+F4
+ OY86Zlq3GXpdGsEYF1vc9mVcTvHuBdlwFQ6tr/RtFhDKlOyINS
+ XZa79ts/5psOaRFfL1SBAiGW1Ou1tqKKvxYJhexw5J96CZpkFY
+ xoo1j4wDV4hk/3qncVOdAbaCNc0yi+E4QuJ89satWiXDNTOspU
+ oAdJXeT3HErYwY013j44=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 4:11 AM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> On Do, 2014-11-13 at 17:36 -0800, Alexei Starovoitov wrote:
->> the current meaning of BPF_MAP_UPDATE_ELEM syscall command is:
->> either update existing map element or create a new one.
->> Initially the plan was to add a new command to handle the case of
->> 'create new element if it didn't exist', but 'flags' style looks
->> cleaner and overall diff is much smaller (more code reused), so add 'flags'
->> attribute to BPF_MAP_UPDATE_ELEM command with the following meaning:
->>  #define BPF_ANY      0 /* create new element or update existing */
->>  #define BPF_NOEXIST  1 /* create new element if it didn't exist */
->>  #define BPF_EXIST    2 /* update existing element */
->
-> Would a cmpxchg-alike function be handy here?
+On Friday 14 November 2014 16:25:53 Antoine Tenart wrote:
+>  menuconfig ARCH_BERLIN
+>         bool "Marvell Berlin SoCs" if ARCH_MULTI_V7
+> +       select ARCH_HAS_RESET_CONTROLLER
+>         select ARCH_REQUIRE_GPIOLIB
+>         select ARM_GIC
+>         select GENERIC_IRQ_CHIP
+>         select DW_APB_ICTL
+>         select DW_APB_TIMER_OF
+>         select PINCTRL
+> +       select RESET_CONTROLLER
 
-you mean cmpxchg command in addition to
-update() command ?
-May be... it will have an extra 'value' argument
-(key, old_value, new_value)
-I don't have a use case for it yet though.
+RESET_CONTROLLER is meant to be user-selectable, don't add a 'select' here,
+but instead make the driver 'depends on RESET_CONTROLLER'.
+
+	Arnd
