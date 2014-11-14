@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965673AbaKNNfn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:35:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59334 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965640AbaKNNfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:35:16 -0500
-Date: Fri, 14 Nov 2014 14:35:00 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        yoshikawa_takuya_b1@lab.ntt.co.jp, imammedo@redhat.com
-Subject: Re: [PATCH 1/3] kvm: memslots: track id_to_index changes during the
- insertion sort
-Message-ID: <20141114133500.GA10593@potion.brq.redhat.com>
-References: <1415963522-5255-1-git-send-email-pbonzini@redhat.com>
- <1415963522-5255-2-git-send-email-pbonzini@redhat.com>
+	id S965693AbaKNNgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:36:07 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:51514 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965240AbaKNNgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:36:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415963522-5255-2-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <CAAMCDec3EJ4e=bDKwH3i0PL655yrOQkBu_typihYMGD3GHZiQA@mail.gmail.com>
+References: <CAD6G_RREb58La-pC48BHW+9r9oruUXnCrk-RS8LaKSw6y9jgxg@mail.gmail.com>
+	<CAAMCDec3EJ4e=bDKwH3i0PL655yrOQkBu_typihYMGD3GHZiQA@mail.gmail.com>
+Date: Fri, 14 Nov 2014 19:06:03 +0530
+Message-ID: <CAD6G_RSiyhD2zSxEAGY_uFz3cjHtsRb+riF9EhziA78AwqvpwA@mail.gmail.com>
+Subject: Re: read performance is too low compared to write - /dev/sda1
+From: Jagan Teki <jagannadh.teki@gmail.com>
+To: Roger Heflin <rogerheflin@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, davem@davemloft.net,
+        linux-ide <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-14 12:12+0100, Paolo Bonzini:
-> This completes the optimization from the previous patch, by
-> removing the KVM_MEM_SLOTS_NUM-iteration loop from insert_memslot.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  virt/kvm/kvm_main.c | 39 +++++++++++++++++++--------------------
->  1 file changed, 19 insertions(+), 20 deletions(-)
-> 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index c0c2202e6c4f..c8ff99cc0ccb 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -677,31 +677,30 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
->  static void insert_memslot(struct kvm_memslots *slots,
->  			   struct kvm_memory_slot *new)
->  {
-> -	int i = slots->id_to_index[new->id];
-> -	struct kvm_memory_slot *old = id_to_memslot(slots, new->id);
-> +	int id = new->id;
-> +	int i = slots->id_to_index[id];
->  	struct kvm_memory_slot *mslots = slots->memslots;
->  
-> -	if (new->npages == old->npages) {
-> -		*old = *new;
-> -		return;
-> -	}
-> -
-> -	while (1) {
-> -		if (i < (KVM_MEM_SLOTS_NUM - 1) &&
-> -			new->npages < mslots[i + 1].npages) {
-> -			mslots[i] = mslots[i + 1];
-> -			i++;
-> -		} else if (i > 0 && new->npages > mslots[i - 1].npages) {
-> -			mslots[i] = mslots[i - 1];
-> -			i--;
-> -		} else {
-> -			mslots[i] = *new;
-> -			break;
-> +	WARN_ON(mslots[i].id != id);
-> +	if (new->npages != mslots[i].npages) {
-> +		while (1) {
-> +			if (i < (KVM_MEM_SLOTS_NUM - 1) &&
-> +    			    new->npages < mslots[i + 1].npages) {
-  (^^^^ whitespace error)
-> +				mslots[i] = mslots[i + 1];
-> +				slots->id_to_index[mslots[i].id] = i;
-> +				i++;
-> +			} else if (i > 0 &&
-> +				   new->npages > mslots[i - 1].npages) {
-> +				mslots[i] = mslots[i - 1];
-> +				slots->id_to_index[mslots[i].id] = i;
-> +				i--;
-> +			} else
-> +				break;
+On 14 November 2014 18:50, Roger Heflin <rogerheflin@gmail.com> wrote:
+> If you are robocoping small files you will hit other limits.
+>
+> Best I have seen with small files is around 30 files/second, and that
+> involves multiple copies going on.   Remember with a small files there
+> are several reads and writes that need to be done to complete a create
+> of a small file and each of these take time.    30 files/second ~ 30ms
+> per file, not that bad considering that on a real spinning disk a
+> single read/write op is 5-10ms, and creating the file entry, copying
+> data and closing the file takes several operations (at least create
+> file entry, write small amount of data, update file entry
+> date/time/info).     If the write in the middle is not a significant
+> amount of data, the 2 extra ops are what hurts.
+>
 
-We are replacing in a sorted array, so the the direction of our
-traversal doesn't change, (and we could lose one tab level here,)
+But, I tried 4gb and 1gb files both got a similar numbers.
 
-	if (new->npages < mslots[i].npages) {
-		while (i < (KVM_MEM_SLOTS_NUM - 1) &&
-		       new->npages < mslots[i + 1].npages) {
-			mslots[i] = mslots[i + 1];
-			slots->id_to_index[mslots[i].id] = i;
-			i++;
-		}
-	else if (new->npages > mslots[i].npages)
-		while (i > 0 &&
-		       new->npages > mslots[i - 1].npages) {
-			mslots[i] = mslots[i - 1];
-			slots->id_to_index[mslots[i].id] = i;
-			i--;
-		}
+> On Fri, Nov 14, 2014 at 6:55 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+>> Hi,
+>>
+>> I'm doing a performance testing on my bench ARM box.
+>>
+>> 1. dd test: I have validate the read and write by mounting /dev/sda1
+>> with ext4 filesystem,
+>>     able to get the good performance numbers where read is high
+>> compared to write
+>>
+>> 2.  robocopy test:
+>>      - mkfs.ext4 /dev/sda1
+>>      - mount /dev/sda1 /media/disk
+>>      - << configured samba >>
+>>      - Mapped the /media/disk on windows
+>>      - login on the mapped driver in windows
+>>      - did a robocopy test, where write got 84MBps and read 14MBps
+>>
+>> read performance is too slow when compared to write in robocopy case.
+>> Can anyone help me out, how to debug this further.
 
-(I guess you don't want me to abstract these two loops further :)
-
-If the probability of slots with same npages was high, we could also
-move just the last one from each group, but I think that the current
-algorithm is already faster than we need.
-
-(We'll have to change it into an interval tree, or something, if the
- number of slots rises anyway.)
+thanks!
+-- 
+Jagan.
