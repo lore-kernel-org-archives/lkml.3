@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaKNIs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:48:28 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:40256 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631AbaKNIs1 (ORCPT
+	id S1754783AbaKNIur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:50:47 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:57110 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754631AbaKNIun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:48:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <1415946050.26378.3.camel@concordia>
-References: <1412919926-13123-1-git-send-email-vvijayan@mvista.com>
- <20141015020811.7904E14011B@ozlabs.org> <CAOpNGcsgX0wVOgMN77+RuKVsb_iHQ7XQk8U_05-up__wC6zuZQ@mail.gmail.com>
- <CAOpNGcsQX1d4=MpHKKKnBotBb11dq55_kQp4PG8OA++U6peqKg@mail.gmail.com> <1415946050.26378.3.camel@concordia>
-From: Vineeth Vijayan <vvijayan@mvista.com>
-Date: Fri, 14 Nov 2014 14:18:06 +0530
-Message-ID: <CAOpNGcu5UDP93FSoKSKJZJYBL_dK7i3KHn3OGzORR67odGjgzA@mail.gmail.com>
-Subject: Re: powerpc: Fix Text randomization
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 14 Nov 2014 03:50:43 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-f3-5465c260411f
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Cc: Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v12 2/6] amba: Add helpers for (un)preparing AMBA clock
+Date: Fri, 14 Nov 2014 09:50:29 +0100
+Message-id: <1415955033-29093-3-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1415955033-29093-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415955033-29093-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xy7oJh1JDDJ52slhsnLGe1WL61AuM
+	Fqun/mW1eP3C0OLp5sdMFmeb3rBbdE5cwm4xa8peJovLu+awWXzuPcJocfsyr8XaI3fZLe6e
+	Ospmceb0JVaLCb8vsFkcXxtu8bJvP4uDoEdLcw+bx+yOmawei/e8ZPLYtKqTzePOtT1sHluu
+	trN4zL77g9Gjb8sqRo8Vq7+ze3zeJBfAFcVlk5Kak1mWWqRvl8CVMefyNtaCqRwVWz+dZW9g
+	/M7WxcjJISFgItE+rw/KFpO4cG89kM3FISSwlFHiUvtFRginj0li68d9jCBVbALGEpuXLwGr
+	EhFoZ5boWzcVrJ1ZYBGTRNNURRBbWMBd4sjHf2ANLAKqEp9OTQCr4QWKn2j4yQKxTk7i5LHJ
+	rCA2p4CHxOSNq8DiQkA1ny//YZ7AyLuAkWEVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkig
+	f9nBuPiY1SFGAQ5GJR5eg4LUECHWxLLiytxDjBIczEoivEq7gUK8KYmVValF+fFFpTmpxYcY
+	mTg4pRoY5xml/g01384x5cF6ubZ50h2RiQo3Ha2Vj83M6zf4vdAxOWJ32IqVL5e+qt9vIMvC
+	zDSjWSr7kt4lhWNzt70SC56x8Nr7dYG/uqSvSzeeeP2NaeWje/fT37HbKcVuV2Wrf2zs/DCM
+	1aVN4H+v1GOd6sh81zlPvk5bKbzMS3nS2xTv8yy1B8JLlViKMxINtZiLihMBMQTq61ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 11:50 AM, Michael Ellerman <mpe@ellerman.id.au> wrote:
-> On Fri, 2014-11-14 at 11:03 +0530, Vineeth Vijayan wrote:
->> ping !
->>
->> any update on this ? As i understand, only powerpc and s390 uses the
->> randomize_et_dyn call; for all other architecture this is an obsolete
->> function call.
->
-> I asked:
->
->> >> I'm not clear on what has changed to break this?
->
+Add amba_pclk_prepare() and amba_pclk_unprepare() inline functions for
+handling the AMBA bus clock by device drivers.
 
-Disabling PIE randomization was added in the commit
-a3defbe5c337dbc6da911f8cc49ae3cc3b49b453
-(binfmt_elf: fix PIE execution with randomization disabled). The
-randomization is decided as
-per the randomize_va_space sysctl flag.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ include/linux/amba/bus.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-As i understand, the randomization of the base address is implemented
-at elf_map and not from the
-arch/<>/include/asm/elf.h
+diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+index d024bd9c9d9b..2afc618b15ce 100644
+--- a/include/linux/amba/bus.h
++++ b/include/linux/amba/bus.h
+@@ -98,6 +98,16 @@ void amba_release_regions(struct amba_device *);
+ #define amba_pclk_disable(d)	\
+ 	do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
+ 
++static inline int amba_pclk_prepare(struct amba_device *dev)
++{
++	return clk_prepare(dev->pclk);
++}
++
++static inline void amba_pclk_unprepare(struct amba_device *dev)
++{
++	clk_unprepare(dev->pclk);
++}
++
+ /* Some drivers don't use the struct amba_device */
+ #define AMBA_CONFIG_BITS(a) (((a) >> 24) & 0xff)
+ #define AMBA_REV_BITS(a) (((a) >> 20) & 0x0f)
+-- 
+1.9.1
 
-Now, for powerpc, there's no support to disable the PIE randomization,
-even after we disable the
-same form randomize_va_space sysctl.This patch gives the support to
-disable PIE randomization in
-case it is disabled from this sysctl.
-
-> And you didn't tell me.
->
->> this call for another patch where randomize_et_dyn is removed.
->
-> Patches welcome :)
->
-
-i will follow up with the patch.
-
-> cheers
->
->
