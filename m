@@ -1,32 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161873AbaKNUPm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:15:42 -0500
-Received: from mail.leg-co.ru ([195.206.56.82]:61941 "EHLO shoes.irkutsk.ru"
+	id S1754219AbaKNUQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:16:14 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:38042 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161184AbaKNUPk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:15:40 -0500
-X-Greylist: delayed 4728 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 15:15:40 EST
-Content-Type: text/plain; charset=US-ASCII
+	id S1751625AbaKNUQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 15:16:13 -0500
+Date: Fri, 14 Nov 2014 12:15:58 -0800
+From: Kees Cook <kees@outflux.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: RW and executable hole in page tables on x86_64
+Message-ID: <20141114201558.GV5451@outflux.net>
+References: <20131025133454.GC4994@outflux.net>
+ <526A874B.2040108@zytor.com>
+ <20141114190251.GT5451@outflux.net>
+ <alpine.DEB.2.11.1411142035050.3909@nanos>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: re:
-To: linux-kernel@vger.kernel.org
-From: milke@imet.sk
-Date: Fri, 14 Nov 2014 12:56:38 -0600
-Reply-To: mrsalimqadri@qq.com
-Message-ID: <auto-000010318138@shoes.irkutsk.ru>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411142035050.3909@nanos>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day,This email is sequel to an ealier sent message of which you have
-not responded.I have a personal charity project which I will want you to
-execute on my behalf.Please kidnly get back to me with this code
-MHR/3910/2014 .You can reach me on mrsalimqadri@gmail.com .
+Hi Thomas,
 
-Thank you
+On Fri, Nov 14, 2014 at 09:04:19PM +0100, Thomas Gleixner wrote:
+> On Fri, 14 Nov 2014, Kees Cook wrote:
+> > Continuing a thread from a year ago...
+> > 
+> > On Fri, Oct 25, 2013 at 03:59:23PM +0100, H. Peter Anvin wrote:
+> > > On 10/25/2013 02:34 PM, Kees Cook wrote:
+> > > > Hi,
+> > > > 
+> > > > I've noticed there's a chunk of kernel memory still marked RW and x. See
+> > > > 0xffffffff82956000 below...
+> > > > 
+> > > > ---[ High Kernel Mapping ]---
+> > > > 0xffffffff80000000-0xffffffff81000000          16M                           pmd
+> > > > 0xffffffff81000000-0xffffffff81a00000          10M     ro         PSE GLB x  pmd
+> > > > 0xffffffff81a00000-0xffffffff81e00000           4M     ro         PSE GLB NX pmd
+> > > > 0xffffffff81e00000-0xffffffff82200000           4M     RW             GLB NX pte
+> > > > 0xffffffff82200000-0xffffffff82800000           6M     RW         PSE GLB NX pmd
+> > > > 0xffffffff82800000-0xffffffff82956000        1368K     RW             GLB NX pte
+> > > > 0xffffffff82956000-0xffffffff82a00000         680K     RW             GLB x  pte
+> > > > 0xffffffff82a00000-0xffffffffa0000000         470M                           pmd
+> > > > 
+> > > > HPA looked at it for a bit, but it wasn't obvious what was going on. It's
+> > > > after the end of bss. I do note that the two adjacent regions add up to
+> > > > 2MiB. Is this some kind of leftover mapping? What is this region? Is there
+> > > > a sensible place to clean it up?
+> > > > 
+> > > 
+> > > It looks to be what is left after the 2 MB page for bss is broken up.
+> > > It doesn't mean it isn't broken, though.
+> > 
+> > It looks like the problem still exists:
+> > 
+> > ---[ High Kernel Mapping ]---
+> > 0xffffffff80000000-0xffffffff9ca00000     458M                   pmd
+> > 0xffffffff9ca00000-0xffffffff9d200000       8M   ro   PSE GLB x  pmd
+> > 0xffffffff9d200000-0xffffffff9d3f3000    1996K   ro       GLB x  pte
+> > 0xffffffff9d3f3000-0xffffffff9d400000      52K   ro           x  pte
+> > 0xffffffff9d400000-0xffffffff9d600000       2M   ro   PSE GLB NX pmd
+> > 0xffffffff9d600000-0xffffffff9d7e8000    1952K   ro       GLB NX pte
+> > 0xffffffff9d7e8000-0xffffffff9d800000      96K   ro           NX pte
+> > 0xffffffff9d800000-0xffffffff9d8ff000    1020K   RW       GLB NX pte
+> > 0xffffffff9d8ff000-0xffffffff9da2d000    1208K   RW           NX pte
+> > 0xffffffff9da2d000-0xffffffff9dc00000    1868K   RW       GLB NX pte
+> > 0xffffffff9dc00000-0xffffffff9e600000      10M   RW   PSE GLB NX pmd
+> > 0xffffffff9e600000-0xffffffff9e7f5000    2004K   RW       GLB NX pte
+> > 0xffffffff9e7f5000-0xffffffff9e800000      44K   RW       GLB x  pte
+> > 0xffffffff9e800000-0xffffffffc0000000     536M                   pmd
+> > 
+> > Still seems to be the bss getting broken up. What is this left-over
+> > memory used for? Any pointers to where it happens? I'd really like to
+> > kill this area.
+> 
+> mark_rodata_ro()
+> 
+> 	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
+> 
+> all_end is _end which is the end of the the __brk section.
+> 
+> That looks indeed like a 2MB page which is split by set_memory_nx().
+> 
+> That reminder of the 2MB is a leftover from cleanup_highmap()
+> 
+>  * We limit the mappings to the region from _text to _brk_end.  _brk_end
+>  * is rounded up to the 2MB boundary.
+> 
+> So what you see is the reminder between _brk_end and the 2MB boundary.
+> 
+> Now the simple solution is to round up all_end in mark_rodata_ro() to
+> the 2MB boundary,
 
-Salim Qadri
+Thanks! I just managed to work these things out from Peter's earlier hints,
+just before you sent this. Good to have my guess confirmed. :)
+
+> but we should probably get rid of the mapping
+> completely.
+> 
+> Something like:
+> 
+>    end = roundup((unsigned long)all_end, PMD_SIZE) - 1;	  
+> 
+>    free_init_pages(all_end + 1, end)
+> 
+> should do the trick.
+
+Ah-ha! Okay, I'll send a new patch that does this. Thanks!
+
+-Kees
+
+-- 
+Kees Cook                                            @outflux.net
