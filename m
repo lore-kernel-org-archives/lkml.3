@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964976AbaKNA0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:26:51 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49882 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964789AbaKNA0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:26:50 -0500
-Date: Fri, 14 Nov 2014 01:26:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH] timekeeping: Move persistent clock registration code
- from ARM to kernel
-In-Reply-To: <CALAqxLXYVLXZafNH_ag3WDFHkhMe5t23zLbvg7Sq+4_rTfy+Kw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1411140123060.3935@nanos>
-References: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com> <20141110095325.GC12126@ulmo> <CAOMFOmXpAm5iKCLFyorTW+n9YmgZMmrDGGe736tJX8C6BYQv-A@mail.gmail.com> <alpine.DEB.2.11.1411132334400.3935@nanos>
- <CALAqxLXYVLXZafNH_ag3WDFHkhMe5t23zLbvg7Sq+4_rTfy+Kw@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S964992AbaKNA12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:27:28 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:42086 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934023AbaKNA11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 19:27:27 -0500
+Message-ID: <54654C61.8070002@interlog.com>
+Date: Thu, 13 Nov 2014 19:27:13 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: SCSI development list <linux-scsi@vger.kernel.org>,
+        Martin Pitt <mpitt@debian.org>
+CC: David Sommerseth <davids@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Ritesh Raj Sarraf <rrs@researchut.com>,
+        "Robin H. Johnson" <robbat2@gentoo.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [Announce] sg3_utils-1.40 available
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, John Stultz wrote:
-> On Thu, Nov 13, 2014 at 2:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Aside of that I really wonder why we need that persistent_clock stuff
-> > at all. We already have mechanisms to register persistent clocks AKA
-> > RTCs after the early boot process and update the wall clock time
-> > before we actually need it. Nothing in early boot depends on correct
-> > wall clock at all.
-> >
-> > So instead of adding more extra persistent clock nonsense, can we just
-> > move all of that to the place where it belongs, i.e. RTC?
-> 
-> Sigh.. I've got this on an eventual todo list.. The big problem though
-> is that the RTC infrastructure can't be called with irqs off, so its
-> not as optimal for measuring suspend time. Some of the suspend-time
-> measurement with clocksources that don't halt is interesting here.
-> 
-> So we need to add to the RTC infrastructure special accessors that are
-> safe when irqs are off, and we can then deprecate the persistent clock
-> bits. There's still evaluation quirks with setting the time earlier in
-> boot or not (possibly some rng effects as well there), but that could
-> be worked out if we had the suspend timing via safe RTC interfaces
-> sorted.
+sg3_utils is a package of command line utilities for sending
+SCSI and some ATA commands to devices. This package targets
+the Linux 3, 2.6 and 2.4 kernel series. It has ports to
+FreeBSD, Tru64, Solaris, and Windows (cygwin and MinGW).
 
-So we better work on this instead of creating more legacy enforcement
-APIs....
+There are three new utilities and major additions to several
+others, see the ChangeLog below. This version tracks various
+changes made by www.t10.org since June 2014.
 
-Thanks,
+For an overview of sg3_utils and downloads see this page:
+     http://sg.danny.cz/sg/sg3_utils.html
+The sg_ses utility (for enclosure devices) is discussed at:
+     http://sg.danny.cz/sg/sg_ses.html
+A full changelog can be found at:
+     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
 
-	tglx
+
+Changelog for sg3_utils-1.40 [20141110] [svn: r620]
+   - sg_write_verify: new utility for WRITE AND VERIFY
+   - sg_ses_microcode: new utility
+   - sg_sat_read_gplog: new utility
+   - sg_senddiag: add --maxlen= option
+   - sg_copy_results: correct response length calculations
+   - sg_format: make '-FFF' bypass mode sense/select
+     - add --mode=MP to supply alternate mode page,
+       default remains read-write error recovery mpage
+     - output unit serial number and LU name prior to
+   - sg_inq: expand Block limits VPD page output
+     - fix --cmddt output if not supported by device
+     - more sanity checks on vendor supplied fields
+   - sg_vpd: add --all option
+     - more TPC VPD page decoding
+     - add zoned block device characteristics page
+     - more sanity checks on vendor supplied fields
+   - sg_ses: fix problem with --index=sse (and ssc)
+     - mask status element before using as control
+     - defeat previous item with --mask (ignore) option
+     - SAS connector status element: add overcurrent bit
+     - handle element descriptor names that count a
+       trailing NULL
+     - add --warn option mainly for broken joins
+     - add optional descriptions to -ee output
+     - sync with ses3r07
+   - sg_sanitize: add --desc and --zero options
+     - output unit serial number and LU name prior to
+   - sg_rep_zones: corrections, sync with zbc-r01c
+   - sg_persist: split help into two pages, '-hh' for 2nd
+   - sg_logs: refine tape drive output
+   - sg_raw: with -vvv decode T10 CDB name
+     - do not output/print data-in if error
+   - sg_opcodes: add --compact field
+   - sg_senddiag: add --page=PG option
+   - sg_reset: add words for EAGAIN from reset ioctl
+   - sg_sat_*: mention t_type and multiple_count fields
+   - win32: sg_scan: handle larger configurations
+   - sg_lib: trim trailing spaces in dStrHex() and friends
+   - sg_lib_data: sync asc/ascq codes with T10 20140924
+     - clean up service action string functions
+     - sg_ll_unmap_v2(): fix group number
+     - sg_ll_inquiry(), sg_ll_mode_sense*(),
+       sg_ll_log_sense(): use resid to clear unfilled
+       data-in buffer
+   - sg_unaligned.h: add header for building parameters
+   - examples/sg_tst_async: new Linux sg test utility
+
+Changelog for sg3_utils-1.39 [20140612] [svn: r588]
+...
+
+Doug Gilbert
