@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885AbaKNFly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 00:41:54 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58756 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaKNFls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 00:41:48 -0500
+	id S1754273AbaKNFlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 00:41:19 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47896 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754205AbaKNFlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 00:41:12 -0500
 From: Vignesh R <vigneshr@ti.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -29,9 +28,9 @@ CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
         <linux-input@vger.kernel.org>
-Subject: [PATCH v4 6/6] input: touchscreen: ti_am335x_tsc: Replace delta filtering with median filtering
-Date: Fri, 14 Nov 2014 10:37:31 +0530
-Message-ID: <1415941651-28962-7-git-send-email-vigneshr@ti.com>
+Subject: [PATCH v4 2/6] input: touchscreen: ti_am335x_tsc: Remove udelay in interrupt handler
+Date: Fri, 14 Nov 2014 10:37:27 +0530
+Message-ID: <1415941651-28962-3-git-send-email-vigneshr@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
 References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
@@ -41,145 +40,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, delta filtering was applied TSC co-ordinate readouts before
-reporting a single value to user space. This patch replaces delta filtering
-with median filtering. Median filtering sorts co-ordinate readouts, drops min
-and max values, and reports the average of remaining values. This method is
-more sensible than delta filering. Median filtering is applied only if number
-of readouts is greater than 3 else just average of co-ordinate readouts is
-reported.
+From: Brad Griffis <bgriffis@ti.com>
+
+TSC interrupt handler had udelay to avoid reporting of false pen-up
+interrupt to user space. This patch implements workaround suggesting in
+Advisory 1.0.31 of silicon errata for am335x, thus eliminating udelay
+and touchscreen lag. This also improves performance of touchscreen and
+eliminates sudden jump of cursor at touch release.
+
+IDLECONFIG and CHARGECONFIG registers are to be configured
+with same values in order to eliminate false pen-up events. This
+workaround may result in false pen-down to be detected, hence considerable
+charge step delay needs to be added. The charge delay is set to 0xB000
+(in terms of ADC clock cycles) by default.
+
+TSC steps are disabled at the end of every sampling cycle and EOS bit is
+set. Once the EOS bit is set, the TSC steps need to be re-enabled to begin
+next sampling cycle.
+
+Signed-off-by: Brad Griffis <bgriffis@ti.com>
+[vigneshr@ti.com: Ported the patch from v3.12 to v3.18rc2]
 
 Signed-off-by: Vignesh R <vigneshr@ti.com>
 ---
- drivers/input/touchscreen/ti_am335x_tsc.c | 91 +++++++++++++++++--------------
- 1 file changed, 51 insertions(+), 40 deletions(-)
+
+v4:
+ - check for PEN_IRQ bit in ADCFSM to avoid false-pen when ADC
+   and TSC are used together.
+ - Set charge delay to 0x400 as default. Most devices function
+   normally at this value.
+
+ drivers/input/touchscreen/ti_am335x_tsc.c | 63 ++++++++++++++-----------------
+ include/linux/mfd/ti_am335x_tscadc.h      |  3 +-
+ 2 files changed, 30 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index e64055a8cd48..b84493fc8a78 100644
+index 1aeac9675fe7..b94719fc8849 100644
 --- a/drivers/input/touchscreen/ti_am335x_tsc.c
 +++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -26,6 +26,7 @@
- #include <linux/delay.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/sort.h>
- 
- #include <linux/mfd/ti_am335x_tscadc.h>
- 
-@@ -204,56 +205,61 @@ static void titsc_step_config(struct titsc *ts_dev)
- 	am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
- }
- 
-+static int titsc_cmp_coord(const void *a, const void *b)
-+{
-+	return *(int *)a - *(int *)b;
-+}
-+
- static void titsc_read_coordinates(struct titsc *ts_dev,
- 		u32 *x, u32 *y, u32 *z1, u32 *z2)
- {
--	unsigned int fifocount = titsc_readl(ts_dev, REG_FIFO0CNT);
--	unsigned int prev_val_x = ~0, prev_val_y = ~0;
--	unsigned int prev_diff_x = ~0, prev_diff_y = ~0;
--	unsigned int read, diff;
--	unsigned int i, channel;
-+	unsigned int yvals[7], xvals[7];
-+	unsigned int i, xsum = 0, ysum = 0;
- 	unsigned int creads = ts_dev->coordinate_readouts;
--	unsigned int first_step = TOTAL_STEPS - (creads * 2 + 2);
- 
--	*z1 = *z2 = 0;
--	if (fifocount % (creads * 2 + 2))
--		fifocount -= fifocount % (creads * 2 + 2);
--	/*
--	 * Delta filter is used to remove large variations in sampled
--	 * values from ADC. The filter tries to predict where the next
--	 * coordinate could be. This is done by taking a previous
--	 * coordinate and subtracting it form current one. Further the
--	 * algorithm compares the difference with that of a present value,
--	 * if true the value is reported to the sub system.
--	 */
--	for (i = 0; i < fifocount; i++) {
--		read = titsc_readl(ts_dev, REG_FIFO0);
--
--		channel = (read & 0xf0000) >> 16;
--		read &= 0xfff;
--		if (channel > first_step + creads + 2) {
--			diff = abs(read - prev_val_x);
--			if (diff < prev_diff_x) {
--				prev_diff_x = diff;
--				*x = read;
--			}
--			prev_val_x = read;
-+	for (i = 0; i < creads; i++) {
-+		yvals[i] = titsc_readl(ts_dev, REG_FIFO0);
-+		yvals[i] &= 0xfff;
-+	}
- 
--		} else if (channel == first_step + creads + 1) {
--			*z1 = read;
-+	*z1 = titsc_readl(ts_dev, REG_FIFO0);
-+	*z1 &= 0xfff;
-+	*z2 = titsc_readl(ts_dev, REG_FIFO0);
-+	*z2 &= 0xfff;
- 
--		} else if (channel == first_step + creads + 2) {
--			*z2 = read;
-+	for (i = 0; i < creads; i++) {
-+		xvals[i] = titsc_readl(ts_dev, REG_FIFO0);
-+		xvals[i] &= 0xfff;
-+	}
- 
--		} else if (channel > first_step) {
--			diff = abs(read - prev_val_y);
--			if (diff < prev_diff_y) {
--				prev_diff_y = diff;
--				*y = read;
--			}
--			prev_val_y = read;
-+	/*
-+	 * If co-ordinates readouts is less than 4 then
-+	 * report the average. In case of 4 or more
-+	 * readouts, sort the co-ordinate samples, drop
-+	 * min and max values and report the average of
-+	 * remaining values.
-+	 */
-+	if (creads <=  3) {
-+		for (i = 0; i < creads; i++) {
-+			ysum += yvals[i];
-+			xsum += xvals[i];
- 		}
-+		ysum /= creads;
-+		xsum /= creads;
-+	} else {
-+		sort(yvals, creads, sizeof(unsigned int),
-+		     titsc_cmp_coord, NULL);
-+		sort(xvals, creads, sizeof(unsigned int),
-+		     titsc_cmp_coord, NULL);
-+		for (i = 1; i < creads - 1; i++) {
-+			ysum += yvals[i];
-+			xsum += xvals[i];
-+		}
-+		ysum /= creads - 2;
-+		xsum /= creads - 2;
+@@ -173,11 +173,9 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 		titsc_writel(ts_dev, REG_STEPDELAY(i), STEPCONFIG_OPENDLY);
  	}
-+	*y = ysum;
-+	*x = xsum;
- }
  
- static irqreturn_t titsc_irq(int irq, void *dev)
-@@ -367,6 +373,11 @@ static int titsc_parse_dt(struct platform_device *pdev,
- 	if (err < 0)
- 		return err;
+-	/* Charge step configuration */
+-	config = ts_dev->bit_xp | ts_dev->bit_yn |
+-			STEPCHARGE_RFP_XPUL | STEPCHARGE_RFM_XNUR |
+-			STEPCHARGE_INM_AN1 | STEPCHARGE_INP(ts_dev->inp_yp);
++	/* Make CHARGECONFIG same as IDLECONFIG */
  
-+	if (ts_dev->coordinate_readouts <= 0) {
-+		dev_warn(&pdev->dev, "invalid co-ordinate readouts, resetting it to 5\n");
-+		ts_dev->coordinate_readouts = 5;
++	config = titsc_readl(ts_dev, REG_IDLECONFIG);
+ 	titsc_writel(ts_dev, REG_CHARGECONFIG, config);
+ 	titsc_writel(ts_dev, REG_CHARGEDELAY, CHARGEDLY_OPENDLY);
+ 
+@@ -261,12 +259,34 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ {
+ 	struct titsc *ts_dev = dev;
+ 	struct input_dev *input_dev = ts_dev->input;
+-	unsigned int status, irqclr = 0;
++	unsigned int fsm, status, irqclr = 0;
+ 	unsigned int x = 0, y = 0;
+ 	unsigned int z1, z2, z;
+-	unsigned int fsm;
+ 
+-	status = titsc_readl(ts_dev, REG_IRQSTATUS);
++	status = titsc_readl(ts_dev, REG_RAWIRQSTATUS);
++	if (status & IRQENB_HW_PEN) {
++		ts_dev->pen_down = true;
++		titsc_writel(ts_dev, REG_IRQWAKEUP, 0x00);
++		titsc_writel(ts_dev, REG_IRQCLR, IRQENB_HW_PEN);
++		irqclr |= IRQENB_HW_PEN;
 +	}
 +
- 	err = of_property_read_u32(node, "ti,charge-delay",
- 				   &ts_dev->charge_delay);
- 	if (err < 0)
++	if (status & IRQENB_PENUP) {
++		fsm = titsc_readl(ts_dev, REG_ADCFSM);
++		if (fsm == ADCFSM_STEPID) {
++			ts_dev->pen_down = false;
++			input_report_key(input_dev, BTN_TOUCH, 0);
++			input_report_abs(input_dev, ABS_PRESSURE, 0);
++			input_sync(input_dev);
++		} else {
++			ts_dev->pen_down = true;
++		}
++		irqclr |= IRQENB_PENUP;
++	}
++
++	if (status & IRQENB_EOS)
++		irqclr |= IRQENB_EOS;
++
+ 	/*
+ 	 * ADC and touchscreen share the IRQ line.
+ 	 * FIFO1 interrupts are used by ADC. Handle FIFO0 IRQs here only
+@@ -297,34 +317,6 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ 		}
+ 		irqclr |= IRQENB_FIFO0THRES;
+ 	}
+-
+-	/*
+-	 * Time for sequencer to settle, to read
+-	 * correct state of the sequencer.
+-	 */
+-	udelay(SEQ_SETTLE);
+-
+-	status = titsc_readl(ts_dev, REG_RAWIRQSTATUS);
+-	if (status & IRQENB_PENUP) {
+-		/* Pen up event */
+-		fsm = titsc_readl(ts_dev, REG_ADCFSM);
+-		if (fsm == ADCFSM_STEPID) {
+-			ts_dev->pen_down = false;
+-			input_report_key(input_dev, BTN_TOUCH, 0);
+-			input_report_abs(input_dev, ABS_PRESSURE, 0);
+-			input_sync(input_dev);
+-		} else {
+-			ts_dev->pen_down = true;
+-		}
+-		irqclr |= IRQENB_PENUP;
+-	}
+-
+-	if (status & IRQENB_HW_PEN) {
+-
+-		titsc_writel(ts_dev, REG_IRQWAKEUP, 0x00);
+-		titsc_writel(ts_dev, REG_IRQCLR, IRQENB_HW_PEN);
+-	}
+-
+ 	if (irqclr) {
+ 		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+ 		am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
+@@ -417,6 +409,7 @@ static int titsc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	titsc_writel(ts_dev, REG_IRQENABLE, IRQENB_FIFO0THRES);
++	titsc_writel(ts_dev, REG_IRQENABLE, IRQENB_EOS);
+ 	err = titsc_config_wires(ts_dev);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "wrong i/p wire configuration\n");
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index e2e70053470e..3f4e994ace2b 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -52,6 +52,7 @@
+ 
+ /* IRQ enable */
+ #define IRQENB_HW_PEN		BIT(0)
++#define IRQENB_EOS		BIT(1)
+ #define IRQENB_FIFO0THRES	BIT(2)
+ #define IRQENB_FIFO0OVRRUN	BIT(3)
+ #define IRQENB_FIFO0UNDRFLW	BIT(4)
+@@ -107,7 +108,7 @@
+ /* Charge delay */
+ #define CHARGEDLY_OPEN_MASK	(0x3FFFF << 0)
+ #define CHARGEDLY_OPEN(val)	((val) << 0)
+-#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(1)
++#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(0x400)
+ 
+ /* Control register */
+ #define CNTRLREG_TSCSSENB	BIT(0)
 -- 
 1.9.1
 
