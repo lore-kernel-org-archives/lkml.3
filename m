@@ -1,116 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965572AbaKNNnb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:43:31 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:43076 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965248AbaKNNn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:43:29 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <fb75c8d364e84a27991d0d81a9caccd9>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v11 06/12] dt-bindings: add document for dw_hdmi
-Date: Fri, 14 Nov 2014 21:42:58 +0800
-Message-Id: <1415972578-8577-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
+	id S935254AbaKNNoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:44:11 -0500
+Received: from mga03.intel.com ([134.134.136.65]:10568 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933815AbaKNNoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:44:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
+   d="scan'208";a="607841356"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v8 00/14] perf: Add infrastructure and support for Intel PT
+Date: Fri, 14 Nov 2014 15:43:33 +0200
+Message-Id: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+Hi Peter and all,
 
----
+Since there weren't too many review comments on the two previous
+versions, here's another one with a couple more fixes.
 
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8:
-- correct some spelling mistake
-- modify ddc-i2c-bus and interrupt description
+[full description below the changelog]
 
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-Changes in v2: None
+Changes since v7:
+  * fixed a bug in aux allocation logic that caused more than
+    requested pages to be allocated,
+  * fixed pt_event_add() for snapshot mode, which would return an
+    error in case of successful completion.
 
- .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 40 ++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+Changes since v6:
+  * replaced kref with atomic in aux refcounting this time for real,
+  * added a small comment on capabilities/"caps" attribute group in PT
+    pmu.
 
-diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-new file mode 100644
-index 0000000..0558442
---- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-@@ -0,0 +1,40 @@
-+DesignWare HDMI bridge bindings
-+
-+Required properities:
-+- compatible: platform specific such as:
-+   * "fsl,imx6q-hdmi"
-+   * "fsl,imx6dl-hdmi"
-+   * "rockchip,rk3288-dw-hdmi"
-+- reg: physical base address of the controller and length
-+- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
-+- interrupts: The HDMI interrupt number
-+
-+Optional properties
-+- reg-io-width: the width of the reg:1,4, default set to 1 if not present
-+
-+Example:
-+	hdmi: hdmi@0120000 {
-+		compatible = "fsl,imx6q-hdmi";
-+		reg = <0x00120000 0x9000>;
-+		interrupts = <0 115 0x04>;
-+		gpr = <&gpr>;
-+		clocks = <&clks 123>, <&clks 124>;
-+		clock-names = "iahb", "isfr";
-+		ddc-i2c-bus = <&i2c2>;
-+
-+		port@0 {
-+			reg = <0>;
-+
-+			hdmi_mux_0: endpoint {
-+				remote-endpoint = <&ipu1_di0_hdmi>;
-+			};
-+		};
-+
-+		port@1 {
-+			reg = <1>;
-+
-+			hdmi_mux_1: endpoint {
-+				remote-endpoint = <&ipu1_di1_hdmi>;
-+			};
-+		};
-+	};
+Changes since v5:
+
+  * dropped "bypass mask", bits that a privileged user could set in
+    RTIT_CTL,
+  * merged configuring and enabling RTIT_CTL writes,
+  * fixed kernel-doc comments
+  * if LBR/BTS events are present in the system, PT event creation is
+    disallowed and vice versa,
+  * fixed a bug with high order allocation under pressure,
+  * fixed undoing vm_locked accounting in case of AUX allocation
+    failure,
+  * left out kernel counters for a separate series to keep this one
+    concise.
+
+This patchset adds support for Intel Processor Trace (PT) extension [1] of
+Intel Architecture that allows the capture of information about software
+execution flow, to the perf kernel infrastructure.
+
+The single most notable thing is that while PT outputs trace data in a
+compressed binary format, it will still generate hundreds of megabytes
+of trace data per second per core. Decoding this binary stream takes
+2-3 orders of magnitude the cpu time that it takes to generate
+it. These considerations make it impossible to carry out decoding in
+kernel space. Therefore, the trace data is exported to userspace as a
+zero-copy mapping that userspace can collect and store for later
+decoding. To address this, this patchset extends perf ring buffer with
+an "AUX space", which is allocated for hardware blocks such as PT to
+export their trace data with minimal overhead. This space can be
+configured via buffer's user page and mmapped from the same file
+descriptor with a given offset. Data can then be collected from it
+by reading the aux_head (write) pointer from the user page and updating
+aux_tail (read) pointer similarly to data_{head,tail} of the
+traditional perf buffer. There is an api between perf core and pmu
+drivers that wish to make use of this AUX space to export their data.
+
+For tracing blocks that don't support hardware scatter-gather tables,
+we provide high-order physically contiguous allocations to minimize
+the overhead needed for software double buffering and PMI pressure.
+
+This way we get a normal perf data stream that provides sideband
+information that is required to decode the trace data, such as MMAPs,
+COMMs etc, plus the actual trace in its own logical space.
+
+If the trace buffer is mapped writable, the driver will stop tracing
+when it fills up (aux_head approaches aux_tail), till data is read,
+aux_tail pointer is moved forward and an ioctl() is issued to
+re-enable tracing. If the trace buffer is mapped read only, the
+tracing will continue, overwriting older data, so that the buffer
+always contains the most recent data. Tracing can be stopped with an
+ioctl() and restarted once the data is collected.
+
+This patchset consists of necessary changes to the perf kernel
+infrastructure, and PT and BTS pmu drivers. The tooling support is not
+included in this series, however, it can be found in my github tree [2].
+
+[1] chapter 36 of
+http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-manual-325462.pdf
+[2] http://github.com/virtuoso/linux-perf/tree/intel_pt
+
+Alexander Shishkin (13):
+  perf: Add data_{offset,size} to user_page
+  perf: Support high-order allocations for AUX space
+  perf: Add a capability for AUX_NO_SG pmus to do software double
+    buffering
+  perf: Add a pmu capability for "exclusive" events
+  perf: Add AUX record
+  perf: Add api for pmus to write to AUX area
+  perf: Support overwrite mode for AUX area
+  perf: Add wakeup watermark control to AUX area
+  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
+  x86: perf: Intel PT and LBR/BTS are mutually exclusive
+  x86: perf: intel_pt: Intel PT PMU driver
+  x86: perf: intel_bts: Add BTS PMU driver
+  perf: add ITRACE_START record to indicate that tracing has started
+
+Peter Zijlstra (1):
+  perf: Add AUX area to ring buffer for raw data streams
+
+ arch/x86/include/asm/cpufeature.h          |    1 +
+ arch/x86/include/uapi/asm/msr-index.h      |   18 +
+ arch/x86/kernel/cpu/Makefile               |    1 +
+ arch/x86/kernel/cpu/intel_pt.h             |  131 ++++
+ arch/x86/kernel/cpu/perf_event.c           |   43 ++
+ arch/x86/kernel/cpu/perf_event.h           |   49 ++
+ arch/x86/kernel/cpu/perf_event_intel.c     |   40 +-
+ arch/x86/kernel/cpu/perf_event_intel_bts.c |  525 ++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |    3 +-
+ arch/x86/kernel/cpu/perf_event_intel_pt.c  | 1082 ++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/scattered.c            |    1 +
+ include/linux/perf_event.h                 |   47 +-
+ include/uapi/linux/perf_event.h            |   59 +-
+ kernel/events/core.c                       |  268 ++++++-
+ kernel/events/internal.h                   |   33 +
+ kernel/events/ring_buffer.c                |  327 ++++++++-
+ 16 files changed, 2577 insertions(+), 51 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/intel_pt.h
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
+
 -- 
-1.9.1
+2.1.1
 
