@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422651AbaKNUkF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:40:05 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55033 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377AbaKNUkD (ORCPT
+	id S1161939AbaKNUk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:40:28 -0500
+Received: from smtprelay4.synopsys.com ([198.182.44.111]:50610 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377AbaKNUkY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:40:03 -0500
-Date: Fri, 14 Nov 2014 21:39:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Borislav Petkov <bp@suse.de>
-cc: Vinson Lee <vlee@twopensource.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        Suresh Siddha <sbsiddha@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: x86 math_error warning in Linux kernel 3.10
-In-Reply-To: <20141114203641.GB7825@pd.tnic>
-Message-ID: <alpine.DEB.2.11.1411142138300.3909@nanos>
-References: <CAHTgTXX=0JqGx1eYa4+Y5TuvzUpVwMNQdPe2a7m=r3pZBfGXxQ@mail.gmail.com> <20141114203641.GB7825@pd.tnic>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 14 Nov 2014 15:40:24 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "balbi@ti.com" <balbi@ti.com>
+CC: "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>,
+        "matthijs@stdin.nl" <matthijs@stdin.nl>,
+        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv7 3/8] usb: dwc2: convert to use dev_pm_ops API
+Thread-Topic: [PATCHv7 3/8] usb: dwc2: convert to use dev_pm_ops API
+Thread-Index: AQHP/dNyR8UKqAd8YUmeQU55Zljpz5xgmmrg
+Date: Fri, 14 Nov 2014 20:40:20 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844EBCA9@US01WEMBX2.internal.synopsys.com>
+References: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
+ <1415726020-19238-4-git-send-email-dinguyen@opensource.altera.com>
+In-Reply-To: <1415726020-19238-4-git-send-email-dinguyen@opensource.altera.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014, Borislav Petkov wrote:
-> On Fri, Nov 14, 2014 at 12:19:16PM -0800, Vinson Lee wrote:
-> > Hi.
-> > 
-> > We hit this x86 math_error warning in Linux kernel 3.10.
-> > 
-> > ------------[ cut here ]------------
-> > WARNING: at arch/x86/include/asm/fpu-internal.h:524 math_error+0xd1/0x219()
-> > Modules linked in: cls_basic act_mirred cls_u32 veth sch_ingress
-> > netconsole configfs ipv6 dm_multipath scsi_dh video sbs sbshc hed
-> > acpi_pad acpi_ipmi acpi_i2c parport_pc lp parport tcp_diag inet_diag
-> > ipmi_si ipmi_devintf ipmi_msghandler dell_rbu sg iTCO_wdt
-> > iTCO_vendor_support dcdbas igb i2c_algo_bit ptp pps_core shpchp
-> > lpc_ich i2c_i801 mfd_core i2c_core ioatdma dca i7core_edac edac_core
-> > microcode freq_table mperf ahci libahci libata sd_mod scsi_mod
-> > CPU: 2 PID: 53182 Comm: java Not tainted 3.10.50 #1
-> >  0000000000000000 ffff8808e1f5be38 ffffffff8146cb74 ffff8808e1f5be70
-> >  ffffffff8103cbf9 0000000000000000 ffff88090b2c9730 ffff8808e1f5bf58
-> >  0000000000000010 0000000000000000 ffff8808e1f5be80 ffffffff8103ccbf
-> > Call Trace:
-> >  [<ffffffff8146cb74>] dump_stack+0x19/0x1b
-> >  [<ffffffff8103cbf9>] warn_slowpath_common+0x65/0x7d
-> >  [<ffffffff8103ccbf>] warn_slowpath_null+0x1a/0x1c
-> >  [<ffffffff8100317b>] math_error+0xd1/0x219
-> >  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
-> >  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
-> >  [<ffffffff8107bf32>] ? ktime_get+0x68/0x76
-> >  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
-> >  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
-> >  [<ffffffff810032d6>] do_coprocessor_error+0x13/0x15
-> >  [<ffffffff81478a38>] coprocessor_error+0x18/0x20
-> > ---[ end trace 3e4a6532a67ba6d3 ]---
+> From: dinguyen@opensource.altera.com [mailto:dinguyen@opensource.altera.com]
+> Sent: Tuesday, November 11, 2014 9:14 AM
 > 
-> AFAICT, you're getting an FPU exception for a task which hasn't used the
-> FPU or current is somehow pointing to the wrong task.
+> From: Dinh Nguyen <dinguyen@opensource.altera.com>
 > 
-> Can you trigger this with the latest kernel too, i.e., say, 3.18-rc4?
+> Update suspend/resume to use dev_pm_ops API.
+> 
+> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+> ---
+>  drivers/usb/dwc2/platform.c | 15 +++++++++------
+>  1 file changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+> index eeba8a4..b94867b 100644
+> --- a/drivers/usb/dwc2/platform.c
+> +++ b/drivers/usb/dwc2/platform.c
+> @@ -219,9 +219,9 @@ static int dwc2_driver_probe(struct platform_device *dev)
+>  	return retval;
+>  }
+> 
+> -static int dwc2_suspend(struct platform_device *dev, pm_message_t state)
+> +static int dwc2_suspend(struct device *dev)
+>  {
+> -	struct dwc2_hsotg *dwc2 = platform_get_drvdata(dev);
+> +	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+>  	int ret = 0;
+> 
+>  	if (dwc2_is_device_mode(dwc2))
+> @@ -229,9 +229,9 @@ static int dwc2_suspend(struct platform_device *dev, pm_message_t state)
+>  	return ret;
+>  }
+> 
+> -static int dwc2_resume(struct platform_device *dev)
+> +static int dwc2_resume(struct device *dev)
+>  {
+> -	struct dwc2_hsotg *dwc2 = platform_get_drvdata(dev);
+> +	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+>  	int ret = 0;
+> 
+>  	if (dwc2_is_device_mode(dwc2))
+> @@ -239,15 +239,18 @@ static int dwc2_resume(struct platform_device *dev)
+>  	return ret;
+>  }
+> 
+> +static const struct dev_pm_ops dwc2_dev_pm_ops = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(dwc2_suspend, dwc2_resume)
+> +};
+> +
+>  static struct platform_driver dwc2_platform_driver = {
+>  	.driver = {
+>  		.name = dwc2_driver_name,
+>  		.of_match_table = dwc2_of_match_table,
+> +		.pm = &dwc2_dev_pm_ops,
+>  	},
+>  	.probe = dwc2_driver_probe,
+>  	.remove = dwc2_driver_remove,
+> -	.suspend = dwc2_suspend,
+> -	.resume = dwc2_resume,
+>  };
+> 
+>  module_platform_driver(dwc2_platform_driver);
 
-Also Vinson forgot to mention HOW that is triggered. Without an
-explanation of the reproducer it's hard to tell what's going wrong.
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-Thanks,
-
-	tglx
