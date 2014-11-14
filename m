@@ -1,150 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965126AbaKNJ5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 04:57:18 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:64565 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965061AbaKNJ5P (ORCPT
+	id S965150AbaKNJ61 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 04:58:27 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39394 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754727AbaKNJ6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 04:57:15 -0500
-Message-ID: <5465D1F6.20205@redhat.com>
-Date: Fri, 14 Nov 2014 10:57:10 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 14 Nov 2014 04:58:24 -0500
+Date: Fri, 14 Nov 2014 09:58:12 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Will Deacon'" <will.deacon@arm.com>,
+        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'Joe Perches'" <joe@perches.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+Message-ID: <20141114095812.GG4042@n2100.arm.linux.org.uk>
+References: <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
+ <20141030120127.GC32589@arm.com>
+ <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
+ <20141030135749.GE32589@arm.com>
+ <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+ <20141113235322.GC4042@n2100.arm.linux.org.uk>
+ <35FD53F367049845BC99AC72306C23D103E010D1829B@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org
-Subject: Re: [PATCH v2] kvm: memslots: replace heap sort with insertion sort
-References: <5464E336.7020402@redhat.com> <1415919613-24461-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1415919613-24461-1-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D1829B@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 14/11/2014 00:00, Igor Mammedov wrote:
-> memslots is a sorted array, when slot changes in it
-> with current heapsort it would take O(n log n) time
-> to update array, while using insertion sort like
-> algorithm on array with 1 item out of order will
-> take only O(n) time.
+On Fri, Nov 14, 2014 at 10:01:34AM +0800, Wang, Yalin wrote:
+> > -----Original Message-----
+> > From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
+> > Sent: Friday, November 14, 2014 7:53 AM
+> > To: Wang, Yalin
+> > > On Fri, Oct 31, 2014 at 01:42:44PM +0800, Wang, Yalin wrote:
+> > > This patch add bitrev.h file to support rbit instruction, so that we
+> > > can do bitrev operation by hardware.
+> > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> > > ---
+> > >  arch/arm/Kconfig              |  1 +
+> > >  arch/arm/include/asm/bitrev.h | 21 +++++++++++++++++++++
+> > >  2 files changed, 22 insertions(+)
+> > >  create mode 100644 arch/arm/include/asm/bitrev.h
+> > >
+> > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig index
+> > > 89c4b5c..be92b3b 100644
+> > > --- a/arch/arm/Kconfig
+> > > +++ b/arch/arm/Kconfig
+> > > @@ -28,6 +28,7 @@ config ARM
+> > >  	select HANDLE_DOMAIN_IRQ
+> > >  	select HARDIRQS_SW_RESEND
+> > >  	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
+> > > +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
+> > 
+> > Looking at this, this is just wrong.  Take a moment to consider what
+> > happens if we build a kernel which supports both ARMv6 _and_ ARMv7 CPUs.
+> > What happens if an ARMv6 CPU tries to execute an rbit instruction?
 > 
-> Replace current heapsort with custom sort that
-> takes advantage of memslots usage pattern and known
-> position of changed slot.
-> 
-> performance change of 128 memslots insersions with
-> gradually increasing size (the worst case):
->       heap sort   custom sort
-> max:  249747      2500 cycles
-> with custom sort alg taking ~98% less then original
-> update time.
-> 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-> ---
-> v2:
->   - replace swap with slot shift, improves result 2x
->   - reprofile original/swap based and swapless 15 times
->       discarding spikes swap based takes ~5900 cycles max
->       and swapless ~2500 cycles.
-> ---
->  virt/kvm/kvm_main.c | 54 ++++++++++++++++++++++++++---------------------------
->  1 file changed, 26 insertions(+), 28 deletions(-)
-> 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 25ffac9..49f896a 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -668,31 +668,35 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
->  	return 0;
->  }
->  
-> -static int cmp_memslot(const void *slot1, const void *slot2)
-> -{
-> -	struct kvm_memory_slot *s1, *s2;
-> -
-> -	s1 = (struct kvm_memory_slot *)slot1;
-> -	s2 = (struct kvm_memory_slot *)slot2;
-> -
-> -	if (s1->npages < s2->npages)
-> -		return 1;
-> -	if (s1->npages > s2->npages)
-> -		return -1;
-> -
-> -	return 0;
-> -}
-> -
->  /*
-> - * Sort the memslots base on its size, so the larger slots
-> - * will get better fit.
-> + * Insert memslot and re-sort memslots based on their size,
-> + * so the larger slots will get better fit. Sorting algorithm
-> + * takes advantage of having initially sorted array and
-> + * known changed memslot position.
->   */
-> -static void sort_memslots(struct kvm_memslots *slots)
-> +static void insert_memslot(struct kvm_memslots *slots,
-> +			   struct kvm_memory_slot *new)
->  {
-> -	int i;
-> +	int i = slots->id_to_index[new->id];
-> +	struct kvm_memory_slot *old = id_to_memslot(slots, new->id);
-> +	struct kvm_memory_slot *mslots = slots->memslots;
-> +
+> Is it possible to build a kernel that support both CPU_V6 and CPU_V7?
 
-It is important to leave the "*old = *new" assignment here, see the 
-comment in __kvm_set_memory_region:
+Absolutely it is.
 
-        /*
-         * We can re-use the old_memslots from above, the only difference
-         * from the currently installed memslots is the invalid flag.  This
-         * will get overwritten by update_memslots anyway.
-         */
+> I mean in Kconfig, CPU_V6 = y and CPU_V7 = y ?
 
-This small problem was already present in v1, but I didn't notice it
-yesterday.  With the new code, we can add it inside this if:
+Yes.
 
-> +	if (new->npages == old->npages)
-> +		return;
+> If there is problem like you said,
+> How about this solution:
+> select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6)  
 
-Do you agree? (No need to send v3).
+That would work.
 
-Paolo
+> For this patch,
+> I just cherry-pick from Joe,
+> If you are not responsible for this part,
+> I will submit to the maintainers for these patches .
+> Sorry for that .
 
-> -	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
-> -	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
-> +	while (1) {
-> +		if (i < (KVM_MEM_SLOTS_NUM - 1) &&
-> +			new->npages < mslots[i + 1].npages) {
-> +			mslots[i] = mslots[i + 1];
-> +			i++;
-> +		} else if (i > 0 && new->npages > mslots[i - 1].npages) {
-> +			mslots[i] = mslots[i - 1];
-> +			i--;
-> +		} else {
-> +			mslots[i] = *new;
-> +			break;
-> +		}
-> +	}
->  
->  	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
->  		slots->id_to_index[slots->memslots[i].id] = i;
-> @@ -702,13 +706,7 @@ static void update_memslots(struct kvm_memslots *slots,
->  			    struct kvm_memory_slot *new)
->  {
->  	if (new) {
-> -		int id = new->id;
-> -		struct kvm_memory_slot *old = id_to_memslot(slots, id);
-> -		unsigned long npages = old->npages;
-> -
-> -		*old = *new;
-> -		if (new->npages != npages)
-> -			sort_memslots(slots);
-> +		insert_memslot(slots, new);
->  	}
->  }
->  
-> 
+I think you need to discuss with Joe how Joe would like his patches
+handled.  However, it seems that Joe already sent his patches to the
+appropriate maintainers, and they have been applying those patches
+themselves.
+
+Since your generic ARM changes depend on these patches being accepted
+first, this means is that I can't apply the generic ARM changes until
+those other patches have hit mainline, otherwise things are going to
+break.  So, when you come to submit the latest set of patches to the
+patch system, please do so only after these dependent patches have
+been merged into mainline so that they don't get accidentally applied
+before hand and break the two drivers that Joe mentioned.
+
+Thanks.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
