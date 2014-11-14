@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaKNH3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 02:29:10 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:64469 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280AbaKNH3I (ORCPT
+	id S964845AbaKNHaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 02:30:06 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:45152 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568AbaKNHaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 02:29:08 -0500
+	Fri, 14 Nov 2014 02:30:02 -0500
 MIME-Version: 1.0
-In-Reply-To: <1415917702-6742-2-git-send-email-khilman@kernel.org>
+In-Reply-To: <1415917702-6742-1-git-send-email-khilman@kernel.org>
 References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-	<1415917702-6742-2-git-send-email-khilman@kernel.org>
-Date: Fri, 14 Nov 2014 08:29:06 +0100
-X-Google-Sender-Auth: i9XNBdkHJl-u8aNoGtBeBprJbh4
-Message-ID: <CAMuHMdXB-7vBqGZ_iMaZdDWDnnzpHZa4ECkDnojbDw=ds5eTWg@mail.gmail.com>
-Subject: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when
- genpd enabled
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Fri, 14 Nov 2014 08:30:01 +0100
+Message-ID: <CAPDyKFraCAVKL8cas79p_K6g-mbu-BuSPUqF0jfMw2Rz3DBrRQ@mail.gmail.com>
+Subject: Re: [PATCH] PM / Runtime: Kconfig: move ia64 dependency to arch/ia64/Kconfig
+From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Kevin Hilman <khilman@kernel.org>
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
         Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@linaro.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        "open list:IA64 (Itanium) PL..." <linux-ia64@vger.kernel.org>,
         open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+On 13 November 2014 23:28, Kevin Hilman <khilman@kernel.org> wrote:
+> From: Kevin Hilman <khilman@linaro.org>
+>
+> The IA64_HP_SIM dependency on PM_RUNTIME should be done in the arch
+> Kconfig instead of in the PM core.  Move it accordingly.
+>
+> NOTE: arch/ia64/Kconfig currently does a 'select PM', which since
+> commit 1eb208aea317 (PM: Make CONFIG_PM depend on (CONFIG_PM_SLEEP ||
+> CONFIG_PM_RUNTIME)) is effectively a noop unless PM_SLEEP or
+> PM_RUNTIME are set elsewhere.
+>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
 
-On Thu, Nov 13, 2014 at 11:28 PM, Kevin Hilman <khilman@kernel.org> wrote:
-> It makes little sense to use generic power domains without runtime PM.
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Does it?
-It still powers down the PM domains on system suspend (at least on my
-boards ;-)
-
-> Also, since the complexities of handling the !PM_RUNTIME case are
-> causing more trouble and confusion than they're worth, let's simplify
-> the world by making genpd always enable runtime PM.
-
-What do other people think?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> ---
+>  arch/ia64/Kconfig    | 1 +
+>  kernel/power/Kconfig | 1 -
+>  2 files changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+> index c84c88bbbbd7..55bc92ca2ce6 100644
+> --- a/arch/ia64/Kconfig
+> +++ b/arch/ia64/Kconfig
+> @@ -233,6 +233,7 @@ config IA64_SGI_UV
+>  config IA64_HP_SIM
+>         bool "Ski-simulator"
+>         select SWIOTLB
+> +       depends on !PM_RUNTIME
+>
+>  endchoice
+>
+> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+> index bbef57f5bdfd..3d39cc0228e9 100644
+> --- a/kernel/power/Kconfig
+> +++ b/kernel/power/Kconfig
+> @@ -131,7 +131,6 @@ config PM_WAKELOCKS_GC
+>
+>  config PM_RUNTIME
+>         bool "Run-time PM core functionality"
+> -       depends on !IA64_HP_SIM
+>         ---help---
+>           Enable functionality allowing I/O devices to be put into energy-saving
+>           (low power) states at run time (or autosuspended) after a specified
+> --
+> 2.1.3
+>
