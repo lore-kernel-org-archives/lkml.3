@@ -1,110 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161217AbaKNNpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:45:30 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:47489 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161196AbaKNNpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:45:25 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <6990c302869b94780c690550cea20978>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v11 08/12] drm: bridge/dw_hdmi: add mode_valid support
-Date: Fri, 14 Nov 2014 21:45:00 +0800
-Message-Id: <1415972700-8672-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
+	id S1161232AbaKNNpg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:45:36 -0500
+Received: from mga14.intel.com ([192.55.52.115]:40441 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161101AbaKNNpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:45:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
+   d="scan'208";a="622376581"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v8 08/14] perf: Support overwrite mode for AUX area
+Date: Fri, 14 Nov 2014 15:43:41 +0200
+Message-Id: <1415972627-37514-9-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-some platform may not support all the display mode,
-add mode_valid interface check it
+This adds support for overwrite mode in the AUX area, which means "keep
+collecting data till you're stopped", turning AUX area into a circular
+buffer, where new data overwrites old data. It does not depend on data
+buffer's overwrite mode, so that it doesn't lose sideband data that is
+instrumental for processing AUX data.
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+Overwrite mode is enabled at mapping AUX area read only. Even though
+aux_tail in the buffer's user page might be user writable, it will be
+ignored in this mode.
+
+A PERF_RECORD_AUX with PERF_AUX_FLAG_OVERWRITE set is written to the perf
+data stream every time an event writes new data to the AUX area. The pmu
+driver might not be able to infer the exact beginning of the new data in
+each snapshot, some drivers will only provide the tail, which is
+aux_offset + aux_size in the AUX record. Consumer has to be able to tell
+the new data from the old one, for example, by means of time stamps if
+such are provided in the trace.
+
+Consumer is also responsible for disabling any events that might write
+to the AUX area (thus potentially racing with the consumer) before
+collecting the data.
+
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
+ include/uapi/linux/perf_event.h |  1 +
+ kernel/events/internal.h        |  1 +
+ kernel/events/ring_buffer.c     | 48 ++++++++++++++++++++++++++++-------------
+ 3 files changed, 35 insertions(+), 15 deletions(-)
 
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-Changes in v2: None
-
- drivers/gpu/drm/bridge/dw_hdmi.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index 24a66ff..e94f6bb 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -1406,6 +1406,20 @@ static int dw_hdmi_connector_get_modes(struct drm_connector *connector)
- 	return 0;
- }
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 272258380e..f36aac2ac5 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -768,6 +768,7 @@ enum perf_callchain_context {
+  * PERF_RECORD_AUX::flags bits
+  */
+ #define PERF_AUX_FLAG_TRUNCATED		0x01	/* record was truncated to fit */
++#define PERF_AUX_FLAG_OVERWRITE		0x02	/* snapshot from overwrite mode */
  
-+static enum drm_mode_status
-+dw_hdmi_connector_mode_valid(struct drm_connector *connector,
-+			     struct drm_display_mode *mode)
-+{
-+	struct dw_hdmi *hdmi = container_of(connector,
-+					   struct dw_hdmi, connector);
-+	enum drm_mode_status mode_status = MODE_OK;
+ #define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
+ #define PERF_FLAG_FD_OUTPUT		(1UL << 1)
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index b701ebc325..ffd51d9f59 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -40,6 +40,7 @@ struct ring_buffer {
+ 	local_t				aux_nest;
+ 	unsigned long			aux_pgoff;
+ 	int				aux_nr_pages;
++	int				aux_overwrite;
+ 	atomic_t			aux_mmap_count;
+ 	unsigned long			aux_mmap_locked;
+ 	void				(*free_aux)(void *);
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 49d6d8f410..8bff8c85eb 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -282,26 +282,33 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
+ 		goto err_put;
+ 
+ 	aux_head = local_read(&rb->aux_head);
+-	aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
+ 
+ 	handle->rb = rb;
+ 	handle->event = event;
+ 	handle->head = aux_head;
+-	if (aux_head - aux_tail < perf_aux_size(rb))
+-		handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
+-	else
+-		handle->size = 0;
++	handle->size = 0;
+ 
+ 	/*
+-	 * handle->size computation depends on aux_tail load; this forms a
+-	 * control dependency barrier separating aux_tail load from aux data
+-	 * store that will be enabled on successful return
++	 * In overwrite mode, AUX data stores do not depend on aux_tail,
++	 * therefore (A) control dependency barrier does not exist. The
++	 * (B) <-> (C) ordering is still observed by the pmu driver.
+ 	 */
+-	if (!handle->size) { /* A, matches D */
+-		event->pending_disable = 1;
+-		perf_output_wakeup(handle);
+-		local_set(&rb->aux_nest, 0);
+-		goto err_put;
++	if (!rb->aux_overwrite) {
++		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
++		if (aux_head - aux_tail < perf_aux_size(rb))
++			handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
 +
-+	if (hdmi->plat_data->mode_valid)
-+		mode_status = hdmi->plat_data->mode_valid(connector, mode);
-+
-+	return mode_status;
-+}
-+
- static struct drm_encoder *dw_hdmi_connector_best_encoder(struct drm_connector
- 							   *connector)
++		/*
++		 * handle->size computation depends on aux_tail load; this forms a
++		 * control dependency barrier separating aux_tail load from aux data
++		 * store that will be enabled on successful return
++		 */
++		if (!handle->size) { /* A, matches D */
++			event->pending_disable = 1;
++			perf_output_wakeup(handle);
++			local_set(&rb->aux_nest, 0);
++			goto err_put;
++		}
+ 	}
+ 
+ 	return handle->rb->aux_priv;
+@@ -326,13 +333,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
+ 			 bool truncated)
  {
-@@ -1430,6 +1444,7 @@ static struct drm_connector_funcs dw_hdmi_connector_funcs = {
+ 	struct ring_buffer *rb = handle->rb;
+-	unsigned long aux_head = local_read(&rb->aux_head);
++	unsigned long aux_head;
+ 	u64 flags = 0;
  
- static struct drm_connector_helper_funcs dw_hdmi_connector_helper_funcs = {
- 	.get_modes = dw_hdmi_connector_get_modes,
-+	.mode_valid = dw_hdmi_connector_mode_valid,
- 	.best_encoder = dw_hdmi_connector_best_encoder,
- };
+ 	if (truncated)
+ 		flags |= PERF_AUX_FLAG_TRUNCATED;
  
-@@ -1632,6 +1647,8 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 
- 	dev_set_drvdata(dev, hdmi);
- 
-+	drm_connector_register(&hdmi->connector);
+-	local_add(size, &rb->aux_head);
++	/* in overwrite mode, driver provides aux_head via handle */
++	if (rb->aux_overwrite) {
++		flags |= PERF_AUX_FLAG_OVERWRITE;
 +
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(dw_hdmi_bind);
++		aux_head = handle->head;
++		local_set(&rb->aux_head, aux_head);
++	} else {
++		aux_head = local_read(&rb->aux_head);
++		local_add(size, &rb->aux_head);
++	}
+ 
+ 	if (size || flags) {
+ 		/*
+@@ -479,6 +495,8 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 	 */
+ 	atomic_set(&rb->aux_refcount, 1);
+ 
++	rb->aux_overwrite = overwrite;
++
+ out:
+ 	if (!ret)
+ 		rb->aux_pgoff = pgoff;
 -- 
-1.9.1
+2.1.1
 
