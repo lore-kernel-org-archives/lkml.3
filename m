@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561AbaKNGzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 01:55:41 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55553 "EHLO gate.crashing.org"
+	id S1754536AbaKNG5d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:57:33 -0500
+Received: from mout.gmx.com ([74.208.4.200]:58429 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754534AbaKNGzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 01:55:39 -0500
-Message-ID: <1415948103.666.47.camel@kernel.crashing.org>
-Subject: [PATCH v3] of/base: Fix PowerPC address parsing hack
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, linuxppc-dev <linuxppc-dev@ozlabs.org>
-Date: Fri, 14 Nov 2014 17:55:03 +1100
-In-Reply-To: <1415883227.666.6.camel@kernel.crashing.org>
-References: <1415771461.5124.33.camel@kernel.crashing.org>
-	 <20141113091036.4e9ec43d@canb.auug.org.au>
-	 <1415833725.5124.53.camel@kernel.crashing.org>
-	 <1415839522.5124.58.camel@kernel.crashing.org>
-	 <CACxGe6s0CXL2oRKCLhzzycOKWJStxdZsc1pn_X8fLuAqCguBMA@mail.gmail.com>
-	 <1415883227.666.6.camel@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752927AbaKNG5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 01:57:32 -0500
+MIME-Version: 1.0
+Message-ID: <trinity-94209088-72cf-43a0-bf76-d2dd2668e36e-1415948250579@3capp-mailcom-lxa14>
+From: "George Malone" <georgemaloneiii@mail.com>
+To: linux-kernel@vger.kernel.org
+Subject: A fork starts with a single branch.
+Content-Type: text/plain; charset=UTF-8
+Date: Fri, 14 Nov 2014 07:57:31 +0100
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:RRDwRhHT8ehH8nNs5/DlkhsV2Ab6IJX0djQHOn7aYlD
+ ubmiL/rBexnNMNkedOsnNih6uVkBg7rKtzg96zq+B89oq+fQUP
+ 1zfPo0/OZ58dd06a7l6yHAtpqjel6Sqt1muFMxyf3sUxoRlLqt
+ NjN9/hZQvY5kWEbTjyzYCeMnw31o78vOVv3av32M8c1VdO7SrA
+ hHqOZIBfbZOCl5obDeaq+rqPQYuM7MPJn6Ylk/zI44d07CZUxe
+ I9U4K7c271ZpoS0SSg0OGVE/QboBbFR1qlt7DFjFbmwkee2/pk
+ e2tJNmaXBBKkWl2g90isPFKGojb
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a historical hack that treats missing ranges properties as the
-equivalent of an empty one. This is needed for ancient PowerMac "bad"
-device-trees, and shouldn't be enabled for any other PowerPC platform,
-otherwise we get some nasty layout of devices in sysfs or even
-duplication when a set of otherwise identically named devices is
-created multiple times under a different parent node with no ranges
-property.
+A fork starts with a single branch.
+As a precaution, I (for one (of many)) have all the debian source packages allready,
+and the full binary set for some architectures.
 
-This fix is needed for the PowerNV i2c busses to be exposed properly
-and will fix a number of other embedded cases.
+(I'm sure many others have taken this precaution aswell, some
+as a matter of course)
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: <stable@vger.kernel.org>
----
+This is how all forks start.
+I've done it more than once.
+The key is a stable base, no shifting sands.
+Then you can build and build, gradually, till you die.
+(and it's fun all the time)
 
-V2: Make it less horrendously ugly
+I think the Best path is 3 and then 4.
+Once people stop work on Wheezy (they still release point releases)
+then it is truly time to continue on from there.
+There must be preperations made to be ready
+by that time, however. Some have allready been done.
 
-V3: use IS_ENABLED()
+Perhaps the mempo and other debian-based projects
+who work best in a unix-like linux can set sail
+down the same river when that time comes?
 
- drivers/of/address.c | 19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+As for the coup. I believe that the coupists should
+be continually confronted and harranged. They should
+not be allowed to get away with this without so much
+as a word. They need to be exposed, pointed at, shown
+to be what they are. In one's free time between working,
+on projects, as a way of not burning one-self out
+continually doing one and only one thing.
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index e371825..42e416a 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -403,6 +403,21 @@ static struct of_bus *of_match_bus(struct device_node *np)
- 	return NULL;
- }
- 
-+static int of_empty_ranges_quirk(void)
-+{
-+	if (IS_ENABLED(CONFIG_PPC)) {
-+		/* To save cycles, we cache the result */
-+		static int quirk_state = -1;
-+
-+		if (quirk_state < 0)
-+			quirk_state =
-+				of_machine_is_compatible("Power Macintosh") ||
-+				of_machine_is_compatible("MacRISC");
-+		return quirk_state;
-+	}
-+	return false;
-+}
-+
- static int of_translate_one(struct device_node *parent, struct of_bus *bus,
- 			    struct of_bus *pbus, __be32 *addr,
- 			    int na, int ns, int pna, const char *rprop)
-@@ -428,12 +443,10 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
- 	 * This code is only enabled on powerpc. --gcl
- 	 */
- 	ranges = of_get_property(parent, rprop, &rlen);
--#if !defined(CONFIG_PPC)
--	if (ranges == NULL) {
-+	if (ranges == NULL && !of_empty_ranges_quirk()) {
- 		pr_err("OF: no ranges; cannot translate\n");
- 		return 1;
- 	}
--#endif /* !defined(CONFIG_PPC) */
- 	if (ranges == NULL || rlen == 0) {
- 		offset = of_read_number(addr, na);
- 		memset(addr, 0, pna * 4);
+(One feature that would be good for such a fork would
+be to provide old versions of things like python 
+installable alongside current versions, this is because
+python (and others) break compatability between versions.
+I have "old" programs that require the old versions.
+Had to find and build the old version. Might aswell
+package it up at some time.
+Also things like earier versions of KDE would be nice.
+To some degree things like this allready exist in debian
+(*box wms))
 
+A full fork of Debian is not impossible, infact debian
+makes it easy to do. One change is how it always, always
+starts.
 
-
+Best of linux, before systemd. http://youtu.be/Bml5bjoMYjQ
