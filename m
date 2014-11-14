@@ -1,50 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965013AbaKNHcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 02:32:21 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:45753 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964866AbaKNHcU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 02:32:20 -0500
-Date: Thu, 13 Nov 2014 23:32:14 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Barto <mister.freeman@laposte.net>
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: BUG in scsi_lib.c due to a bad commit
-Message-ID: <20141114073214.GA1879@infradead.org>
-References: <54629CAE.2000207@laposte.net>
- <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com>
- <5462CB90.1080303@roeck-us.net>
- <54642541.9080302@laposte.net>
- <94D0CD8314A33A4D9D801C0FE68B4029593A1880@G9W0745.americas.hpqcorp.net>
- <54647C10.4070506@laposte.net>
- <20141113142907.GB29354@infradead.org>
- <5464E6E6.3090606@laposte.net>
- <20141113175402.GA27327@infradead.org>
- <546536EA.4070705@laposte.net>
+	id S1754517AbaKNHcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 02:32:47 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55627 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754299AbaKNHco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 02:32:44 -0500
+Message-ID: <5465AFF6.506@ti.com>
+Date: Fri, 14 Nov 2014 09:32:06 +0200
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546536EA.4070705@laposte.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Marek Belisko <marek@goldelico.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
+        <plagnioj@jcrosoft.com>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-fbdev@vger.kernel.org>, <hns@goldelico.com>
+Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
+ devconf1 register
+References: <1415051968-4878-1-git-send-email-marek@goldelico.com> <1415051968-4878-5-git-send-email-marek@goldelico.com> <5463585D.9070209@ti.com> <20141112150210.GC26481@atomide.com> <5464969F.30708@ti.com> <20141113182848.GQ26481@atomide.com> <alpine.DEB.2.02.1411132251320.17030@utopia.booyaka.com> <20141113235840.GS26481@atomide.com>
+In-Reply-To: <20141113235840.GS26481@atomide.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 11:55:38PM +0100, Barto wrote:
-> it's interesting, with this commit
-> 74665016086615bbaa3fa6f83af410a0a4e029ee I have the bug :
-> 
-> scsi: convert host_busy to atomic_t :
+On 11/14/2014 01:58 AM, Tony Lindgren wrote:
+> * Paul Walmsley <paul@pwsan.com> [141113 15:01]:
+>> Hi
+>>
+>> On Thu, 13 Nov 2014, Tony Lindgren wrote:
+>>
+>>> * Tomi Valkeinen <tomi.valkeinen@ti.com> [141113 03:33]:
+>>>> On 12/11/14 17:02, Tony Lindgren wrote:
+>>>>
+>>>>>> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
+>>>>>> places in the kernel. I wonder if adding a pinmux entry for it could
+>>>>>> cause some rather odd problems.
+>>>>>
+>>>>> They can all use pinctrl-single no problem.
+>>>>
+>>>> Can, but don't. That's my worry. If we touch the DEVCONF1 via pinmux,
+>>>> and we have code in mach-omap2 that also touch DEVCONF1, without any
+>>>> knowledge (and locking) between those...
+>>>
+>>> Hmm yeah the McBSP clock mux could be racy as the mux register for
+>>> McBSP is treated as a clock. This register muxes the clock between
+>>> external pin and internal clock. Considering that this should be
+>>> selectable at board level as the external clock probably needs to be
+>>> used if level shifters are being used, it should be really handled by
+>>> pinctrl-single.
+>>>
+>>> The other use for hsmmc.c and pdata-quirks.c for the one time mux for
+>>> MMC clock from the MMC clock pin. That can be done with pinctrl-single
+>>> from the MMC driver too for DT based booting.
+>>>
+>>> Then we just have the save and restore of the registers for
+>>> off-idle.
+>>>
+>>>> So _maybe_ that's not an issue, as the pinmux config we have here is
+>>>> fixed, and done once at boot time, and maybe the code in mach-omap2 that
+>>>> touch DEVCONF1 is also ran just once and not at the same time as the
+>>>> pinmux. But I don't know if that's so.
+>>>
+>>> It seems we could just do a read-only check for McBSP in the clock
+>>> code for the mux register, or even completely drop that code from
+>>> cclock3xxx_data.c and start using the pinctrl for that mux.
+>>>
+>>> Paul & Tero, got any comments here?
+>>
+>> It's best to move all of the SCM register reads/writes to an SCM IP block
+>> driver.  This driver would be the only entity that would touch the SCM IP
+>> block registers - no other code on the system would touch it (perhaps
+>> aside from anything needed for early init).  The SCM driver would enforce
+>> mutual exclusion via a spinlock, so concurrent SCM register modifications
+>> wouldn't flake out.  Then the SCM driver would register clocks with the
+>> CCF, register pins with the pinctrl subsystem, etc. etc.
+>
+> We actually do have that with pinctrl-single + syscon. We certainly
+> need to implement more Linux framework drivers for the SCM registers.
+> Things like regulators, clocks, and PHYs, but they should use
+> pinctrl-single + syscon. See the the pbias-regulator.c for example.
+>
+> Looking at the McBSP clock handling, threre's yet more handling of
+> the same DEVCONF1 mux register in omap2_mcbsp_set_clks_src that gets
+> alled from omap_mcbsp_dai_set_dai_sysclk.
+>
+> To me it seems that if we handle the DEVCONF with pinctrl-single, we
+> don't need most of the McBSP fck code or the omap2_mcbsp_set_clks_src.
+> Having the mux register as the clock enable register is not nice..
+> Who knows what the clock coming from the external pin might be :)
 
-At this point we'll need a bisction between v3.16 as the last good
-point, and 74665016086615bbaa3fa6f83af410a0a4e029ee as the known bad
-point.
+The PRCM/clock cleanups that I have under work basically splits the 
+clock inits under their respective IP blocks; currently everything is 
+registered under generic PRCM. System control module will be one of the 
+clock providers (and is going to look like a driver), which will be 
+registering its own clocks. This doesn't change the fact that pinctrl is 
+directly mapping its own register space atm though, it might be possible 
+to re-route this to use the generic system control module if need be though.
+
+I guess its just a political decision which way we want to go, currently 
+we have lots of system control clocks under the clock data (for 
+AM33xx,AM43xx,OMAP3), but we can remove these easily if need be. In some 
+cases it is nicer to have the data in the clock tree though, the drivers 
+don't need to care if they are touching a clock or a pinctrl entity. 
+Some people have been converting additional stuff to CCF outside of 
+PRCM, like Archit did some work to try and get control module clock 
+support for DRA7, and Tomi has been talking to convert some of the DSS 
+internal clocks to CCF also.
+
+-Tero
+
