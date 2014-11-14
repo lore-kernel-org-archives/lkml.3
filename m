@@ -1,146 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaKNGap (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 01:30:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52533 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013AbaKNGan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 01:30:43 -0500
-Message-ID: <5465A18F.5050007@suse.com>
-Date: Fri, 14 Nov 2014 07:30:39 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Subject: Re: [PATCH V6 00/18] x86: Full support of PAT
-References: <1415019724-4317-1-git-send-email-jgross@suse.com>
-In-Reply-To: <1415019724-4317-1-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754222AbaKNGgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:36:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50033 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751935AbaKNGgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 01:36:39 -0500
+Message-ID: <1415946985.3398.125.camel@decadent.org.uk>
+Subject: Re: [PATCH 3.16.y-ckt 009/170] NFS: Fix /proc/fs/nfsfs/servers and
+ /proc/fs/nfsfs/volumes
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Fri, 14 Nov 2014 06:36:25 +0000
+In-Reply-To: <1415704129-12709-10-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+	 <1415704129-12709-10-git-send-email-luis.henriques@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-/zfgJIy5JClaRz2HcScl"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
 
-could you take the patches, please?
+--=-/zfgJIy5JClaRz2HcScl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, 2014-11-11 at 11:06 +0000, Luis Henriques wrote:
+> 3.16.7-ckt1 -stable review patch.  If anyone has any objections, please l=
+et me know.
+>=20
+> ------------------
+>=20
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>=20
+> commit 65b38851a17472d31fec9019fc3a55b0802dab88 upstream.
+>=20
+> The usage of pid_ns->child_reaper->nsproxy->net_ns in
+> nfs_server_list_open and nfs_client_list_open is not safe.
+>=20
+> /proc for a pid namespace can remain mounted after the all of the
+> process in that pid namespace have exited.  There are also times
+> before the initial process in a pid namespace has started or after the
+> initial process in a pid namespace has exited where
+> pid_ns->child_reaper can be NULL or stale.  Making the idiom
+> pid_ns->child_reaper->nsproxy a double whammy of problems.
+>=20
+> Luckily all that needs to happen is to move /proc/fs/nfsfs/servers and
+> /proc/fs/nfsfs/volumes under /proc/net to /proc/net/nfsfs/servers and
+> /proc/net/nfsfs/volumes and add a symlink from the original location,
+> and to use seq_open_net as it has been designed.
+>=20
+> Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+> Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+[...]
 
-Juergen
+This needs a follow-up:
 
-On 11/03/2014 02:01 PM, Juergen Gross wrote:
-> The x86 architecture offers via the PAT (Page Attribute Table) a way to
-> specify different caching modes in page table entries. The PAT MSR contains
-> 8 entries each specifying one of 6 possible cache modes. A pte references one
-> of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
->
-> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
-> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
-> top 4 entries in the PAT MSR are the same as the 4 lower entries.
->
-> This results in the kernel not supporting e.g. write-through mode. Especially
-> this cache mode would speed up drivers of video cards which now have to use
-> uncached accesses.
->
-> OTOH some old processors (Pentium) don't support PAT correctly and the Xen
-> hypervisor has been using a different PAT MSR configuration for some time now
-> and can't change that as this setting is part of the ABI.
->
-> This patch set abstracts the cache mode from the pte and introduces tables to
-> translate between cache mode and pte bits (the default cache mode "write back"
-> is hard-wired to PAT entry 0). The tables are statically initialized with
-> values being compatible to old processors and current usage. As soon as the
-> PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
-> changed accordingly. Requests of mappings with special cache modes are always
-> possible now, in case they are not supported there will be a fallback to a
-> compatible but slower mode.
->
-> Summing it up, this patch set adds the following features:
-> - capability to support WT and WP cache modes on processors with full PAT
->    support
-> - processors with no or uncorrect PAT support are still working as today, even
->    if WT or WP cache mode are selected by drivers for some pages
-> - reduction of Xen special handling regarding cache mode
->
-> Changes in V6:
-> - add new patch 10 (x86: Remove looking for setting of _PAGE_PAT_LARGE in
->    pageattr.c) as suggested by Thomas Gleixner
-> - replaced SOB of Stefan Bader by "Based-on-patch-by:" as suggested by
->    Borislav Petkov
->
-> Changes in V5:
-> - split up first patch as requested by Ingo Molnar and Thomas Gleixner
-> - add a helper function in pat_init_cache_modes() as requested by Ingo Molnar
->
-> Changes in V4:
-> - rebased to 3.18-rc2
->
-> Changes in V3:
-> - corrected two minor nits (UC_MINUS, again) detected by Toshi Kani
->
-> Changes in V2:
-> - simplified handling of PAT MSR write under Xen as suggested by David Vrabel
-> - removed resetting of pat_enabled under Xen
-> - two small corrections requested by Toshi Kani (UC_MINUS cache mode in
->    vermilion driver, fix 32 bit kernel build failure)
-> - correct build error on non-x86 arch by moving definition of
->    update_cache_mode_entry() to x86 specific header
->
-> Changes since RFC:
-> - renamed functions and variables as suggested by Toshi Kani
-> - corrected cache mode bits for WT and WP
-> - modified handling of PAT MSR write under Xen as suggested by Jan Beulich
->
->
-> Juergen Gross (18):
->    x86: Make page cache mode a real type
->    x86: Use new cache mode type in include/asm/fb.h
->    x86: Use new cache mode type in drivers/video/fbdev/gbefb.c
->    x86: Use new cache mode type in drivers/video/fbdev/vermilion
->    x86: Use new cache mode type in arch/x86/pci
->    x86: Use new cache mode type in arch/x86/mm/init_64.c
->    x86: Use new cache mode type in asm/pgtable.h
->    x86: Use new cache mode type in mm/iomap_32.c
->    x86: Use new cache mode type in track_pfn_remap() and
->      track_pfn_insert()
->    x86: Remove looking for setting of _PAGE_PAT_LARGE in pageattr.c
->    x86: Use new cache mode type in setting page attributes
->    x86: Use new cache mode type in mm/ioremap.c
->    x86: Use new cache mode type in memtype related functions
->    x86: Clean up pgtable_types.h
->    x86: Support PAT bit in pagetable dump for lower levels
->    x86: Respect PAT bit when copying pte values between large and normal
->      pages
->    x86: Enable PAT to use cache mode translation tables
->    xen: Support Xen pv-domains using PAT
->
->   arch/x86/include/asm/cacheflush.h         |  38 ++++---
->   arch/x86/include/asm/fb.h                 |   6 +-
->   arch/x86/include/asm/io.h                 |   2 +-
->   arch/x86/include/asm/pat.h                |   7 +-
->   arch/x86/include/asm/pgtable.h            |  19 ++--
->   arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
->   arch/x86/mm/dump_pagetables.c             |  24 ++--
->   arch/x86/mm/init.c                        |  37 +++++++
->   arch/x86/mm/init_64.c                     |   9 +-
->   arch/x86/mm/iomap_32.c                    |  12 +-
->   arch/x86/mm/ioremap.c                     |  63 ++++++-----
->   arch/x86/mm/mm_internal.h                 |   2 +
->   arch/x86/mm/pageattr.c                    |  84 ++++++++------
->   arch/x86/mm/pat.c                         | 176 +++++++++++++++++++-----------
->   arch/x86/mm/pat_internal.h                |  22 ++--
->   arch/x86/mm/pat_rbtree.c                  |   8 +-
->   arch/x86/pci/i386.c                       |   4 +-
->   arch/x86/xen/enlighten.c                  |  25 ++---
->   arch/x86/xen/mmu.c                        |  47 +-------
->   arch/x86/xen/xen-ops.h                    |   1 -
->   drivers/video/fbdev/gbefb.c               |   3 +-
->   drivers/video/fbdev/vermilion/vermilion.c |   6 +-
->   22 files changed, 412 insertions(+), 279 deletions(-)
->
+commit 21e81002f9788a3af591416b6dec60d7b67f2fb2
+Author: Cong Wang <xiyou.wangcong@gmail.com>
+Date:   Mon Sep 8 16:17:55 2014 -0700
 
+    nfs: fix kernel warning when removing proc entry
+
+Ben.
+
+--=20
+Ben Hutchings
+Never put off till tomorrow what you can avoid all together.
+
+--=-/zfgJIy5JClaRz2HcScl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVGWi7ue/yOyVhhEJAQrdVA/8DLpHi8UKmwCqsQOSKhQYRZ2gOHGfF6Ch
+2CCBYZALTlj0eHU3xXA0DTtPThtrtTgLswc1qzkrTyuxqPBGGXNyR4UXKoQ2zCUl
+HEoSGzQ44QymNnVAsiLqzcC8ZWQvuAkDMK2D4kx/mjdGIpW60zDi/hmCG4N97c5z
+qSJ/9kCz78n/3o+ywfAsegzFO/zQWNe2x6CEmmOj63NNvcpqzEXaNC34SjA7bQVh
+BZPQhHZOAwsOQNCToaM+3uNZOevdCb7ELnCUKptKpXrKoOCb1z7L3A7FOEJUkA1S
++fsytOJ/lP4iK9RBIokRbxHnWV5tD0FUVP4DVh8CVdQ2+cTsechbO7/h3v9L+Ntt
+2nr4sBhLlGgBNtA3J07ADfyM387tuMVk6oe7HLjXTE7/fgX+Wl8/hHO0JnFCTbyS
+x0YWE2rj08NMl4FBPQvxGPUd6FteXNxRf2H7ZSLKL9iVBoEFEmgQqaG9lf0QWrrl
+LpHeAFK0/aehORf8lmUeVlOWtL02nSmnD2ZRqf1FTmi9+xQijGWuCkK2Cx06/Oug
+KVWk0n7/rfuwE20DkC1FjvaM3cTteQeUykXXVcKFdatjuPg/5rRIOIkPdmF/cYHy
+yT6abOHvzpNdiXwAN7fceyQ2keUfHr312k/blXJkl7Byb1E2SGj7twTM6jPRjawq
+xOlubCVHPlU=
+=muri
+-----END PGP SIGNATURE-----
+
+--=-/zfgJIy5JClaRz2HcScl--
