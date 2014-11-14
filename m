@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965451AbaKNLv6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:51:58 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:53659 "EHLO mail.kapsi.fi"
+	id S935168AbaKNL6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:58:11 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:2952 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965200AbaKNLu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:50:56 -0500
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, wni@nvidia.com,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v5 0/3] Thermal reset support in PMC
-Date: Fri, 14 Nov 2014 13:50:34 +0200
-Message-Id: <1415965837-29331-1-git-send-email-mikko.perttunen@kapsi.fi>
-X-Mailer: git-send-email 2.1.3
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+	id S933262AbaKNL6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 06:58:09 -0500
+X-IronPort-AV: E=Sophos;i="5.07,385,1413244800"; 
+   d="scan'208";a="192816416"
+Message-ID: <5465EE4E.2010206@citrix.com>
+Date: Fri, 14 Nov 2014 11:58:06 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Juergen Gross <jgross@suse.com>, David Vrabel <david.vrabel@citrix.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
+        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH V3 7/8] xen: switch to linear virtual mapped
+ sparse p2m list
+References: <1415684626-18590-1-git-send-email-jgross@suse.com>	<1415684626-18590-8-git-send-email-jgross@suse.com>	<54624BCB.9040300@citrix.com> <546477FD.9050800@suse.com>
+In-Reply-To: <546477FD.9050800@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 13/11/14 09:21, Juergen Gross wrote:
+> On 11/11/2014 06:47 PM, David Vrabel wrote:
+>>
+>> Can you please test this with the following guests/scenarios.
+>>
+>> * 64 bit dom0 with PCI devices with high MMIO BARs.
+> 
+> I'm not sure I have a machine available with this configuration.
 
-this series adds support for hardware-triggered thermal reset to the PMC
-driver. Namely, it adds device tree properties for specifying the I2C
-command to be sent when thermtrip is triggered.
+We have a bunch of them in our test lab. Unfortunately, xapi doesn't
+work on Linux 3.12 or later so I won't be able to test this series in
+the short term.
 
-The soctherm driver has now been acked and will be taken into 3.19, so we
-can move forward with this. Note that there are no compile time dependencies
-between the two series; it's just that this series is no-op without the
-soctherm driver being present.
+David
 
-The series is also available at
-  git://github.com/cyndis/linux pmc-thermtrip-v5
-
-Changes in v5:
-- Dropped id property for I2C controllers
-- Use integer field instead of phandle for thermtrip i2c controller id
-- Rearrange pmc.c using a forward declaration to prevent huge patch
-
-Mikko Perttunen (3):
-  of: Add descriptions of thermtrip properties to Tegra PMC bindings
-  ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
-  ARM: tegra: Add thermal reset (thermtrip) support to PMC
-
- .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      |  26 +++++
- arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   7 ++
- drivers/soc/tegra/pmc.c                            | 107 +++++++++++++++++++++
- 3 files changed, 140 insertions(+)
-
--- 
-2.1.3
 
