@@ -1,123 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965411AbaKNLWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:22:06 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:37575 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965011AbaKNLWA (ORCPT
+	id S965459AbaKNLWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:22:41 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:37696 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965242AbaKNLWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:22:00 -0500
-Date: Fri, 14 Nov 2014 12:21:57 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Johan Hovold <johan@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 19/22] dt/bindings: add micrel,rmii_ref_clk_sel_25_mhz to
- eth-phy binding
-Message-ID: <20141114112157.GC18285@localhost>
-References: <1415727460-20417-1-git-send-email-johan@kernel.org>
- <1415727460-20417-20-git-send-email-johan@kernel.org>
- <20141111175741.GF25295@leverpostej>
- <20141111181825.GH29789@localhost>
- <20141112070127.GF30369@pengutronix.de>
- <20141112091920.GC15215@localhost>
- <20141113080927.GP30369@pengutronix.de>
+	Fri, 14 Nov 2014 06:22:38 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v3 4/4] input: alps: Fix trackstick detection
+Date: Fri, 14 Nov 2014 12:22:33 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <20141109080504.GB34700@dtor-ws> <201411091230.05337@pali>
+In-Reply-To: <201411091230.05337@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141113080927.GP30369@pengutronix.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: multipart/signed;
+  boundary="nextPart2655571.58VtXZxoDn";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411141222.35319@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 09:09:27AM +0100, Sascha Hauer wrote:
-> On Wed, Nov 12, 2014 at 10:19:20AM +0100, Johan Hovold wrote:
-> > On Wed, Nov 12, 2014 at 08:01:27AM +0100, Sascha Hauer wrote:
-> > > On Tue, Nov 11, 2014 at 07:18:25PM +0100, Johan Hovold wrote:
-> > > > On Tue, Nov 11, 2014 at 05:57:42PM +0000, Mark Rutland wrote:
-> > > > > On Tue, Nov 11, 2014 at 05:37:37PM +0000, Johan Hovold wrote:
-> > > > > > Add "micrel,rmii_ref_clk_sel_25_mhz" to Micrel ethernet PHY binding
-> > > > > > documentation.
-> > > > > > 
-> > > > > > Cc: devicetree@vger.kernel.org
-> > > > > > Signed-off-by: Johan Hovold <johan@kernel.org>
-> > > > > > ---
-> > > > > >  Documentation/devicetree/bindings/net/micrel.txt | 5 +++++
-> > > > > >  1 file changed, 5 insertions(+)
-> > > > > > 
-> > > > > > diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
-> > > > > > index a1bab5eaae02..9b08dd6551dd 100644
-> > > > > > --- a/Documentation/devicetree/bindings/net/micrel.txt
-> > > > > > +++ b/Documentation/devicetree/bindings/net/micrel.txt
-> > > > > > @@ -19,6 +19,11 @@ Optional properties:
-> > > > > >  
-> > > > > >                See the respective PHY datasheet for the mode values.
-> > > > > >  
-> > > > > > + - micrel,rmii_ref_clk_sel_25_mhz: rmii_ref_clk_sel bit selects 25 MHz mode
-> > > > > > +
-> > > > > > +		Whether 25 MHz (rather than 50 Mhz) clock mode is selected
-> > > > > > +		when the rmii_ref_clk_sel bit is set.
-> > > > > 
-> > > > > s/_/-/ in property names please.
-> > > > 
-> > > > Ouch, copied from variable name, sorry.
-> > > > 
-> > > > > That said, I don't follow the meaning. Does this cause the kernel to do
-> > > > > something different, or is is simply that a 25MHz ref clock is wired up?
-> > > > 
-> > > > Yes, the driver currently sets this configuration bit based on a common
-> > > > clock binding.
-> > > > 
-> > > > However, it turns out the meaning of the bit is reversed on some PHY
-> > > > variants. On most PHYs 50 MHz mode is selected by setting this bit,
-> > > > whereas on the PHYs that need this new property, setting it selects 25
-> > > > MHz mode instead.
-> > > 
-> > > Maybe rename the property to something like rmii-ref-clk-25mhz-active-high
-> > > then? Also you should probably make it more explicit that this is a
-> > > hardware property and not for adjusting the clock.
-> > 
-> > You're right, but how about calling it
-> > 
-> > 	micrel,rmii-reference-clock-select-inverted
-> > 
-> > Then no one will set it believing it will change the clock mode and
-> > without reading the binding doc first.
-> > 
-> > The description could then read something like
-> > 
-> > 	micrel,rmii-reference-clock-select-inverted: RMII Reference
-> > 		Clock Select bit is inverted
-> > 
-> > 	The RMII Reference Clock Select bit is inverted so that setting
-> > 	it selects 25 MHz rather than 50 MHz clock mode. 
-> > 
-> > 	Note that this is only needed for PHY variants that has this bit
-> > 	inverted and that a clock reference ("rmii-ref" below) is always
-> > 	needed to select the actual mode.
-> 
-> "Inverted" only has a meaning when everybody agrees what's the normal
-> case. Since that not the case I really prefer talking about
-> "active-high" or "active-low".
+--nextPart2655571.58VtXZxoDn
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yes, but I'm reluctant to using "active-high" and "active-low" as this
-is not a signal (or IO pin) we're dealing with.
+On Sunday 09 November 2014 12:30:03 Pali Roh=C3=A1r wrote:
+> On Sunday 09 November 2014 09:05:04 Dmitry Torokhov wrote:
+> > Hi Pali,
+> >=20
+> > On Sun, Nov 02, 2014 at 12:25:10AM +0100, Pali Roh=C3=A1r wrote:
+> > >  int alps_detect(struct psmouse *psmouse, bool
+> > >  set_properties) {
+> > >=20
+> > > -	struct alps_data dummy;
+> > > +	unsigned char e6[4];
+> > >=20
+> > > -	if (alps_identify(psmouse, &dummy) < 0)
+> > > -		return -1;
+> > > +	/*
+> > > +	 * Try "E6 report".
+> > > +	 * ALPS should return 0,0,10 or 0,0,100 if no buttons
+> > > are pressed. +	 * The bits 0-2 of the first byte will be
+> > > 1s if some buttons are +	 * pressed.
+> > > +	 */
+> > > +	if (alps_rpt_cmd(psmouse, PSMOUSE_CMD_SETRES,
+> > > +			 PSMOUSE_CMD_SETSCALE11, e6))
+> > > +		return -EIO;
+> > > +
+> > > +	if ((e6[0] & 0xf8) !=3D 0 || e6[1] !=3D 0 || (e6[2] !=3D 10=20
+&&
+> > > e6[2] !=3D 100)) +		return -EINVAL;
+> > >=20
+> > >  	if (set_properties) {
+> > >=20
+> > > +		/*
+> > > +		 * NOTE: To detect model and trackstick presence we
+>=20
+> need
+>=20
+> > > to do +		 *       full device reset. To speed up
+>=20
+> detection
+>=20
+> > > and prevent +		 *       calling duplicate=20
+initialization
+> > > sequence (both in +		 *       alps_detect() and
+> > > alps_init()) we set model/protocol +		 *       version=20
+and
+> > > correct name in alps_init() (which will +		 *       do
+>=20
+> full
+>=20
+> > > device reset). For now set name to DualPoint. +		 */
+> > >=20
+> > >  		psmouse->vendor =3D "ALPS";
+> > >=20
+> > > -		psmouse->name =3D dummy.flags & ALPS_DUALPOINT ?
+> > > -				"DualPoint TouchPad" : "GlidePoint";
+> > > -		psmouse->model =3D dummy.proto_version << 8;
+> > > +		psmouse->name =3D "DualPoint TouchPad";
+> > >=20
+> > >  	}
+> > >=20
+> > > +
+> > >=20
+> > >  	return 0;
+> >=20
+> > We can't do this; going by e6 only will give us false
+> > positives and alps_detect is supposed to be authoritative.
+> >=20
+> > Thanks.
+>=20
+> psmouse-base.c is calling alps_detect() and alps_init()
+> consecutively so it does not matter if code is in _detect or
+> _init function. Just need to make sure that correct order will
+> be used. So this patch could not bring any problems.
+>=20
+> If psmouse-base.c detect device false-positive as ALPS (with
+> alps_detect()) then it immediately calls alps_init() which
+> fails and psmouse-base.c will try to use another protocol.
 
-It's a configuration bit, which (if set) selects 25 MHz mode. Hence I
-still think something like 
+Dmitry: PING
+Also see my comment for PATCH v3 3/4.
 
-	micrel,rmii_ref_clk_sel_25_mhz
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-or
+--nextPart2655571.58VtXZxoDn
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-	micrel,rmii_reference_clock_select_selects_25_mhz
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-is preferred. The binding documentation will still make it clear that a
-clocks reference is also needed.
+iEYEABECAAYFAlRl5fsACgkQi/DJPQPkQ1LmkACgp1IYDRds2bA8uKBGbAlvgn4v
+J/EAoMIXesIU7rfsXUIH37gltiybr9GV
+=hVpW
+-----END PGP SIGNATURE-----
 
-Johan
+--nextPart2655571.58VtXZxoDn--
