@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161643AbaKNTcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 14:32:32 -0500
-Received: from mailsec109.isp.belgacom.be ([195.238.20.105]:31380 "EHLO
-	mailsec109.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161455AbaKNTca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 14:32:30 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=hkFBDakPHWYIOok4y3pcivnmCJQbEK2MeX2RAJ8hs1E= c=1 sm=2
- a=IkcTkHD0fZMA:10 a=IJv9LcIfAAAA:8 a=IDsI0P-6XW0UrOo3YjoA:9 a=QEXdDO2ut3YA:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8KAE9YZlTD7hTT/2dsb2JhbABbgw6BLoMGtj0GmwoCgR0WAQEBAQF9hAIBAQEDASNWBQsFBhgCAhgOAgJXBhMRiCcNu2KHAo8uAQEBBwIBH4EthRGKZAeCd4FUBateiWiDfTwwgksBAQE
-Date: Fri, 14 Nov 2014 20:32:29 +0100 (CET)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Message-ID: <47990659.56515.1415993549555.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <1415992486.5912.23.camel@perches.com>
-References: <1415990202-28673-1-git-send-email-fabf@skynet.be> <1415990835.5912.20.camel@perches.com> <2104595537.56209.1415991758726.open-xchange@webmail.nmp.skynet.be> <1415992486.5912.23.camel@perches.com>
-Subject: Re: [PATCH 1/1 net-next] net: dsa: replace count*size kmalloc by
- kmalloc_array
+	id S1161757AbaKNThU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 14:37:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48034 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965580AbaKNThR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 14:37:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,387,1413270000"; 
+   d="scan'208";a="608046259"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Andi Kleen" <andi@firstfloor.org>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/s7+MsolZCiViEiCPzqCVeTRAJxdoOwAgACR1oD//3yvMIAAtdCAgAB2NOCAAM3pAP//e6+AgACK+ACAAAdiAIAAGwAAgACUXsCAAJ8cAP//gGJw
+Date: Fri, 14 Nov 2014 19:37:15 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3293BB97@ORSMSX114.amr.corp.intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com>
+ <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292CB9A@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVx7hGZodWfAoU1oee1SW7XXSn3Lr8Vs9JTOUMNtLXY4A@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292D57B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVB9VQPqFb7GQyxmVEKYtPhppmZS8SewQmtre+3_su9FA@mail.gmail.com>
+ <CALCETrVJE25Txr5vRKAxHpeKx9p0VJBbat44w+X4gT8qX7a4bg@mail.gmail.com>
+ <CALCETrVYWAOzaHqet8gS5hafvQC9prrH05qgc+v5dxSL9AF8bg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293A5D8@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVHS2YM+bWeoSpZgk3Q8P3rVVHmG5o9T55f+EkTj6He4A@mail.gmail.com>
+In-Reply-To: <CALCETrVHS2YM+bWeoSpZgk3Q8P3rVVHmG5o9T55f+EkTj6He4A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAEJbRvn003247
 
+> So far, the only thing I've come up with is that do_machine_check
+> seems to be missing exception_enter or the equivalent.  Do you have
+> CONFIG_CONTEXT_TRACKING on and/or full nohz enabled?  I don't think
+> that this explains my bug, though.
 
+Yes to both:
 
-> On 14 November 2014 at 20:14 Joe Perches <joe@perches.com> wrote:
->
->
-> On Fri, 2014-11-14 at 20:02 +0100, Fabian Frederick wrote:
-> > On 14 November 2014 at 19:47 Joe Perches <joe@perches.com> wrote:
-> > > On Fri, 2014-11-14 at 19:36 +0100, Fabian Frederick wrote:
-> > > > kmalloc_array manages count*sizeof overflow.
-> > >
-> > > Fundamentally correct, but is this necessary or useful?
-> > > sizeof(s8) isn't often going to be anything other than 1.
-> > Absolutely, I thought it was a struct :)
-> >
-> > There must be a reason for so many cases though ...
->
-> Some might be style symmetry for other sizeof(othertype)
-> uses in the same paths, but most of them are just overkill
-> or maybe lack of understanding.
->
-> s8 is char so by definition it has to be 1.
->
-> I doubt any of the code dates from PDP-8/TOPS-10 days.
->
->
-95% comes from drivers tree. I guess one patch to Greg would be enough.
-Are you interested in those patches or can I do them with some "Suggested-by" ?
+$ grep CONTEXT_TRACK .config
+CONFIG_CONTEXT_TRACKING=y
+# CONFIG_CONTEXT_TRACKING_FORCE is not set
+CONFIG_HAVE_CONTEXT_TRACKING=y
+
+$ grep HZ .config
+CONFIG_NO_HZ_COMMON=y
+# CONFIG_HZ_PERIODIC is not set
+# CONFIG_NO_HZ_IDLE is not set
+CONFIG_NO_HZ_FULL=y
+# CONFIG_NO_HZ_FULL_ALL is not set
+# CONFIG_NO_HZ_FULL_SYSIDLE is not set
+CONFIG_NO_HZ=y
+# CONFIG_RCU_FAST_NO_HZ is not set
+# CONFIG_HZ_100 is not set
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+CONFIG_HZ_1000=y
+CONFIG_HZ=1000
+CONFIG_MACHZ_WDT=m
+
+-Tony
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
