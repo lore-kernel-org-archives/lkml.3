@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935279AbaKNPFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:05:31 -0500
-Received: from mail-bl2on0081.outbound.protection.outlook.com ([65.55.169.81]:54184
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935237AbaKNPF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:05:27 -0500
-Date: Fri, 14 Nov 2014 07:05:14 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, <wg@grandegger.com>,
-        <michal.simek@xilinx.com>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>, <linux-can@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v2] can: Fix bug in suspend/resume
-References: <e7070431858e49e29cd03d76fd7a66c3@BN1AFFO11FD055.protection.gbl>
- <5465C34D.4030805@pengutronix.de>
+	id S935308AbaKNPFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:05:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38359 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934535AbaKNPFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 10:05:44 -0500
+Date: Fri, 14 Nov 2014 15:04:11 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        James Hartley <James.Hartley@imgtec.com>,
+        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20141114150411.GB3815@sirena.org.uk>
+References: <1415848096-20079-1-git-send-email-abrestic@chromium.org>
+ <20141113173631.GI3815@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2ZXnG0twRSEA0LxK"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5465C34D.4030805@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21104.000
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <e5f5913b51a54222aa1bb0680a77e56d@BN1AFFO11FD055.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377454003)(479174003)(377424004)(24454002)(199003)(51704005)(164054003)(189002)(95666004)(47776003)(20776003)(64706001)(120916001)(50986999)(46102003)(54356999)(107046002)(21056001)(77156002)(44976005)(77096003)(85202003)(4396001)(74316001)(62966003)(50466002)(110136001)(19580405001)(104016003)(106466001)(99396003)(33646002)(76176999)(108616004)(53416004)(19580395003)(87936001)(92566001)(83506001)(102836001)(6806004)(86362001)(85182001)(31966008)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB040;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB040;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB040;
-X-Forefront-PRVS: 03950F25EC
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB040;
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <20141113173631.GI3815@sirena.org.uk>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2 0/2] spi: IMG SPFI driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-14 at 09:54AM +0100, Marc Kleine-Budde wrote:
-> On 11/14/2014 09:16 AM, Kedareswara rao Appana wrote:
-> > The drvdata in the suspend/resume is of type struct net_device,
-> > not the platform device.Enable the clocks in the suspend before
-> > accessing the registers of the CAN.
-> > 
-> > Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> > ---
-> > Changes for v2:
-> >   - Removed the struct platform_device* from suspend/resume
-> >     as suggest by Lothar.
-> >   - The clocks are getting disabled and un prepared at the end of the probe. 
-> >     In the suspend the driver is doing a register write.In order
-> >     To do that register write we have to again enable and prepare the clocks.
-> 
-> Please look the at suspend/resume code and count the
-> clock_enable/disable manually. After a suspend/resume cycle, you have
-> enabled the clock twice, but disabled it once.
-> 
-> I think you have to abstract the clock handling behind runtime PM. I
-> haven't done this myself yet, but the strong feeling that this is a
-> possible solution to your problem. These links might help:
 
-I agree, the clock handling looks weird. Also the clk_disable calls in
-xcan_get_berr_counter() look suspicious to me, but I might be wrong.
-I think you can take a look at gpio-zynq for an example for runtime_pm
-usage. I think the usage model in that driver is similar to here.
+--2ZXnG0twRSEA0LxK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	Thanks,
-	Sören
+On Thu, Nov 13, 2014 at 05:36:31PM +0000, Mark Brown wrote:
+> On Wed, Nov 12, 2014 at 07:08:14PM -0800, Andrew Bresticker wrote:
+> > This series adds support for the Sychronous Peripheral Flash Interface
+> > master found on IMG SoCs.  The controller supports up to 5 chip-select
+> > lines and single, dual, and optionally quad, mode transfers.
+
+> Applied both, thanks.
+
+...and reverted since they fail to build in x86 allmodconfig (due to a
+missing linux/interrupt.h it seems).  Please check and resend.
+
+--2ZXnG0twRSEA0LxK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUZhnqAAoJECTWi3JdVIfQJE8H/Aj98L8arZae6SFhlU93VbYF
+IYx+pmmkZv6VsdArO0T6lM2/yA/ghmISIRpzKeGaxj8ASS06yZ5KE+J4QmB2NRVx
+qrcBwejf6YU7WQU3orwpU6KbCTLR8Cg83G3BnSdwwNcIzTEmI3QUVAz44ZhTlZnh
+g3H5qz/iLfBfAhEoL+U7fXDX03WSX5S1iVkl5r9CBrlU1weIcWIQIBDIFC1w8XoF
+grb3XtizgudFQFC41iNbdzNKMyZltKxmOr9xBux9dbjp8GcHjPiz74ulL2/SBXBO
+na9MzNWXuffFelT/kJHxlw1XHva9xd/nPXeICcQgRy8v6f1zBFXSmxzjcdNRiwc=
+=/cKV
+-----END PGP SIGNATURE-----
+
+--2ZXnG0twRSEA0LxK--
