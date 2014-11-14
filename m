@@ -1,184 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935036AbaKNBiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:38:04 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:62572 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934940AbaKNBhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:37:11 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 net-next 7/7] bpf: remove test map scaffolding and user proper types
-Date: Thu, 13 Nov 2014 17:36:50 -0800
-Message-Id: <1415929010-9361-8-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
-References: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
+	id S935056AbaKNBiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:38:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33154 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934900AbaKNBiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 20:38:09 -0500
+Date: Fri, 14 Nov 2014 02:38:15 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Aaron Tomlin <atomlin@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Rik van Riel <riel@redhat.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] exit: wait: cleanup the ptrace_reparented() checks
+Message-ID: <20141114013815.GA5116@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114013750.GA4697@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-proper types and function helpers are ready. Use them in verifier testsuite.
-Remove temporary stubs
+Now that EXIT_DEAD is the terminal state we can kill "int traced"
+variable and check "state == EXIT_DEAD" instead to cleanup the code.
+In particular, this way it is clear that the check obviously doesn't
+need tasklist_lock.
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Also fix the type of "unsigned long state", "long" was always wrong
+although this doesn't matter because cmpxchg/xchg uses typeof(*ptr).
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/bpf/test_stub.c      |   56 +++++++------------------------------------
- samples/bpf/test_verifier.c |   14 +++++------
- 2 files changed, 16 insertions(+), 54 deletions(-)
+ kernel/exit.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/bpf/test_stub.c b/kernel/bpf/test_stub.c
-index fcaddff4003e..0ceae1e6e8b5 100644
---- a/kernel/bpf/test_stub.c
-+++ b/kernel/bpf/test_stub.c
-@@ -18,26 +18,18 @@ struct bpf_context {
- 	u64 arg2;
- };
- 
--static u64 test_func(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
--{
--	return 0;
--}
--
--static struct bpf_func_proto test_funcs[] = {
--	[BPF_FUNC_unspec] = {
--		.func = test_func,
--		.gpl_only = true,
--		.ret_type = RET_PTR_TO_MAP_VALUE_OR_NULL,
--		.arg1_type = ARG_CONST_MAP_PTR,
--		.arg2_type = ARG_PTR_TO_MAP_KEY,
--	},
--};
--
- static const struct bpf_func_proto *test_func_proto(enum bpf_func_id func_id)
+diff --git a/kernel/exit.c b/kernel/exit.c
+index ee5399b..0511f1d 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -973,8 +973,7 @@ static int wait_noreap_copyout(struct wait_opts *wo, struct task_struct *p,
+  */
+ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
  {
--	if (func_id < 0 || func_id >= ARRAY_SIZE(test_funcs))
-+	switch (func_id) {
-+	case BPF_FUNC_map_lookup_elem:
-+		return &bpf_map_lookup_elem_proto;
-+	case BPF_FUNC_map_update_elem:
-+		return &bpf_map_update_elem_proto;
-+	case BPF_FUNC_map_delete_elem:
-+		return &bpf_map_delete_elem_proto;
-+	default:
- 		return NULL;
--	return &test_funcs[func_id];
-+	}
- }
- 
- static const struct bpf_context_access {
-@@ -78,38 +70,8 @@ static struct bpf_prog_type_list tl_prog = {
- 	.type = BPF_PROG_TYPE_UNSPEC,
- };
- 
--static struct bpf_map *test_map_alloc(union bpf_attr *attr)
--{
--	struct bpf_map *map;
--
--	map = kzalloc(sizeof(*map), GFP_USER);
--	if (!map)
--		return ERR_PTR(-ENOMEM);
--
--	map->key_size = attr->key_size;
--	map->value_size = attr->value_size;
--	map->max_entries = attr->max_entries;
--	return map;
--}
--
--static void test_map_free(struct bpf_map *map)
--{
--	kfree(map);
--}
--
--static struct bpf_map_ops test_map_ops = {
--	.map_alloc = test_map_alloc,
--	.map_free = test_map_free,
--};
--
--static struct bpf_map_type_list tl_map = {
--	.ops = &test_map_ops,
--	.type = BPF_MAP_TYPE_UNSPEC,
--};
--
- static int __init register_test_ops(void)
- {
--	bpf_register_map_type(&tl_map);
- 	bpf_register_prog_type(&tl_prog);
- 	return 0;
- }
-diff --git a/samples/bpf/test_verifier.c b/samples/bpf/test_verifier.c
-index 63402742345e..b96175e90363 100644
---- a/samples/bpf/test_verifier.c
-+++ b/samples/bpf/test_verifier.c
-@@ -261,7 +261,7 @@ static struct bpf_test tests[] = {
- 			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
- 			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
- 			BPF_LD_MAP_FD(BPF_REG_1, 0),
--			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_unspec),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
- 			BPF_EXIT_INSN(),
- 		},
- 		.fixup = {2},
-@@ -417,7 +417,7 @@ static struct bpf_test tests[] = {
- 			BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_10),
- 			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
- 			BPF_LD_MAP_FD(BPF_REG_1, 0),
--			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_unspec),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_delete_elem),
- 			BPF_EXIT_INSN(),
- 		},
- 		.errstr = "fd 0 is not pointing to valid bpf_map",
-@@ -430,7 +430,7 @@ static struct bpf_test tests[] = {
- 			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
- 			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
- 			BPF_LD_MAP_FD(BPF_REG_1, 0),
--			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_unspec),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
- 			BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 0),
- 			BPF_EXIT_INSN(),
- 		},
-@@ -445,7 +445,7 @@ static struct bpf_test tests[] = {
- 			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
- 			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
- 			BPF_LD_MAP_FD(BPF_REG_1, 0),
--			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_unspec),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
- 			BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
- 			BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
- 			BPF_EXIT_INSN(),
-@@ -461,7 +461,7 @@ static struct bpf_test tests[] = {
- 			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
- 			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
- 			BPF_LD_MAP_FD(BPF_REG_1, 0),
--			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_unspec),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
- 			BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
- 			BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 0),
- 			BPF_EXIT_INSN(),
-@@ -548,7 +548,7 @@ static struct bpf_test tests[] = {
- 			BPF_ST_MEM(BPF_DW, BPF_REG_2, -56, 0),
- 			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -56),
- 			BPF_LD_MAP_FD(BPF_REG_1, 0),
--			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_unspec),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_delete_elem),
- 			BPF_EXIT_INSN(),
- 		},
- 		.fixup = {24},
-@@ -659,7 +659,7 @@ static int create_map(void)
- 	long long key, value = 0;
- 	int map_fd;
- 
--	map_fd = bpf_create_map(BPF_MAP_TYPE_UNSPEC, sizeof(key), sizeof(value), 1024);
-+	map_fd = bpf_create_map(BPF_MAP_TYPE_HASH, sizeof(key), sizeof(value), 1024);
- 	if (map_fd < 0) {
- 		printf("failed to create map '%s'\n", strerror(errno));
+-	unsigned long state;
+-	int retval, status, traced;
++	int state, retval, status;
+ 	pid_t pid = task_pid_vnr(p);
+ 	uid_t uid = from_kuid_munged(current_user_ns(), task_uid(p));
+ 	struct siginfo __user *infop;
+@@ -997,19 +996,18 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 		}
+ 		return wait_noreap_copyout(wo, p, pid, uid, why, status);
  	}
+-
+-	traced = ptrace_reparented(p);
+ 	/*
+ 	 * Move the task's state to DEAD/TRACE, only one thread can do this.
+ 	 */
+-	state = traced && thread_group_leader(p) ? EXIT_TRACE : EXIT_DEAD;
++	state = ptrace_reparented(p) && thread_group_leader(p) ?
++		EXIT_TRACE : EXIT_DEAD;
+ 	if (cmpxchg(&p->exit_state, EXIT_ZOMBIE, state) != EXIT_ZOMBIE)
+ 		return 0;
++
+ 	/*
+-	 * It can be ptraced but not reparented, check
+-	 * thread_group_leader() to filter out sub-threads.
++	 * Check thread_group_leader() to exclude the traced sub-threads.
+ 	 */
+-	if (likely(!traced) && thread_group_leader(p)) {
++	if (state == EXIT_DEAD && thread_group_leader(p)) {
+ 		struct signal_struct *psig;
+ 		struct signal_struct *sig;
+ 		unsigned long maxrss;
 -- 
-1.7.9.5
+1.5.5.1
 
