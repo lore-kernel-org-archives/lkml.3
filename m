@@ -1,156 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965489AbaKNOmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:42:40 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:37509 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964832AbaKNOmi (ORCPT
+	id S965539AbaKNOnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:43:09 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53221 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964832AbaKNOnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:42:38 -0500
-From: minyard@acm.org
-To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Corey Minyard <cminyard@mvista.com>
-Subject: [PATCH] i2c: Add parameters to sysfs-added i2c devices
-Date: Fri, 14 Nov 2014 08:41:57 -0600
-Message-Id: <1415976117-27755-1-git-send-email-minyard@acm.org>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 14 Nov 2014 09:43:07 -0500
+From: John Ogness <john.ogness@linutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: davem@davemloft.net
+Cc: mugunthanvnm@ti.com
+Cc: balbi@ti.com
+Cc: george.cherian@ti.com
+Cc: jhovold@gmail.com
+Cc: mpa@pengutronix.de
+Cc: bhutchings@solarflare.com
+Cc: zonque@gmail.com
+Cc: tklauser@distanz.ch
+Cc: netdev@vger.kernel.org
+Subject: [PATCH 1/1] drivers: net: cpsw: Fix TX_IN_SEL offset
+Date: Fri, 14 Nov 2014 15:42:52 +0100
+Message-ID: <87sihlj11v.fsf@linutronix.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corey Minyard <cminyard@mvista.com>
+The TX_IN_SEL offset for the CPSW_PORT/TX_IN_CTL register was
+incorrect. This caused the Dual MAC mode to never get set when
+it should. It also caused possible unintentional setting of a
+bit in the CPSW_PORT/TX_BLKS_REM register.
 
-Some devices might need parameters to control their operation,
-add the ability to pass these parameters to the client.
+The purpose of setting the Dual MAC mode for this register is to:
 
-This also makes the parsing of sysfs-added I2C devices a little
-more flexible, allowing tabs and arbitrary numbers of spaces.
+    "... allow packets from both ethernet ports to be written into
+     the FIFO without one port starving the other port."
+					- AM335x ARM TRM
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
 ---
- drivers/i2c/i2c-core.c | 46 ++++++++++++++++++++++++++++++++++------------
- include/linux/i2c.h    |  3 +++
- 2 files changed, 37 insertions(+), 12 deletions(-)
+ drivers/net/ethernet/ti/cpsw.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-I'm adding an SMBus IPMI driver, and it needs to be able to have
-the IPMI bus address specified in case it's not the default.
-
-Also, this seems like it would be useful for other devices that
-need some sort of configuration.
-
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index f43b4e1..9a2ab13 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -781,7 +781,10 @@ static int i2c_device_pm_restore(struct device *dev)
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index d879448..c560f9a 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -129,9 +129,9 @@ do {								\
+ #define CPSW_VLAN_AWARE		BIT(1)
+ #define CPSW_ALE_VLAN_AWARE	1
  
- static void i2c_client_dev_release(struct device *dev)
- {
--	kfree(to_i2c_client(dev));
-+	struct i2c_client *client = to_i2c_client(dev);
-+
-+	kfree(client->parms);
-+	kfree(client);
- }
+-#define CPSW_FIFO_NORMAL_MODE		(0 << 15)
+-#define CPSW_FIFO_DUAL_MAC_MODE		(1 << 15)
+-#define CPSW_FIFO_RATE_LIMIT_MODE	(2 << 15)
++#define CPSW_FIFO_NORMAL_MODE		(0 << 16)
++#define CPSW_FIFO_DUAL_MAC_MODE		(1 << 16)
++#define CPSW_FIFO_RATE_LIMIT_MODE	(2 << 16)
  
- static ssize_t
-@@ -1059,6 +1062,13 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
- 	client->flags = info->flags;
- 	client->addr = info->addr;
- 	client->irq = info->irq;
-+	if (info->parms) {
-+		client->parms = kstrdup(info->parms, GFP_KERNEL);
-+		if (!client->parms) {
-+			dev_err(&adap->dev, "Out of memory allocating parms\n");
-+			goto out_err_silent;
-+		}
-+	}
- 
- 	strlcpy(client->name, info->type, sizeof(client->name));
- 
-@@ -1207,31 +1217,43 @@ i2c_sysfs_new_device(struct device *dev, struct device_attribute *attr,
- 	struct i2c_adapter *adap = to_i2c_adapter(dev);
- 	struct i2c_board_info info;
- 	struct i2c_client *client;
--	char *blank, end;
-+	char *pos, end;
- 	int res;
- 
- 	memset(&info, 0, sizeof(struct i2c_board_info));
- 
--	blank = strchr(buf, ' ');
--	if (!blank) {
-+	pos = strpbrk(buf, " \t");
-+	if (!pos) {
- 		dev_err(dev, "%s: Missing parameters\n", "new_device");
- 		return -EINVAL;
- 	}
--	if (blank - buf > I2C_NAME_SIZE - 1) {
-+	if (pos - buf > I2C_NAME_SIZE - 1) {
- 		dev_err(dev, "%s: Invalid device name\n", "new_device");
- 		return -EINVAL;
- 	}
--	memcpy(info.type, buf, blank - buf);
-+	memcpy(info.type, buf, pos - buf);
- 
--	/* Parse remaining parameters, reject extra parameters */
--	res = sscanf(++blank, "%hi%c", &info.addr, &end);
--	if (res < 1) {
-+	while (isspace(*pos))
-+		pos++;
-+
-+	/* Parse address, saving remaining parameters. */
-+	res = sscanf(pos, "%hi%c", &info.addr, &end);
-+	if (res < 1 || !isspace(end)) {
- 		dev_err(dev, "%s: Can't parse I2C address\n", "new_device");
- 		return -EINVAL;
- 	}
--	if (res > 1  && end != '\n') {
--		dev_err(dev, "%s: Extra parameters\n", "new_device");
--		return -EINVAL;
-+	if (res > 1 && end != '\n') {
-+		if (isspace(end)) {
-+			/* Extra parms, skip the address and space. */
-+			while (!isspace(*pos))
-+				pos++;
-+			while (isspace(*pos))
-+				pos++;
-+			info.parms = pos;
-+		} else {
-+			dev_err(dev, "%s: Extra parameters\n", "new_device");
-+			return -EINVAL;
-+		}
- 	}
- 
- 	client = i2c_new_device(adap, &info);
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index b556e0a..e40fc56 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -222,6 +222,7 @@ struct i2c_client {
- 	char name[I2C_NAME_SIZE];
- 	struct i2c_adapter *adapter;	/* the adapter we sit on	*/
- 	struct device dev;		/* the device structure		*/
-+	char *parms;			/* sysfs extra parms		*/
- 	int irq;			/* irq issued by device		*/
- 	struct list_head detected;
- };
-@@ -255,6 +256,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
-  * @archdata: copied into i2c_client.dev.archdata
-  * @of_node: pointer to OpenFirmware device node
-  * @acpi_node: ACPI device node
-+ * @parms: Parameters supplied on the sysfs command line
-  * @irq: stored in i2c_client.irq
-  *
-  * I2C doesn't actually support hardware probing, although controllers and
-@@ -276,6 +278,7 @@ struct i2c_board_info {
- 	struct dev_archdata	*archdata;
- 	struct device_node *of_node;
- 	struct acpi_dev_node acpi_node;
-+	char            *parms;
- 	int		irq;
- };
- 
+ #define CPSW_INTPACEEN		(0x3f << 16)
+ #define CPSW_INTPRESCALE_MASK	(0x7FF << 0)
 -- 
-1.8.3.1
-
+1.7.10.4
