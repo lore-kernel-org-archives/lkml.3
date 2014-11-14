@@ -1,128 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965435AbaKNNcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:32:52 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:32875 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965283AbaKNNcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:32:51 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>
-CC: <linux-audit@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <sgrubb@redhat.com>, <eparis@parisplace.org>
-Date: Fri, 14 Nov 2014 08:32:48 -0500
-Message-ID: <149ae818c30.2806.85c95baa4474aabc7814e68940a78392@paul-moore.com>
-In-Reply-To: <20141114010852.GB5960@madcap2.tricolour.ca>
-References: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com>
- <1745832.tbkjBzSGxr@sifl>
- <20141114010852.GB5960@madcap2.tricolour.ca>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0 AquaMail/1.5.0.19 (build: 2100846)
-Subject: Re: [PATCH] audit: convert status version to a feature bitmap
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S965557AbaKNNdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:33:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33142 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965283AbaKNNdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:33:16 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 7/7] mm: numa: Add paranoid check around pte_protnone_numa
+Date: Fri, 14 Nov 2014 13:33:06 +0000
+Message-Id: <1415971986-16143-8-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1415971986-16143-1-git-send-email-mgorman@suse.de>
+References: <1415971986-16143-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My apologies, yes I was concerned about LATEST. Try the test that Steve 
-described and if that works I'm happy.
---
-paul moore
-www.paul-moore.com
+pte_protnone_numa is only safe to use after VMA checks for PROT_NONE are
+complete. Treating a real PROT_NONE PTE as a NUMA hinting fault is going
+to result in strangeness so add a check for it. BUG_ON looks like overkill
+but if this is hit then it's a serious bug that could result in corruption
+so do not even try recovering. It would have been more comprehensive to
+check VMA flags in pte_protnone_numa but it would have made the API ugly
+just for a debugging check.
 
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/huge_memory.c | 3 +++
+ mm/memory.c      | 3 +++
+ 2 files changed, 6 insertions(+)
 
-
-On November 13, 2014 8:09:11 PM Richard Guy Briggs <rgb@redhat.com> wrote:
-
-> On 14/11/13, Paul Moore wrote:
-> > On Thursday, November 13, 2014 03:29:10 PM Richard Guy Briggs wrote:
-> > > The version field defined in the audit status structure was found to have
-> > > limitations in terms of its expressibility of features supported.  This is
-> > > distict from the get/set features call to be able to command those features
-> > > that are present.
-> > >
-> > > Converting this field from a version number to a feature bitmap will allow
-> > > distributions to selectively backport and support certain features and will
-> > > allow upstream to be able to deprecate features in the future.  It will
-> > > allow userspace clients to first query the kernel for which features are
-> > > actually present and supported.  Currently, EINVAL is returned rather than
-> > > EOPNOTSUP, which isn't helpful in determining if there was an error in the
-> > > command, or if it simply isn't supported yet.  Past features are not
-> > > represented by this bitmap, but their use may be converted to EOPNOTSUP if
-> > > needed in the future.
-> > >
-> > > Since "version" is too generic to convert with a #define, use a union 
-> in the
-> > > struct status, introducing the member "feature_bitmap" unionized with
-> > > "version".
-> > >
-> > > Convert existing AUDIT_VERSION_* macros over to AUDIT_FEATURE_BITMAP*
-> > > counterparts, leaving the former for backwards compatibility.
-> > >
-> > > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > > ---
-> > >  include/uapi/linux/audit.h |   17 +++++++++++++----
-> > >  kernel/audit.c             |    2 +-
-> > >  2 files changed, 14 insertions(+), 5 deletions(-)
-> >
-> > Looks good for the most part, just a naming nit pick and a question about the
-> > deprecated AUDIT_VERSION_* defines; see below ...
-> >
-> > > diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> > > index 4d100c8..74aa584 100644
-> > > --- a/include/uapi/linux/audit.h
-> > > +++ b/include/uapi/linux/audit.h
-> > > @@ -322,9 +322,15 @@ enum {
-> > >  #define AUDIT_STATUS_BACKLOG_LIMIT	0x0010
-> > >  #define AUDIT_STATUS_BACKLOG_WAIT_TIME	0x0020
-> > >
-> > > -#define AUDIT_VERSION_BACKLOG_LIMIT	1
-> > > -#define AUDIT_VERSION_BACKLOG_WAIT_TIME	2
-> > > -#define AUDIT_VERSION_LATEST AUDIT_VERSION_BACKLOG_WAIT_TIME
-> > > +#define AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT	0x00000001
-> > > +#define AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME	0x00000002
-> > > +#define AUDIT_FEATURE_BITMAP ( AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT | \
-> > > +				                AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME )
-> >
-> > How about AUDIT_FEATURE_BIMAP_ALL instead of just AUDIT_FEATURE_BITMAP?
->
-> Sure, I'm fine with that.
->
-> > > +/* deprecated: AUDIT_VERSION_* */
-> > > +#define AUDIT_VERSION_LATEST 		AUDIT_FEATURE_BITMAP
-> > > +#define AUDIT_VERSION_BACKLOG_LIMIT	AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT
-> > > +#define AUDIT_VERSION_BACKLOG_WAIT_TIME
-> > > ...                                AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME
-> >
-> > So what terrible things happen to userspace if 
-> AUDIT_VERSION_BACKLOG_WAIT_TIME
-> > becomes 0x03 instead of 0x02?
->
-> But it won't.  It gets the value of
-> AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME, which is 0x00000002.
->
-> I think you meant to ask about AUDIT_VERSION_LATEST, which would become 3.
->
-> You *did* already ask that question in a previous thread, and there
-> didn't seem to be a concern.  Steve Grubb could likely answer this
-> question better than me.
->
-> > paul moore
->
-> - RGB
->
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, 
-> Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 4f02010..ae3f3e0 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1274,6 +1274,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	bool migrated = false;
+ 	int flags = 0;
+ 
++	/* A PROT_NONE fault should not end up here */
++	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
++
+ 	ptl = pmd_lock(mm, pmdp);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+ 		goto out_unlock;
+diff --git a/mm/memory.c b/mm/memory.c
+index 360c3e3..5d45026 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3116,6 +3116,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	bool migrated = false;
+ 	int flags = 0;
+ 
++	/* A PROT_NONE fault should not end up here */
++	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
++
+ 	/*
+ 	* The "pte" at this point cannot be used safely without
+ 	* validation through pte_unmap_same(). It's of NUMA type but
+-- 
+1.8.4.5
 
