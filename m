@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934976AbaKNBOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:14:18 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19427 "EHLO
+	id S965078AbaKNBQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:16:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:43207 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934578AbaKNBOM (ORCPT
+	by vger.kernel.org with ESMTP id S934960AbaKNBOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:14:12 -0500
-Message-Id: <20141114011410.200049674@goodmis.org>
+	Thu, 13 Nov 2014 20:14:17 -0500
+Message-Id: <20141114011412.811957882@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 13 Nov 2014 20:12:45 -0500
+Date: Thu, 13 Nov 2014 20:13:01 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC][PATCH 01/23 v4] tracing: Fix trace_seq_bitmask() to start at current position
+Subject: [RFC][PATCH 17/23 v4] tracing: Have seq_buf use full buffer
 References: <20141114011244.256115061@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-tracing-Fix-trace_seq_bitmask-to-start-at-current-po.patch
+Content-Disposition: inline; filename=0017-tracing-Have-seq_buf-use-full-buffer.patch
 X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,33 +27,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-In trace_seq_bitmask() it calls bitmap_scnprintf() not from the current
-position of the trace_seq buffer (s->buffer + s->len), but instead from
-the beginning of the buffer (s->buffer).
+Currently seq_buf is full when all but one byte of the buffer is
+filled. Change it so that the seq_buf is full when all of the
+buffer is filled.
 
-Luckily, the only user of this "ipi_raise tracepoint" uses it as the
-first parameter, and as such, the start of the temp buffer in
-include/trace/ftrace.h (see __get_bitmask()).
+Some of the functions would fill the buffer completely and report
+everything was fine. This was inconsistent with the max of size - 1.
+Changing this to be max of size makes all functions consistent.
 
-Reported-by: Petr Mladek <pmladek@suse.cz>
+Link: http://lkml.kernel.org/r/20141104160222.502133196@goodmis.org
+
+Tested-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_seq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/seq_buf.h |  6 +++---
+ kernel/trace/seq_buf.c  | 19 +++++++++++--------
+ 2 files changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
-index 1f24ed99dca2..b100994a17fe 100644
---- a/kernel/trace/trace_seq.c
-+++ b/kernel/trace/trace_seq.c
-@@ -122,7 +122,7 @@ int trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
- 	if (s->full || !len)
+diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+index 5d91262433e2..581c1fc733c3 100644
+--- a/include/linux/seq_buf.h
++++ b/include/linux/seq_buf.h
+@@ -43,13 +43,13 @@ seq_buf_init(struct seq_buf *s, unsigned char *buf, unsigned int size)
+ static inline bool
+ seq_buf_has_overflowed(struct seq_buf *s)
+ {
+-	return s->len == s->size;
++	return s->len > s->size;
+ }
+ 
+ static inline void
+ seq_buf_set_overflow(struct seq_buf *s)
+ {
+-	s->len = s->size;
++	s->len = s->size + 1;
+ }
+ 
+ /*
+@@ -61,7 +61,7 @@ seq_buf_buffer_left(struct seq_buf *s)
+ 	if (seq_buf_has_overflowed(s))
  		return 0;
  
--	ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-+	ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
- 	s->len += ret;
+-	return (s->size - 1) - s->len;
++	return s->size - s->len;
+ }
  
- 	return 1;
+ extern __printf(2, 3)
+diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+index 7dac34d1235b..9d3bb64dca31 100644
+--- a/kernel/trace/seq_buf.c
++++ b/kernel/trace/seq_buf.c
+@@ -17,7 +17,7 @@
+ #include <linux/seq_buf.h>
+ 
+ /* How much buffer is written? */
+-#define SEQ_BUF_USED(s) min((s)->len, (s)->size - 1)
++#define SEQ_BUF_USED(s) min((s)->len, (s)->size)
+ 
+ /**
+  * seq_buf_print_seq - move the contents of seq_buf into a seq_file
+@@ -51,7 +51,7 @@ int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args)
+ 
+ 	if (s->len < s->size) {
+ 		len = vsnprintf(s->buffer + s->len, s->size - s->len, fmt, args);
+-		if (s->len + len < s->size) {
++		if (s->len + len <= s->size) {
+ 			s->len += len;
+ 			return 0;
+ 		}
+@@ -100,8 +100,11 @@ int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+ 	WARN_ON(s->size == 0);
+ 
+ 	/*
+-	 * The last byte of the buffer is used to determine if we
+-	 * overflowed or not.
++	 * Note, because bitmap_scnprintf() only returns the number of bytes
++	 * written and not the number that would be written, we use the last
++	 * byte of the buffer to let us know if we overflowed. There's a small
++	 * chance that the bitmap could have fit exactly inside the buffer, but
++	 * it's not that critical if that does happen.
+ 	 */
+ 	if (len > 1) {
+ 		ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
+@@ -140,7 +143,7 @@ int seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary)
+ 
+ 	if (s->len < s->size) {
+ 		ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
+-		if (s->len + ret < s->size) {
++		if (s->len + ret <= s->size) {
+ 			s->len += ret;
+ 			return 0;
+ 		}
+@@ -164,7 +167,7 @@ int seq_buf_puts(struct seq_buf *s, const char *str)
+ 
+ 	WARN_ON(s->size == 0);
+ 
+-	if (s->len + len < s->size) {
++	if (s->len + len <= s->size) {
+ 		memcpy(s->buffer + s->len, str, len);
+ 		s->len += len;
+ 		return 0;
+@@ -186,7 +189,7 @@ int seq_buf_putc(struct seq_buf *s, unsigned char c)
+ {
+ 	WARN_ON(s->size == 0);
+ 
+-	if (s->len + 1 < s->size) {
++	if (s->len + 1 <= s->size) {
+ 		s->buffer[s->len++] = c;
+ 		return 0;
+ 	}
+@@ -210,7 +213,7 @@ int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len)
+ {
+ 	WARN_ON(s->size == 0);
+ 
+-	if (s->len + len < s->size) {
++	if (s->len + len <= s->size) {
+ 		memcpy(s->buffer + s->len, mem, len);
+ 		s->len += len;
+ 		return 0;
 -- 
 2.1.1
 
