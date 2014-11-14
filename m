@@ -1,187 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161305AbaKNQdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 11:33:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161108AbaKNQds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 11:33:48 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-api@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        linux-arch@vger.kernel.org, davej@redhat.com
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
-References: <cover.1415636409.git.milosz@adfin.com>
-	<20141111064417.GT23575@dastard>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 14 Nov 2014 11:32:53 -0500
-In-Reply-To: <20141111064417.GT23575@dastard> (Dave Chinner's message of "Tue,
-	11 Nov 2014 17:44:17 +1100")
-Message-ID: <x49mw7tyc7e.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S965655AbaKNQh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:37:26 -0500
+Received: from cosmos.ssec.wisc.edu ([128.104.109.114]:48104 "EHLO
+	cosmos.ssec.wisc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965050AbaKNQhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 11:37:25 -0500
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 11:37:24 EST
+Date: Fri, 14 Nov 2014 10:30:53 -0600
+From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+To: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH] Repeated fork() causes SLAB to grow without bound
+Message-ID: <20141114163053.GA6547@cosmos.ssec.wisc.edu>
+Reply-To: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+Mail-Followup-To: Rik van Riel <riel@redhat.com>,
+	Michel Lespinasse <walken@google.com>,
+	Hugh Dickins <hughd@google.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+	Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
+References: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
+ <502D42E5.7090403@redhat.com>
+ <20120818000312.GA4262@evergreen.ssec.wisc.edu>
+ <502F100A.1080401@redhat.com>
+ <alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+ <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+ <20120822032057.GA30871@google.com>
+ <50345232.4090002@redhat.com>
+ <20130603195003.GA31275@evergreen.ssec.wisc.edu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603195003.GA31275@evergreen.ssec.wisc.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+There have been a couple of inquiries about the status of this patch
+over the last few months, so I am going to try pushing it out.
 
-> On Mon, Nov 10, 2014 at 11:40:23AM -0500, Milosz Tanski wrote:
->> This patcheset introduces an ability to perform a non-blocking read from
->> regular files in buffered IO mode. This works by only for those filesystems
->> that have data in the page cache.
->> 
->> It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
->> new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
->> extra flag argument (RWF_NONBLOCK).
->> 
->> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
->> perform buffered IO operations. They submit the work form another thread
->> that performs network IO and epoll or other threads that perform CPU work. This
->> leads to increased latency for processing, esp. in the case of data that's
->> already cached in the page cache.
->> 
->> With the new interface the applications will now be able to fetch the data in
->> their network / cpu bound thread(s) and only defer to a threadpool if it's not
->> there. In our own application (VLDB) we've observed a decrease in latency for
->> "fast" request by avoiding unnecessary queuing and having to swap out current
->> tasks in IO bound work threads.
->
-> Can you write a test (or set of) for fstests that exercises this new
-> functionality? I'm not worried about performance, just
-> correctness....
+Andrea Arcangeli has commented:
 
-On the subject of testing, I added support to trinity (attached,
-untested).  That did raise one question.  Do we expect applications to
-#include <linux/fs.h> to get the RWF_NONBLOCK definition?
+> Agreed. The only thing I don't like about this patch is the hardcoding
+> of number 5: could we make it a variable to tweak with sysfs/sysctl so
+> if some weird workload arises we have a tuning tweak? It'd cost one
+> cacheline during fork, so it doesn't look excessive overhead.
 
-Cheers,
-Jeff
+Adding this is beyond my experience level, so if it is required then
+someone else will have to make it so.
 
-diff --git a/include/syscalls-i386.h b/include/syscalls-i386.h
-index 767be6e..3125064 100644
---- a/include/syscalls-i386.h
-+++ b/include/syscalls-i386.h
-@@ -365,4 +365,6 @@ struct syscalltable syscalls_i386[] = {
- 	{ .entry = &syscall_getrandom },
- 	{ .entry = &syscall_memfd_create },
- 	{ .entry = &syscall_bpf },
-+	{ .entry = &syscall_preadv2 },
-+	{ .entry = &syscall_pwritev2 },
- };
-diff --git a/include/syscalls-x86_64.h b/include/syscalls-x86_64.h
-index cb609ad..8d32571 100644
---- a/include/syscalls-x86_64.h
-+++ b/include/syscalls-x86_64.h
-@@ -329,4 +329,6 @@ struct syscalltable syscalls_x86_64[] = {
- 	{ .entry = &syscall_memfd_create },
- 	{ .entry = &syscall_kexec_file_load },
- 	{ .entry = &syscall_bpf },
-+	{ .entry = &syscall_preadv2 },
-+	{ .entry = &syscall_pwritev2 },
- };
-diff --git a/syscalls/read.c b/syscalls/read.c
-index e0948a2..adbf146 100644
---- a/syscalls/read.c
-+++ b/syscalls/read.c
-@@ -3,6 +3,7 @@
-  */
- #include <stdlib.h>
- #include <string.h>
-+#include <linux/fs.h>
- #include "arch.h"
- #include "maps.h"
- #include "random.h"
-@@ -94,3 +95,29 @@ struct syscallentry syscall_preadv = {
- 	.arg5name = "pos_h",
- 	.flags = NEED_ALARM,
- };
-+
-+/*
-+ * SYSCALL_DEFINE6(preadv2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-+		int, flags)
-+ */
-+
-+struct syscallentry syscall_preadv2 = {
-+	.name = "preadv2",
-+	.num_args = 5,
-+	.arg1name = "fd",
-+	.arg1type = ARG_FD,
-+	.arg2name = "vec",
-+	.arg2type = ARG_IOVEC,
-+	.arg3name = "vlen",
-+	.arg3type = ARG_IOVECLEN,
-+	.arg4name = "pos_l",
-+	.arg5name = "pos_h",
-+	.arg6name = "flags",
-+	.arg6type = ARG_OP,
-+	.arg6list = {
-+		.num = 1,
-+		.values = { RWF_NONBLOCK, },
-+	},
-+	.flags = NEED_ALARM,
-+};
-diff --git a/syscalls/syscalls.h b/syscalls/syscalls.h
-index 5a7748b..04400dd 100644
---- a/syscalls/syscalls.h
-+++ b/syscalls/syscalls.h
-@@ -375,5 +375,7 @@ extern struct syscallentry syscall_seccomp;
- extern struct syscallentry syscall_memfd_create;
- extern struct syscallentry syscall_kexec_file_load;
- extern struct syscallentry syscall_bpf;
-+extern struct syscallentry syscall_preadv2;
-+extern struct syscallentry syscall_pwritev2;
+Rik van Riel has commented:
+
+> I believe we should just merge that patch.
+> 
+> I have not seen any better ideas come by.
+> 
+> The comment should probably be fixed to reflect the
+> chain length of 5 though :)
+
+So here is Michel's patch again with "(length > 1)" modified to
+"(length > 5)" and fixed comments.
+
+I have been running with this patch (with the threshold set to 5) for
+over two years now and it does indeed solve the problem.
+
+---
+
+anon_vma_clone() is modified to return the length of the existing
+same_vma anon vma chain, and we create a new anon_vma in the child
+if it is more than five forks after the anon_vma was created, as we
+don't want the same_vma chain to grow arbitrarily large.
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+Tested-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+---
+ mm/mmap.c |    6 +++---
+ mm/rmap.c |   18 ++++++++++++++----
+ 2 files changed, 17 insertions(+), 7 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3edfcdfa42d9..e14b19a838cb 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -539,7 +539,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		 * shrinking vma had, to cover any anon pages imported.
+ 		 */
+ 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
+-			if (anon_vma_clone(importer, exporter))
++			if (anon_vma_clone(importer, exporter) < 0)
+ 				return -ENOMEM;
+ 			importer->anon_vma = exporter->anon_vma;
+ 		}
+@@ -1988,7 +1988,7 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 	}
+ 	vma_set_policy(new, pol);
  
- unsigned int random_fcntl_setfl_flags(void);
-diff --git a/syscalls/write.c b/syscalls/write.c
-index f37e760..4218ccc 100644
---- a/syscalls/write.c
-+++ b/syscalls/write.c
-@@ -2,6 +2,7 @@
-  * SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf, size_t, count)
+-	if (anon_vma_clone(new, vma))
++	if (anon_vma_clone(new, vma) < 0)
+ 		goto out_free_mpol;
+ 
+ 	if (new->vm_file) {
+@@ -2409,7 +2409,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 			if (IS_ERR(pol))
+ 				goto out_free_vma;
+ 			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
+-			if (anon_vma_clone(new_vma, vma))
++			if (anon_vma_clone(new_vma, vma) < 0)
+ 				goto out_free_mempol;
+ 			vma_set_policy(new_vma, pol);
+ 			new_vma->vm_start = addr;
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 0f3b7cda2a24..ba8a726aaee6 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -238,12 +238,13 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
+ 
+ /*
+  * Attach the anon_vmas from src to dst.
+- * Returns 0 on success, -ENOMEM on failure.
++ * Returns length of the anon_vma chain on success, -ENOMEM on failure.
   */
- #include <stdlib.h>
-+#include <linux/fs.h>
- #include "arch.h"	// page_size
- #include "maps.h"
- #include "random.h"
-@@ -95,3 +96,30 @@ struct syscallentry syscall_pwritev = {
- 	.arg5name = "pos_h",
- 	.flags = NEED_ALARM,
- };
-+
-+
-+/*
-+ * SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-+		int, flags)
-+ */
-+
-+struct syscallentry syscall_pwritev2 = {
-+	.name = "pwritev2",
-+	.num_args = 6,
-+	.arg1name = "fd",
-+	.arg1type = ARG_FD,
-+	.arg2name = "vec",
-+	.arg2type = ARG_IOVEC,
-+	.arg3name = "vlen",
-+	.arg3type = ARG_IOVECLEN,
-+	.arg4name = "pos_l",
-+	.arg5name = "pos_h",
-+	.arg6name = "flags",
-+	.arg6type = ARG_OP,
-+	.arg6list = {
-+		.num = 1,
-+		.values = { RWF_NONBLOCK, },
-+	},
-+	.flags = NEED_ALARM,
-+};
+ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+ {
+ 	struct anon_vma_chain *avc, *pavc;
+ 	struct anon_vma *root = NULL;
++	int length = 0;
+ 
+ 	list_for_each_entry_reverse(pavc, &src->anon_vma_chain, same_vma) {
+ 		struct anon_vma *anon_vma;
+@@ -259,9 +260,10 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+ 		anon_vma = pavc->anon_vma;
+ 		root = lock_anon_vma_root(root, anon_vma);
+ 		anon_vma_chain_link(dst, avc, anon_vma);
++		length++;
+ 	}
+ 	unlock_anon_vma_root(root);
+-	return 0;
++	return length;
+ 
+  enomem_failure:
+ 	unlink_anon_vmas(dst);
+@@ -322,6 +324,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ {
+ 	struct anon_vma_chain *avc;
+ 	struct anon_vma *anon_vma;
++	int length;
+ 
+ 	/* Don't bother if the parent process has no anon_vma here. */
+ 	if (!pvma->anon_vma)
+@@ -331,10 +334,17 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	 * First, attach the new VMA to the parent VMA's anon_vmas,
+ 	 * so rmap can find non-COWed pages in child processes.
+ 	 */
+-	if (anon_vma_clone(vma, pvma))
++	length = anon_vma_clone(vma, pvma);
++	if (length < 0)
+ 		return -ENOMEM;
++	else if (length > 5)
++		return 0;
+ 
+-	/* Then add our own anon_vma. */
++	/*
++	 * Then add our own anon_vma. We do this only for five forks after
++	 * the anon_vma was created, as we don't want the same_vma chain to
++	 * grow arbitrarily large.
++	 */
+ 	anon_vma = anon_vma_alloc();
+ 	if (!anon_vma)
+ 		goto out_error;
+
+-- 
+Daniel K. Forrest		Space Science and
+dan.forrest@ssec.wisc.edu	Engineering Center
+(608) 890 - 0558		University of Wisconsin, Madison
