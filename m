@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965003AbaKNBPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:15:03 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:27203 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934978AbaKNBOT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934995AbaKNBOT (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 Nov 2014 20:14:19 -0500
-Message-Id: <20141114011413.530757981@goodmis.org>
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:54013 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934681AbaKNBOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 20:14:12 -0500
+Message-Id: <20141114011410.814170311@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 13 Nov 2014 20:13:04 -0500
+Date: Thu, 13 Nov 2014 20:12:49 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC][PATCH 20/23 v4] seq-buf: Make seq_buf_bprintf() conditional on CONFIG_BINARY_PRINTF
+Subject: [RFC][PATCH 05/23 v4] tracing: Have branch tracer use trace_handle_return() helper function
 References: <20141114011244.256115061@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0020-seq-buf-Make-seq_buf_bprintf-conditional-on-CONFIG_B.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0005-tracing-Have-branch-tracer-use-trace_handle_return-h.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The function bstr_printf() from lib/vsprnintf.c is only available if
-CONFIG_BINARY_PRINTF is defined. This is due to the only user currently
-being the tracing infrastructure, which needs to select this config
-when tracing is configured. Until there is another user of the binary
-printf formats, this will continue to be the case.
+The branch tracer should not be checking the trace_seq_printf() return value
+as that will soon be void. There's a new trace_handle_return() helper function
+that will return TRACE_TYPE_PARTIAL_LINE if the trace_seq overflowed
+and TRACE_TYPE_HANDLED otherwise.
 
-Since seq_buf.c is now lives in lib/ and is compiled even without
-tracing, it must encompass its use of bstr_printf() which is used
-by seq_buf_printf(). This too is only used by the tracing infrastructure
-and is still encapsulated by the CONFIG_BINARY_PRINTF.
-
-Link: http://lkml.kernel.org/r/20141104160222.969013383@goodmis.org
-
-Tested-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/seq_buf.h | 7 +++++--
- kernel/trace/seq_buf.c  | 2 ++
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ kernel/trace/trace_branch.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-index 8fda502ee630..da211dfbcebe 100644
---- a/include/linux/seq_buf.h
-+++ b/include/linux/seq_buf.h
-@@ -114,8 +114,6 @@ extern __printf(2, 3)
- int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
- extern __printf(2, 0)
- int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args);
--extern int
--seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
- extern int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s);
- extern int seq_buf_to_user(struct seq_buf *s, char __user *ubuf,
- 			   int cnt);
-@@ -129,4 +127,9 @@ extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *
- extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
- 			   int nmaskbits);
+diff --git a/kernel/trace/trace_branch.c b/kernel/trace/trace_branch.c
+index 697fb9bac8f0..42c85036fc3f 100644
+--- a/kernel/trace/trace_branch.c
++++ b/kernel/trace/trace_branch.c
+@@ -151,14 +151,13 @@ static enum print_line_t trace_branch_print(struct trace_iterator *iter,
  
-+#ifdef CONFIG_BINARY_PRINTF
-+extern int
-+seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
-+#endif
+ 	trace_assign_type(field, iter->ent);
+ 
+-	if (trace_seq_printf(&iter->seq, "[%s] %s:%s:%d\n",
+-			     field->correct ? "  ok  " : " MISS ",
+-			     field->func,
+-			     field->file,
+-			     field->line))
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	return TRACE_TYPE_HANDLED;
++	trace_seq_printf(&iter->seq, "[%s] %s:%s:%d\n",
++			 field->correct ? "  ok  " : " MISS ",
++			 field->func,
++			 field->file,
++			 field->line);
 +
- #endif /* _LINUX_SEQ_BUF_H */
-diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-index 3657af4b5f53..84b6377df827 100644
---- a/kernel/trace/seq_buf.c
-+++ b/kernel/trace/seq_buf.c
-@@ -114,6 +114,7 @@ int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
- 	return -1;
++	return trace_handle_return(&iter->seq);
  }
  
-+#ifdef CONFIG_BINARY_PRINTF
- /**
-  * seq_buf_bprintf - Write the printf string from binary arguments
-  * @s: seq_buf descriptor
-@@ -148,6 +149,7 @@ int seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary)
- 	seq_buf_set_overflow(s);
- 	return -1;
- }
-+#endif /* CONFIG_BINARY_PRINTF */
- 
- /**
-  * seq_buf_puts - sequence printing of simple string
+ static void branch_print_header(struct seq_file *s)
 -- 
 2.1.1
 
