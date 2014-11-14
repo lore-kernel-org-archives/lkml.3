@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422656AbaKNVyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 16:54:51 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64805 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754335AbaKNVyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 16:54:50 -0500
+	id S1422708AbaKNV4l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 16:56:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:53204 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754335AbaKNV4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 16:56:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,387,1413270000"; 
+   d="scan'208";a="622594496"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>
+CC: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphA=
+Date: Fri, 14 Nov 2014 21:56:38 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+References: <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+ <20141111230926.GR31490@pd.tnic>
+ <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic>
+ <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
+In-Reply-To: <20141113180436.GG14070@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411142138300.3909@nanos>
-References: <CAHTgTXX=0JqGx1eYa4+Y5TuvzUpVwMNQdPe2a7m=r3pZBfGXxQ@mail.gmail.com>
-	<20141114203641.GB7825@pd.tnic>
-	<alpine.DEB.2.11.1411142138300.3909@nanos>
-Date: Fri, 14 Nov 2014 13:54:49 -0800
-Message-ID: <CAHTgTXVVN7wFdD5eJXs-gpoiEHrqcpeEx39Yetru1Mbvo0enWg@mail.gmail.com>
-Subject: Re: x86 math_error warning in Linux kernel 3.10
-From: Vinson Lee <vlee@twopensource.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@suse.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        Suresh Siddha <sbsiddha@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAELuklO003913
 
-On Fri, Nov 14, 2014 at 12:39 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 14 Nov 2014, Borislav Petkov wrote:
->> On Fri, Nov 14, 2014 at 12:19:16PM -0800, Vinson Lee wrote:
->> > Hi.
->> >
->> > We hit this x86 math_error warning in Linux kernel 3.10.
->> >
->> > ------------[ cut here ]------------
->> > WARNING: at arch/x86/include/asm/fpu-internal.h:524 math_error+0xd1/0x219()
->> > Modules linked in: cls_basic act_mirred cls_u32 veth sch_ingress
->> > netconsole configfs ipv6 dm_multipath scsi_dh video sbs sbshc hed
->> > acpi_pad acpi_ipmi acpi_i2c parport_pc lp parport tcp_diag inet_diag
->> > ipmi_si ipmi_devintf ipmi_msghandler dell_rbu sg iTCO_wdt
->> > iTCO_vendor_support dcdbas igb i2c_algo_bit ptp pps_core shpchp
->> > lpc_ich i2c_i801 mfd_core i2c_core ioatdma dca i7core_edac edac_core
->> > microcode freq_table mperf ahci libahci libata sd_mod scsi_mod
->> > CPU: 2 PID: 53182 Comm: java Not tainted 3.10.50 #1
->> >  0000000000000000 ffff8808e1f5be38 ffffffff8146cb74 ffff8808e1f5be70
->> >  ffffffff8103cbf9 0000000000000000 ffff88090b2c9730 ffff8808e1f5bf58
->> >  0000000000000010 0000000000000000 ffff8808e1f5be80 ffffffff8103ccbf
->> > Call Trace:
->> >  [<ffffffff8146cb74>] dump_stack+0x19/0x1b
->> >  [<ffffffff8103cbf9>] warn_slowpath_common+0x65/0x7d
->> >  [<ffffffff8103ccbf>] warn_slowpath_null+0x1a/0x1c
->> >  [<ffffffff8100317b>] math_error+0xd1/0x219
->> >  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
->> >  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
->> >  [<ffffffff8107bf32>] ? ktime_get+0x68/0x76
->> >  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
->> >  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
->> >  [<ffffffff810032d6>] do_coprocessor_error+0x13/0x15
->> >  [<ffffffff81478a38>] coprocessor_error+0x18/0x20
->> > ---[ end trace 3e4a6532a67ba6d3 ]---
->>
->> AFAICT, you're getting an FPU exception for a task which hasn't used the
->> FPU or current is somehow pointing to the wrong task.
->>
->> Can you trigger this with the latest kernel too, i.e., say, 3.18-rc4?
+>> Right, I can do it in the meantime and we can always experiment more
+>> later. Getting rid of _TIF_MCE_NOTIFY is a good thing already.
 >
-> Also Vinson forgot to mention HOW that is triggered. Without an
-> explanation of the reproducer it's hard to tell what's going wrong.
->
-> Thanks,
->
->         tglx
+> Yep, it looks pretty simple - not tested yet, it builds though.
 
+It seems pretty solid under test so far.
 
-Thanks for the quick responses. This is an infrequent warning. We have
-yet to reliably reproduce it or narrow down to a test case.
+Can we make it pass the address/flag to mce_notify_process() too? So
+we can get rid of mce_save_info() and mce_find_info().
 
-Thanks.
-Vinson
+We'd need to wrap mce_task_work inside a bigger structure with fields
+to have the address and flags - then use "container_of" inside mce_notify_process().
+
+But I think that means we need more than one of these structures ... we may not
+be done with one before a new machine check occurs. So we'd have to make an
+NMI-safe allocator to grab one for use inside do_machine_check()
+
+-Tony
+
+General testing note - one thing I did see was that if inject 1000 errors at 0.3s interval from
+my ssh'd login ... the serial console keeps streaming messages for about 40 seconds
+after my test says it is all done. This might be a factor in the other tests I've been
+running against the stack-switching code (especially with extra debug) ... at some
+point __log_buf must get full - what happens then?
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
