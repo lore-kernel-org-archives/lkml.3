@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934823AbaKNAiq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:38:46 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:44651 "HELO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S934635AbaKNAim (ORCPT
+	id S934882AbaKNAjl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:39:41 -0500
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:57606 "HELO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S934636AbaKNAih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:38:42 -0500
+	Thu, 13 Nov 2014 19:38:37 -0500
 From: Joe Stringer <joestringer@nicira.com>
 To: netdev@vger.kernel.org
 Cc: sathya.perla@emulex.com, shahed.shaikh@qlogic.com, amirv@mellanox.com,
         Dept-GELinuxNICDev@qlogic.com, therbert@google.com,
         gerlitz.or@gmail.com, alexander.duyck@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv2 net 4/4] qlcnic: Implement ndo_gso_check()
-Date: Thu, 13 Nov 2014 16:38:15 -0800
-Message-Id: <1415925495-59312-5-git-send-email-joestringer@nicira.com>
+Subject: [PATCHv2 net 2/4] be2net: Implement ndo_gso_check()
+Date: Thu, 13 Nov 2014 16:38:13 -0800
+Message-Id: <1415925495-59312-3-git-send-email-joestringer@nicira.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415925495-59312-1-git-send-email-joestringer@nicira.com>
 References: <1415925495-59312-1-git-send-email-joestringer@nicira.com>
@@ -29,33 +29,33 @@ Signed-off-by: Joe Stringer <joestringer@nicira.com>
 ---
 v2: Refactor out vxlan helper.
 ---
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    6 ++++++
+ drivers/net/ethernet/emulex/benet/be_main.c |    6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index f5e29f7..a913b3a 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -503,6 +503,11 @@ static void qlcnic_del_vxlan_port(struct net_device *netdev,
- 
- 	adapter->flags |= QLCNIC_DEL_VXLAN_PORT;
+diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
+index 9a18e79..3e8475c 100644
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -4421,6 +4421,11 @@ static void be_del_vxlan_port(struct net_device *netdev, sa_family_t sa_family,
+ 		 "Disabled VxLAN offloads for UDP port %d\n",
+ 		 be16_to_cpu(port));
  }
 +
-+static bool qlcnic_gso_check(struct sk_buff *skb, struct net_device *dev)
++static bool be_gso_check(struct sk_buff *skb, struct net_device *dev)
 +{
 +	return vxlan_gso_check(skb);
 +}
  #endif
  
- static const struct net_device_ops qlcnic_netdev_ops = {
-@@ -526,6 +531,7 @@ static const struct net_device_ops qlcnic_netdev_ops = {
- #ifdef CONFIG_QLCNIC_VXLAN
- 	.ndo_add_vxlan_port	= qlcnic_add_vxlan_port,
- 	.ndo_del_vxlan_port	= qlcnic_del_vxlan_port,
-+	.ndo_gso_check		= qlcnic_gso_check,
+ static const struct net_device_ops be_netdev_ops = {
+@@ -4450,6 +4455,7 @@ static const struct net_device_ops be_netdev_ops = {
+ #ifdef CONFIG_BE2NET_VXLAN
+ 	.ndo_add_vxlan_port	= be_add_vxlan_port,
+ 	.ndo_del_vxlan_port	= be_del_vxlan_port,
++	.ndo_gso_check		= be_gso_check,
  #endif
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller = qlcnic_poll_controller,
+ };
+ 
 -- 
 1.7.10.4
 
