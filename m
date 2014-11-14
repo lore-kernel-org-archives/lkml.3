@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935127AbaKNEtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 23:49:46 -0500
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:36243 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934226AbaKNEtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 23:49:45 -0500
+	id S935139AbaKNExY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 23:53:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51853 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934226AbaKNExX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 23:53:23 -0500
+Message-ID: <54658ABF.5050708@suse.com>
+Date: Fri, 14 Nov 2014 05:53:19 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <5463FE5E.906@rock-chips.com>
-References: <1415624983-22413-1-git-send-email-kever.yang@rock-chips.com>
-	<CAD=FV=V-D3qTtnwjme8k=boUkoGGPmfvcF=Jboq0qcRBzKrY6g@mail.gmail.com>
-	<5463FE5E.906@rock-chips.com>
-Date: Thu, 13 Nov 2014 20:49:44 -0800
-X-Google-Sender-Auth: XLofNeOppgSsyDZ98ZLqduMFBG8
-Message-ID: <CAODwPW9Avc1RCdDoarGg2cZirn7ivu4JEdUTV485J=nLLmecTQ@mail.gmail.com>
-Subject: Re: [PATCH v3] usb: dwc2: add bus suspend/resume for dwc2
-From: Julius Werner <jwerner@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: Doug Anderson <dianders@chromium.org>, Paul Zimmerman <paulz@synopsys.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Romain Perier <romain.perier@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        lyz <lyz@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 2/8] xen: Delay remapping memory of pv-domain
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-3-git-send-email-jgross@suse.com> <20141112214506.GA5922@laptop.dumpdata.com> <54644E48.3040506@suse.com> <20141113195605.GA13039@laptop.dumpdata.com>
+In-Reply-To: <20141113195605.GA13039@laptop.dumpdata.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I will figure out how to make dwc2 detect the device connect after auto
-> suspend,
-> or disable the auto suspend feature for the dwc2 hcd.
+On 11/13/2014 08:56 PM, Konrad Rzeszutek Wilk wrote:
+>>>> +	mfn_save = virt_to_mfn(buf);
+>>>> +
+>>>> +	while (xen_remap_mfn != INVALID_P2M_ENTRY) {
+>>>
+>>> So the 'list' is constructed by going forward - that is from low-numbered
+>>> PFNs to higher numbered ones. But the 'xen_remap_mfn' is going the
+>>> other way - from the highest PFN to the lowest PFN.
+>>>
+>>> Won't that mean we will restore the chunks of memory in the wrong
+>>> order? That is we will still restore them in chunks size, but the
+>>> chunks will be in descending order instead of ascending?
+>>
+>> No, the information where to put each chunk is contained in the chunk
+>> data. I can add a comment explaining this.
+>
+> Right, the MFNs in a "chunks" are going to be restored in the right order.
+>
+> I was thinking that the "chunks" (so a set of MFNs) will be restored in
+> the opposite order that they are written to.
+>
+> And oddly enough the "chunks" are done in 512-3 = 509 MFNs at once?
 
-I think auto-suspend of the root hub device (which is what calls
-bus_suspend, but is not the host controller device itself) is expected
-to always happen and not really meant to be disabled. I'm surprised
-that the controller would fail to come back up, though. Does removing
-the PCGCTL part make it work? That's the only thing I can think of
-(but then again the function should immediately return if the port is
-not in L0, so if there is nothing plugged in the suspend shouldn't
-really do anything).
+More don't fit on a single page due to the other info needed. So: yes.
 
-Another thing might be that the port connect interrupt does not
-correctly resume the root hub. I don't really know many details about
-how that works, and it seems pretty complicated. But I can see that
-all other HCDs seem to call usb_hcd_resume_root_hub() from their
-interrupt handlers, which we don't. There's also a
-usb_hcd_start_port_resume() in EHCI which I'm not familiar with, that
-seems to have been added recently. And finally, it seems that all
-normal host controllers (UHCI/OHCI/EHCI/XHCI) now do the
-usb_hcd->uses_new_polling thing (where you're supposed to call
-hcd_poll_rh_status() from the HCD code)... the old polling code still
-seems to be in place, but without any relevant driver using I wouldn't
-be so sure if it's still functional.
+>
+>>
+>>>
+>>>> +		/* Map the remap information */
+>>>> +		set_pte_mfn(buf, xen_remap_mfn, PAGE_KERNEL);
+>>>> +
+>>>> +		BUG_ON(xen_remap_mfn != xen_remap_buf.mfns[0]);
+>>>> +
+>>>> +		free = 0;
+>>>> +		pfn = xen_remap_buf.target_pfn;
+>>>> +		for (i = 0; i < xen_remap_buf.size; i++) {
+>>>> +			mfn = xen_remap_buf.mfns[i];
+>>>> +			if (!released && xen_update_mem_tables(pfn, mfn)) {
+>>>> +				remapped++;
+>>>
+>>> If we fail 'xen_update_mem_tables' we will on the next chunk (so i+1) keep on
+>>> freeing pages instead of trying to remap. Is that intentional? Could we
+>>> try to remap?
+>>
+>> Hmm, I'm not sure this is worth the effort. What could lead to failure
+>> here? I suspect we could even just BUG() on failure. What do you think?
+>
+> I was hoping that this question would lead to making this loop a bit
+> simpler as you would have to spread some of the code in the loop
+> into functions.
+>
+> And keep 'remmaped' and 'released' reset every loop.
+>
+> However, if it makes the code more complex - then please
+> forget my question.
 
-+Alan who should know HCD/core interactions much better and might have
-some ideas what the DWC2 driver is still missing right now.
+Using BUG() instead would make the code less complex. Do you really
+think xen_update_mem_tables() would ever fail in a sane system?
+
+- set_phys_to_machine() would fail only on a memory shortage. Just
+   going on without adding more memory wouldn't lead to a healthy system,
+   I think.
+- The hypervisor calls would fail only in case of parameter errors.
+   This should never happen, so dying seems to be the correct reaction.
+
+David, what do you think?
+
+
+Juergen
