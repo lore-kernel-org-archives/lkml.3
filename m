@@ -1,64 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161264AbaKNQwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 11:52:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48484 "EHLO mx1.redhat.com"
+	id S1161356AbaKNQxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:53:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38003 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965580AbaKNQwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 11:52:18 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, Milosz Tanski <milosz@adfin.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-api@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
-References: <cover.1415636409.git.milosz@adfin.com>
-	<20141111064417.GT23575@dastard>
-	<x49mw7tyc7e.fsf@segfault.boston.devel.redhat.com>
-	<20141114163912.GA23769@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 14 Nov 2014 11:51:31 -0500
-In-Reply-To: <20141114163912.GA23769@redhat.com> (Dave Jones's message of
-	"Fri, 14 Nov 2014 11:39:12 -0500")
-Message-ID: <x491tp5ybcc.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1161065AbaKNQxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 11:53:14 -0500
+Date: Fri, 14 Nov 2014 17:53:08 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 14/23 v4] tracing: Convert seq_buf_path() to be like
+ seq_path()
+Message-ID: <20141114165308.GB14538@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+ <20141114011412.338523371@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114011412.338523371@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones <davej@redhat.com> writes:
-
-> On Fri, Nov 14, 2014 at 11:32:53AM -0500, Jeff Moyer wrote:
->
->  > > Can you write a test (or set of) for fstests that exercises this new
->  > > functionality? I'm not worried about performance, just
->  > > correctness....
->  > 
->  > On the subject of testing, I added support to trinity (attached,
->  > untested).  That did raise one question.  Do we expect applications to
->  > #include <linux/fs.h> to get the RWF_NONBLOCK definition?
+On Thu 2014-11-13 20:12:58, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> Rewrite seq_buf_path() like it is done in seq_path() and allow
+> it to accept any escape character instead of just "\n".
+> 
+> Making seq_buf_path() like seq_path() will help prevent problems
+> when converting seq_file to use the seq_buf logic.
+> 
+> Link: http://lkml.kernel.org/r/20141104160222.048795666@goodmis.org
+> 
+> Tested-by: Jiri Kosina <jkosina@suse.cz>
+> Acked-by: Jiri Kosina <jkosina@suse.cz>
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/seq_buf.h  |  2 +-
+>  kernel/trace/seq_buf.c   | 28 ++++++++++++++++------------
+>  kernel/trace/trace_seq.c |  4 ++--
+>  3 files changed, 19 insertions(+), 15 deletions(-)
+> 
+> diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> index 4f7a96a9d71a..38770688a627 100644
+> --- a/include/linux/seq_buf.h
+> +++ b/include/linux/seq_buf.h
+> @@ -73,7 +73,7 @@ extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
+>  extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
+>  extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+>  			      unsigned int len);
+> -extern int seq_buf_path(struct seq_buf *s, const struct path *path);
+> +extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc);
 >  
-> Trinity will at least need an addition to include/compat.h for
-> older headers that won't have the definition.  Looks ok otherwise.
+>  extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+>  			   int nmaskbits);
+> diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+> index e9a7861595d2..7dac34d1235b 100644
+> --- a/kernel/trace/seq_buf.c
+> +++ b/kernel/trace/seq_buf.c
+> @@ -272,28 +272,32 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+>   * seq_buf_path - copy a path into the sequence buffer
+>   * @s: seq_buf descriptor
+>   * @path: path to write into the sequence buffer.
+> + * @esc: set of characters to escape in the output
+>   *
+>   * Write a path name into the sequence buffer.
+>   *
+> - * Returns zero on success, -1 on overflow
+> + * Returns the number of written bytes on success, -1 on overflow
+>   */
+> -int seq_buf_path(struct seq_buf *s, const struct path *path)
+> +int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
+>  {
+> -	unsigned int len = seq_buf_buffer_left(s);
+> -	unsigned char *p;
+> +	char *buf = s->buffer + s->len;
+> +	size_t size = seq_buf_buffer_left(s);
+> +	int res = -1;
+>  
+>  	WARN_ON(s->size == 0);
+>  
+> -	p = d_path(path, s->buffer + s->len, len);
+> -	if (!IS_ERR(p)) {
+> -		p = mangle_path(s->buffer + s->len, p, "\n");
+> -		if (p) {
+> -			s->len = p - s->buffer;
+> -			return 0;
+> +	if (size) {
+> +		char *p = d_path(path, buf, size);
+> +		if (!IS_ERR(p)) {
+> +			char *end = mangle_path(buf, p, esc);
+> +			if (end)
+> +				res = end - buf;
+>  		}
+>  	}
+> -	seq_buf_set_overflow(s);
+> -	return -1;
+> +	if (res > 0)
+> +		s->len += res;
+> +
+> +	return res;
+>  }
+>  
+>  /**
+> diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
+> index 3c63b619d6b7..475412e31de5 100644
+> --- a/kernel/trace/trace_seq.c
+> +++ b/kernel/trace/trace_seq.c
+> @@ -342,7 +342,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
+>  		return 0;
+>  	}
+>  
+> -	ret = seq_buf_path(&s->seq, path);
+> +	ret = seq_buf_path(&s->seq, path, "\n");
+>  
+>  	if (unlikely(seq_buf_has_overflowed(&s->seq))) {
+>  		s->seq.len = save_len;
+> @@ -350,7 +350,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
+>  		return 0;
+>  	}
+>  
+> -	return ret;
+> +	return 1;
 
-OK, I'll add that.
+Ah, I have just realized that this should return -1 when
+seq_buf_path() returns -1.
 
-> Also, I usually sit on stuff like this until the syscall numbers are
-> in Linus tree. This is 3.19 stuff I presume ?
-> istr akpm picked up execveat recently, so if that goes in first, we'll
-> need to respin this anyway..
+Note that set_buf_path() does not longer calls seq_buf_set_overflow(s)
+when the path handling fails. Therefore the above check for overflow
+will probably never happen.
 
-Sure.  I just wanted to test with trinity *before* it makes it into the
-kernel.  Crazy, I know.  ;-)
+Best Regards,
+Petr
 
-Cheers,
-Jeff
+>  }
+>  EXPORT_SYMBOL_GPL(trace_seq_path);
+>  
+> -- 
+> 2.1.1
+> 
+> 
