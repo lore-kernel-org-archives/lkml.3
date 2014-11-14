@@ -1,493 +1,1355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965488AbaKNNse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:48:34 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:54124 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964805AbaKNNsb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:48:31 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <452a3de10ee9a2acc5afddbcb5251a88>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v11 12/12] drm: bridge/dw_hdmi: add rockchip rk3288 support
-Date: Fri, 14 Nov 2014 21:48:06 +0800
-Message-Id: <1415972886-8865-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
+	id S1161159AbaKNNpQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:45:16 -0500
+Received: from mga03.intel.com ([134.134.136.65]:15246 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161107AbaKNNpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:45:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
+   d="scan'208";a="636978640"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v8 12/14] x86: perf: intel_pt: Intel PT PMU driver
+Date: Fri, 14 Nov 2014 15:43:45 +0200
+Message-Id: <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rockchip RK3288 hdmi is compatible with dw_hdmi
+Add support for Intel Processor Trace (PT) to kernel's perf events.
+PT is an extension of Intel Architecture that collects information about
+software execuction such as control flow, execution modes and timings and
+formats it into highly compressed binary packets. Even being compressed,
+these packets are generated at hundreds of megabytes per second per core,
+which makes it impractical to decode them on the fly in the kernel.
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+This driver exports trace data by through AUX space in the perf ring
+buffer, which is zero-copy mapped into userspace for faster data retrieval.
 
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
+ arch/x86/include/uapi/asm/msr-index.h     |   18 +
+ arch/x86/kernel/cpu/Makefile              |    1 +
+ arch/x86/kernel/cpu/intel_pt.h            |  131 ++++
+ arch/x86/kernel/cpu/perf_event.h          |    2 +
+ arch/x86/kernel/cpu/perf_event_intel.c    |    8 +
+ arch/x86/kernel/cpu/perf_event_intel_pt.c | 1082 +++++++++++++++++++++++++++++
+ 6 files changed, 1242 insertions(+)
+ create mode 100644 arch/x86/kernel/cpu/intel_pt.h
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
 
-Changes in v11: None
-Changes in v10:
-- add more display mode support mpll configuration for rk3288
-
-Changes in v9:
-- move some phy configuration to platform driver
-
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-Changes in v2: None
-
- drivers/gpu/drm/bridge/dw_hdmi.c            |   3 +
- drivers/gpu/drm/rockchip/Kconfig            |  10 +
- drivers/gpu/drm/rockchip/Makefile           |   2 +-
- drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 355 ++++++++++++++++++++++++++++
- include/drm/bridge/dw_hdmi.h                |   1 +
- 5 files changed, 370 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
-
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index 87f0327..5a0a498 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -853,6 +853,9 @@ static int hdmi_phy_configure(struct dw_hdmi *hdmi, unsigned char prep,
- 	dw_hdmi_phy_gen2_txpwron(hdmi, 1);
- 	dw_hdmi_phy_gen2_pddq(hdmi, 0);
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index e21331ce36..caae296ab7 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -74,6 +74,24 @@
+ #define MSR_IA32_PERF_CAPABILITIES	0x00000345
+ #define MSR_PEBS_LD_LAT_THRESHOLD	0x000003f6
  
-+	if (hdmi->dev_type == RK3288_HDMI)
-+		dw_hdmi_phy_enable_spare(hdmi, 1);
++#define MSR_IA32_RTIT_CTL		0x00000570
++#define RTIT_CTL_TRACEEN		BIT(0)
++#define RTIT_CTL_OS			BIT(2)
++#define RTIT_CTL_USR			BIT(3)
++#define RTIT_CTL_CR3EN			BIT(7)
++#define RTIT_CTL_TOPA			BIT(8)
++#define RTIT_CTL_TSC_EN			BIT(10)
++#define RTIT_CTL_DISRETC		BIT(11)
++#define RTIT_CTL_BRANCH_EN		BIT(13)
++#define MSR_IA32_RTIT_STATUS		0x00000571
++#define RTIT_STATUS_CONTEXTEN		BIT(1)
++#define RTIT_STATUS_TRIGGEREN		BIT(2)
++#define RTIT_STATUS_ERROR		BIT(4)
++#define RTIT_STATUS_STOPPED		BIT(5)
++#define MSR_IA32_RTIT_CR3_MATCH		0x00000572
++#define MSR_IA32_RTIT_OUTPUT_BASE	0x00000560
++#define MSR_IA32_RTIT_OUTPUT_MASK	0x00000561
 +
- 	/*Wait for PHY PLL lock */
- 	msec = 5;
- 	do {
-diff --git a/drivers/gpu/drm/rockchip/Kconfig b/drivers/gpu/drm/rockchip/Kconfig
-index 0ff6682..06371ae 100644
---- a/drivers/gpu/drm/rockchip/Kconfig
-+++ b/drivers/gpu/drm/rockchip/Kconfig
-@@ -15,3 +15,13 @@ config DRM_ROCKCHIP
- 	  management to userspace. This driver does not provide
- 	  2D or 3D acceleration; acceleration is performed by other
- 	  IP found on the SoC.
-+
-+config ROCKCHIP_DW_HDMI
-+        bool "Rockchip specific extensions for Synopsys DW HDMI"
-+        depends on DRM_ROCKCHIP
-+        select DRM_DW_HDMI
-+        help
-+	  This selects support for Rockchip SoC specific extensions
-+	  for the Synopsys DesignWare HDMI driver. If you want to
-+	  enable HDMI on RK3288 based SoC, you should selet this
-+	  option.
-diff --git a/drivers/gpu/drm/rockchip/Makefile b/drivers/gpu/drm/rockchip/Makefile
-index b3a5193..347e65c 100644
---- a/drivers/gpu/drm/rockchip/Makefile
-+++ b/drivers/gpu/drm/rockchip/Makefile
-@@ -4,5 +4,5 @@
+ #define MSR_MTRRfix64K_00000		0x00000250
+ #define MSR_MTRRfix16K_80000		0x00000258
+ #define MSR_MTRRfix16K_A0000		0x00000259
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index e27b49d7c9..4bc29fa23e 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -40,6 +40,7 @@ endif
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
++obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_pt.o
  
- rockchipdrm-y := rockchip_drm_drv.o rockchip_drm_fb.o rockchip_drm_fbdev.o \
- 		rockchip_drm_gem.o rockchip_drm_vop.o
--
-+rockchipdrm-$(CONFIG_ROCKCHIP_DW_HDMI) += dw_hdmi-rockchip.o
- obj-$(CONFIG_DRM_ROCKCHIP) += rockchipdrm.o
-diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+ obj-$(CONFIG_PERF_EVENTS_INTEL_UNCORE)	+= perf_event_intel_uncore.o \
+ 					   perf_event_intel_uncore_snb.o \
+diff --git a/arch/x86/kernel/cpu/intel_pt.h b/arch/x86/kernel/cpu/intel_pt.h
 new file mode 100644
-index 0000000..16cad75
+index 0000000000..1c338b0eba
 --- /dev/null
-+++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
-@@ -0,0 +1,355 @@
++++ b/arch/x86/kernel/cpu/intel_pt.h
+@@ -0,0 +1,131 @@
 +/*
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
++ * Intel(R) Processor Trace PMU driver for perf
++ * Copyright (c) 2013-2014, Intel Corporation.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * Intel PT is specified in the Intel Architecture Instruction Set Extensions
++ * Programming Reference:
++ * http://software.intel.com/en-us/intel-isa-extensions
 + */
 +
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
-+#include <linux/clk.h>
-+#include <drm/drm_of.h>
-+#include <drm/drmP.h>
-+#include <drm/drm_crtc_helper.h>
-+#include <drm/drm_edid.h>
-+#include <drm/drm_encoder_slave.h>
-+#include <drm/bridge/dw_hdmi.h>
++#ifndef __INTEL_PT_H__
++#define __INTEL_PT_H__
 +
-+#include "rockchip_drm_drv.h"
-+#include "rockchip_drm_vop.h"
++/*
++ * Single-entry ToPA: when this close to region boundary, switch
++ * buffers to avoid losing data.
++ */
++#define TOPA_PMI_MARGIN 512
 +
-+#define GRF_SOC_CON6                    0x025c
-+#define HDMI_SEL_VOP_LIT                (1 << 4)
-+
-+struct rockchip_hdmi {
-+	struct device *dev;
-+	struct clk *clk;
-+	struct clk *hdcp_clk;
-+	struct regmap *regmap;
-+	struct drm_encoder encoder;
++/*
++ * Table of Physical Addresses bits
++ */
++enum topa_sz {
++	TOPA_4K	= 0,
++	TOPA_8K,
++	TOPA_16K,
++	TOPA_32K,
++	TOPA_64K,
++	TOPA_128K,
++	TOPA_256K,
++	TOPA_512K,
++	TOPA_1MB,
++	TOPA_2MB,
++	TOPA_4MB,
++	TOPA_8MB,
++	TOPA_16MB,
++	TOPA_32MB,
++	TOPA_64MB,
++	TOPA_128MB,
++	TOPA_SZ_END,
 +};
 +
-+#define to_rockchip_hdmi(x)	container_of(x, struct rockchip_hdmi, x)
-+
-+static const struct mpll_config rockchip_mpll_cfg[] = {
-+	{
-+		27000000, {
-+			{ 0x00b3, 0x0000},
-+			{ 0x2153, 0x0000},
-+			{ 0x40f3, 0x0000}
-+		},
-+	}, {
-+		36000000, {
-+			{ 0x00b3, 0x0000},
-+			{ 0x2153, 0x0000},
-+			{ 0x40f3, 0x0000}
-+		},
-+	}, {
-+		40000000, {
-+			{ 0x00b3, 0x0000},
-+			{ 0x2153, 0x0000},
-+			{ 0x40f3, 0x0000}
-+		},
-+	}, {
-+		54000000, {
-+			{ 0x0072, 0x0001},
-+			{ 0x2142, 0x0001},
-+			{ 0x40a2, 0x0001},
-+		},
-+	}, {
-+		65000000, {
-+			{ 0x0072, 0x0001},
-+			{ 0x2142, 0x0001},
-+			{ 0x40a2, 0x0001},
-+		},
-+	}, {
-+		66000000, {
-+			{ 0x013e, 0x0003},
-+			{ 0x217e, 0x0002},
-+			{ 0x4061, 0x0002}
-+		},
-+	}, {
-+		74250000, {
-+			{ 0x0072, 0x0001},
-+			{ 0x2145, 0x0002},
-+			{ 0x4061, 0x0002}
-+		},
-+	}, {
-+		83500000, {
-+			{ 0x0072, 0x0001},
-+		},
-+	}, {
-+		108000000, {
-+			{ 0x0051, 0x0002},
-+			{ 0x2145, 0x0002},
-+			{ 0x4061, 0x0002}
-+		},
-+	}, {
-+		106500000, {
-+			{ 0x0051, 0x0002},
-+			{ 0x2145, 0x0002},
-+			{ 0x4061, 0x0002}
-+		},
-+	}, {
-+		146250000, {
-+			{ 0x0051, 0x0002},
-+			{ 0x2145, 0x0002},
-+			{ 0x4061, 0x0002}
-+		},
-+	}, {
-+		148500000, {
-+			{ 0x0051, 0x0003},
-+			{ 0x214c, 0x0003},
-+			{ 0x4064, 0x0003}
-+		},
-+	}, {
-+		~0UL, {
-+			{ 0x00a0, 0x000a },
-+			{ 0x2001, 0x000f },
-+			{ 0x4002, 0x000f },
-+		},
-+	}
-+};
-+
-+static const struct curr_ctrl rockchip_cur_ctr[] = {
-+	/*      pixelclk    bpp8    bpp10   bpp12 */
-+	{
-+		40000000,  { 0x0018, 0x0018, 0x0018 },
-+	}, {
-+		65000000,  { 0x0028, 0x0028, 0x0028 },
-+	}, {
-+		66000000,  { 0x0038, 0x0038, 0x0038 },
-+	}, {
-+		74250000,  { 0x0028, 0x0038, 0x0038 },
-+	}, {
-+		83500000,  { 0x0028, 0x0038, 0x0038 },
-+	}, {
-+		146250000, { 0x0038, 0x0038, 0x0038 },
-+	}, {
-+		148500000, { 0x0000, 0x0038, 0x0038 },
-+	}, {
-+		~0UL,      { 0x0000, 0x0000, 0x0000},
-+	}
-+};
-+
-+static const struct sym_term rockchip_sym_term[] = {
-+	/*pixelclk   symbol   term*/
-+	{ 74250000,  0x8009, 0x0004 },
-+	{ 148500000, 0x8029, 0x0004 },
-+	{ 297000000, 0x8039, 0x0005 },
-+	{ ~0UL,	     0x0000, 0x0000 }
-+};
-+
-+static int rockchip_hdmi_parse_dt(struct rockchip_hdmi *hdmi)
++static inline unsigned int sizes(enum topa_sz tsz)
 +{
-+	struct device_node *np = hdmi->dev->of_node;
++	return 1 << (tsz + 12);
++};
 +
-+	hdmi->regmap = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
-+	if (IS_ERR(hdmi->regmap)) {
-+		dev_err(hdmi->dev, "Unable to get rockchip,grf\n");
-+		return PTR_ERR(hdmi->regmap);
++struct topa_entry {
++	u64	end	: 1;
++	u64	rsvd0	: 1;
++	u64	intr	: 1;
++	u64	rsvd1	: 1;
++	u64	stop	: 1;
++	u64	rsvd2	: 1;
++	u64	size	: 4;
++	u64	rsvd3	: 2;
++	u64	base	: 36;
++	u64	rsvd4	: 16;
++};
++
++#define TOPA_SHIFT 12
++#define PT_CPUID_LEAVES 2
++
++enum pt_capabilities {
++	PT_CAP_max_subleaf = 0,
++	PT_CAP_cr3_filtering,
++	PT_CAP_topa_output,
++	PT_CAP_topa_multiple_entries,
++	PT_CAP_payloads_lip,
++};
++
++struct pt_pmu {
++	struct pmu		pmu;
++	u32			caps[4 * PT_CPUID_LEAVES];
++};
++
++/**
++ * struct pt_buffer - buffer configuration; one buffer per task_struct or
++ *		cpu, depending on perf event configuration
++ * @cpu:	cpu for per-cpu allocation
++ * @tables:	list of ToPA tables in this buffer
++ * @first:	shorthand for first topa table
++ * @last:	shorthand for last topa table
++ * @cur:	current topa table
++ * @nr_pages:	buffer size in pages
++ * @cur_idx:	current output region's index within @cur table
++ * @output_off:	offset within the current output region
++ * @data_size:	running total of the amount of data in this buffer
++ * @lost:	if data was lost/truncated
++ * @head:	logical write offset inside the buffer
++ * @snapshot:	if this is for a snapshot/overwrite counter
++ * @stop_pos:	STOP topa entry in the buffer
++ * @intr_pos:	INT topa entry in the buffer
++ * @data_pages:	array of pages from perf
++ * @topa_index:	table of topa entries indexed by page offset
++ */
++struct pt_buffer {
++	int			cpu;
++	struct list_head	tables;
++	struct topa		*first, *last, *cur;
++	unsigned int		cur_idx;
++	size_t			output_off;
++	unsigned long		nr_pages;
++	local_t			data_size;
++	local_t			lost;
++	local64_t		head;
++	bool			snapshot;
++	unsigned long		stop_pos, intr_pos;
++	void			**data_pages;
++	struct topa_entry	*topa_index[0];
++};
++
++/**
++ * struct pt - per-cpu pt context
++ * @handle:	perf output handle
++ * @handle_nmi:	do handle PT PMI on this cpu, there's an active event
++ */
++struct pt {
++	struct perf_output_handle handle;
++	int			handle_nmi;
++};
++
++#endif /* __INTEL_PT_H__ */
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 620612d311..9ab6c59851 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -783,6 +783,8 @@ void intel_pmu_lbr_init_snb(void);
+ 
+ int intel_pmu_setup_lbr_filter(struct perf_event *event);
+ 
++void intel_pt_interrupt(void);
++
+ int p4_pmu_init(void);
+ 
+ int p6_pmu_init(void);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index c64e97a1cb..5a29ea59d6 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1385,6 +1385,14 @@ again:
+ 	}
+ 
+ 	/*
++	 * Intel PT
++	 */
++	if (__test_and_clear_bit(55, (unsigned long *)&status)) {
++		handled++;
++		intel_pt_interrupt();
 +	}
 +
-+	hdmi->clk = devm_clk_get(hdmi->dev, "clk");
-+	if (IS_ERR(hdmi->clk)) {
-+		dev_err(hdmi->dev, "Unable to get HDMI clk\n");
-+	       return PTR_ERR(hdmi->clk);
++	/*
+ 	 * Checkpointed counters can lead to 'spurious' PMIs because the
+ 	 * rollback caused by the PMI will have cleared the overflow status
+ 	 * bit. Therefore always force probe these counters.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_pt.c b/arch/x86/kernel/cpu/perf_event_intel_pt.c
+new file mode 100644
+index 0000000000..f2fda8f038
+--- /dev/null
++++ b/arch/x86/kernel/cpu/perf_event_intel_pt.c
+@@ -0,0 +1,1082 @@
++/*
++ * Intel(R) Processor Trace PMU driver for perf
++ * Copyright (c) 2013-2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * Intel PT is specified in the Intel Architecture Instruction Set Extensions
++ * Programming Reference:
++ * http://software.intel.com/en-us/intel-isa-extensions
++ */
++
++#undef DEBUG
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/device.h>
++
++#include <asm/perf_event.h>
++#include <asm/insn.h>
++
++#include "perf_event.h"
++#include "intel_pt.h"
++
++static DEFINE_PER_CPU(struct pt, pt_ctx);
++
++static struct pt_pmu pt_pmu;
++
++enum cpuid_regs {
++	CR_EAX = 0,
++	CR_ECX,
++	CR_EDX,
++	CR_EBX
++};
++
++/*
++ * Capabilities of Intel PT hardware, such as number of address bits or
++ * supported output schemes, are cached and exported to userspace as "caps"
++ * attribute group of pt pmu device
++ * (/sys/bus/event_source/devices/intel_pt/caps/) so that userspace can store
++ * relevant bits together with intel_pt traces.
++ *
++ * These are necessary for both trace decoding (payloads_lip, contains address
++ * width encoded in IP-related packets), and event configuration (bitmasks with
++ * permitted values for certain bit fields).
++ */
++#define PT_CAP(_n, _l, _r, _m)						\
++	[PT_CAP_ ## _n] = { .name = __stringify(_n), .leaf = _l,	\
++			    .reg = _r, .mask = _m }
++
++static struct pt_cap_desc {
++	const char	*name;
++	u32		leaf;
++	u8		reg;
++	u32		mask;
++} pt_caps[] = {
++	PT_CAP(max_subleaf,		0, CR_EAX, 0xffffffff),
++	PT_CAP(cr3_filtering,		0, CR_EBX, BIT(0)),
++	PT_CAP(topa_output,		0, CR_ECX, BIT(0)),
++	PT_CAP(topa_multiple_entries,	0, CR_ECX, BIT(1)),
++	PT_CAP(payloads_lip,		0, CR_ECX, BIT(31)),
++};
++
++static u32 pt_cap_get(enum pt_capabilities cap)
++{
++	struct pt_cap_desc *cd = &pt_caps[cap];
++	u32 c = pt_pmu.caps[cd->leaf * 4 + cd->reg];
++	unsigned int shift = __ffs(cd->mask);
++
++	return (c & cd->mask) >> shift;
++}
++
++static ssize_t pt_cap_show(struct device *cdev,
++			   struct device_attribute *attr,
++			   char *buf)
++{
++	struct dev_ext_attribute *ea =
++		container_of(attr, struct dev_ext_attribute, attr);
++	enum pt_capabilities cap = (long)ea->var;
++
++	return snprintf(buf, PAGE_SIZE, "%x\n", pt_cap_get(cap));
++}
++
++static struct attribute_group pt_cap_group = {
++	.name	= "caps",
++};
++
++PMU_FORMAT_ATTR(tsc,		"config:10"	);
++PMU_FORMAT_ATTR(noretcomp,	"config:11"	);
++
++static struct attribute *pt_formats_attr[] = {
++	&format_attr_tsc.attr,
++	&format_attr_noretcomp.attr,
++	NULL,
++};
++
++static struct attribute_group pt_format_group = {
++	.name	= "format",
++	.attrs	= pt_formats_attr,
++};
++
++static const struct attribute_group *pt_attr_groups[] = {
++	&pt_cap_group,
++	&pt_format_group,
++	NULL,
++};
++
++static int __init pt_pmu_hw_init(void)
++{
++	struct dev_ext_attribute *de_attrs;
++	struct attribute **attrs;
++	size_t size;
++	long i;
++
++	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_INTEL_PT)) {
++		for (i = 0; i < PT_CPUID_LEAVES; i++)
++			cpuid_count(20, i,
++				    &pt_pmu.caps[CR_EAX + i * 4],
++				    &pt_pmu.caps[CR_EBX + i * 4],
++				    &pt_pmu.caps[CR_ECX + i * 4],
++				    &pt_pmu.caps[CR_EDX + i * 4]);
++	} else {
++		return -ENODEV;
 +	}
 +
-+	hdmi->hdcp_clk = devm_clk_get(hdmi->dev, "hdcp_clk");
-+	if (IS_ERR(hdmi->hdcp_clk)) {
-+		dev_err(hdmi->dev, "Unable to get HDMI hdcp clk\n");
-+		return PTR_ERR(hdmi->hdcp_clk);
++	size = sizeof(struct attribute *) * (ARRAY_SIZE(pt_caps) + 1);
++	attrs = kzalloc(size, GFP_KERNEL);
++	if (!attrs)
++		goto err_attrs;
++
++	size = sizeof(struct dev_ext_attribute) * (ARRAY_SIZE(pt_caps) + 1);
++	de_attrs = kzalloc(size, GFP_KERNEL);
++	if (!de_attrs)
++		goto err_de_attrs;
++
++	for (i = 0; i < ARRAY_SIZE(pt_caps); i++) {
++		de_attrs[i].attr.attr.name = pt_caps[i].name;
++
++		sysfs_attr_init(&de_attrs[i].attr.attr);
++		de_attrs[i].attr.attr.mode = S_IRUGO;
++		de_attrs[i].attr.show = pt_cap_show;
++		de_attrs[i].var = (void *)i;
++		attrs[i] = &de_attrs[i].attr.attr;
 +	}
 +
++	pt_cap_group.attrs = attrs;
 +	return 0;
++
++err_de_attrs:
++	kfree(de_attrs);
++err_attrs:
++	kfree(attrs);
++
++	return -ENOMEM;
 +}
 +
-+static enum drm_mode_status
-+dw_hdmi_rockchip_mode_valid(struct drm_connector *connector,
-+			    struct drm_display_mode *mode)
++#define PT_CONFIG_MASK (RTIT_CTL_TSC_EN | RTIT_CTL_DISRETC)
++
++static bool pt_event_valid(struct perf_event *event)
 +{
-+	const struct mpll_config *mpll_cfg = rockchip_mpll_cfg;
-+	int pclk = mode->clock * 1000;
-+	bool valid = false;
-+	int i;
++	u64 config = event->attr.config;
 +
-+	for (i = 0; mpll_cfg[i].mpixelclock != (~0UL); i++) {
-+		if (pclk == mpll_cfg[i].mpixelclock) {
-+			valid = true;
-+			break;
-+		}
-+	}
++	if ((config & PT_CONFIG_MASK) != config)
++		return false;
 +
-+	return (valid) ? MODE_OK : MODE_BAD;
-+}
-+
-+static struct drm_encoder_funcs dw_hdmi_encoder_funcs = {
-+	.destroy = drm_encoder_cleanup,
-+};
-+
-+static void dw_hdmi_rockchip_disable(struct drm_encoder *encoder)
-+{
-+}
-+
-+static bool dw_hdmi_rockchip_mode_fixup(struct drm_encoder *encoder,
-+					const struct drm_display_mode *mode,
-+					struct drm_display_mode *adjusted_mode)
-+{
 +	return true;
 +}
 +
-+static void dw_hdmi_rockchip_mode_set(struct drm_encoder *encoder,
-+				      struct drm_display_mode *mode,
-+				      struct drm_display_mode *adjusted_mode)
++/*
++ * PT configuration helpers
++ * These all are cpu affine and operate on a local PT
++ */
++
++static bool pt_is_running(void)
 +{
++	u64 ctl;
++
++	rdmsrl(MSR_IA32_RTIT_CTL, ctl);
++
++	return !!(ctl & RTIT_CTL_TRACEEN);
 +}
 +
-+static void dw_hdmi_rockchip_commit(struct drm_encoder *encoder)
++static void pt_config(struct perf_event *event)
 +{
-+	struct rockchip_hdmi *hdmi = to_rockchip_hdmi(encoder);
-+	u32 val;
-+	int mux;
++	u64 reg;
 +
-+	mux = rockchip_drm_encoder_get_mux_id(hdmi->dev->of_node, encoder);
-+	if (mux)
-+		val = HDMI_SEL_VOP_LIT | (HDMI_SEL_VOP_LIT << 16);
++	reg = RTIT_CTL_TOPA | RTIT_CTL_BRANCH_EN | RTIT_CTL_TRACEEN;
++
++	if (!event->attr.exclude_kernel)
++		reg |= RTIT_CTL_OS;
++	if (!event->attr.exclude_user)
++		reg |= RTIT_CTL_USR;
++
++	reg |= (event->attr.config & PT_CONFIG_MASK);
++
++	wrmsrl(MSR_IA32_RTIT_CTL, reg);
++}
++
++static void pt_config_start(bool start)
++{
++	u64 ctl;
++
++	rdmsrl(MSR_IA32_RTIT_CTL, ctl);
++	if (start)
++		ctl |= RTIT_CTL_TRACEEN;
 +	else
-+		val = HDMI_SEL_VOP_LIT << 16;
++		ctl &= ~RTIT_CTL_TRACEEN;
++	wrmsrl(MSR_IA32_RTIT_CTL, ctl);
 +
-+	regmap_write(hdmi->regmap, GRF_SOC_CON6, val);
-+	dev_dbg(hdmi->dev, "vop %s output to hdmi\n",
-+		(mux) ? "LIT" : "BIG");
++	/*
++	 * A wrmsr that disables trace generation serializes other PT
++	 * registers and causes all data packets to be written to memory,
++	 * but a fence is required for the data to become globally visible.
++	 *
++	 * The below WMB, separating data store and aux_head store matches
++	 * the consumer's RMB that separates aux_head load and data load.
++	 */
++	if (!start)
++		wmb();
 +}
 +
-+static void dw_hdmi_rockchip_prepare(struct drm_encoder *encoder)
++static void pt_config_buffer(void *buf, unsigned int topa_idx,
++			     unsigned int output_off)
 +{
-+	rockchip_drm_crtc_mode_config(encoder->crtc, DRM_MODE_CONNECTOR_HDMIA,
-+				      ROCKCHIP_OUT_MODE_AAAA);
++	u64 reg;
++
++	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, virt_to_phys(buf));
++
++	reg = 0x7f | ((u64)topa_idx << 7) | ((u64)output_off << 32);
++
++	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, reg);
 +}
 +
-+static struct drm_encoder_helper_funcs dw_hdmi_encoder_helper_funcs = {
-+	.mode_fixup = dw_hdmi_rockchip_mode_fixup,
-+	.mode_set = dw_hdmi_rockchip_mode_set,
-+	.prepare = dw_hdmi_rockchip_prepare,
-+	.commit = dw_hdmi_rockchip_commit,
-+	.disable = dw_hdmi_rockchip_disable,
++/*
++ * Keep ToPA table-related metadata on the same page as the actual table,
++ * taking up a few words from the top
++ */
++
++#define TENTS_PER_PAGE (((PAGE_SIZE - 40) / sizeof(struct topa_entry)) - 1)
++
++/**
++ * struct topa - page-sized ToPA table with metadata at the top
++ * @table:	actual ToPA table entries, as understood by PT hardware
++ * @list:	linkage to struct pt_buffer's list of tables
++ * @phys:	physical address of this page
++ * @offset:	offset of the first entry in this table in the buffer
++ * @size:	total size of all entries in this table
++ * @last:	index of the last initialized entry in this table
++ */
++struct topa {
++	struct topa_entry	table[TENTS_PER_PAGE];
++	struct list_head	list;
++	u64			phys;
++	u64			offset;
++	size_t			size;
++	int			last;
 +};
 +
-+static const struct dw_hdmi_plat_data rockchip_hdmi_drv_data = {
-+	.mode_valid		= dw_hdmi_rockchip_mode_valid,
-+	.mpll_cfg		= rockchip_mpll_cfg,
-+	.cur_ctr		= rockchip_cur_ctr,
-+	.sym_term		= rockchip_sym_term,
-+	.dev_type		= RK3288_HDMI,
-+};
++/* make -1 stand for the last table entry */
++#define TOPA_ENTRY(t, i) ((i) == -1 ? &(t)->table[(t)->last] : &(t)->table[(i)])
 +
-+static const struct of_device_id dw_hdmi_rockchip_ids[] = {
-+	{ .compatible = "rockchip,rk3288-dw-hdmi",
-+	  .data = &rockchip_hdmi_drv_data
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, dw_hdmi_rockchip_dt_ids);
-+
-+static int dw_hdmi_rockchip_bind(struct device *dev, struct device *master,
-+				 void *data)
++/**
++ * topa_alloc() - allocate page-sized ToPA table
++ * @cpu:	CPU on which to allocate.
++ * @gfp:	Allocation flags.
++ *
++ * Return:	On success, return the pointer to ToPA table page.
++ */
++static struct topa *topa_alloc(int cpu, gfp_t gfp)
 +{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	const struct dw_hdmi_plat_data *plat_data;
-+	const struct of_device_id *match;
-+	struct drm_device *drm = data;
-+	struct drm_encoder *encoder;
-+	struct rockchip_hdmi *hdmi;
-+	int ret;
++	int node = cpu_to_node(cpu);
++	struct topa *topa;
++	struct page *p;
 +
-+	if (!pdev->dev.of_node)
-+		return -ENODEV;
++	p = alloc_pages_node(node, gfp | __GFP_ZERO, 0);
++	if (!p)
++		return NULL;
 +
-+	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
-+	if (!hdmi)
-+		return -ENOMEM;
++	topa = page_address(p);
++	topa->last = 0;
++	topa->phys = page_to_phys(p);
 +
-+	match = of_match_node(dw_hdmi_rockchip_ids, pdev->dev.of_node);
-+	plat_data = match->data;
-+	hdmi->dev = &pdev->dev;
-+	encoder = &hdmi->encoder;
-+	platform_set_drvdata(pdev, hdmi);
-+
-+	ret = rockchip_hdmi_parse_dt(hdmi);
-+	if (ret) {
-+		dev_err(hdmi->dev, "Unable to parse OF data\n");
-+		return ret;
++	/*
++	 * In case of singe-entry ToPA, always put the self-referencing END
++	 * link as the 2nd entry in the table
++	 */
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries)) {
++		TOPA_ENTRY(topa, 1)->base = topa->phys >> TOPA_SHIFT;
++		TOPA_ENTRY(topa, 1)->end = 1;
 +	}
 +
-+	ret = clk_prepare_enable(hdmi->clk);
-+	if (ret) {
-+		dev_err(hdmi->dev, "Cannot enable HDMI clock: %d\n", ret);
-+		return ret;
++	return topa;
++}
++
++/**
++ * topa_free() - free a page-sized ToPA table
++ * @topa:	Table to deallocate.
++ */
++static void topa_free(struct topa *topa)
++{
++	free_page((unsigned long)topa);
++}
++
++/**
++ * topa_insert_table() - insert a ToPA table into a buffer
++ * @buf:	 PT buffer that's being extended.
++ * @topa:	 New topa table to be inserted.
++ *
++ * If it's the first table in this buffer, set up buffer's pointers
++ * accordingly; otherwise, add a END=1 link entry to @topa to the current
++ * "last" table and adjust the last table pointer to @topa.
++ */
++static void topa_insert_table(struct pt_buffer *buf, struct topa *topa)
++{
++	struct topa *last = buf->last;
++
++	list_add_tail(&topa->list, &buf->tables);
++
++	if (!buf->first) {
++		buf->first = buf->last = buf->cur = topa;
++		return;
 +	}
 +
-+	ret = clk_prepare_enable(hdmi->hdcp_clk);
-+	if (ret) {
-+		dev_err(hdmi->dev, "Cannot enable HDMI hdcp clock: %d\n", ret);
-+		return ret;
++	topa->offset = last->offset + last->size;
++	buf->last = topa;
++
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
++		return;
++
++	BUG_ON(last->last != TENTS_PER_PAGE - 1);
++
++	TOPA_ENTRY(last, -1)->base = topa->phys >> TOPA_SHIFT;
++	TOPA_ENTRY(last, -1)->end = 1;
++}
++
++/**
++ * topa_table_full() - check if a ToPA table is filled up
++ * @topa:	ToPA table.
++ */
++static bool topa_table_full(struct topa *topa)
++{
++	/* single-entry ToPA is a special case */
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
++		return !!topa->last;
++
++	return topa->last == TENTS_PER_PAGE - 1;
++}
++
++/**
++ * topa_insert_pages() - create a list of ToPA tables
++ * @buf:	PT buffer being initialized.
++ * @gfp:	Allocation flags.
++ *
++ * This initializes a list of ToPA tables with entries from
++ * the data_pages provided by rb_alloc_aux().
++ *
++ * Return:	0 on success or error code.
++ */
++static int topa_insert_pages(struct pt_buffer *buf, gfp_t gfp)
++{
++	struct topa *topa = buf->last;
++	int order = 0;
++	struct page *p;
++
++	p = virt_to_page(buf->data_pages[buf->nr_pages]);
++	if (PagePrivate(p))
++		order = page_private(p);
++
++	if (topa_table_full(topa)) {
++		topa = topa_alloc(buf->cpu, gfp);
++		if (!topa)
++			return -ENOMEM;
++
++		topa_insert_table(buf, topa);
 +	}
 +
-+	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
++	TOPA_ENTRY(topa, -1)->base = page_to_phys(p) >> TOPA_SHIFT;
++	TOPA_ENTRY(topa, -1)->size = order;
++	if (!buf->snapshot && !pt_cap_get(PT_CAP_topa_multiple_entries)) {
++		TOPA_ENTRY(topa, -1)->intr = 1;
++		TOPA_ENTRY(topa, -1)->stop = 1;
++	}
 +
-+	drm_encoder_helper_add(encoder, &dw_hdmi_encoder_helper_funcs);
-+	drm_encoder_init(drm, encoder, &dw_hdmi_encoder_funcs,
-+			 DRM_MODE_ENCODER_TMDS);
++	topa->last++;
++	topa->size += sizes(order);
 +
-+	return dw_hdmi_bind(dev, master, data, encoder, plat_data);
-+}
-+
-+static void dw_hdmi_rockchip_unbind(struct device *dev, struct device *master,
-+				    void *data)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct rockchip_hdmi *hdmi = platform_get_drvdata(pdev);
-+
-+	clk_disable_unprepare(hdmi->clk);
-+	clk_disable_unprepare(hdmi->hdcp_clk);
-+
-+	return dw_hdmi_unbind(dev, master, data);
-+}
-+
-+static const struct component_ops dw_hdmi_rockchip_ops = {
-+	.bind	= dw_hdmi_rockchip_bind,
-+	.unbind	= dw_hdmi_rockchip_unbind,
-+};
-+
-+static int dw_hdmi_rockchip_probe(struct platform_device *pdev)
-+{
-+	return component_add(&pdev->dev, &dw_hdmi_rockchip_ops);
-+}
-+
-+static int dw_hdmi_rockchip_remove(struct platform_device *pdev)
-+{
-+	component_del(&pdev->dev, &dw_hdmi_rockchip_ops);
++	buf->nr_pages += 1ul << order;
 +
 +	return 0;
 +}
 +
-+static struct platform_driver dw_hdmi_rockchip_pltfm_driver = {
-+	.probe  = dw_hdmi_rockchip_probe,
-+	.remove = dw_hdmi_rockchip_remove,
-+	.driver = {
-+		.name = "dwhdmi-rockchip",
-+		.owner = THIS_MODULE,
-+		.of_match_table = dw_hdmi_rockchip_ids,
-+	},
-+};
++/**
++ * pt_topa_dump() - print ToPA tables and their entries
++ * @buf:	PT buffer.
++ */
++static void pt_topa_dump(struct pt_buffer *buf)
++{
++	struct topa *topa;
 +
-+module_platform_driver(dw_hdmi_rockchip_pltfm_driver);
++	list_for_each_entry(topa, &buf->tables, list) {
++		int i;
 +
-+MODULE_AUTHOR("Andy Yan <andy.yan@rock-chips.com>");
-+MODULE_AUTHOR("Yakir Yang <ykk@rock-chips.com>");
-+MODULE_DESCRIPTION("Rockchip Specific DW-HDMI Driver Extension");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:dwhdmi-rockchip");
-diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
-index 1e618f3..33bbae2 100644
---- a/include/drm/bridge/dw_hdmi.h
-+++ b/include/drm/bridge/dw_hdmi.h
-@@ -22,6 +22,7 @@ enum {
- enum dw_hdmi_devtype {
- 	IMX6Q_HDMI,
- 	IMX6DL_HDMI,
-+	RK3288_HDMI,
- };
- 
- struct mpll_config {
++		pr_debug("# table @%p (%p), off %llx size %zx\n", topa->table,
++			 (void *)topa->phys, topa->offset, topa->size);
++		for (i = 0; i < TENTS_PER_PAGE; i++) {
++			pr_debug("# entry @%p (%lx sz %u %c%c%c) raw=%16llx\n",
++				 &topa->table[i],
++				 (unsigned long)topa->table[i].base << TOPA_SHIFT,
++				 sizes(topa->table[i].size),
++				 topa->table[i].end ?  'E' : ' ',
++				 topa->table[i].intr ? 'I' : ' ',
++				 topa->table[i].stop ? 'S' : ' ',
++				 *(u64 *)&topa->table[i]);
++			if ((pt_cap_get(PT_CAP_topa_multiple_entries) &&
++			     topa->table[i].stop) ||
++			    topa->table[i].end)
++				break;
++		}
++	}
++}
++
++/**
++ * pt_buffer_advance() - advance to the next output region
++ * @buf:	PT buffer.
++ *
++ * Advance the current pointers in the buffer to the next ToPA entry.
++ */
++static void pt_buffer_advance(struct pt_buffer *buf)
++{
++	buf->output_off = 0;
++	buf->cur_idx++;
++
++	if (buf->cur_idx == buf->cur->last) {
++		if (buf->cur == buf->last)
++			buf->cur = buf->first;
++		else
++			buf->cur = list_entry(buf->cur->list.next, struct topa,
++					      list);
++		buf->cur_idx = 0;
++	}
++}
++
++/**
++ * pt_update_head() - calculate current offsets and sizes
++ * @pt:		Per-cpu pt context.
++ *
++ * Update buffer's current write pointer position and data size.
++ */
++static void pt_update_head(struct pt *pt)
++{
++	struct pt_buffer *buf = perf_get_aux(&pt->handle);
++	u64 topa_idx, base, old;
++
++	/* offset of the first region in this table from the beginning of buf */
++	base = buf->cur->offset + buf->output_off;
++
++	/* offset of the current output region within this table */
++	for (topa_idx = 0; topa_idx < buf->cur_idx; topa_idx++)
++		base += sizes(buf->cur->table[topa_idx].size);
++
++	if (buf->snapshot) {
++		local_set(&buf->data_size, base);
++	} else {
++		old = (local64_xchg(&buf->head, base) &
++		       ((buf->nr_pages << PAGE_SHIFT) - 1));
++		if (base < old)
++			base += buf->nr_pages << PAGE_SHIFT;
++
++		local_add(base - old, &buf->data_size);
++	}
++}
++
++/**
++ * pt_buffer_region() - obtain current output region's address
++ * @buf:	PT buffer.
++ */
++static void *pt_buffer_region(struct pt_buffer *buf)
++{
++	return phys_to_virt(buf->cur->table[buf->cur_idx].base << TOPA_SHIFT);
++}
++
++/**
++ * pt_buffer_region_size() - obtain current output region's size
++ * @buf:	PT buffer.
++ */
++static size_t pt_buffer_region_size(struct pt_buffer *buf)
++{
++	return sizes(buf->cur->table[buf->cur_idx].size);
++}
++
++/**
++ * pt_handle_status() - take care of possible status conditions
++ * @pt:		Per-cpu pt context.
++ */
++static void pt_handle_status(struct pt *pt)
++{
++	struct pt_buffer *buf = perf_get_aux(&pt->handle);
++	int advance = 0;
++	u64 status;
++
++	rdmsrl(MSR_IA32_RTIT_STATUS, status);
++
++	if (status & RTIT_STATUS_ERROR) {
++		pr_err_ratelimited("ToPA ERROR encountered, trying to recover\n");
++		pt_topa_dump(buf);
++		status &= ~RTIT_STATUS_ERROR;
++	}
++
++	if (status & RTIT_STATUS_STOPPED) {
++		status &= ~RTIT_STATUS_STOPPED;
++
++		/*
++		 * On systems that only do single-entry ToPA, hitting STOP
++		 * means we are already losing data; need to let the decoder
++		 * know.
++		 */
++		if (!pt_cap_get(PT_CAP_topa_multiple_entries) ||
++		    buf->output_off == sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size)) {
++			local_inc(&buf->lost);
++			advance++;
++		}
++	}
++
++	/*
++	 * Also on single-entry ToPA implementations, interrupt will come
++	 * before the output reaches its output region's boundary.
++	 */
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries) && !buf->snapshot &&
++	    pt_buffer_region_size(buf) - buf->output_off <= TOPA_PMI_MARGIN) {
++		void *head = pt_buffer_region(buf);
++
++		/* everything within this margin needs to be zeroed out */
++		memset(head + buf->output_off, 0,
++		       pt_buffer_region_size(buf) -
++		       buf->output_off);
++		advance++;
++	}
++
++	if (advance)
++		pt_buffer_advance(buf);
++
++	wrmsrl(MSR_IA32_RTIT_STATUS, status);
++}
++
++/**
++ * pt_read_offset() - translate registers into buffer pointers
++ * @buf:	PT buffer.
++ *
++ * Set buffer's output pointers from MSR values.
++ */
++static void pt_read_offset(struct pt_buffer *buf)
++{
++	u64 offset, base_topa;
++
++	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, base_topa);
++	buf->cur = phys_to_virt(base_topa);
++
++	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, offset);
++	/* offset within current output region */
++	buf->output_off = offset >> 32;
++	/* index of current output region within this table */
++	buf->cur_idx = (offset & 0xffffff80) >> 7;
++}
++
++/**
++ * pt_topa_next_entry() - obtain index of the first page in the next ToPA entry
++ * @buf:	PT buffer.
++ * @pg:		Page offset in the buffer.
++ *
++ * When advancing to the next output region (ToPA entry), given a page offset
++ * into the buffer, we need to find the offset of the first page in the next
++ * region.
++ */
++static unsigned int pt_topa_next_entry(struct pt_buffer *buf, unsigned int pg)
++{
++	struct topa_entry *te = buf->topa_index[pg];
++
++	/* one region */
++	if (buf->first == buf->last && buf->first->last == 1)
++		return pg;
++
++	do {
++		pg++;
++		pg &= buf->nr_pages - 1;
++	} while (buf->topa_index[pg] == te);
++
++	return pg;
++}
++
++/**
++ * pt_buffer_reset_markers() - place interrupt and stop bits in the buffer
++ * @buf:	PT buffer.
++ * @handle:	Current output handle.
++ *
++ * Place INT and STOP marks to prevent overwriting old data that the consumer
++ * hasn't yet collected.
++ */
++static int pt_buffer_reset_markers(struct pt_buffer *buf,
++				   struct perf_output_handle *handle)
++
++{
++	unsigned long idx, npages, end;
++
++	if (buf->snapshot)
++		return 0;
++
++	/* can't stop in the middle of an output region */
++	if (buf->output_off + handle->size + 1 <
++	    sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size))
++		return -EINVAL;
++
++
++	/* single entry ToPA is handled by marking all regions STOP=1 INT=1 */
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
++		return 0;
++
++	/* clear STOP and INT from current entry */
++	buf->topa_index[buf->stop_pos]->stop = 0;
++	buf->topa_index[buf->intr_pos]->intr = 0;
++
++	if (pt_cap_get(PT_CAP_topa_multiple_entries)) {
++		npages = (handle->size + 1) >> PAGE_SHIFT;
++		end = (local64_read(&buf->head) >> PAGE_SHIFT) + npages;
++		/*if (end > handle->wakeup >> PAGE_SHIFT)
++		  end = handle->wakeup >> PAGE_SHIFT;*/
++		idx = end & (buf->nr_pages - 1);
++		buf->stop_pos = idx;
++		idx = (local64_read(&buf->head) >> PAGE_SHIFT) + npages - 1;
++		idx &= buf->nr_pages - 1;
++		buf->intr_pos = idx;
++	}
++
++	buf->topa_index[buf->stop_pos]->stop = 1;
++	buf->topa_index[buf->intr_pos]->intr = 1;
++
++	return 0;
++}
++
++/**
++ * pt_buffer_setup_topa_index() - build topa_index[] table of regions
++ * @buf:	PT buffer.
++ *
++ * topa_index[] references output regions indexed by offset into the
++ * buffer for purposes of quick reverse lookup.
++ */
++static void pt_buffer_setup_topa_index(struct pt_buffer *buf)
++{
++	struct topa *cur = buf->first, *prev = buf->last;
++	struct topa_entry *te_cur = TOPA_ENTRY(cur, 0),
++		*te_prev = TOPA_ENTRY(prev, prev->last - 1);
++	int pg = 0, idx = 0, ntopa = 0;
++
++	while (pg < buf->nr_pages) {
++		int tidx;
++
++		/* pages within one topa entry */
++		for (tidx = 0; tidx < 1 << te_cur->size; tidx++, pg++)
++			buf->topa_index[pg] = te_prev;
++
++		te_prev = te_cur;
++
++		if (idx == cur->last - 1) {
++			/* advance to next topa table */
++			idx = 0;
++			cur = list_entry(cur->list.next, struct topa, list);
++			ntopa++;
++		} else
++			idx++;
++		te_cur = TOPA_ENTRY(cur, idx);
++	}
++
++}
++
++/**
++ * pt_buffer_reset_offsets() - adjust buffer's write pointers from aux_head
++ * @buf:	PT buffer.
++ * @head:	Write pointer (aux_head) from AUX buffer.
++ *
++ * Find the ToPA table and entry corresponding to given @head and set buffer's
++ * "current" pointers accordingly.
++ */
++static void pt_buffer_reset_offsets(struct pt_buffer *buf, unsigned long head)
++{
++	int pg;
++
++	if (buf->snapshot)
++		head &= (buf->nr_pages << PAGE_SHIFT) - 1;
++
++	pg = (head >> PAGE_SHIFT) & (buf->nr_pages - 1);
++	pg = pt_topa_next_entry(buf, pg);
++
++	buf->cur = (struct topa *)((unsigned long)buf->topa_index[pg] & PAGE_MASK);
++	buf->cur_idx = ((unsigned long)buf->topa_index[pg] -
++			(unsigned long)buf->cur) / sizeof(struct topa_entry);
++	buf->output_off = head & (sizes(buf->cur->table[buf->cur_idx].size) - 1);
++
++	local64_set(&buf->head, head);
++	local_set(&buf->data_size, 0);
++}
++
++/**
++ * pt_buffer_fini_topa() - deallocate ToPA structure of a buffer
++ * @buf:	PT buffer.
++ */
++static void pt_buffer_fini_topa(struct pt_buffer *buf)
++{
++	struct topa *topa, *iter;
++
++	list_for_each_entry_safe(topa, iter, &buf->tables, list) {
++		/*
++		 * right now, this is in free_aux() path only, so
++		 * no need to unlink this table from the list
++		 */
++		topa_free(topa);
++	}
++}
++
++/**
++ * pt_buffer_init_topa() - initialize ToPA table for pt buffer
++ * @buf:	PT buffer.
++ * @size:	Total size of all regions within this ToPA.
++ * @gfp:	Allocation flags.
++ */
++static int pt_buffer_init_topa(struct pt_buffer *buf, unsigned long nr_pages,
++			       gfp_t gfp)
++{
++	struct topa *topa;
++	int err;
++
++	topa = topa_alloc(buf->cpu, gfp);
++	if (!topa)
++		return -ENOMEM;
++
++	topa_insert_table(buf, topa);
++
++	while (buf->nr_pages < nr_pages) {
++		err = topa_insert_pages(buf, gfp);
++		if (err) {
++			pt_buffer_fini_topa(buf);
++			return -ENOMEM;
++		}
++	}
++
++	pt_buffer_setup_topa_index(buf);
++
++	/* link last table to the first one, unless we're double buffering */
++	if (pt_cap_get(PT_CAP_topa_multiple_entries)) {
++		TOPA_ENTRY(buf->last, -1)->base = buf->first->phys >> TOPA_SHIFT;
++		TOPA_ENTRY(buf->last, -1)->end = 1;
++	}
++
++	pt_topa_dump(buf);
++	return 0;
++}
++
++/**
++ * pt_buffer_setup_aux() - set up topa tables for a PT buffer
++ * @cpu:	Cpu on which to allocate, -1 means current.
++ * @pages:	Array of pointers to buffer pages passed from perf core.
++ * @nr_pages:	Number of pages in the buffer.
++ * @snapshot:	If this is a snapshot/overwrite counter.
++ *
++ * This is a pmu::setup_aux callback that sets up ToPA tables and all the
++ * bookkeeping for an AUX buffer.
++ *
++ * Return:	Our private PT buffer structure.
++ */
++static void *
++pt_buffer_setup_aux(int cpu, void **pages, int nr_pages, bool snapshot)
++{
++	struct pt_buffer *buf;
++	int node, ret;
++
++	if (!nr_pages)
++		return NULL;
++
++	if (cpu == -1)
++		cpu = raw_smp_processor_id();
++	node = cpu_to_node(cpu);
++
++	buf = kzalloc_node(offsetof(struct pt_buffer, topa_index[nr_pages]),
++			   GFP_KERNEL, node);
++	if (!buf)
++		return NULL;
++
++	buf->cpu = cpu;
++	buf->snapshot = snapshot;
++	buf->data_pages = pages;
++
++	INIT_LIST_HEAD(&buf->tables);
++
++	ret = pt_buffer_init_topa(buf, nr_pages, GFP_KERNEL);
++	if (ret) {
++		kfree(buf);
++		return NULL;
++	}
++
++	return buf;
++}
++
++/**
++ * pt_buffer_free_aux() - perf AUX deallocation path callback
++ * @data:	PT buffer.
++ */
++static void pt_buffer_free_aux(void *data)
++{
++	struct pt_buffer *buf = data;
++
++	pt_buffer_fini_topa(buf);
++	kfree(buf);
++}
++
++/**
++ * pt_buffer_is_full() - check if the buffer is full
++ * @buf:	PT buffer.
++ * @pt:		Per-cpu pt handle.
++ *
++ * If the user hasn't read data from the output region that aux_head
++ * points to, the buffer is considered full: the user needs to read at
++ * least this region and update aux_tail to point past it.
++ */
++static bool pt_buffer_is_full(struct pt_buffer *buf, struct pt *pt)
++{
++	if (buf->snapshot)
++		return false;
++
++	if (local_read(&buf->data_size) >= pt->handle.size)
++		return true;
++
++	return false;
++}
++
++/**
++ * intel_pt_interrupt() - PT PMI handler
++ */
++void intel_pt_interrupt(void)
++{
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	struct pt_buffer *buf;
++	struct perf_event *event = pt->handle.event;
++
++	if (!ACCESS_ONCE(pt->handle_nmi))
++		return;
++
++	pt_config_start(false);
++
++	if (!event)
++		return;
++
++	buf = perf_get_aux(&pt->handle);
++	if (!buf)
++		return;
++
++	pt_read_offset(buf);
++
++	pt_handle_status(pt);
++
++	pt_update_head(pt);
++
++	perf_aux_output_end(&pt->handle, local_xchg(&buf->data_size, 0),
++			    local_xchg(&buf->lost, 0));
++
++	if (!event->hw.state) {
++		int ret;
++
++		buf = perf_aux_output_begin(&pt->handle, event);
++		if (!buf) {
++			event->hw.state = PERF_HES_STOPPED;
++			return;
++		}
++
++		pt_buffer_reset_offsets(buf, pt->handle.head);
++		ret = pt_buffer_reset_markers(buf, &pt->handle);
++		if (ret) {
++			perf_aux_output_end(&pt->handle, 0, true);
++			return;
++		}
++
++		pt_config_buffer(buf->cur->table, buf->cur_idx,
++				 buf->output_off);
++		wrmsrl(MSR_IA32_RTIT_STATUS, 0);
++		pt_config(event);
++	}
++}
++
++/*
++ * PMU callbacks
++ */
++
++static void pt_event_start(struct perf_event *event, int mode)
++{
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	struct pt_buffer *buf = perf_get_aux(&pt->handle);
++
++	if (pt_is_running() || !buf || pt_buffer_is_full(buf, pt)) {
++		event->hw.state = PERF_HES_STOPPED;
++		return;
++	}
++
++	ACCESS_ONCE(pt->handle_nmi) = 1;
++	event->hw.state = 0;
++
++	pt_config_buffer(buf->cur->table, buf->cur_idx,
++			 buf->output_off);
++	wrmsrl(MSR_IA32_RTIT_STATUS, 0);
++	pt_config(event);
++}
++
++static void pt_event_stop(struct perf_event *event, int mode)
++{
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++
++	ACCESS_ONCE(pt->handle_nmi) = 0;
++	pt_config_start(false);
++
++	if (event->hw.state == PERF_HES_STOPPED)
++		return;
++
++	event->hw.state = PERF_HES_STOPPED;
++
++	if (mode & PERF_EF_UPDATE) {
++		struct pt *pt = this_cpu_ptr(&pt_ctx);
++		struct pt_buffer *buf = perf_get_aux(&pt->handle);
++
++		if (!buf)
++			return;
++
++		if (WARN_ON_ONCE(pt->handle.event != event))
++			return;
++
++		pt_read_offset(buf);
++
++		pt_handle_status(pt);
++
++		pt_update_head(pt);
++	}
++}
++
++static void pt_event_del(struct perf_event *event, int mode)
++{
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	struct pt_buffer *buf;
++
++	pt_event_stop(event, PERF_EF_UPDATE);
++
++	buf = perf_get_aux(&pt->handle);
++
++	if (buf) {
++		if (buf->snapshot)
++			pt->handle.head =
++				local_xchg(&buf->data_size,
++					   buf->nr_pages << PAGE_SHIFT);
++		perf_aux_output_end(&pt->handle, local_xchg(&buf->data_size, 0),
++				    local_xchg(&buf->lost, 0));
++	}
++}
++
++static int pt_event_add(struct perf_event *event, int mode)
++{
++	struct pt_buffer *buf;
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	struct hw_perf_event *hwc = &event->hw;
++	int ret = -EBUSY;
++
++	if (pt->handle.event)
++		goto out;
++
++	buf = perf_aux_output_begin(&pt->handle, event);
++	if (!buf) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	pt_buffer_reset_offsets(buf, pt->handle.head);
++	if (!buf->snapshot) {
++		ret = pt_buffer_reset_markers(buf, &pt->handle);
++		if (ret) {
++			perf_aux_output_end(&pt->handle, 0, true);
++			goto out;
++		}
++	}
++
++	if (mode & PERF_EF_START) {
++		pt_event_start(event, 0);
++		if (hwc->state == PERF_HES_STOPPED) {
++			pt_event_del(event, 0);
++			ret = -EBUSY;
++		}
++	} else {
++		hwc->state = PERF_HES_STOPPED;
++	}
++
++	ret = 0;
++out:
++
++	if (ret)
++		hwc->state = PERF_HES_STOPPED;
++
++	return ret;
++}
++
++static void pt_event_read(struct perf_event *event)
++{
++}
++
++static void pt_event_destroy(struct perf_event *event)
++{
++	x86_del_exclusive(x86_lbr_exclusive_pt);
++}
++
++static int pt_event_init(struct perf_event *event)
++{
++	if (event->attr.type != pt_pmu.pmu.type)
++		return -ENOENT;
++
++	if (!pt_event_valid(event))
++		return -EINVAL;
++
++	if (x86_add_exclusive(x86_lbr_exclusive_pt))
++		return -EBUSY;
++
++	event->destroy = pt_event_destroy;
++
++	return 0;
++}
++
++static __init int pt_init(void)
++{
++	int ret, cpu, prior_warn = 0;
++
++	BUILD_BUG_ON(sizeof(struct topa) > PAGE_SIZE);
++	get_online_cpus();
++	for_each_online_cpu(cpu) {
++		u64 ctl;
++
++		ret = rdmsrl_safe_on_cpu(cpu, MSR_IA32_RTIT_CTL, &ctl);
++		if (!ret && (ctl & RTIT_CTL_TRACEEN))
++			prior_warn++;
++	}
++	put_online_cpus();
++
++	ret = pt_pmu_hw_init();
++	if (ret)
++		return ret;
++
++	if (!pt_cap_get(PT_CAP_topa_output)) {
++		pr_warn("ToPA output is not supported on this CPU\n");
++		return -ENODEV;
++	}
++
++	if (prior_warn)
++		pr_warn("PT is enabled at boot time, traces may be empty\n");
++
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
++		pt_pmu.pmu.capabilities =
++			PERF_PMU_CAP_AUX_NO_SG | PERF_PMU_CAP_AUX_SW_DOUBLEBUF;
++
++	pt_pmu.pmu.capabilities	|= PERF_PMU_CAP_EXCLUSIVE | PERF_PMU_CAP_ITRACE;
++	pt_pmu.pmu.attr_groups	= pt_attr_groups;
++	pt_pmu.pmu.task_ctx_nr	= perf_hw_context;
++	pt_pmu.pmu.event_init	= pt_event_init;
++	pt_pmu.pmu.add		= pt_event_add;
++	pt_pmu.pmu.del		= pt_event_del;
++	pt_pmu.pmu.start	= pt_event_start;
++	pt_pmu.pmu.stop		= pt_event_stop;
++	pt_pmu.pmu.read		= pt_event_read;
++	pt_pmu.pmu.setup_aux	= pt_buffer_setup_aux;
++	pt_pmu.pmu.free_aux	= pt_buffer_free_aux;
++	ret = perf_pmu_register(&pt_pmu.pmu, "intel_pt", -1);
++
++	return ret;
++}
++
++module_init(pt_init);
 -- 
-1.9.1
+2.1.1
 
