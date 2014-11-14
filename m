@@ -1,144 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161906AbaKNTlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 14:41:40 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:52408 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161455AbaKNTli (ORCPT
+	id S1161915AbaKNTmR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 14:42:17 -0500
+Received: from smtprelay0024.hostedemail.com ([216.40.44.24]:58697 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161621AbaKNTmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 14:41:38 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v3 4/4] input: alps: Fix trackstick detection
-Date: Fri, 14 Nov 2014 20:41:32 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201411091230.05337@pali> <201411141222.35319@pali>
-In-Reply-To: <201411141222.35319@pali>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart12424953.VIL5QLEk8y";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Fri, 14 Nov 2014 14:42:15 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1461:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:4321:5007:6119:6121:6261:6609:7901:8531:10004:10400:10848:11232:11657:11658:11914:12043:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sink92_13568798c9551
+X-Filterd-Recvd-Size: 2582
+Message-ID: <1415994131.5912.25.camel@perches.com>
+Subject: Re: [PATCH 1/1 net-next] net: dsa: replace count*size kmalloc by
+ kmalloc_array
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 14 Nov 2014 11:42:11 -0800
+In-Reply-To: <47990659.56515.1415993549555.open-xchange@webmail.nmp.skynet.be>
+References: <1415990202-28673-1-git-send-email-fabf@skynet.be>
+	 <1415990835.5912.20.camel@perches.com>
+	 <2104595537.56209.1415991758726.open-xchange@webmail.nmp.skynet.be>
+	 <1415992486.5912.23.camel@perches.com>
+	 <47990659.56515.1415993549555.open-xchange@webmail.nmp.skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201411142041.34925@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart12424953.VIL5QLEk8y
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-11-14 at 20:32 +0100, Fabian Frederick wrote:
+> On 14 November 2014 at 20:14 Joe Perches <joe@perches.com> wrote:
+> > On Fri, 2014-11-14 at 20:02 +0100, Fabian Frederick wrote:
+> > > On 14 November 2014 at 19:47 Joe Perches <joe@perches.com> wrote:
+> > > > On Fri, 2014-11-14 at 19:36 +0100, Fabian Frederick wrote:
+> > > > > kmalloc_array manages count*sizeof overflow.
+> > > >
+> > > > Fundamentally correct, but is this necessary or useful?
+> > > > sizeof(s8) isn't often going to be anything other than 1.
+> > > Absolutely, I thought it was a struct :)
+> > >
+> > > There must be a reason for so many cases though ...
+> >
+> > Some might be style symmetry for other sizeof(othertype)
+> > uses in the same paths, but most of them are just overkill
+> > or maybe lack of understanding.
+> 95% comes from drivers tree. I guess one patch to Greg would be enough.
 
-On Friday 14 November 2014 12:22:33 Pali Roh=C3=A1r wrote:
-> On Sunday 09 November 2014 12:30:03 Pali Roh=C3=A1r wrote:
-> > On Sunday 09 November 2014 09:05:04 Dmitry Torokhov wrote:
-> > > Hi Pali,
-> > >=20
-> > > On Sun, Nov 02, 2014 at 12:25:10AM +0100, Pali Roh=C3=A1r wrote:
-> > > >  int alps_detect(struct psmouse *psmouse, bool
-> > > >  set_properties) {
-> > > >=20
-> > > > -	struct alps_data dummy;
-> > > > +	unsigned char e6[4];
-> > > >=20
-> > > > -	if (alps_identify(psmouse, &dummy) < 0)
-> > > > -		return -1;
-> > > > +	/*
-> > > > +	 * Try "E6 report".
-> > > > +	 * ALPS should return 0,0,10 or 0,0,100 if no buttons
-> > > > are pressed. +	 * The bits 0-2 of the first byte will be
-> > > > 1s if some buttons are +	 * pressed.
-> > > > +	 */
-> > > > +	if (alps_rpt_cmd(psmouse, PSMOUSE_CMD_SETRES,
-> > > > +			 PSMOUSE_CMD_SETSCALE11, e6))
-> > > > +		return -EIO;
-> > > > +
-> > > > +	if ((e6[0] & 0xf8) !=3D 0 || e6[1] !=3D 0 || (e6[2] !=3D 10
->=20
-> &&
->=20
-> > > > e6[2] !=3D 100)) +		return -EINVAL;
-> > > >=20
-> > > >  	if (set_properties) {
-> > > >=20
-> > > > +		/*
-> > > > +		 * NOTE: To detect model and trackstick presence we
-> >=20
-> > need
-> >=20
-> > > > to do +		 *       full device reset. To speed up
-> >=20
-> > detection
-> >=20
-> > > > and prevent +		 *       calling duplicate
->=20
-> initialization
->=20
-> > > > sequence (both in +		 *       alps_detect() and
-> > > > alps_init()) we set model/protocol +		 *       version
->=20
-> and
->=20
-> > > > correct name in alps_init() (which will +		 *      =20
-do
-> >=20
-> > full
-> >=20
-> > > > device reset). For now set name to DualPoint. +		 */
-> > > >=20
-> > > >  		psmouse->vendor =3D "ALPS";
-> > > >=20
-> > > > -		psmouse->name =3D dummy.flags & ALPS_DUALPOINT ?
-> > > > -				"DualPoint TouchPad" : "GlidePoint";
-> > > > -		psmouse->model =3D dummy.proto_version << 8;
-> > > > +		psmouse->name =3D "DualPoint TouchPad";
-> > > >=20
-> > > >  	}
-> > > >=20
-> > > > +
-> > > >=20
-> > > >  	return 0;
-> > >=20
-> > > We can't do this; going by e6 only will give us false
-> > > positives and alps_detect is supposed to be authoritative.
-> > >=20
-> > > Thanks.
-> >=20
-> > psmouse-base.c is calling alps_detect() and alps_init()
-> > consecutively so it does not matter if code is in _detect or
-> > _init function. Just need to make sure that correct order
-> > will be used. So this patch could not bring any problems.
-> >=20
-> > If psmouse-base.c detect device false-positive as ALPS (with
-> > alps_detect()) then it immediately calls alps_init() which
-> > fails and psmouse-base.c will try to use another protocol.
->=20
-> Dmitry: PING
-> Also see my comment for PATCH v3 3/4.
+I think it'd be better to send patches through the
+appropriate various maintainers
 
-Dmitry, finally I split this big patch into more smaller and=20
-tried to fix what you did not like. I sent new series of patches,=20
-so drop this one 4/4.
+Likely just using the 2nd level directory would be
+good enough
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+$ git grep -E --name-only "\*\s*sizeof\s*\(\s*[us]8\s*\)" | \
+  cut -f1-2 -d"/" | uniq
+arch/arm
+drivers/acpi
+drivers/char
+drivers/gpu
+drivers/iio
+drivers/infiniband
+drivers/input
+drivers/md
+drivers/media
+drivers/mtd
+drivers/net
+drivers/power
+drivers/rtc
+drivers/thermal
+fs/compat_ioctl.c
+net/dsa
 
---nextPart12424953.VIL5QLEk8y
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> Are you interested in those patches or can I do them with some "Suggested-by" ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Not really and no need.
 
-iEYEABECAAYFAlRmWu4ACgkQi/DJPQPkQ1IFxgCgmlhZTizCz6H5cUoCViVCQ/g7
-vU4AoLwOIV2z+NFzdS3vuquHoz4YrdtD
-=GfZb
------END PGP SIGNATURE-----
+cheers, Joe
 
---nextPart12424953.VIL5QLEk8y--
