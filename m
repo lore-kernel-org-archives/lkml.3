@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965216AbaKNKwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:52:19 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:47027 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965144AbaKNKwQ (ORCPT
+	id S965252AbaKNKw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:52:27 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:33926 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965144AbaKNKwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:52:16 -0500
+	Fri, 14 Nov 2014 05:52:22 -0500
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-arm-kernel@lists.infradead.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>,
@@ -16,16 +16,16 @@ Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
         Rob Herring <robherring2@gmail.com>,
         Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 2/6] ARM: zynq: Extract slcr related functions out of common.h
-Date: Fri, 14 Nov 2014 11:52:03 +0100
-Message-Id: <f3d0bb91f0cc7c9e735f756b6e664ea8aad921a9.1415962281.git.michal.simek@xilinx.com>
+Subject: [PATCH v4 4/6] ARM: zynq: Extend SLCR driver to read OCM configuration
+Date: Fri, 14 Nov 2014 11:52:05 +0100
+Message-Id: <1b945376f9979a3b3e7c1231ea7ecead78026b07.1415962281.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1415962281.git.michal.simek@xilinx.com>
 References: <cover.1415962281.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1415962281.git.michal.simek@xilinx.com>
 References: <cover.1415962281.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-14101-1415962332-0001";
+    boundary="=_mimegpg-monstr-desktop-14121-1415962338-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,132 +37,81 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-14101-1415962332-0001
+--=_mimegpg-monstr-desktop-14121-1415962338-0001
 
-Create topic headers not to share all functions.
+Get OCM configuration from SLCR.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
 
 Changes in v4:
-- New patch in this series
+- slcr.h has moved to soc/include/ folder. Move definition there too.
 
 Changes in v3: None
 Changes in v2: None
 
- arch/arm/mach-zynq/common.c  |  1 +
- arch/arm/mach-zynq/common.h  |  9 ---------
- arch/arm/mach-zynq/platsmp.c |  1 +
- arch/arm/mach-zynq/slcr.c    |  1 +
- arch/arm/mach-zynq/slcr.h    | 29 +++++++++++++++++++++++++++++
- 5 files changed, 32 insertions(+), 9 deletions(-)
- create mode 100644 arch/arm/mach-zynq/slcr.h
+ arch/arm/mach-zynq/slcr.c | 15 +++++++++++++++
+ include/soc/zynq/slcr.h   |  1 +
+ 2 files changed, 16 insertions(+)
 
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index 45cb778b344d..947e72b79496 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -43,6 +43,7 @@
- #include <asm/hardware/cache-l2x0.h>
-
- #include "common.h"
-+#include "slcr.h"
- #include "smp.h"
-
- #define ZYNQ_DEVCFG_MCTRL		0x80
-diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h
-index 0667cc79f179..5557de83058a 100644
---- a/arch/arm/mach-zynq/common.h
-+++ b/arch/arm/mach-zynq/common.h
-@@ -17,15 +17,6 @@
- #ifndef __MACH_ZYNQ_COMMON_H__
- #define __MACH_ZYNQ_COMMON_H__
-
--extern int zynq_slcr_init(void);
--extern int zynq_early_slcr_init(void);
--extern void zynq_slcr_system_reset(void);
--extern void zynq_slcr_cpu_stop(int cpu);
--extern void zynq_slcr_cpu_start(int cpu);
--extern bool zynq_slcr_cpu_state_read(int cpu);
--extern void zynq_slcr_cpu_state_write(int cpu, bool die);
--extern u32 zynq_slcr_get_device_id(void);
--
- extern void __iomem *zynq_scu_base;
-
- void zynq_pm_late_init(void);
-diff --git a/arch/arm/mach-zynq/platsmp.c b/arch/arm/mach-zynq/platsmp.c
-index 5aa6b9ee95fc..717ba2b922b1 100644
---- a/arch/arm/mach-zynq/platsmp.c
-+++ b/arch/arm/mach-zynq/platsmp.c
-@@ -26,6 +26,7 @@
- #include <asm/smp_scu.h>
- #include <linux/irqchip/arm-gic.h>
- #include "common.h"
-+#include "slcr.h"
- #include "smp.h"
-
- /*
 diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
-index d4cb50cf97c0..40f8d7420334 100644
+index b77e42d999c8..f7c606e57525 100644
 --- a/arch/arm/mach-zynq/slcr.c
 +++ b/arch/arm/mach-zynq/slcr.c
-@@ -20,6 +20,7 @@
- #include <linux/regmap.h>
- #include <linux/clk/zynq.h>
- #include "common.h"
-+#include "slcr.h"
+@@ -29,6 +29,7 @@
+ #define SLCR_A9_CPU_RST_CTRL_OFFSET	0x244 /* CPU Software Reset Control */
+ #define SLCR_REBOOT_STATUS_OFFSET	0x258 /* PS Reboot Status */
+ #define SLCR_PSS_IDCODE			0x530 /* PS IDCODE */
++#define SLCR_OCM_CFG_OFFSET		0x910 /* OCM Address Mapping */
 
- /* register offsets */
- #define SLCR_UNLOCK_OFFSET		0x8   /* SCLR unlock register */
-diff --git a/arch/arm/mach-zynq/slcr.h b/arch/arm/mach-zynq/slcr.h
-new file mode 100644
-index 000000000000..7b4edab666ee
---- /dev/null
-+++ b/arch/arm/mach-zynq/slcr.h
-@@ -0,0 +1,29 @@
-+/*
-+ * This file contains common function prototypes to avoid externs
-+ * in the c files.
+ #define SLCR_UNLOCK_MAGIC		0xDF0D
+ #define SLCR_A9_CPU_CLKSTOP		0x10
+@@ -128,6 +129,20 @@ void zynq_slcr_system_reset(void)
+ }
+
+ /**
++ * zynq_slcr_get_ocm_config - Get SLCR OCM config
 + *
-+ * Copyright (C) 2014 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * Return:	OCM config bits
 + */
++u32 zynq_slcr_get_ocm_config(void)
++{
++	u32 val;
 +
-+#ifndef __MACH_ZYNQ_SLCR_H__
-+#define __MACH_ZYNQ_SLCR_H__
++	zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
 +
-+extern int zynq_slcr_init(void);
-+extern int zynq_early_slcr_init(void);
-+extern void zynq_slcr_system_reset(void);
-+extern void zynq_slcr_cpu_stop(int cpu);
-+extern void zynq_slcr_cpu_start(int cpu);
-+extern bool zynq_slcr_cpu_state_read(int cpu);
-+extern void zynq_slcr_cpu_state_write(int cpu, bool die);
-+extern u32 zynq_slcr_get_device_id(void);
++	return val;
++}
 +
-+#endif
++/**
+  * zynq_slcr_cpu_start - Start cpu
+  * @cpu:	cpu number
+  */
+diff --git a/include/soc/zynq/slcr.h b/include/soc/zynq/slcr.h
+index 7b4edab666ee..639723c4f90c 100644
+--- a/include/soc/zynq/slcr.h
++++ b/include/soc/zynq/slcr.h
+@@ -25,5 +25,6 @@ extern void zynq_slcr_cpu_start(int cpu);
+ extern bool zynq_slcr_cpu_state_read(int cpu);
+ extern void zynq_slcr_cpu_state_write(int cpu, bool die);
+ extern u32 zynq_slcr_get_device_id(void);
++extern u32 zynq_slcr_get_ocm_config(void);
+
+ #endif
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-14101-1415962332-0001
+--=_mimegpg-monstr-desktop-14121-1415962338-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlRl3twACgkQykllyylKDCH0WgCgnblV2CdqKgwq/MNvNkYIbRjW
-89kAn1NYZ3uOQeWoO5QslBe/sLUTqQC2
-=uWQ/
+iEYEABECAAYFAlRl3uIACgkQykllyylKDCGrMgCgiEN5CbT9Oq9/E0S1XXzzNJx6
+y5sAnAnp7JoDLpbxktnSnr7xFrtskQAp
+=9pwG
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-14101-1415962332-0001--
+--=_mimegpg-monstr-desktop-14121-1415962338-0001--
