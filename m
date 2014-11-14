@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161574AbaKNRMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 12:12:14 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37048 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161282AbaKNRMM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 12:12:12 -0500
-Message-ID: <1415985069.4445.6.camel@pengutronix.de>
-Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Yijing Wang <wangyijing0307@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 14 Nov 2014 18:11:09 +0100
-In-Reply-To: <546627DD.2050200@arm.com>
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com>
-	 <54651BE2.9080008@arm.com> <54654C10.2040102@linux.intel.com>
-	 <54655632.2040209@huawei.com> <alpine.DEB.2.11.1411140211480.3935@nanos>
-	 <54655D44.1070703@linux.intel.com> <54660D7F.70702@gmail.com>
-	 <54661103.8000707@linux.intel.com> <54661CB8.2070704@arm.com>
-	 <54661ED9.8090901@linux.intel.com> <546627DD.2050200@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
+	id S1161423AbaKNROL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 12:14:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38501 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161125AbaKNROJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 12:14:09 -0500
+Message-ID: <5466385E.6040009@suse.com>
+Date: Fri, 14 Nov 2014 18:14:06 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [PATCH V3 2/8] xen: Delay remapping memory of pv-domain
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-3-git-send-email-jgross@suse.com> <20141112214506.GA5922@laptop.dumpdata.com> <54644E48.3040506@suse.com> <20141113195605.GA13039@laptop.dumpdata.com> <54658ABF.5050708@suse.com> <20141114164741.GA8198@laptop.dumpdata.com>
+In-Reply-To: <20141114164741.GA8198@laptop.dumpdata.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 14.11.2014, 16:03 +0000 schrieb Marc Zyngier:
-> On 14/11/14 15:25, Jiang Liu wrote:
-> > On 2014/11/14 23:16, Marc Zyngier wrote:
-> >> On 14/11/14 14:26, Jiang Liu wrote:
-> >>> On 2014/11/14 22:11, Yijing Wang wrote:
-> >>>>
-> >>> We have achieved 1 and 2. And seems we could also achieve 3 by
-> >>> converting all arch specific PCI MSI code to use hierarchy
-> >>> irqdomain. But not sure whether we could achieve 4, not familiar
-> >>> with ARM world:)
-> >>
-> >> Killing all the weak functions shouldn't be a problem for ARM, we're
-> >> trying very hard not to rely on them.
-> >>
-> >> Killing msi_chip is a different story, as this is what we use to match a
-> >> PCI host controller with its MSI controller (that's what the of_node
-> >> field in msi_chip is for). See drivers/of/of_pci.c for details.
-> >>
-> >> Also, we use msi_chip directly in the MSI drivers as a way to go from a
-> >> pci_dev to the MSI controller specific structure:
-> >>
-> >> http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3-its.c?h=irq/stacked-its-v2#n1143
-> >>
-> >> If we're going to kill msi_chip, we must make sure we have mechanisms
-> >> that allow the conversion of the existing code.
-> > Hi Marc,
-> > 	Seem it doesn't worth the effort to remove irq_chip,
-> > so I will focus on killing all weak functions first:)
-> > After that, we may kill setup_irq and teardown_irq in irq_chip,
-> > but seems irq_chip still has other usages, so I won't try to
-> > kill irq_chip.
-> 
-> I assume you mean msi_chip! ;-)
-> 
-> Killing setup/teardown_irq is going to require some work. There are a
-> few users in the tree (I can see three in drivers/pci/host and one in
-> drivers/irqchip).
-> 
-> Hopefully, we can get the maintainers to convert them.
-> 
+On 11/14/2014 05:47 PM, Konrad Rzeszutek Wilk wrote:
+> On Fri, Nov 14, 2014 at 05:53:19AM +0100, Juergen Gross wrote:
+>> On 11/13/2014 08:56 PM, Konrad Rzeszutek Wilk wrote:
+>>>>>> +	mfn_save = virt_to_mfn(buf);
+>>>>>> +
+>>>>>> +	while (xen_remap_mfn != INVALID_P2M_ENTRY) {
+>>>>>
+>>>>> So the 'list' is constructed by going forward - that is from low-numbered
+>>>>> PFNs to higher numbered ones. But the 'xen_remap_mfn' is going the
+>>>>> other way - from the highest PFN to the lowest PFN.
+>>>>>
+>>>>> Won't that mean we will restore the chunks of memory in the wrong
+>>>>> order? That is we will still restore them in chunks size, but the
+>>>>> chunks will be in descending order instead of ascending?
+>>>>
+>>>> No, the information where to put each chunk is contained in the chunk
+>>>> data. I can add a comment explaining this.
+>>>
+>>> Right, the MFNs in a "chunks" are going to be restored in the right order.
+>>>
+>>> I was thinking that the "chunks" (so a set of MFNs) will be restored in
+>>> the opposite order that they are written to.
+>>>
+>>> And oddly enough the "chunks" are done in 512-3 = 509 MFNs at once?
+>>
+>> More don't fit on a single page due to the other info needed. So: yes.
+>
+> But you could use two pages - one for the structure and the other
+> for the list of MFNs. That would fix the problem of having only
+> 509 MFNs being contingous per chunk when restoring.
 
-I can help with both the Designware and Tegra host bridge drivers.
+That's no problem (see below).
 
-But that requires:
-1. CCing patches to me, so I know what is going on
-2. Providing good descriptions on what is done in the patchset and how
-the msi_chip users should adjust
+> Anyhow the point I had that I am worried is that we do not restore the
+> MFNs in the same order. We do it in "chunk" size which is OK (so the 509 MFNs
+> at once)- but the order we traverse the restoration process is the opposite of
+> the save process. Say we have 4MB of contingous MFNs, so two (err, three)
+> chunks. The first one we iterate is from 0->509, the second is 510->1018, the
+> last is 1019->1023. When we restore (remap) we start with the last 'chunk'
+> so we end up restoring them: 1019->1023, 510->1018, 0->509 order.
 
-With all the MSI changes by various people going on in parallel it's
-hard to follow for someone not looking at this stuff every day.
+No. When building up the chunks we save in each chunk where to put it
+on remap. So in your example 0-509 should be mapped at <dest>+0,
+510-1018 at <dest>+510, and 1019-1023 at <dest>+1019.
 
-Regards,
-Lucas
+When remapping we map 1019-1023 to <dest>+1019, 510-1018 at <dest>+510
+and last 0-509 at <dest>+0. So we do the mapping in reverse order, but
+to the correct pfns.
 
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
-
+Juergen
