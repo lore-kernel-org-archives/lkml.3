@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161466AbaKNP1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:27:55 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:36125 "EHLO
+	id S1161528AbaKNP2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:28:05 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:36170 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161409AbaKNP1s (ORCPT
+	with ESMTP id S1161472AbaKNP16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:27:48 -0500
+	Fri, 14 Nov 2014 10:27:58 -0500
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
         p.zabel@pengutronix.de
@@ -16,9 +16,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 06/13] Documentation: bindings: add doc for the Berlin USB PHY
-Date: Fri, 14 Nov 2014 16:25:56 +0100
-Message-Id: <1415978763-27345-7-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v7 11/13] ARM: dts: Berlin: enable USB on the BG2Q DMP
+Date: Fri, 14 Nov 2014 16:26:01 +0100
+Message-Id: <1415978763-27345-12-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -26,36 +26,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the bindings of the Marvell Berlin USB PHY driver.
+Enable the 2 available USB PHY and USB nodes on the Marvell Berlin BG2Q
+DMP.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- Documentation/devicetree/bindings/phy/berlin-usb-phy.txt | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 53 ++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
-new file mode 100644
-index 000000000000..be33780f668e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
-@@ -0,0 +1,16 @@
-+* Marvell Berlin USB PHY
+diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+index ea1f99b8eed6..f7c25580e122 100644
+--- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
++++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+@@ -7,6 +7,8 @@
+  */
+ 
+ /dts-v1/;
 +
-+Required properties:
-+- compatible: "marvell,berlin2-usb-phy" or "marvell,berlin2cd-usb-phy"
-+- reg: base address and length of the registers
-+- #phys-cells: should be 0
-+- resets: reference to the reset controller
++#include <dt-bindings/gpio/gpio.h>
+ #include "berlin2q.dtsi"
+ 
+ / {
+@@ -21,6 +23,39 @@
+ 	choosen {
+ 		bootargs = "console=ttyS0,115200 earlyprintk";
+ 	};
 +
-+Example:
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+	usb-phy@f774000 {
-+		compatible = "marvell,berlin2-usb-phy";
-+		reg = <0xf774000 0x128>;
-+		#phy-cells = <0>;
-+		resets = <&chip 0x104 14>;
++		reg_usb0_vbus: regulator@0 {
++			compatible = "regulator-fixed";
++			regulator-name = "usb0_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&portb 8 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
++
++		reg_usb1_vbus: regulator@1 {
++			compatible = "regulator-fixed";
++			regulator-name = "usb1_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&portb 10 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
++
++		reg_usb2_vbus: regulator@2 {
++			compatible = "regulator-fixed";
++			regulator-name = "usb2_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&portb 12 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
 +	};
+ };
+ 
+ &sdhci1 {
+@@ -46,6 +81,24 @@
+ 	status = "okay";
+ };
+ 
++&usb_phy0 {
++	status = "okay";
++};
++
++&usb_phy2 {
++	status = "okay";
++};
++
++&usb0 {
++	vbus-supply = <&reg_usb0_vbus>;
++	status = "okay";
++};
++
++&usb2 {
++	vbus-supply = <&reg_usb2_vbus>;
++	status = "okay";
++};
++
+ &eth0 {
+ 	status = "okay";
+ };
 -- 
 2.1.0
 
