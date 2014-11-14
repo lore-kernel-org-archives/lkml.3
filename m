@@ -1,157 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965523AbaKNPMw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:12:52 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:20921 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965233AbaKNPMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:12:51 -0500
-X-IronPort-AV: E=Sophos;i="5.07,386,1413244800"; 
-   d="scan'208";a="191411308"
-Date: Fri, 14 Nov 2014 15:11:34 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: David Vrabel <david.vrabel@citrix.com>
-CC: <linux-kernel@vger.kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Tony Luck <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <xen-devel@lists.xenproject.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 1/3] dma, ia64: add
- dma_get_required_mask_from_max_pfn()
-In-Reply-To: <1415805906-27316-2-git-send-email-david.vrabel@citrix.com>
-Message-ID: <alpine.DEB.2.02.1411141507550.26318@kaball.uk.xensource.com>
-References: <1415805906-27316-1-git-send-email-david.vrabel@citrix.com> <1415805906-27316-2-git-send-email-david.vrabel@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	id S1161032AbaKNPNf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:13:35 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:53692 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965434AbaKNPNb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 10:13:31 -0500
+Subject: Re: [PATCH v8 4/8] OF: platform: Add OF notifier handler
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20141113232944.1F136C40B52@trevor.secretlab.ca>
+Date: Fri, 14 Nov 2014 17:13:23 +0200
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        linux-spi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5E35070E-5536-41DE-835E-8441B1C867F5@konsulko.com>
+References: <1414528565-10907-1-git-send-email-pantelis.antoniou@konsulko.com> <1414528565-10907-5-git-send-email-pantelis.antoniou@konsulko.com> <20141113232944.1F136C40B52@trevor.secretlab.ca>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Nov 2014, David Vrabel wrote:
-> ia64 provides a duplicate of the generic dma_get_required_mask()
-> because it has ARCH_HAS_GET_REQUIRED_MASK.  Provide a common
-> dma_get_require_mask_max_pfn() instead.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: linux-ia64@vger.kernel.org
+Hi Grant,
 
-Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> On Nov 14, 2014, at 01:29 , Grant Likely <grant.likely@secretlab.ca> wrote:
+> 
+> On Tue, 28 Oct 2014 22:36:01 +0200
+> , Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+> wrote:
+>> Add OF notifier handler needed for creating/destroying platform devices
+>> according to dynamic runtime changes in the DT live tree.
+>> 
+>> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+> 
+> Hi Pantelis,
+> 
+> Some comments below. Feel free to send me fixup patches instead of
+> respinning.
+> 
 
+Sure, I’ll get around to send updated patches over the weekend.
 
->  arch/ia64/include/asm/machvec.h      |    2 +-
->  arch/ia64/include/asm/machvec_init.h |    1 -
->  arch/ia64/pci/pci.c                  |   20 --------------------
->  drivers/base/platform.c              |   10 ++++++++--
->  include/linux/dma-mapping.h          |    1 +
->  5 files changed, 10 insertions(+), 24 deletions(-)
+> g.
 > 
-> diff --git a/arch/ia64/include/asm/machvec.h b/arch/ia64/include/asm/machvec.h
-> index 9c39bdf..beaa47d 100644
-> --- a/arch/ia64/include/asm/machvec.h
-> +++ b/arch/ia64/include/asm/machvec.h
-> @@ -287,7 +287,7 @@ extern struct dma_map_ops *dma_get_ops(struct device *);
->  # define platform_dma_get_ops		dma_get_ops
->  #endif
->  #ifndef platform_dma_get_required_mask
-> -# define  platform_dma_get_required_mask	ia64_dma_get_required_mask
-> +# define  platform_dma_get_required_mask	dma_get_required_mask_from_max_pfn
->  #endif
->  #ifndef platform_irq_to_vector
->  # define platform_irq_to_vector		__ia64_irq_to_vector
-> diff --git a/arch/ia64/include/asm/machvec_init.h b/arch/ia64/include/asm/machvec_init.h
-> index 37a4698..ef964b2 100644
-> --- a/arch/ia64/include/asm/machvec_init.h
-> +++ b/arch/ia64/include/asm/machvec_init.h
-> @@ -3,7 +3,6 @@
->  
->  extern ia64_mv_send_ipi_t ia64_send_ipi;
->  extern ia64_mv_global_tlb_purge_t ia64_global_tlb_purge;
-> -extern ia64_mv_dma_get_required_mask ia64_dma_get_required_mask;
->  extern ia64_mv_irq_to_vector __ia64_irq_to_vector;
->  extern ia64_mv_local_vector_to_irq __ia64_local_vector_to_irq;
->  extern ia64_mv_pci_get_legacy_mem_t ia64_pci_get_legacy_mem;
-> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-> index 291a582..79da21b 100644
-> --- a/arch/ia64/pci/pci.c
-> +++ b/arch/ia64/pci/pci.c
-> @@ -791,26 +791,6 @@ static void __init set_pci_dfl_cacheline_size(void)
->  	pci_dfl_cache_line_size = (1 << cci.pcci_line_size) / 4;
->  }
->  
-> -u64 ia64_dma_get_required_mask(struct device *dev)
-> -{
-> -	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
-> -	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
-> -	u64 mask;
-> -
-> -	if (!high_totalram) {
-> -		/* convert to mask just covering totalram */
-> -		low_totalram = (1 << (fls(low_totalram) - 1));
-> -		low_totalram += low_totalram - 1;
-> -		mask = low_totalram;
-> -	} else {
-> -		high_totalram = (1 << (fls(high_totalram) - 1));
-> -		high_totalram += high_totalram - 1;
-> -		mask = (((u64)high_totalram) << 32) + 0xffffffff;
-> -	}
-> -	return mask;
-> -}
-> -EXPORT_SYMBOL_GPL(ia64_dma_get_required_mask);
-> -
->  u64 dma_get_required_mask(struct device *dev)
->  {
->  	return platform_dma_get_required_mask(dev);
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index b2afc29..f9f3930 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -1009,8 +1009,7 @@ int __init platform_bus_init(void)
->  	return error;
->  }
->  
-> -#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
-> -u64 dma_get_required_mask(struct device *dev)
-> +u64 dma_get_required_mask_from_max_pfn(struct device *dev)
->  {
->  	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
->  	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
-> @@ -1028,6 +1027,13 @@ u64 dma_get_required_mask(struct device *dev)
->  	}
->  	return mask;
->  }
-> +EXPORT_SYMBOL_GPL(dma_get_required_mask_from_max_pfn);
-> +
-> +#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
-> +u64 dma_get_required_mask(struct device *dev)
-> +{
-> +	return dma_get_required_mask_from_max_pfn(dev);
-> +}
->  EXPORT_SYMBOL_GPL(dma_get_required_mask);
->  #endif
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index d5d3881..6e2fdfc 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -127,6 +127,7 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
->  	return dma_set_mask_and_coherent(dev, mask);
->  }
->  
-> +extern u64 dma_get_required_mask_from_max_pfn(struct device *dev);
->  extern u64 dma_get_required_mask(struct device *dev);
->  
->  #ifndef set_arch_dma_coherent_ops
-> -- 
-> 1.7.10.4
+>> ---
+>> drivers/base/platform.c     | 18 +++++++++--
+>> drivers/of/platform.c       | 78 +++++++++++++++++++++++++++++++++++++++++++++
+>> include/linux/of_platform.h | 10 ++++++
+>> 3 files changed, 103 insertions(+), 3 deletions(-)
+>> 
+>> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+>> index b2afc29..282bfec 100644
+>> --- a/drivers/base/platform.c
+>> +++ b/drivers/base/platform.c
+>> @@ -1002,10 +1002,22 @@ int __init platform_bus_init(void)
+>> 
+>> 	error = device_register(&platform_bus);
+>> 	if (error)
+>> -		return error;
+>> -	error =  bus_register(&platform_bus_type);
+>> +		goto err_out;
+>> +
+>> +	error = bus_register(&platform_bus_type);
+>> +	if (error)
+>> +		goto err_unreg_dev;
+>> +
+>> +	error = of_platform_register_reconfig_notifier();
+>> 	if (error)
+>> -		device_unregister(&platform_bus);
+>> +		goto err_unreg_bus;
 > 
+> We really don't want to fail out here. If the notifier registration fails, it
+> doesn't make sense to cause the entire boot to fail.
 > 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+> Instead of refactoring the function, just add the call to
+> of_platform_register_reconfig_notifier(), and WARN_ON() failure without
+> bailing.
 > 
+> (Actually, you don't need to send me a fixup for this; I've gone ahead
+> and fixed it up in my tree)
+> 
+
+I see. Thanks.
+
+I’m curious under which condition the of_platform_register_reconfig_notifier()
+would fail. Only under extreme low memory conditions (and very early in the
+boot-sequence). I doubt we’ll get very far - the boot-sequence will croak shortly
+after. 
+
+>> +
+>> +	return 0;
+>> +err_unreg_bus:
+>> +	bus_unregister(&platform_bus_type);
+>> +err_unreg_dev:
+>> +	device_unregister(&platform_bus);
+>> +err_out:
+>> 	return error;
+>> }
+>> 
+>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+>> index 3b64d0b..aa8db92 100644
+>> --- a/drivers/of/platform.c
+>> +++ b/drivers/of/platform.c
+>> @@ -546,4 +546,82 @@ void of_platform_depopulate(struct device *parent)
+>> }
+>> EXPORT_SYMBOL_GPL(of_platform_depopulate);
+>> 
+>> +#ifdef CONFIG_OF_DYNAMIC
+>> +
+>> +static struct notifier_block platform_of_notifier;
+>> +
+>> +static int of_platform_notify(struct notifier_block *nb,
+>> +				unsigned long action, void *arg)
+>> +{
+>> +	struct platform_device *pdev_parent, *pdev;
+>> +	struct device_node *dn;
+>> +	int state;
+>> +	bool children_left;
+>> +
+>> +	state = of_reconfig_get_state_change(action, arg);
+>> +
+>> +	/* no change? */
+>> +	if (state == -1)
+>> +		return NOTIFY_OK;
+>> +
+>> +	switch (action) {
+>> +	case OF_RECONFIG_ATTACH_NODE:
+>> +	case OF_RECONFIG_DETACH_NODE:
+>> +		dn = arg;
+>> +		break;
+>> +	case OF_RECONFIG_ADD_PROPERTY:
+>> +	case OF_RECONFIG_REMOVE_PROPERTY:
+>> +	case OF_RECONFIG_UPDATE_PROPERTY:
+>> +		dn = ((struct of_prop_reconfig *)arg)->dn;
+>> +		break;
+>> +	default:
+>> +		return NOTIFY_OK;
+>> +	}
+>> +
+>> +	if (state) {
+>> +
+>> +		/* verify that the parent is a bus */
+>> +		if (!of_match_node(of_default_bus_match_table, dn->parent))
+>> +			return NOTIFY_OK;	/* not for us */
+> 
+> This doesn't work reliably. Not all callers of of_platform_populate use
+> the of_default_bus_match_table. The code needs to actively track the
+> nodes that were used to create child devices. We've got a flag in the
+> device node now that you can use for that; OF_POPULATED_BUS.
+> 
+
+I see. That’s a relatively new flag no?
+
+>> +
+>> +		/* pdev_parent may be NULL when no bus platform device */
+>> +		pdev_parent = of_find_device_by_node(dn->parent);
+>> +		pdev = of_platform_device_create(dn, NULL,
+>> +				pdev_parent ? &pdev_parent->dev : NULL);
+>> +		of_dev_put(pdev_parent);
+>> +
+>> +		if (pdev == NULL) {
+>> +			pr_err("%s: failed to create for '%s'\n",
+>> +					__func__, dn->full_name);
+>> +			/* of_platform_device_create tosses the error code */
+>> +			return notifier_from_errno(-EINVAL);
+>> +		}
+>> +
+>> +	} else {
+>> +
+>> +		/* find our device by node */
+>> +		pdev = of_find_device_by_node(dn);
+>> +		if (pdev == NULL)
+>> +			return NOTIFY_OK;	/* no? not meant for us */
+>> +
+>> +		/* unregister takes one ref away */
+>> +		of_platform_device_destroy(&pdev->dev, &children_left);
+>> +
+>> +		/* and put the reference of the find */
+>> +		of_dev_put(pdev);
+>> +
+>> +	}
+>> +
+>> +	return NOTIFY_OK;
+>> +}
+>> +
+>> +int of_platform_register_reconfig_notifier(void)
+>> +{
+>> +	platform_of_notifier.notifier_call = of_platform_notify;
+>> +	return of_reconfig_notifier_register(&platform_of_notifier);
+>> +}
+>> +EXPORT_SYMBOL_GPL(of_platform_register_reconfig_notifier);
+>> +
+>> +#endif
+>> +
+>> #endif /* CONFIG_OF_ADDRESS */
+>> diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+>> index c2b0627..01fe5d6 100644
+>> --- a/include/linux/of_platform.h
+>> +++ b/include/linux/of_platform.h
+>> @@ -84,4 +84,14 @@ static inline int of_platform_populate(struct device_node *root,
+>> static inline void of_platform_depopulate(struct device *parent) { }
+>> #endif
+>> 
+>> +#ifdef CONFIG_OF_DYNAMIC
+>> +extern int of_platform_register_reconfig_notifier(void);
+>> +#else
+>> +static inline int of_platform_register_reconfig_notifier(void)
+>> +{
+>> +	return 0;
+>> +}
+>> +#endif
+>> +
+>> +
+>> #endif	/* _LINUX_OF_PLATFORM_H */
+>> -- 
+>> 1.7.12
+
