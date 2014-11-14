@@ -1,134 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965873AbaKNPby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:31:54 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:44986 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965567AbaKNPbv convert rfc822-to-8bit (ORCPT
+	id S965885AbaKNPc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:32:28 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:49358 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965743AbaKNPc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:31:51 -0500
-Message-ID: <54662062.8030807@arm.com>
-Date: Fri, 14 Nov 2014 15:31:46 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 14 Nov 2014 10:32:26 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <linux-rockchip@lists.infradead.org>,
+        James Hogan <james.hogan@imgtec.com>, Heiko Stuebner <heiko@sntech.de>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Max Schwarz <max.schwarz@online.de>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] clk-divider: Fix READ_ONLY when divider > 1
+Date: Fri, 14 Nov 2014 15:32:09 +0000
+Message-ID: <1415979129-21325-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 2.0.4
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
- to reduce duplicated code
-References: <20141112133941.647950773@linutronix.de> <20141112134120.393705922@linutronix.de>
-In-Reply-To: <20141112134120.393705922@linutronix.de>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 14 Nov 2014 15:31:47.0113 (UTC) FILETIME=[1A21F190:01D00020]
-X-MC-Unique: 114111415314908801
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/14 13:43, Thomas Gleixner wrote:
-> From: Jiang Liu <jiang.liu@linux.intel.com>
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-> Cc: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  include/linux/irqdomain.h |    5 +++++
->  kernel/irq/irqdomain.c    |   10 ++++++++++
->  2 files changed, 15 insertions(+)
-> 
-> Index: tip/include/linux/irqdomain.h
-> ===================================================================
-> --- tip.orig/include/linux/irqdomain.h
-> +++ tip/include/linux/irqdomain.h
-> @@ -33,6 +33,7 @@
->  #define _LINUX_IRQDOMAIN_H
->  
->  #include <linux/types.h>
-> +#include <linux/irqhandler.h>
->  #include <linux/radix-tree.h>
->  
->  struct device_node;
-> @@ -263,6 +264,10 @@ extern int irq_domain_set_hwirq_and_chip
->  					 irq_hw_number_t hwirq,
->  					 struct irq_chip *chip,
->  					 void *chip_data);
-> +extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
-> +				irq_hw_number_t hwirq, struct irq_chip *chip,
-> +				void *chip_data, irq_flow_handler_t handler,
-> +				void *handler_data, const char *handler_name);
->  extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
->  extern void irq_domain_free_irqs_common(struct irq_domain *domain,
->  					int virq, int nr_irqs);
-> Index: tip/kernel/irq/irqdomain.c
-> ===================================================================
-> --- tip.orig/kernel/irq/irqdomain.c
-> +++ tip/kernel/irq/irqdomain.c
-> @@ -882,6 +882,16 @@ int irq_domain_set_hwirq_and_chip(struct
->  	return 0;
->  }
->  
-> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
-> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
-> +			 void *chip_data, irq_flow_handler_t handler,
-> +			 void *handler_data, const char *handler_name)
-> +{
-> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
-> +	__irq_set_handler(virq, handler, 0, handler_name);
-> +	irq_set_handler_data(virq, handler_data);
-> +}
-> +
+Commit 79c6ab509558 (clk: divider: add CLK_DIVIDER_READ_ONLY flag) in
+v3.16 introduced the CLK_DIVIDER_READ_ONLY flag which caused the
+recalc_rate() and round_rate() clock callbacks to be omitted.
 
-We still have the issue that, depending on where in the stack this is
- called, this will succeed or fail: If this is called from the inner
-irqchip, __irq_set_handler() will fail, as it will look at the outer
-domain as the (desc->irq_data.chip == &no_irq_chip) test fails (we
-haven't set the top level yet).
+However using this flag has the unfortunate side effect of causing the
+clock recalculation code when a clock rate change is attempted to always
+treat it as a pass-through clock, i.e. with a fixed divide of 1, which
+may not be the case. Child clock rates are then recalculated using the
+wrong parent rate.
 
-I have this very imperfect workaround in my tree:
+Therefore instead of dropping the recalc_rate() and round_rate()
+callbacks, alter clk_divider_bestdiv() to always report the current
+divider as the best divider so that it is never altered.
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index d028b34..91e6515 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -731,7 +731,16 @@ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
- 	if (!handle) {
- 		handle = handle_bad_irq;
- 	} else {
--		if (WARN_ON(desc->irq_data.chip == &no_irq_chip))
-+#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
-+		struct irq_data *irq_data = &desc->irq_data;
-+		while (irq_data) {
-+			if (irq_data->chip != &no_irq_chip)
-+				break;
-+			irq_data = irq_data->parent_data;
-+		}
-+#endif
+For me the read only clock was the system clock, which divided the PLL
+rate by 2, from which both the UART and the SPI clocks were divided.
+Initial setting of the UART rate set it correctly, but when the SPI
+clock was set, the other child clocks were miscalculated. The UART clock
+was recalculated using the PLL rate as the parent rate, resulting in a
+UART new_rate of double what it should be, and a UART which spewed forth
+garbage when the rate changes were propagated.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Heiko Stuebner <heiko@sntech.de>
+Cc: Thomas Abraham <thomas.ab@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Max Schwarz <max.schwarz@online.de>
+Cc: <stable@vger.kernel.org> # v3.16+
+---
+ drivers/clk/clk-divider.c    | 18 +++++++++---------
+ drivers/clk/rockchip/clk.c   |  4 +---
+ include/linux/clk-provider.h |  1 -
+ 3 files changed, 10 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index 18a9de29df0e..c0a842b335c5 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -263,6 +263,14 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+ 	if (!rate)
+ 		rate = 1;
+ 
++	/* if read only, just return current value */
++	if (divider->flags & CLK_DIVIDER_READ_ONLY) {
++		bestdiv = readl(divider->reg) >> divider->shift;
++		bestdiv &= div_mask(divider);
++		bestdiv = _get_div(divider, bestdiv);
++		return bestdiv;
++	}
 +
-+		if (WARN_ON(!irq_data || irq_data->chip == &no_irq_chip))
- 			goto out;
+ 	maxdiv = _get_maxdiv(divider);
+ 
+ 	if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
+@@ -361,11 +369,6 @@ const struct clk_ops clk_divider_ops = {
+ };
+ EXPORT_SYMBOL_GPL(clk_divider_ops);
+ 
+-const struct clk_ops clk_divider_ro_ops = {
+-	.recalc_rate = clk_divider_recalc_rate,
+-};
+-EXPORT_SYMBOL_GPL(clk_divider_ro_ops);
+-
+ static struct clk *_register_divider(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		void __iomem *reg, u8 shift, u8 width,
+@@ -391,10 +394,7 @@ static struct clk *_register_divider(struct device *dev, const char *name,
  	}
  
-Which translate into: If there is at least one irqchip in the domain,
-it will probably sort itself out. Not ideal. Any real solution to
-this problem?
-
-GICv2 faces this exact problem, as some of its interrupts are used
-directly, and some others are used through the MSI domain. In the
-GIC driver, it is almost impossible to find out...
-
-Thanks,
-
-	M.
+ 	init.name = name;
+-	if (clk_divider_flags & CLK_DIVIDER_READ_ONLY)
+-		init.ops = &clk_divider_ro_ops;
+-	else
+-		init.ops = &clk_divider_ops;
++	init.ops = &clk_divider_ops;
+ 	init.flags = flags | CLK_IS_BASIC;
+ 	init.parent_names = (parent_name ? &parent_name: NULL);
+ 	init.num_parents = (parent_name ? 1 : 0);
+diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
+index 1e68bff481b8..880a266f0143 100644
+--- a/drivers/clk/rockchip/clk.c
++++ b/drivers/clk/rockchip/clk.c
+@@ -90,9 +90,7 @@ static struct clk *rockchip_clk_register_branch(const char *name,
+ 		div->width = div_width;
+ 		div->lock = lock;
+ 		div->table = div_table;
+-		div_ops = (div_flags & CLK_DIVIDER_READ_ONLY)
+-						? &clk_divider_ro_ops
+-						: &clk_divider_ops;
++		div_ops = &clk_divider_ops;
+ 	}
+ 
+ 	clk = clk_register_composite(NULL, name, parent_names, num_parents,
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index be21af149f11..2839c639f092 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -352,7 +352,6 @@ struct clk_divider {
+ #define CLK_DIVIDER_READ_ONLY		BIT(5)
+ 
+ extern const struct clk_ops clk_divider_ops;
+-extern const struct clk_ops clk_divider_ro_ops;
+ struct clk *clk_register_divider(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		void __iomem *reg, u8 shift, u8 width,
 -- 
-Jazz is not dead. It just smells funny...
+2.0.4
 
