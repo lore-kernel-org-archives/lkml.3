@@ -1,452 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186AbaKNWnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 17:43:04 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:44481 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163AbaKNWnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 17:43:00 -0500
-From: Hai Li <hali@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Hai Li <hali@codeaurora.org>
-Subject: [PATCH 2/2] drm/msm: Decouple hdmi driver from mdp driver
-Date: Fri, 14 Nov 2014 17:42:35 -0500
-Message-Id: <1416004955-28749-2-git-send-email-hali@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1416004955-28749-1-git-send-email-hali@codeaurora.org>
-References: <1416004955-28749-1-git-send-email-hali@codeaurora.org>
+	id S1755195AbaKNWoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 17:44:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48709 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754644AbaKNWoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 17:44:12 -0500
+Date: Fri, 14 Nov 2014 23:44:07 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Dmitry Torokhov <dtor@chromium.org>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HIS: nokia-modem: fix error handling of
+ irq_of_parse_and_map
+Message-ID: <20141114224407.GB18566@earth.universe>
+References: <20141114220637.GA33546@dtor-ws>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="1LKvkjL3sHcu1TtY"
+Content-Disposition: inline
+In-Reply-To: <20141114220637.GA33546@dtor-ws>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is to remove the hdmi structure from mdp kms data structure.
 
-To do this, the initialization flow is re-arranged.
- - hdmi_init is moved from modeset_init to hdmi_bind.
- - hdmi_destroy is called by hdmi_unbind and the use of kref is abandoned.
- - A new interface hdmi_set_encoder is introduced to establish the links
-   between hdmi connector, encoder and bridge.
+--1LKvkjL3sHcu1TtY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Hai Li <hali@codeaurora.org>
----
- drivers/gpu/drm/msm/hdmi/hdmi.c           | 61 +++++++++++++++++++++++--------
- drivers/gpu/drm/msm/hdmi/hdmi.h           | 14 -------
- drivers/gpu/drm/msm/hdmi/hdmi_bridge.c    |  3 +-
- drivers/gpu/drm/msm/hdmi/hdmi_connector.c |  6 +--
- drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c   | 14 ++++---
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c   | 38 ++++++++++---------
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h   |  2 -
- drivers/gpu/drm/msm/msm_drv.c             |  9 ++++-
- drivers/gpu/drm/msm/msm_drv.h             |  6 ++-
- 9 files changed, 88 insertions(+), 65 deletions(-)
+On Fri, Nov 14, 2014 at 02:06:37PM -0800, Dmitry Torokhov wrote:
+> Return value of irq_of_parse_and_map() is unsigned int, with 0
+> indicating failure, so testing for negative result never works.
+>=20
+> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
 
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi.c b/drivers/gpu/drm/msm/hdmi/hdmi.c
-index aaf5e2b..2d2551f 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi.c
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi.c
-@@ -1,4 +1,5 @@
- /*
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-  * Copyright (C) 2013 Red Hat
-  * Author: Rob Clark <robdclark@gmail.com>
-  *
-@@ -17,6 +18,29 @@
- 
- #include "hdmi.h"
- 
-+int hdmi_set_encoder(struct platform_device *pdev,
-+				struct drm_encoder *encoder)
-+{
-+	struct hdmi *hdmi = platform_get_drvdata(pdev);
-+
-+	if (!encoder && !hdmi->encoder) {
-+		pr_err("%s:wrong encoder status,encoder=%p,hdmi->encoder=%p\n",
-+			__func__, encoder, hdmi->encoder);
-+		return -EINVAL;
-+	}
-+
-+	/* Each connector has only one available encoder for now. */
-+	hdmi->connector->encoder_ids[0] = 0;
-+	hdmi->connector->encoder = NULL;
-+	if (encoder) {
-+		drm_mode_connector_attach_encoder(hdmi->connector, encoder);
-+		encoder->bridge = hdmi->bridge;
-+	}
-+	hdmi->encoder = encoder;
-+
-+	return 0;
-+}
-+
- void hdmi_set_mode(struct hdmi *hdmi, bool power_on)
- {
- 	uint32_t ctrl = 0;
-@@ -54,10 +78,15 @@ static irqreturn_t hdmi_irq(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--void hdmi_destroy(struct kref *kref)
-+static void hdmi_destroy(struct platform_device *pdev)
- {
--	struct hdmi *hdmi = container_of(kref, struct hdmi, refcount);
--	struct hdmi_phy *phy = hdmi->phy;
-+	struct hdmi *hdmi = platform_get_drvdata(pdev);
-+	struct hdmi_phy *phy;
-+
-+	if (!hdmi)
-+		return;
-+
-+	phy = hdmi->phy;
- 
- 	if (hdmi->config->shared_irq)
- 		msm_shared_irq_unregister(MSM_SUBSYS_HDMI);
-@@ -68,15 +97,14 @@ void hdmi_destroy(struct kref *kref)
- 	if (hdmi->i2c)
- 		hdmi_i2c_destroy(hdmi->i2c);
- 
--	platform_set_drvdata(hdmi->pdev, NULL);
-+	platform_set_drvdata(pdev, NULL);
- }
- 
- /* initialize connector */
--struct hdmi *hdmi_init(struct drm_device *dev, struct drm_encoder *encoder)
-+static int hdmi_init(struct platform_device *pdev, struct drm_device *dev)
- {
- 	struct hdmi *hdmi = NULL;
- 	struct msm_drm_private *priv = dev->dev_private;
--	struct platform_device *pdev = priv->hdmi_pdev;
- 	struct hdmi_platform_config *config;
- 	int i, ret;
- 
-@@ -94,12 +122,11 @@ struct hdmi *hdmi_init(struct drm_device *dev, struct drm_encoder *encoder)
- 		goto fail;
- 	}
- 
--	kref_init(&hdmi->refcount);
-+	platform_set_drvdata(pdev, hdmi);
- 
- 	hdmi->dev = dev;
- 	hdmi->pdev = pdev;
- 	hdmi->config = config;
--	hdmi->encoder = encoder;
- 
- 	hdmi_audio_infoframe_init(&hdmi->audio.infoframe);
- 
-@@ -233,14 +260,10 @@ struct hdmi *hdmi_init(struct drm_device *dev, struct drm_encoder *encoder)
- 		}
- 	}
- 
--	encoder->bridge = hdmi->bridge;
--
- 	priv->bridges[priv->num_bridges++]       = hdmi->bridge;
- 	priv->connectors[priv->num_connectors++] = hdmi->connector;
- 
--	platform_set_drvdata(pdev, hdmi);
--
--	return hdmi;
-+	return 0;
- 
- fail:
- 	if (hdmi) {
-@@ -249,10 +272,10 @@ fail:
- 			hdmi->bridge->funcs->destroy(hdmi->bridge);
- 		if (hdmi->connector)
- 			hdmi->connector->funcs->destroy(hdmi->connector);
--		hdmi_destroy(&hdmi->refcount);
-+		hdmi_destroy(pdev);
- 	}
- 
--	return ERR_PTR(ret);
-+	return ret;
- }
- 
- /*
-@@ -289,6 +312,7 @@ static int get_gpio(struct device *dev, struct device_node *of_node, const char
- static int hdmi_bind(struct device *dev, struct device *master, void *data)
- {
- 	static struct hdmi_platform_config config = {};
-+	int ret;
- #ifdef CONFIG_OF
- 	struct device_node *of_node = dev->of_node;
- 
-@@ -379,6 +403,12 @@ static int hdmi_bind(struct device *dev, struct device *master, void *data)
- 	}
- #endif
- 	dev->platform_data = &config;
-+
-+	ret = hdmi_init(to_platform_device(dev), dev_get_drvdata(master));
-+	if (ret) {
-+		dev_err(dev, "%s: hdmi_init fail, %d\n", __func__, ret);
-+		return ret;
-+	}
- 	set_hdmi_pdev(dev_get_drvdata(master), to_platform_device(dev));
- 	return 0;
- }
-@@ -387,6 +417,7 @@ static void hdmi_unbind(struct device *dev, struct device *master,
- 		void *data)
- {
- 	set_hdmi_pdev(dev_get_drvdata(master), NULL);
-+	hdmi_destroy(to_platform_device(dev));
- }
- 
- static const struct component_ops hdmi_ops = {
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi.h b/drivers/gpu/drm/msm/hdmi/hdmi.h
-index b981995..a78dd8d 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi.h
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi.h
-@@ -38,8 +38,6 @@ struct hdmi_audio {
- };
- 
- struct hdmi {
--	struct kref refcount;
--
- 	struct drm_device *dev;
- 	struct platform_device *pdev;
- 
-@@ -103,7 +101,6 @@ struct hdmi_platform_config {
- };
- 
- void hdmi_set_mode(struct hdmi *hdmi, bool power_on);
--void hdmi_destroy(struct kref *kref);
- 
- static inline void hdmi_write(struct hdmi *hdmi, u32 reg, u32 data)
- {
-@@ -115,17 +112,6 @@ static inline u32 hdmi_read(struct hdmi *hdmi, u32 reg)
- 	return msm_readl(hdmi->mmio + reg);
- }
- 
--static inline struct hdmi * hdmi_reference(struct hdmi *hdmi)
--{
--	kref_get(&hdmi->refcount);
--	return hdmi;
--}
--
--static inline void hdmi_unreference(struct hdmi *hdmi)
--{
--	kref_put(&hdmi->refcount, hdmi_destroy);
--}
--
- /*
-  * The phy appears to be different, for example between 8960 and 8x60,
-  * so split the phy related functions out and load the correct one at
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi_bridge.c b/drivers/gpu/drm/msm/hdmi/hdmi_bridge.c
-index f6cf745..6902ad6 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi_bridge.c
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi_bridge.c
-@@ -26,7 +26,6 @@ struct hdmi_bridge {
- static void hdmi_bridge_destroy(struct drm_bridge *bridge)
- {
- 	struct hdmi_bridge *hdmi_bridge = to_hdmi_bridge(bridge);
--	hdmi_unreference(hdmi_bridge->hdmi);
- 	drm_bridge_cleanup(bridge);
- 	kfree(hdmi_bridge);
- }
-@@ -218,7 +217,7 @@ struct drm_bridge *hdmi_bridge_init(struct hdmi *hdmi)
- 		goto fail;
- 	}
- 
--	hdmi_bridge->hdmi = hdmi_reference(hdmi);
-+	hdmi_bridge->hdmi = hdmi;
- 
- 	bridge = &hdmi_bridge->base;
- 
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi_connector.c b/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
-index 4aca2a3..f5da877 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
-@@ -330,8 +330,6 @@ static void hdmi_connector_destroy(struct drm_connector *connector)
- 	drm_connector_unregister(connector);
- 	drm_connector_cleanup(connector);
- 
--	hdmi_unreference(hdmi_connector->hdmi);
--
- 	kfree(hdmi_connector);
- }
- 
-@@ -422,7 +420,7 @@ struct drm_connector *hdmi_connector_init(struct hdmi *hdmi)
- 		goto fail;
- 	}
- 
--	hdmi_connector->hdmi = hdmi_reference(hdmi);
-+	hdmi_connector->hdmi = hdmi;
- 	INIT_WORK(&hdmi_connector->hpd_work, hotplug_work);
- 
- 	connector = &hdmi_connector->base;
-@@ -445,8 +443,6 @@ struct drm_connector *hdmi_connector_init(struct hdmi *hdmi)
- 		goto fail;
- 	}
- 
--	drm_mode_connector_attach_encoder(connector, hdmi->encoder);
--
- 	return connector;
- 
- fail:
-diff --git a/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c b/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c
-index 79d804e..b0b6dee 100644
---- a/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c
-@@ -228,7 +228,6 @@ static int modeset_init(struct mdp4_kms *mdp4_kms)
- 	struct drm_encoder *encoder;
- 	struct drm_connector *connector;
- 	struct drm_panel *panel;
--	struct hdmi *hdmi;
- 	int ret;
- 
- 	/* construct non-private planes: */
-@@ -326,15 +325,18 @@ static int modeset_init(struct mdp4_kms *mdp4_kms)
- 	priv->crtcs[priv->num_crtcs++] = crtc;
- 	priv->encoders[priv->num_encoders++] = encoder;
- 
--	hdmi = hdmi_init(dev, encoder);
--	if (IS_ERR(hdmi)) {
--		ret = PTR_ERR(hdmi);
--		dev_err(dev->dev, "failed to initialize HDMI: %d\n", ret);
--		goto fail;
-+	ret = hdmi_set_encoder(priv->hdmi_pdev, encoder);
-+	if (ret) {
-+		dev_err(dev->dev, "failed to set encoder\n");
-+		goto fail1;
- 	}
- 
- 	return 0;
- 
-+fail1:
-+	priv->encoders[--priv->num_encoders] = NULL;
-+	if (encoder)
-+		encoder->funcs->destroy(encoder);
- fail:
- 	return ret;
- }
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-index 31a2c63..1bb3a28 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-@@ -302,14 +302,6 @@ static int modeset_init(struct mdp5_kms *mdp5_kms)
- 		priv->crtcs[priv->num_crtcs++] = crtc;
- 	}
- 
--	/* Construct encoder for HDMI: */
--	encoder = mdp5_encoder_init(dev, 3, INTF_HDMI);
--	if (IS_ERR(encoder)) {
--		dev_err(dev->dev, "failed to construct encoder\n");
--		ret = PTR_ERR(encoder);
--		goto fail;
--	}
--
- 	/* NOTE: the vsync and error irq's are actually associated with
- 	 * the INTF/encoder.. the easiest way to deal with this (ie. what
- 	 * we do now) is assume a fixed relationship between crtc's and
-@@ -318,21 +310,33 @@ static int modeset_init(struct mdp5_kms *mdp5_kms)
- 	 * care of error and vblank irq's that the crtc has registered,
- 	 * and also update user-requested vblank_mask.
- 	 */
--	encoder->possible_crtcs = BIT(0);
--	mdp5_crtc_set_intf(priv->crtcs[0], 3, INTF_HDMI);
-+	if (priv->hdmi_pdev) {
-+		/* Construct encoder for HDMI: */
-+		encoder = mdp5_encoder_init(dev, 3, INTF_HDMI);
-+		if (IS_ERR(encoder)) {
-+			dev_err(dev->dev, "failed to construct encoder\n");
-+			ret = PTR_ERR(encoder);
-+			goto fail;
-+		}
- 
--	priv->encoders[priv->num_encoders++] = encoder;
-+		encoder->possible_crtcs = BIT(0);
-+		mdp5_crtc_set_intf(priv->crtcs[0], 3, INTF_HDMI);
- 
--	/* Construct bridge/connector for HDMI: */
--	mdp5_kms->hdmi = hdmi_init(dev, encoder);
--	if (IS_ERR(mdp5_kms->hdmi)) {
--		ret = PTR_ERR(mdp5_kms->hdmi);
--		dev_err(dev->dev, "failed to initialize HDMI: %d\n", ret);
--		goto fail;
-+		priv->encoders[priv->num_encoders++] = encoder;
-+
-+		ret = hdmi_set_encoder(priv->hdmi_pdev, encoder);
-+		if (ret)
-+			goto fail1;
- 	}
- 
- 	return 0;
- 
-+fail1:
-+	if (priv->hdmi_pdev) {
-+		priv->encoders[--priv->num_encoders] = NULL;
-+		if (encoder)
-+			encoder->funcs->destroy(encoder);
-+	}
- fail:
- 	return ret;
- }
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-index 5bf340d..c91101d 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-@@ -71,8 +71,6 @@ struct mdp5_kms {
- 	struct clk *lut_clk;
- 	struct clk *vsync_clk;
- 
--	struct hdmi *hdmi;
--
- 	struct mdp_irq error_handler;
- };
- #define to_mdp5_kms(x) container_of(x, struct mdp5_kms, base)
-diff --git a/drivers/gpu/drm/msm/msm_drv.c b/drivers/gpu/drm/msm/msm_drv.c
-index b67ef59..c27cb9a 100644
---- a/drivers/gpu/drm/msm/msm_drv.c
-+++ b/drivers/gpu/drm/msm/msm_drv.c
-@@ -147,7 +147,10 @@ static int msm_unload(struct drm_device *dev)
- 				priv->vram.paddr, &attrs);
- 	}
- 
--	component_unbind_all(dev->dev, dev);
-+	if (priv->component_bound) {
-+		component_unbind_all(dev->dev, dev);
-+		priv->component_bound = false;
-+	}
- 
- 	dev->dev_private = NULL;
- 
-@@ -237,7 +240,9 @@ static int msm_load(struct drm_device *dev, unsigned long flags)
- 	/* Bind all our sub-components: */
- 	ret = component_bind_all(dev->dev, dev);
- 	if (ret)
--		return ret;
-+		goto fail;
-+
-+	priv->component_bound = true;
- 
- 	switch (get_mdp_ver(pdev)) {
- 	case 4:
-diff --git a/drivers/gpu/drm/msm/msm_drv.h b/drivers/gpu/drm/msm/msm_drv.h
-index 718ac55..76cac63 100644
---- a/drivers/gpu/drm/msm/msm_drv.h
-+++ b/drivers/gpu/drm/msm/msm_drv.h
-@@ -125,6 +125,8 @@ struct msm_drm_private {
- 		 */
- 		struct drm_mm mm;
- 	} vram;
-+
-+	bool component_bound;
- };
- 
- /* For mdp5 only */
-@@ -219,10 +221,10 @@ struct drm_framebuffer *msm_framebuffer_create(struct drm_device *dev,
- 
- struct drm_fb_helper *msm_fbdev_init(struct drm_device *dev);
- 
--struct hdmi;
--struct hdmi *hdmi_init(struct drm_device *dev, struct drm_encoder *encoder);
- void __init hdmi_register(void);
- void __exit hdmi_unregister(void);
-+int hdmi_set_encoder(struct platform_device *pdev,
-+				struct drm_encoder *encoder);
- 
- #ifdef CONFIG_DEBUG_FS
- void msm_gem_describe(struct drm_gem_object *obj, struct seq_file *m);
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+https://git.kernel.org/cgit/linux/kernel/git/sre/linux-hsi.git/commit/?h=3D=
+for-next&id=3Dd95dc9e388104488d0f5a5969c435e601840da2e
 
+-- Sebastian
+
+--1LKvkjL3sHcu1TtY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUZoW3AAoJENju1/PIO/qaXekP/2YDxp1v80i7XGao5krh1kEI
+xJ56NxaFhIdZ6BxAwtjc1BM8gzsrdDQ/gRZBWbOeq1yI33rE4rOlCPlhjiV5i73G
+DLlNpHQeljMRb3mlYEdiYhHk+5/F0mydfb0EP+DtXyJF0orYjzTyfpXFy6Qpn7oh
+HL9HV5vX7k7qC7usOmGisi9LT26g+Jb9Gb9fVNyxwZMJwP14UzsiUOnGgnRxmhjD
+C4JXG8m8R3Sb641EW+SPgbBxj01/mzIFNy585HszBbtuWOclVn6xid3yL0xaRpcq
+UOIuV+iiasTj6FOwZMesjxaDs7ozIfyg1UgSdIku5szI/nWSZTIZAtnWM3CXRP+k
+R6rFrbwcVyxQdPVAgU8k3RcJtzlPT4ZQ3F4ZvYEtlSThmNerP5eXhl27m8O7k5G9
+2bF7onJTC2rxVpoCBDQ+upf4GhhEcK37mFjuckAtVzyi76t7GrHZUYS4YYUqhnS0
+CcIL0hTGjg4NUs3WVNt/dH2wkYNKHTjRYshbuX8zNWqC6z/wPOiHZp/YDk4eMgLR
+h/zfCVZwl5/4qtZEYGufWnOi6dcyOKJfHlz5IsCycVyoOfnCdgoheASgepw4aP71
+z4S3qTruespH2Ca/UOKklPTVKrOX12hu30lhiI+YkGG1btp5FtElSyLSN2hkW+nw
+ynMp9vr9rX/NJOE55oAZ
+=SmAX
+-----END PGP SIGNATURE-----
+
+--1LKvkjL3sHcu1TtY--
