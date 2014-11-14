@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935337AbaKNPGX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:06:23 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:50112 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934535AbaKNPGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:06:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Feng Kan <fkan@apm.com>, patches@apm.com, linux-kernel@vger.kernel.org,
-        =devicetree@vger.kernel.org
-Subject: Re: [PATCH V2 4/7] arm64: dts: Add Designware GPIO dts binding to APM X-Gene platform
-Date: Fri, 14 Nov 2014 16:06:15 +0100
-Message-ID: <1829495.FoDfH1G36W@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415924401-3013-5-git-send-email-fkan@apm.com>
-References: <1415924401-3013-1-git-send-email-fkan@apm.com> <1415924401-3013-5-git-send-email-fkan@apm.com>
+	id S935365AbaKNPHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:07:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934535AbaKNPHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 10:07:10 -0500
+Message-ID: <54661A8C.5050806@redhat.com>
+Date: Fri, 14 Nov 2014 10:06:52 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:lG+56G5dsWb7+w3Dr7LKgdfPzDtpxErvMxjNCq+mC72
- aYOkySD0dXPfjoi3Cz9QLDpf2KO/qs8Bl/PkRE6Jixy841zlyH
- SI4xn4Xk41GCSIys+uwP1zKVNbWxj0jaT5Q0gqDOXBWYdXtV9K
- fxjy5CTHN04tSzb40LPvMc+9/dvtfLIia0PRjiCpkZ63kyTJmK
- xqrGgZvEhUUvRJ9mrNH2M1l40Ey6w7L+WENNAfrg+fM3eR2IrO
- jQ9qFcXLoEL7mqAr3rPB1fgyaPvXtPhuCmT6JFq58DlfKNRPlR
- BFUE0ciLMOrw5lIcd7nxG+Ma+8RKpBbVdQLb/ZCYLHYilw5D0S
- Y6FY1Du/lAAfqHmRtvPk=
-X-UI-Out-Filterresults: notjunk:1;
+To: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andrea Argangeli <andrea@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: anon_vma accumulating for certain load still not addressed
+References: <20141114130822.GC22857@dhcp22.suse.cz>
+In-Reply-To: <20141114130822.GC22857@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 November 2014 16:19:58 Feng Kan wrote:
-> +               dwgpio: dwgpio@1c024000 {
-> +                       compatible = "snps,dw-apb-gpio";
-> +                       reg = <0x0 0x1c024000 0x0 0x1000>;
-> +                       reg-io-width = <4>;
-> +                       #address-cells = <1>;
-> +                       #size-cells = <0>;
-> 
+On 11/14/2014 08:08 AM, Michal Hocko wrote:
+> Hi,
+> back in 2012 [1] there was a discussion about a forking load which
+> accumulates anon_vmas. There was a trivial test case which triggers this
+> and can potentially deplete the memory by local user.
+>
+> We have a report for an older enterprise distribution where nsd is
+> suffering from this issue most probably (I haven't debugged it throughly
+> but accumulating anon_vma structs over time sounds like a good enough
+> fit) and has to be restarted after some time to release the accumulated
+> anon_vma objects.
+>
+> There was a patch which tried to work around the issue [2] but I do not
+> see any follow ups nor any indication that the issue would be addressed
+> in other way.
+>
+> The test program from [1] was running for around 39 mins on my laptop
+> and here is the result:
+>
+> $ date +%s; grep anon_vma /proc/slabinfo
+> 1415960225
+> anon_vma           11664  11900    160   25    1 : tunables    0    0    0 : slabdata    476    476      0
+>
+> $ ./a # The reproducer
+>
+> $ date +%s; grep anon_vma /proc/slabinfo
+> 1415962592
+> anon_vma           34875  34875    160   25    1 : tunables    0    0    0 : slabdata   1395   1395      0
+>
+> $ killall a
+> $ date +%s; grep anon_vma /proc/slabinfo
+> 1415962607
+> anon_vma           11277  12175    160   25    1 : tunables    0    0    0 : slabdata    487    487      0
+>
+> So we have accumulated 23211 objects over that time period before the
+> offender was killed which released all of them.
+>
+> The proposed workaround is kind of ugly but do people have a better idea
+> than reference counting? If not should we merge it?
 
-Same comment as patch 1: make the node name 'gpio', not 'dwgpio'.
+I believe we should just merge that patch.
 
-	Arnd
+I have not seen any better ideas come by.
+
+The comment should probably be fixed to reflect the
+chain length of 5 though :)
+
