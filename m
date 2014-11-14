@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965539AbaKNOnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:43:09 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53221 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964832AbaKNOnH (ORCPT
+	id S1161022AbaKNOnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:43:33 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:57880 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965179AbaKNOnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:43:07 -0500
-From: John Ogness <john.ogness@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: davem@davemloft.net
-Cc: mugunthanvnm@ti.com
-Cc: balbi@ti.com
-Cc: george.cherian@ti.com
-Cc: jhovold@gmail.com
-Cc: mpa@pengutronix.de
-Cc: bhutchings@solarflare.com
-Cc: zonque@gmail.com
-Cc: tklauser@distanz.ch
-Cc: netdev@vger.kernel.org
-Subject: [PATCH 1/1] drivers: net: cpsw: Fix TX_IN_SEL offset
-Date: Fri, 14 Nov 2014 15:42:52 +0100
-Message-ID: <87sihlj11v.fsf@linutronix.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Fri, 14 Nov 2014 09:43:31 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
+        Johan Hovold <johan@kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: drivers for 3.19 #1
+Date: Fri, 14 Nov 2014 15:43:30 +0100
+Message-ID: <1415976210-3665-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TX_IN_SEL offset for the CPSW_PORT/TX_IN_CTL register was
-incorrect. This caused the Dual MAC mode to never get set when
-it should. It also caused possible unintentional setting of a
-bit in the CPSW_PORT/TX_BLKS_REM register.
+Arnd, Olof, Kevin,
 
-The purpose of setting the Dual MAC mode for this register is to:
+This is a pull-request about AT91-related drivers that are easier to take via
+arm-soc.
 
-    "... allow packets from both ethernet ports to be written into
-     the FIFO without one port starving the other port."
-					- AM335x ARM TRM
+There is a little merge conflict with the "cleanup" branch because of removal
+of at91sam9g45 and at91sam9rl legacy code. The resolution is pretty simple but
+you can have a look at the resolution example here:
+https://git.kernel.org/cgit/linux/kernel/git/nferre/linux-at91.git/log/?h=at91-next
 
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
----
- drivers/net/ethernet/ti/cpsw.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Thanks, best regards,
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index d879448..c560f9a 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -129,9 +129,9 @@ do {								\
- #define CPSW_VLAN_AWARE		BIT(1)
- #define CPSW_ALE_VLAN_AWARE	1
- 
--#define CPSW_FIFO_NORMAL_MODE		(0 << 15)
--#define CPSW_FIFO_DUAL_MAC_MODE		(1 << 15)
--#define CPSW_FIFO_RATE_LIMIT_MODE	(2 << 15)
-+#define CPSW_FIFO_NORMAL_MODE		(0 << 16)
-+#define CPSW_FIFO_DUAL_MAC_MODE		(1 << 16)
-+#define CPSW_FIFO_RATE_LIMIT_MODE	(2 << 16)
- 
- #define CPSW_INTPACEEN		(0x3f << 16)
- #define CPSW_INTPRESCALE_MASK	(0x7FF << 0)
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-drivers
+
+for you to fetch changes up to 2c91e61dc97cce57ffd9dd654a6ee284e1f45a1f:
+
+  rtc: at91sam9: add DT bindings documentation (2014-11-13 16:08:48 +0100)
+
+----------------------------------------------------------------
+First batch of drivers for 3.19:
+It is only about a not so recent driver for old platforms: RTT as RTC driver:
+- RTT as RTC driver enhancements and machine specific include files removal
+- RTT as RTC driver conversion to device tree
+
+----------------------------------------------------------------
+Boris BREZILLON (9):
+      rtc: at91sam9: remove references to mach specific headers
+      rtc: at91sam9: use standard readl/writel functions instead of raw versions
+      rtc: at91sam9: replace devm_ioremap by devm_ioremap_resource
+      rtc: at91sam9: add DT support
+      rtc: at91sam9: make use of syscon/regmap to access GPBR registers
+      rtc: at91sam9: rework the Kconfig description
+      ARM: at91: add clk_lookup entry for RTT devices
+      rtc: at91sam9: use clk API instead of relying on AT91_SLOW_CLOCK
+      rtc: at91sam9: add DT bindings documentation
+
+ .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt |  23 ++++
+ arch/arm/mach-at91/at91sam9260.c                   |   2 +
+ arch/arm/mach-at91/at91sam9261.c                   |   2 +
+ arch/arm/mach-at91/at91sam9263.c                   |   4 +
+ arch/arm/mach-at91/at91sam9g45.c                   |   2 +
+ arch/arm/mach-at91/at91sam9rl.c                    |   2 +
+ arch/arm/mach-at91/clock.c                         |   2 +-
+ arch/arm/mach-at91/clock.h                         |   1 +
+ drivers/rtc/Kconfig                                |  24 ++--
+ drivers/rtc/rtc-at91sam9.c                         | 138 ++++++++++++++++-----
+ 10 files changed, 162 insertions(+), 38 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+
 -- 
-1.7.10.4
+Nicolas Ferre
