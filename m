@@ -1,118 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965159AbaKNOhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:37:01 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:47465 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934535AbaKNOg7 convert rfc822-to-8bit (ORCPT
+	id S965348AbaKNOjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:39:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39127 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965136AbaKNOjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:36:59 -0500
+	Fri, 14 Nov 2014 09:39:48 -0500
+Message-ID: <5466142C.60100@oracle.com>
+Date: Fri, 14 Nov 2014 09:39:40 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141113235840.GS26481@atomide.com>
-References: <1415051968-4878-1-git-send-email-marek@goldelico.com>
-	<1415051968-4878-5-git-send-email-marek@goldelico.com>
-	<5463585D.9070209@ti.com>
-	<20141112150210.GC26481@atomide.com>
-	<5464969F.30708@ti.com>
-	<20141113182848.GQ26481@atomide.com>
-	<alpine.DEB.2.02.1411132251320.17030@utopia.booyaka.com>
-	<20141113235840.GS26481@atomide.com>
-Date: Fri, 14 Nov 2014 16:36:58 +0200
-Message-ID: <CANOLnONkQu-BBvZH5nb+VngCxq=xnk60JkTd6Jha1uFt2j8gJQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
- devconf1 register
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Paul Walmsley <paul@pwsan.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        robh+dt@kernel.org, Tero Kristo <t-kristo@ti.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, bcousson@baylibre.com,
-        galak@codeaurora.org, Grant Likely <grant.likely@linaro.org>,
-        Marek Belisko <marek@goldelico.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: shmem: freeing mlocked page
+References: <545C4A36.9050702@oracle.com>
+In-Reply-To: <545C4A36.9050702@oracle.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 1:58 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Paul Walmsley <paul@pwsan.com> [141113 15:01]:
->> Hi
->>
->> On Thu, 13 Nov 2014, Tony Lindgren wrote:
->>
->> > * Tomi Valkeinen <tomi.valkeinen@ti.com> [141113 03:33]:
->> > > On 12/11/14 17:02, Tony Lindgren wrote:
->> > >
->> > > >> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
->> > > >> places in the kernel. I wonder if adding a pinmux entry for it could
->> > > >> cause some rather odd problems.
->> > > >
->> > > > They can all use pinctrl-single no problem.
->> > >
->> > > Can, but don't. That's my worry. If we touch the DEVCONF1 via pinmux,
->> > > and we have code in mach-omap2 that also touch DEVCONF1, without any
->> > > knowledge (and locking) between those...
->> >
->> > Hmm yeah the McBSP clock mux could be racy as the mux register for
->> > McBSP is treated as a clock. This register muxes the clock between
->> > external pin and internal clock. Considering that this should be
->> > selectable at board level as the external clock probably needs to be
->> > used if level shifters are being used, it should be really handled by
->> > pinctrl-single.
->> >
->> > The other use for hsmmc.c and pdata-quirks.c for the one time mux for
->> > MMC clock from the MMC clock pin. That can be done with pinctrl-single
->> > from the MMC driver too for DT based booting.
->> >
->> > Then we just have the save and restore of the registers for
->> > off-idle.
->> >
->> > > So _maybe_ that's not an issue, as the pinmux config we have here is
->> > > fixed, and done once at boot time, and maybe the code in mach-omap2 that
->> > > touch DEVCONF1 is also ran just once and not at the same time as the
->> > > pinmux. But I don't know if that's so.
->> >
->> > It seems we could just do a read-only check for McBSP in the clock
->> > code for the mux register, or even completely drop that code from
->> > cclock3xxx_data.c and start using the pinctrl for that mux.
->> >
->> > Paul & Tero, got any comments here?
->>
->> It's best to move all of the SCM register reads/writes to an SCM IP block
->> driver.  This driver would be the only entity that would touch the SCM IP
->> block registers - no other code on the system would touch it (perhaps
->> aside from anything needed for early init).  The SCM driver would enforce
->> mutual exclusion via a spinlock, so concurrent SCM register modifications
->> wouldn't flake out.  Then the SCM driver would register clocks with the
->> CCF, register pins with the pinctrl subsystem, etc. etc.
->
-> We actually do have that with pinctrl-single + syscon. We certainly
-> need to implement more Linux framework drivers for the SCM registers.
-> Things like regulators, clocks, and PHYs, but they should use
-> pinctrl-single + syscon. See the the pbias-regulator.c for example.
->
-> Looking at the McBSP clock handling, threre's yet more handling of
-> the same DEVCONF1 mux register in omap2_mcbsp_set_clks_src that gets
-> alled from omap_mcbsp_dai_set_dai_sysclk.
->
-> To me it seems that if we handle the DEVCONF with pinctrl-single, we
-> don't need most of the McBSP fck code or the omap2_mcbsp_set_clks_src.
-> Having the mux register as the clock enable register is not nice..
-> Who knows what the clock coming from the external pin might be :)
+On 11/06/2014 11:27 PM, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following spew:
+> 
+> [ 1441.564471] BUG: Bad page state in process trinity-c612  pfn:12593a
+> [ 1441.564476] page:ffffea0006e175c0 count:0 mapcount:0 mapping:          (null) index:
+> 0x49
+> [ 1441.564488] flags: 0xafffff8028000c(referenced|uptodate|swapbacked|mlocked)
+> [ 1441.564491] page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
+> [ 1441.564493] bad because of flags:
+> [ 1441.564498] flags: 0x200000(mlocked)
+> [ 1441.564503] Modules linked in:
+> [ 1441.564511] CPU: 2 PID: 11657 Comm: trinity-c612 Not tainted 3.18.0-rc3-next-20141106-sasha-00054-g09b7ccf-dirty #1447
+> [ 1441.564519]  0000000000000000 0000000000000000 1ffffffff3b44e48 ffff8805c969b868
+> [ 1441.564526]  ffffffff9c085024 0000000000000000 ffffea0006e175c0 ffff8805c969b898
+> [ 1441.564532]  ffffffff925fd0a1 ffffea0006e17628 dfffe90000000000 0000000000000000
+> [ 1441.564534] Call Trace:
+> [ 1441.568496] dump_stack (lib/dump_stack.c:52)
+> [ 1441.568516] bad_page (mm/page_alloc.c:338)
+> [ 1441.568523] free_pages_prepare (mm/page_alloc.c:649 mm/page_alloc.c:755)
+> [ 1441.568531] free_hot_cold_page (mm/page_alloc.c:1436)
+> [ 1441.568541] free_hot_cold_page_list (mm/page_alloc.c:1482 (discriminator 3))
+> [ 1441.568555] release_pages (mm/swap.c:961)
+> [ 1441.568566] __pagevec_release (include/linux/pagevec.h:44 mm/swap.c:978)
+> [ 1441.568579] shmem_undo_range (include/linux/pagevec.h:69 mm/shmem.c:451)
+> [ 1441.568591] shmem_truncate_range (mm/shmem.c:546)
+> [ 1441.568599] shmem_fallocate (include/linux/spinlock.h:309 mm/shmem.c:2092)
+> [ 1441.568612] ? __sb_start_write (fs/super.c:1208)
+> [ 1441.568622] ? __sb_start_write (fs/super.c:1208)
+> [ 1441.568633] do_fallocate (fs/open.c:297)
+> [ 1441.568648] SyS_madvise (mm/madvise.c:332 mm/madvise.c:381 mm/madvise.c:531 mm/madvise.c:462)
+> [ 1441.568660] ? syscall_trace_enter_phase1 (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1486)
+> [ 1441.568672] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+> 
+> I'm slightly confused here, because the page is mapcount==0, not LOCKED but still MLOCKED...
 
-How will audio do dynamic muxing without that code?
-The pin must be remuxed back to internal clock when audio stops, or
-else PM breaks.
+So I got this as well:
+
+[ 1026.988043] BUG: Bad page state in process trinity-c374  pfn:23f70
+[ 1026.989684] page:ffffea0000b3d300 count:0 mapcount:0 mapping:          (null) index:0x5b
+[ 1026.991151] flags: 0x1fffff8028000c(referenced|uptodate|swapbacked|mlocked)
+[ 1026.992410] page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
+[ 1026.993479] bad because of flags:
+[ 1026.994125] flags: 0x200000(mlocked)
+[ 1026.994816] Modules linked in:
+[ 1026.995378] CPU: 7 PID: 7879 Comm: trinity-c374 Not tainted 3.18.0-rc4-next-20141113-sasha-00047-gd1763ce-dirty #1455
+[ 1026.996123] FAULT_INJECTION: forcing a failure.
+[ 1026.996123] name failslab, interval 100, probability 30, space 0, times -1
+[ 1026.999050]  0000000000000000 0000000000000000 0000000000b3d300 ffff88061295bbd8
+[ 1027.000676]  ffffffff92f71097 0000000000000000 ffffea0000b3d300 ffff88061295bc08
+[ 1027.002020]  ffffffff8197ef7a ffffea0000b3d300 ffffffff942dd148 dfffe90000000000
+[ 1027.003359] Call Trace:
+[ 1027.003831] dump_stack (lib/dump_stack.c:52)
+[ 1027.004725] bad_page (mm/page_alloc.c:338)
+[ 1027.005623] free_pages_prepare (mm/page_alloc.c:657 mm/page_alloc.c:763)
+[ 1027.006761] free_hot_cold_page (mm/page_alloc.c:1438)
+[ 1027.007772] ? __page_cache_release (mm/swap.c:66)
+[ 1027.008815] put_page (mm/swap.c:270)
+[ 1027.009665] page_cache_pipe_buf_release (fs/splice.c:93)
+[ 1027.010888] __splice_from_pipe (fs/splice.c:784 fs/splice.c:886)
+[ 1027.011917] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3734)
+[ 1027.012856] ? pipe_lock (fs/pipe.c:69)
+[ 1027.013728] ? write_pipe_buf (fs/splice.c:1534)
+[ 1027.014756] vmsplice_to_user (fs/splice.c:1574)
+[ 1027.015725] ? rcu_read_lock_held (kernel/rcu/update.c:169)
+[ 1027.016757] ? __fget_light (include/linux/fdtable.h:80 fs/file.c:684)
+[ 1027.017782] SyS_vmsplice (fs/splice.c:1656 fs/splice.c:1639)
+[ 1027.018863] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+
+Which makes me suspect I blamed shmem for nothing.
 
 
-Gražvydas
+Thanks,
+Sasha
+
