@@ -1,122 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934961AbaKNBKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:10:53 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:53236 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934749AbaKNBKv (ORCPT
+	id S964848AbaKNBOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:14:21 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:19028 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934664AbaKNBOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:10:51 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH] zsmalloc: correct fragile [kmap|kunmap]_atomic use
-Date: Fri, 14 Nov 2014 10:11:01 +0900
-Message-Id: <1415927461-14220-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
+	Thu, 13 Nov 2014 20:14:12 -0500
+Message-Id: <20141114011410.668946743@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 13 Nov 2014 20:12:48 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: [RFC][PATCH 04/23 v4] ring-buffer: Remove check of trace_seq_{puts,printf}() return values
+References: <20141114011244.256115061@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0004-ring-buffer-Remove-check-of-trace_seq_-puts-printf-r.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kunmap_atomic should use virtual address getting by kmap_atomic.
-However, some pieces of code in zsmalloc uses modified address,
-not the one got by kmap_atomic for kunmap_atomic.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-It's okay for working because zsmalloc modifies the address
-inner PAGE_SIZE bounday so it works with current kmap_atomic's
-implementation. But it's still fragile with potential changing
-of kmap_atomic so let's correct it.
+Remove checking the return value of all trace_seq_puts(). It was wrong
+anyway as only the last return value mattered. But as the trace_seq_puts()
+is going to be a void function in the future, we should not be checking
+the return value of it anyway.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Just return !trace_seq_has_overflowed() instead.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- mm/zsmalloc.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ kernel/trace/ring_buffer.c | 75 ++++++++++++++++++++++------------------------
+ 1 file changed, 36 insertions(+), 39 deletions(-)
 
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index b3b57ef85830..85e14f584048 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -629,6 +629,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
- 		struct page *next_page;
- 		struct link_free *link;
- 		unsigned int i = 1;
-+		void *vaddr;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 2d75c94ae87d..a28bdd17c853 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -34,21 +34,19 @@ static void update_pages_handler(struct work_struct *work);
+  */
+ int ring_buffer_print_entry_header(struct trace_seq *s)
+ {
+-	int ret;
+-
+-	ret = trace_seq_puts(s, "# compressed entry header\n");
+-	ret = trace_seq_puts(s, "\ttype_len    :    5 bits\n");
+-	ret = trace_seq_puts(s, "\ttime_delta  :   27 bits\n");
+-	ret = trace_seq_puts(s, "\tarray       :   32 bits\n");
+-	ret = trace_seq_putc(s, '\n');
+-	ret = trace_seq_printf(s, "\tpadding     : type == %d\n",
+-			       RINGBUF_TYPE_PADDING);
+-	ret = trace_seq_printf(s, "\ttime_extend : type == %d\n",
+-			       RINGBUF_TYPE_TIME_EXTEND);
+-	ret = trace_seq_printf(s, "\tdata max type_len  == %d\n",
+-			       RINGBUF_TYPE_DATA_TYPE_LEN_MAX);
++	trace_seq_puts(s, "# compressed entry header\n");
++	trace_seq_puts(s, "\ttype_len    :    5 bits\n");
++	trace_seq_puts(s, "\ttime_delta  :   27 bits\n");
++	trace_seq_puts(s, "\tarray       :   32 bits\n");
++	trace_seq_putc(s, '\n');
++	trace_seq_printf(s, "\tpadding     : type == %d\n",
++			 RINGBUF_TYPE_PADDING);
++	trace_seq_printf(s, "\ttime_extend : type == %d\n",
++			 RINGBUF_TYPE_TIME_EXTEND);
++	trace_seq_printf(s, "\tdata max type_len  == %d\n",
++			 RINGBUF_TYPE_DATA_TYPE_LEN_MAX);
  
- 		/*
- 		 * page->index stores offset of first object starting
-@@ -639,8 +640,8 @@ static void init_zspage(struct page *first_page, struct size_class *class)
- 		if (page != first_page)
- 			page->index = off;
+-	return ret;
++	return !trace_seq_has_overflowed(s);
+ }
  
--		link = (struct link_free *)kmap_atomic(page) +
--						off / sizeof(*link);
-+		vaddr = kmap_atomic(page);
-+		link = (struct link_free *)vaddr + off / sizeof(*link);
+ /*
+@@ -419,32 +417,31 @@ static inline int test_time_stamp(u64 delta)
+ int ring_buffer_print_page_header(struct trace_seq *s)
+ {
+ 	struct buffer_data_page field;
+-	int ret;
+-
+-	ret = trace_seq_printf(s, "\tfield: u64 timestamp;\t"
+-			       "offset:0;\tsize:%u;\tsigned:%u;\n",
+-			       (unsigned int)sizeof(field.time_stamp),
+-			       (unsigned int)is_signed_type(u64));
+-
+-	ret = trace_seq_printf(s, "\tfield: local_t commit;\t"
+-			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
+-			       (unsigned int)offsetof(typeof(field), commit),
+-			       (unsigned int)sizeof(field.commit),
+-			       (unsigned int)is_signed_type(long));
+-
+-	ret = trace_seq_printf(s, "\tfield: int overwrite;\t"
+-			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
+-			       (unsigned int)offsetof(typeof(field), commit),
+-			       1,
+-			       (unsigned int)is_signed_type(long));
+-
+-	ret = trace_seq_printf(s, "\tfield: char data;\t"
+-			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
+-			       (unsigned int)offsetof(typeof(field), data),
+-			       (unsigned int)BUF_PAGE_SIZE,
+-			       (unsigned int)is_signed_type(char));
  
- 		while ((off += class->size) < PAGE_SIZE) {
- 			link->next = obj_location_to_handle(page, i++);
-@@ -654,7 +655,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
- 		 */
- 		next_page = get_next_page(page);
- 		link->next = obj_location_to_handle(next_page, 0);
--		kunmap_atomic(link);
-+		kunmap_atomic(vaddr);
- 		page = next_page;
- 		off %= PAGE_SIZE;
- 	}
-@@ -1055,6 +1056,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- 	unsigned long obj;
- 	struct link_free *link;
- 	struct size_class *class;
-+	void *vaddr;
+-	return ret;
++	trace_seq_printf(s, "\tfield: u64 timestamp;\t"
++			 "offset:0;\tsize:%u;\tsigned:%u;\n",
++			 (unsigned int)sizeof(field.time_stamp),
++			 (unsigned int)is_signed_type(u64));
++
++	trace_seq_printf(s, "\tfield: local_t commit;\t"
++			 "offset:%u;\tsize:%u;\tsigned:%u;\n",
++			 (unsigned int)offsetof(typeof(field), commit),
++			 (unsigned int)sizeof(field.commit),
++			 (unsigned int)is_signed_type(long));
++
++	trace_seq_printf(s, "\tfield: int overwrite;\t"
++			 "offset:%u;\tsize:%u;\tsigned:%u;\n",
++			 (unsigned int)offsetof(typeof(field), commit),
++			 1,
++			 (unsigned int)is_signed_type(long));
++
++	trace_seq_printf(s, "\tfield: char data;\t"
++			 "offset:%u;\tsize:%u;\tsigned:%u;\n",
++			 (unsigned int)offsetof(typeof(field), data),
++			 (unsigned int)BUF_PAGE_SIZE,
++			 (unsigned int)is_signed_type(char));
++
++	return !trace_seq_has_overflowed(s);
+ }
  
- 	struct page *first_page, *m_page;
- 	unsigned long m_objidx, m_offset;
-@@ -1083,11 +1085,11 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- 	obj_handle_to_location(obj, &m_page, &m_objidx);
- 	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
- 
--	link = (struct link_free *)kmap_atomic(m_page) +
--					m_offset / sizeof(*link);
-+	vaddr = kmap_atomic(m_page);
-+	link = (struct link_free *)vaddr + m_offset / sizeof(*link);
- 	first_page->freelist = link->next;
- 	memset(link, POISON_INUSE, sizeof(*link));
--	kunmap_atomic(link);
-+	kunmap_atomic(vaddr);
- 
- 	first_page->inuse++;
- 	/* Now move the zspage to another fullness group, if required */
-@@ -1103,6 +1105,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
- 	struct link_free *link;
- 	struct page *first_page, *f_page;
- 	unsigned long f_objidx, f_offset;
-+	void *vaddr;
- 
- 	int class_idx;
- 	struct size_class *class;
-@@ -1121,10 +1124,10 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
- 	spin_lock(&class->lock);
- 
- 	/* Insert this object in containing zspage's freelist */
--	link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
--							+ f_offset);
-+	vaddr = kmap_atomic(f_page);
-+	link = (struct link_free *)(vaddr + f_offset);
- 	link->next = first_page->freelist;
--	kunmap_atomic(link);
-+	kunmap_atomic(vaddr);
- 	first_page->freelist = (void *)obj;
- 
- 	first_page->inuse--;
+ struct rb_irq_work {
 -- 
-2.0.0
+2.1.1
+
 
