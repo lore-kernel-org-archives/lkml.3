@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161642AbaKNSq1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 13:46:27 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:42634 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161333AbaKNSqX (ORCPT
+	id S1161713AbaKNSqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 13:46:42 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47540 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161333AbaKNSqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 13:46:23 -0500
+	Fri, 14 Nov 2014 13:46:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141114150411.GB3815@sirena.org.uk>
-References: <1415848096-20079-1-git-send-email-abrestic@chromium.org>
-	<20141113173631.GI3815@sirena.org.uk>
-	<20141114150411.GB3815@sirena.org.uk>
-Date: Fri, 14 Nov 2014 10:46:22 -0800
-X-Google-Sender-Auth: 9Bm_ob0DbQBblEJDRJ0aiHboViA
-Message-ID: <CAL1qeaFM5wLMtGBmHnwwKeq7ps1RzL_QMRoUbAbF9iSTJMEXBg@mail.gmail.com>
-Subject: Re: [PATCH V2 0/2] spi: IMG SPFI driver
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        James Hartley <James.Hartley@imgtec.com>,
-        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-spi@vger.kernel.org
+In-Reply-To: <x491tp5ybcc.fsf@segfault.boston.devel.redhat.com>
+References: <cover.1415636409.git.milosz@adfin.com>
+	<20141111064417.GT23575@dastard>
+	<x49mw7tyc7e.fsf@segfault.boston.devel.redhat.com>
+	<20141114163912.GA23769@redhat.com>
+	<x491tp5ybcc.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 14 Nov 2014 13:46:38 -0500
+Message-ID: <CANP1eJEhbE3xWYkJyj3ebhPdRLM3Gj+bBxWz40tvB5HXbzgWZg@mail.gmail.com>
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
+From: Milosz Tanski <milosz@adfin.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 7:04 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Nov 13, 2014 at 05:36:31PM +0000, Mark Brown wrote:
->> On Wed, Nov 12, 2014 at 07:08:14PM -0800, Andrew Bresticker wrote:
->> > This series adds support for the Sychronous Peripheral Flash Interface
->> > master found on IMG SoCs.  The controller supports up to 5 chip-select
->> > lines and single, dual, and optionally quad, mode transfers.
+On Fri, Nov 14, 2014 at 11:51 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Dave Jones <davej@redhat.com> writes:
 >
->> Applied both, thanks.
+>> On Fri, Nov 14, 2014 at 11:32:53AM -0500, Jeff Moyer wrote:
+>>
+>>  > > Can you write a test (or set of) for fstests that exercises this new
+>>  > > functionality? I'm not worried about performance, just
+>>  > > correctness....
+>>  >
+>>  > On the subject of testing, I added support to trinity (attached,
+>>  > untested).  That did raise one question.  Do we expect applications to
+>>  > #include <linux/fs.h> to get the RWF_NONBLOCK definition?
+>>
+>> Trinity will at least need an addition to include/compat.h for
+>> older headers that won't have the definition.  Looks ok otherwise.
 >
-> ...and reverted since they fail to build in x86 allmodconfig (due to a
-> missing linux/interrupt.h it seems).  Please check and resend.
+> OK, I'll add that.
+>
+>> Also, I usually sit on stuff like this until the syscall numbers are
+>> in Linus tree. This is 3.19 stuff I presume ?
+>> istr akpm picked up execveat recently, so if that goes in first, we'll
+>> need to respin this anyway..
+>
+> Sure.  I just wanted to test with trinity *before* it makes it into the
+> kernel.  Crazy, I know.  ;-)
 
-Sorry about that :(.  v3 incoming...
+I am happy to help out to make sure it's solid... although deep down
+inside I secretly wish that now wasn't the time we decided to start
+doing it :)
+
+>
+> Cheers,
+> Jeff
+
+
+
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
