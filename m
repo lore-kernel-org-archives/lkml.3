@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaKNI24 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:28:56 -0500
-Received: from mout.gmx.com ([74.208.4.201]:49645 "EHLO mout.gmx.com"
+	id S964888AbaKNIaz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:30:55 -0500
+Received: from mout.gmx.com ([74.208.4.201]:55724 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754505AbaKNI2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:28:55 -0500
+	id S1754505AbaKNIay convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 03:30:54 -0500
 MIME-Version: 1.0
-Message-ID: <trinity-59fa9701-e0ea-485d-9b2a-5c5f17022a83-1415953733399@3capp-mailcom-lxa15>
+Message-ID: <trinity-2f96bfb2-5c8c-4187-8174-5494500a1bcb-1415953853008@3capp-mailcom-lxa15>
 From: "George Malone" <georgemaloneiii@mail.com>
 To: linux-kernel@vger.kernel.org
-Subject: (SystemD) Empires only fall to an enemy within. (SystemD,
- Feminists)
+Subject: (Bass song) SystemD Abomination_More
 Content-Type: text/plain; charset=UTF-8
-Date: Fri, 14 Nov 2014 09:28:53 +0100
+Date: Fri, 14 Nov 2014 09:30:53 +0100
 Importance: normal
 Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
 X-Priority: 3
-X-Provags-ID: V03:K0:4nlFF6XbSq6WXlOtGqLANr8UpJZQfdT/+dbnD/z+p4V
- H7rk46RKHfUORiQ6W/zuF11NO7LjIhFFaTuOmcb49TUkfMyvxK
- eT4F9zRffcJyMlMe357tAwIg0WB6K/qTlKIYUfnth2W/ZDS8Ip
- 8FxD00RkIQtG9Q6a3K0G7mzKsVFuSIQEQMmcorVZ7gR6VU3s2f
- oixAJ7z59yiWr5yfje3o0biy6Cst4dUZBIEkaDkxJg860c8iWi
- UMq2QWIibVvQpt4Qtas/cBAjZzIQw8l+7ENpvAZQDCItW1QVEW
- k/oecd/kPq40GXNqp7NfiyFC1Hs
+X-Provags-ID: V03:K0:JUvTNDM1wwCJn37ow5iP7oEd0XtLDntsY84NmzoBLvz
+ rzraZRznmc4UTenrfScl4zH6TozfXSlLUpWGqlj1AqXJZrMm7J
+ BE0dGzyJpp1VAbMJGGyAlQHjH/3Hf3H2JxfmJpidMt8mLF0D43
+ /EmLH3XpAeqVMdk/U0HTYB1P94Hf+SqH2V4Thwzm4eWRJdczYY
+ ZD7FXij2ZX6CEl3+S/p2+UHlk17uMaWFov+Sr5c5NeGs83o35U
+ sCAfjr+TvAe2NkRVqK3unk1oD48Z8+bfjYJ66WeRb+OZCuNGMU
+ lF6fdRjlIndrvTLJI/IHc24pTwd
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free software worked great for a time, it was a movement
-on the upswing. Then it was noticed. Feminists appeared
-and lobbied to have those of unclean mind excluded from 
-the free/opensource movement, only those who believed
-the correct thing were allowed to stay. Code nor contribution
-mattered anymore. Believing in social justice for women,
-self-mutilated men/women, and gays was what was now important.
-
-No longer is it enough that a man has the ability and the will
-to code and contribute. His balls must be in a purse.
-
-Now SystemD has appeared aswell, and is tearing down what
-once were stable, time tested, edifices. Its proponents
-strangely also are of the pro-feminist / social justice warrior
-camp.
-
-Dissent is crushed.
-
-Empires only fall to an enemy within.
-
-http://youtu.be/y0aTqsl-vfU
-
+Sonic description of SystemD
+http://youtu.be/zw8Ta1A3sTQ
+ 
 (Hi David Miller.)
