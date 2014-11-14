@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698AbaKNOFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:05:18 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40693 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140AbaKNOFP (ORCPT
+	id S1754832AbaKNOF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:05:28 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:61371 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140AbaKNOFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:05:15 -0500
-Date: Fri, 14 Nov 2014 19:35:06 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] ALSA: ice1712: consider error value
-Message-ID: <20141114140506.GA16619@sudip-PC>
-References: <1415968941-14181-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5h389lj4yg.wl-tiwai@suse.de>
- <20141114134502.GA16479@sudip-PC>
- <s5hvbmhhp30.wl-tiwai@suse.de>
+	Fri, 14 Nov 2014 09:05:23 -0500
+Message-ID: <54660C16.6080107@gmail.com>
+Date: Fri, 14 Nov 2014 22:05:10 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hvbmhhp30.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "gleb@kernel.org" <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] virt: kvm: arm: vgic: Process the failure case when kvm_register_device_ops()
+ fails
+References: <5464C865.90504@gmail.com> <5464CE9A.6050209@arm.com>
+In-Reply-To: <5464CE9A.6050209@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 02:46:43PM +0100, Takashi Iwai wrote:
-> At Fri, 14 Nov 2014 19:15:02 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > On Fri, Nov 14, 2014 at 02:18:31PM +0100, Takashi Iwai wrote:
-> > > At Fri, 14 Nov 2014 18:12:21 +0530,
-> > > Sudip Mukherjee wrote:
-> > > > 
-> > > > earlier we were ignoring the return value of snd_ak4114_create and
-> > > > always returning 0.
-> > > > now we are returning the actual status. revo_init is calling this
-> > > > function, and revo_init is checking the return value.
-> > > > 
-> > > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > > > ---
-> > > > 
-> > > > change in v3: spec->ak4114 is now dereferenced if we dont get an
-> > > > error value from snd_ak4114_create.
-> > > > 
-> > > > change in v4: error value returned according to coding style.
-> > > 
-> > > Applied but I had to fix your From address (two others, too).  That
-> > > doesn't match with your sign-off.  Please fix your git config to have
-> > > a proper author address as same as sign-off.
-> > 
-> > i know it does not match. Previously Dan Carpenter also told me the same thing, and I sent a patch from my corporate account. You can find reference of that conversation here https://lkml.org/lkml/2014/9/3/473 
-> > 
-> > copying some part from there :
-> > "I have given strict DMARC check for the corporate mail server. DMARC = domain based message authentication.
-> > So the mail i sent reached all the list subscriber from a different server than our designated server,
-> > and as a result it has been marked as spam in many places. I have already received a few complaints regarding that."
-> > 
-> > since i do use office resources for patches (though it is not part of my job), so i should atleast put Signed-off to the patches i send. You will see all my patches having different Signed-off and different from adderess.
-> > 
-> > again copying from the previous conversation:
-> > "Is there any other way that i send the patch from my personal account, and use my corporate mail in Signed-off-by ... "
+On 11/13/2014 11:30 PM, Marc Zyngier wrote:
+> On 13/11/14 15:04, Chen Gang wrote:
+>> When kvm_register_device_ops() fails, also need call free_percpu_irq()
+>> just like others have down within kvm_vgic_hyp_init().
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  virt/kvm/arm/vgic.c | 10 ++++++++--
+>>  1 file changed, 8 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+>> index 3aaca49..b799f17 100644
+>> --- a/virt/kvm/arm/vgic.c
+>> +++ b/virt/kvm/arm/vgic.c
+>> @@ -2470,8 +2470,14 @@ int kvm_vgic_hyp_init(void)
+>>  
+>>  	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
+>>  
+>> -	return kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
+>> -				       KVM_DEV_TYPE_ARM_VGIC_V2);
+>> +	ret = kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
+>> +				      KVM_DEV_TYPE_ARM_VGIC_V2);
+>> +	if (ret) {
+>> +		kvm_err("Cannot register device ops\n");
+>> +		goto out_free_irq;
+>> +	}
+>> +
+>> +	return 0;
+>>  
+>>  out_free_irq:
+>>  	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
+>>
 > 
-> You just need to put another "From: xxx" in the patch itself.  Then
-> git will take it as the author address.
+> Awesome. You're now freeing a per-cpu interrupt after just after having
+> enabled it on all CPUs. What could possibly go wrong?
 > 
-i did that also. reference : https://lkml.org/lkml/2014/9/2/473
 
-and reply from Dan Carpenter at: https://lkml.org/lkml/2014/9/3/135
+OK, thanks. What you said sound reasonable to me. Need call on_each_cpu
+for disable_percpu_irq(). Also need call __unregister_cpu_notifier(),
+and need a new function vgic_arch_unsetup() for arm64.
 
-copying from reply of  Dan Carpenter:
-"I really would prefer if you just figured out your email settings so
-this isn't needed.  The From: header is mostly used for people
-forwarding patches from other people.  We have allowed people to use
-the From header like this if they can't get their corporate email
-configured properly but I try to discorage it.  If everyone starts using
->From headers like this then it becomes a pain to deal with."
+I shall send patch v2 for it.
 
-:(
+Thanks.
+-- 
+Chen Gang
 
-for my next patches to you i will add the extra "From:" in the patch.
-next is that pending one of korg1212.
-
-thanks
-sudip
-
-> 
-> Takashi
+Open share and attitude like air water and life which God blessed
