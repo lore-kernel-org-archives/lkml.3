@@ -1,135 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934682AbaKNDK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 22:10:27 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:40266 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932755AbaKNDK0 (ORCPT
+	id S934952AbaKNDMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 22:12:45 -0500
+Received: from mailgw01.mediatek.com ([218.249.47.110]:51342 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932755AbaKNDMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 22:10:26 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <733e208b57598dc2672501e082a19416>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
+	Thu, 13 Nov 2014 22:12:43 -0500
+X-Listener-Flag: 11101
+Message-ID: <1415934752.2152.58.camel@mhfsdcap03>
+Subject: Re: [PATCH v2 0/3] ARM: mediatek: Add driver for Mediatek I2C
+ controller
+From: xudong chen <xudong.chen@mediatek.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Mark Rutland <mark.rutland@arm.com>, <arm@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v10 0/11] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
-Date: Fri, 14 Nov 2014 11:09:43 +0800
-Message-Id: <1415934583-16290-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415883141-3330-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415883141-3330-1-git-send-email-andy.yan@rock-chips.com>
+        "Kumar Gala" <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, "Arnd Bergmann" <arnd@arndb.de>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        "Eddie Huang" <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        YH Chen <yh.chen@mediatek.com>
+Date: Fri, 14 Nov 2014 11:12:32 +0800
+In-Reply-To: <20141113183122.GH1275@katana>
+References: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
+	 <20141113183122.GH1275@katana>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-11-13 at 19:31 +0100, Wolfram Sang wrote:
+> > MTK I2C HW has some limitation.
+> > 1. If the i2c_msg number is more than one, STOP will be issued instead of
+> > RS(Repeat Start) between each message.
+> > 
+> > 2. Mediatek I2C controller support WRRD(write then read) mode, in WRRD
+> > mode the Repeat Start will be issued between 2 messages.
+> > In this driver if 2 messages is first write then read, the driver will
+> > combine 2 messages using Write-Read mode so the RS will be issued between
+> > the 2 messages.
+> > Ex: W/R/R, driver will combine first W/R and then R.
+> > 
+> > 3. Due to HW limitation, in this version the max transfer data length is 255
+> > in one message.
+> 
+> This looks to me more like an SMBUS controller instead of I2C. Maybe you
+> should populate smbus_xfer rather than master_xfer?
 
-We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
-use the interface compatible Designware HDMI IP, but they also have some
-lightly differences, such as phy pll configuration, register width(imx hdmi
-register is one byte, but rk3288 is 4 bytes width and can only be accessed
-by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
-support.
+This is the HW limitation, we will try to workaround this in the
+separate patch.
 
-To reuse the imx-hdmi driver, we make this patch set:
-(1): fix some CodingStyle warning to make checkpatch happy
-(2): split out imx-soc code from imx-hdmi to dw_hdmi-imx.c
-(3): move imx-hdmi to bridge/dw-hdmi, and convert it to a drm_bridge driver
-(4): add rockchip rk3288 platform specific code dw_hdmi-rockchip.c
+> 
+> > MT8135 and MT6589 can control I2C pins on PMIC(MT6397) by setting the i2c
+> > registers in MT8135 side.
+> 
+> I still didn't get this, even after reading the mail thread of old
+> series. Can someone maybe draw me a nice ASCII picture showing the setup
+> which is going on here?
+> 
 
-Changes in v10:
-- split generic dw_hdmi.c improvements from patch#11(add rk3288 support)
-- add more display mode support mpll configuration for rk3288
+1. The DIR_PATH register is in MT8135.
+2. All the registers used in the driver are in MT8135.
+3. If want I2C wave go/from PMIC need to set the DIR_PATH register bit^0
+to 1 extra.
 
-Changes in v9:
-- move some phy configuration to platform driver
+>From the picture:
+If MT8135 connected to PMIC(MT6397), when set the DIR_PATH register
+bit^0 to 1, the HW will transfer the i2c wave from pins(SDA4_pmic &
+SCL4_pmic) on MT6397 side.
+If want use pins(SDA4 & SCL4) on 8135 side directly, we should set the
+DIR_PATH register bit^0 to 0.
 
-Changes in v8:
-- correct some spelling mistake
-- modify ddc-i2c-bus and interrupt description
-- Add documentation for rockchip dw hdmi
+_______       ________
+|      |______|       |
+|      |      |  PMIC |
+| 8135 |______| (6397)|___SDA4_pmic
+|      |      |       |___SCL4_pmic
+!______!      !_______!
+  |   |
+SDA4 SCL4
 
-Changes in v7:
-- remove unused variables from structure dw_hdmi
-- remove a wrong modification
-- add copyrights for dw_hdmi-imx.c
 
-Changes in v6:
-- rearrange the patch order
-- move some modification to  patch#6
-- refactor register access without reg_shift
-- move some modification from patch#5
+Thanks!
 
-Changes in v5:
-- refactor reg-io-width
 
-Changes in v4:
-- fix checkpatch CHECK
-- defer probe ddc i2c adapter
 
-Changes in v3:
-- split multi register access to one indepent patch
 
-Changes in v2:
-- use git format -M to generate these patch
 
-Andy Yan (10):
-  staging: imx-drm: imx-hdmi: make checkpatch happy
-  staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
-  staging: imx-drm: imx-hdmi: split imx soc specific code from imx-hdmi
-  staging: imx-drm: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
-  drm: bridge/dw_hdmi:split some phy configuration to platform driver
-  drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
-  dt-bindings: add document for dw_hdmi
-  drm: bridge/dw_hdmi: add support for multi byte register width access
-  dt-bindings: Add documentation for rockchip dw hdmi
-  drm: bridge/dw_hdmi: add rockchip rk3288 support
 
-Yakir Yang (1):
-  drm: bridge/dw_hdmi: convert dw-hdmi to drm_bridge mode
-
- .../devicetree/bindings/drm/bridge/dw_hdmi.txt     |  40 ++
- .../devicetree/bindings/video/dw_hdmi-rockchip.txt |  43 ++
- drivers/gpu/drm/bridge/Kconfig                     |   5 +
- drivers/gpu/drm/bridge/Makefile                    |   1 +
- .../imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c}        | 762 +++++++++------------
- .../imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h}        |   8 +-
- drivers/gpu/drm/rockchip/Kconfig                   |  10 +
- drivers/gpu/drm/rockchip/Makefile                  |   2 +-
- drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c        | 355 ++++++++++
- drivers/staging/imx-drm/Kconfig                    |   1 +
- drivers/staging/imx-drm/Makefile                   |   2 +-
- drivers/staging/imx-drm/dw_hdmi-imx.c              | 274 ++++++++
- include/drm/bridge/dw_hdmi.h                       |  60 ++
- 13 files changed, 1138 insertions(+), 425 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
- create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
- rename drivers/{staging/imx-drm/imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c} (70%)
- rename drivers/{staging/imx-drm/imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h} (99%)
- create mode 100644 drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
- create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
- create mode 100644 include/drm/bridge/dw_hdmi.h
-
--- 
-1.9.1
 
