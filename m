@@ -1,172 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161279AbaKNNqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:46:00 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11428 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161250AbaKNNpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:45:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="416495670"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        acme@infradead.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v8 14/14] perf: add ITRACE_START record to indicate that tracing has started
-Date: Fri, 14 Nov 2014 15:43:47 +0200
-Message-Id: <1415972627-37514-15-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
-References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1161297AbaKNNqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:46:11 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:49103 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161250AbaKNNqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:46:08 -0500
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <8deb6cbad009c32c7331768253f9aa82>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v11 09/12] drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
+Date: Fri, 14 Nov 2014 21:45:41 +0800
+Message-Id: <1415972741-8718-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For counters that generate AUX data that is bound to the context of a
-running task, such as instruction tracing, the decoder needs to know
-exactly which task is running when the event is first scheduled in,
-before the first sched_switch. The decoder's need to know this stems
-from the fact that instruction flow trace decoding will almost always
-require program's object code in order to reconstruct said flow and
-for that we need at least its pid/tid in the perf stream.
+HDMI_IH_I2CMPHY_STAT0 is a clear on write register, which indicates i2cm
+operation status(i2c transfer done or error), every hdmi phy register
+configuration must check this register to make sure the configuration
+has complete. But the indication bit should be cleared after check, otherwise
+the corresponding bit will hold on forever, this may give a wrong signal for
+next check.
 
-To single out such instruction tracing pmus, this patch introduces
-ITRACE PMU capability. The reason this is not part of RECORD_AUX
-record is that not all pmus capable of generating AUX data need this,
-and the opposite is *probably* also true.
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-While sched_switch covers for most cases, there are two problems with it:
-the consumer will need to process events out of order (that is, having
-found RECORD_AUX, it will have to skip forward to the nearest sched_switch
-to figure out which task it was, then go back to the actual trace to
-decode it) and it completely misses the case when the tracing is enabled
-and disabled before sched_switch, for example, via PERF_EVENT_IOC_DISABLE.
-
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/linux/perf_event.h      |  4 ++++
- include/uapi/linux/perf_event.h | 11 +++++++++++
- kernel/events/core.c            | 41 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 56 insertions(+)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f126eb89e6..282721b2df 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -127,6 +127,9 @@ struct hw_perf_event {
- 			/* for tp_event->class */
- 			struct list_head	tp_list;
- 		};
-+		struct { /* itrace */
-+			int			itrace_started;
-+		};
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 		struct { /* breakpoint */
- 			/*
-@@ -174,6 +177,7 @@ struct perf_event;
- #define PERF_PMU_CAP_AUX_NO_SG			0x02
- #define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
- #define PERF_PMU_CAP_EXCLUSIVE			0x08
-+#define PERF_PMU_CAP_ITRACE			0x10
+Changes in v11:
+- split form patch <dw_hdmi: add rk3288 support>
+
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
+
+ drivers/gpu/drm/bridge/dw_hdmi.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index e94f6bb..d5d5207 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -668,11 +668,15 @@ static inline void hdmi_phy_test_dout(struct dw_hdmi *hdmi,
  
- /**
-  * struct pmu - generic performance monitoring unit
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index ffd52c0861..78017276fe 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -750,6 +750,17 @@ enum perf_event_type {
- 	 */
- 	PERF_RECORD_AUX				= 11,
- 
-+	/*
-+	 * Indicates that instruction trace has started
-+	 *
-+	 * struct {
-+	 *	struct perf_event_header	header;
-+	 *	u32				pid;
-+	 *	u32				tid;
-+	 * };
-+	 */
-+	PERF_RECORD_ITRACE_START		= 12,
+ static bool hdmi_phy_wait_i2c_done(struct dw_hdmi *hdmi, int msec)
+ {
+-	while ((hdmi_readb(hdmi, HDMI_IH_I2CMPHY_STAT0) & 0x3) == 0) {
++	u32 val;
 +
- 	PERF_RECORD_MAX,			/* non-ABI */
- };
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index da2e44aedd..988ef2380a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1733,6 +1733,7 @@ static void perf_set_shadow_time(struct perf_event *event,
- #define MAX_INTERRUPTS (~0ULL)
- 
- static void perf_log_throttle(struct perf_event *event, int enable);
-+static void perf_log_itrace_start(struct perf_event *event);
- 
- static int
- event_sched_in(struct perf_event *event,
-@@ -1767,6 +1768,8 @@ event_sched_in(struct perf_event *event,
- 
- 	perf_pmu_disable(event->pmu);
- 
-+	perf_log_itrace_start(event);
++	while ((val = hdmi_readb(hdmi, HDMI_IH_I2CMPHY_STAT0) & 0x3) == 0) {
+ 		if (msec-- == 0)
+ 			return false;
+ 		udelay(1000);
+ 	}
++	hdmi_writeb(hdmi, val, HDMI_IH_I2CMPHY_STAT0);
 +
- 	if (event->pmu->add(event, PERF_EF_START)) {
- 		event->state = PERF_EVENT_STATE_INACTIVE;
- 		event->oncpu = -1;
-@@ -5681,6 +5684,44 @@ static void perf_log_throttle(struct perf_event *event, int enable)
- 	perf_output_end(&handle);
+ 	return true;
  }
  
-+static void perf_log_itrace_start(struct perf_event *event)
-+{
-+	struct perf_output_handle handle;
-+	struct perf_sample_data sample;
-+	struct perf_aux_event {
-+		struct perf_event_header        header;
-+		u32				pid;
-+		u32				tid;
-+	} rec;
-+	int ret;
-+
-+	if (event->parent)
-+		event = event->parent;
-+
-+	if (!(event->pmu->capabilities & PERF_PMU_CAP_ITRACE) ||
-+	    event->hw.itrace_started)
-+		return;
-+
-+	event->hw.itrace_started = 1;
-+
-+	rec.header.type	= PERF_RECORD_ITRACE_START;
-+	rec.header.misc	= 0;
-+	rec.header.size	= sizeof(rec);
-+	rec.pid	= perf_event_pid(event, current);
-+	rec.tid	= perf_event_tid(event, current);
-+
-+	perf_event_header__init_id(&rec.header, &sample, event);
-+	ret = perf_output_begin(&handle, event, rec.header.size);
-+
-+	if (ret)
-+		return;
-+
-+	perf_output_put(&handle, rec);
-+	perf_event__output_id_sample(event, &handle, &sample);
-+
-+	perf_output_end(&handle);
-+}
-+
- /*
-  * Generic event overflow handling, sampling.
-  */
 -- 
-2.1.1
+1.9.1
 
