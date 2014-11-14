@@ -1,138 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934775AbaKMX7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 18:59:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48066 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934386AbaKMX7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 18:59:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,381,1413270000"; 
-   d="scan'208";a="607555786"
-Date: Fri, 14 Nov 2014 07:39:03 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Takashi Iwai <tiwai@suse.de>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Tiejun Chen <tiejun.chen@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] KVM: x86: fix access memslots w/o hold srcu read lock
-Message-ID: <20141113233903.GA26686@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1414912063-10923-1-git-send-email-wanpeng.li@linux.intel.com>
- <5461A021.8000305@cn.fujitsu.com>
+	id S964817AbaKNAAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:00:48 -0500
+Received: from mail-ie0-f193.google.com ([209.85.223.193]:33842 "EHLO
+	mail-ie0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934320AbaKNAAq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 19:00:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5461A021.8000305@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 13 Nov 2014 16:00:45 -0800
+Message-ID: <CAN9pvahZ_qFjqY6KgRDPNC0CDdqf33N6p7Z4e3LUyW98yCk5TQ@mail.gmail.com>
+Subject: Business co-operation
+From: Emry Holmes <holmesemry@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
-On Tue, Nov 11, 2014 at 01:35:29PM +0800, Tang Chen wrote:
->Hi Wanpeng,
->
+Dear Sir,
+I represent Group of investors in Middle east and they are
+seeking`means of expanding business interest abroad such as Real
+Estate/Construction, oil industry, Banking, Stock speculation, Film
+Industries, Mining,Transportation, agriculture and those any other
+Lucrative business.
+If you have a solid background and idea of making good profit in any
+business, that is capable of generating 10% annual return on
+investment(AROI) Joint Venture, please write me for possible business
+co-operation, as we are ready to fund any business that will interest
+us.
+I am available to discuss with you, and answer any questions, based on
+the investment. I look forward to discussing this opportunity further
+in details with you.
 
-Sorry for the late.
-
->I think I have totally missed this thread.
->I opened lockdep and RCU debug, and tried on 3.18-rc1. But I didn't
->get the warning.
-
-I also opened lockdep and RCU debug, and tried 3.18.0-rc2 on a Ivy
-bridge, the warning will be triggered after run qemu immediately. There 
-is no need to try any hotplug related stuff.
-
-In addition, Paolo's patch is merged upstream to fix this.
-
-commit a73896cb5bbdce672945745db8224352a689f580
-Author: Paolo Bonzini <pbonzini@redhat.com>
-Date:   Sun Nov 2 07:54:30 2014 +0100
-
-KVM: vmx: defer load of APIC access page address during reset
-
-Regards,
-Wanpeng Li 
-
->My steps are:
->
->1. Use numactl to bind a qemu process to node1.
->2. Offline all node1 memory. And the qemu process is still running.
->
->Would you please tell me how did you reproduce it ?
->
->Thanks.
->
->On 11/02/2014 03:07 PM, Wanpeng Li wrote:
->>The srcu read lock must be held while accessing memslots (e.g.
->>when using gfn_to_* functions), however, commit c24ae0dcd3e8
->>("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
->>gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it in
->>vmx_vcpu_reset() path which leads to suspicious rcu_dereference_check()
->>usage warning. This patch fix it by holding srcu read lock in all
->>kvm_vcpu_reset() call path.
->>
->>
->>[ INFO: suspicious RCU usage. ]
->>3.18.0-rc2-test2+ #70 Not tainted
->>-------------------------------
->>include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
->>
->>other info that might help us debug this:
->>
->>rcu_scheduler_active = 1, debug_locks = 0
->>1 lock held by qemu-system-x86/2371:
->>  #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
->>
->>stack backtrace:
->>CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
->>Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
->>  0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
->>  ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
->>  ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
->>Call Trace:
->>  [<ffffffff816f514f>] dump_stack+0x4e/0x71
->>  [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
->>  [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
->>  [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
->>  [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
->>  [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
->>  [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
->>  [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
->>  [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
->>  [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
->>  [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
->>  [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
->>  [<ffffffff8122ee45>] ? __fget+0x5/0x250
->>  [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
->>  [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
->>  [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
->>
->>Reported-by: Takashi Iwai <tiwai@suse.de>
->>Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
->>Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
->>Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>---
->>v3 -> v4:
->>  * bypass the problem altoghter by kvm_make_request
->>v2 -> v3:
->>  * take care all vmx_vcpu_reset call path
->>v1 -> v2:
->>  * just fix hold the srcu read lock in vmx_vcpu_reset path
->>
->>  arch/x86/kvm/vmx.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->>diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->>index a0f78db..3e556c6 100644
->>--- a/arch/x86/kvm/vmx.c
->>+++ b/arch/x86/kvm/vmx.c
->>@@ -4579,7 +4579,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
->>  		vmcs_write32(TPR_THRESHOLD, 0);
->>  	}
->>-	kvm_vcpu_reload_apic_access_page(vcpu);
->>+	kvm_make_request(KVM_REQ_APIC_PAGE_RELOAD, vcpu);
->>  	if (vmx_vm_has_apicv(vcpu->kvm))
->>  		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
+Your Sincerely
+Emry Holmes
