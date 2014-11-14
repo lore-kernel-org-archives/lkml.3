@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964907AbaKNBO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:14:28 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:27203 "EHLO
+	id S964943AbaKNBOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:14:42 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:54013 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934999AbaKNBOU (ORCPT
+	by vger.kernel.org with ESMTP id S934681AbaKNBOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Nov 2014 20:14:20 -0500
-Message-Id: <20141114011413.981169132@goodmis.org>
+Message-Id: <20141114011413.838802991@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 13 Nov 2014 20:13:07 -0500
+Date: Thu, 13 Nov 2014 20:13:06 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [RFC][PATCH 23/23 v4] x86/nmi: Perform a safe NMI stack trace on all CPUs
+Subject: [RFC][PATCH 22/23 v4] printk: Add per_cpu printk func to allow printk to be diverted
 References: <20141114011244.256115061@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0023-x86-nmi-Perform-a-safe-NMI-stack-trace-on-all-CPUs.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0022-printk-Add-per_cpu-printk-func-to-allow-printk-to-be.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,170 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-When trigger_all_cpu_backtrace() is called on x86, it will trigger an
-NMI on each CPU and call show_regs(). But this can lead to a hard lock
-up if the NMI comes in on another printk().
+Being able to divert printk to call another function besides the normal
+logging is useful for such things like NMI handling. If some functions
+are to be called from NMI that does printk() it is possible to lock up
+the box if the nmi handler triggers when another printk is happening.
 
-In order to avoid this, when the NMI triggers, it switches the printk
-routine for that CPU to call a NMI safe printk function that records the
-printk in a per_cpu seq_buf descriptor. After all NMIs have finished
-recording its data, the seq_bufs are printed in a safe context.
+One example of this use is to perform a stack trace on all CPUs via NMI.
+But if the NMI is to do the printk() it can cause the system to lock up.
+By allowing the printk to be diverted to another function that can safely
+record the printk output and then print it when it in a safe context
+then NMIs will be safe to call these functions like show_regs().
 
-Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
+Link: http://lkml.kernel.org/p/20140619213952.209176403@goodmis.org
 
 Tested-by: Jiri Kosina <jkosina@suse.cz>
 Acked-by: Jiri Kosina <jkosina@suse.cz>
 Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/apic/hw_nmi.c | 91 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 86 insertions(+), 5 deletions(-)
+ include/linux/percpu.h |  3 +++
+ include/linux/printk.h |  2 ++
+ kernel/printk/printk.c | 38 +++++++++++++++++++++++++++++---------
+ 3 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 6a1e71bde323..c95c3e9ce196 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -18,6 +18,7 @@
- #include <linux/nmi.h>
- #include <linux/module.h>
- #include <linux/delay.h>
-+#include <linux/seq_buf.h>
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index a3aa63e47637..ba2e85a0ff5b 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -134,4 +134,7 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
+ 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\
+ 						__alignof__(type))
  
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- u64 hw_nmi_get_sample_period(int watchdog_thresh)
-@@ -29,14 +30,35 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
- #ifdef arch_trigger_all_cpu_backtrace
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-+static cpumask_var_t printtrace_mask;
++/* To avoid include hell, as printk can not declare this, we declare it here */
++DECLARE_PER_CPU(printk_func_t, printk_func);
 +
-+#define NMI_BUF_SIZE		4096
-+
-+struct nmi_seq_buf {
-+	unsigned char		buffer[NMI_BUF_SIZE];
-+	struct seq_buf		seq;
-+};
-+
-+/* Safe printing in NMI context */
-+static DEFINE_PER_CPU(struct nmi_seq_buf, nmi_print_seq);
+ #endif /* __LINUX_PERCPU_H */
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index d78125f73ac4..3bbd979d32fb 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -162,6 +162,8 @@ extern int kptr_restrict;
  
- /* "in progress" flag of arch_trigger_all_cpu_backtrace */
- static unsigned long backtrace_flag;
+ extern void wake_up_klogd(void);
  
-+static void print_seq_line(struct nmi_seq_buf *s, int start, int end)
-+{
-+	const char *buf = s->buffer + start;
++typedef int(*printk_func_t)(const char *fmt, va_list args);
 +
-+	printk("%.*s", (end - start) + 1, buf);
-+}
-+
- void arch_trigger_all_cpu_backtrace(bool include_self)
- {
-+	struct nmi_seq_buf *s;
-+	int len;
-+	int cpu;
- 	int i;
--	int cpu = get_cpu();
-+	int this_cpu = get_cpu();
- 
- 	if (test_and_set_bit(0, &backtrace_flag)) {
- 		/*
-@@ -49,7 +71,17 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 
- 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
- 	if (!include_self)
--		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+		cpumask_clear_cpu(this_cpu, to_cpumask(backtrace_mask));
-+
-+	cpumask_copy(printtrace_mask, to_cpumask(backtrace_mask));
-+	/*
-+	 * Set up per_cpu seq_buf buffers that the NMIs running on the other
-+	 * CPUs will write to.
-+	 */
-+	for_each_cpu(cpu, to_cpumask(backtrace_mask)) {
-+		s = &per_cpu(nmi_print_seq, cpu);
-+		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
-+	}
- 
- 	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
- 		pr_info("sending NMI to %s CPUs:\n",
-@@ -65,11 +97,58 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 		touch_softlockup_watchdog();
- 	}
- 
-+	/*
-+	 * Now that all the NMIs have triggered, we can dump out their
-+	 * back traces safely to the console.
-+	 */
-+	for_each_cpu(cpu, printtrace_mask) {
-+		int last_i = 0;
-+
-+		s = &per_cpu(nmi_print_seq, cpu);
-+		len = seq_buf_used(&s->seq);
-+		if (!len)
-+			continue;
-+
-+		/* Print line by line. */
-+		for (i = 0; i < len; i++) {
-+			if (s->buffer[i] == '\n') {
-+				print_seq_line(s, last_i, i);
-+				last_i = i + 1;
-+			}
-+		}
-+		/* Check if there was a partial line. */
-+		if (last_i < len) {
-+			print_seq_line(s, last_i, len - 1);
-+			pr_cont("\n");
-+		}
-+	}
-+
- 	clear_bit(0, &backtrace_flag);
- 	smp_mb__after_atomic();
- 	put_cpu();
+ void log_buf_kexec_setup(void);
+ void __init setup_log_buf(int early);
+ void dump_stack_set_arch_desc(const char *fmt, ...);
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index ced2b84b1cb7..f7b723f98cb9 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1807,6 +1807,30 @@ asmlinkage int printk_emit(int facility, int level,
  }
+ EXPORT_SYMBOL(printk_emit);
  
-+/*
-+ * It is not safe to call printk() directly from NMI handlers.
-+ * It may be fine if the NMI detected a lock up and we have no choice
-+ * but to do so, but doing a NMI on all other CPUs to get a back trace
-+ * can be done with a sysrq-l. We don't want that to lock up, which
-+ * can happen if the NMI interrupts a printk in progress.
-+ *
-+ * Instead, we redirect the vprintk() to this nmi_vprintk() that writes
-+ * the content into a per cpu seq_buf buffer. Then when the NMIs are
-+ * all done, we can safely dump the contents of the seq_buf to a printk()
-+ * from a non NMI context.
-+ */
-+static int nmi_vprintk(const char *fmt, va_list args)
++int vprintk_default(const char *fmt, va_list args)
 +{
-+	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
-+	unsigned int len = seq_buf_used(&s->seq);
++	int r;
 +
-+	seq_buf_vprintf(&s->seq, fmt, args);
-+	return seq_buf_used(&s->seq) - len;
++#ifdef CONFIG_KGDB_KDB
++	if (unlikely(kdb_trap_printk)) {
++		r = vkdb_printf(fmt, args);
++		return r;
++	}
++#endif
++	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
++
++	return r;
 +}
++EXPORT_SYMBOL_GPL(vprintk_default);
 +
- static int
- arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
++/*
++ * This allows printk to be diverted to another function per cpu.
++ * This is useful for calling printk functions from within NMI
++ * without worrying about race conditions that can lock up the
++ * box.
++ */
++DEFINE_PER_CPU(printk_func_t, printk_func) = vprintk_default;
++
+ /**
+  * printk - print a kernel message
+  * @fmt: format string
+@@ -1830,19 +1854,15 @@ EXPORT_SYMBOL(printk_emit);
+  */
+ asmlinkage __visible int printk(const char *fmt, ...)
  {
-@@ -78,12 +157,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
- 	cpu = smp_processor_id();
++	printk_func_t vprintk_func;
+ 	va_list args;
+ 	int r;
  
- 	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
--		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+		printk_func_t printk_func_save = this_cpu_read(printk_func);
+-#ifdef CONFIG_KGDB_KDB
+-	if (unlikely(kdb_trap_printk)) {
+-		va_start(args, fmt);
+-		r = vkdb_printf(fmt, args);
+-		va_end(args);
+-		return r;
+-	}
+-#endif
+ 	va_start(args, fmt);
+-	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
++	preempt_disable();
++	vprintk_func = this_cpu_read(printk_func);
++	r = vprintk_func(fmt, args);
++	preempt_enable();
+ 	va_end(args);
  
--		arch_spin_lock(&lock);
-+		/* Replace printk to write into the NMI seq */
-+		this_cpu_write(printk_func, nmi_vprintk);
- 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
- 		show_regs(regs);
--		arch_spin_unlock(&lock);
-+		this_cpu_write(printk_func, printk_func_save);
-+
- 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
- 		return NMI_HANDLED;
- 	}
+ 	return r;
 -- 
 2.1.1
 
