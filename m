@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935357AbaKNMmX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 07:42:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60260 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934994AbaKNMmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 07:42:22 -0500
-Message-ID: <5465F8AC.1050905@suse.com>
-Date: Fri, 14 Nov 2014 13:42:20 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-Subject: Re: [Xen-devel] [PATCH V3 7/8] xen: switch to linear virtual mapped
- sparse p2m list
-References: <1415684626-18590-1-git-send-email-jgross@suse.com>	<1415684626-18590-8-git-send-email-jgross@suse.com>	<54624BCB.9040300@citrix.com> <546477FD.9050800@suse.com> <5465EE4E.2010206@citrix.com>
-In-Reply-To: <5465EE4E.2010206@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S935377AbaKNMmf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 07:42:35 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58634 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934994AbaKNMmd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 07:42:33 -0500
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4] ALSA: ice1712: consider error value
+Date: Fri, 14 Nov 2014 18:12:21 +0530
+Message-Id: <1415968941-14181-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2014 12:58 PM, David Vrabel wrote:
-> On 13/11/14 09:21, Juergen Gross wrote:
->> On 11/11/2014 06:47 PM, David Vrabel wrote:
->>>
->>> Can you please test this with the following guests/scenarios.
->>>
->>> * 64 bit dom0 with PCI devices with high MMIO BARs.
->>
->> I'm not sure I have a machine available with this configuration.
->
-> We have a bunch of them in our test lab. Unfortunately, xapi doesn't
-> work on Linux 3.12 or later so I won't be able to test this series in
-> the short term.
+earlier we were ignoring the return value of snd_ak4114_create and
+always returning 0.
+now we are returning the actual status. revo_init is calling this
+function, and revo_init is checking the return value.
 
-I've found one. Stay tuned. :-)
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
 
+change in v3: spec->ak4114 is now dereferenced if we dont get an
+error value from snd_ak4114_create.
 
-Juergen
+change in v4: error value returned according to coding style.
+
+ sound/pci/ice1712/revo.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/sound/pci/ice1712/revo.c b/sound/pci/ice1712/revo.c
+index 1112ec1..1d81ae6 100644
+--- a/sound/pci/ice1712/revo.c
++++ b/sound/pci/ice1712/revo.c
+@@ -494,11 +494,13 @@ static int ap192_ak4114_init(struct snd_ice1712 *ice)
+ 				 ap192_ak4114_write,
+ 				 ak4114_init_vals, ak4114_init_txcsb,
+ 				 ice, &spec->ak4114);
++	if (err < 0)
++		return err;
+ 	/* AK4114 in Revo cannot detect external rate correctly.
+ 	 * No reason to stop capture stream due to incorrect checks */
+ 	spec->ak4114->check_flags = AK4114_CHECK_NO_RATE;
+ 
+-	return 0; /* error ignored; it's no fatal error */
++	return 0;
+ }
+ 
+ static int revo_init(struct snd_ice1712 *ice)
+-- 
+1.8.1.2
 
