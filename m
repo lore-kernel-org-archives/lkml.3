@@ -1,181 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161121AbaKNMgS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 07:36:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60125 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161078AbaKNMgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 07:36:14 -0500
-Date: Fri, 14 Nov 2014 13:36:10 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: vgoyal@redhat.com, kumagai-atsushi@mxc.nes.nec.co.jp, anderson@redhat.com,
-        kexec@lists.infradead.org, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in
- VMCOREINFO
-Message-ID: <20141114133610.0e370d26@hananiah.suse.cz>
-In-Reply-To: <20141114.185423.380949544673818300.d.hatayama@jp.fujitsu.com>
-References: <20141113154810.2ee36e72@hananiah.suse.cz>
-	<20141114.104235.926535445994740268.d.hatayama@jp.fujitsu.com>
-	<20141114093145.746c7efe@hananiah.suse.cz>
-	<20141114.185423.380949544673818300.d.hatayama@jp.fujitsu.com>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1161136AbaKNMgx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 07:36:53 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:58473 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161067AbaKNMgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 07:36:05 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.18-rc3 v8 3/4] ARM: add basic support for on-demand backtrace of other CPUs
+Date: Fri, 14 Nov 2014 12:35:42 +0000
+Message-Id: <1415968543-29469-4-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
+ <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014 18:54:23 +0900 (JST)
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+Add basic infrastructure for triggering a backtrace of other CPUs
+via an IPI, preferably at FIQ level.  It is intended that this shall
+be used for cases where we have detected that something has already
+failed in the kernel.
 
-> From: Petr Tesarik <ptesarik@suse.cz>
-> Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-> Date: Fri, 14 Nov 2014 09:31:45 +0100
-> 
-> > On Fri, 14 Nov 2014 10:42:35 +0900 (JST)
-> > HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
-> > 
-> >> From: Petr Tesarik <ptesarik@suse.cz>
-> >> Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-> >> Date: Thu, 13 Nov 2014 15:48:10 +0100
-> >> 
-> >> > On Thu, 13 Nov 2014 09:25:48 -0500
-> >> > Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> > 
-> >> >> On Thu, Nov 13, 2014 at 05:30:21PM +0900, HATAYAMA, Daisuke wrote:
-> >> >> > 
-> >> >> > (2014/11/13 17:06), Petr Tesarik wrote:
-> >> >> > >On Thu, 13 Nov 2014 09:17:09 +0900 (JST)
-> >> >> > >HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
-> >> >> > >
-> >> >> > >>From: Vivek Goyal <vgoyal@redhat.com>
-> >> >> > >>Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-> >> >> > >>Date: Wed, 12 Nov 2014 17:12:05 -0500
-> >> >> > >>
-> >> >> > >>>On Wed, Nov 12, 2014 at 03:40:42PM +0900, HATAYAMA Daisuke wrote:
-> >> >> > >>>>Currently, VMCOREINFO note information reports the virtual address of
-> >> >> > >>>>phys_base that is assigned to symbol phys_base. But this doesn't make
-> >> >> > >>>>sense because to refer to value of the phys_base, it's necessary to
-> >> >> > >>>>get the value of phys_base itself we are now about to refer to.
-> >> >> > >>>>
-> >> >> > >>>
-> >> >> > >>>Hi Hatayama,
-> >> >> > >>>
-> >> >> > >>>/proc/vmcore ELF headers have virtual address information and using
-> >> >> > >>>that you should be able to read actual value of phys_base. gdb deals
-> >> >> > >>>with virtual addresses all the time and can read value of any symbol
-> >> >> > >>>using those headers.
-> >> >> > >>>
-> >> >> > >>>So I am not sure what's the need for exporting actual value of
-> >> >> > >>>phys_base.
-> >> >> > >>>
-> >> >> > >>
-> >> >> > >>Sorry, my logic in the patch description was wrong. For /proc/vmcore,
-> >> >> > >>there's enough information for makedumpdile to get phys_base. It's
-> >> >> > >>correct. The problem here is that other crash dump mechanisms that run
-> >> >> > >>outside Linux kernel independently don't have information to get
-> >> >> > >>phys_base.
-> >> >> > >
-> >> >> > >Yes, but these mechanisms won't be able to read VMCOREINFO either, will
-> >> >> > >they?
-> >> >> > >
-> >> >> > 
-> >> >> > I don't intend such sophisticated function only by VMCOREINFO.
-> >> >> > Search vmcore for VMCOREINFO using strings + grep before opening it by crash.
-> >> >> > I intend that only here.
-> >> >> 
-> >> >> I think this is very crude and not proper way to get to vmcoreinfo.
-> >> > 
-> >> > Same here. If VMCOREINFO must be locatable without communicating any
-> >> > information to the hypervisor, then I would rather go for something
-> >> > similar to what s390(x) folks do - a well-known location in physical
-> >> > memory that contains a pointer to a checksummed OS info structure,
-> >> > which in turn contains the VMCOREINFO pointers.
-> >> > 
-> >> > I'm a bit surprised such mechanism is not needed by Fujitsu SADUMP.
-> >> > Or is that part of the current plan, Daisuke?
-> >> > 
-> >> 
-> >> It's useful if there is. I don't plan now. For now, the idea of this
-> >> patch is enough for me.
-> >> 
-> >> BTW, for the above idea, I suspect that if the location in the
-> >> physical memory is unique, it cannot deal with the kdump 2nd kernel
-> >> case.
-> > 
-> > No, not at all. The low 640K are copied away to a pre-allocated area by
-> > kexec purgatory code on x86_64, so it's safe to overwrite any location
-> > in there. The copy is needed, because BIOS already uses some hardcoded
-> > addresses in that range. I think the Linux kernel may safely use part of
-> > PFN 0 starting at physical address 0x0500. This area was originally
-> > used by MS-DOS, so chances are high that no broken BIOS out there
-> > corrupts this part of RAM...
-> > 
-> 
-> In fact, I didn't consider in such deep way... I had forgot back up
-> region at all. But it's hard to use the low 640K area. Then, it's hard
-> to get phys_base of the kdump 1st kernel that is assumed to be saved
-> in thw low 640K now. Because externally running mechanism can run
-> after kdump 2nd kernel has booted up, crash utility needs to convert a
-> read request to the low 640K area into the corresponding part of the
-> pre-allocated area. See kdump_backup_region_init() in crash utility,
-> which tries to find the pre-allocated area via ELF header, where
-> symbol kexec_crash_image is read to find ELF header. This means we
-> need phys_base to find the pre-allocated area.
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/include/asm/irq.h |  5 ++++
+ arch/arm/kernel/smp.c      | 62 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 67 insertions(+)
 
-Wrong again, I'm afraid.
+diff --git a/arch/arm/include/asm/irq.h b/arch/arm/include/asm/irq.h
+index 53c15dec7af6..be1d07d59ee9 100644
+--- a/arch/arm/include/asm/irq.h
++++ b/arch/arm/include/asm/irq.h
+@@ -35,6 +35,11 @@ extern void (*handle_arch_irq)(struct pt_regs *);
+ extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
+ #endif
+ 
++#ifdef CONFIG_SMP
++extern void arch_trigger_all_cpu_backtrace(bool);
++#define arch_trigger_all_cpu_backtrace(x) arch_trigger_all_cpu_backtrace(x)
++#endif
++
+ #endif
+ 
+ #endif
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 13396d3d600e..14c594a12bef 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -72,8 +72,12 @@ enum ipi_msg_type {
+ 	IPI_CPU_STOP,
+ 	IPI_IRQ_WORK,
+ 	IPI_COMPLETION,
++	IPI_CPU_BACKTRACE,
+ };
+ 
++/* For reliability, we're prepared to waste bits here. */
++static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
++
+ static DECLARE_COMPLETION(cpu_running);
+ 
+ static struct smp_operations smp_ops;
+@@ -535,6 +539,21 @@ static void ipi_cpu_stop(unsigned int cpu)
+ 		cpu_relax();
+ }
+ 
++static void ipi_cpu_backtrace(struct pt_regs *regs)
++{
++	int cpu = smp_processor_id();
++
++	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
++		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
++
++		arch_spin_lock(&lock);
++		printk(KERN_WARNING "FIQ backtrace for cpu %d\n", cpu);
++		show_regs(regs);
++		arch_spin_unlock(&lock);
++		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
++	}
++}
++
+ static DEFINE_PER_CPU(struct completion *, cpu_completion);
+ 
+ int register_ipi_completion(struct completion *completion, int cpu)
+@@ -614,6 +633,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 		irq_exit();
+ 		break;
+ 
++	case IPI_CPU_BACKTRACE:
++		irq_enter();
++		ipi_cpu_backtrace(regs);
++		irq_exit();
++		break;
++
+ 	default:
+ 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
+ 		       cpu, ipinr);
+@@ -708,3 +733,40 @@ static int __init register_cpufreq_notifier(void)
+ core_initcall(register_cpufreq_notifier);
+ 
+ #endif
++
++void arch_trigger_all_cpu_backtrace(bool include_self)
++{
++	static unsigned long backtrace_flag;
++	int i, cpu = get_cpu();
++
++	if (test_and_set_bit(0, &backtrace_flag)) {
++		/*
++		 * If there is already a trigger_all_cpu_backtrace() in progress
++		 * (backtrace_flag == 1), don't output double cpu dump infos.
++		 */
++		put_cpu();
++		return;
++	}
++
++	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
++	if (!include_self)
++		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
++
++	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
++		pr_info("Sending FIQ to %s CPUs:\n",
++			(include_self ? "all" : "other"));
++		smp_cross_call(to_cpumask(backtrace_mask), IPI_CPU_BACKTRACE);
++	}
++
++	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
++	for (i = 0; i < 10 * 1000; i++) {
++		if (cpumask_empty(to_cpumask(backtrace_mask)))
++			break;
++
++		mdelay(1);
++	}
++
++	clear_bit(0, &backtrace_flag);
++	smp_mb__after_atomic();
++	put_cpu();
++}
+-- 
+1.9.3
 
-So, first of all, an admin should make up your mind if you want to use
-kexec-based dumping, or stand-alone dumping. OK, you seem to address
-a corner case when s/he configures both. But in that case, the
-stand-alone dump can be used to look at _BOTH_ kernels, and the default
-should indeed be the one that was currently running. After all, I have
-already debugged the _SECONDARY_ kernel environment several times...
-
-However, it even works. If somebody wants to see the crashed kernel
-from the same dump, they can use the second kernel's internal
-structures to locate the corresponding phys_base and pass that as an
-option to crash.
-
-Let me illustrate the situation:
-
-  +-------------------+
-  | secondary kernel  | <--- low 640K
-  | private pointers -+--\
-  |                   |  |  (1)
-  |                   |  |
-  +-------------------+<-+-----\
-  |                   |  |     |
-  | primary kernel    |  |     |
-  Z                   Z  |     |
-  |                   |  |     |
-  +-------------------+<-/     |  (3)
-  | secondary kernel  |        |
-  | (contains pointer |        |
-  |  to backup area) -+--\     |
-  +-------------------+  | (2) |
-  | backup area       |<-/     |
-  |                  -+--------/
-  +-------------------+
-  |                   |
-  | 1st kernel again  |
-  Z                   Z
-  +-------------------+
-
-The information is nicely chained in this diagram:
-
-  (1)  Low 640K allows you to find the currently running kernel
-       (here it is the kdump kernel).
-  (2)  This kernel knows where to find the backup area (otherwise it
-       couldn't correctly map them in /proc/vmcore).
-  (3)  The backup area allows yoou to find the previously runnning
-       kernel (the 1st kernel).
-
-I really don't see any issues with the concept, although I haven't
-tried it in practice (yet).
-
-Petr T
