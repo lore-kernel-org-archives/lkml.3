@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935325AbaKNQ2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 11:28:15 -0500
-Received: from mail-wi0-f201.google.com ([209.85.212.201]:38344 "EHLO
-	mail-wi0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934046AbaKNQ2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 11:28:13 -0500
-From: David Drysdale <drysdale@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Rich Felker <dalias@aerifal.cx>,
-        Christoph Hellwig <hch@infradead.org>, x86@kernel.org,
-        linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        sparclinux@vger.kernel.org, David Drysdale <drysdale@google.com>
-Subject: [PATCHv8 3/4] sparc: Hook up execveat system call.
-Date: Fri, 14 Nov 2014 16:23:02 +0000
-Message-Id: <1415982183-20525-4-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1415982183-20525-1-git-send-email-drysdale@google.com>
-References: <1415982183-20525-1-git-send-email-drysdale@google.com>
+	id S1161138AbaKNQ3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:29:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:11221 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934283AbaKNQ3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 11:29:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
+   d="scan'208";a="632038588"
+Message-ID: <54662DC6.7070302@linux.intel.com>
+Date: Fri, 14 Nov 2014 10:28:54 -0600
+From: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: gsantosh@codeaurora.org
+CC: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh@kernel.org>,
+        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, devicetree@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, grant.likely@linaro.org,
+        alsa-devel-bounces@alsa-project.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Subject: Re: [alsa-devel] Question on Compressed offload session
+References: <85499f52ebd29581bf58b9cafbae6864.squirrel@www.codeaurora.org> <5464CDE2.2070406@linux.intel.com> <fd33d16f31eb73cc6f0585c192601d9e.squirrel@www.codeaurora.org>
+In-Reply-To: <fd33d16f31eb73cc6f0585c192601d9e.squirrel@www.codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Drysdale <drysdale@google.com>
----
- arch/sparc/include/uapi/asm/unistd.h | 3 ++-
- arch/sparc/kernel/systbls_32.S       | 1 +
- arch/sparc/kernel/systbls_64.S       | 2 ++
- 3 files changed, 5 insertions(+), 1 deletion(-)
+On 11/13/14, 10:08 PM, gsantosh@codeaurora.org wrote:
+>> On 11/12/14, 9:02 PM, gsantosh@codeaurora.org wrote:
+>>> Hi All,
+>>>
+>>> The Question is for the compressed offload session.
+>>>
+>>> For a generic codec driver during the startup function it will set some
+>>> of
+>>> the hw_constraints rule similarly like this.
+>>>
+>>>           snd_pcm_hw_constraint_list(substream->runtime, 0,
+>>>                       SNDRV_PCM_HW_PARAM_RATE,
+>>>                       &constraints_12_24);
+>>>
+>>> pcm_lib.c will try to add the rule to the runtime structure by accessing
+>>> the pointers which will be initialized during opening of the session,
+>>> as The Constraints added by the codec driver will be updated in the
+>>>
+>>> struct snd_pcm_hw_constraints of runtime structure which will be part of
+>>> substream handle.
+>>>
+>>> But for the compressed offload I do not see the initialization done for
+>>> HW
+>>> constraints, as done in pcm session
+>>>
+>>> 2092int snd_pcm_open_substream(struct snd_pcm *pcm, int stream,
+>>> 2093			   struct file *file,
+>>> 2094			   struct snd_pcm_substream **rsubstream)
+>>>
+>>> most of the existing drivers which has the hw_constraint_list code will
+>>> not be applicable for compress offload session, how to solve this?
+>>
+>> You can't directly link physical output/input with the decoder/encoder
+>> in general.
+>> For decoders, the sample-rate may not always be known ahead of time,
+>> e.g. with AAC-SBR implicit signaling. There is no way to add constraints
+>> on open, there is an assumption that a sample-rate converter is part of
+>> the chain to take care of the difference between the output of the
+>> offloaded decoder and the back-end actual sampling frequency (same with
+>> number of channels and bit-width btw).
+>> Likewise if you encode the frequency may not be the same as what the
+>> backend provides and some SRC might be needed.
+>> -Pierre
+>>
+>
+> I Agree we cannot have a direct link between physical output  / input with
+> decoder / encoder, during compressed playback.
+> My concern here is, if we have a legacy codec driver which is used for the
+> PCM out, and in the start up of this codec driver it is adding
+> hw_constraints list, now the same codec driver is used for the compressed
+> session FE or PCM session FE,
+> If the routing is such that compressed FE -> codec the hw_constraints
+> added by this driver is not valid here,
+> and legacy drivers needs to be changed,
+> Now the question comes how to change this drivers?
+> I can think of following things
+> if the routing is done for Compressed FE -> codec
+>
+> 1) in Codec driver avoid adding hw_constraint during startup if compressed
+> session is routed, this recommend for codec driver to know that compress
+> session is routed to codec which I feel not the correct way to handle this
+>
+> I was checking how to handle this situation in much better way.
 
-diff --git a/arch/sparc/include/uapi/asm/unistd.h b/arch/sparc/include/uapi/asm/unistd.h
-index 46d83842eddc..6f35f4df17f2 100644
---- a/arch/sparc/include/uapi/asm/unistd.h
-+++ b/arch/sparc/include/uapi/asm/unistd.h
-@@ -415,8 +415,9 @@
- #define __NR_getrandom		347
- #define __NR_memfd_create	348
- #define __NR_bpf		349
-+#define __NR_execveat		350
+What exactly do you call a 'legacy codec'? If there is a DAI i am not 
+sure I understand the problem.
 
--#define NR_syscalls		350
-+#define NR_syscalls		351
-
- /* Bitmask values returned from kern_features system call.  */
- #define KERN_FEATURE_MIXED_MODE_STACK	0x00000001
-diff --git a/arch/sparc/kernel/systbls_32.S b/arch/sparc/kernel/systbls_32.S
-index ad0cdf497b78..e31a9056a303 100644
---- a/arch/sparc/kernel/systbls_32.S
-+++ b/arch/sparc/kernel/systbls_32.S
-@@ -87,3 +87,4 @@ sys_call_table:
- /*335*/	.long sys_syncfs, sys_sendmmsg, sys_setns, sys_process_vm_readv, sys_process_vm_writev
- /*340*/	.long sys_ni_syscall, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- /*345*/	.long sys_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.long sys_execveat
-diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
-index 580cde9370c9..15069cb35dac 100644
---- a/arch/sparc/kernel/systbls_64.S
-+++ b/arch/sparc/kernel/systbls_64.S
-@@ -88,6 +88,7 @@ sys_call_table32:
- 	.word sys_syncfs, compat_sys_sendmmsg, sys_setns, compat_sys_process_vm_readv, compat_sys_process_vm_writev
- /*340*/	.word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- 	.word sys32_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.word sys_execveat
-
- #endif /* CONFIG_COMPAT */
-
-@@ -167,3 +168,4 @@ sys_call_table:
- 	.word sys_syncfs, sys_sendmmsg, sys_setns, sys_process_vm_readv, sys_process_vm_writev
- /*340*/	.word sys_kern_features, sys_kcmp, sys_finit_module, sys_sched_setattr, sys_sched_getattr
- 	.word sys_renameat2, sys_seccomp, sys_getrandom, sys_memfd_create, sys_bpf
-+/*350*/	.word sys_execveat
---
-2.1.0.rc2.206.gedb03e5
