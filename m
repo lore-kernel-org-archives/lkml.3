@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935106AbaKNEIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 23:08:32 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41874 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933512AbaKNEI3 (ORCPT
+	id S935016AbaKNEWB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 23:22:01 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:58654 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934226AbaKNEWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 23:08:29 -0500
-Message-ID: <fd33d16f31eb73cc6f0585c192601d9e.squirrel@www.codeaurora.org>
-In-Reply-To: <5464CDE2.2070406@linux.intel.com>
-References: <85499f52ebd29581bf58b9cafbae6864.squirrel@www.codeaurora.org>
-    <5464CDE2.2070406@linux.intel.com>
-Date: Fri, 14 Nov 2014 04:08:28 -0000
-Subject: Re: [alsa-devel] Question on Compressed offload session
-From: gsantosh@codeaurora.org
-To: "Pierre-Louis Bossart" <pierre-louis.bossart@linux.intel.com>
-Cc: gsantosh@codeaurora.org, alsa-devel-bounces@alsa-project.org,
-        "Mark Rutland" <mark.rutland@arm.com>, "Rob Herring" <robh@kernel.org>,
-        "ALSA Development Mailing List" <alsa-devel@alsa-project.org>,
-        "Kuninori Morimoto" <kuninori.morimoto.gx@renesas.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        "Magnus" <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        "Mark Brown" <broonie@kernel.org>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        "Olof Johansson" <olof@lixom.net>,
-        "Kuninori Morimoto" <kuninori.morimoto.gx@gmail.com>
-User-Agent: SquirrelMail/1.4.22-4.el6
+	Thu, 13 Nov 2014 23:22:00 -0500
+Date: Thu, 13 Nov 2014 20:21:58 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] platform-drivers-x86 for 3.18-3
+Message-ID: <20141114042158.GB3088@vmdeb7>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 11/12/14, 9:02 PM, gsantosh@codeaurora.org wrote:
->> Hi All,
->>
->> The Question is for the compressed offload session.
->>
->> For a generic codec driver during the startup function it will set some
->> of
->> the hw_constraints rule similarly like this.
->>
->>          snd_pcm_hw_constraint_list(substream->runtime, 0,
->>                      SNDRV_PCM_HW_PARAM_RATE,
->>                      &constraints_12_24);
->>
->> pcm_lib.c will try to add the rule to the runtime structure by accessing
->> the pointers which will be initialized during opening of the session,
->> as The Constraints added by the codec driver will be updated in the
->>
->> struct snd_pcm_hw_constraints of runtime structure which will be part of
->> substream handle.
->>
->> But for the compressed offload I do not see the initialization done for
->> HW
->> constraints, as done in pcm session
->>
->> 2092int snd_pcm_open_substream(struct snd_pcm *pcm, int stream,
->> 2093			   struct file *file,
->> 2094			   struct snd_pcm_substream **rsubstream)
->>
->> most of the existing drivers which has the hw_constraint_list code will
->> not be applicable for compress offload session, how to solve this?
->
-> You can't directly link physical output/input with the decoder/encoder
-> in general.
-> For decoders, the sample-rate may not always be known ahead of time,
-> e.g. with AAC-SBR implicit signaling. There is no way to add constraints
-> on open, there is an assumption that a sample-rate converter is part of
-> the chain to take care of the difference between the output of the
-> offloaded decoder and the back-end actual sampling frequency (same with
-> number of channels and bit-width btw).
-> Likewise if you encode the frequency may not be the same as what the
-> backend provides and some SRC might be needed.
-> -Pierre
->
+Hi Linus,
 
-I Agree we cannot have a direct link between physical output  / input with
-decoder / encoder, during compressed playback.
-My concern here is, if we have a legacy codec driver which is used for the
-PCM out, and in the start up of this codec driver it is adding
-hw_constraints list, now the same codec driver is used for the compressed
-session FE or PCM session FE,
-If the routing is such that compressed FE -> codec the hw_constraints
-added by this driver is not valid here,
-and legacy drivers needs to be changed,
-Now the question comes how to change this drivers?
-I can think of following things
-if the routing is done for Compressed FE -> codec
+Just two patches to remove hp_accel events from the keyboard bus stream via an
+i8042 filter.
 
-1) in Codec driver avoid adding hw_constraint during startup if compressed
-session is routed, this recommend for codec driver to know that compress
-session is routed to codec which I feel not the correct way to handle this
+My inclination was to merge these, but as I had (incorrectly) pushed them to
+linux-next already, and you had cautioned against rebasing and to just fix
+issues in follow-on patches, I kept the kconfig i8042 dependency fix as a
+separate patch.
 
-I was checking how to handle this situation in much better way.
+If you would prefer I collapse them, I'm happy to resend and rebase my
+linux-next branch for the 3.19 cycle. Apologies for the noise.
 
-Regards
-Santosh
+Thanks,
 
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
->
+Darren Hart
+Intel Open Source Technology Center
 
+The following changes since commit ed78bb846e8bc1a8589fa6e0d9bf2b0f518893d5:
 
+  Merge tag 'pci-v3.18-fixes-2' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci (2014-11-06 11:33:06 -0800)
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/dvhart/linux-platform-drivers-x86.git tags/platform-drivers-x86-v3.18-3
+
+for you to fetch changes up to 0cdbcd6d3ebeffa7d1a475ed7a294315cd046a11:
+
+  platform: hp_accel: Add SERIO_I8042 as a dependency since it now includes i8042.h/serio.h (2014-11-10 21:16:15 -0800)
+
+----------------------------------------------------------------
+platform-drivers-x86 for 3.18-3
+
+Remove hp_accel events from keyboard bus stream.
+
+----------------------------------------------------------------
+Giedrius Statkevicius (2):
+      platform: hp_accel: add a i8042 filter to remove HPQ6000 data from kb bus stream
+      platform: hp_accel: Add SERIO_I8042 as a dependency since it now includes i8042.h/serio.h
+
+ drivers/platform/x86/Kconfig    |  1 +
+ drivers/platform/x86/hp_accel.c | 44 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+)
