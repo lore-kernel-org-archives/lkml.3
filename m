@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935358AbaKNNol (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:44:41 -0500
-Received: from mga14.intel.com ([192.55.52.115]:43541 "EHLO mga14.intel.com"
+	id S935318AbaKNNo1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:44:27 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34434 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935264AbaKNNoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:44:39 -0500
+	id S935300AbaKNNoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:44:25 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="416495412"
+X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
+   d="scan'208";a="631966599"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
         acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v8 06/14] perf: Add AUX record
-Date: Fri, 14 Nov 2014 15:43:39 +0200
-Message-Id: <1415972627-37514-7-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v8 03/14] perf: Support high-order allocations for AUX space
+Date: Fri, 14 Nov 2014 15:43:36 +0200
+Message-Id: <1415972627-37514-4-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -30,114 +30,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When there's new data in the AUX space, output a record indicating its
-offset and size and a set of flags, such as PERF_AUX_FLAG_TRUNCATED, to
-mean the described data was truncated to fit in the ring buffer.
+Some pmus (such as BTS or Intel PT without multiple-entry ToPA capability)
+don't support scatter-gather and will prefer larger contiguous areas for
+their output regions.
+
+This patch adds a new pmu capability to request higher order allocations.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 ---
- include/uapi/linux/perf_event.h | 19 +++++++++++++++++++
- kernel/events/core.c            | 34 ++++++++++++++++++++++++++++++++++
- kernel/events/internal.h        |  3 +++
- 3 files changed, 56 insertions(+)
+ include/linux/perf_event.h  |  1 +
+ kernel/events/ring_buffer.c | 56 ++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 51 insertions(+), 6 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9a13e5fded..272258380e 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -733,6 +733,20 @@ enum perf_event_type {
- 	 */
- 	PERF_RECORD_MMAP2			= 10,
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 344058c71d..71df948b4d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -171,6 +171,7 @@ struct perf_event;
+  * pmu::capabilities flags
+  */
+ #define PERF_PMU_CAP_NO_INTERRUPT		0x01
++#define PERF_PMU_CAP_AUX_NO_SG			0x02
  
-+	/*
-+	 * Records that new data landed in the AUX buffer part.
-+	 *
-+	 * struct {
-+	 * 	struct perf_event_header	header;
-+	 *
-+	 * 	u64				aux_offset;
-+	 * 	u64				aux_size;
-+	 *	u64				flags;
-+	 * 	struct sample_id		sample_id;
-+	 * };
-+	 */
-+	PERF_RECORD_AUX				= 11,
-+
- 	PERF_RECORD_MAX,			/* non-ABI */
- };
- 
-@@ -750,6 +764,11 @@ enum perf_callchain_context {
- 	PERF_CONTEXT_MAX		= (__u64)-4095,
- };
- 
-+/**
-+ * PERF_RECORD_AUX::flags bits
-+ */
-+#define PERF_AUX_FLAG_TRUNCATED		0x01	/* record was truncated to fit */
-+
- #define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
- #define PERF_FLAG_FD_OUTPUT		(1UL << 1)
- #define PERF_FLAG_PID_CGROUP		(1UL << 2) /* pid=cgroup id, per-cpu mode only */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2399c12e49..779f60d300 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5606,6 +5606,40 @@ void perf_event_mmap(struct vm_area_struct *vma)
- 	perf_event_mmap_event(&mmap_event);
+ /**
+  * struct pmu - generic performance monitoring unit
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index c6fdce4ea0..6e700e8fd6 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -242,30 +242,74 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
+ 	spin_lock_init(&rb->event_lock);
  }
  
-+void perf_event_aux_event(struct perf_event *event, unsigned long head,
-+			  unsigned long size, u64 flags)
++#define PERF_AUX_GFP	(GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY)
++
++static struct page *rb_alloc_aux_page(int node, int order)
 +{
-+	struct perf_output_handle handle;
-+	struct perf_sample_data sample;
-+	struct perf_aux_event {
-+		struct perf_event_header	header;
-+		u64				offset;
-+		u64				size;
-+		u64				flags;
-+	} rec = {
-+		.header = {
-+			.type = PERF_RECORD_AUX,
-+			.misc = 0,
-+			.size = sizeof(rec),
-+		},
-+		.offset		= head,
-+		.size		= size,
-+		.flags		= flags,
-+	};
-+	int ret;
++	struct page *page;
 +
-+	perf_event_header__init_id(&rec.header, &sample, event);
-+	ret = perf_output_begin(&handle, event, rec.header.size);
++	if (order > MAX_ORDER)
++		order = MAX_ORDER;
 +
-+	if (ret)
-+		return;
++	do {
++		page = alloc_pages_node(node, PERF_AUX_GFP, order);
++	} while (!page && order--);
 +
-+	perf_output_put(&handle, rec);
-+	perf_event__output_id_sample(event, &handle, &sample);
++	if (page && order) {
++		/*
++		 * Communicate the allocation size to the driver
++		 */
++		split_page(page, order);
++		SetPagePrivate(page);
++		set_page_private(page, order);
++	}
 +
-+	perf_output_end(&handle);
++	return page;
 +}
 +
- /*
-  * IRQ throttle logging
-  */
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index 0f6d080159..4d117a9814 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -62,6 +62,9 @@ static inline bool rb_has_aux(struct ring_buffer *rb)
- 	return !!rb->aux_nr_pages;
- }
- 
-+void perf_event_aux_event(struct perf_event *event, unsigned long head,
-+			  unsigned long size, u64 flags);
++static void rb_free_aux_page(struct ring_buffer *rb, int idx)
++{
++	struct page *page = virt_to_page(rb->aux_pages[idx]);
 +
- extern void
- perf_event_header__init_id(struct perf_event_header *header,
- 			   struct perf_sample_data *data,
++	ClearPagePrivate(page);
++	page->mapping = NULL;
++	__free_page(page);
++}
++
+ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 		 pgoff_t pgoff, int nr_pages, int flags)
+ {
+ 	bool overwrite = !(flags & RING_BUFFER_WRITABLE);
+ 	int node = (event->cpu == -1) ? -1 : cpu_to_node(event->cpu);
+-	int ret = -ENOMEM;
++	int ret = -ENOMEM, max_order = 0;
+ 
+ 	if (!has_aux(event))
+ 		return -ENOTSUPP;
+ 
++	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
++		/*
++		 * We need to start with the max_order that fits in nr_pages,
++		 * not the other way around, hence ilog2() and not get_order.
++		 */
++		max_order = ilog2(nr_pages);
++
+ 	rb->aux_pages = kzalloc_node(nr_pages * sizeof(void *), GFP_KERNEL, node);
+ 	if (!rb->aux_pages)
+ 		return -ENOMEM;
+ 
+ 	rb->free_aux = event->pmu->free_aux;
+-	for (rb->aux_nr_pages = 0; rb->aux_nr_pages < nr_pages;
+-	     rb->aux_nr_pages++) {
++	for (rb->aux_nr_pages = 0; rb->aux_nr_pages < nr_pages;) {
+ 		struct page *page;
++		int last, order;
+ 
+-		page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
++		order = min(max_order, ilog2(nr_pages - rb->aux_nr_pages));
++		page = rb_alloc_aux_page(node, order);
+ 		if (!page)
+ 			goto out;
+ 
+-		rb->aux_pages[rb->aux_nr_pages] = page_address(page);
++		for (last = rb->aux_nr_pages + (1 << page_private(page));
++		     last > rb->aux_nr_pages; rb->aux_nr_pages++)
++			rb->aux_pages[rb->aux_nr_pages] = page_address(page++);
+ 	}
+ 
+ 	rb->aux_priv = event->pmu->setup_aux(event->cpu, rb->aux_pages, nr_pages,
+@@ -303,7 +347,7 @@ static void __rb_free_aux(struct ring_buffer *rb)
+ 	}
+ 
+ 	for (pg = 0; pg < rb->aux_nr_pages; pg++)
+-		free_page((unsigned long)rb->aux_pages[pg]);
++		rb_free_aux_page(rb, pg);
+ 
+ 	kfree(rb->aux_pages);
+ 	rb->aux_nr_pages = 0;
 -- 
 2.1.1
 
