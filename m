@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161943AbaKNUno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:43:44 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:39396 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377AbaKNUnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:43:42 -0500
-Date: Fri, 14 Nov 2014 15:43:39 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: [GIT PULL] libata fixes for v3.18-rc4
-Message-ID: <20141114204339.GJ25889@htj.dyndns.org>
+	id S1161903AbaKNUpp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:45:45 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:60794 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754337AbaKNUpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 15:45:44 -0500
+Date: Fri, 14 Nov 2014 12:45:17 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, Wang Nan <wangnan0@huawei.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH v2] x86, mm: set NX across entire PMD at boot
+Message-ID: <20141114204517.GA24402@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+When setting up permissions on kernel memory at boot, the end of the
+PMD that was split from bss remained executable. It should be NX like
+the rest. This performs a PMD alignment instead of a PAGE alignment to
+get the correct span of memory, and should be freed.
 
-libata fixes for v3.18-rc4.
+Before:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
+0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
 
-The most notable is the revert of lock splitting optimization in ahci.
-This also made the IRQ handling threaded even when there's only one
-IRQ in use.  The conversion missed IRFQ_SHARED leading to screaming
-IRQs problem in some cases and the threaded IRQ handling showed
-performance regression in some LKP test cases.  The changes are
-reverted for now.  It'll probably be retried once threaded IRQ
-handling is removed from ahci.
+After:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
+0xffffffff82df5000-0xffffffff82e00000    44K     RW           NX pte
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
 
-Other than that, there's one fix for ahci and several patches adding
-device IDs.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v2:
+ - added call to free_init_pages(), as suggested by tglx
+---
+ arch/x86/mm/init_64.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Thanks.
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 4cb8763868fc..0d498c922668 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1124,6 +1124,7 @@ void mark_rodata_ro(void)
+ 	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
+ 	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
+ 	unsigned long all_end = PFN_ALIGN(&_end);
++	unsigned long pmd_end = roundup(all_end, PMD_SIZE);
+ 
+ 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+ 	       (end - start) >> 10);
+@@ -1135,7 +1136,7 @@ void mark_rodata_ro(void)
+ 	 * The rodata/data/bss/brk section (but not the kernel text!)
+ 	 * should also be not-executable.
+ 	 */
+-	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
++	set_memory_nx(rodata_start, (pmd_end - rodata_start) >> PAGE_SHIFT);
+ 
+ 	rodata_test();
+ 
+@@ -1147,6 +1148,7 @@ void mark_rodata_ro(void)
+ 	set_memory_ro(start, (end-start) >> PAGE_SHIFT);
+ #endif
+ 
++	free_init_pages("unused kernel", all_end, pmd_end);
+ 	free_init_pages("unused kernel",
+ 			(unsigned long) __va(__pa_symbol(text_end)),
+ 			(unsigned long) __va(__pa_symbol(rodata_start)));
+-- 
+1.9.1
 
-The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
-
-  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.18-fixes
-
-for you to fetch changes up to 9a23c1d6f0f5dbac4c9b73fa6cea7c9ee3d29074:
-
-  ahci: fix AHCI parameters not taken into account (2014-11-04 12:56:25 -0500)
-
-----------------------------------------------------------------
-Antoine Tenart (1):
-      ahci: fix AHCI parameters not taken into account
-
-James Ralston (1):
-      ahci: Add Device IDs for Intel Sunrise Point PCH
-
-Koji Matsuoka (1):
-      ata: sata_rcar: Add r8a7793 device support
-
-Simon Horman (1):
-      ata: sata_rcar: Disable DIPM mode for r8a7790 ES1
-
-Tejun Heo (3):
-      Revert "AHCI: Do not acquire ata_host::lock from single IRQ handler"
-      Revert "AHCI: Optimize single IRQ interrupt processing"
-      ahci: disable MSI instead of NCQ on Samsung pci-e SSDs on macbooks
-
- .../devicetree/bindings/ata/sata_rcar.txt          |  6 +-
- drivers/ata/ahci.c                                 | 28 +++++---
- drivers/ata/libahci.c                              | 78 +++++-----------------
- drivers/ata/sata_rcar.c                            | 15 +++++
- 4 files changed, 55 insertions(+), 72 deletions(-)
 
 -- 
-tejun
+Kees Cook
+Chrome OS Security
