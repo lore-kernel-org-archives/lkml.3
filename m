@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935095AbaKNKTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:19:12 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58045 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934386AbaKNKTJ (ORCPT
+	id S965105AbaKNKT6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:19:58 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:27374 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935099AbaKNKT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:19:09 -0500
-Date: Fri, 14 Nov 2014 10:19:02 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Alexander Duyck <alexander.h.duyck@redhat.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikey@neuling.org" <mikey@neuling.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
-        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "michael@ellerman.id.au" <michael@ellerman.id.au>,
-        "matthew.vick@intel.com" <matthew.vick@intel.com>,
-        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-Subject: Re: [PATCH 1/3] arch: Introduce load_acquire() and store_release()
-Message-ID: <20141114101902.GA27963@arm.com>
-References: <20141113191250.12579.19694.stgit@ahduyck-server>
- <20141113192723.12579.25343.stgit@ahduyck-server>
+	Fri, 14 Nov 2014 05:19:56 -0500
+Message-ID: <5465D73C.9030507@imgtec.com>
+Date: Fri, 14 Nov 2014 10:19:40 +0000
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141113192723.12579.25343.stgit@ahduyck-server>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
+        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
+        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
+        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
+        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>,
+        <jay.xu@rock-chips.com>, Pawel Moll <pawel.moll@arm.com>,
+        <mark.yao@rock-chips.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v10 05/11] drm: bridge/dw_hdmi:split some phy configuration
+ to platform driver
+References: <1415934583-16290-1-git-send-email-andy.yan@rock-chips.com> <1415935631-16826-1-git-send-email-andy.yan@rock-chips.com>
+In-Reply-To: <1415935631-16826-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+Hi Andy,
 
-On Thu, Nov 13, 2014 at 07:27:23PM +0000, Alexander Duyck wrote:
-> It is common for device drivers to make use of acquire/release semantics
-> when dealing with descriptors stored in device memory.  On reviewing the
-> documentation and code for smp_load_acquire() and smp_store_release() as
-> well as reviewing an IBM website that goes over the use of PowerPC barriers
-> at http://www.ibm.com/developerworks/systems/articles/powerpc.html it
-> occurred to me that the same code could likely be applied to device drivers.
+Nice work on this patch series. Its getting better and better :).
+
+On 14/11/14 03:27, Andy Yan wrote:
+> hdmi phy clock symbol and transmission termination value
+> can adjust platform specific to get the best SI
+
+						^Is this signal integrity?
+
+Are these two disjoint features in separate patches?
+
 > 
-> As a result this patch introduces load_acquire() and store_release().  The
-> load_acquire() function can be used in the place of situations where a test
-> for ownership must be followed by a memory barrier.  The below example is
-> from ixgbe:
+> also add mode_valid interface for some platform may not support
+> all the display mode
+
+Sounds like another separate patch to me. :)
+
+Also, This series is becoming quite large. With major changes and fixes mixed together.
+
+Patch 3 splits imx-drm.
+Patch 4 moves dw-drm out of imx-drm folder.
+Patch 7 adds binding
+Patch 9 converts to drm bridge.
+
+Can these be placed together easily?
+And in the start. i.e. patch 1, 2, 3, 4, 
+
+Then all fixes etc can come afterwards?
+
+It helps when checking histories later as to how a driver was made and how fixes happened.
+
+Especially when file moves happen..
+
+Cheers,
+ZubairLK
+
 > 
->         if (!rx_desc->wb.upper.status_error)
->                 break;
+> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 > 
->         /* This memory barrier is needed to keep us from reading
->          * any other fields out of the rx_desc until we know the
->          * descriptor has been written back
->          */
->         rmb();
+> ---
 > 
-> With load_acquire() this can be changed to:
+> Changes in v10:
+> - split generic dw_hdmi.c improvements from patch#11 (add rk3288 support)
 > 
->         if (!load_acquire(&rx_desc->wb.upper.status_error))
->                 break;
-
-I still don't think this is a good idea for the specific use-case you're
-highlighting.
-
-On ARM, an mb() can be *significantly* more expensive than an rmb() (since
-we may have to drain store buffers on an outer L2 cache) and on arm64 it's
-not at all clear that an LDAR is more efficient than an LDR; DMB LD
-sequence. I can certainly imagine implementations where the latter would
-be preferred.
-
-So, whilst I'm perfectly fine to go along with mandatory acquire/release
-macros (we should probably add a check to barf on __iomem pointers), I
-don't agree with using them in preference to finer-grained read/write
-barriers. Doing so will have a real impact on I/O performance.
-
-Finally, do you know of any architectures where load_acquire/store_release
-aren't implemented the same way as the smp_* variants on SMP kernels?
-
-Will
+> Changes in v9: None
+> Changes in v8: None
+> Changes in v7: None
+> Changes in v6: None
+> Changes in v5: None
+> Changes in v4: None
+> Changes in v3: None
+> Changes in v2: None
+> 
+>  drivers/gpu/drm/bridge/dw_hdmi.c      | 29 +++++++++++++++++++++++++++--
+>  drivers/staging/imx-drm/dw_hdmi-imx.c | 10 +++++++++-
+>  include/drm/bridge/dw_hdmi.h          |  7 +++++++
+>  3 files changed, 43 insertions(+), 3 deletions(-)
+> 
