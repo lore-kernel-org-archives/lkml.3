@@ -1,116 +1,716 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965162AbaKNBSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:18:52 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38941 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934547AbaKNBSt (ORCPT
+	id S965168AbaKNBTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:19:21 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:19028 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934801AbaKNBOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:18:49 -0500
-Date: Fri, 14 Nov 2014 01:18:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Message-ID: <20141114011832.GE4042@n2100.arm.linux.org.uk>
-References: <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
- <20141030135749.GE32589@arm.com>
- <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
- <20141113235322.GC4042@n2100.arm.linux.org.uk>
- <1415923530.4223.17.camel@perches.com>
- <20141114001720.GD4042@n2100.arm.linux.org.uk>
- <1415925943.4141.1.camel@perches.com>
+	Thu, 13 Nov 2014 20:14:14 -0500
+Message-Id: <20141114011410.987913836@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 13 Nov 2014 20:12:50 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: [RFC][PATCH 06/23 v4] tracing: Have function_graph use trace_seq_has_overflowed()
+References: <20141114011244.256115061@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415925943.4141.1.camel@perches.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0006-tracing-Have-function_graph-use-trace_seq_has_overfl.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 04:45:43PM -0800, Joe Perches wrote:
-> On Fri, 2014-11-14 at 00:17 +0000, Russell King - ARM Linux wrote:
-> > On Thu, Nov 13, 2014 at 04:05:30PM -0800, Joe Perches wrote:
-> > > On Thu, 2014-11-13 at 23:53 +0000, Russell King - ARM Linux wrote:
-> > > > On Fri, Oct 31, 2014 at 01:42:44PM +0800, Wang, Yalin wrote:
-> > > > > This patch add bitrev.h file to support rbit instruction,
-> > > > > so that we can do bitrev operation by hardware.
-> > > > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> > > > > ---
-> > > > >  arch/arm/Kconfig              |  1 +
-> > > > >  arch/arm/include/asm/bitrev.h | 21 +++++++++++++++++++++
-> > > > >  2 files changed, 22 insertions(+)
-> > > > >  create mode 100644 arch/arm/include/asm/bitrev.h
-> > > > > 
-> > > > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > > > > index 89c4b5c..be92b3b 100644
-> > > > > --- a/arch/arm/Kconfig
-> > > > > +++ b/arch/arm/Kconfig
-> > > > > @@ -28,6 +28,7 @@ config ARM
-> > > > >  	select HANDLE_DOMAIN_IRQ
-> > > > >  	select HARDIRQS_SW_RESEND
-> > > > >  	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
-> > > > > +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
-> > > > 
-> > > > Looking at this, this is just wrong.  Take a moment to consider what
-> > > > happens if we build a kernel which supports both ARMv6 _and_ ARMv7 CPUs.
-> > > > What happens if an ARMv6 CPU tries to execute an rbit instruction?
-> > > > 
-> > > > Second point (which isn't obvious from your submissions on-list) is that
-> > > > you've loaded the patch system up with patches for other parts of the
-> > > > kernel tree for which I am not responsible for.  As such, I can't take
-> > > > those patches without the sub-tree maintainer acking them.  Also, the
-> > > > commit text in those patches look weird:
-> > > > 
-> > > > 6fire: Convert byte_rev_table uses to bitrev8
-> > > > 
-> > > > Use the inline function instead of directly indexing the array.
-> > > > 
-> > > > This allows some architectures with hardware instructions for bit
-> > > > reversals to eliminate the array.
-> > > > 
-> > > > Signed-off-by: Joe Perches <(address hidden)>
-> > > > Signed-off-by: Yalin Wang <(address hidden)>
-> > > > 
-> > > > Why is Joe signing off on these patches?
-> > > > Shouldn't his entry be an Acked-by: ?
-> > > 
-> > > I didn't sign off on or ack the "add bitrev.h" patch.
-> > 
-> > Correct, I never said you did.  Please read my message a bit more carefully
-> > next time, huh?
-> 
-> You've no reason to write that Russell.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Absolutely I have, but I'm not going to discuss it because I'll just
-end up flaming you because in my mind you are the one who is completely
-mistaken with your comments.
+Instead of doing individual checks all over the place that makes the code
+very messy. Just check trace_seq_has_overflowed() at the end or in
+strategic places.
 
-In case it hasn't been realised, I hardly read this mailing list anymore,
-or messages that I'm Cc'd on.  I do read most messages that I'm in the
-To: line, but generally not if they're DT changes (which always end up
-being marked To: me.)
+This makes the code much cleaner and also helps with getting closer
+to removing the return values of trace_seq_printf() and friends.
 
-> > Great, so I can just discard these that were incorrectly submitted to me
-> > then.
-> 
-> I think you shouldn't apply these patches or updated
-> ones either until all the current uses are converted.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.h                 |   2 +-
+ kernel/trace/trace_functions_graph.c | 374 +++++++++++------------------------
+ 2 files changed, 116 insertions(+), 260 deletions(-)
 
-Where are the dependencies mentioned?  How do I get to know when all
-the dependencies are met?  Who is tracking the dependencies?
-
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 19418221b302..c3a37e55ec8b 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -726,7 +726,7 @@ extern unsigned long trace_flags;
+ extern enum print_line_t
+ print_graph_function_flags(struct trace_iterator *iter, u32 flags);
+ extern void print_graph_headers_flags(struct seq_file *s, u32 flags);
+-extern enum print_line_t
++extern void
+ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s);
+ extern void graph_trace_open(struct trace_iterator *iter);
+ extern void graph_trace_close(struct trace_iterator *iter);
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index f0a0c982cde3..477a7c65cf08 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -107,7 +107,7 @@ enum {
+ 	FLAGS_FILL_END   = 3 << TRACE_GRAPH_PRINT_FILL_SHIFT,
+ };
+ 
+-static enum print_line_t
++static void
+ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+ 		     u32 flags);
+ 
+@@ -483,33 +483,24 @@ static int graph_trace_update_thresh(struct trace_array *tr)
+ 
+ static int max_bytes_for_cpu;
+ 
+-static enum print_line_t
+-print_graph_cpu(struct trace_seq *s, int cpu)
++static void print_graph_cpu(struct trace_seq *s, int cpu)
+ {
+-	int ret;
+-
+ 	/*
+ 	 * Start with a space character - to make it stand out
+ 	 * to the right a bit when trace output is pasted into
+ 	 * email:
+ 	 */
+-	ret = trace_seq_printf(s, " %*d) ", max_bytes_for_cpu, cpu);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	return TRACE_TYPE_HANDLED;
++	trace_seq_printf(s, " %*d) ", max_bytes_for_cpu, cpu);
+ }
+ 
+ #define TRACE_GRAPH_PROCINFO_LENGTH	14
+ 
+-static enum print_line_t
+-print_graph_proc(struct trace_seq *s, pid_t pid)
++static void print_graph_proc(struct trace_seq *s, pid_t pid)
+ {
+ 	char comm[TASK_COMM_LEN];
+ 	/* sign + log10(MAX_INT) + '\0' */
+ 	char pid_str[11];
+ 	int spaces = 0;
+-	int ret;
+ 	int len;
+ 	int i;
+ 
+@@ -524,56 +515,43 @@ print_graph_proc(struct trace_seq *s, pid_t pid)
+ 		spaces = TRACE_GRAPH_PROCINFO_LENGTH - len;
+ 
+ 	/* First spaces to align center */
+-	for (i = 0; i < spaces / 2; i++) {
+-		ret = trace_seq_putc(s, ' ');
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	for (i = 0; i < spaces / 2; i++)
++		trace_seq_putc(s, ' ');
+ 
+-	ret = trace_seq_printf(s, "%s-%s", comm, pid_str);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_printf(s, "%s-%s", comm, pid_str);
+ 
+ 	/* Last spaces to align center */
+-	for (i = 0; i < spaces - (spaces / 2); i++) {
+-		ret = trace_seq_putc(s, ' ');
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
+-	return TRACE_TYPE_HANDLED;
++	for (i = 0; i < spaces - (spaces / 2); i++)
++		trace_seq_putc(s, ' ');
+ }
+ 
+ 
+-static enum print_line_t
+-print_graph_lat_fmt(struct trace_seq *s, struct trace_entry *entry)
++static void print_graph_lat_fmt(struct trace_seq *s, struct trace_entry *entry)
+ {
+-	if (!trace_seq_putc(s, ' '))
+-		return 0;
+-
+-	return trace_print_lat_fmt(s, entry);
++	trace_seq_putc(s, ' ');
++	trace_print_lat_fmt(s, entry);
+ }
+ 
+ /* If the pid changed since the last trace, output this event */
+-static enum print_line_t
++static void
+ verif_pid(struct trace_seq *s, pid_t pid, int cpu, struct fgraph_data *data)
+ {
+ 	pid_t prev_pid;
+ 	pid_t *last_pid;
+-	int ret;
+ 
+ 	if (!data)
+-		return TRACE_TYPE_HANDLED;
++		return;
+ 
+ 	last_pid = &(per_cpu_ptr(data->cpu_data, cpu)->last_pid);
+ 
+ 	if (*last_pid == pid)
+-		return TRACE_TYPE_HANDLED;
++		return;
+ 
+ 	prev_pid = *last_pid;
+ 	*last_pid = pid;
+ 
+ 	if (prev_pid == -1)
+-		return TRACE_TYPE_HANDLED;
++		return;
+ /*
+  * Context-switch trace line:
+ 
+@@ -582,33 +560,12 @@ verif_pid(struct trace_seq *s, pid_t pid, int cpu, struct fgraph_data *data)
+  ------------------------------------------
+ 
+  */
+-	ret = trace_seq_puts(s,
+-		" ------------------------------------------\n");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ret = print_graph_cpu(s, cpu);
+-	if (ret == TRACE_TYPE_PARTIAL_LINE)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ret = print_graph_proc(s, prev_pid);
+-	if (ret == TRACE_TYPE_PARTIAL_LINE)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ret = trace_seq_puts(s, " => ");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ret = print_graph_proc(s, pid);
+-	if (ret == TRACE_TYPE_PARTIAL_LINE)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ret = trace_seq_puts(s,
+-		"\n ------------------------------------------\n\n");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	return TRACE_TYPE_HANDLED;
++	trace_seq_puts(s, " ------------------------------------------\n");
++	print_graph_cpu(s, cpu);
++	print_graph_proc(s, prev_pid);
++	trace_seq_puts(s, " => ");
++	print_graph_proc(s, pid);
++	trace_seq_puts(s, "\n ------------------------------------------\n\n");
+ }
+ 
+ static struct ftrace_graph_ret_entry *
+@@ -682,94 +639,69 @@ get_return_for_leaf(struct trace_iterator *iter,
+ 	return next;
+ }
+ 
+-static int print_graph_abs_time(u64 t, struct trace_seq *s)
++static void print_graph_abs_time(u64 t, struct trace_seq *s)
+ {
+ 	unsigned long usecs_rem;
+ 
+ 	usecs_rem = do_div(t, NSEC_PER_SEC);
+ 	usecs_rem /= 1000;
+ 
+-	return trace_seq_printf(s, "%5lu.%06lu |  ",
+-			(unsigned long)t, usecs_rem);
++	trace_seq_printf(s, "%5lu.%06lu |  ",
++			 (unsigned long)t, usecs_rem);
+ }
+ 
+-static enum print_line_t
++static void
+ print_graph_irq(struct trace_iterator *iter, unsigned long addr,
+ 		enum trace_type type, int cpu, pid_t pid, u32 flags)
+ {
+-	int ret;
+ 	struct trace_seq *s = &iter->seq;
+ 
+ 	if (addr < (unsigned long)__irqentry_text_start ||
+ 		addr >= (unsigned long)__irqentry_text_end)
+-		return TRACE_TYPE_UNHANDLED;
++		return;
+ 
+ 	if (trace_flags & TRACE_ITER_CONTEXT_INFO) {
+ 		/* Absolute time */
+-		if (flags & TRACE_GRAPH_PRINT_ABS_TIME) {
+-			ret = print_graph_abs_time(iter->ts, s);
+-			if (!ret)
+-				return TRACE_TYPE_PARTIAL_LINE;
+-		}
++		if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
++			print_graph_abs_time(iter->ts, s);
+ 
+ 		/* Cpu */
+-		if (flags & TRACE_GRAPH_PRINT_CPU) {
+-			ret = print_graph_cpu(s, cpu);
+-			if (ret == TRACE_TYPE_PARTIAL_LINE)
+-				return TRACE_TYPE_PARTIAL_LINE;
+-		}
++		if (flags & TRACE_GRAPH_PRINT_CPU)
++			print_graph_cpu(s, cpu);
+ 
+ 		/* Proc */
+ 		if (flags & TRACE_GRAPH_PRINT_PROC) {
+-			ret = print_graph_proc(s, pid);
+-			if (ret == TRACE_TYPE_PARTIAL_LINE)
+-				return TRACE_TYPE_PARTIAL_LINE;
+-			ret = trace_seq_puts(s, " | ");
+-			if (!ret)
+-				return TRACE_TYPE_PARTIAL_LINE;
++			print_graph_proc(s, pid);
++			trace_seq_puts(s, " | ");
+ 		}
+ 	}
+ 
+ 	/* No overhead */
+-	ret = print_graph_duration(0, s, flags | FLAGS_FILL_START);
+-	if (ret != TRACE_TYPE_HANDLED)
+-		return ret;
++	print_graph_duration(0, s, flags | FLAGS_FILL_START);
+ 
+ 	if (type == TRACE_GRAPH_ENT)
+-		ret = trace_seq_puts(s, "==========>");
++		trace_seq_puts(s, "==========>");
+ 	else
+-		ret = trace_seq_puts(s, "<==========");
+-
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ret = print_graph_duration(0, s, flags | FLAGS_FILL_END);
+-	if (ret != TRACE_TYPE_HANDLED)
+-		return ret;
+-
+-	ret = trace_seq_putc(s, '\n');
++		trace_seq_puts(s, "<==========");
+ 
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-	return TRACE_TYPE_HANDLED;
++	print_graph_duration(0, s, flags | FLAGS_FILL_END);
++	trace_seq_putc(s, '\n');
+ }
+ 
+-enum print_line_t
++void
+ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
+ {
+ 	unsigned long nsecs_rem = do_div(duration, 1000);
+ 	/* log10(ULONG_MAX) + '\0' */
+ 	char msecs_str[21];
+ 	char nsecs_str[5];
+-	int ret, len;
++	int len;
+ 	int i;
+ 
+ 	sprintf(msecs_str, "%lu", (unsigned long) duration);
+ 
+ 	/* Print msecs */
+-	ret = trace_seq_printf(s, "%s", msecs_str);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_printf(s, "%s", msecs_str);
+ 
+ 	len = strlen(msecs_str);
+ 
+@@ -778,79 +710,63 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
+ 		size_t slen = min_t(size_t, sizeof(nsecs_str), 8UL - len);
+ 
+ 		snprintf(nsecs_str, slen, "%03lu", nsecs_rem);
+-		ret = trace_seq_printf(s, ".%s", nsecs_str);
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
++		trace_seq_printf(s, ".%s", nsecs_str);
+ 		len += strlen(nsecs_str);
+ 	}
+ 
+-	ret = trace_seq_puts(s, " us ");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_puts(s, " us ");
+ 
+ 	/* Print remaining spaces to fit the row's width */
+-	for (i = len; i < 7; i++) {
+-		ret = trace_seq_putc(s, ' ');
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
+-	return TRACE_TYPE_HANDLED;
++	for (i = len; i < 7; i++)
++		trace_seq_putc(s, ' ');
+ }
+ 
+-static enum print_line_t
++static void
+ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+ 		     u32 flags)
+ {
+-	int ret = -1;
++	bool duration_printed = false;
+ 
+ 	if (!(flags & TRACE_GRAPH_PRINT_DURATION) ||
+ 	    !(trace_flags & TRACE_ITER_CONTEXT_INFO))
+-			return TRACE_TYPE_HANDLED;
++		return;
+ 
+ 	/* No real adata, just filling the column with spaces */
+ 	switch (flags & TRACE_GRAPH_PRINT_FILL_MASK) {
+ 	case FLAGS_FILL_FULL:
+-		ret = trace_seq_puts(s, "              |  ");
+-		return ret ? TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
++		trace_seq_puts(s, "              |  ");
++		return;
+ 	case FLAGS_FILL_START:
+-		ret = trace_seq_puts(s, "  ");
+-		return ret ? TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
++		trace_seq_puts(s, "  ");
++		return;
+ 	case FLAGS_FILL_END:
+-		ret = trace_seq_puts(s, " |");
+-		return ret ? TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
++		trace_seq_puts(s, " |");
++		return;
+ 	}
+ 
+ 	/* Signal a overhead of time execution to the output */
+ 	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+ 		/* Duration exceeded 100 msecs */
+-		if (duration > 100000ULL)
+-			ret = trace_seq_puts(s, "! ");
++		if (duration > 100000ULL) {
++			trace_seq_puts(s, "! ");
++			duration_printed = true;
++
+ 		/* Duration exceeded 10 msecs */
+-		else if (duration > 10000ULL)
+-			ret = trace_seq_puts(s, "+ ");
++		} else if (duration > 10000ULL) {
++			trace_seq_puts(s, "+ ");
++			duration_printed = true;
++		}
+ 	}
+ 
+ 	/*
+-	 * The -1 means we either did not exceed the duration tresholds
+-	 * or we dont want to print out the overhead. Either way we need
+-	 * to fill out the space.
++	 * If we did not exceed the duration tresholds or we dont want
++	 * to print out the overhead. Either way we need to fill out the space.
+ 	 */
+-	if (ret == -1)
+-		ret = trace_seq_puts(s, "  ");
+-
+-	/* Catching here any failure happenned above */
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ret = trace_print_graph_duration(duration, s);
+-	if (ret != TRACE_TYPE_HANDLED)
+-		return ret;
+-
+-	ret = trace_seq_puts(s, "|  ");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	if (!duration_printed)
++		trace_seq_puts(s, "  ");
+ 
+-	return TRACE_TYPE_HANDLED;
++	trace_print_graph_duration(duration, s);
++	trace_seq_puts(s, "|  ");
+ }
+ 
+ /* Case of a leaf function on its call entry */
+@@ -864,7 +780,6 @@ print_graph_entry_leaf(struct trace_iterator *iter,
+ 	struct ftrace_graph_ret *graph_ret;
+ 	struct ftrace_graph_ent *call;
+ 	unsigned long long duration;
+-	int ret;
+ 	int i;
+ 
+ 	graph_ret = &ret_entry->ret;
+@@ -890,22 +805,15 @@ print_graph_entry_leaf(struct trace_iterator *iter,
+ 	}
+ 
+ 	/* Overhead and duration */
+-	ret = print_graph_duration(duration, s, flags);
+-	if (ret == TRACE_TYPE_PARTIAL_LINE)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	print_graph_duration(duration, s, flags);
+ 
+ 	/* Function */
+-	for (i = 0; i < call->depth * TRACE_GRAPH_INDENT; i++) {
+-		ret = trace_seq_putc(s, ' ');
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	for (i = 0; i < call->depth * TRACE_GRAPH_INDENT; i++)
++		trace_seq_putc(s, ' ');
+ 
+-	ret = trace_seq_printf(s, "%ps();\n", (void *)call->func);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_printf(s, "%ps();\n", (void *)call->func);
+ 
+-	return TRACE_TYPE_HANDLED;
++	return trace_handle_return(s);
+ }
+ 
+ static enum print_line_t
+@@ -915,7 +823,6 @@ print_graph_entry_nested(struct trace_iterator *iter,
+ {
+ 	struct ftrace_graph_ent *call = &entry->graph_ent;
+ 	struct fgraph_data *data = iter->private;
+-	int ret;
+ 	int i;
+ 
+ 	if (data) {
+@@ -931,19 +838,15 @@ print_graph_entry_nested(struct trace_iterator *iter,
+ 	}
+ 
+ 	/* No time */
+-	ret = print_graph_duration(0, s, flags | FLAGS_FILL_FULL);
+-	if (ret != TRACE_TYPE_HANDLED)
+-		return ret;
++	print_graph_duration(0, s, flags | FLAGS_FILL_FULL);
+ 
+ 	/* Function */
+-	for (i = 0; i < call->depth * TRACE_GRAPH_INDENT; i++) {
+-		ret = trace_seq_putc(s, ' ');
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	for (i = 0; i < call->depth * TRACE_GRAPH_INDENT; i++)
++		trace_seq_putc(s, ' ');
+ 
+-	ret = trace_seq_printf(s, "%ps() {\n", (void *)call->func);
+-	if (!ret)
++	trace_seq_printf(s, "%ps() {\n", (void *)call->func);
++
++	if (trace_seq_has_overflowed(s))
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+ 	/*
+@@ -953,62 +856,43 @@ print_graph_entry_nested(struct trace_iterator *iter,
+ 	return TRACE_TYPE_NO_CONSUME;
+ }
+ 
+-static enum print_line_t
++static void
+ print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
+ 		     int type, unsigned long addr, u32 flags)
+ {
+ 	struct fgraph_data *data = iter->private;
+ 	struct trace_entry *ent = iter->ent;
+ 	int cpu = iter->cpu;
+-	int ret;
+ 
+ 	/* Pid */
+-	if (verif_pid(s, ent->pid, cpu, data) == TRACE_TYPE_PARTIAL_LINE)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	verif_pid(s, ent->pid, cpu, data);
+ 
+-	if (type) {
++	if (type)
+ 		/* Interrupt */
+-		ret = print_graph_irq(iter, addr, type, cpu, ent->pid, flags);
+-		if (ret == TRACE_TYPE_PARTIAL_LINE)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++		print_graph_irq(iter, addr, type, cpu, ent->pid, flags);
+ 
+ 	if (!(trace_flags & TRACE_ITER_CONTEXT_INFO))
+-		return 0;
++		return;
+ 
+ 	/* Absolute time */
+-	if (flags & TRACE_GRAPH_PRINT_ABS_TIME) {
+-		ret = print_graph_abs_time(iter->ts, s);
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
++		print_graph_abs_time(iter->ts, s);
+ 
+ 	/* Cpu */
+-	if (flags & TRACE_GRAPH_PRINT_CPU) {
+-		ret = print_graph_cpu(s, cpu);
+-		if (ret == TRACE_TYPE_PARTIAL_LINE)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	if (flags & TRACE_GRAPH_PRINT_CPU)
++		print_graph_cpu(s, cpu);
+ 
+ 	/* Proc */
+ 	if (flags & TRACE_GRAPH_PRINT_PROC) {
+-		ret = print_graph_proc(s, ent->pid);
+-		if (ret == TRACE_TYPE_PARTIAL_LINE)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-
+-		ret = trace_seq_puts(s, " | ");
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
++		print_graph_proc(s, ent->pid);
++		trace_seq_puts(s, " | ");
+ 	}
+ 
+ 	/* Latency format */
+-	if (trace_flags & TRACE_ITER_LATENCY_FMT) {
+-		ret = print_graph_lat_fmt(s, ent);
+-		if (ret == TRACE_TYPE_PARTIAL_LINE)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	if (trace_flags & TRACE_ITER_LATENCY_FMT)
++		print_graph_lat_fmt(s, ent);
+ 
+-	return 0;
++	return;
+ }
+ 
+ /*
+@@ -1126,8 +1010,7 @@ print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
+ 	if (check_irq_entry(iter, flags, call->func, call->depth))
+ 		return TRACE_TYPE_HANDLED;
+ 
+-	if (print_graph_prologue(iter, s, TRACE_GRAPH_ENT, call->func, flags))
+-		return TRACE_TYPE_PARTIAL_LINE;
++	print_graph_prologue(iter, s, TRACE_GRAPH_ENT, call->func, flags);
+ 
+ 	leaf_ret = get_return_for_leaf(iter, field);
+ 	if (leaf_ret)
+@@ -1160,7 +1043,6 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
+ 	pid_t pid = ent->pid;
+ 	int cpu = iter->cpu;
+ 	int func_match = 1;
+-	int ret;
+ 	int i;
+ 
+ 	if (check_irq_return(iter, flags, trace->depth))
+@@ -1186,20 +1068,14 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
+ 		}
+ 	}
+ 
+-	if (print_graph_prologue(iter, s, 0, 0, flags))
+-		return TRACE_TYPE_PARTIAL_LINE;
++	print_graph_prologue(iter, s, 0, 0, flags);
+ 
+ 	/* Overhead and duration */
+-	ret = print_graph_duration(duration, s, flags);
+-	if (ret == TRACE_TYPE_PARTIAL_LINE)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	print_graph_duration(duration, s, flags);
+ 
+ 	/* Closing brace */
+-	for (i = 0; i < trace->depth * TRACE_GRAPH_INDENT; i++) {
+-		ret = trace_seq_putc(s, ' ');
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	for (i = 0; i < trace->depth * TRACE_GRAPH_INDENT; i++)
++		trace_seq_putc(s, ' ');
+ 
+ 	/*
+ 	 * If the return function does not have a matching entry,
+@@ -1208,30 +1084,20 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
+ 	 * belongs to, write out the function name. Always do
+ 	 * that if the funcgraph-tail option is enabled.
+ 	 */
+-	if (func_match && !(flags & TRACE_GRAPH_PRINT_TAIL)) {
+-		ret = trace_seq_puts(s, "}\n");
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	} else {
+-		ret = trace_seq_printf(s, "} /* %ps */\n", (void *)trace->func);
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	if (func_match && !(flags & TRACE_GRAPH_PRINT_TAIL))
++		trace_seq_puts(s, "}\n");
++	else
++		trace_seq_printf(s, "} /* %ps */\n", (void *)trace->func);
+ 
+ 	/* Overrun */
+-	if (flags & TRACE_GRAPH_PRINT_OVERRUN) {
+-		ret = trace_seq_printf(s, " (Overruns: %lu)\n",
+-					trace->overrun);
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
+-	}
++	if (flags & TRACE_GRAPH_PRINT_OVERRUN)
++		trace_seq_printf(s, " (Overruns: %lu)\n",
++				 trace->overrun);
+ 
+-	ret = print_graph_irq(iter, trace->func, TRACE_GRAPH_RET,
+-			      cpu, pid, flags);
+-	if (ret == TRACE_TYPE_PARTIAL_LINE)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	print_graph_irq(iter, trace->func, TRACE_GRAPH_RET,
++			cpu, pid, flags);
+ 
+-	return TRACE_TYPE_HANDLED;
++	return trace_handle_return(s);
+ }
+ 
+ static enum print_line_t
+@@ -1248,26 +1114,18 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
+ 	if (data)
+ 		depth = per_cpu_ptr(data->cpu_data, iter->cpu)->depth;
+ 
+-	if (print_graph_prologue(iter, s, 0, 0, flags))
+-		return TRACE_TYPE_PARTIAL_LINE;
++	print_graph_prologue(iter, s, 0, 0, flags);
+ 
+ 	/* No time */
+-	ret = print_graph_duration(0, s, flags | FLAGS_FILL_FULL);
+-	if (ret != TRACE_TYPE_HANDLED)
+-		return ret;
++	print_graph_duration(0, s, flags | FLAGS_FILL_FULL);
+ 
+ 	/* Indentation */
+ 	if (depth > 0)
+-		for (i = 0; i < (depth + 1) * TRACE_GRAPH_INDENT; i++) {
+-			ret = trace_seq_putc(s, ' ');
+-			if (!ret)
+-				return TRACE_TYPE_PARTIAL_LINE;
+-		}
++		for (i = 0; i < (depth + 1) * TRACE_GRAPH_INDENT; i++)
++			trace_seq_putc(s, ' ');
+ 
+ 	/* The comment */
+-	ret = trace_seq_puts(s, "/* ");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_puts(s, "/* ");
+ 
+ 	switch (iter->ent->type) {
+ 	case TRACE_BPRINT:
+@@ -1296,11 +1154,9 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
+ 		s->len--;
+ 	}
+ 
+-	ret = trace_seq_puts(s, " */\n");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_puts(s, " */\n");
+ 
+-	return TRACE_TYPE_HANDLED;
++	return trace_handle_return(s);
+ }
+ 
+ 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.1
+
+
