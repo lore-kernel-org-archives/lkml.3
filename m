@@ -1,130 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161370AbaKNP7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:59:05 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64840 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161015AbaKNP7B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:59:01 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19qW+Cc3iNj6b8n3mFQVK7j
-Date: Fri, 14 Nov 2014 07:58:23 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Grazvydas Ignotas <notasas@gmail.com>
-Cc: Paul Walmsley <paul@pwsan.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        robh+dt@kernel.org, Tero Kristo <t-kristo@ti.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, bcousson@baylibre.com,
-        galak@codeaurora.org, Grant Likely <grant.likely@linaro.org>,
-        Marek Belisko <marek@goldelico.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
- devconf1 register
-Message-ID: <20141114155823.GV26481@atomide.com>
-References: <1415051968-4878-1-git-send-email-marek@goldelico.com>
- <1415051968-4878-5-git-send-email-marek@goldelico.com>
- <5463585D.9070209@ti.com>
- <20141112150210.GC26481@atomide.com>
- <5464969F.30708@ti.com>
- <20141113182848.GQ26481@atomide.com>
- <alpine.DEB.2.02.1411132251320.17030@utopia.booyaka.com>
- <20141113235840.GS26481@atomide.com>
- <CANOLnONkQu-BBvZH5nb+VngCxq=xnk60JkTd6Jha1uFt2j8gJQ@mail.gmail.com>
+	id S965702AbaKNQBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:01:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965288AbaKNQBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 11:01:37 -0500
+Message-ID: <54662705.9050603@redhat.com>
+Date: Fri, 14 Nov 2014 08:00:05 -0800
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANOLnONkQu-BBvZH5nb+VngCxq=xnk60JkTd6Jha1uFt2j8gJQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikey@neuling.org" <mikey@neuling.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "matthew.vick@intel.com" <matthew.vick@intel.com>,
+        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+Subject: Re: [PATCH 1/3] arch: Introduce load_acquire() and store_release()
+References: <20141113191250.12579.19694.stgit@ahduyck-server> <20141113192723.12579.25343.stgit@ahduyck-server> <20141114101902.GA27963@arm.com>
+In-Reply-To: <20141114101902.GA27963@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grazvydas Ignotas <notasas@gmail.com> [141114 06:38]:
-> On Fri, Nov 14, 2014 at 1:58 AM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Paul Walmsley <paul@pwsan.com> [141113 15:01]:
-> >> Hi
-> >>
-> >> On Thu, 13 Nov 2014, Tony Lindgren wrote:
-> >>
-> >> > * Tomi Valkeinen <tomi.valkeinen@ti.com> [141113 03:33]:
-> >> > > On 12/11/14 17:02, Tony Lindgren wrote:
-> >> > >
-> >> > > >> And, with a quick grep, I see CONTROL_DEVCONF1 touched in multiple
-> >> > > >> places in the kernel. I wonder if adding a pinmux entry for it could
-> >> > > >> cause some rather odd problems.
-> >> > > >
-> >> > > > They can all use pinctrl-single no problem.
-> >> > >
-> >> > > Can, but don't. That's my worry. If we touch the DEVCONF1 via pinmux,
-> >> > > and we have code in mach-omap2 that also touch DEVCONF1, without any
-> >> > > knowledge (and locking) between those...
-> >> >
-> >> > Hmm yeah the McBSP clock mux could be racy as the mux register for
-> >> > McBSP is treated as a clock. This register muxes the clock between
-> >> > external pin and internal clock. Considering that this should be
-> >> > selectable at board level as the external clock probably needs to be
-> >> > used if level shifters are being used, it should be really handled by
-> >> > pinctrl-single.
-> >> >
-> >> > The other use for hsmmc.c and pdata-quirks.c for the one time mux for
-> >> > MMC clock from the MMC clock pin. That can be done with pinctrl-single
-> >> > from the MMC driver too for DT based booting.
-> >> >
-> >> > Then we just have the save and restore of the registers for
-> >> > off-idle.
-> >> >
-> >> > > So _maybe_ that's not an issue, as the pinmux config we have here is
-> >> > > fixed, and done once at boot time, and maybe the code in mach-omap2 that
-> >> > > touch DEVCONF1 is also ran just once and not at the same time as the
-> >> > > pinmux. But I don't know if that's so.
-> >> >
-> >> > It seems we could just do a read-only check for McBSP in the clock
-> >> > code for the mux register, or even completely drop that code from
-> >> > cclock3xxx_data.c and start using the pinctrl for that mux.
-> >> >
-> >> > Paul & Tero, got any comments here?
-> >>
-> >> It's best to move all of the SCM register reads/writes to an SCM IP block
-> >> driver.  This driver would be the only entity that would touch the SCM IP
-> >> block registers - no other code on the system would touch it (perhaps
-> >> aside from anything needed for early init).  The SCM driver would enforce
-> >> mutual exclusion via a spinlock, so concurrent SCM register modifications
-> >> wouldn't flake out.  Then the SCM driver would register clocks with the
-> >> CCF, register pins with the pinctrl subsystem, etc. etc.
-> >
-> > We actually do have that with pinctrl-single + syscon. We certainly
-> > need to implement more Linux framework drivers for the SCM registers.
-> > Things like regulators, clocks, and PHYs, but they should use
-> > pinctrl-single + syscon. See the the pbias-regulator.c for example.
-> >
-> > Looking at the McBSP clock handling, threre's yet more handling of
-> > the same DEVCONF1 mux register in omap2_mcbsp_set_clks_src that gets
-> > alled from omap_mcbsp_dai_set_dai_sysclk.
-> >
-> > To me it seems that if we handle the DEVCONF with pinctrl-single, we
-> > don't need most of the McBSP fck code or the omap2_mcbsp_set_clks_src.
-> > Having the mux register as the clock enable register is not nice..
-> > Who knows what the clock coming from the external pin might be :)
-> 
-> How will audio do dynamic muxing without that code?
-> The pin must be remuxed back to internal clock when audio stops, or
-> else PM breaks.
 
-There's a standard way of dealing with that already available. We can
-just have runtime_pm functions call pinctrl_pm_select_sleep_state()
-and pinctrl_pm_select_default_state().
+On 11/14/2014 02:19 AM, Will Deacon wrote:
+> Hi Alex,
+>
+> On Thu, Nov 13, 2014 at 07:27:23PM +0000, Alexander Duyck wrote:
+>> It is common for device drivers to make use of acquire/release semantics
+>> when dealing with descriptors stored in device memory.  On reviewing the
+>> documentation and code for smp_load_acquire() and smp_store_release() as
+>> well as reviewing an IBM website that goes over the use of PowerPC barriers
+>> at http://www.ibm.com/developerworks/systems/articles/powerpc.html it
+>> occurred to me that the same code could likely be applied to device drivers.
+>>
+>> As a result this patch introduces load_acquire() and store_release().  The
+>> load_acquire() function can be used in the place of situations where a test
+>> for ownership must be followed by a memory barrier.  The below example is
+>> from ixgbe:
+>>
+>>          if (!rx_desc->wb.upper.status_error)
+>>                  break;
+>>
+>>          /* This memory barrier is needed to keep us from reading
+>>           * any other fields out of the rx_desc until we know the
+>>           * descriptor has been written back
+>>           */
+>>          rmb();
+>>
+>> With load_acquire() this can be changed to:
+>>
+>>          if (!load_acquire(&rx_desc->wb.upper.status_error))
+>>                  break;
+> I still don't think this is a good idea for the specific use-case you're
+> highlighting.
+>
+> On ARM, an mb() can be *significantly* more expensive than an rmb() (since
+> we may have to drain store buffers on an outer L2 cache) and on arm64 it's
+> not at all clear that an LDAR is more efficient than an LDR; DMB LD
+> sequence. I can certainly imagine implementations where the latter would
+> be preferred.
 
-Regards,
+Yeah, I am pretty sure I overdid it in using a mb() for arm.  I think 
+what I should probably be using is something like dmb(ish) which is used 
+for smp_mb() instead.  The general idea is to enforce memory-memory 
+accesses.  The memory-mmio accesses still should be using a full 
+rmb()/wmb() barrier.
 
-Tony
+The alternative I am mulling over is creating something like a 
+lightweight set of memory barriers named lw_mb(), lw_rmb(), lw_wmb(), 
+that could be used instead.  The general idea is that on many 
+architectures a full mb/rmb/wmb is far too much for just guaranteeing 
+ordering for system memory only writes or reads.  I'm thinking I could 
+probably use the smp_ varieties as a template for them since I'm 
+thinking that in most cases this should be correct.
+
+Also, just to be clear I am not advocating replacing the wmb() in most 
+I/O setups where we have to sync the system memory before doing the MMIO 
+write.  This is for the case where the device descriptor ring has some 
+bit indicating ownership by either the device or the CPU.  So for 
+example on the r8169 they have to do a wmb() before writing the DescOwn 
+bit in the first descriptor of a given set of Tx descriptors to 
+guarantee the rest are written, then they set the DescOwn bit, then they 
+call wmb() again to flush that last bit before notifying the device it 
+can start fetching the descriptors. My goal is to deal with that first 
+wmb() and leave the second as it since it is correct.
+
+> So, whilst I'm perfectly fine to go along with mandatory acquire/release
+> macros (we should probably add a check to barf on __iomem pointers), I
+> don't agree with using them in preference to finer-grained read/write
+> barriers. Doing so will have a real impact on I/O performance.
+
+Couldn't that type of check be added to compiletime_assert_atomic_type?  
+That seems like that would be the best place for something like that.
+
+
+> Finally, do you know of any architectures where load_acquire/store_release
+> aren't implemented the same way as the smp_* variants on SMP kernels?
+>
+> Will
+
+I should probably go back through and sort out the cases where mb() and 
+smp_mb() are not the same thing.  I think I probably went with too harsh 
+of a barrier in probably a couple of other cases.
+
+Thanks,
+
+Alex
