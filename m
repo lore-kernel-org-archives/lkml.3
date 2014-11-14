@@ -1,83 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaKNG2j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 01:28:39 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58764 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131AbaKNG2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 01:28:33 -0500
+	id S1754399AbaKNGap (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:30:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52533 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752013AbaKNGan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 01:30:43 -0500
+Message-ID: <5465A18F.5050007@suse.com>
+Date: Fri, 14 Nov 2014 07:30:39 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141031113358.GY32045@tbergstrom-lnx.Nvidia.com>
-References: <1414666135-14313-1-git-send-email-tomeu.vizoso@collabora.com> <20141031113358.GY32045@tbergstrom-lnx.Nvidia.com>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Fri, 14 Nov 2014 07:28:12 +0100
-X-Google-Sender-Auth: 5V4NNtL_gIvbcNejuvjjnlWok3Y
-Message-ID: <CAAObsKARz=Y3J74Fm+MVOuH-ftK6yGSxWnNtd3LpHZjebKCGsg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/7] Per-user clock constraints
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, Alex Elder <elder@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mips@linux-mips.org, linux-omap@vger.kernel.org,
-        Manuel Lauss <manuel.lauss@gmail.com>,
-        Matt Porter <mporter@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH V6 00/18] x86: Full support of PAT
+References: <1415019724-4317-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1415019724-4317-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 October 2014 12:33, Peter De Schrijver <pdeschrijver@nvidia.com> wrote:
-> On Thu, Oct 30, 2014 at 11:48:26AM +0100, Tomeu Vizoso wrote:
->> Hello,
->>
->> this fifth version of the series has just one change, suggested by Stephen:
+Ingo,
 
-Hi Mike, how is this looking for 3.19?
+could you take the patches, please?
 
-Regards,
 
-Tomeu
+Juergen
 
->> * Initialize clk.ceiling_constraint to ULONG_MAX and warn about new floor
->> constraints being higher than the existing ceiling.
->>
->> The first five patches are just cleanups that should be desirable on their own,
->> and that should make easier to review the actual per-user clock patch.
->>
->> The sixth patch actually moves the per-clock data that was stored in struct
->> clk to a new struct clk_core and adds references to it from both struct clk and
->> struct clk_hw. struct clk is now ready to contain information that is specific
->> to a given clk consumer.
->>
->> The seventh patch adds API for setting floor and ceiling constraints and stores
->> that information on the per-user struct clk, which is iterable from struct
->> clk_core.
->>
->> They are based on top of 3.18-rc1.
->>
->> http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v5
->>
+On 11/03/2014 02:01 PM, Juergen Gross wrote:
+> The x86 architecture offers via the PAT (Page Attribute Table) a way to
+> specify different caching modes in page table entries. The PAT MSR contains
+> 8 entries each specifying one of 6 possible cache modes. A pte references one
+> of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
 >
-> Acked-By: Peter De Schrijver <pdeschrijver@nvidia.com>
+> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+> top 4 entries in the PAT MSR are the same as the 4 lower entries.
 >
-> Mike,
+> This results in the kernel not supporting e.g. write-through mode. Especially
+> this cache mode would speed up drivers of video cards which now have to use
+> uncached accesses.
 >
-> Do you think this will be merged for 3.19?
+> OTOH some old processors (Pentium) don't support PAT correctly and the Xen
+> hypervisor has been using a different PAT MSR configuration for some time now
+> and can't change that as this setting is part of the ABI.
 >
-> Thanks,
+> This patch set abstracts the cache mode from the pte and introduces tables to
+> translate between cache mode and pte bits (the default cache mode "write back"
+> is hard-wired to PAT entry 0). The tables are statically initialized with
+> values being compatible to old processors and current usage. As soon as the
+> PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
+> changed accordingly. Requests of mappings with special cache modes are always
+> possible now, in case they are not supported there will be a fallback to a
+> compatible but slower mode.
 >
-> Peter.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Summing it up, this patch set adds the following features:
+> - capability to support WT and WP cache modes on processors with full PAT
+>    support
+> - processors with no or uncorrect PAT support are still working as today, even
+>    if WT or WP cache mode are selected by drivers for some pages
+> - reduction of Xen special handling regarding cache mode
+>
+> Changes in V6:
+> - add new patch 10 (x86: Remove looking for setting of _PAGE_PAT_LARGE in
+>    pageattr.c) as suggested by Thomas Gleixner
+> - replaced SOB of Stefan Bader by "Based-on-patch-by:" as suggested by
+>    Borislav Petkov
+>
+> Changes in V5:
+> - split up first patch as requested by Ingo Molnar and Thomas Gleixner
+> - add a helper function in pat_init_cache_modes() as requested by Ingo Molnar
+>
+> Changes in V4:
+> - rebased to 3.18-rc2
+>
+> Changes in V3:
+> - corrected two minor nits (UC_MINUS, again) detected by Toshi Kani
+>
+> Changes in V2:
+> - simplified handling of PAT MSR write under Xen as suggested by David Vrabel
+> - removed resetting of pat_enabled under Xen
+> - two small corrections requested by Toshi Kani (UC_MINUS cache mode in
+>    vermilion driver, fix 32 bit kernel build failure)
+> - correct build error on non-x86 arch by moving definition of
+>    update_cache_mode_entry() to x86 specific header
+>
+> Changes since RFC:
+> - renamed functions and variables as suggested by Toshi Kani
+> - corrected cache mode bits for WT and WP
+> - modified handling of PAT MSR write under Xen as suggested by Jan Beulich
+>
+>
+> Juergen Gross (18):
+>    x86: Make page cache mode a real type
+>    x86: Use new cache mode type in include/asm/fb.h
+>    x86: Use new cache mode type in drivers/video/fbdev/gbefb.c
+>    x86: Use new cache mode type in drivers/video/fbdev/vermilion
+>    x86: Use new cache mode type in arch/x86/pci
+>    x86: Use new cache mode type in arch/x86/mm/init_64.c
+>    x86: Use new cache mode type in asm/pgtable.h
+>    x86: Use new cache mode type in mm/iomap_32.c
+>    x86: Use new cache mode type in track_pfn_remap() and
+>      track_pfn_insert()
+>    x86: Remove looking for setting of _PAGE_PAT_LARGE in pageattr.c
+>    x86: Use new cache mode type in setting page attributes
+>    x86: Use new cache mode type in mm/ioremap.c
+>    x86: Use new cache mode type in memtype related functions
+>    x86: Clean up pgtable_types.h
+>    x86: Support PAT bit in pagetable dump for lower levels
+>    x86: Respect PAT bit when copying pte values between large and normal
+>      pages
+>    x86: Enable PAT to use cache mode translation tables
+>    xen: Support Xen pv-domains using PAT
+>
+>   arch/x86/include/asm/cacheflush.h         |  38 ++++---
+>   arch/x86/include/asm/fb.h                 |   6 +-
+>   arch/x86/include/asm/io.h                 |   2 +-
+>   arch/x86/include/asm/pat.h                |   7 +-
+>   arch/x86/include/asm/pgtable.h            |  19 ++--
+>   arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
+>   arch/x86/mm/dump_pagetables.c             |  24 ++--
+>   arch/x86/mm/init.c                        |  37 +++++++
+>   arch/x86/mm/init_64.c                     |   9 +-
+>   arch/x86/mm/iomap_32.c                    |  12 +-
+>   arch/x86/mm/ioremap.c                     |  63 ++++++-----
+>   arch/x86/mm/mm_internal.h                 |   2 +
+>   arch/x86/mm/pageattr.c                    |  84 ++++++++------
+>   arch/x86/mm/pat.c                         | 176 +++++++++++++++++++-----------
+>   arch/x86/mm/pat_internal.h                |  22 ++--
+>   arch/x86/mm/pat_rbtree.c                  |   8 +-
+>   arch/x86/pci/i386.c                       |   4 +-
+>   arch/x86/xen/enlighten.c                  |  25 ++---
+>   arch/x86/xen/mmu.c                        |  47 +-------
+>   arch/x86/xen/xen-ops.h                    |   1 -
+>   drivers/video/fbdev/gbefb.c               |   3 +-
+>   drivers/video/fbdev/vermilion/vermilion.c |   6 +-
+>   22 files changed, 412 insertions(+), 279 deletions(-)
+>
+
