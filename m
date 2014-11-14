@@ -1,246 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935332AbaKNWrI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 17:47:08 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:52761 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935230AbaKNWrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 17:47:05 -0500
+	id S935376AbaKNWso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 17:48:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55819 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934460AbaKNWsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 17:48:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,387,1413270000"; 
+   d="scan'208";a="608123189"
+Date: Fri, 14 Nov 2014 14:48:30 -0800
+From: "Sean O. Stalley" <sean.stalley@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Stephanie Wallick <stephanie.s.wallick@intel.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [V2 PATCH 01/10] added media agnostic (MA) USB HCD driver
+Message-ID: <20141114224829.GA2980@sean.stalley.intel.com>
+References: <20141112214021.GA3531@sean.stalley.intel.com>
+ <Pine.LNX.4.44L0.1411121656000.1676-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20141113005908.GA27381@saruman>
-References: <1415832094-20991-1-git-send-email-george.mccollister@gmail.com>
-	<1415832094-20991-2-git-send-email-george.mccollister@gmail.com>
-	<20141113005908.GA27381@saruman>
-Date: Fri, 14 Nov 2014 16:47:02 -0600
-Message-ID: <CAFSKS=PvoibYvP8fauFT8J7t_pRDK56-ZbRvOovu=Q5mrw9wpA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: dts: Add devicetree for NovaTech OrionLXm
-From: George McCollister <george.mccollister@gmail.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        "open list:OMAP DEVICE TREE..." <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1411121656000.1676-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+On Wed, Nov 12, 2014 at 05:03:18PM -0500, Alan Stern wrote:
+> On Wed, 12 Nov 2014, Sean O. Stalley wrote:
+> > Our plan to support multiple MA devices is to have them all connected
+> > to the same virtual host controller, so only 1 would be needed.
+> > 
+> > Would you prefer we have 1 host controller instance per MA device?
+> > We are definitely open to suggestions on how this should be architected.
+> 
+> I haven't read the MA USB spec, so I don't know how it's intended to 
+> work.  Still, what happens if you create a virtual host controller 
+> with, say, 16 ports, and then someone wants to connect a 17th MA 
+> device?
 
-Thank you for your reply.
+To summarize the spec:
+MA USB groups a host & connected devices into MA service sets (MSS).
+The architectural limit is 254 MA devices per MSS.
 
->> +     vbat: fixedregulator@0 {
->> +             compatible = "regulator-fixed";
->> +             regulator-name = "vbat";
->> +             regulator-min-microvolt = <5000000>;
->> +             regulator-max-microvolt = <5000000>;
->> +             regulator-boot-on;
->> +     };
->
-> I suppose this is the 5V on a power jack, or something like that ?
+If the host needs to connect more devices than that, It can start a
+new MSS and connect to 254 more MA devices.
 
-It comes with one of three different power supplies (24 - 250VDC, 120
-- 240VAC, 12VDC input) all of which ultimately supply a fixed 5V and
-3.3V.
 
->
->> +     vmmcsd_fixed: fixedregulator@0 {
->> +             compatible = "regulator-fixed";
->> +             regulator-name = "vmmcsd_fixed";
->> +             regulator-min-microvolt = <3300000>;
->> +             regulator-max-microvolt = <3300000>;
->
-> but this... I know every other board devices this as a fixed regulator,
-> but is it really a fixed regulator or is supplied by one of the LDOs on
-> the PMIC ?
->
 
-It's actually fixed (not from TP65910).
+Is supporting up to 254 devices on one machine sufficient?
 
->> +     };
->> +};
->> +
->> +&am33xx_pinmux {
->> +     mmc1_pins: pinmux_mmc1_pins {
->> +             pinctrl-single,pins = <
->> +                     0xf0 (PIN_INPUT_PULLUP | MUX_MODE0)     /* mmc0_dat3 */
->> +                     0xf4 (PIN_INPUT_PULLUP | MUX_MODE0)     /* mmc0_dat2 */
->> +                     0xf8 (PIN_INPUT_PULLUP | MUX_MODE0)     /* mmc0_dat1 */
->> +                     0xfc (PIN_INPUT_PULLUP | MUX_MODE0)     /* mmc0_dat0 */
->> +                     0x100 (PIN_INPUT_PULLUP | MUX_MODE0)    /* mmc0_clk */
->> +                     0x104 (PIN_INPUT_PULLUP | MUX_MODE0)    /* mmc0_cmd */
->> +             >;
->> +     };
->> +
->> +     i2c0_pins: pinmux_i2c0_pins {
->> +             pinctrl-single,pins = <
->> +                     0x188 (PIN_INPUT_PULLUP | MUX_MODE0)    /* i2c0_sda.i2c0_sda */
->> +                     0x18c (PIN_INPUT_PULLUP | MUX_MODE0)    /* i2c0_scl.i2c0_scl */
->> +             >;
->> +     };
->> +
->> +     i2c2_pins: pinmux_i2c2_pins {
->> +             pinctrl-single,pins = <
->> +                     0x178 (PIN_INPUT_PULLUP | MUX_MODE3)    /* uart1_ctsn.i2c2_sda */
->> +                     0x17c (PIN_INPUT_PULLUP | MUX_MODE3)    /* uart1_rtsn.i2c2_scl */
->
-> on thing to keep in mind, if you already have external pullups, you
-> might not want to add internal pullups as you'd end up with both
-> resistors in parallel. For I2C the danger is minimal (unless you have a
-> ton of bus capacitance, then it changes high/low time), but it's best to
-> write a more "pristine" DTS. (and sure, I know pretty much every board
-> makes this mistake, but it's best if we don't proliferate the error)
+Would it make sense (and does the usb stack support) having 254 root
+ports on one host controller? If so, we could make our host
+controller instance have 254 ports. I'm guessing the hub driver may have
+a problem with this (especially for superspeed).
 
-I'll make sure this is correct and include any required changes in the
-next version of the patch series.
+If that doesn't make sense (or isn't supported), we can have 1 host
+controller instance per MA device. Would that be preferred?
 
->
->> +&i2c0 {
->> +     pinctrl-names = "default";
->> +     pinctrl-0 = <&i2c0_pins>;
->> +
->> +     status = "okay";
->> +     clock-frequency = <400000>;
->> +
->> +     serial_config1: serial_config1@20 {
->> +             compatible = "nxp,pca9539";
->> +             reg = <0x20>;
->> +     };
->> +
->> +     serial_config2: serial_config2@21 {
->> +             compatible = "nxp,pca9539";
->> +             reg = <0x21>;
->> +     };
->> +
->> +     tps: tps@2d {
->> +             reg = <0x2d>;
->
-> which TPS device ? no compatible ?
->
->> +/include/ "tps65910.dtsi"
->
-> oh... okay.
+> Also, I noticed that your patch adds a new bus type for these MA host 
+> controllers.  It really seems like overkill to have a whole new bus 
+> type if there's only going to be one device on it.
 
-I'm assuming that means you're okay with this (if not please elaborate
-on how to improve it).
+The bus was added when we were quickly trying to replace the platform
+device code. It's probably not the right thing to do.
 
->
->> +&tps {
->> +     vcc1-supply = <&vbat>;
->> +     vcc2-supply = <&vbat>;
->> +     vcc3-supply = <&vbat>;
->> +     vcc4-supply = <&vbat>;
->> +     vcc5-supply = <&vbat>;
->> +     vcc6-supply = <&vbat>;
->> +     vcc7-supply = <&vbat>;
->> +     vccio-supply = <&vbat>;
->> +
->> +     regulators {
->> +             vrtc_reg: regulator@0 {
->> +                     regulator-always-on;
->
-> this should not be always on, you want to pass this as supply to the RTC
-> module so it can manage it. It's also best to give names to all
-> regulators, so people know what they're used for.
+I'm still not sure why we can't make our hcd a platform device,
+especially since dummy_hcd & the usbip's hcd are both platform devices.
 
-I think we may actually be able to turn this one and possibly two
-others off, I will investigate.
+> > If we get rid of these locks, endpoints can't run simultaneously.
+> > MA USB IN endpoints have to copy data, which could take a while.
+> 
+> I don't know what you mean by "run simultaneously".  Certainly multiple 
+> network packets can be transmitted and received concurrently even if 
+> you use a single spinlock, since your locking won't affect the 
+> networking subsystem.
 
-I've come up with names for all of the regulators being used and will
-include the changes in the next version of the patch series.
+I meant we couldn't have 2 threads in our driver. With one lock,
+One thread would always have to wait for the other, even though
+they could be working on 2 different endpoints doing completely
+independent tasks.
 
->
->> +             };
->> +
->> +             vio_reg: regulator@1 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vdd1_reg: regulator@2 {
->> +                     regulator-name = "vdd_mpu";
->> +                     regulator-min-microvolt = <600000>;
->> +                     regulator-max-microvolt = <1500000>;
->> +                     regulator-boot-on;
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vdd2_reg: regulator@3 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vdd3_reg: regulator@4 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vdig1_reg: regulator@5 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vdig2_reg: regulator@6 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vpll_reg: regulator@7 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vdac_reg: regulator@8 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vaux1_reg: regulator@9 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vaux2_reg: regulator@10 {
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vaux33_reg: regulator@11 {
->
-> isn't this the supply to the other MMC slot ?
+> > Couldn't this cause a bottleneck?
+> 
+> Probably not enough to matter.  After all, the other host controller
+> drivers rely on a single spinlock.  And if it did matter, you could
+> drop the spinlock while copying the data.
 
-no, it's actually being used for the USB PHY. As I said above I will
-name all regulators being used.
+Good point. We can cut our driver down to using 1 lock. If we find that
+only having 1 spinlock does cause a bottleneck, we can deal with it then.
 
->
->> +                     regulator-always-on;
->> +             };
->> +
->> +             vmmc_reg: regulator@12 {
->> +                     regulator-min-microvolt = <3300000>;
->> +                     regulator-max-microvolt = <3300000>;
->> +                     regulator-always-on;
->> +             };
->> +     };
->> +};
->> +
->> +&sham {
->> +     status = "okay";
->> +};
->> +
->> +&aes {
->> +     status = "okay";
->> +};
->
-> just making sure, are you really using them ?
 
-We may need them at some point, I'd like to keep them enabled.
-
->
->> +&mmc1 {
->> +     pinctrl-names = "default";
->> +     pinctrl-0 = <&mmc1_pins>;
->> +     bus-width = <4>;
->> +     status = "okay";
->> +     vmmc-supply = <&vmmc_reg>;
->> +     ti,vcc-aux-disable-is-sleep;
->
-> this binding isn't documented anywhere. What was it supposed to do ?
-
-I mentioned in the commit message that there is a micro SD slot.
-
->
-> --
-> balbi
+Thanks,
+Sean
