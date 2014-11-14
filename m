@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161835AbaKNSva (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 13:51:30 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27944 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161184AbaKNSv1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 13:51:27 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+1wmBe9ZAUG0TgkVxqkakV
-Date: Fri, 14 Nov 2014 10:50:49 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH v2 0/3] Add support for ADC on am437x-gp and
- am43x-epos-evm
-Message-ID: <20141114185049.GB7046@atomide.com>
-References: <1415099728-10959-1-git-send-email-vigneshr@ti.com>
- <54657FFA.1070200@ti.com>
+	id S965785AbaKNSxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 13:53:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59469 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965580AbaKNSxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 13:53:30 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio\@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
+References: <cover.1415636409.git.milosz@adfin.com>
+	<20141111064417.GT23575@dastard>
+	<x49mw7tyc7e.fsf@segfault.boston.devel.redhat.com>
+	<20141114163912.GA23769@redhat.com>
+	<CANP1eJH6BNiJ8zwA2Ba4Dc-2NZ5s2TBE4NVg3Ydk_cvSdDQUFQ@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 14 Nov 2014 13:52:42 -0500
+In-Reply-To: <CANP1eJH6BNiJ8zwA2Ba4Dc-2NZ5s2TBE4NVg3Ydk_cvSdDQUFQ@mail.gmail.com>
+	(Milosz Tanski's message of "Fri, 14 Nov 2014 13:45:02 -0500")
+Message-ID: <x49r3x5vclh.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54657FFA.1070200@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vignesh R <vigneshr@ti.com> [141113 20:09]:
-> 
-> On Tuesday 04 November 2014 04:45 PM, Vignesh R wrote:
-> > This series of patches enable ADC on am437x-gp-evm and am43x-epos-evm.
-> > The ADC clock hwmod data of am33xx has been moved to commom place so that
-> > both am43xx and am33xx can reuse them.
-> > tscadc DT node has been adided to am437x-gp and am43x-epos dt files.
-> > With these patches, ADC functionalities are now available on am43xx.
-> > 
-> > Changelog:
-> > 
-> > v2:
-> > Removed phy addresses in hwmod. Using DT instead.
-> > Removed unused "ti,am4372" compatible string.
-> > Use macro to set clk domain name.
-> > Fixed subject format of all patches
-> > 
-> 
-> Please accept these patches.
+Milosz Tanski <milosz@adfin.com> writes:
 
-Adding Paul to Cc, I don't think Paul has seen these, probably because
-get_maintainer.pl did not catch these hwmod files?
+> On a unrelated note I just back to figuring out how to add this to
+> xfstests. I got busy with other things the last few days. I'm still
+> not quite sure how to write a test using the framework, the
+> documentation (README) seams very XFS specific and otherwise the test
+> seam to be be split between many different files / directories / C
+> code / shell code. I might be me being slow... but it's just not
+> obvious for me how to glue the whole thing together.
 
-Regards,
+I can help you get started with this.  I'll send email off-list.
 
-Tony
- 
-> > Vignesh R (3):
-> >   ARM: OMAP2+: hwmod: AM335x/AM43x: Move am33xx_l4_hs_hwmod to
-> >     ipblock_data
-> >   ARM: OMAP2+: hwmod: AM335x/AM43x: add hwmod support for tscadc on
-> >     am43x-evm
-> >   ARM: dts: AM43xx: add tscadc DT entries for am437x-evm and
-> >     am43x-epos-evm
-> > 
-> >  arch/arm/boot/dts/am4372.dtsi                      | 20 ++++++
-> >  arch/arm/boot/dts/am437x-gp-evm.dts                |  8 +++
-> >  arch/arm/boot/dts/am43x-epos-evm.dts               |  8 +++
-> >  .../mach-omap2/omap_hwmod_33xx_43xx_common_data.h  |  2 +
-> >  .../mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c | 71 ++++++++++++++++++++++
-> >  arch/arm/mach-omap2/omap_hwmod_33xx_data.c         | 64 -------------------
-> >  arch/arm/mach-omap2/omap_hwmod_43xx_data.c         |  1 +
-> >  7 files changed, 110 insertions(+), 64 deletions(-)
-> > 
+Cheers,
+Jeff
