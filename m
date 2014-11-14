@@ -1,141 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584AbaKNGNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 01:13:24 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:14283 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751729AbaKNGNX (ORCPT
+	id S1752371AbaKNGTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:19:00 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49544 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaKNGS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 01:13:23 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="43383583"
-Message-ID: <54659D59.8020905@cn.fujitsu.com>
-Date: Fri, 14 Nov 2014 14:12:41 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 14 Nov 2014 01:18:59 -0500
+X-Original-SENDERIP: 10.177.222.33
+X-Original-MAILFROM: byungchul.park@lge.com
+Date: Fri, 14 Nov 2014 15:18:36 +0900
+From: Byungchul Park <byungchul.park@lge.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
+        jolsa@redhat.com
+Subject: Re: [PATCH v2 2/3] tracing, function_graph: add additional marks to
+ signal very large function execution time
+Message-ID: <20141114061836.GJ3393@byungchulpark-X58A-UD3R>
+References: <1415171926-9782-1-git-send-email-byungchul.park@lge.com>
+ <1415171926-9782-3-git-send-email-byungchul.park@lge.com>
+ <20141113223206.04912862@gandalf.local.home>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Takashi Iwai <tiwai@suse.de>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Tiejun Chen <tiejun.chen@intel.com>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] KVM: x86: fix access memslots w/o hold srcu read lock
-References: <1414912063-10923-1-git-send-email-wanpeng.li@linux.intel.com> <5461A021.8000305@cn.fujitsu.com> <20141113233903.GA26686@kernel>
-In-Reply-To: <20141113233903.GA26686@kernel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113223206.04912862@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Thanks for the sharing. Will do more tests. :)
+On Thu, Nov 13, 2014 at 10:32:06PM -0500, Steven Rostedt wrote:
+> On Wed,  5 Nov 2014 16:18:45 +0900
+> byungchul.park@lge.com wrote:
+>   
+> > +/* trace overhead mark */
+> > +struct trace_mark {
+> > +	unsigned long long val; /* unit: nsec */
+> > +	char sym;
+> > +};
+> 
+> Please format the above to:
+> 
+> struct trace_mark {
+> 	unsigned long long		val;
+> 	char				sym;
+> };
 
-On 11/14/2014 07:39 AM, Wanpeng Li wrote:
-> Hi Tang,
-> On Tue, Nov 11, 2014 at 01:35:29PM +0800, Tang Chen wrote:
->> Hi Wanpeng,
->>
-> Sorry for the late.
->
->> I think I have totally missed this thread.
->> I opened lockdep and RCU debug, and tried on 3.18-rc1. But I didn't
->> get the warning.
-> I also opened lockdep and RCU debug, and tried 3.18.0-rc2 on a Ivy
-> bridge, the warning will be triggered after run qemu immediately. There
-> is no need to try any hotplug related stuff.
->
-> In addition, Paolo's patch is merged upstream to fix this.
->
-> commit a73896cb5bbdce672945745db8224352a689f580
-> Author: Paolo Bonzini <pbonzini@redhat.com>
-> Date:   Sun Nov 2 07:54:30 2014 +0100
->
-> KVM: vmx: defer load of APIC access page address during reset
->
-> Regards,
-> Wanpeng Li
->
->> My steps are:
->>
->> 1. Use numactl to bind a qemu process to node1.
->> 2. Offline all node1 memory. And the qemu process is still running.
->>
->> Would you please tell me how did you reproduce it ?
->>
->> Thanks.
->>
->> On 11/02/2014 03:07 PM, Wanpeng Li wrote:
->>> The srcu read lock must be held while accessing memslots (e.g.
->>> when using gfn_to_* functions), however, commit c24ae0dcd3e8
->>> ("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
->>> gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it in
->>> vmx_vcpu_reset() path which leads to suspicious rcu_dereference_check()
->>> usage warning. This patch fix it by holding srcu read lock in all
->>> kvm_vcpu_reset() call path.
->>>
->>>
->>> [ INFO: suspicious RCU usage. ]
->>> 3.18.0-rc2-test2+ #70 Not tainted
->>> -------------------------------
->>> include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
->>>
->>> other info that might help us debug this:
->>>
->>> rcu_scheduler_active = 1, debug_locks = 0
->>> 1 lock held by qemu-system-x86/2371:
->>>   #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
->>>
->>> stack backtrace:
->>> CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
->>> Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
->>>   0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
->>>   ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
->>>   ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
->>> Call Trace:
->>>   [<ffffffff816f514f>] dump_stack+0x4e/0x71
->>>   [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
->>>   [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
->>>   [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
->>>   [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
->>>   [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
->>>   [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
->>>   [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
->>>   [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
->>>   [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
->>>   [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
->>>   [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
->>>   [<ffffffff8122ee45>] ? __fget+0x5/0x250
->>>   [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
->>>   [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
->>>   [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
->>>
->>> Reported-by: Takashi Iwai <tiwai@suse.de>
->>> Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
->>> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
->>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>> ---
->>> v3 -> v4:
->>>   * bypass the problem altoghter by kvm_make_request
->>> v2 -> v3:
->>>   * take care all vmx_vcpu_reset call path
->>> v1 -> v2:
->>>   * just fix hold the srcu read lock in vmx_vcpu_reset path
->>>
->>>   arch/x86/kvm/vmx.c |    2 +-
->>>   1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->>> index a0f78db..3e556c6 100644
->>> --- a/arch/x86/kvm/vmx.c
->>> +++ b/arch/x86/kvm/vmx.c
->>> @@ -4579,7 +4579,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
->>>   		vmcs_write32(TPR_THRESHOLD, 0);
->>>   	}
->>> -	kvm_vcpu_reload_apic_access_page(vcpu);
->>> +	kvm_make_request(KVM_REQ_APIC_PAGE_RELOAD, vcpu);
->>>   	if (vmx_vm_has_apicv(vcpu->kvm))
->>>   		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
-> .
->
+Thank you, I will do it.
 
+> 
+> > +
+> > +#define DEFINE_MARK_STRUCT static const struct trace_mark mark[]
+> 
+> Why is this a macro?
+
+Because I want to hide the 'mark' variable so that user dont need to know it.
+If this macro wouldn't be used, the function or macro to find and get a symbol
+must know what the variable is. And I didnt want to take an additional arg
+'mark' to the function or macro.
+
+I will explicitly define the variable 'mark' in the c file and use it in
+the function to find and get a corresponding symbol, if it would be ok.
+
+> 
+> > +#define DEFINE_MARK(v, s) {.val = v, .sym = s}
+> > +#define MARK(d) 							\
+> > +({									\
+> > +	int i = ARRAY_SIZE(mark);					\
+> > +	while ((unsigned long long)(d) <= mark[--i].val && i > 0);	\
+> > +	mark[i].sym;							\
+> > +})
+> 
+> Why is this a macro and not a static inline?
+
+I wanted to couple static data 'mark' and macro 'MARK' only in .h and 
+abstract its details. But I will move it to .c explicitly if it looks better.
+
+> 
+> static inline char find_trace_mark(unsigned long long duration)
+> {
+> 	int i = ARRAY_SIZE(mark);
+> 
+> 	while (duration <= mark[--i].val && i > 0)
+> 		;
+> 
+> 	return make[i]. sym;
+> }
+> 
+> That's much more readable.
+> 
+> >  
+> >  /**
+> >   * struct tracer - a specific tracer and its callbacks to interact with debugfs
+> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> > index cb33f46..8a62907 100644
+> > --- a/kernel/trace/trace_functions_graph.c
+> > +++ b/kernel/trace/trace_functions_graph.c
+> > @@ -797,6 +797,14 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
+> >  	return TRACE_TYPE_HANDLED;
+> >  }
+> >  
+> > +DEFINE_MARK_STRUCT = {
+> > +	DEFINE_MARK(0ULL		, ' '), /* 0 usecs */
+> > +	DEFINE_MARK(10000ULL		, '+'), /* 10 usecs */
+> > +	DEFINE_MARK(100000ULL		, '!'), /* 100 usecs */
+> > +	DEFINE_MARK(1000000ULL		, '#'), /* 1000 usecs */
+> > +	DEFINE_MARK(1000000000ULL	, '$'), /* 1 sec */
+> > +};
+> 
+> Don't need to use a name as big as DEFINE_MARK. Just have:
+> 
+> #undef MARK
+> #define MARK(v, s) { .val = v, .sym = s }
+> 
+
+Thank you, I will do it.
+
+> struct trace_mark mark[] = {
+> 	MARK(0ULL			, ' '), /* 0 usecs */
+> [...]
+> };
+> 
+> With the define directly above the call, we don't need need to be that
+> descriptive.
+> 
+
+I still wonder if it's better to define 'mark' explicitly in .c. Anyway
+I'll fix it. :)
+
+> > +
+> >  static enum print_line_t
+> >  print_graph_duration(unsigned long long duration, struct trace_seq *s,
+> >  		     u32 flags)
+> > @@ -822,12 +830,7 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+> >  
+> >  	/* Signal a overhead of time execution to the output */
+> >  	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+> > -		/* Duration exceeded 100 usecs */
+> > -		if (duration > 100000ULL)
+> > -			ret = trace_seq_puts(s, "! ");
+> > -		/* Duration exceeded 10 usecs */
+> > -		else if (duration > 10000ULL)
+> > -			ret = trace_seq_puts(s, "+ ");
+> > +		ret = trace_seq_printf(s, "%c ", MARK(duration));
+> 
+> Then this could just be:
+> 
+> 		ret = trace_seq_printf(s, "%c ",
+> 				       find_trace_mark(duration));
+> 
+
+Thank you very much for your kindness!
+
+> -- Steve
+> 
+> >  	}
+> >  
+> >  	/*
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
