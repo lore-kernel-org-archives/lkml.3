@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422821AbaKNWc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 17:32:29 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:34490 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422662AbaKNWc1 (ORCPT
+	id S1422829AbaKNWdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 17:33:16 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61643 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934460AbaKNWdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 17:32:27 -0500
-Date: Fri, 14 Nov 2014 14:32:24 -0800
-From: Dmitry Torokhov <dtor@chromium.org>
-To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
-Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Christophe Ricard <christophe.ricard@gmail.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] NFC: st21nfca: fix error handling of irq_of_parse_and_map
-Message-ID: <20141114223224.GA1448@dtor-ws>
+	Fri, 14 Nov 2014 17:33:14 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH] ACPI / GPIO: Driver GPIO mappings for ACPI GPIOs
+Date: Fri, 14 Nov 2014 23:54:13 +0100
+Message-ID: <3115626.VVMxodDDvN@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CACRpkdb-T42Bqtf7zvc+2om03hgu4j8twDUqmsE4dcKaPXB9Wg@mail.gmail.com>
+References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com> <1433051.htaUTMPMBY@vostro.rjw.lan> <CACRpkdb-T42Bqtf7zvc+2om03hgu4j8twDUqmsE4dcKaPXB9Wg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return value of irq_of_parse_and_map() is unsigned int, with 0
-indicating failure, so testing for negative result never works.
+On Friday, November 14, 2014 09:58:41 AM Linus Walleij wrote:
+> On Mon, Nov 3, 2014 at 11:56 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Monday, November 03, 2014 02:22:10 PM Linus Walleij wrote:
+> 
+> >> With that change:
+> >> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > OK, made the changes and added your Reviewed-by.
+> >
+> > One semi-related question though.  Alexandre ACKed the patch before, so
+> > what did that mean from the GPIO subsystem's perspective?  Was the patch
+> > approved, not approved, semi-approved?
+> 
+> It just means we are not always entirely aligned, it's not like
+> Alexandre and I have meetings on the side and decide what to
+> say, it's just these mails. I do trust him, I wouldn't get mad if it
+> had been merged just wanted some polishing when I could get
+> it...
 
-Also report error returned by devm_gpio_request_one instead of
-clobbering it with -ENODEV.
+I see, thanks!
 
-Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
----
- drivers/nfc/st21nfca/i2c.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+Rafael
 
-diff --git a/drivers/nfc/st21nfca/i2c.c b/drivers/nfc/st21nfca/i2c.c
-index 0ea756b..6d6d282 100644
---- a/drivers/nfc/st21nfca/i2c.c
-+++ b/drivers/nfc/st21nfca/i2c.c
-@@ -531,20 +531,19 @@ static int st21nfca_hci_i2c_of_request_resources(struct i2c_client *client)
- 				  "clf_enable");
- 	if (r) {
- 		nfc_err(&client->dev, "Failed to request enable pin\n");
--		return -ENODEV;
-+		return r;
- 	}
- 
- 	phy->gpio_ena = gpio;
- 
- 	/* IRQ */
--	r = irq_of_parse_and_map(pp, 0);
--	if (r < 0) {
--		nfc_err(&client->dev, "Unable to get irq, error: %d\n", r);
--		return r;
-+	client->irq = irq_of_parse_and_map(pp, 0);
-+	if (!client->irq) {
-+		nfc_err(&client->dev, "Unable to get irq\n");
-+		return -EINVAL;
- 	}
- 
- 	phy->irq_polarity = irq_get_trigger_type(r);
--	client->irq = r;
- 
- 	return 0;
- }
--- 
-2.1.0.rc2.206.gedb03e5
-
-
--- 
-Dmitry
