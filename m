@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965537AbaKNNdP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:33:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33112 "EHLO mx2.suse.de"
+	id S1161062AbaKNNdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:33:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33152 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965283AbaKNNdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:33:10 -0500
+	id S965514AbaKNNdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:33:15 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>,
@@ -16,9 +16,9 @@ Cc: Linux-MM <linux-mm@kvack.org>,
         Sasha Levin <sasha.levin@oracle.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/7] mm: Add p[te|md] protnone helpers for use by NUMA balancing
-Date: Fri, 14 Nov 2014 13:33:00 +0000
-Message-Id: <1415971986-16143-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 5/7] mm: numa: Do not trap faults on the huge zero page
+Date: Fri, 14 Nov 2014 13:33:04 +0000
+Message-Id: <1415971986-16143-6-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1415971986-16143-1-git-send-email-mgorman@suse.de>
 References: <1415971986-16143-1-git-send-email-mgorman@suse.de>
@@ -26,97 +26,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparatory patch that introduces protnone helpers for automatic
-NUMA balancing.
+Faults on the huge zero page are pointless and there is a BUG_ON
+to catch them during fault time. This patch reintroduces a check
+that avoids marking the zero page PAGE_NONE.
 
-Needs-signed-off: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Needs-signed-off: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- arch/powerpc/include/asm/pgtable.h | 11 +++++++++++
- arch/x86/include/asm/pgtable.h     | 16 ++++++++++++++++
- include/asm-generic/pgtable.h      | 19 +++++++++++++++++++
- 3 files changed, 46 insertions(+)
+ include/linux/huge_mm.h |  3 ++-
+ mm/huge_memory.c        | 13 ++++++++++++-
+ mm/memory.c             |  1 -
+ mm/mprotect.c           | 15 ++++++++++++++-
+ 4 files changed, 28 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
-index 316f9a5..452c3b4 100644
---- a/arch/powerpc/include/asm/pgtable.h
-+++ b/arch/powerpc/include/asm/pgtable.h
-@@ -39,6 +39,17 @@ static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK)
- static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 554bbe3..ad9051b 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -31,7 +31,8 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
+ 			 unsigned long new_addr, unsigned long old_end,
+ 			 pmd_t *old_pmd, pmd_t *new_pmd);
+ extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-			unsigned long addr, pgprot_t newprot);
++			unsigned long addr, pgprot_t newprot,
++			int prot_numa);
  
- #ifdef CONFIG_NUMA_BALANCING
-+static inline int pte_protnone_numa(pte_t pte)
-+{
-+	return (pte_val(pte) &
-+		(_PAGE_PRESENT | _PAGE_USER)) == _PAGE_PRESENT;
-+}
-+
-+static inline int pmd_protnone_numa(pmd_t pmd)
-+{
-+	return pte_protnone_numa(pmd_pte(pmd));
-+}
-+
- static inline int pte_present(pte_t pte)
+ enum transparent_hugepage_flag {
+ 	TRANSPARENT_HUGEPAGE_FLAG,
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 8295c9a..4f02010 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1501,7 +1501,7 @@ out:
+  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
+  */
+ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, pgprot_t newprot)
++		unsigned long addr, pgprot_t newprot, int prot_numa)
  {
- 	return pte_val(pte) & _PAGE_NUMA_MASK;
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index aa97a07..613cd00 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -497,6 +497,22 @@ static inline int pmd_present(pmd_t pmd)
- 				 _PAGE_NUMA);
- }
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	spinlock_t *ptl;
+@@ -1509,6 +1509,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
  
-+#ifdef CONFIG_NUMA_BALANCING
-+/*
-+ * These work without NUMA balancing but the kernel does not care. See the
-+ * comment in include/asm-generic/pgtable.h
-+ */
-+static inline int pte_protnone_numa(pte_t pte)
-+{
-+	return pte_flags(pte) & _PAGE_PROTNONE;
-+}
+ 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pmd_t entry;
 +
-+static inline int pmd_protnone_numa(pmd_t pmd)
-+{
-+	return pmd_flags(pmd) & _PAGE_PROTNONE;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
++		/*
++		 * Avoid trapping faults against the zero page. The read-only
++		 * data is likely to be read-cached on the local CPU and
++		 * local/remote hits to the zero page are not interesting.
++		 */
++		if (prot_numa && is_huge_zero_pmd(*pmd)) {
++			spin_unlock(ptl);
++			return 0;
++		}
 +
- static inline int pmd_none(pmd_t pmd)
- {
- 	/* Only check low word on 32-bit platforms, since it might be
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 752e30d..7e74122 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -677,6 +677,25 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- #endif
- }
+ 		ret = 1;
+ 		entry = pmdp_get_and_clear(mm, addr, pmd);
+ 		entry = pmd_modify(entry, newprot);
+diff --git a/mm/memory.c b/mm/memory.c
+index 62604b1..360c3e3 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3145,7 +3145,6 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		pte_unmap_unlock(ptep, ptl);
+ 		return 0;
+ 	}
+-	BUG_ON(is_zero_pfn(page_to_pfn(page)));
  
-+#ifndef CONFIG_NUMA_BALANCING
-+/*
-+ * Technically a PTE can be PROTNONE even when not doing NUMA balancing but
-+ * the only case the kernel cares is for NUMA balancing. By default,
-+ * implement the helper as "always no". Note that this does not check VMA
-+ * protection bits meaning that it is up to the caller to distinguish between
-+ * PROT_NONE protections and NUMA hinting fault protections.
-+ */
-+static inline int pte_protnone_numa(pte_t pte)
-+{
-+	return 0;
-+}
+ 	/*
+ 	 * Avoid grouping on DSO/COW pages in specific and RO pages
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index dc65c0f..33dfafb 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -75,6 +75,19 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		oldpte = *pte;
+ 		if (pte_present(oldpte)) {
+ 			pte_t ptent;
 +
-+static inline int pmd_protnone_numa(pmd_t pmd)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
++			/*
++			 * Avoid trapping faults against the zero or KSM
++			 * pages. See similar comment in change_huge_pmd.
++			 */
++			if (prot_numa) {
++				struct page *page;
 +
- #ifdef CONFIG_NUMA_BALANCING
- /*
-  * _PAGE_NUMA distinguishes between an unmapped page table entry, an entry that
++				page = vm_normal_page(vma, addr, oldpte);
++				if (!page || PageKsm(page))
++					continue;
++			}
++
+ 			ptent = ptep_modify_prot_start(mm, addr, pte);
+ 			ptent = pte_modify(ptent, newprot);
+ 
+@@ -141,7 +154,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else {
+ 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
+-						newprot);
++						newprot, prot_numa);
+ 
+ 				if (nr_ptes) {
+ 					if (nr_ptes == HPAGE_PMD_NR) {
 -- 
 1.8.4.5
 
