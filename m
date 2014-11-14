@@ -1,138 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161194AbaKNNpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:45:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11307 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935380AbaKNNpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:45:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
-   d="scan'208";a="631966641"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        acme@infradead.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v8 05/14] perf: Add a pmu capability for "exclusive" events
-Date: Fri, 14 Nov 2014 15:43:38 +0200
-Message-Id: <1415972627-37514-6-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
-References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1161217AbaKNNpa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:45:30 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:47489 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161196AbaKNNpZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:45:25 -0500
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <6990c302869b94780c690550cea20978>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v11 08/12] drm: bridge/dw_hdmi: add mode_valid support
+Date: Fri, 14 Nov 2014 21:45:00 +0800
+Message-Id: <1415972700-8672-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Usually, pmus that do, for example, instruction tracing, would only ever
-be able to have one event per task per cpu (or per perf_context). For such
-pmus it makes sense to disallow creating conflicting events early on, so
-as to provide consistent behavior for the user.
+some platform may not support all the display mode,
+add mode_valid interface check it
 
-This patch adds a pmu capability that indicates such constraint on event
-creation.
-
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 ---
- include/linux/perf_event.h |  1 +
- kernel/events/core.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 46 insertions(+)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e7a15f5c3f..5c3dee021c 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -173,6 +173,7 @@ struct perf_event;
- #define PERF_PMU_CAP_NO_INTERRUPT		0x01
- #define PERF_PMU_CAP_AUX_NO_SG			0x02
- #define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
-+#define PERF_PMU_CAP_EXCLUSIVE			0x08
- 
- /**
-  * struct pmu - generic performance monitoring unit
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ac7bfb43fc..2399c12e49 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7298,6 +7298,32 @@ out:
- 	return ret;
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
+
+ drivers/gpu/drm/bridge/dw_hdmi.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index 24a66ff..e94f6bb 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -1406,6 +1406,20 @@ static int dw_hdmi_connector_get_modes(struct drm_connector *connector)
+ 	return 0;
  }
  
-+static bool exclusive_event_match(struct perf_event *e1, struct perf_event *e2)
++static enum drm_mode_status
++dw_hdmi_connector_mode_valid(struct drm_connector *connector,
++			     struct drm_display_mode *mode)
 +{
-+	if ((e1->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE) &&
-+	    (e1->cpu == e2->cpu ||
-+	     e1->cpu == -1 ||
-+	     e2->cpu == -1))
-+		return true;
-+	return false;
++	struct dw_hdmi *hdmi = container_of(connector,
++					   struct dw_hdmi, connector);
++	enum drm_mode_status mode_status = MODE_OK;
++
++	if (hdmi->plat_data->mode_valid)
++		mode_status = hdmi->plat_data->mode_valid(connector, mode);
++
++	return mode_status;
 +}
 +
-+static bool exclusive_event_ok(struct perf_event *event,
-+			      struct perf_event_context *ctx)
-+{
-+	struct perf_event *iter_event;
-+
-+	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
-+		return true;
-+
-+	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
-+		if (exclusive_event_match(iter_event, event))
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
- /**
-  * sys_perf_event_open - open a performance event, associate it to a task/cpu
-  *
-@@ -7449,6 +7475,11 @@ SYSCALL_DEFINE5(perf_event_open,
- 		goto err_alloc;
- 	}
+ static struct drm_encoder *dw_hdmi_connector_best_encoder(struct drm_connector
+ 							   *connector)
+ {
+@@ -1430,6 +1444,7 @@ static struct drm_connector_funcs dw_hdmi_connector_funcs = {
  
-+	if ((pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE) && group_leader) {
-+		err = -EBUSY;
-+		goto err_context;
-+	}
-+
- 	if (task) {
- 		put_task_struct(task);
- 		task = NULL;
-@@ -7534,6 +7565,12 @@ SYSCALL_DEFINE5(perf_event_open,
- 		}
- 	}
+ static struct drm_connector_helper_funcs dw_hdmi_connector_helper_funcs = {
+ 	.get_modes = dw_hdmi_connector_get_modes,
++	.mode_valid = dw_hdmi_connector_mode_valid,
+ 	.best_encoder = dw_hdmi_connector_best_encoder,
+ };
  
-+	if (!exclusive_event_ok(event, ctx)) {
-+		mutex_unlock(&ctx->mutex);
-+		fput(event_file);
-+		goto err_context;
-+	}
-+
- 	perf_install_in_context(ctx, event, event->cpu);
- 	perf_unpin_context(ctx);
- 	mutex_unlock(&ctx->mutex);
-@@ -7620,6 +7657,14 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+@@ -1632,6 +1647,8 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
  
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	mutex_lock(&ctx->mutex);
-+	if (!exclusive_event_ok(event, ctx)) {
-+		mutex_unlock(&ctx->mutex);
-+		perf_unpin_context(ctx);
-+		put_ctx(ctx);
-+		err = -EBUSY;
-+		goto err_free;
-+	}
+ 	dev_set_drvdata(dev, hdmi);
+ 
++	drm_connector_register(&hdmi->connector);
 +
- 	perf_install_in_context(ctx, event, cpu);
- 	perf_unpin_context(ctx);
- 	mutex_unlock(&ctx->mutex);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(dw_hdmi_bind);
 -- 
-2.1.1
+1.9.1
 
