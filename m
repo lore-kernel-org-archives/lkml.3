@@ -1,114 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161464AbaKNRIz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 12:08:55 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60285 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161302AbaKNRIx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 12:08:53 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+BANsgJGSC9cEnzs5pVvsm
-Date: Fri, 14 Nov 2014 09:08:17 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Nishanth Menon <nm@ti.com>,
-        lee.jones@linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
-        Mark Brown <broonie@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-omap@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
-Message-ID: <20141114170816.GW26481@atomide.com>
-References: <alpine.DEB.2.10.1409190710320.5612@nanos>
- <20140919161927.GA28613@kahuna>
- <alpine.DEB.2.10.1409191027330.5612@nanos>
- <20140919191649.GQ14505@atomide.com>
- <alpine.DEB.2.10.1409191233590.4213@nanos>
- <20141002034345.GH3122@atomide.com>
- <20141106204629.GF31454@atomide.com>
- <alpine.DEB.2.11.1411131053050.3935@nanos>
- <20141113174030.GM26481@atomide.com>
- <20141114161901.GG11538@saruman>
+	id S1161486AbaKNRJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 12:09:27 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:38012 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934233AbaKNRJZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 12:09:25 -0500
+Date: Fri, 14 Nov 2014 12:09:09 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 12/23 v4] tracing: Remove return values of most
+ trace_seq_*() functions
+Message-ID: <20141114120909.6f4a749a@gandalf.local.home>
+In-Reply-To: <20141114131728.GC2988@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011411.992510720@goodmis.org>
+	<20141114131728.GC2988@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141114161901.GG11538@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [141114 08:20]:
-> On Thu, Nov 13, 2014 at 09:40:31AM -0800, Tony Lindgren wrote:
-> > +/**
-> > + *	handle_wakeirq_thread - call device runtime pm calls on wake-up interrupt
-> > + *	@wakeirq: device specific wake-up interrupt
-> > + *	@dev_id: struct device entry
-> > + */
-> > +irqreturn_t handle_wakeirq_thread(int wakeirq, void *dev_id)
-> > +{
-> > +	struct device *dev = dev_id;
-> > +	irqreturn_t ret = IRQ_NONE;
-> > +
-> > +	if (pm_runtime_suspended(dev)) {
-> > +		pm_runtime_mark_last_busy(dev);
-> > +		pm_request_resume(dev);
-> 
-> this assumes that every driver's ->resume() callback has a:
-> 
-> 	if (pending)
-> 		handle_pending_irqs();
-> 
-> which might not be very nice. I'd rather follow what Thomas suggested
-> and always pass device irq so this can mark it pending. Keep in mind
-> that we *don't* need a pm_runtime_get_sync() in every IRQ handler
-> because of that. Adding it is but the easiest way to get things working
-> and, quite frankly, very silly.
-> 
-> what we want is rather:
-> 
-> 	irqreturn_t my_handler(int irq, void *dev_id)
-> 	{
-> 		struct device *dev = dev_id;
-> 
-> 		if (pm_runtime_suspended(dev)) {
-> 			pending_irqs_to_be_handled_from_runtime_resume = true;
-> 			pm_runtime_get(dev);
-> 			clear_irq_source(dev);
-> 			return IRQ_HANDLED;
-> 		}
-> 	}
-> 
-> or something similar.
+On Fri, 14 Nov 2014 14:17:28 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-Yeah I'll take a look.
+> > @@ -334,10 +297,7 @@ int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+> >  		/* j increments twice per loop */
+> >  		len -= j / 2;
+> >  		hex[j++] = ' ';
+> > -
+> > -		cnt += trace_seq_putmem(s, hex, j);
+> 
+> trace_seq_putmem(s, hex, j); should stay ;-)
+
+Here's the new patch:
+
+>From 08223449645f482ee41333d414228da1d46e2095 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Wed, 12 Nov 2014 18:07:22 -0500
+Subject: [PATCH] tracing: Remove return values of most trace_seq_*() functions
+
+The trace_seq_printf() and friends are used to store strings into a buffer
+that can be passed around from function to function. If the trace_seq buffer
+fills up, it will not print any more. The return values were somewhat
+inconsistant and using trace_seq_has_overflowed() was a better way to know
+if the write to the trace_seq buffer succeeded or not.
+
+Now that all users have removed reading the return value of the printf()
+type functions, they can safely return void and keep future users of them
+from reading the inconsistent values as well.
+
+Link: http://lkml.kernel.org/r/20141114011411.992510720@goodmis.org
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/trace_seq.h | 37 +++++++++------------
+ kernel/trace/trace_seq.c  | 84 +++++++++++++----------------------------------
+ 2 files changed, 38 insertions(+), 83 deletions(-)
+
+diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
+index 07eda413dfcf..db8a73224f1a 100644
+--- a/include/linux/trace_seq.h
++++ b/include/linux/trace_seq.h
+@@ -57,40 +57,37 @@ static inline bool trace_seq_has_overflowed(struct trace_seq *s)
+  */
+ #ifdef CONFIG_TRACING
+ extern __printf(2, 3)
+-int trace_seq_printf(struct trace_seq *s, const char *fmt, ...);
++void trace_seq_printf(struct trace_seq *s, const char *fmt, ...);
+ extern __printf(2, 0)
+-int trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args);
+-extern int
++void trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args);
++extern void
+ trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary);
+ extern int trace_print_seq(struct seq_file *m, struct trace_seq *s);
+ extern int trace_seq_to_user(struct trace_seq *s, char __user *ubuf,
+ 			     int cnt);
+-extern int trace_seq_puts(struct trace_seq *s, const char *str);
+-extern int trace_seq_putc(struct trace_seq *s, unsigned char c);
+-extern int trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len);
+-extern int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
++extern void trace_seq_puts(struct trace_seq *s, const char *str);
++extern void trace_seq_putc(struct trace_seq *s, unsigned char c);
++extern void trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len);
++extern void trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+ 				unsigned int len);
+ extern int trace_seq_path(struct trace_seq *s, const struct path *path);
  
-> > +		ret = IRQ_HANDLED;
-> > +	}
-> 
-> you're not masking the wake irq here which means that when this handler
-> returns, wake irq will be unmasked by core IRQ subsystem leaving it
-> unmasked after ->resume().
-
-It currently assumes the consumer driver takes care of it. But I get
-your point, we should be able to automate this further.
-
-And right now there's also a dependency on dev->power.irq_safe so
-RPM_ASYNC is not set. And this all should ideally work even with runtime
-PM not set as it's also needed for resume from suspend.
+-extern int trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
++extern void trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
+ 			     int nmaskbits);
  
-> you *know* you'll pass a NULL top half handler, why don't you just force
-> IRQF_ONESHOT instead of erroring out ? Just add:
-> 
-> 	wakeflags |= IRQF_ONESHOT;
-> 
-> and get it over with :-)
-
-Good point :)
+ #else /* CONFIG_TRACING */
+-static inline int trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
++static inline void trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
+ {
+-	return 0;
+ }
+-static inline int
++static inline void
+ trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
+ {
+-	return 0;
+ }
  
-Regards,
+-static inline int
++static inline void
+ trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
+ 		  int nmaskbits)
+ {
+-	return 0;
+ }
+ 
+ static inline int trace_print_seq(struct seq_file *m, struct trace_seq *s)
+@@ -102,23 +99,19 @@ static inline int trace_seq_to_user(struct trace_seq *s, char __user *ubuf,
+ {
+ 	return 0;
+ }
+-static inline int trace_seq_puts(struct trace_seq *s, const char *str)
++static inline void trace_seq_puts(struct trace_seq *s, const char *str)
+ {
+-	return 0;
+ }
+-static inline int trace_seq_putc(struct trace_seq *s, unsigned char c)
++static inline void trace_seq_putc(struct trace_seq *s, unsigned char c)
+ {
+-	return 0;
+ }
+-static inline int
++static inline void
+ trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len)
+ {
+-	return 0;
+ }
+-static inline int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
++static inline void trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+ 				       unsigned int len)
+ {
+-	return 0;
+ }
+ static inline int trace_seq_path(struct trace_seq *s, const struct path *path)
+ {
+diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
+index b100994a17fe..fabfa0f190a3 100644
+--- a/kernel/trace/trace_seq.c
++++ b/kernel/trace/trace_seq.c
+@@ -69,20 +69,15 @@ int trace_print_seq(struct seq_file *m, struct trace_seq *s)
+  * trace_seq_printf() is used to store strings into a special
+  * buffer (@s). Then the output may be either used by
+  * the sequencer or pulled into another buffer.
+- *
+- * Returns 1 if we successfully written all the contents to
+- *   the buffer.
+-  * Returns 0 if we the length to write is bigger than the
+- *   reserved buffer space. In this case, nothing gets written.
+  */
+-int trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
++void trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
+ {
+ 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
+ 	va_list ap;
+ 	int ret;
+ 
+ 	if (s->full || !len)
+-		return 0;
++		return;
+ 
+ 	va_start(ap, fmt);
+ 	ret = vsnprintf(s->buffer + s->len, len, fmt, ap);
+@@ -91,12 +86,10 @@ int trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
+ 	/* If we can't write it all, don't bother writing anything */
+ 	if (ret >= len) {
+ 		s->full = 1;
+-		return 0;
++		return;
+ 	}
+ 
+ 	s->len += ret;
+-
+-	return 1;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_printf);
+ 
+@@ -107,25 +100,18 @@ EXPORT_SYMBOL_GPL(trace_seq_printf);
+  * @nmaskbits:	The number of bits that are valid in @maskp
+  *
+  * Writes a ASCII representation of a bitmask string into @s.
+- *
+- * Returns 1 if we successfully written all the contents to
+- *   the buffer.
+- * Returns 0 if we the length to write is bigger than the
+- *   reserved buffer space. In this case, nothing gets written.
+  */
+-int trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
++void trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
+ 		      int nmaskbits)
+ {
+ 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
+ 	int ret;
+ 
+ 	if (s->full || !len)
+-		return 0;
++		return;
+ 
+ 	ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
+ 	s->len += ret;
+-
+-	return 1;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_bitmask);
+ 
+@@ -139,28 +125,24 @@ EXPORT_SYMBOL_GPL(trace_seq_bitmask);
+  * trace_seq_printf is used to store strings into a special
+  * buffer (@s). Then the output may be either used by
+  * the sequencer or pulled into another buffer.
+- *
+- * Returns how much it wrote to the buffer.
+  */
+-int trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
++void trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
+ {
+ 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
+ 	int ret;
+ 
+ 	if (s->full || !len)
+-		return 0;
++		return;
+ 
+ 	ret = vsnprintf(s->buffer + s->len, len, fmt, args);
+ 
+ 	/* If we can't write it all, don't bother writing anything */
+ 	if (ret >= len) {
+ 		s->full = 1;
+-		return 0;
++		return;
+ 	}
+ 
+ 	s->len += ret;
+-
+-	return len;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_vprintf);
+ 
+@@ -178,28 +160,24 @@ EXPORT_SYMBOL_GPL(trace_seq_vprintf);
+  *
+  * This function will take the format and the binary array and finish
+  * the conversion into the ASCII string within the buffer.
+- *
+- * Returns how much it wrote to the buffer.
+  */
+-int trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
++void trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
+ {
+ 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
+ 	int ret;
+ 
+ 	if (s->full || !len)
+-		return 0;
++		return;
+ 
+ 	ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
+ 
+ 	/* If we can't write it all, don't bother writing anything */
+ 	if (ret >= len) {
+ 		s->full = 1;
+-		return 0;
++		return;
+ 	}
+ 
+ 	s->len += ret;
+-
+-	return len;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_bprintf);
+ 
+@@ -212,25 +190,21 @@ EXPORT_SYMBOL_GPL(trace_seq_bprintf);
+  * copy to user routines. This function records a simple string
+  * into a special buffer (@s) for later retrieval by a sequencer
+  * or other mechanism.
+- *
+- * Returns how much it wrote to the buffer.
+  */
+-int trace_seq_puts(struct trace_seq *s, const char *str)
++void trace_seq_puts(struct trace_seq *s, const char *str)
+ {
+ 	unsigned int len = strlen(str);
+ 
+ 	if (s->full)
+-		return 0;
++		return;
+ 
+ 	if (len > TRACE_SEQ_BUF_LEFT(s)) {
+ 		s->full = 1;
+-		return 0;
++		return;
+ 	}
+ 
+ 	memcpy(s->buffer + s->len, str, len);
+ 	s->len += len;
+-
+-	return len;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_puts);
+ 
+@@ -243,22 +217,18 @@ EXPORT_SYMBOL_GPL(trace_seq_puts);
+  * copy to user routines. This function records a simple charater
+  * into a special buffer (@s) for later retrieval by a sequencer
+  * or other mechanism.
+- *
+- * Returns how much it wrote to the buffer.
+  */
+-int trace_seq_putc(struct trace_seq *s, unsigned char c)
++void trace_seq_putc(struct trace_seq *s, unsigned char c)
+ {
+ 	if (s->full)
+-		return 0;
++		return;
+ 
+ 	if (TRACE_SEQ_BUF_LEFT(s) < 1) {
+ 		s->full = 1;
+-		return 0;
++		return;
+ 	}
+ 
+ 	s->buffer[s->len++] = c;
+-
+-	return 1;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_putc);
+ 
+@@ -271,23 +241,19 @@ EXPORT_SYMBOL_GPL(trace_seq_putc);
+  * There may be cases where raw memory needs to be written into the
+  * buffer and a strcpy() would not work. Using this function allows
+  * for such cases.
+- *
+- * Returns how much it wrote to the buffer.
+  */
+-int trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len)
++void trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len)
+ {
+ 	if (s->full)
+-		return 0;
++		return;
+ 
+ 	if (len > TRACE_SEQ_BUF_LEFT(s)) {
+ 		s->full = 1;
+-		return 0;
++		return;
+ 	}
+ 
+ 	memcpy(s->buffer + s->len, mem, len);
+ 	s->len += len;
+-
+-	return len;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_putmem);
+ 
+@@ -303,20 +269,17 @@ EXPORT_SYMBOL_GPL(trace_seq_putmem);
+  * This is similar to trace_seq_putmem() except instead of just copying the
+  * raw memory into the buffer it writes its ASCII representation of it
+  * in hex characters.
+- *
+- * Returns how much it wrote to the buffer.
+  */
+-int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
++void trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+ 			 unsigned int len)
+ {
+ 	unsigned char hex[HEX_CHARS];
+ 	const unsigned char *data = mem;
+ 	unsigned int start_len;
+ 	int i, j;
+-	int cnt = 0;
+ 
+ 	if (s->full)
+-		return 0;
++		return;
+ 
+ 	while (len) {
+ 		start_len = min(len, HEX_CHARS - 1);
+@@ -335,9 +298,8 @@ int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+ 		len -= j / 2;
+ 		hex[j++] = ' ';
+ 
+-		cnt += trace_seq_putmem(s, hex, j);
++		trace_seq_putmem(s, hex, j);
+ 	}
+-	return cnt;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_putmem_hex);
+ 
+-- 
+1.8.1.4
 
-Tony
