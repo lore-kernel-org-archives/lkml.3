@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935247AbaKNMNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 07:13:30 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52525 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933506AbaKNMN3 (ORCPT
+	id S935268AbaKNMOC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 07:14:02 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:43465 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933506AbaKNMOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 07:13:29 -0500
-Date: Fri, 14 Nov 2014 13:13:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Yijing Wang <wangyijing@huawei.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
-In-Reply-To: <54655D44.1070703@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1411141311520.3935@nanos>
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <54651BE2.9080008@arm.com> <54654C10.2040102@linux.intel.com> <54655632.2040209@huawei.com> <alpine.DEB.2.11.1411140211480.3935@nanos> <54655D44.1070703@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 14 Nov 2014 07:14:00 -0500
+Message-ID: <5465F1FF.8070005@linaro.org>
+Date: Fri, 14 Nov 2014 12:13:51 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@redhat.com>, kgdb-bugreport@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH RESEND 3.18-rc3 v2 1/2] trace: kdb: Fix kernel panic during
+ ftdump
+References: <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>	<1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>	<1415277716-19419-2-git-send-email-daniel.thompson@linaro.org>	<20141113212646.6d720886@gandalf.local.home>	<5465C685.9060006@linaro.org> <20141114065927.4156ef8e@gandalf.local.home>
+In-Reply-To: <20141114065927.4156ef8e@gandalf.local.home>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014, Jiang Liu wrote:
-> On 2014/11/14 9:31, Thomas Gleixner wrote:
-> > On Fri, 14 Nov 2014, Yijing Wang wrote:
-> > 
-> > Could you please use a mail client which does proper line wraps or
-> > configure yours to do so?
-> > 
-> >> Associate the irq domain and PCI bus is not necessary, because all
-> >> PCI buses under same host bridge always share same MSI chip/irq
-> >> domain, we only need associate them and pci host bridge.
-> >>
-> >> I'm refactoring the pci_host_bridge, make it be a generic one, rip
-> >> out of the pci root bus creation, so we could put the irq domain and
-> >> pci domain etc.. in it. Finally, we could eliminate lots platform
-> >> arch functions. I will post it out within one week.
-> > 
-> > That's a completely orthogonal problem. From the MSI/interrupt
-> > handling POV it does not matter at all where that information is
-> > stored. All we care about is that it is retrievable via the (pci)
-> > device which tries to setup MSI[X].
-> > 
-> > So we can store/retrieve it via generic functions into/from whatever
-> > is available right now. If the irq side has generic interfaces to do
-> > so then this wont conflict with your decisions to change the final
-> > storage point because all it takes is to tweak the storage/retrieve
-> > functions.
-> > 
-> > So all we need at the moment is an agreed on way to store/retrieve
-> > that information which is based on the current shared infrastructure,
-> > aka. Linus tree. If we can utilize that you are completely free to
-> > change the association mechanism underneath.
-> Hi Thomas,
-> 	So we need something like:
-> struct msi_chip *pci_get_msi_chip(struct pci_dev *);
-> or:
-> struct irq_domain *pci_get_msi_domain(struct pci_dev *);
+On 14/11/14 11:59, Steven Rostedt wrote:
+> On Fri, 14 Nov 2014 09:08:21 +0000
+> Daniel Thompson <daniel.thompson@linaro.org> wrote:
 > 
-> BTW, there's a conflict when merging tip/irq/irqdomain into
-> tip/x86/apic. It's my first time to deal with merging conflicts,
-> what's the preferred way? Is it working like this?
-> 1) I merge the two branch
-> 2) I rebase my x86 irqdomain patch sets and send them to you
-> 3) You merge the two branch and apply my patch set.
+>> On 14/11/14 02:26, Steven Rostedt wrote:
+>>> On Thu,  6 Nov 2014 12:41:55 +0000
+>>> Daniel Thompson <daniel.thompson@linaro.org> wrote:
+>>>
+>>>> Currently kdb's ftdump command unconditionally crashes due to a null
+>>>> pointer de-reference whenever the command is run. This in turn causes
+>>>> the kernel to panic.
+>>>>
+>>>> The abridged stacktrace (gathered with ARCH=arm) is:
+>>>> --- cut here ---
+>>>
+>>> This is a nasty line. "git am " truncated the change log there thinking
+>>> it was the end of the change log (that '---' did it).
+>>
+>> Oops. Looks like I shall have to train myself out of that particular
+>> habit (which will be tough, since I've used it long enough to be ingrained).
+>>
+>> Will repost as soon as I've thought about your other comments.
+> 
+> I was just telling you so that you wouldn't do it again. I already
+> pulled in your patches. You didn't need to resend. But at least it
+> would help you get out of that habit! J
 
-When we have the generic parts sorted out, i'll make the irq/irqdomain
-branch official and immutable and then merge it into x86/apic fix the
-conflicts and add the x86 specific stuff on top.
+Thanks.
 
-Thanks,
+BTW I did check on kernel.org before punting them back on the list:
+https://git.kernel.org/cgit/linux/kernel/git/rostedt/linux-trace.git/log/?h=for-next
 
-	tglx
+Am I looking in the wrong place or are they not aimed at linux-next just
+yet?
+
+
+Daniel.
+
