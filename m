@@ -1,54 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422653AbaKNUya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:54:30 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:53595 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161883AbaKNUy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:54:28 -0500
-Message-ID: <1415998465.1847.4.camel@sipsolutions.net>
-Subject: Re: [PATCH v3 00/21] backports: add kernel integration support
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
-Date: Fri, 14 Nov 2014 21:54:25 +0100
-In-Reply-To: <CAB=NE6X_d68Wc=CFAMb_suWJJQgSOSNafHiMwAmC6YhJFEtP1w@mail.gmail.com> (sfid-20141114_215317_746640_45CFB1A7)
-References: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1415998228.1847.3.camel@sipsolutions.net>
-	 <CAB=NE6X_d68Wc=CFAMb_suWJJQgSOSNafHiMwAmC6YhJFEtP1w@mail.gmail.com>
-	 (sfid-20141114_215317_746640_45CFB1A7)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1422668AbaKNU4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:56:13 -0500
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:61796 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161286AbaKNU4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 15:56:11 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtcNAL5rZlRXQzQ2/2dsb2JhbABbgw6BLrlDBQF1mhWBHhcBAQEBAX2EMC8jgRo3iEUBwXiQKSyGPopkhFIFnkyWeoFHAYI1PDCCSwEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        linux-wireless@vger.kernel.org, b43-dev@lists.infradead.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] wireless: remove unnecessary sizeof(u8)
+Date: Fri, 14 Nov 2014 21:55:53 +0100
+Message-Id: <1415998553-12636-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-14 at 12:52 -0800, Luis R. Rodriguez wrote:
-> On Fri, Nov 14, 2014 at 12:50 PM, Johannes Berg
-> <johannes@sipsolutions.net> wrote:
-> > On Tue, 2014-11-11 at 00:14 -0800, Luis R. Rodriguez wrote:
-> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> >>
-> >> This third series should hopefully address all pending feedback.
-> >> I've split out patches even more, but more importantly have
-> >> made the parser simpler by both integrating the logic required
-> >> to understand a backport by identifying the backport by type
-> >> and strategy, sharing that, and then providing ignore lists on
-> >> the parsers.
-> >
-> > I think from a code change POV I should be OK with this, but I'll
-> > definitely want to run it and see the differences. I'll have to do that
-> > next week, it's getting late here.
-> 
-> OK. So I shouldn't merge yet?
+sizeof(u8) is always 1.
 
-I would prefer you didn't, but OTOH we can always fix up issues later as
-well.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/net/wireless/b43/ppr.c            |  2 +-
+ drivers/net/wireless/iwlwifi/pcie/trans.c |  2 +-
+ drivers/net/wireless/rtlwifi/efuse.c      | 16 ++++++++--------
+ 3 files changed, 10 insertions(+), 10 deletions(-)
 
-johannes
+diff --git a/drivers/net/wireless/b43/ppr.c b/drivers/net/wireless/b43/ppr.c
+index 9a77027..6bc1c6f 100644
+--- a/drivers/net/wireless/b43/ppr.c
++++ b/drivers/net/wireless/b43/ppr.c
+@@ -28,7 +28,7 @@ void b43_ppr_clear(struct b43_wldev *dev, struct b43_ppr *ppr)
+ 	memset(ppr, 0, sizeof(*ppr));
+ 
+ 	/* Compile-time PPR check */
+-	BUILD_BUG_ON(sizeof(struct b43_ppr) != B43_PPR_RATES_NUM * sizeof(u8));
++	BUILD_BUG_ON(sizeof(struct b43_ppr) != B43_PPR_RATES_NUM);
+ }
+ 
+ void b43_ppr_add(struct b43_wldev *dev, struct b43_ppr *ppr, int diff)
+diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
+index 836725e..f016824 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -1157,7 +1157,7 @@ static void iwl_trans_pcie_configure(struct iwl_trans *trans,
+ 		trans_pcie->n_no_reclaim_cmds = trans_cfg->n_no_reclaim_cmds;
+ 	if (trans_pcie->n_no_reclaim_cmds)
+ 		memcpy(trans_pcie->no_reclaim_cmds, trans_cfg->no_reclaim_cmds,
+-		       trans_pcie->n_no_reclaim_cmds * sizeof(u8));
++		       trans_pcie->n_no_reclaim_cmds);
+ 
+ 	trans_pcie->rx_buf_size_8k = trans_cfg->rx_buf_size_8k;
+ 	if (trans_pcie->rx_buf_size_8k)
+diff --git a/drivers/net/wireless/rtlwifi/efuse.c b/drivers/net/wireless/rtlwifi/efuse.c
+index 0b4082c..a3135c5 100644
+--- a/drivers/net/wireless/rtlwifi/efuse.c
++++ b/drivers/net/wireless/rtlwifi/efuse.c
+@@ -251,8 +251,8 @@ void read_efuse(struct ieee80211_hw *hw, u16 _offset, u16 _size_byte, u8 *pbuf)
+ 	}
+ 
+ 	/* allocate memory for efuse_tbl and efuse_word */
+-	efuse_tbl = kzalloc(rtlpriv->cfg->maps[EFUSE_HWSET_MAX_SIZE] *
+-			    sizeof(u8), GFP_ATOMIC);
++	efuse_tbl = kzalloc(rtlpriv->cfg->maps[EFUSE_HWSET_MAX_SIZE],
++			    GFP_ATOMIC);
+ 	if (!efuse_tbl)
+ 		return;
+ 	efuse_word = kzalloc(EFUSE_MAX_WORD_UNIT * sizeof(u16 *), GFP_ATOMIC);
+@@ -733,8 +733,8 @@ static int efuse_pg_packet_read(struct ieee80211_hw *hw, u8 offset, u8 *data)
+ 	if (offset > 15)
+ 		return false;
+ 
+-	memset(data, 0xff, PGPKT_DATA_SIZE * sizeof(u8));
+-	memset(tmpdata, 0xff, PGPKT_DATA_SIZE * sizeof(u8));
++	memset(data, 0xff, PGPKT_DATA_SIZE);
++	memset(tmpdata, 0xff, PGPKT_DATA_SIZE);
+ 
+ 	while (continual && (efuse_addr < EFUSE_MAX_SIZE)) {
+ 		if (readstate & PG_STATE_HEADER) {
+@@ -772,7 +772,7 @@ static void efuse_write_data_case1(struct ieee80211_hw *hw, u16 *efuse_addr,
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct pgpkt_struct tmp_pkt;
+ 	int dataempty = true;
+-	u8 originaldata[8 * sizeof(u8)];
++	u8 originaldata[8];
+ 	u8 badworden = 0x0F;
+ 	u8 match_word_en, tmp_word_en;
+ 	u8 tmpindex;
+@@ -881,7 +881,7 @@ static void efuse_write_data_case2(struct ieee80211_hw *hw, u16 *efuse_addr,
+ 	struct pgpkt_struct tmp_pkt;
+ 	u8 pg_header;
+ 	u8 tmp_header;
+-	u8 originaldata[8 * sizeof(u8)];
++	u8 originaldata[8];
+ 	u8 tmp_word_cnts;
+ 	u8 badworden = 0x0F;
+ 
+@@ -904,7 +904,7 @@ static void efuse_write_data_case2(struct ieee80211_hw *hw, u16 *efuse_addr,
+ 
+ 		tmp_word_cnts = efuse_calculate_word_cnts(tmp_pkt.word_en);
+ 
+-		memset(originaldata, 0xff,  8 * sizeof(u8));
++		memset(originaldata, 0xff,  8);
+ 
+ 		if (efuse_pg_packet_read(hw, tmp_pkt.offset, originaldata)) {
+ 			badworden = enable_efuse_data_write(hw,
+@@ -962,7 +962,7 @@ static int efuse_pg_packet_write(struct ieee80211_hw *hw,
+ 	target_pkt.offset = offset;
+ 	target_pkt.word_en = word_en;
+ 
+-	memset(target_pkt.data, 0xFF,  8 * sizeof(u8));
++	memset(target_pkt.data, 0xFF,  8);
+ 
+ 	efuse_word_enable_data_read(word_en, data, target_pkt.data);
+ 	target_word_cnts = efuse_calculate_word_cnts(target_pkt.word_en);
+-- 
+1.9.3
 
