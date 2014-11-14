@@ -1,69 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965408AbaKNPA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:00:29 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:62483 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964887AbaKNPA1 (ORCPT
+	id S965505AbaKNPEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:04:52 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:35628 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934535AbaKNPEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:00:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, patrice.chotard@st.com,
-        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
-        maxime.coquelin@st.com
-Subject: Re: [PATCH v2 13/14] ARM: STi: DT: STiH410: Add usb2 picophy dt nodes
-Date: Fri, 14 Nov 2014 15:59:51 +0100
-Message-ID: <3480005.rnSDFdcTbG@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141114133425.GA28680@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1415876417-28728-1-git-send-email-peter.griffin@linaro.org> <1546892.RCPeXgVQNJ@wuerfel> <20141114133425.GA28680@griffinp-ThinkPad-X1-Carbon-2nd>
+	Fri, 14 Nov 2014 10:04:50 -0500
+Date: Fri, 14 Nov 2014 16:04:46 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] [media] Add RGB444_1X12 and RGB565_1X16 media bus
+ formats
+Message-ID: <20141114160446.70c1b8b9@bbrezillon>
+In-Reply-To: <20141114135831.GC8907@valkosipuli.retiisi.org.uk>
+References: <1415961360-14898-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20141114135831.GC8907@valkosipuli.retiisi.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ooakA7DfqK1P/2wKIpzRLsNlLjFMobVObUNc94W+atf
- 5WMlQHY6nLSXDzedqQhGgDqvjgzBx7DBpVJgWSdYPkXHTaLcId
- mf4XmTIM11q7OAQZ46u09S89axXmWSHMwjS2UdIg//63LhUlow
- YkIxiJEkLxDo8NSfBkFEpbDdLQAze/IUhFcet4/aU8U353iPr7
- 1jGJUVyKEek/swU3OAM6KuXQoZuK4t3nkrQF5Kc8CJkP2CqXh7
- /HGbTHSyeDGvDAmRlGY8+YbyeRluNYNbea1RbWVQWVOA7A2NgE
- 6breJzddK44+pcEe6r7t+tvyOR6TWsqVEfMmFM5ToTBVuIahCw
- 1DFXbZXVMwie6XY5Cg2w=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 November 2014 13:34:25 Peter Griffin wrote:
-> > 
-> > > From looking around in the source I see a few different ways people have done this: -
-> > > 
-> > > 1) Some drivers encode the data statically into the source and make a decision based on compatible string.
-> > > 2) Some drivers add a couple of extra dt properties to encode the offset (spifsm in stih416)
-> > > 3) Some drivers mix address spaces in the reg properties (examples given above) 
-> > > 3) Probably some other ways I've not found yet
-> > >
-> > > Is there a blessed way of doing this? It would be nice at least for all the drivers in STI to be doing
-> > > it the same as currently there seems to be a mix of implementations.
-> > 
-> > You can do 1 or 2, not 3.
+Hi Sakari,
+
+On Fri, 14 Nov 2014 15:58:31 +0200
+Sakari Ailus <sakari.ailus@iki.fi> wrote:
+
+> Hi Boris,
 > 
-> Yep got it.
+> On Fri, Nov 14, 2014 at 11:36:00AM +0100, Boris Brezillon wrote:
+> > Add RGB444_1X12 and RGB565_1X16 format definitions and update the
+> > documentation.
+> > 
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+> > ---
+> >  Documentation/DocBook/media/v4l/subdev-formats.xml | 40 ++++++++++++++++++++++
+> >  include/uapi/linux/media-bus-format.h              |  4 ++-
+> >  2 files changed, 43 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/DocBook/media/v4l/subdev-formats.xml b/Documentation/DocBook/media/v4l/subdev-formats.xml
+> > index 18730b9..8c396db 100644
+> > --- a/Documentation/DocBook/media/v4l/subdev-formats.xml
+> > +++ b/Documentation/DocBook/media/v4l/subdev-formats.xml
+> > @@ -563,6 +563,46 @@
+> >  	      <entry>b<subscript>1</subscript></entry>
+> >  	      <entry>b<subscript>0</subscript></entry>
+> >  	    </row>
+> > +	    <row id="MEDIA-BUS-FMT-RGB444-1X12">
+> > +	      <entry>MEDIA_BUS_FMT_RGB444_1X12</entry>
+> > +	      <entry>0x100d</entry>
+> > +	      <entry></entry>
+> > +	      &dash-ent-20;
+> > +	      <entry>r<subscript>3</subscript></entry>
+> > +	      <entry>r<subscript>2</subscript></entry>
+> > +	      <entry>r<subscript>1</subscript></entry>
+> > +	      <entry>r<subscript>0</subscript></entry>
+> > +	      <entry>g<subscript>3</subscript></entry>
+> > +	      <entry>g<subscript>2</subscript></entry>
+> > +	      <entry>g<subscript>1</subscript></entry>
+> > +	      <entry>g<subscript>0</subscript></entry>
+> > +	      <entry>b<subscript>3</subscript></entry>
+> > +	      <entry>b<subscript>2</subscript></entry>
+> > +	      <entry>b<subscript>1</subscript></entry>
+> > +	      <entry>b<subscript>0</subscript></entry>
+> > +	    </row>
+> > +	    <row id="MEDIA-BUS-FMT-RGB565-1X16">
+> > +	      <entry>MEDIA_BUS_FMT_RGB565_1X16</entry>
+> > +	      <entry>0x100d</entry>
+> > +	      <entry></entry>
+> > +	      &dash-ent-16;
+> > +	      <entry>r<subscript>4</subscript></entry>
+> > +	      <entry>r<subscript>3</subscript></entry>
+> > +	      <entry>r<subscript>2</subscript></entry>
+> > +	      <entry>r<subscript>1</subscript></entry>
+> > +	      <entry>r<subscript>0</subscript></entry>
+> > +	      <entry>g<subscript>5</subscript></entry>
+> > +	      <entry>g<subscript>4</subscript></entry>
+> > +	      <entry>g<subscript>3</subscript></entry>
+> > +	      <entry>g<subscript>2</subscript></entry>
+> > +	      <entry>g<subscript>1</subscript></entry>
+> > +	      <entry>g<subscript>0</subscript></entry>
+> > +	      <entry>b<subscript>4</subscript></entry>
+> > +	      <entry>b<subscript>3</subscript></entry>
+> > +	      <entry>b<subscript>2</subscript></entry>
+> > +	      <entry>b<subscript>1</subscript></entry>
+> > +	      <entry>b<subscript>0</subscript></entry>
+> > +	    </row>
+> >  	  </tbody>
+> >  	</tgroup>
+> >        </table>
+> > diff --git a/include/uapi/linux/media-bus-format.h b/include/uapi/linux/media-bus-format.h
+> > index 23b4090..cc7b79e 100644
+> > --- a/include/uapi/linux/media-bus-format.h
+> > +++ b/include/uapi/linux/media-bus-format.h
+> > @@ -33,7 +33,7 @@
+> >  
+> >  #define MEDIA_BUS_FMT_FIXED			0x0001
+> >  
+> > -/* RGB - next is	0x100e */
+> > +/* RGB - next is	0x1010 */
+> >  #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_BE	0x1001
+> >  #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_LE	0x1002
+> >  #define MEDIA_BUS_FMT_RGB555_2X8_PADHI_BE	0x1003
+> > @@ -47,6 +47,8 @@
+> >  #define MEDIA_BUS_FMT_RGB888_2X12_BE		0x100b
+> >  #define MEDIA_BUS_FMT_RGB888_2X12_LE		0x100c
+> >  #define MEDIA_BUS_FMT_ARGB8888_1X32		0x100d
+> > +#define MEDIA_BUS_FMT_RGB444_1X12		0x100e
+> > +#define MEDIA_BUS_FMT_RGB565_1X16		0x100f
 > 
-> One last question, what are the rules about updating ethernet and miphy365 over
-> to using this method for there sysconfig registers? 
+> I'd arrange these according to BPP and bits per sample, both in the header
+> and documentation.
 
-It depends on whether you have any machines that rely on this for backwards
-compatibility. If the platform support is still work in progress and you
-wouldn't be able to run a machine with an upstream kernel yet, just say
-in the patch description that this breaks compatibility and why it is ok
-in this particular case.
+I cannot keep both macro values and BPP/bits per sample in incrementing
+order. Are you sure you prefer to order macros in BPP/bits per sample
+order ?
 
-If you have existing users that rely on these properties, make the
-driver code handle the existing dtb files but print a warning if you
-encounter them. In the documentation, you should list the new method
-as required then, but you can mention that the old method might be
-accepted for backwards compatibility.
-
-	Arnd
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
