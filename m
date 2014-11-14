@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161216AbaKNQaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 11:30:25 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46531 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161017AbaKNQaY (ORCPT
+	id S935353AbaKNQbL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:31:11 -0500
+Received: from smtp2.tech.numericable.fr ([82.216.111.38]:41166 "EHLO
+	smtp2.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934046AbaKNQbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 11:30:24 -0500
-Message-ID: <54662E13.2010507@gmail.com>
-Date: Sat, 15 Nov 2014 00:30:11 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 14 Nov 2014 11:31:10 -0500
+Message-ID: <54662E2C.5020309@laposte.net>
+Date: Fri, 14 Nov 2014 17:30:36 +0100
+From: Barto <mister.freeman@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "gleb@kernel.org" <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] virt: kvm: arm: vgic: Process the failure case when
- kvm_register_device_ops() fails
-References: <54661D5F.3060304@gmail.com> <546625F8.6060900@arm.com>
-In-Reply-To: <546625F8.6060900@arm.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+References: <54629CAE.2000207@laposte.net> <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com> <5462CB90.1080303@roeck-us.net> <54642541.9080302@laposte.net> <94D0CD8314A33A4D9D801C0FE68B4029593A1880@G9W0745.americas.hpqcorp.net> <54647C10.4070506@laposte.net> <20141113142907.GB29354@infradead.org> <5464E6E6.3090606@laposte.net> <20141113175402.GA27327@infradead.org> <546536EA.4070705@laposte.net> <20141114073214.GA1879@infradead.org>
+In-Reply-To: <20141114073214.GA1879@infradead.org>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrjeefgdejgecutefuodetggdotefrucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepkfffhfgfggfvufhfjggtgfesthekrgdttdefheenucfhrhhomhepuegrrhhtohcuoehmihhsthgvrhdrfhhrvggvmhgrnheslhgrphhoshhtvgdrnhgvtheqnecuffhomhgrihhnpehkvghrnhgvlhdrohhrgh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Christoph,
 
-According to your taste, we need improve 2 contents below:
+I did the new bisect,
 
-On 11/14/2014 11:55 PM, Marc Zyngier wrote:
+the first bad commit is :
+
+74665016086615bbaa3fa6f83af410a0a4e029ee
+scsi: convert host_busy to atomic_t
+
+you can find the bisect log here :
+
+https://bugzilla.kernel.org/attachment.cgi?id=157621
+
+
+Le 14/11/2014 08:32, Christoph Hellwig a écrit :
+> On Thu, Nov 13, 2014 at 11:55:38PM +0100, Barto wrote:
+>> it's interesting, with this commit
+>> 74665016086615bbaa3fa6f83af410a0a4e029ee I have the bug :
+>>
+>> scsi: convert host_busy to atomic_t :
 > 
-> No. This is completely overdesigned, and fixes something that really
-> cannot happen. What is wrong with:
+> At this point we'll need a bisction between v3.16 as the last good
+> point, and 74665016086615bbaa3fa6f83af410a0a4e029ee as the known bad
+> point.
 > 
-> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-> index 3aaca49..b7dffa80 100644
-> --- a/virt/kvm/arm/vgic.c
-> +++ b/virt/kvm/arm/vgic.c
-> @@ -2465,13 +2465,17 @@ int kvm_vgic_hyp_init(void)
->  		goto out_free_irq;
->  	}
->  
-> +	ret = kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
-> +				       KVM_DEV_TYPE_ARM_VGIC_V2);
-> +	if (ret)
-> +		goto out_free_irq;
-> +
-
-Need call __unregister_cpu_notifier(), since __register_cpu_notifier()
-is already successfully called.
-
-Need print some information for failure via kvm_err().
-
-Thanks.
->  	/* Callback into for arch code for setup */
->  	vgic_arch_setup(vgic);
->  
->  	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
->  
-> -	return kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
-> -				       KVM_DEV_TYPE_ARM_VGIC_V2);
-> +	return 0;
->  
->  out_free_irq:
->  	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
-> 
-> This achieves the exact same effect.
-> 
-> Thanks,
-> 
-> 	M.
-> 
-
-
--- 
-Chen Gang
-
-Open share and attitude like air water and life which God blessed
