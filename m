@@ -1,99 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbaKNHBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 02:01:36 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:49986 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333AbaKNHBe (ORCPT
+	id S1754553AbaKNHCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 02:02:44 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:34814 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131AbaKNHCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 02:01:34 -0500
+	Fri, 14 Nov 2014 02:02:43 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 14 Nov 2014 16:05:02 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 5/5] mm, compaction: more focused lru and pcplists
+ draining
+Message-ID: <20141114070501.GA24817@js1304-P5Q-DELUXE>
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
+ <1412696019-21761-6-git-send-email-vbabka@suse.cz>
+ <20141027074112.GC23379@js1304-P5Q-DELUXE>
+ <545738F1.4010307@suse.cz>
+ <20141104003733.GB8412@js1304-P5Q-DELUXE>
+ <5464A84C.1040903@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20141114060848.GB12682@linux.vnet.ibm.com>
-References: <cover.1415917623.git.luto@amacapital.net> <2beb5abca257e5b5f37420f5d85361e5e197824b.1415917623.git.luto@amacapital.net>
- <20141114060848.GB12682@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Nov 2014 23:01:12 -0800
-Message-ID: <CALCETrWYCX28GwAw=D1F862zjyp_Srhc=Bb5E19m=VCo6VLnZA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] uprobes, x86: Fix _TIF_UPROBE vs _TIF_NOTIFY_RESUME
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5464A84C.1040903@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 10:08 PM, Srikar Dronamraju
-<srikar@linux.vnet.ibm.com> wrote:
-> * Andy Lutomirski <luto@amacapital.net> [2014-11-13 14:31:21]:
->
->> x86 call do_notify_resume on paranoid returns if TIF_UPROBE is set
->> but not on non-paranoid returns.  I suspect that this is a mistake
->> and that the code only works because int3 is paranoid.
->>
->> Setting _TIF_NOTIFY_RESUME in the uprobe code was probably a
->> workaround for the x86 bug.  With that bug fixed, we can remove
->
->> _TIF_NOTIFY_RESUME from the uprobes code.
->>
->> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->> Reported-by: Oleg Nesterov <oleg@redhat.com>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>  arch/x86/include/asm/thread_info.h | 2 +-
->>  kernel/events/uprobes.c            | 1 -
->>  2 files changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
->> index 854053889d4d..547e344a6dc6 100644
->> --- a/arch/x86/include/asm/thread_info.h
->> +++ b/arch/x86/include/asm/thread_info.h
->> @@ -141,7 +141,7 @@ struct thread_info {
->>  /* Only used for 64 bit */
->>  #define _TIF_DO_NOTIFY_MASK                                          \
->>       (_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |       \
->> -      _TIF_USER_RETURN_NOTIFY)
->> +      _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE)
->
->
-> The comment above says only for 64 bit. So would this still work for
-> i386?
->
+On Thu, Nov 13, 2014 at 01:47:08PM +0100, Vlastimil Babka wrote:
+> On 11/04/2014 01:37 AM, Joonsoo Kim wrote:
+> >On Mon, Nov 03, 2014 at 09:12:33AM +0100, Vlastimil Babka wrote:
+> >>On 10/27/2014 08:41 AM, Joonsoo Kim wrote:
+> >>>On Tue, Oct 07, 2014 at 05:33:39PM +0200, Vlastimil Babka wrote:
+> >>>
+> >>>And, I wonder why last_migrated_pfn is set after isolate_migratepages().
+> >>
+> >>Not sure I understand your question. With the mistake above, it
+> >>cannot currently be set at the point isolate_migratepages() is
+> >>called, so you might question the goto check_drain in the
+> >>ISOLATE_NONE case, if that's what you are wondering about.
+> >>
+> >>When I correct that, it might be set when COMPACT_CLUSTER_MAX pages
+> >>are isolated and migrated the middle of a pageblock, and then the
+> >>rest of the pageblock contains no pages that could be isolated, so
+> >>the last isolate_migratepages() attempt in the pageblock returns
+> >>with ISOLATE_NONE. Still there were some migrations that produced
+> >>free pages that should be drained at that point.
+> >
+> >To clarify my question, I attach psuedo code that I thought correct.
+> 
+> Sorry for the late reply.
+> 
+> >static int compact_zone()
+> >{
+> >         unsigned long last_migrated_pfn = 0;
+> >
+> >         ...
+> >
+> >         compaction_suitable();
+> >
+> >         ...
+> >
+> >         while (compact_finished()) {
+> >                 if (!last_migrated_pfn)
+> >                         last_migrated_pfn = cc->migrate_pfn - 1;
+> >
+> >                 isolate_migratepages();
+> >                 switch case
+> >                 migrate_pages();
+> >                 ...
+> >
+> >                 check_drain: (at the end of loop)
+> >                         do flush and reset last_migrated_pfn if needed
+> >         }
+> >}
+> >
+> >We should record last_migrated_pfn before isolate_migratepages() and
+> >then compare it with cc->migrate_pfn after isolate_migratepages() to
+> >know if we moved away from the previous cc->order aligned block.
+> >Am I missing something?
+> 
+> What about this scenario, with pageblock order:
+> 
+> - record cc->migrate_pfn pointing to pageblock X
+> - isolate_migratepages() skips the pageblock due to e.g. skip bit,
+> or the pageblock being a THP already...
+> - loop to pageblock X+1, last_migrated_pfn is still set to pfn of
+> pageblock X (more precisely the pfn is (X << pageblock_order) - 1
+> per your code, but doesn't matter)
+> - isolate_migratepages isolates something, but ends up somewhere in
+> the middle of pageblock due to COMPACT_CLUSTER_MAX
+> - cc->migrate_pfn points to pageblock X+1 (plus some pages it scanned)
+> - so it will decide that it has fully migrated pageblock X and it's
+> time to drain. But the drain is most likely useless - we didn't
+> migrate anything in pageblock X, we skipped it. And in X+1 we didn't
+> migrate everything yet, so we should drain only after finishing the
+> other part of the pageblock.
 
-i386 seems to look at _TIF_WORK_MASK (which includes _TIF_UPROBE) for
-everything except syscalls and at _TIF_WORK_SYSCALL_EXIT for syscall
-return (which does not include _TIF_UPROBE).  Is that okay?
+Yes, but, it can be easily fixed.
 
---Andy
+  while (compact_finished()) {
+          unsigned long prev_migrate_pfn = cc->migrate_pfn;
 
->>
->>  /* flags to check in __switch_to() */
->>  #define _TIF_WORK_CTXSW                                                      \
->> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
->> index 1d0af8a2c646..ed8f2cde34c5 100644
->> --- a/kernel/events/uprobes.c
->> +++ b/kernel/events/uprobes.c
->> @@ -1640,7 +1640,6 @@ bool uprobe_deny_signal(void)
->>               if (__fatal_signal_pending(t) || arch_uprobe_xol_was_trapped(t)) {
->>                       utask->state = UTASK_SSTEP_TRAPPED;
->>                       set_tsk_thread_flag(t, TIF_UPROBE);
->> -                     set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
->>               }
->>       }
->>
->> --
->> 1.9.3
->>
->
-> --
-> Thanks and Regards
-> Srikar Dronamraju
->
+          isolate_migratepages()
+          switch case {
+                  NONE:
+                  goto check_drain;
+                  SUCCESS:
+                  if (!last_migrated_pfn)
+                          last_migrated_pfn = prev_migrate_pfn;
+          }
 
+          ...
 
+          check_drain: (at the end of loop)
+                ...
+}
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+> In short, "last_migrated_pfn" is not "last position of migrate
+> scanner" but "last block where we *actually* migrated".
+
+Okay. Now I get it.
+Nevertheless, I'd like to change logic like above.
+
+One problem of your approach is that it can't detect some cases.
+
+Let's think about following case.
+'|' denotes aligned block boundary.
+'^' denotes migrate_pfn at certain time.
+
+Assume that last_migrated_pfn = 0;
+
+|--------------|-------------|--------------|
+   ^                ^
+  before isolate   after isolate
+
+In this case, your code just records position of second '^' to
+last_migrated_pfn and skip to flush. But, flush is needed if we
+migrate some pages because we move away from previous aligned block.
+
+Thanks.
