@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965557AbaKNNdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:33:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33142 "EHLO mx2.suse.de"
+	id S965575AbaKNNdU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:33:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33132 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965283AbaKNNdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:33:16 -0500
+	id S965535AbaKNNdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:33:15 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>,
@@ -16,9 +16,9 @@ Cc: Linux-MM <linux-mm@kvack.org>,
         Sasha Levin <sasha.levin@oracle.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 7/7] mm: numa: Add paranoid check around pte_protnone_numa
-Date: Fri, 14 Nov 2014 13:33:06 +0000
-Message-Id: <1415971986-16143-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 6/7] x86: mm: Restore original pte_special check
+Date: Fri, 14 Nov 2014 13:33:05 +0000
+Message-Id: <1415971986-16143-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1415971986-16143-1-git-send-email-mgorman@suse.de>
 References: <1415971986-16143-1-git-send-email-mgorman@suse.de>
@@ -26,48 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pte_protnone_numa is only safe to use after VMA checks for PROT_NONE are
-complete. Treating a real PROT_NONE PTE as a NUMA hinting fault is going
-to result in strangeness so add a check for it. BUG_ON looks like overkill
-but if this is hit then it's a serious bug that could result in corruption
-so do not even try recovering. It would have been more comprehensive to
-check VMA flags in pte_protnone_numa but it would have made the API ugly
-just for a debugging check.
+Commit b38af4721f59 ("x86,mm: fix pte_special versus pte_numa") adjusted
+the pte_special check to take into account that a special pte had SPECIAL
+and neither PRESENT nor PROTNONE. Now that NUMA hinting PTEs are no
+longer modifying _PAGE_PRESENT it should be safe to restore the original
+pte_special behaviour.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/huge_memory.c | 3 +++
- mm/memory.c      | 3 +++
- 2 files changed, 6 insertions(+)
+ arch/x86/include/asm/pgtable.h | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 4f02010..ae3f3e0 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1274,6 +1274,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	bool migrated = false;
- 	int flags = 0;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index f8799e0..5241332 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -131,13 +131,7 @@ static inline int pte_exec(pte_t pte)
  
-+	/* A PROT_NONE fault should not end up here */
-+	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
-+
- 	ptl = pmd_lock(mm, pmdp);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
- 		goto out_unlock;
-diff --git a/mm/memory.c b/mm/memory.c
-index 360c3e3..5d45026 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3116,6 +3116,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	bool migrated = false;
- 	int flags = 0;
+ static inline int pte_special(pte_t pte)
+ {
+-	/*
+-	 * See CONFIG_NUMA_BALANCING pte_numa in include/asm-generic/pgtable.h.
+-	 * On x86 we have _PAGE_BIT_NUMA == _PAGE_BIT_GLOBAL+1 ==
+-	 * __PAGE_BIT_SOFTW1 == _PAGE_BIT_SPECIAL.
+-	 */
+-	return (pte_flags(pte) & _PAGE_SPECIAL) &&
+-		(pte_flags(pte) & (_PAGE_PRESENT|_PAGE_PROTNONE));
++	return pte_flags(pte) & _PAGE_SPECIAL;
+ }
  
-+	/* A PROT_NONE fault should not end up here */
-+	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
-+
- 	/*
- 	* The "pte" at this point cannot be used safely without
- 	* validation through pte_unmap_same(). It's of NUMA type but
+ static inline unsigned long pte_pfn(pte_t pte)
 -- 
 1.8.4.5
 
