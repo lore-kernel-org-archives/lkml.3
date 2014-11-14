@@ -1,47 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaKNKeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:34:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52990 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755057AbaKNKeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:34:16 -0500
-Date: Fri, 14 Nov 2014 11:34:06 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Message-ID: <20141114103406.GA7475@pd.tnic>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141112220058.GA5295@redhat.com>
- <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
- <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
- <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755179AbaKNKgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:36:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33628 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754815AbaKNKgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 05:36:05 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH] [media] Add RGB444_1X12 and RGB565_1X16 media bus formats
+Date: Fri, 14 Nov 2014 11:36:00 +0100
+Message-Id: <1415961360-14898-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 07:03:21PM -0800, Andy Lutomirski wrote:
-> printk seems to work just fine in do_machine_check.
+Add RGB444_1X12 and RGB565_1X16 format definitions and update the
+documentation.
 
-That must be pure luck. Has anything changed which I missed to make
-printk NMI-safe?
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+---
+ Documentation/DocBook/media/v4l/subdev-formats.xml | 40 ++++++++++++++++++++++
+ include/uapi/linux/media-bus-format.h              |  4 ++-
+ 2 files changed, 43 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/DocBook/media/v4l/subdev-formats.xml b/Documentation/DocBook/media/v4l/subdev-formats.xml
+index 18730b9..8c396db 100644
+--- a/Documentation/DocBook/media/v4l/subdev-formats.xml
++++ b/Documentation/DocBook/media/v4l/subdev-formats.xml
+@@ -563,6 +563,46 @@
+ 	      <entry>b<subscript>1</subscript></entry>
+ 	      <entry>b<subscript>0</subscript></entry>
+ 	    </row>
++	    <row id="MEDIA-BUS-FMT-RGB444-1X12">
++	      <entry>MEDIA_BUS_FMT_RGB444_1X12</entry>
++	      <entry>0x100d</entry>
++	      <entry></entry>
++	      &dash-ent-20;
++	      <entry>r<subscript>3</subscript></entry>
++	      <entry>r<subscript>2</subscript></entry>
++	      <entry>r<subscript>1</subscript></entry>
++	      <entry>r<subscript>0</subscript></entry>
++	      <entry>g<subscript>3</subscript></entry>
++	      <entry>g<subscript>2</subscript></entry>
++	      <entry>g<subscript>1</subscript></entry>
++	      <entry>g<subscript>0</subscript></entry>
++	      <entry>b<subscript>3</subscript></entry>
++	      <entry>b<subscript>2</subscript></entry>
++	      <entry>b<subscript>1</subscript></entry>
++	      <entry>b<subscript>0</subscript></entry>
++	    </row>
++	    <row id="MEDIA-BUS-FMT-RGB565-1X16">
++	      <entry>MEDIA_BUS_FMT_RGB565_1X16</entry>
++	      <entry>0x100d</entry>
++	      <entry></entry>
++	      &dash-ent-16;
++	      <entry>r<subscript>4</subscript></entry>
++	      <entry>r<subscript>3</subscript></entry>
++	      <entry>r<subscript>2</subscript></entry>
++	      <entry>r<subscript>1</subscript></entry>
++	      <entry>r<subscript>0</subscript></entry>
++	      <entry>g<subscript>5</subscript></entry>
++	      <entry>g<subscript>4</subscript></entry>
++	      <entry>g<subscript>3</subscript></entry>
++	      <entry>g<subscript>2</subscript></entry>
++	      <entry>g<subscript>1</subscript></entry>
++	      <entry>g<subscript>0</subscript></entry>
++	      <entry>b<subscript>4</subscript></entry>
++	      <entry>b<subscript>3</subscript></entry>
++	      <entry>b<subscript>2</subscript></entry>
++	      <entry>b<subscript>1</subscript></entry>
++	      <entry>b<subscript>0</subscript></entry>
++	    </row>
+ 	  </tbody>
+ 	</tgroup>
+       </table>
+diff --git a/include/uapi/linux/media-bus-format.h b/include/uapi/linux/media-bus-format.h
+index 23b4090..cc7b79e 100644
+--- a/include/uapi/linux/media-bus-format.h
++++ b/include/uapi/linux/media-bus-format.h
+@@ -33,7 +33,7 @@
+ 
+ #define MEDIA_BUS_FMT_FIXED			0x0001
+ 
+-/* RGB - next is	0x100e */
++/* RGB - next is	0x1010 */
+ #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_BE	0x1001
+ #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_LE	0x1002
+ #define MEDIA_BUS_FMT_RGB555_2X8_PADHI_BE	0x1003
+@@ -47,6 +47,8 @@
+ #define MEDIA_BUS_FMT_RGB888_2X12_BE		0x100b
+ #define MEDIA_BUS_FMT_RGB888_2X12_LE		0x100c
+ #define MEDIA_BUS_FMT_ARGB8888_1X32		0x100d
++#define MEDIA_BUS_FMT_RGB444_1X12		0x100e
++#define MEDIA_BUS_FMT_RGB565_1X16		0x100f
+ 
+ /* YUV (including grey) - next is	0x2024 */
+ #define MEDIA_BUS_FMT_Y8_1X8			0x2001
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
