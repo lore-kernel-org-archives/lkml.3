@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161545AbaKNR0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 12:26:49 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:33892 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161108AbaKNR0s (ORCPT
+	id S1161679AbaKNR1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 12:27:46 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:45556 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161108AbaKNR1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 12:26:48 -0500
+	Fri, 14 Nov 2014 12:27:45 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd enabled
+References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
+	<1415917702-6742-2-git-send-email-khilman@kernel.org>
+	<CAPDyKFou5iwX2Oe9K6n=2u6xRAqUtVNRrDn736oo0kGf0GgaLQ@mail.gmail.com>
+Date: Fri, 14 Nov 2014 09:27:41 -0800
+In-Reply-To: <CAPDyKFou5iwX2Oe9K6n=2u6xRAqUtVNRrDn736oo0kGf0GgaLQ@mail.gmail.com>
+	(Ulf Hansson's message of "Fri, 14 Nov 2014 08:26:58 +0100")
+Message-ID: <7hk32x8zg2.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20141114172404.GF7475@pd.tnic>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141112220058.GA5295@redhat.com> <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
- <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
- <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
- <20141114103406.GA7475@pd.tnic> <CALCETrXTxJnEejqV_LjrDHO6Pur5afhYERneZD+2KrshH28tVQ@mail.gmail.com>
- <20141114172404.GF7475@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 14 Nov 2014 09:26:26 -0800
-Message-ID: <CALCETrWJr_sMuKtYWF+CLnG7jDRxV7sgPvEQbtUhRokJquyq_g@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "Luck, Tony" <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 9:24 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Fri, Nov 14, 2014 at 09:18:51AM -0800, Andy Lutomirski wrote:
->> Grr. Do you or Tony have any pointers for how to test this myself? I
->> don't know enough about the acpi error injection thing, which I assume
->> is that Tony is using.
+Hi Ulf,
+
+Ulf Hansson <ulf.hansson@linaro.org> writes:
+
+> On 13 November 2014 23:28, Kevin Hilman <khilman@kernel.org> wrote:
+>> From: Kevin Hilman <khilman@linaro.org>
+>>
+>> It makes little sense to use generic power domains without runtime PM.
+>> Also, since the complexities of handling the !PM_RUNTIME case are
+>> causing more trouble and confusion than they're worth, let's simplify
+>> the world by making genpd always enable runtime PM.
 >
-> Maybe that would help:
+> I do agree that your above statement seems reasonable, even if can't
+> really tell if that would break some SOCs use-cases.
+
+Break in what way?
+
+> My concern is though, that I fear we will be taking short-cuts in
+> genpd that might bite us later on, but I might be wrong.
 >
-> Documentation/acpi/apei/einj.txt
->
-> provided your box's BIOS even has EINJ support ...
->
+> The reason for my concern is that on every other place, like in the
+> subsystem level, driver core, PM core and of course in drivers -  we
+> need to cope with all the combinations of CONFIG_PM_SLEEP and
+> CONFIG_PM_SLEEP.  So theoretically, why shouldn't genpd be able to do
+> that as well?
 
-I was hoping for an actual worked-out example of what the parameters
-should be :)  I'll see if my weird server-ish test machine can do
-this.
+Good question, and one we need to figure out.  (I meant to mark this
+patch as RFC for that reason.)
 
---Andy
+I think the primary question is: why would one want to use genpd without
+runtime PM?
 
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+I understand why one might want to use/test drivers with various
+combinations of PM_SLEEP and PM_RUNTIME, but I'm not seeing why we
+should need to support genpd without PM_RUNTIME enabled.
 
+In fact, on all the SoCs I've worked closely with, power domains,
+suspend/resume and runtime PM are all so closely intertwined that I
+can't imagine a useful scenario where they they are not all used
+together.  If you care about PM, you turn them all on.  If you don't,
+you turn them all off and ensure everything is enabled at boot.
 
+IMO, we're spending a lot of cycles supporting these various
+combinations and permutations and as a result are not really able to
+solve the real problems people are raising.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Seems like most of the time a new feature/fixup/cleanup is proposed, the
+discussion always ends up around how to support things when this or that
+option is disabled, or some combination of kconfig options that weren't
+considered.
+
+I think we should simplify the config space permuations so we can focus
+on improving the frameworks.
+
+Kevin
