@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422773AbaKNVPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 16:15:38 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:47040 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422733AbaKNVPa (ORCPT
+	id S1422801AbaKNVP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 16:15:58 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:49773 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422760AbaKNVPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 16:15:30 -0500
+	Fri, 14 Nov 2014 16:15:38 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -15,11 +15,10 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
         Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/11] perf/x86/intel: Add Intel Cache QoS Monitoring support
-Date: Fri, 14 Nov 2014 21:15:08 +0000
-Message-Id: <1415999712-5850-8-git-send-email-matt@console-pimps.org>
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 11/11] perf/x86/intel: Enable conflicting event scheduling for CQM
+Date: Fri, 14 Nov 2014 21:15:12 +0000
+Message-Id: <1415999712-5850-12-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
 References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
@@ -29,593 +28,275 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Future Intel Xeon processors support a Cache QoS Monitoring feature that
-allows tracking of the LLC occupancy for a task or task group, i.e. the
-amount of data in pulled into the LLC for the task (group).
+We can leverage the workqueue that we use for RMID rotation to support
+scheduling of conflicting monitoring events. Allowing events that
+monitor conflicting things is done at various other places in the perf
+subsystem, so there's precedent there.
 
-Currently the PMU only supports per-cpu events. We create an event for
-each cpu and read out all the LLC occupancy values.
+An example of two conflicting events would be monitoring a cgroup and
+simultaneously monitoring a task within that cgroup.
 
-Because this results in duplicate values being written out to userspace,
-we also export a .per-pkg event file so that the perf tools only
-accumulate values for one cpu per package.
+This uses the cache_groups list as a queuing mechanism, where every
+event that reaches the front of the list gets the chance to be scheduled
+in, possibly descheduling any conflicting events that are running.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/cpu/Makefile               |   2 +-
- arch/x86/kernel/cpu/perf_event_intel_cqm.c | 528 +++++++++++++++++++++++++++++
- include/linux/perf_event.h                 |   7 +
- 3 files changed, 536 insertions(+), 1 deletion(-)
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_cqm.c
+ arch/x86/kernel/cpu/perf_event_intel_cqm.c | 132 +++++++++++++++++++----------
+ 1 file changed, 86 insertions(+), 46 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index e27b49d7c922..18e5341bb3fd 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -39,7 +39,7 @@ obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd_iommu.o
- endif
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
--obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o perf_event_intel_cqm.o
- 
- obj-$(CONFIG_PERF_EVENTS_INTEL_UNCORE)	+= perf_event_intel_uncore.o \
- 					   perf_event_intel_uncore_snb.o \
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_cqm.c b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-new file mode 100644
-index 000000000000..b16458ff274e
---- /dev/null
+index df15d28c00e3..4720ba30d503 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_cqm.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-@@ -0,0 +1,528 @@
-+/*
-+ * Intel Cache Quality-of-Service Monitoring (CQM) support.
-+ *
-+ * Based very, very heavily on work by Peter Zijlstra.
-+ */
-+
-+#include <linux/perf_event.h>
-+#include <linux/slab.h>
-+#include <asm/cpu_device_id.h>
-+#include "perf_event.h"
-+
-+#define MSR_IA32_PQR_ASSOC	0x0c8f
-+#define MSR_IA32_QM_CTR		0x0c8e
-+#define MSR_IA32_QM_EVTSEL	0x0c8d
-+
-+static unsigned int cqm_max_rmid = -1;
-+static unsigned int cqm_l3_scale; /* supposedly cacheline size */
-+
-+struct intel_cqm_state {
-+	raw_spinlock_t		lock;
-+	int			rmid;
-+	int 			cnt;
-+};
-+
-+static DEFINE_PER_CPU(struct intel_cqm_state, cqm_state);
-+
-+/*
-+ * Protects cache_cgroups.
-+ */
-+static DEFINE_MUTEX(cache_mutex);
-+
-+/*
-+ * Groups of events that have the same target(s), one RMID per group.
-+ */
-+static LIST_HEAD(cache_groups);
-+
-+/*
-+ * Mask of CPUs for reading CQM values. We only need one per-socket.
-+ */
-+static cpumask_t cqm_cpumask;
-+
-+#define RMID_VAL_ERROR		(1ULL << 63)
-+#define RMID_VAL_UNAVAIL	(1ULL << 62)
-+
-+#define QOS_L3_OCCUP_EVENT_ID	(1 << 0)
-+
-+#define QOS_EVENT_MASK	QOS_L3_OCCUP_EVENT_ID
-+
-+static u64 __rmid_read(unsigned long rmid)
-+{
-+	u64 val;
+@@ -510,7 +510,6 @@ static unsigned int __rmid_queue_time_ms = RMID_DEFAULT_QUEUE_TIME;
+ static bool intel_cqm_rmid_stabilize(bool *available)
+ {
+ 	struct cqm_rmid_entry *entry, *tmp;
+-	struct perf_event *event;
+ 
+ 	lockdep_assert_held(&cache_mutex);
+ 
+@@ -579,19 +578,9 @@ static bool intel_cqm_rmid_stabilize(bool *available)
+ 
+ 		/*
+ 		 * If we have groups waiting for RMIDs, hand
+-		 * them one now.
++		 * them one now provided they don't conflict.
+ 		 */
+-		list_for_each_entry(event, &cache_groups,
+-				    hw.cqm_groups_entry) {
+-			if (__rmid_valid(event->hw.cqm_rmid))
+-				continue;
+-
+-			intel_cqm_xchg_rmid(event, entry->rmid);
+-			entry = NULL;
+-			break;
+-		}
+-
+-		if (!entry)
++		if (intel_cqm_sched_in_event(entry->rmid))
+ 			continue;
+ 
+ 		/*
+@@ -606,25 +595,75 @@ static bool intel_cqm_rmid_stabilize(bool *available)
+ 
+ /*
+  * Pick a victim group and move it to the tail of the group list.
++ * @next: The first group without an RMID
+  */
+-static struct perf_event *
+-__intel_cqm_pick_and_rotate(void)
++static void __intel_cqm_pick_and_rotate(struct perf_event *next)
+ {
+ 	struct perf_event *rotor;
++	unsigned int rmid;
+ 
+ 	lockdep_assert_held(&cache_mutex);
+-	lockdep_assert_held(&cache_lock);
+ 
+ 	rotor = list_first_entry(&cache_groups, struct perf_event,
+ 				 hw.cqm_groups_entry);
 +
 +	/*
-+	 * Ignore the SDM, this thing is _NOTHING_ like a regular perfcnt,
-+	 * it just says that to increase confusion.
++	 * The group at the front of the list should always have a valid
++	 * RMID. If it doesn't then no groups have RMIDs assigned and we
++	 * don't need to rotate the list.
 +	 */
-+	wrmsr(MSR_IA32_QM_EVTSEL, QOS_L3_OCCUP_EVENT_ID, rmid);
-+	rdmsrl(MSR_IA32_QM_CTR, val);
-+
-+	/*
-+	 * Aside from the ERROR and UNAVAIL bits, assume this thing returns
-+	 * the number of cachelines tagged with @rmid.
-+	 */
-+	return val;
-+}
-+
-+static unsigned long *cqm_rmid_bitmap;
-+
-+/*
-+ * Returns < 0 on fail.
-+ */
-+static int __get_rmid(void)
-+{
-+	return bitmap_find_free_region(cqm_rmid_bitmap, cqm_max_rmid, 0);
-+}
-+
-+static void __put_rmid(int rmid)
-+{
-+	bitmap_release_region(cqm_rmid_bitmap, rmid, 0);
-+}
-+
-+static int intel_cqm_setup_rmid_cache(void)
-+{
-+	cqm_rmid_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(cqm_max_rmid), GFP_KERNEL);
-+	if (!cqm_rmid_bitmap)
-+		return -ENOMEM;
-+
-+	bitmap_zero(cqm_rmid_bitmap, cqm_max_rmid);
-+
-+	/*
-+	 * RMID 0 is special and is always allocated. It's used for all
-+	 * tasks that are not monitored.
-+	 */
-+	bitmap_allocate_region(cqm_rmid_bitmap, 0, 0);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Determine if @a and @b measure the same set of tasks.
-+ */
-+static bool __match_event(struct perf_event *a, struct perf_event *b)
-+{
-+	if ((a->attach_state & PERF_ATTACH_TASK) !=
-+	    (b->attach_state & PERF_ATTACH_TASK))
-+		return false;
-+
-+	/* not task */
-+
-+	return true; /* if not task, we're machine wide */
-+}
-+
-+/*
-+ * Determine if @a's tasks intersect with @b's tasks
-+ */
-+static bool __conflict_event(struct perf_event *a, struct perf_event *b)
-+{
-+	/*
-+	 * If one of them is not a task, same story as above with cgroups.
-+	 */
-+	if (!(a->attach_state & PERF_ATTACH_TASK) ||
-+	    !(b->attach_state & PERF_ATTACH_TASK))
-+		return true;
-+
-+	/*
-+	 * Must be non-overlapping.
-+	 */
-+	return false;
-+}
-+
-+/*
-+ * Find a group and setup RMID.
-+ *
-+ * If we're part of a group, we use the group's RMID.
-+ */
-+static int intel_cqm_setup_event(struct perf_event *event,
-+				 struct perf_event **group)
-+{
-+	struct perf_event *iter;
-+	int rmid;
-+
-+	list_for_each_entry(iter, &cache_groups, hw.cqm_groups_entry) {
-+		if (__match_event(iter, event)) {
-+			/* All tasks in a group share an RMID */
-+			event->hw.cqm_rmid = iter->hw.cqm_rmid;
-+			*group = iter;
-+			return 0;
-+		}
-+
-+		if (__conflict_event(iter, event))
-+			return -EBUSY;
-+	}
-+
-+	rmid = __get_rmid();
-+	if (rmid < 0)
-+		return rmid;
-+
-+	event->hw.cqm_rmid = rmid;
-+	return 0;
-+}
-+
-+static void intel_cqm_event_read(struct perf_event *event)
-+{
-+	unsigned long rmid = event->hw.cqm_rmid;
-+	u64 val;
-+
-+	val = __rmid_read(rmid);
-+
-+	/*
-+	 * Ignore this reading on error states and do not update the value.
-+	 */
-+	if (val & (RMID_VAL_ERROR | RMID_VAL_UNAVAIL))
++	if (next == rotor)
 +		return;
 +
-+	local64_set(&event->count, val);
++	rmid = intel_cqm_xchg_rmid(rotor, INVALID_RMID);
++	__put_rmid(rmid);
++
+ 	list_rotate_left(&cache_groups);
 +}
-+
-+static void intel_cqm_event_start(struct perf_event *event, int mode)
-+{
-+	struct intel_cqm_state *state = &__get_cpu_var(cqm_state);
-+	unsigned long rmid = event->hw.cqm_rmid;
-+	unsigned long flags;
-+
-+	if (!(event->hw.cqm_state & PERF_HES_STOPPED))
-+		return;
-+
-+	event->hw.cqm_state &= ~PERF_HES_STOPPED;
-+
-+	raw_spin_lock_irqsave(&state->lock, flags);
-+
-+	if (state->cnt++)
-+		WARN_ON_ONCE(state->rmid != rmid);
-+	else
-+		WARN_ON_ONCE(state->rmid);
-+
-+	state->rmid = rmid;
-+	wrmsrl(MSR_IA32_PQR_ASSOC, state->rmid);
-+
-+	raw_spin_unlock_irqrestore(&state->lock, flags);
-+}
-+
-+static void intel_cqm_event_stop(struct perf_event *event, int mode)
-+{
-+	struct intel_cqm_state *state = &__get_cpu_var(cqm_state);
-+	unsigned long flags;
-+
-+	if (event->hw.cqm_state & PERF_HES_STOPPED)
-+		return;
-+
-+	event->hw.cqm_state |= PERF_HES_STOPPED;
-+
-+	raw_spin_lock_irqsave(&state->lock, flags);
-+	intel_cqm_event_read(event);
-+
-+	if (!--state->cnt) {
-+		state->rmid = 0;
-+		wrmsrl(MSR_IA32_PQR_ASSOC, 0);
-+	} else {
-+		WARN_ON_ONCE(!state->rmid);
-+	}
-+
-+	raw_spin_unlock_irqrestore(&state->lock, flags);
-+}
-+
-+static int intel_cqm_event_add(struct perf_event *event, int mode)
-+{
-+	int rmid;
-+
-+	event->hw.cqm_state = PERF_HES_STOPPED;
-+	rmid = event->hw.cqm_rmid;
-+	WARN_ON_ONCE(!rmid);
-+
-+	if (mode & PERF_EF_START)
-+		intel_cqm_event_start(event, mode);
-+
-+	return 0;
-+}
-+
-+static void intel_cqm_event_del(struct perf_event *event, int mode)
-+{
-+	intel_cqm_event_stop(event, mode);
-+}
-+
-+static void intel_cqm_event_destroy(struct perf_event *event)
-+{
-+	struct perf_event *group_other = NULL;
-+
-+	mutex_lock(&cache_mutex);
-+
-+	/*
-+	 * If there's another event in this group...
-+	 */
-+	if (!list_empty(&event->hw.cqm_group_entry)) {
-+		group_other = list_first_entry(&event->hw.cqm_group_entry,
-+					       struct perf_event,
-+					       hw.cqm_group_entry);
-+		list_del(&event->hw.cqm_group_entry);
-+	}
-+
-+	/*
-+	 * And we're the group leader..
-+	 */
-+	if (!list_empty(&event->hw.cqm_groups_entry)) {
-+		/*
-+		 * If there was a group_other, make that leader, otherwise
-+		 * destroy the group and return the RMID.
-+		 */
-+		if (group_other) {
-+			list_replace(&event->hw.cqm_groups_entry,
-+				     &group_other->hw.cqm_groups_entry);
-+		} else {
-+			int rmid = event->hw.cqm_rmid;
-+			__put_rmid(rmid);
-+			list_del(&event->hw.cqm_groups_entry);
-+		}
-+	}
-+
-+	mutex_unlock(&cache_mutex);
-+}
-+
-+static struct pmu intel_cqm_pmu;
 +
 +/*
-+ * XXX there's a bit of a problem in that we cannot simply do the one
-+ * event per node as one would want, since that one event would one get
-+ * scheduled on the one cpu. But we want to 'schedule' the RMID on all
-+ * CPUs.
-+ *
-+ * This means we want events for each CPU, however, that generates a lot
-+ * of duplicate values out to userspace -- this is not to be helped
-+ * unless we want to change the core code in some way. Fore more info,
-+ * see intel_cqm_event_read().
++ * Deallocate the RMIDs from any events that conflict with @event, and
++ * place them on the back of the group list.
 + */
-+static int intel_cqm_event_init(struct perf_event *event)
++static void intel_cqm_sched_out_events(struct perf_event *event)
 +{
-+	struct perf_event *group = NULL;
-+	int err;
++	struct perf_event *group, *g;
++	unsigned int rmid;
+ 
+-	return rotor;
++	lockdep_assert_held(&cache_mutex);
 +
-+	if (event->attr.type != intel_cqm_pmu.type)
-+		return -ENOENT;
-+
-+	if (event->attr.config & ~QOS_EVENT_MASK)
-+		return -EINVAL;
-+
-+	if (event->cpu == -1)
-+		return -EINVAL;
-+
-+	/* unsupported modes and filters */
-+	if (event->attr.exclude_user   ||
-+	    event->attr.exclude_kernel ||
-+	    event->attr.exclude_hv     ||
-+	    event->attr.exclude_idle   ||
-+	    event->attr.exclude_host   ||
-+	    event->attr.exclude_guest  ||
-+	    event->attr.sample_period) /* no sampling */
-+		return -EINVAL;
-+
-+	INIT_LIST_HEAD(&event->hw.cqm_group_entry);
-+	INIT_LIST_HEAD(&event->hw.cqm_groups_entry);
-+
-+	event->destroy = intel_cqm_event_destroy;
-+
-+	mutex_lock(&cache_mutex);
-+
-+	err = intel_cqm_setup_event(event, &group); /* will also set rmid */
-+	if (err)
-+		goto out;
-+
-+	if (group) {
-+		list_add_tail(&event->hw.cqm_group_entry,
-+			      &group->hw.cqm_group_entry);
-+	} else {
-+		list_add_tail(&event->hw.cqm_groups_entry,
-+			      &cache_groups);
-+	}
-+
-+out:
-+	mutex_unlock(&cache_mutex);
-+	return err;
-+}
-+
-+EVENT_ATTR_STR(llc_occupancy, intel_cqm_llc, "event=0x01");
-+EVENT_ATTR_STR(llc_occupancy.per-pkg, intel_cqm_llc_pkg, "1");
-+EVENT_ATTR_STR(llc_occupancy.unit, intel_cqm_llc_unit, "Bytes");
-+EVENT_ATTR_STR(llc_occupancy.scale, intel_cqm_llc_scale, NULL);
-+EVENT_ATTR_STR(llc_occupancy.snapshot, intel_cqm_llc_snapshot, "1");
-+
-+static struct attribute *intel_cqm_events_attr[] = {
-+	EVENT_PTR(intel_cqm_llc),
-+	EVENT_PTR(intel_cqm_llc_pkg),
-+	EVENT_PTR(intel_cqm_llc_unit),
-+	EVENT_PTR(intel_cqm_llc_scale),
-+	EVENT_PTR(intel_cqm_llc_snapshot),
-+	NULL,
-+};
-+
-+static struct attribute_group intel_cqm_events_group = {
-+	.name = "events",
-+	.attrs = intel_cqm_events_attr,
-+};
-+
-+PMU_FORMAT_ATTR(event, "config:0-7");
-+static struct attribute *intel_cqm_formats_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group intel_cqm_format_group = {
-+	.name = "format",
-+	.attrs = intel_cqm_formats_attr,
-+};
-+
-+static const struct attribute_group *intel_cqm_attr_groups[] = {
-+	&intel_cqm_events_group,
-+	&intel_cqm_format_group,
-+	NULL,
-+};
-+
-+static struct pmu intel_cqm_pmu = {
-+	.attr_groups	= intel_cqm_attr_groups,
-+	.task_ctx_nr	= perf_sw_context,
-+	.event_init	= intel_cqm_event_init,
-+	.add		= intel_cqm_event_add,
-+	.del		= intel_cqm_event_del,
-+	.start		= intel_cqm_event_start,
-+	.stop		= intel_cqm_event_stop,
-+	.read		= intel_cqm_event_read,
-+};
-+
-+static inline void cqm_pick_event_reader(int cpu)
-+{
-+	int phys_id = topology_physical_package_id(cpu);
-+	int i;
-+
-+	for_each_cpu(i, &cqm_cpumask) {
-+		if (phys_id == topology_physical_package_id(i))
-+			return;	/* already got reader for this socket */
-+	}
-+
-+	cpumask_set_cpu(cpu, &cqm_cpumask);
-+}
-+
-+static void intel_cqm_cpu_prepare(unsigned int cpu)
-+{
-+	struct intel_cqm_state *state = &per_cpu(cqm_state, cpu);
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+
-+	raw_spin_lock_init(&state->lock);
-+	state->rmid = 0;
-+
-+	WARN_ON(c->x86_cache_max_rmid != cqm_max_rmid);
-+	WARN_ON(c->x86_cache_occ_scale != cqm_l3_scale);
-+}
-+
-+static void intel_cqm_cpu_exit(unsigned int cpu)
-+{
-+	int phys_id = topology_physical_package_id(cpu);
-+	int i;
-+
-+	/*
-+	 * Is @cpu a designated cqm reader?
-+	 */
-+	if (!cpumask_test_and_clear_cpu(cpu, &cqm_cpumask))
-+		return;
-+
-+	for_each_online_cpu(i) {
-+		if (i == cpu)
++	list_for_each_entry_safe(group, g, &cache_groups, hw.cqm_groups_entry) {
++		if (group == event)
 +			continue;
 +
-+		if (phys_id == topology_physical_package_id(i)) {
-+			cpumask_set_cpu(i, &cqm_cpumask);
-+			break;
-+		}
++		rmid = group->hw.cqm_rmid;
++
++		/*
++		 * Skip events that don't have a valid RMID.
++		 */
++		if (!__rmid_valid(rmid))
++			continue;
++
++		/*
++		 * No conflict? No problem! Leave the event alone.
++		 */
++		if (!__conflict_event(group, event))
++			continue;
++
++		intel_cqm_xchg_rmid(group, INVALID_RMID);
++		__put_rmid(rmid);
++
++		list_move_tail(&group->hw.cqm_groups_entry, &cache_groups);
 +	}
-+}
+ }
+ 
+ /*
+  * Attempt to rotate the groups and assign new RMIDs.
+  *
++ * We rotate for two reasons,
++ *   1. To handle the scheduling of conflicting events
++ *   2. To recycle RMIDs
++ *
+  * Rotating RMIDs is complicated because the hardware doesn't give us
+  * any clues.
+  *
+@@ -644,9 +683,8 @@ __intel_cqm_pick_and_rotate(void)
+  */
+ static bool __intel_cqm_rmid_rotate(void)
+ {
+-	struct perf_event *group, *rotor, *start = NULL;
++	struct perf_event *group, *start = NULL;
+ 	unsigned int nr_needed = 0;
+-	unsigned int rmid;
+ 	bool rotated = false;
+ 	bool available;
+ 
+@@ -679,7 +717,9 @@ again:
+ 		goto stabilize;
+ 
+ 	/*
+-	 * We have more event groups without RMIDs than available RMIDs.
++	 * We have more event groups without RMIDs than available RMIDs,
++	 * or we have event groups that conflict with the ones currently
++	 * scheduled.
+ 	 *
+ 	 * We force deallocate the rmid of the group at the head of
+ 	 * cache_groups. The first event group without an RMID then gets
+@@ -689,15 +729,7 @@ again:
+ 	 * Rotate the cache_groups list so the previous head is now the
+ 	 * tail.
+ 	 */
+-	rotor = __intel_cqm_pick_and_rotate();
+-	rmid = intel_cqm_xchg_rmid(rotor, INVALID_RMID);
+-
+-	/*
+-	 * The group at the front of the list should always have a valid
+-	 * RMID. If it doesn't then no groups have RMIDs assigned.
+-	 */
+-	if (!__rmid_valid(rmid))
+-		goto stabilize;
++	__intel_cqm_pick_and_rotate(start);
+ 
+ 	/*
+ 	 * If the rotation is going to succeed, reduce the threshold so
+@@ -705,14 +737,14 @@ again:
+ 	 */
+ 	if (__rmid_valid(intel_cqm_rotation_rmid)) {
+ 		intel_cqm_xchg_rmid(start, intel_cqm_rotation_rmid);
+-		intel_cqm_rotation_rmid = INVALID_RMID;
++		intel_cqm_rotation_rmid = __get_rmid();
 +
-+static int intel_cqm_cpu_notifier(struct notifier_block *nb,
-+				  unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu  = (unsigned long)hcpu;
++		intel_cqm_sched_out_events(start);
+ 
+ 		if (__intel_cqm_threshold)
+ 			__intel_cqm_threshold--;
+ 	}
+ 
+-	__put_rmid(rmid);
+-
+ 	rotated = true;
+ 
+ stabilize:
+@@ -760,25 +792,37 @@ static void intel_cqm_rmid_rotate(struct work_struct *work)
+  *
+  * If we're part of a group, we use the group's RMID.
+  */
+-static int intel_cqm_setup_event(struct perf_event *event,
+-				 struct perf_event **group)
++static void intel_cqm_setup_event(struct perf_event *event,
++				  struct perf_event **group)
+ {
+ 	struct perf_event *iter;
++	unsigned int rmid;
++	bool conflict = false;
+ 
+ 	list_for_each_entry(iter, &cache_groups, hw.cqm_groups_entry) {
++		rmid = iter->hw.cqm_rmid;
 +
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
-+		intel_cqm_cpu_prepare(cpu);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+		intel_cqm_cpu_exit(cpu);
-+		break;
-+	case CPU_STARTING:
-+		cqm_pick_event_reader(cpu);
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static const struct x86_cpu_id intel_cqm_match[] = {
-+	{ .vendor = X86_VENDOR_INTEL, .feature = X86_FEATURE_CQM_OCCUP_LLC },
-+	{}
-+};
-+
-+static int __init intel_cqm_init(void)
-+{
-+	char *str, scale[20];
-+	int i, cpu, ret;
-+
-+	if (!x86_match_cpu(intel_cqm_match))
-+		return -ENODEV;
-+
-+	cqm_l3_scale = boot_cpu_data.x86_cache_occ_scale;
-+
-+	/*
-+	 * It's possible that not all resources support the same number
-+	 * of RMIDs. Instead of making scheduling much more complicated
-+	 * (where we have to match a task's RMID to a cpu that supports
-+	 * that many RMIDs) just find the minimum RMIDs supported across
-+	 * all cpus.
-+	 *
-+	 * Also, check that the scales match on all cpus.
-+	 */
-+	cpu_notifier_register_begin();
-+
-+	for_each_online_cpu(cpu) {
-+		struct cpuinfo_x86 *c = &cpu_data(cpu);
-+
-+		if (c->x86_cache_max_rmid < cqm_max_rmid)
-+			cqm_max_rmid = c->x86_cache_max_rmid;
-+
-+		if (c->x86_cache_occ_scale != cqm_l3_scale) {
-+			pr_err("Multiple LLC scale values, disabling\n");
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
-+
-+	snprintf(scale, sizeof(scale), "%u", cqm_l3_scale);
-+	str = kstrdup(scale, GFP_KERNEL);
-+	if (!str) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	event_attr_intel_cqm_llc_scale.event_str = str;
-+
-+	ret = intel_cqm_setup_rmid_cache();
-+	if (ret)
-+		goto out;
-+
-+	for_each_online_cpu(i) {
-+		intel_cqm_cpu_prepare(i);
-+		cqm_pick_event_reader(i);
-+	}
-+
-+	__perf_cpu_notifier(intel_cqm_cpu_notifier);
-+
-+	ret = perf_pmu_register(&intel_cqm_pmu, "intel_cqm", -1);
-+
-+	if (ret)
-+		pr_err("Intel CQM perf registration failed: %d\n", ret);
+ 		if (__match_event(iter, event)) {
+ 			/* All tasks in a group share an RMID */
+-			event->hw.cqm_rmid = iter->hw.cqm_rmid;
++			event->hw.cqm_rmid = rmid;
+ 			*group = iter;
+-			return 0;
++			return;
+ 		}
+ 
+-		if (__conflict_event(iter, event))
+-			return -EBUSY;
++		/*
++		 * We only care about conflicts for events that are
++		 * actually scheduled in (and hence have a valid RMID).
++		 */
++		if (__conflict_event(iter, event) && __rmid_valid(rmid))
++			conflict = true;
+ 	}
+ 
+-	event->hw.cqm_rmid = __get_rmid();
+-	return 0;
++	if (conflict)
++		rmid = INVALID_RMID;
 +	else
-+		pr_info("Intel CQM monitoring enabled\n");
++		rmid = __get_rmid();
 +
-+out:
-+	cpu_notifier_register_done();
-+
-+	return ret;
-+}
-+device_initcall(intel_cqm_init);
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 1bf06b6fd5dc..50ceb0665cda 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -128,6 +128,13 @@ struct hw_perf_event {
- 			/* for tp_event->class */
- 			struct list_head	tp_list;
- 		};
-+		struct { /* intel_cqm */
-+			int			cqm_state;
-+			int			cqm_rmid;
-+			struct list_head	cqm_events_entry;
-+			struct list_head	cqm_groups_entry;
-+			struct list_head	cqm_group_entry;
-+		};
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 		struct { /* breakpoint */
- 			/*
++	event->hw.cqm_rmid = rmid;
+ }
+ 
+ static void intel_cqm_event_read(struct perf_event *event)
+@@ -998,7 +1042,6 @@ static int intel_cqm_event_init(struct perf_event *event)
+ {
+ 	struct perf_event *group = NULL;
+ 	bool rotate = false;
+-	int err;
+ 
+ 	if (event->attr.type != intel_cqm_pmu.type)
+ 		return -ENOENT;
+@@ -1024,9 +1067,7 @@ static int intel_cqm_event_init(struct perf_event *event)
+ 	mutex_lock(&cache_mutex);
+ 
+ 	/* Will also set rmid */
+-	err = intel_cqm_setup_event(event, &group);
+-	if (err)
+-		goto out;
++	intel_cqm_setup_event(event, &group);
+ 
+ 	if (group) {
+ 		list_add_tail(&event->hw.cqm_group_entry,
+@@ -1046,13 +1087,12 @@ static int intel_cqm_event_init(struct perf_event *event)
+ 			rotate = true;
+ 	}
+ 
+-out:
+ 	mutex_unlock(&cache_mutex);
+ 
+ 	if (rotate)
+ 		schedule_delayed_work(&intel_cqm_rmid_work, 0);
+ 
+-	return err;
++	return 0;
+ }
+ 
+ EVENT_ATTR_STR(llc_occupancy, intel_cqm_llc, "event=0x01");
 -- 
 1.9.3
 
