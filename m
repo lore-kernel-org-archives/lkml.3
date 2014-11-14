@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbaKNHBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 02:01:06 -0500
-Received: from ozlabs.org ([103.22.144.67]:44892 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392AbaKNHBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 02:01:03 -0500
-Date: Fri, 14 Nov 2014 18:00:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: linux-next: manual merge of the scsi tree with the usb tree
-Message-ID: <20141114180054.77fbbc7b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1754548AbaKNHBg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 02:01:36 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:49986 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754333AbaKNHBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 02:01:34 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/RLU61p/c5uqQ3RrTNO04.PU"; protocol="application/pgp-signature"
+In-Reply-To: <20141114060848.GB12682@linux.vnet.ibm.com>
+References: <cover.1415917623.git.luto@amacapital.net> <2beb5abca257e5b5f37420f5d85361e5e197824b.1415917623.git.luto@amacapital.net>
+ <20141114060848.GB12682@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Nov 2014 23:01:12 -0800
+Message-ID: <CALCETrWYCX28GwAw=D1F862zjyp_Srhc=Bb5E19m=VCo6VLnZA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] uprobes, x86: Fix _TIF_UPROBE vs _TIF_NOTIFY_RESUME
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/RLU61p/c5uqQ3RrTNO04.PU
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 13, 2014 at 10:08 PM, Srikar Dronamraju
+<srikar@linux.vnet.ibm.com> wrote:
+> * Andy Lutomirski <luto@amacapital.net> [2014-11-13 14:31:21]:
+>
+>> x86 call do_notify_resume on paranoid returns if TIF_UPROBE is set
+>> but not on non-paranoid returns.  I suspect that this is a mistake
+>> and that the code only works because int3 is paranoid.
+>>
+>> Setting _TIF_NOTIFY_RESUME in the uprobe code was probably a
+>> workaround for the x86 bug.  With that bug fixed, we can remove
+>
+>> _TIF_NOTIFY_RESUME from the uprobes code.
+>>
+>> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>> Reported-by: Oleg Nesterov <oleg@redhat.com>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  arch/x86/include/asm/thread_info.h | 2 +-
+>>  kernel/events/uprobes.c            | 1 -
+>>  2 files changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+>> index 854053889d4d..547e344a6dc6 100644
+>> --- a/arch/x86/include/asm/thread_info.h
+>> +++ b/arch/x86/include/asm/thread_info.h
+>> @@ -141,7 +141,7 @@ struct thread_info {
+>>  /* Only used for 64 bit */
+>>  #define _TIF_DO_NOTIFY_MASK                                          \
+>>       (_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |       \
+>> -      _TIF_USER_RETURN_NOTIFY)
+>> +      _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE)
+>
+>
+> The comment above says only for 64 bit. So would this still work for
+> i386?
+>
 
-Hi James,
+i386 seems to look at _TIF_WORK_MASK (which includes _TIF_UPROBE) for
+everything except syscalls and at _TIF_WORK_SYSCALL_EXIT for syscall
+return (which does not include _TIF_UPROBE).  Is that okay?
 
-Today's linux-next merge of the scsi tree got a conflict in
-drivers/usb/storage/uas.c between commit e28e2f2f7c42 ("uas: Make uas
-work with blk-mq") from the usb tree and commits 125c99bc8b6b ("scsi:
-add new scsi-command flag for tagged commands"), abd0c533e377
-("scsi: remove ordered_tag host template field") and 2ecb204d07ac
-("scsi: always assign block layer tags if enabled") from the scsi tree.
+--Andy
 
-I fixed it up (maybe, please check - see below) and can carry the fix
-as necessary (no action is required).
+>>
+>>  /* flags to check in __switch_to() */
+>>  #define _TIF_WORK_CTXSW                                                      \
+>> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+>> index 1d0af8a2c646..ed8f2cde34c5 100644
+>> --- a/kernel/events/uprobes.c
+>> +++ b/kernel/events/uprobes.c
+>> @@ -1640,7 +1640,6 @@ bool uprobe_deny_signal(void)
+>>               if (__fatal_signal_pending(t) || arch_uprobe_xol_was_trapped(t)) {
+>>                       utask->state = UTASK_SSTEP_TRAPPED;
+>>                       set_tsk_thread_flag(t, TIF_UPROBE);
+>> -                     set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
+>>               }
+>>       }
+>>
+>> --
+>> 1.9.3
+>>
+>
+> --
+> Thanks and Regards
+> Srikar Dronamraju
+>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/usb/storage/uas.c
-index 004ebc12bc21,33f211b56a42..000000000000
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@@ -806,7 -816,14 +805,7 @@@ static struct scsi_host_template uas_ho
-  	.sg_tablesize =3D SG_NONE,
-  	.cmd_per_lun =3D 1,	/* until we override it */
-  	.skip_settle_delay =3D 1,
-- 	.ordered_tag =3D 1,
- -
- -	/*
- -	 * The uas drivers expects tags not to be bigger than the maximum
- -	 * per-device queue depth, which is not true with the blk-mq tag
- -	 * allocator.
- -	 */
- -	.disable_blk_mq =3D true,
-+ 	.use_blk_tags =3D 1,
-  };
- =20
-  #define UNUSUAL_DEV(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax, \
 
---Sig_/RLU61p/c5uqQ3RrTNO04.PU
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUZaitAAoJEMDTa8Ir7ZwVfhAQAIXnmGYFDuRRNsA1By3WaWpW
-coUAbNQd54Avb8EAh0IuPkVNeL1G+wVwZmBP03KWrV9onKvlYJ3UCWD+VFKEuwAX
-jJL4GC2nHKRebH4CRVYIa1BFjjJ3wYILVozqIrhmkZ9nwD0VHtx7T6gfOxbXuSvX
-DChYNYQ7Kvzh7X64nnAdcZr/zv+RCTeRVfbdHwwxrQ83fTORkLKC6aW1E5oym7gR
-dzEHU4yPTYiF3tnbRy8pDrgtnTcEaju7dcNdWYzoCaoJPfk6DhrgW2ez6Do33bju
-1Vnv9KkSyhi6/H0s/AD9C/kZOv1LB/yE4GPhfPHR6pnSgrlqKPfkiAQYTA5pfkL2
-snMphZtZYRfz6dGCHccTLaIN3N3O5Mnk6N0K7TfPsmvuNUAx060E+H1VPO0skc5s
-rX89UgPi1BSG7IJFCjjwVijdfdAKMe4AKUGU7XpM7fWUBI5epHjfyPgHPlZ4enMV
-zsZuC9ouudVzTTwYlPjxL4Q/eqbs5A5hpUDAB4dnw2181ledYC3zuT4JXAgJ2AMn
-j2N+0QfnUwcw1MVH1cm34VdZ8Ja9uaOTHacCkygi5q/iIQIx7ZwMSDv+L12vxMqb
-wlsC5a90tqpYsyn6p757FvICfb3ulg22HFLB1l8FlOCsDdV0GkMcIzFzU5H/+nqa
-bk9RYxKVXDid9Fxajx9x
-=49dI
------END PGP SIGNATURE-----
-
---Sig_/RLU61p/c5uqQ3RrTNO04.PU--
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
