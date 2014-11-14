@@ -1,109 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935149AbaKNLIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:08:51 -0500
-Received: from regular1.263xmail.com ([211.150.99.132]:44901 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934378AbaKNLIu (ORCPT
+	id S965174AbaKNLLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:11:00 -0500
+Received: from lb1-smtp-cloud2.xs4all.net ([194.109.24.21]:40494 "EHLO
+	lb1-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934378AbaKNLK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:08:50 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: l.stach@pengutronix.de
-X-SENDER-IP: 121.15.173.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <e4f39ad82bd16356d96a6f0c5b23a36c>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <5465E2BB.1070507@rock-chips.com>
-Date: Fri, 14 Nov 2014 19:08:43 +0800
-From: Andy Yan <andy.yan@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 14 Nov 2014 06:10:58 -0500
+Message-ID: <5465E337.6020808@xs4all.nl>
+Date: Fri, 14 Nov 2014 12:10:47 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>, airlied@linux.ie,
-        heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-CC: Mark Rutland <mark.rutland@arm.com>, dri-devel@lists.freedesktop.org,
-        ykk@rock-chips.com, devel@driverdev.osuosl.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Airlie <airlied@redhat.com>, jay.xu@rock-chips.com,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Sean Paul <seanpaul@chromium.org>, mark.yao@rock-chips.com,
-        Josh Boyer <jwboyer@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, djkurtz@google.com,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCH v10 05/11] drm: bridge/dw_hdmi:split some phy configuration
- to platform driver
-References: <1415934583-16290-1-git-send-email-andy.yan@rock-chips.com> <1415935631-16826-1-git-send-email-andy.yan@rock-chips.com> <5465D73C.9030507@imgtec.com> <5465DF0C.50301@rock-chips.com> <5465DFB2.8060601@imgtec.com>
-In-Reply-To: <5465DFB2.8060601@imgtec.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Andrey Utkin <andrey.utkin@corp.bluecherry.net>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+CC: m.chehab@samsung.com, hans.verkuil@cisco.com
+Subject: Re: [PATCH] solo6x10: just pass frame motion flag from hardware,
+ drop additional handling as complicated and unstable
+References: <1415218274-28132-1-git-send-email-andrey.utkin@corp.bluecherry.net>
+In-Reply-To: <1415218274-28132-1-git-send-email-andrey.utkin@corp.bluecherry.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew,
 
-On 2014年11月14日 18:55, Zubair Lutfullah Kakakhel wrote:
->
-> On 14/11/14 10:53, Andy Yan wrote:
->> Hi ZubairLK:
->>     Thanks for your review.
->> On 2014年11月14日 18:19, Zubair Lutfullah Kakakhel wrote:
->>> Hi Andy,
->>>
->>> Nice work on this patch series. Its getting better and better :).
->>>
->>> On 14/11/14 03:27, Andy Yan wrote:
->>>> hdmi phy clock symbol and transmission termination value
->>>> can adjust platform specific to get the best SI
->>>                          ^Is this signal integrity?
->>     yes , SI  is signal integrity, such as eye diagram measurement
->>> Are these two disjoint features in separate patches?
->>>
->>>> also add mode_valid interface for some platform may not support
->>>> all the display mode
->>> Sounds like another separate patch to me. :)
->>     they can seperate
->>> Also, This series is becoming quite large. With major changes and fixes mixed together.
->>>
->>> Patch 3 splits imx-drm.
->>> Patch 4 moves dw-drm out of imx-drm folder.
->>> Patch 7 adds binding
->>> Patch 9 converts to drm bridge.
->>>
->>> Can these be placed together easily?
->>> And in the start. i.e. patch 1, 2, 3, 4,
->>>
->>> Then all fixes etc can come afterwards?
->>>
->>> It helps when checking histories later as to how a driver was made and how fixes happened.
->>>
->>> Especially when file moves happen..
->>    Do you mean we can rearrange the patch series?
->>    put patch 3, 4 ,7, 9 together  one bye one
->>    than followed by the fixes patches  5 ,6, 8, 11 ?
-> Yes. Rearrange so that the split imx-drm/imx-hdmi and conversion to drm-bridge is at the start of the series.
-> Then the rest are bug fixes and feature additions.
-   Can I put patch#1(make checkpatch happy) and patch#2 (defer probe) as 
-the first two patch.
-   Daniel from Google chromium think it's better to put the two slightly 
-changes in the front for easy review.
-> Cheers,
-> ZubairLK
->
-> _______________________________________________
-> Linux-rockchip mailing list
-> Linux-rockchip@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rockchip
+FYI: I need to test this myself and understand it better, so it will take some
+time before I get to this. It is in my TODO list, so it won't be forgotten.
 
+Regards,
+
+	Hans
+
+On 11/05/2014 09:11 PM, Andrey Utkin wrote:
+> Dropping code (introduced in 316d9e84a72069e04e483de0d5934c1d75f6a44c)
+> which intends to make raising of motion events more "smooth"(?).
+> 
+> It made motion event never appear in my installation.
+> That code is complicated, so I couldn't figure out quickly how to fix
+> it, so dropping it seems better to me.
+> 
+> Another justification is that anyway application would implement
+> "motion signal stabilization" if required, it is not necessarily kernel
+> driver's job.
+> 
+> Signed-off-by: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
+> ---
+>  drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c | 30 +-------------------------
+>  drivers/media/pci/solo6x10/solo6x10.h          |  2 --
+>  2 files changed, 1 insertion(+), 31 deletions(-)
+> 
+> diff --git a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+> index 30e09d9..866f7b3 100644
+> --- a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+> +++ b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+> @@ -239,8 +239,6 @@ static int solo_enc_on(struct solo_enc_dev *solo_enc)
+>  	if (solo_enc->bw_weight > solo_dev->enc_bw_remain)
+>  		return -EBUSY;
+>  	solo_enc->sequence = 0;
+> -	solo_enc->motion_last_state = false;
+> -	solo_enc->frames_since_last_motion = 0;
+>  	solo_dev->enc_bw_remain -= solo_enc->bw_weight;
+>  
+>  	if (solo_enc->type == SOLO_ENC_TYPE_EXT)
+> @@ -555,36 +553,12 @@ static int solo_enc_fillbuf(struct solo_enc_dev *solo_enc,
+>  	}
+>  
+>  	if (!ret) {
+> -		bool send_event = false;
+> -
+>  		vb->v4l2_buf.sequence = solo_enc->sequence++;
+>  		vb->v4l2_buf.timestamp.tv_sec = vop_sec(vh);
+>  		vb->v4l2_buf.timestamp.tv_usec = vop_usec(vh);
+>  
+>  		/* Check for motion flags */
+> -		if (solo_is_motion_on(solo_enc)) {
+> -			/* It takes a few frames for the hardware to detect
+> -			 * motion. Once it does it clears the motion detection
+> -			 * register and it takes again a few frames before
+> -			 * motion is seen. This means in practice that when the
+> -			 * motion field is 1, it will go back to 0 for the next
+> -			 * frame. This leads to motion detection event being
+> -			 * sent all the time, which is not what we want.
+> -			 * Instead wait a few frames before deciding that the
+> -			 * motion has halted. After some experimentation it
+> -			 * turns out that waiting for 5 frames works well.
+> -			 */
+> -			if (enc_buf->motion == 0 &&
+> -			    solo_enc->motion_last_state &&
+> -			    solo_enc->frames_since_last_motion++ > 5)
+> -				send_event = true;
+> -			else if (enc_buf->motion) {
+> -				solo_enc->frames_since_last_motion = 0;
+> -				send_event = !solo_enc->motion_last_state;
+> -			}
+> -		}
+> -
+> -		if (send_event) {
+> +		if (solo_is_motion_on(solo_enc) && enc_buf->motion) {
+>  			struct v4l2_event ev = {
+>  				.type = V4L2_EVENT_MOTION_DET,
+>  				.u.motion_det = {
+> @@ -594,8 +568,6 @@ static int solo_enc_fillbuf(struct solo_enc_dev *solo_enc,
+>  				},
+>  			};
+>  
+> -			solo_enc->motion_last_state = enc_buf->motion;
+> -			solo_enc->frames_since_last_motion = 0;
+>  			v4l2_event_queue(solo_enc->vfd, &ev);
+>  		}
+>  	}
+> diff --git a/drivers/media/pci/solo6x10/solo6x10.h b/drivers/media/pci/solo6x10/solo6x10.h
+> index 72017b7..dc503fd 100644
+> --- a/drivers/media/pci/solo6x10/solo6x10.h
+> +++ b/drivers/media/pci/solo6x10/solo6x10.h
+> @@ -159,8 +159,6 @@ struct solo_enc_dev {
+>  	u16			motion_thresh;
+>  	bool			motion_global;
+>  	bool			motion_enabled;
+> -	bool			motion_last_state;
+> -	u8			frames_since_last_motion;
+>  	u16			width;
+>  	u16			height;
+>  
+> 
 
