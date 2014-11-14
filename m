@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161070AbaKNNT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:19:28 -0500
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:52831 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161043AbaKNNT0 (ORCPT
+	id S965530AbaKNNU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:20:56 -0500
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:60915 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964865AbaKNNUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:19:26 -0500
-X-Greylist: delayed 1550 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 08:19:25 EST
-X-SENDER-IP: [213.113.165.61]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuYTAIT6ZVTVcaU9PGdsb2JhbABbgw0BAYEtgjZQhDe2DY8th12BIRcBAQEBAQEFAQEBATg7hCwPASMTAQ8YEQwCJgIvDAoaARKIRQG6SJZBAQsgGIEVj3WCfoFUBaAAhmOKWYgHPDCCSwEBAQ
-X-IPAS-Result: AuYTAIT6ZVTVcaU9PGdsb2JhbABbgw0BAYEtgjZQhDe2DY8th12BIRcBAQEBAQEFAQEBATg7hCwPASMTAQ8YEQwCJgIvDAoaARKIRQG6SJZBAQsgGIEVj3WCfoFUBaAAhmOKWYgHPDCCSwEBAQ
-X-IronPort-AV: E=Sophos;i="5.07,385,1413237600"; 
-   d="scan'208";a="816689530"
-From: Henrik Rydberg <rydberg@euromail.se>
-To: Peter Jones <pjones@redhat.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-        =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Subject: [PATCH] x86, ia64: Do not lose track of the EFI default VGA device
-Date: Fri, 14 Nov 2014 13:53:30 +0100
-Message-Id: <1415969610-1469-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 2.1.3
+	Fri, 14 Nov 2014 08:20:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAD6G_RREb58La-pC48BHW+9r9oruUXnCrk-RS8LaKSw6y9jgxg@mail.gmail.com>
+References: <CAD6G_RREb58La-pC48BHW+9r9oruUXnCrk-RS8LaKSw6y9jgxg@mail.gmail.com>
+From: Roger Heflin <rogerheflin@gmail.com>
+Date: Fri, 14 Nov 2014 07:20:33 -0600
+Message-ID: <CAAMCDec3EJ4e=bDKwH3i0PL655yrOQkBu_typihYMGD3GHZiQA@mail.gmail.com>
+Subject: Re: read performance is too low compared to write - /dev/sda1
+To: Jagan Teki <jagannadh.teki@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, davem@davemloft.net,
+        linux-ide <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 20cde694027e ("x86, ia64: Move EFI_FB
-vga_default_device() initialization to pci_vga_fixup()") in the 3.17
-merge window, the EFI framebuffer depends on the VGA arbitration
-layer. However, the configuration does not reflect this, which leads
-to a hard-to-find bug when FB_EFI is configured without VGA_ARB. Add a
-select clause to remedy this.
+If you are robocoping small files you will hit other limits.
 
-Cc: Bruno Prémont <bonbons@linux-vserver.org>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Peter,
+Best I have seen with small files is around 30 files/second, and that
+involves multiple copies going on.   Remember with a small files there
+are several reads and writes that need to be done to complete a create
+of a small file and each of these take time.    30 files/second ~ 30ms
+per file, not that bad considering that on a real spinning disk a
+single read/write op is 5-10ms, and creating the file entry, copying
+data and closing the file takes several operations (at least create
+file entry, write small amount of data, update file entry
+date/time/info).     If the write in the middle is not a significant
+amount of data, the 2 extra ops are what hurts.
 
-I stumbled upon this bug from the 3.17 merge window when updating to
-Linus's 3.18 git head yesterday. The patch has been tested on two
-different EFI machines; one that needs the patch and one that does not.
-
-Thanks,
-Henrik
-
- drivers/video/fbdev/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-index c7bf606..81b21bc 100644
---- a/drivers/video/fbdev/Kconfig
-+++ b/drivers/video/fbdev/Kconfig
-@@ -761,6 +761,7 @@ config FB_EFI
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
-+	select VGA_ARB
- 	help
- 	  This is the EFI frame buffer device driver. If the firmware on
- 	  your platform is EFI 1.10 or UEFI 2.0, select Y to add support for
--- 
-2.1.3
-
+On Fri, Nov 14, 2014 at 6:55 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+> Hi,
+>
+> I'm doing a performance testing on my bench ARM box.
+>
+> 1. dd test: I have validate the read and write by mounting /dev/sda1
+> with ext4 filesystem,
+>     able to get the good performance numbers where read is high
+> compared to write
+>
+> 2.  robocopy test:
+>      - mkfs.ext4 /dev/sda1
+>      - mount /dev/sda1 /media/disk
+>      - << configured samba >>
+>      - Mapped the /media/disk on windows
+>      - login on the mapped driver in windows
+>      - did a robocopy test, where write got 84MBps and read 14MBps
+>
+> read performance is too slow when compared to write in robocopy case.
+> Can anyone help me out, how to debug this further.
+>
+> thanks!
+> --
+> Jagan.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
