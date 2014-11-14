@@ -1,87 +1,27 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1751850AbaKJHLM (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Mon, 10 Nov 2014 02:11:12 -0500
-Received: from vps91566031.123-vps.co.uk ([212.48.66.191]:58700 "EHLO
-        vps91566031.123-vps.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751747AbaKJHLL (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Mon, 10 Nov 2014 02:11:11 -0500
-To: jaracee@msn.com, espy742006@yahoo.com,
-        linux-kernel@vger.kernel.org, teddybyrd@bellsouth.net,
-        japkaw@aol.com
-Subject: A recommendation from Support
-X-PHP-Originating-Script: 10000:tellafriend.php
-FROM: support2341@millionaire.com
-Message-Id: <20141110055620.BFF84520FD@vps91566031.123-vps.co.uk>
-Date: Mon, 10 Nov 2014 05:56:20 +0000 (GMT)
+        id S1754873AbaKNJan (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Fri, 14 Nov 2014 04:30:43 -0500
+Received: from smtp.servinco.cl ([200.68.19.167]:35988 "EHLO servinco.cl"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1754547AbaKNJak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Fri, 14 Nov 2014 04:30:40 -0500
+X-Greylist: delayed 31116 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 04:30:39 EST
+Date: Thu, 13 Nov 2014 21:50:22 -0300 (CLST)
+From: "Barr. Mark Lewis" <servinco@servinco.cl>
+Reply-To: "Barr. Mark Lewis" <barrmarklewis13@gmail.com>
+Message-ID: <7569927.1067181415926222227.JavaMail.root@mailer.servinco.cl>
+Subject: loan offer apply now at 2%, only serious replies needed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.64.134]
+X-Mailer: Zimbra 5.0.5_GA_2201.RHEL5 (zclient/5.0.5_GA_2201.RHEL5)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
 
-Hello,
 
-Hey Friend,
-
-As you know, I’m always on the lookout for 
-real ways to make decent money.       
-                                                     
-Not just a measly $20 or $30 a day; I mean real money. 
-
-$20,000 or $30,000 A DAY?!?! Now THAT is…
-
-DAMN GOOD REAL MONEY!
-
-His 6 figure bank accounts now are a pretty good 
-indicator that Trevor Haynes has figured it out.
-
-Check this out -  http://tinyurl.com/ko7bljk
-
-The Millionaire Money Machine has nothing to do with 
-eBooks, websites, T-shirts, MLM, gambling, writing, 
-flipping sites or any of that.
-
-THIS isn’t about making ten buck here or there. 
-
-It’s about making TENS OF THOUSANDS DAILY.
-
-You’ll meet one Millionaire Money Machine user who 
-banked over $30K overnight… 
-
-While he was asleep!
-
-Take a look -  http://tinyurl.com/ko7bljk  
-
-For a VERY LIMITED number, Haynes is giving away his 
-Millionaire Money Machine. No strings, No BS.
-
-But DO NOT WAIT on this!
-
-Check it out here:
-
--  http://tinyurl.com/ko7bljk
-
-
-
-
-
-
-
-
-
-NOTE: If your email account doesn't automatically turn the URL above into a link, 
-      you can copy and paste it into your browser.               
-============================================================================
-If the link is broken please use this: http://nikkanares.mmmachine.cpa.clicksure.com   
-============================================================================
-
-
-Click below to view the webpage that your friend has recommended:
-
-
-Support has used the Tell-a-Friend form to send you this link.
-
-We look forward to your visit!
-
-
+Are you in need of any type of loan? of yes, kindly contact barrmarklewis13@gmail.com for more information. Thanks
