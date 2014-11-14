@@ -1,104 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909AbaKNIwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:52:24 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:21083 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637AbaKNIun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:50:43 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-ec-5465c25f2faf
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Cc: Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v12 1/6] PM / Runtime: Add getter for querying the IRQ safe
- option
-Date: Fri, 14 Nov 2014 09:50:28 +0100
-Message-id: <1415955033-29093-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415955033-29093-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415955033-29093-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xy7rxh1JDDJq/illsnLGe1WL61AuM
-	Fqun/mW1eP3C0OLp5sdMFmeb3rBbdE5cwm4xa8peJovLu+awWXzuPcJocfsyr8XaI3fZLe6e
-	Ospmceb0JVaLCb8vsFkcXxtu8bJvP4uDoEdLcw+bx+yOmawei/e8ZPLYtKqTzePOtT1sHluu
-	trN4zL77g9Gjb8sqRo8Vq7+ze3zeJBfAFcVlk5Kak1mWWqRvl8CVselqYsE2oYqtn/pYGxh3
-	8HcxcnJICJhIXFj9nB3CFpO4cG89WxcjF4eQwFJGia6L7xlBEkICfUwSL/bYgNhsAsYSm5cv
-	ASsSEWhnluhbN5UNJMEssIhJommqIogtLBAicXDDPyYQm0VAVWL2h4fMIDavgLvE+217oLbJ
-	SZw8NpkVxOYU8JCYvHEVC8Qyd4nPl/8wT2DkXcDIsIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/
-	dxMjJMi/7GBcfMzqEKMAB6MSD69BQWqIEGtiWXFl7iFGCQ5mJRFepd1AId6UxMqq1KL8+KLS
-	nNTiQ4xMHJxSDYyhgU+uGW2pWm4dt6f+s9WbXbJz99p/SHmsyGTC+PFZuGRUxc2XrO+ll7HJ
-	sM3fwCaxb2vorJe2Bznt9GJe7zrOpvG2c9qGr7Z6ph3T/3etf/n+ltnHyX+52W5PjtUIfG9X
-	UxV/R72m/qSNmnzabAF+fq0/y6uXTr10U/yRxqqwBTeDv3aeaLBQYinOSDTUYi4qTgQAaqj0
-	glACAAA=
+	id S1754947AbaKNIwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:52:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54980 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754918AbaKNIwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 03:52:35 -0500
+Message-ID: <5465C2CF.4000902@suse.cz>
+Date: Fri, 14 Nov 2014 09:52:31 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 1/5] mm, compaction: pass classzone_idx and alloc_flags
+ to watermark checking
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-2-git-send-email-vbabka@suse.cz> <20141027064651.GA23379@js1304-P5Q-DELUXE> <544E0C43.3030009@suse.cz> <20141028071625.GB27813@js1304-P5Q-DELUXE> <5450F0CF.3030504@suse.cz> <20141031074944.GA14642@js1304-P5Q-DELUXE>
+In-Reply-To: <20141031074944.GA14642@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a simple getter pm_runtime_is_irq_safe() for querying whether runtime
-PM IRQ safe was set or not.
+On 10/31/2014 08:49 AM, Joonsoo Kim wrote:
+> On Wed, Oct 29, 2014 at 02:51:11PM +0100, Vlastimil Babka wrote:
+>> On 10/28/2014 08:16 AM, Joonsoo Kim wrote:> On Mon, Oct 27, 2014 at
+>> 10:11:31AM +0100, Vlastimil Babka wrote:
+>>
+>> I thought that the second check in compaction_suitable() makes sure
+>> of this, but now I see it's in fact not.
+>> But i'm not sure if we should just put the flags in the first check,
+>> as IMHO the flags should only affect the final high-order
+>> allocation, not also the temporary pages needed for migration?
+> 
+> I don't think so.
+> As mentioned before, if we don't have not enough freepages, compaction
+> will fail due to shortage of freepage at final high-order watermark
+> check. Maybe it failes due to not enough freepage rather than ordered
+> freepage. Proper flags and index make us avoid useless compaction so
+> I prefer put the flags in the first check.
+> 
+>>
+>> BTW now I'm not even sure that the 2UL << order part makes sense
+>> anymore. The number of pages migrated at once is always restricted
+>> by COMPACT_CLUSTER_MAX, so why would we need more than that to cover
+>> migration?
+> 
+> In fact, any values seems to be wrong. We can isolate high order freepage
+> for this temporary use. I don't have any idea what the proper value is.
+> 
+>> Also the order of checks seems wrong. It should return
+>> COMPACT_PARTIAL "If the allocation would succeed without compaction"
+>> but that only can happen after passing the check if the zone has the
+>> extra 1UL << order for migration. Do you agree?
+> 
+> Yes, agree!
+> 
+>>> I guess that __isolate_free_page() is also good candidate to need this
+>>> information in order to prevent compaction from isolating too many
+>>> freepage in low memory condition.
+>>
+>> I don't see how it would help here. It's temporary allocations for
+>> page migration. How would passing classzone_idx and alloc_flags
+>> prevent isolating too many?
+> 
+> It is temporary allocation, but, anyway, it could holds many freepage
+> in some duration. As mentioned above, if we isolate high order freepage,
+> we can hold 1MB or more freepage at once. I guess that passing flags helps
+> system stability.
 
-Various bus drivers implementing runtime PM may use choose to suspend
-differently based on IRQ safeness status of child driver (e.g. do not
-unprepare the clock if IRQ safe is not set).
+OK, here's a patch-fix to address everything discussed above. My testing
+didn't show much difference, but I know it's limited anyway.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+------8<------
+From: Vlastimil Babka <vbabka@suse.cz>
+Date: Mon, 3 Nov 2014 15:26:40 +0100
+Subject: mm-compaction-pass-classzone_idx-and-alloc_flags-to-watermark-checking-fix
+
+This patch-fix changes zone watermark checking in compaction_suitable()
+as we discussed with Joonsoo Kim. First, it moves up the watermark check for
+answering the question "does the zone need compaction at all?". Before this
+change, the check is preceded by a check that answers the question "does the
+zone have enough free pages to succeed compaction". So it might happen that
+there is already a high-order page available, but not enough pages for
+performing the compaction (which assumes extra pages for the migrations).
+Before the patch, compaction_suitable() would return COMPACT_SKIPPED which
+means "compaction cannot succeed, reclaim more", after this change it returns
+COMPACT_PARTIAL which means "compaction not needed, try allocating".
+
+Second, the check for answering "can the compaction succeed?" now also
+includes classzone_idx and alloc_flags parameters. This prevents starting
+compaction that would not lead to successful allocation due to not having
+enough free pages. The addition of extra pages for migration is left in the
+check. Although these are temporary allocations and thus should not be
+affected by alloc_flags and classzone_idx, it only matters when we are close
+to the watermark, where it does not hurt to be a bit pessimistic.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+
 ---
- Documentation/power/runtime_pm.txt | 4 ++++
- include/linux/pm_runtime.h         | 6 ++++++
- 2 files changed, 10 insertions(+)
 
-diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
-index 0e5ea26b255a..44fe1d28a163 100644
---- a/Documentation/power/runtime_pm.txt
-+++ b/Documentation/power/runtime_pm.txt
-@@ -468,6 +468,10 @@ drivers/base/power/runtime.c and include/linux/pm_runtime.h:
-     - set the power.irq_safe flag for the device, causing the runtime-PM
-       callbacks to be invoked with interrupts off
+When squashed, full changelog of the patch+fix should be:
+
+Compaction relies on zone watermark checks for decisions such as if it's
+worth to start compacting in compaction_suitable() or whether compaction
+should stop in compact_finished().  The watermark checks take
+classzone_idx and alloc_flags parameters, which are related to the memory
+allocation request.  But from the context of compaction they are currently
+passed as 0, including the direct compaction which is invoked to satisfy
+the allocation request, and could therefore know the proper values.
+
+The lack of proper values can lead to mismatch between decisions taken
+during compaction and decisions related to the allocation request.  Lack
+of proper classzone_idx value means that lowmem_reserve is not taken into
+account.  This has manifested (during recent changes to deferred
+compaction) when DMA zone was used as fallback for preferred Normal zone.
+compaction_suitable() without proper classzone_idx would think that the
+watermarks are already satisfied, but watermark check in
+get_page_from_freelist() would fail.  Because of this problem, deferring
+compaction has extra complexity that can be removed in the following
+patch.
+
+The issue (not confirmed in practice) with missing alloc_flags is opposite
+in nature.  For allocations that include ALLOC_HIGH, ALLOC_HIGHER or
+ALLOC_CMA in alloc_flags (the last includes all MOVABLE allocations on
+CMA-enabled systems) the watermark checking in compaction with 0 passed
+will be stricter than in get_page_from_freelist().  In these cases
+compaction might be running for a longer time than is really needed.
+
+Another issue compaction_suitable() is that the check for "does the zone need
+compaction at all?" comes only after the check "does the zone have enough free
+free pages to succeed compaction". The latter considers extra pages for
+migration and can therefore in some situations fail and return COMPACT_SKIPPED,
+although the high-order allocation would succeed and we should return
+COMPACT_PARTIAL.
+
+This patch fixes these problems by adding alloc_flags and classzone_idx to
+struct compact_control and related functions involved in direct compaction
+and watermark checking.  Where possible, all other callers of
+compaction_suitable() pass proper values where those are known.  This is
+currently limited to classzone_idx, which is sometimes known in kswapd
+context.  However, the direct reclaim callers should_continue_reclaim()
+and compaction_ready() do not currently know the proper values, so the
+coordination between reclaim and compaction may still not be as accurate
+as it could.  This can be fixed later, if it's shown to be an issue.
+
+Additionaly the checks in compact_suitable() are reordered to address the
+second issue described above.
+
+The effect of this patch should be slightly better high-order allocation
+success rates and/or less compaction overhead, depending on the type of
+allocations and presence of CMA.  It allows simplifying deferred
+compaction code in a followup patch.
+
+When testing with stress-highalloc, there was some slight improvement
+(which might be just due to variance) in success rates of non-THP-like
+allocations.
+
+ mm/compaction.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index ba8bdb9..f15e8e5 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1113,21 +1113,30 @@ unsigned long compaction_suitable(struct zone *zone, int order,
+ 	if (order == -1)
+ 		return COMPACT_CONTINUE;
  
-+  bool pm_runtime_is_irq_safe(struct device *dev);
-+    - return true if power.irq_safe flag was set for the device, causing
-+      the runtime-PM callbacks to be invoked with interrupts off
++	watermark = low_wmark_pages(zone);
++	/*
++	 * If watermarks for high-order allocation are already met, there
++	 * should be no need for compaction at all.
++	 */
++	if (zone_watermark_ok(zone, order, watermark, classzone_idx,
++								alloc_flags))
++		return COMPACT_PARTIAL;
 +
-   void pm_runtime_mark_last_busy(struct device *dev);
-     - set the power.last_busy field to the current time
+ 	/*
+ 	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
+ 	 * This is because during migration, copies of pages need to be
+ 	 * allocated and for a short time, the footprint is higher
+ 	 */
+-	watermark = low_wmark_pages(zone) + (2UL << order);
+-	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
++	watermark += (2UL << order);
++	if (!zone_watermark_ok(zone, 0, watermark, classzone_idx, alloc_flags))
+ 		return COMPACT_SKIPPED;
  
-diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
-index 367f49b9a1c9..44d74f0f182e 100644
---- a/include/linux/pm_runtime.h
-+++ b/include/linux/pm_runtime.h
-@@ -128,6 +128,11 @@ static inline void pm_runtime_mark_last_busy(struct device *dev)
- 	ACCESS_ONCE(dev->power.last_busy) = jiffies;
+ 	/*
+ 	 * fragmentation index determines if allocation failures are due to
+ 	 * low memory or external fragmentation
+ 	 *
+-	 * index of -1000 implies allocations might succeed depending on
+-	 * watermarks
++	 * index of -1000 would imply allocations might succeed depending on
++	 * watermarks, but we already failed the high-order watermark check
+ 	 * index towards 0 implies failure is due to lack of memory
+ 	 * index towards 1000 implies failure is due to fragmentation
+ 	 *
+@@ -1137,10 +1146,6 @@ unsigned long compaction_suitable(struct zone *zone, int order,
+ 	if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
+ 		return COMPACT_SKIPPED;
+ 
+-	if (fragindex == -1000 && zone_watermark_ok(zone, order, watermark,
+-	    classzone_idx, alloc_flags))
+-		return COMPACT_PARTIAL;
+-
+ 	return COMPACT_CONTINUE;
  }
  
-+static inline bool pm_runtime_is_irq_safe(struct device *dev)
-+{
-+	return dev->power.irq_safe;
-+}
-+
- #else /* !CONFIG_PM_RUNTIME */
- 
- static inline int __pm_runtime_idle(struct device *dev, int rpmflags)
-@@ -167,6 +172,7 @@ static inline bool pm_runtime_enabled(struct device *dev) { return false; }
- 
- static inline void pm_runtime_no_callbacks(struct device *dev) {}
- static inline void pm_runtime_irq_safe(struct device *dev) {}
-+static inline bool pm_runtime_is_irq_safe(struct device *dev) { return false; }
- 
- static inline bool pm_runtime_callbacks_present(struct device *dev) { return false; }
- static inline void pm_runtime_mark_last_busy(struct device *dev) {}
 -- 
-1.9.1
+2.1.2
+
+
 
