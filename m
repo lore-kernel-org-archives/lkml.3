@@ -1,112 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161985AbaKNVJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 16:09:26 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:53867 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754335AbaKNVJY (ORCPT
+	id S1161992AbaKNVK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 16:10:57 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:38780 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754335AbaKNVK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 16:09:24 -0500
+	Fri, 14 Nov 2014 16:10:56 -0500
+Date: Fri, 14 Nov 2014 22:10:52 +0100
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
+        p.zabel@pengutronix.de, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 08/13] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20141114211052.GA8105@kwain>
+References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1415978763-27345-9-git-send-email-antoine.tenart@free-electrons.com>
+ <20141114210832.GE16388@saruman>
 MIME-Version: 1.0
-In-Reply-To: <1415999255.29427.5.camel@theros.lm.intel.com>
-References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
- <1415731396-19364-2-git-send-email-ross.zwisler@linux.intel.com>
- <546424B1.6070205@amacapital.net> <1415999255.29427.5.camel@theros.lm.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 14 Nov 2014 13:09:02 -0800
-Message-ID: <CALCETrWS3frNU0L+=GgGV-Z0AC-Ua2fvMEseGZhB52R5BoODyg@mail.gmail.com>
-Subject: Re: [PATCH 1/6] x86: Add support for the pcommit instruction
-To: Ross Zwisler <ross.zwisler@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        H Peter Anvin <h.peter.anvin@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Airlie <airlied@linux.ie>, DRI <dri-devel@lists.freedesktop.org>,
-        X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141114210832.GE16388@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 1:07 PM, Ross Zwisler
-<ross.zwisler@linux.intel.com> wrote:
-> On Wed, 2014-11-12 at 19:25 -0800, Andy Lutomirski wrote:
->> On 11/11/2014 10:43 AM, Ross Zwisler wrote:
->> > Add support for the new pcommit instruction.  This instruction was
->> > announced in the document "Intel Architecture Instruction Set Extensions
->> > Programming Reference" with reference number 319433-022.
->> >
->> > https://software.intel.com/sites/default/files/managed/0d/53/319433-022.pdf
->> >
->> > Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
->> > Cc: H Peter Anvin <h.peter.anvin@intel.com>
->> > Cc: Ingo Molnar <mingo@kernel.org>
->> > Cc: Thomas Gleixner <tglx@linutronix.de>
->> > Cc: David Airlie <airlied@linux.ie>
->> > Cc: dri-devel@lists.freedesktop.org
->> > Cc: x86@kernel.org
->> > ---
->> >  arch/x86/include/asm/cpufeature.h    | 1 +
->> >  arch/x86/include/asm/special_insns.h | 6 ++++++
->> >  2 files changed, 7 insertions(+)
->> >
->> > diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
->> > index 0bb1335..b3e6b89 100644
->> > --- a/arch/x86/include/asm/cpufeature.h
->> > +++ b/arch/x86/include/asm/cpufeature.h
->> > @@ -225,6 +225,7 @@
->> >  #define X86_FEATURE_RDSEED ( 9*32+18) /* The RDSEED instruction */
->> >  #define X86_FEATURE_ADX            ( 9*32+19) /* The ADCX and ADOX instructions */
->> >  #define X86_FEATURE_SMAP   ( 9*32+20) /* Supervisor Mode Access Prevention */
->> > +#define X86_FEATURE_PCOMMIT        ( 9*32+22) /* PCOMMIT instruction */
->> >  #define X86_FEATURE_CLFLUSHOPT     ( 9*32+23) /* CLFLUSHOPT instruction */
->> >  #define X86_FEATURE_AVX512PF       ( 9*32+26) /* AVX-512 Prefetch */
->> >  #define X86_FEATURE_AVX512ER       ( 9*32+27) /* AVX-512 Exponential and Reciprocal */
->> > diff --git a/arch/x86/include/asm/special_insns.h b/arch/x86/include/asm/special_insns.h
->> > index e820c08..1709a2e 100644
->> > --- a/arch/x86/include/asm/special_insns.h
->> > +++ b/arch/x86/include/asm/special_insns.h
->> > @@ -199,6 +199,12 @@ static inline void clflushopt(volatile void *__p)
->> >                    "+m" (*(volatile char __force *)__p));
->> >  }
->> >
->> > +static inline void pcommit(void)
->> > +{
->> > +   alternative(ASM_NOP4, ".byte 0x66, 0x0f, 0xae, 0xf8",
->> > +               X86_FEATURE_PCOMMIT);
->> > +}
->> > +
->>
->> Should this patch add the feature bit and cpuinfo entry to go with it?
->>
->> --Andy
->
-> I think this patch does everything we need?  The text for cpuinfo is
-> auto-generated in arch/x86/kernel/cpu/capflags.c from the flags defined
-> in arch/x86/include/asm/cpufeature.h, I think.  Here's what I get in
-> cpuinfo on my system with a faked-out CPUID saying that clwb and pcommit
-> are present:
->
-> $ grep 'flags' /proc/cpuinfo
-> flags           : fpu <snip> erms pcommit clflushopt clwb xsaveopt
->
-> The X86_FEATURE_CLWB and X86_FEATURE_PCOMMIT flags are being set up
-> according to what's in CPUID, and the proper alternatives are being
-> triggered.  I stuck some debug code in the alternatives code to see what
-> was being patched in the presence and absence of each of the flags.
->
-> Is there something else I'm missing?
+Felipe,
 
-No.  I just missed the magical auto-generation part.
+On Fri, Nov 14, 2014 at 03:08:32PM -0600, Felipe Balbi wrote:
+> On Fri, Nov 14, 2014 at 04:25:58PM +0100, Antoine Tenart wrote:
+> > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
+> > and DMA mask, to support USB2 ChipIdea controllers that don't need
+> > specific functions.
+> > 
+> > Tested on the Marvell Berlin SoCs USB controllers.
+> > 
+> > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> > ---
+> >  drivers/usb/chipidea/Makefile       |   1 +
+> >  drivers/usb/chipidea/ci_hdrc_usb2.c | 117 ++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 118 insertions(+)
+> >  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
+> > 
+> > diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
+> > index 2f099c7df7b5..1fc86a2ca22d 100644
+> > --- a/drivers/usb/chipidea/Makefile
+> > +++ b/drivers/usb/chipidea/Makefile
+> > @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+= otg_fsm.o
+> >  
+> >  # Glue/Bridge layers go here
+> >  
+> > +obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_usb2.o
+> 
+> usb2 is too generic, you should call it ci_hdcr_marvell, or something
+> like that.
 
---Andy
+This driver is generic, and not only for Marvell Berlin SoCs. It is part
+of the Berlin USB series as it is the first SoC to use it but Xilinx can
+also use it for example.
 
->
-> Thanks,
-> - Ross
->
-
-
+Antoine
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
