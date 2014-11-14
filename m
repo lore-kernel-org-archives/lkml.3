@@ -1,175 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161391AbaKNRHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 12:07:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38401 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161329AbaKNRHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 12:07:22 -0500
-Date: Fri, 14 Nov 2014 18:07:16 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [RFC][PATCH 17/23 v4] tracing: Have seq_buf use full buffer
-Message-ID: <20141114170716.GC14538@dhcp128.suse.cz>
-References: <20141114011244.256115061@goodmis.org>
- <20141114011412.811957882@goodmis.org>
+	id S1161435AbaKNRIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 12:08:32 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38548 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161302AbaKNRIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 12:08:30 -0500
+Date: Fri, 14 Nov 2014 17:06:50 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Cc: gsantosh@codeaurora.org, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <robh@kernel.org>,
+        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, devicetree@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, grant.likely@linaro.org,
+        alsa-devel-bounces@alsa-project.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Message-ID: <20141114170650.GG3815@sirena.org.uk>
+References: <85499f52ebd29581bf58b9cafbae6864.squirrel@www.codeaurora.org>
+ <5464CDE2.2070406@linux.intel.com>
+ <fd33d16f31eb73cc6f0585c192601d9e.squirrel@www.codeaurora.org>
+ <54662DC6.7070302@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6cotLj5rESeNB5ig"
 Content-Disposition: inline
-In-Reply-To: <20141114011412.811957882@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54662DC6.7070302@linux.intel.com>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] Question on Compressed offload session
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-11-13 20:13:01, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Currently seq_buf is full when all but one byte of the buffer is
-> filled. Change it so that the seq_buf is full when all of the
-> buffer is filled.
-> 
-> Some of the functions would fill the buffer completely and report
-> everything was fine. This was inconsistent with the max of size - 1.
-> Changing this to be max of size makes all functions consistent.
-> 
-> Link: http://lkml.kernel.org/r/20141104160222.502133196@goodmis.org
-> 
-> Tested-by: Jiri Kosina <jkosina@suse.cz>
-> Acked-by: Jiri Kosina <jkosina@suse.cz>
-> Reviewed-by: Petr Mladek <pmladek@suse.cz>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Hmm, we should not apply this patch before we fix all other locations
-accessing seq.len. We need to make sure that they do not access
-outside of the buffer when seq.len = seq.size  + 1.
+--6cotLj5rESeNB5ig
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-See my comments for "[RFC][PATCH 13/23 v4] tracing: Create seq_buf
-layer in trace_seq"
+On Fri, Nov 14, 2014 at 10:28:54AM -0600, Pierre-Louis Bossart wrote:
+> On 11/13/14, 10:08 PM, gsantosh@codeaurora.org wrote:
 
-BTW: Are these patches applied in some public branch, please? The
-patch series is getting long. I would like to see it applied but I do
-not want to copy all the patches and apply manually :-)
+> >1) in Codec driver avoid adding hw_constraint during startup if compressed
+> >session is routed, this recommend for codec driver to know that compress
+> >session is routed to codec which I feel not the correct way to handle this
 
-Best Regards,
-Petr
+> >I was checking how to handle this situation in much better way.
 
-PS: I will need to go in a while. I am not sure that I will be able to
-review the whole patchset before the weekend. I do the review in the
-order of patches. I sent reply only when I had something to add. The
-non-commented other patches (< 17) looks fine to me.
+> What exactly do you call a 'legacy codec'? If there is a DAI i am not sure I
+> understand the problem.
 
+I think what he's trying to say is that there's nothing automatic which
+will ensure that constraints on the back end set by the CODEC driver
+will be paid attention to.  This is true, it's pretty much entirely up
+to the machine driver to make sure it gets the back end links right.
 
-> ---
->  include/linux/seq_buf.h |  6 +++---
->  kernel/trace/seq_buf.c  | 19 +++++++++++--------
->  2 files changed, 14 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-> index 5d91262433e2..581c1fc733c3 100644
-> --- a/include/linux/seq_buf.h
-> +++ b/include/linux/seq_buf.h
-> @@ -43,13 +43,13 @@ seq_buf_init(struct seq_buf *s, unsigned char *buf, unsigned int size)
->  static inline bool
->  seq_buf_has_overflowed(struct seq_buf *s)
->  {
-> -	return s->len == s->size;
-> +	return s->len > s->size;
->  }
->  
->  static inline void
->  seq_buf_set_overflow(struct seq_buf *s)
->  {
-> -	s->len = s->size;
-> +	s->len = s->size + 1;
->  }
->  
->  /*
-> @@ -61,7 +61,7 @@ seq_buf_buffer_left(struct seq_buf *s)
->  	if (seq_buf_has_overflowed(s))
->  		return 0;
->  
-> -	return (s->size - 1) - s->len;
-> +	return s->size - s->len;
->  }
->  
->  extern __printf(2, 3)
-> diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-> index 7dac34d1235b..9d3bb64dca31 100644
-> --- a/kernel/trace/seq_buf.c
-> +++ b/kernel/trace/seq_buf.c
-> @@ -17,7 +17,7 @@
->  #include <linux/seq_buf.h>
->  
->  /* How much buffer is written? */
-> -#define SEQ_BUF_USED(s) min((s)->len, (s)->size - 1)
-> +#define SEQ_BUF_USED(s) min((s)->len, (s)->size)
->  
->  /**
->   * seq_buf_print_seq - move the contents of seq_buf into a seq_file
-> @@ -51,7 +51,7 @@ int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args)
->  
->  	if (s->len < s->size) {
->  		len = vsnprintf(s->buffer + s->len, s->size - s->len, fmt, args);
-> -		if (s->len + len < s->size) {
-> +		if (s->len + len <= s->size) {
->  			s->len += len;
->  			return 0;
->  		}
-> @@ -100,8 +100,11 @@ int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
->  	WARN_ON(s->size == 0);
->  
->  	/*
-> -	 * The last byte of the buffer is used to determine if we
-> -	 * overflowed or not.
-> +	 * Note, because bitmap_scnprintf() only returns the number of bytes
-> +	 * written and not the number that would be written, we use the last
-> +	 * byte of the buffer to let us know if we overflowed. There's a small
-> +	 * chance that the bitmap could have fit exactly inside the buffer, but
-> +	 * it's not that critical if that does happen.
->  	 */
->  	if (len > 1) {
->  		ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
-> @@ -140,7 +143,7 @@ int seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary)
->  
->  	if (s->len < s->size) {
->  		ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
-> -		if (s->len + ret < s->size) {
-> +		if (s->len + ret <= s->size) {
->  			s->len += ret;
->  			return 0;
->  		}
-> @@ -164,7 +167,7 @@ int seq_buf_puts(struct seq_buf *s, const char *str)
->  
->  	WARN_ON(s->size == 0);
->  
-> -	if (s->len + len < s->size) {
-> +	if (s->len + len <= s->size) {
->  		memcpy(s->buffer + s->len, str, len);
->  		s->len += len;
->  		return 0;
-> @@ -186,7 +189,7 @@ int seq_buf_putc(struct seq_buf *s, unsigned char c)
->  {
->  	WARN_ON(s->size == 0);
->  
-> -	if (s->len + 1 < s->size) {
-> +	if (s->len + 1 <= s->size) {
->  		s->buffer[s->len++] = c;
->  		return 0;
->  	}
-> @@ -210,7 +213,7 @@ int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len)
->  {
->  	WARN_ON(s->size == 0);
->  
-> -	if (s->len + len < s->size) {
-> +	if (s->len + len <= s->size) {
->  		memcpy(s->buffer + s->len, mem, len);
->  		s->len += len;
->  		return 0;
-> -- 
-> 2.1.1
-> 
-> 
+--6cotLj5rESeNB5ig
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUZjaqAAoJECTWi3JdVIfQuFAH/13RyikXZ58DwaCl7jN85TQ8
+BV4EwR+3FqqXVcXw4fX8JLkRyNmUnkv4GSQyFTNEICL2qoHHKSlnd1fbow1tOWdn
+NGuhgFL1yqraNjguNS8/bBKfbwFOZ2OwhQruKXWuZdeOyKJ6qZ+GffsR/ov/7LY4
+Ggrfl4PqjPowCWMulNgwCkCfdy84/E1tzPOfInBj6YXDeORs+Ros6kgnOiyAyXHf
+UVUnExmdreqnqHpnVeBS4TT68hM2Wnh8A7jmWISM6taB6bHe9BAiXpiqtEOx6DBq
+6Kwqjn8w0jZ1jfVUuof+cJs6t/C+MYSabOLn+M6brV8ZY5Z1P7AZvW4W2PmBkC8=
+=hWv8
+-----END PGP SIGNATURE-----
+
+--6cotLj5rESeNB5ig--
