@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965096AbaKNBRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:17:05 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:27203 "EHLO
+	id S965129AbaKNBRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:17:32 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:54013 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934934AbaKNBOR (ORCPT
+	by vger.kernel.org with ESMTP id S934929AbaKNBOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:14:17 -0500
-Message-Id: <20141114011412.636548251@goodmis.org>
+	Thu, 13 Nov 2014 20:14:16 -0500
+Message-Id: <20141114011411.842421346@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 13 Nov 2014 20:13:00 -0500
+Date: Thu, 13 Nov 2014 20:12:55 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC][PATCH 16/23 v4] tracing: Add a seq_buf_clear() helper and clear len and readpos in
- init
+Subject: [RFC][PATCH 11/23 v4] tracing: Do not use return values of trace_seq_printf() in syscall
+ tracing
 References: <20141114011244.256115061@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0016-tracing-Add-a-seq_buf_clear-helper-and-clear-len-and.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0011-tracing-Do-not-use-return-values-of-trace_seq_printf.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +28,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add a helper function seq_buf_clear() that resets the len and readpos
-fields of a seq_buf. Currently it is only used in the seq_buf_init()
-but will be used later when updating the seq_file code.
+The functions trace_seq_printf() and friends will not be returning values
+soon and will be void functions. To know if they succeeded or not, the
+functions trace_seq_has_overflowed() and trace_handle_return() should be
+used instead.
 
-Link: http://lkml.kernel.org/r/20141104160222.352309995@goodmis.org
-
-Tested-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/seq_buf.h | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ kernel/trace/trace_syscalls.c | 43 +++++++++++++++----------------------------
+ 1 file changed, 15 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-index d14dc9023dde..5d91262433e2 100644
---- a/include/linux/seq_buf.h
-+++ b/include/linux/seq_buf.h
-@@ -22,13 +22,18 @@ struct seq_buf {
- 	loff_t			readpos;
- };
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 4dc8b79c5f75..2193e8038681 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -114,7 +114,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+ 	struct trace_entry *ent = iter->ent;
+ 	struct syscall_trace_enter *trace;
+ 	struct syscall_metadata *entry;
+-	int i, ret, syscall;
++	int i, syscall;
  
-+static inline void seq_buf_clear(struct seq_buf *s)
-+{
-+	s->len = 0;
-+	s->readpos = 0;
-+}
+ 	trace = (typeof(trace))ent;
+ 	syscall = trace->nr;
+@@ -128,35 +128,24 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+ 		goto end;
+ 	}
+ 
+-	ret = trace_seq_printf(s, "%s(", entry->name);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_printf(s, "%s(", entry->name);
+ 
+ 	for (i = 0; i < entry->nb_args; i++) {
+ 		/* parameter types */
+-		if (trace_flags & TRACE_ITER_VERBOSE) {
+-			ret = trace_seq_printf(s, "%s ", entry->types[i]);
+-			if (!ret)
+-				return TRACE_TYPE_PARTIAL_LINE;
+-		}
++		if (trace_flags & TRACE_ITER_VERBOSE)
++			trace_seq_printf(s, "%s ", entry->types[i]);
 +
- static inline void
- seq_buf_init(struct seq_buf *s, unsigned char *buf, unsigned int size)
- {
- 	s->buffer = buf;
- 	s->size = size;
--	s->len = 0;
--	s->readpos = 0;
-+	seq_buf_clear(s);
+ 		/* parameter values */
+-		ret = trace_seq_printf(s, "%s: %lx%s", entry->args[i],
+-				       trace->args[i],
+-				       i == entry->nb_args - 1 ? "" : ", ");
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
++		trace_seq_printf(s, "%s: %lx%s", entry->args[i],
++				 trace->args[i],
++				 i == entry->nb_args - 1 ? "" : ", ");
+ 	}
+ 
+-	ret = trace_seq_putc(s, ')');
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
++	trace_seq_putc(s, ')');
+ end:
+-	ret =  trace_seq_putc(s, '\n');
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_putc(s, '\n');
+ 
+-	return TRACE_TYPE_HANDLED;
++	return trace_handle_return(s);
  }
  
- /*
+ static enum print_line_t
+@@ -168,7 +157,6 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
+ 	struct syscall_trace_exit *trace;
+ 	int syscall;
+ 	struct syscall_metadata *entry;
+-	int ret;
+ 
+ 	trace = (typeof(trace))ent;
+ 	syscall = trace->nr;
+@@ -176,7 +164,7 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
+ 
+ 	if (!entry) {
+ 		trace_seq_putc(s, '\n');
+-		return TRACE_TYPE_HANDLED;
++		goto out;
+ 	}
+ 
+ 	if (entry->exit_event->event.type != ent->type) {
+@@ -184,12 +172,11 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
+ 		return TRACE_TYPE_UNHANDLED;
+ 	}
+ 
+-	ret = trace_seq_printf(s, "%s -> 0x%lx\n", entry->name,
++	trace_seq_printf(s, "%s -> 0x%lx\n", entry->name,
+ 				trace->ret);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+ 
+-	return TRACE_TYPE_HANDLED;
++ out:
++	return trace_handle_return(s);
+ }
+ 
+ extern char *__bad_type_size(void);
 -- 
 2.1.1
 
