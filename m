@@ -1,82 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161750AbaKNUaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:30:25 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:47303 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752011AbaKNUaX (ORCPT
+	id S1161833AbaKNUb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:31:27 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:54539 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161771AbaKNUb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:30:23 -0500
-Date: Fri, 14 Nov 2014 13:30:14 -0700
-From: Jens Axboe <axboe@fb.com>
-To: <torvalds@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Block fixes for 3.18-rc
-Message-ID: <20141114203014.GA18280@kernel.dk>
+	Fri, 14 Nov 2014 15:31:26 -0500
+Date: Fri, 14 Nov 2014 15:31:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 18/23 v4] tracing: Add seq_buf_get_buf() and
+ seq_buf_commit() helper functions
+Message-ID: <20141114153123.2e1d8db6@gandalf.local.home>
+In-Reply-To: <20141114171828.GD14538@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011412.977571447@goodmis.org>
+	<20141114171828.GD14538@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
- definitions=2014-11-14_08:2014-11-14,2014-11-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=2.09832151654155e-14 kscore.compositescore=0
- circleOfTrustscore=37.7501936418875 compositescore=0.98609165920913
- urlsuspect_oldscore=0.98609165920913 suspectscore=3
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.98609165920913 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1411140151
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 14 Nov 2014 18:18:28 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-4 small fixes that should be merged for the current 3.18-rc series. This
-pull request contains:
+> On Thu 2014-11-13 20:13:02, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > Add two helper functions; seq_buf_get_buf() and seq_buf_commit() that
+> > are used by seq_buf_path(). This makes the code similar to the
+> > seq_file: seq_path() function, and will help to be able to consolidate
+> > the functions between seq_file and trace_seq.
+> > 
+> > Link: http://lkml.kernel.org/r/20141104160222.644881406@goodmis.org
+> > 
+> > Tested-by: Jiri Kosina <jkosina@suse.cz>
+> > Acked-by: Jiri Kosina <jkosina@suse.cz>
+> > Reviewed-by: Petr Mladek <pmladek@suse.cz>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  include/linux/seq_buf.h | 40 ++++++++++++++++++++++++++++++++++++++++
+> >  kernel/trace/seq_buf.c  |  7 +++----
+> >  2 files changed, 43 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> > index 581c1fc733c3..3e550d214187 100644
+> > --- a/include/linux/seq_buf.h
+> > +++ b/include/linux/seq_buf.h
+> > @@ -64,6 +64,46 @@ seq_buf_buffer_left(struct seq_buf *s)
+> >  	return s->size - s->len;
+> >  }
+> >  
+> > +/**
+> > + * seq_buf_get_buf - get buffer to write arbitrary data to
+> > + * @s: the seq_buf handle
+> > + * @bufp: the beginning of the buffer is stored here
+> > + *
+> > + * Return the number of bytes available in the buffer, or zero if
+> > + * there's no space.
+> > + */
+> > +static inline size_t seq_buf_get_buf(struct seq_buf *s, char **bufp)
+> > +{
+> > +	WARN_ON(s->len > s->size + 1);
+> > +
+> > +	if (s->len < s->size) {
+> > +		*bufp = s->buffer + s->len;
+> > +		return s->size - s->len;
+> > +	}
+> > +
+> > +	*bufp = NULL;
+> > +	return 0;
+> > +}
+> > +
+> > +/**
+> > + * seq_buf_commit - commit data to the buffer
+> > + * @s: the seq_buf handle
+> > + * @num: the number of bytes to commit
+> > + *
+> > + * Commit @num bytes of data written to a buffer previously acquired
+> > + * by seq_buf_get.  To signal an error condition, or that the data
+> > + * didn't fit in the available space, pass a negative @num value.
+> > + */
+> > +static inline void seq_buf_commit(struct seq_buf *s, int num)
+> > +{
+> > +	if (num < 0) {
+> > +		seq_buf_set_overflow(s);
+> > +	} else {
+> > +		BUG_ON(s->len + num > s->size + 1);
+> 
+> I thought about it more and we should probably do
+> 
+> 		BUG_ON(s->len + num > s->size);
+> 
+> "size + 1" signalizes that there was an overflow. It is a valid
+> value for the "len" variable. But it is not valid to commit "size + 1"
+> bytes into the buffer. It would mean access outside of the buffer.
+> 
+> What do you think, please?
 
-- A minor bugfix for computation of best IO priority given two merging
-  requests. From Jan Kara.
+I don't see anything wrong with committing an overflowed state.
 
-- The final (final) merge count issue that has been plaguing virtio-blk.
-  From Ming Lei.
+Note, seq_commit() allows an overflow number to go in too. But of
+course that's where overflow is still on the buffer.
 
-- Enable parallel reinit notify for blk-mq queues, to combine the cost
-  of an RCU grace period across lots of devices. From Tejun Heo.
+Hmm, I guess I can still make this change. The seq_commit() comment
+states that @num needs to be < 0 if the data did not fit, and if it is
+in overflow state, then it should be -1 not size + 1 (or size for the
+old way).
 
-- An error handling fix for the SCSI_IOCTL_SEND_COMMAND ioctl. From Tony
-  Battersby.
-
-Please pull!
+-- Steve
 
 
-  git://git.kernel.dk/linux-block.git for-linus
-
-
-----------------------------------------------------------------
-Jan Kara (1):
-      block: Fix computation of merged request priority
-
-Ming Lei (1):
-      block: blk-merge: fix blk_recount_segments()
-
-Tejun Heo (1):
-      blk-mq: make mq_queue_reinit_notify() freeze queues in parallel
-
-Tony Battersby (1):
-      scsi: Fix more error handling in SCSI_IOCTL_SEND_COMMAND
-
- block/blk-merge.c  | 19 +++++++++++--------
- block/blk-mq.c     | 41 +++++++++++++++++++++++++++++++++--------
- block/ioprio.c     | 14 ++++++++------
- block/scsi_ioctl.c |  8 +++++---
- 4 files changed, 57 insertions(+), 25 deletions(-)
-
--- 
-Jens Axboe
+> 
+> Best Regards,
+> Petr
+> 
+> PS: Sigh, I wish, I saw all this problems during the first review and not
+> triggering another patchset version.
+> 
+> 
+> > +		s->len += num;
+> > +	}
+> > +}
+> > +
+> >  extern __printf(2, 3)
+> >  int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
+> >  extern __printf(2, 0)
+> > diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+> > index 9d3bb64dca31..4f35a783b82f 100644
+> > --- a/kernel/trace/seq_buf.c
+> > +++ b/kernel/trace/seq_buf.c
+> > @@ -283,8 +283,8 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+> >   */
+> >  int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
+> >  {
+> > -	char *buf = s->buffer + s->len;
+> > -	size_t size = seq_buf_buffer_left(s);
+> > +	char *buf;
+> > +	size_t size = seq_buf_get_buf(s, &buf);
+> >  	int res = -1;
+> >  
+> >  	WARN_ON(s->size == 0);
+> > @@ -297,8 +297,7 @@ int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
+> >  				res = end - buf;
+> >  		}
+> >  	}
+> > -	if (res > 0)
+> > -		s->len += res;
+> > +	seq_buf_commit(s, res);
+> >  
+> >  	return res;
+> >  }
+> > -- 
+> > 2.1.1
+> > 
+> > 
 
