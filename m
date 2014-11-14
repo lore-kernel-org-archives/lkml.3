@@ -1,135 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965145AbaKNBSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:18:01 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19427 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934911AbaKNBOP (ORCPT
+	id S965162AbaKNBSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:18:52 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38941 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934547AbaKNBSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:14:15 -0500
-Message-Id: <20141114011412.338523371@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 13 Nov 2014 20:12:58 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC][PATCH 14/23 v4] tracing: Convert seq_buf_path() to be like seq_path()
-References: <20141114011244.256115061@goodmis.org>
+	Thu, 13 Nov 2014 20:18:49 -0500
+Date: Fri, 14 Nov 2014 01:18:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'Will Deacon'" <will.deacon@arm.com>,
+        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+Message-ID: <20141114011832.GE4042@n2100.arm.linux.org.uk>
+References: <20141030120127.GC32589@arm.com>
+ <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
+ <20141030135749.GE32589@arm.com>
+ <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+ <20141113235322.GC4042@n2100.arm.linux.org.uk>
+ <1415923530.4223.17.camel@perches.com>
+ <20141114001720.GD4042@n2100.arm.linux.org.uk>
+ <1415925943.4141.1.camel@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0014-tracing-Convert-seq_buf_path-to-be-like-seq_path.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415925943.4141.1.camel@perches.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu, Nov 13, 2014 at 04:45:43PM -0800, Joe Perches wrote:
+> On Fri, 2014-11-14 at 00:17 +0000, Russell King - ARM Linux wrote:
+> > On Thu, Nov 13, 2014 at 04:05:30PM -0800, Joe Perches wrote:
+> > > On Thu, 2014-11-13 at 23:53 +0000, Russell King - ARM Linux wrote:
+> > > > On Fri, Oct 31, 2014 at 01:42:44PM +0800, Wang, Yalin wrote:
+> > > > > This patch add bitrev.h file to support rbit instruction,
+> > > > > so that we can do bitrev operation by hardware.
+> > > > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> > > > > ---
+> > > > >  arch/arm/Kconfig              |  1 +
+> > > > >  arch/arm/include/asm/bitrev.h | 21 +++++++++++++++++++++
+> > > > >  2 files changed, 22 insertions(+)
+> > > > >  create mode 100644 arch/arm/include/asm/bitrev.h
+> > > > > 
+> > > > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > > > > index 89c4b5c..be92b3b 100644
+> > > > > --- a/arch/arm/Kconfig
+> > > > > +++ b/arch/arm/Kconfig
+> > > > > @@ -28,6 +28,7 @@ config ARM
+> > > > >  	select HANDLE_DOMAIN_IRQ
+> > > > >  	select HARDIRQS_SW_RESEND
+> > > > >  	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
+> > > > > +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
+> > > > 
+> > > > Looking at this, this is just wrong.  Take a moment to consider what
+> > > > happens if we build a kernel which supports both ARMv6 _and_ ARMv7 CPUs.
+> > > > What happens if an ARMv6 CPU tries to execute an rbit instruction?
+> > > > 
+> > > > Second point (which isn't obvious from your submissions on-list) is that
+> > > > you've loaded the patch system up with patches for other parts of the
+> > > > kernel tree for which I am not responsible for.  As such, I can't take
+> > > > those patches without the sub-tree maintainer acking them.  Also, the
+> > > > commit text in those patches look weird:
+> > > > 
+> > > > 6fire: Convert byte_rev_table uses to bitrev8
+> > > > 
+> > > > Use the inline function instead of directly indexing the array.
+> > > > 
+> > > > This allows some architectures with hardware instructions for bit
+> > > > reversals to eliminate the array.
+> > > > 
+> > > > Signed-off-by: Joe Perches <(address hidden)>
+> > > > Signed-off-by: Yalin Wang <(address hidden)>
+> > > > 
+> > > > Why is Joe signing off on these patches?
+> > > > Shouldn't his entry be an Acked-by: ?
+> > > 
+> > > I didn't sign off on or ack the "add bitrev.h" patch.
+> > 
+> > Correct, I never said you did.  Please read my message a bit more carefully
+> > next time, huh?
+> 
+> You've no reason to write that Russell.
 
-Rewrite seq_buf_path() like it is done in seq_path() and allow
-it to accept any escape character instead of just "\n".
+Absolutely I have, but I'm not going to discuss it because I'll just
+end up flaming you because in my mind you are the one who is completely
+mistaken with your comments.
 
-Making seq_buf_path() like seq_path() will help prevent problems
-when converting seq_file to use the seq_buf logic.
+In case it hasn't been realised, I hardly read this mailing list anymore,
+or messages that I'm Cc'd on.  I do read most messages that I'm in the
+To: line, but generally not if they're DT changes (which always end up
+being marked To: me.)
 
-Link: http://lkml.kernel.org/r/20141104160222.048795666@goodmis.org
+> > Great, so I can just discard these that were incorrectly submitted to me
+> > then.
+> 
+> I think you shouldn't apply these patches or updated
+> ones either until all the current uses are converted.
 
-Tested-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/seq_buf.h  |  2 +-
- kernel/trace/seq_buf.c   | 28 ++++++++++++++++------------
- kernel/trace/trace_seq.c |  4 ++--
- 3 files changed, 19 insertions(+), 15 deletions(-)
+Where are the dependencies mentioned?  How do I get to know when all
+the dependencies are met?  Who is tracking the dependencies?
 
-diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-index 4f7a96a9d71a..38770688a627 100644
---- a/include/linux/seq_buf.h
-+++ b/include/linux/seq_buf.h
-@@ -73,7 +73,7 @@ extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
- extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
- extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
- 			      unsigned int len);
--extern int seq_buf_path(struct seq_buf *s, const struct path *path);
-+extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc);
- 
- extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
- 			   int nmaskbits);
-diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-index e9a7861595d2..7dac34d1235b 100644
---- a/kernel/trace/seq_buf.c
-+++ b/kernel/trace/seq_buf.c
-@@ -272,28 +272,32 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-  * seq_buf_path - copy a path into the sequence buffer
-  * @s: seq_buf descriptor
-  * @path: path to write into the sequence buffer.
-+ * @esc: set of characters to escape in the output
-  *
-  * Write a path name into the sequence buffer.
-  *
-- * Returns zero on success, -1 on overflow
-+ * Returns the number of written bytes on success, -1 on overflow
-  */
--int seq_buf_path(struct seq_buf *s, const struct path *path)
-+int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
- {
--	unsigned int len = seq_buf_buffer_left(s);
--	unsigned char *p;
-+	char *buf = s->buffer + s->len;
-+	size_t size = seq_buf_buffer_left(s);
-+	int res = -1;
- 
- 	WARN_ON(s->size == 0);
- 
--	p = d_path(path, s->buffer + s->len, len);
--	if (!IS_ERR(p)) {
--		p = mangle_path(s->buffer + s->len, p, "\n");
--		if (p) {
--			s->len = p - s->buffer;
--			return 0;
-+	if (size) {
-+		char *p = d_path(path, buf, size);
-+		if (!IS_ERR(p)) {
-+			char *end = mangle_path(buf, p, esc);
-+			if (end)
-+				res = end - buf;
- 		}
- 	}
--	seq_buf_set_overflow(s);
--	return -1;
-+	if (res > 0)
-+		s->len += res;
-+
-+	return res;
- }
- 
- /**
-diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
-index 3c63b619d6b7..475412e31de5 100644
---- a/kernel/trace/trace_seq.c
-+++ b/kernel/trace/trace_seq.c
-@@ -342,7 +342,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
- 		return 0;
- 	}
- 
--	ret = seq_buf_path(&s->seq, path);
-+	ret = seq_buf_path(&s->seq, path, "\n");
- 
- 	if (unlikely(seq_buf_has_overflowed(&s->seq))) {
- 		s->seq.len = save_len;
-@@ -350,7 +350,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
- 		return 0;
- 	}
- 
--	return ret;
-+	return 1;
- }
- EXPORT_SYMBOL_GPL(trace_seq_path);
- 
 -- 
-2.1.1
-
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
