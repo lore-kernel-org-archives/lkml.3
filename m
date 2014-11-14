@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161950AbaKNVIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 16:08:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:60956 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306AbaKNVIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 16:08:47 -0500
-Date: Fri, 14 Nov 2014 15:08:32 -0600
+	id S1422657AbaKNVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 16:09:16 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40140 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306AbaKNVJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 16:09:13 -0500
+Date: Fri, 14 Nov 2014 15:07:09 -0600
 From: Felipe Balbi <balbi@ti.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <sebastian.hesselbarth@gmail.com>, <Peter.Chen@freescale.com>,
-        <balbi@ti.com>, <p.zabel@pengutronix.de>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 08/13] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20141114210832.GE16388@saruman>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+CC: "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>,
+        "matthijs@stdin.nl" <matthijs@stdin.nl>,
+        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv7 6/8] usb: dwc2: gadget: Do not fail probe if there
+ isn't a clock node
+Message-ID: <20141114210709.GD16388@saruman>
 Reply-To: <balbi@ti.com>
-References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
- <1415978763-27345-9-git-send-email-antoine.tenart@free-electrons.com>
+References: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
+ <1415726020-19238-7-git-send-email-dinguyen@opensource.altera.com>
+ <A2CA0424C0A6F04399FB9E1CD98E0304844EBD12@US01WEMBX2.internal.synopsys.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7LkOrbQMr4cezO2T"
+	protocol="application/pgp-signature"; boundary="MAH+hnPXVZWQ5cD/"
 Content-Disposition: inline
-In-Reply-To: <1415978763-27345-9-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844EBD12@US01WEMBX2.internal.synopsys.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7LkOrbQMr4cezO2T
+--MAH+hnPXVZWQ5cD/
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Nov 14, 2014 at 04:25:58PM +0100, Antoine Tenart wrote:
-> Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> and DMA mask, to support USB2 ChipIdea controllers that don't need
-> specific functions.
+On Fri, Nov 14, 2014 at 09:01:49PM +0000, Paul Zimmerman wrote:
+> > From: dinguyen@opensource.altera.com [mailto:dinguyen@opensource.altera=
+=2Ecom]
+> > Sent: Tuesday, November 11, 2014 9:14 AM
+> >=20
+> > From: Dinh Nguyen <dinguyen@opensource.altera.com>
+> >=20
+> > Since the dwc2 hcd driver is currently not looking for a clock node dur=
+ing
+> > init, we should not completely fail if there isn't a clock provided.
+> > By assigning clk =3D NULL, this allows the driver, when configured for =
+dual-role
+> > mode, to be able to continue loading the host portion of the driver when
+> > a clock node is not specified.
+> >=20
+> > Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+> > ---
+> > v7: Reworked to use clk=3DNULL and remove the need to is IS_ERR(clk)
+> > v6: none
+> > v5: reworked to not access gadget functions from the hcd.
+> > ---
+> >  drivers/usb/dwc2/gadget.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> >=20
+> > diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+> > index 37c7916..367689b 100644
+> > --- a/drivers/usb/dwc2/gadget.c
+> > +++ b/drivers/usb/dwc2/gadget.c
+> > @@ -3431,6 +3431,7 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, in=
+t irq)
+> >=20
+> >  	hsotg->clk =3D devm_clk_get(dev, "otg");
+> >  	if (IS_ERR(hsotg->clk)) {
+> > +		hsotg->clk =3D NULL;
+> >  		dev_err(dev, "cannot get otg clock\n");
+> >  		return PTR_ERR(hsotg->clk);
+> >  	}
 >=20
-> Tested on the Marvell Berlin SoCs USB controllers.
->=20
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/usb/chipidea/Makefile       |   1 +
->  drivers/usb/chipidea/ci_hdrc_usb2.c | 117 ++++++++++++++++++++++++++++++=
-++++++
->  2 files changed, 118 insertions(+)
->  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
->=20
-> diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-> index 2f099c7df7b5..1fc86a2ca22d 100644
-> --- a/drivers/usb/chipidea/Makefile
-> +++ b/drivers/usb/chipidea/Makefile
-> @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+=3D otg_fsm.o
-> =20
->  # Glue/Bridge layers go here
-> =20
-> +obj-$(CONFIG_USB_CHIPIDEA)	+=3D ci_hdrc_usb2.o
+> Whoops, you just broke the return value, since you NULL out
+> hsotg->clk and then call PTR_ERR() on it.
 
-usb2 is too generic, you should call it ci_hdcr_marvell, or something
-like that.
+yeah, the idea was to remove the early return too :-)
 
 --=20
 balbi
 
---7LkOrbQMr4cezO2T
+--MAH+hnPXVZWQ5cD/
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUZm9QAAoJEIaOsuA1yqREWHwP/A9omNZxdGijpfNCN8z2PaHC
-A7Li0HF/a87E29/5S2vh1yDihIJQJY5txGX50dSxmiWZ7ZjGQPV2rMxM/xo2uEkF
-3qDKhzW5qreVziqwPIOZq3jujf2o9F1fd8v1Ao6xCB7hBOEetHYSgkXPw5jKQLuz
-PVsEuN5c5fb1s6FNxjIL8aqqdWC1O/ft/bM4gF6Cb/Ep+c10aV3bDrI6YOLZ9MaP
-t0m5I+LiWcZFL+UxW3Me4bfcWbEMwur3M9f3nrCQcWrA5b83afymEQL9/Y1I3vHB
-9MgplH7TYQlyuD2zQdCDqAnuHP43Zh2Y4L+qQqQlX7ftn98j64pIrA8E6yuW3+3u
-bfei9+7qoHlzqZBd72PJq8JuBh71EknYcDbhjTB8hmsemfoqsuQrG0N+s6IiZw0F
-md+HJfMTWsjUUyk6DV4uG91hhiKB+BRMlPLFYn1gvI5CqStPpOvbLnM/aMbiMRom
-S4ZhCUzpRChzL7hegISkYxgsDAoheZ6T3xll2v9rnaZ6fx/zmAsREngAAyJHH7rE
-u77poV4dYhnejj1hLeZDXNfqpWyvcy6BbvuKvUeOxDNWAQ8ruUJFcShR/pOx/M9i
-9Xc+a31EQU84aPXPPYR7hZhKE2U1zoUq+4/2rJ6qi734L0AipSXVE0PuqU6r51+o
-IZRBXa5TEWj87QWaFqj4
-=YA/Z
+iQIcBAEBAgAGBQJUZm79AAoJEIaOsuA1yqREgmcQAJw2sHg9y6v3rKMPSRdCcO+6
+GLUPECqxR+O7eysu1QHlrsyXeYAytOTOhheqt6M5RY1yrNkbMnFjAmmgCrQE+DBG
+/wdP9jkGHDLUBDZjXMQUlbC4qAH/sXfqS/v3jM3cHbvJbYIiHvh3I1TLXbas3PgX
+9222MjrTnO5q5ZJzpymrN1kul2d8PnFIewRbFNipRavs2EZKsNpI5ETV2dePrIPB
+Vi9BU0jemfAmMiPjCJkE+U2thU6aWBKVsuSpml0X8pDcfbka0g4SET0LEFLPDu1g
+TNhnWanq5hc1GmJ6NJyTBdq0K6la+x24dVbIUM+z6MWCZfD0111u+IvpY8OZ3Gn8
+ufRFsfG4J9yM2JLXeqPah7n5Rdf+I8VpmjxBjQQPF6xOeNI4hti70OSXa8woNDGh
+MjLeJKT1WRxtwPurp1urHwYo50A7pM+kxS8KDD/glOC+KYLSHgsuwzJU2BwdyZXd
+Iij92apDf1sDVj1NEbayraG1kXQtQqvM9VVYg/ZjxnHXKZV6C4lsW7qcM7Tx3qL+
+JQCjLPwHCrcw7wxZxmdNd0omXp5BX/s9v9HVmLFADxcgk/9fONZ9V5ERCKE+pAP7
+5vamAzmOhDv5O1WNp7icxY8hp3RUu4nWq7wtYBwv8kwmBcxPDSIJdwUfR2PoEbof
+spYDIyQRHziJ6n2zCl37
+=Ao0E
 -----END PGP SIGNATURE-----
 
---7LkOrbQMr4cezO2T--
+--MAH+hnPXVZWQ5cD/--
