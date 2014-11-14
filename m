@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965342AbaKNLV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:21:57 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:60795 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965011AbaKNLVx (ORCPT
+	id S965445AbaKNLWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:22:08 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61502 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965313AbaKNLV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:21:53 -0500
+	Fri, 14 Nov 2014 06:21:56 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH 3.18-rc3 v3 0/2] trace: kdb: Bug fixes for ftdump
-Date: Fri, 14 Nov 2014 11:21:21 +0000
-Message-Id: <1415964083-10354-1-git-send-email-daniel.thompson@linaro.org>
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 3.18-rc3 v3 2/2] trace: kdb: Fix kernel livelock with empty buffers
+Date: Fri, 14 Nov 2014 11:21:23 +0000
+Message-Id: <1415964083-10354-3-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1415964083-10354-1-git-send-email-daniel.thompson@linaro.org>
 References: <1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
+ <1415964083-10354-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset makes it possible to use kdb's ftdump command without
-panicing, crashing or livelocking. The ftdump command cannot be used
-at all without these changes.
+Currently kdb's ftdump command will livelock by constantly printk'ing
+the empty string at KERN_EMERG level if it run when the ftrace system is
+not in use. This occurs because trace_empty() never returns false when
+the ring buffers are left at the start of a non-consuming read [launched
+by ring_buffer_read_start()].
 
-IIRC this patches are still pending Jason's ack.
+This patch changes the loop exit condition to use the result of
+trace_find_next_entry_inc(). Effectively this switches the non-consuming
+kdb dumper to follow the approach of the non-consuming userspace
+interface [s_next()] rather than the consuming ftrace_dump().
 
-v3:
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ kernel/trace/trace_kdb.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-* Remove lines leading with --- from the patch comments, now it it
-  -~- cut here -~- and "git am" did the right thing when I checked
-  (Steven Rostedt)
-
-v2:
-
-* Fixed use-after-free problems in v1 by adding logic to NULL out
-  buffer_iter during free operations.
-
-* Introduced a second patch to fix a live lock when trying to display
-  an empty trace buffer.
-
-
-Daniel Thompson (2):
-  trace: kdb: Fix kernel panic during ftdump
-  trace: kdb: Fix kernel livelock with empty buffers
-
- kernel/trace/trace_kdb.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
-
---
+diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
+index 8faa7ce58814..b0b1c44e923a 100644
+--- a/kernel/trace/trace_kdb.c
++++ b/kernel/trace/trace_kdb.c
+@@ -59,19 +59,19 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
+ 		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
+ 		tracing_iter_reset(&iter, cpu_file);
+ 	}
+-	if (!trace_empty(&iter))
+-		trace_find_next_entry_inc(&iter);
+-	while (!trace_empty(&iter)) {
++
++	while (trace_find_next_entry_inc(&iter)) {
+ 		if (!cnt)
+ 			kdb_printf("---------------------------------\n");
+ 		cnt++;
+ 
+-		if (trace_find_next_entry_inc(&iter) != NULL && !skip_lines)
++		if (!skip_lines) {
+ 			print_trace_line(&iter);
+-		if (!skip_lines)
+ 			trace_printk_seq(&iter.seq);
+-		else
++		} else {
+ 			skip_lines--;
++		}
++
+ 		if (KDB_FLAG(CMD_INTERRUPT))
+ 			goto out;
+ 	}
+-- 
 1.9.3
 
