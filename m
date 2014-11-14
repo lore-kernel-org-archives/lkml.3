@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649AbaKNFPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 00:15:19 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:64110 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472AbaKNFPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 00:15:15 -0500
-From: Howard Chen <ibanezchen@gmail.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Howard Chen <ibanezchen@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v7 3/3] dt-bindings: add documentation for Mediatek SoC
-Date: Fri, 14 Nov 2014 13:14:54 +0800
-Message-Id: <1415942094-11451-3-git-send-email-ibanezchen@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415942094-11451-1-git-send-email-ibanezchen@gmail.com>
-References: <1415942094-11451-1-git-send-email-ibanezchen@gmail.com>
+	id S1753922AbaKNFQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 00:16:49 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:16729 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751492AbaKNFQr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 00:16:47 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'chunkeey@googlemail.com'" <chunkeey@googlemail.com>,
+        "'linville@tuxdriver.com'" <linville@tuxdriver.com>,
+        "'linux-wireless@vger.kernel.org'" <linux-wireless@vger.kernel.org>,
+        "'netdev@vger.kernel.org'" <netdev@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'joe@perches.com'" <joe@perches.com>
+Date: Fri, 14 Nov 2014 13:16:44 +0800
+Subject: [PATCH] carl9170: Convert byte_rev_table uses to bitrev8
+Thread-Topic: [PATCH] carl9170: Convert byte_rev_table uses to bitrev8
+Thread-Index: Ac//yi5OswK5mi6ZQd+KtioFzyjodw==
+Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1829D@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a DT binding documentation for the MT6592 SoC from Mediatek.
+Use the inline function instead of directly indexing the array.
 
-Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+This allows some architectures with hardware instructions for bit
+reversals to eliminate the array.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
 ---
- Documentation/devicetree/bindings/arm/mediatek.txt | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/carl9170/phy.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/mediatek.txt b/Documentation/devicetree/bindings/arm/mediatek.txt
-index fa25226..1d2d151 100644
---- a/Documentation/devicetree/bindings/arm/mediatek.txt
-+++ b/Documentation/devicetree/bindings/arm/mediatek.txt
-@@ -1,10 +1,10 @@
- Mediatek MT6589 Platforms Device Tree Bindings
+diff --git a/drivers/net/wireless/ath/carl9170/phy.c b/drivers/net/wireless/ath/carl9170/phy.c
+index b80b213..dca6df1 100644
+--- a/drivers/net/wireless/ath/carl9170/phy.c
++++ b/drivers/net/wireless/ath/carl9170/phy.c
+@@ -994,7 +994,7 @@ static int carl9170_init_rf_bank4_pwr(struct ar9170 *ar, bool band5ghz,
+ 			refsel0 = 0;
+ 			refsel1 = 1;
+ 		}
+-		chansel = byte_rev_table[chansel];
++		chansel = bitrev8(chansel);
+ 	} else {
+ 		if (freq == 2484) {
+ 			chansel = 10 + (freq - 2274) / 5;
+@@ -1002,7 +1002,7 @@ static int carl9170_init_rf_bank4_pwr(struct ar9170 *ar, bool band5ghz,
+ 		} else
+ 			chansel = 16 + (freq - 2272) / 5;
+ 		chansel *= 4;
+-		chansel = byte_rev_table[chansel];
++		chansel = bitrev8(chansel);
+ 	}
  
--Boards with a SoC of the Mediatek MT6589 shall have the following property:
-+Boards with a SoC from Mediatek shall have the following property:
- 
- Required root node property:
- 
--compatible: must contain "mediatek,mt6589"
-+compatible: must contain one of "mediatek,mt6589", "mediatek,mt6592"
- 
- 
- Supported boards:
-@@ -12,3 +12,6 @@ Supported boards:
- - bq Aquaris5 smart phone:
-     Required root node properties:
-       - compatible = "mundoreader,bq-aquaris5", "mediatek,mt6589";
-+
-+- Evaluation board for MT6592:
-+      - compatible = "mediatek,mt6592-evb", "mediatek,mt6592";
+ 	d1 =	chansel;
 -- 
-1.9.1
+2.1.1
 
