@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161992AbaKNVK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 16:10:57 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:38780 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754335AbaKNVK4 (ORCPT
+	id S1162007AbaKNVLK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 16:11:10 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:34860 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaKNVLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 16:10:56 -0500
-Date: Fri, 14 Nov 2014 22:10:52 +0100
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
-        p.zabel@pengutronix.de, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 08/13] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20141114211052.GA8105@kwain>
-References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
- <1415978763-27345-9-git-send-email-antoine.tenart@free-electrons.com>
- <20141114210832.GE16388@saruman>
+	Fri, 14 Nov 2014 16:11:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141114210832.GE16388@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415998465.1847.4.camel@sipsolutions.net>
+References: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
+ <1415998228.1847.3.camel@sipsolutions.net> <CAB=NE6X_d68Wc=CFAMb_suWJJQgSOSNafHiMwAmC6YhJFEtP1w@mail.gmail.com>
+ <1415998465.1847.4.camel@sipsolutions.net>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 14 Nov 2014 13:10:44 -0800
+X-Google-Sender-Auth: n9L_pHnJhpb_QWQVYqCpraQ66Wo
+Message-ID: <CAB=NE6XVsZaUebqpKWZhPXncDY-5NRXorYSGQQZC00a9ezJouQ@mail.gmail.com>
+Subject: Re: [PATCH v3 00/21] backports: add kernel integration support
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+On Fri, Nov 14, 2014 at 12:54 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Fri, 2014-11-14 at 12:52 -0800, Luis R. Rodriguez wrote:
+>> On Fri, Nov 14, 2014 at 12:50 PM, Johannes Berg
+>> <johannes@sipsolutions.net> wrote:
+>> > On Tue, 2014-11-11 at 00:14 -0800, Luis R. Rodriguez wrote:
+>> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>> >>
+>> >> This third series should hopefully address all pending feedback.
+>> >> I've split out patches even more, but more importantly have
+>> >> made the parser simpler by both integrating the logic required
+>> >> to understand a backport by identifying the backport by type
+>> >> and strategy, sharing that, and then providing ignore lists on
+>> >> the parsers.
+>> >
+>> > I think from a code change POV I should be OK with this, but I'll
+>> > definitely want to run it and see the differences. I'll have to do that
+>> > next week, it's getting late here.
+>>
+>> OK. So I shouldn't merge yet?
+>
+> I would prefer you didn't, but OTOH we can always fix up issues later as
+> well.
 
-On Fri, Nov 14, 2014 at 03:08:32PM -0600, Felipe Balbi wrote:
-> On Fri, Nov 14, 2014 at 04:25:58PM +0100, Antoine Tenart wrote:
-> > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> > and DMA mask, to support USB2 ChipIdea controllers that don't need
-> > specific functions.
-> > 
-> > Tested on the Marvell Berlin SoCs USB controllers.
-> > 
-> > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> > ---
-> >  drivers/usb/chipidea/Makefile       |   1 +
-> >  drivers/usb/chipidea/ci_hdrc_usb2.c | 117 ++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 118 insertions(+)
-> >  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
-> > 
-> > diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-> > index 2f099c7df7b5..1fc86a2ca22d 100644
-> > --- a/drivers/usb/chipidea/Makefile
-> > +++ b/drivers/usb/chipidea/Makefile
-> > @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+= otg_fsm.o
-> >  
-> >  # Glue/Bridge layers go here
-> >  
-> > +obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_usb2.o
-> 
-> usb2 is too generic, you should call it ci_hdcr_marvell, or something
-> like that.
+I'll wait.
 
-This driver is generic, and not only for Marvell Berlin SoCs. It is part
-of the Berlin USB series as it is the first SoC to use it but Xilinx can
-also use it for example.
-
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+ Luis
