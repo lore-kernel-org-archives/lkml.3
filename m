@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161614AbaKNRWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 12:22:21 -0500
-Received: from smtprelay0022.hostedemail.com ([216.40.44.22]:55951 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161017AbaKNRWO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 12:22:14 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2901:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:6261:6742:7903:8603:8660:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13148:13161:13229:13230:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grain80_6a2f15298540e
-X-Filterd-Recvd-Size: 2735
-Message-ID: <1415985728.5912.17.camel@perches.com>
-Subject: Re: [PATCH v2 1/2] kernel: printk: specify alignment for struct
- printk_log
-From: Joe Perches <joe@perches.com>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Jonathan Corbet <corbet@lwn.net>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yury Gribov <y.gribov@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Fri, 14 Nov 2014 09:22:08 -0800
-In-Reply-To: <1415969446-26356-2-git-send-email-a.ryabinin@samsung.com>
-References: <1415969446-26356-1-git-send-email-a.ryabinin@samsung.com>
-	 <1415969446-26356-2-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1161622AbaKNRXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 12:23:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39256 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161017AbaKNRXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 12:23:11 -0500
+Date: Fri, 14 Nov 2014 18:23:06 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 19/23 v4] seq_buf: Create seq_buf_used() to find out
+ how much was written
+Message-ID: <20141114172306.GE14538@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+ <20141114011413.321654244@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114011413.321654244@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-14 at 15:50 +0300, Andrey Ryabinin wrote:
-> On architectures that have support for efficient unaligned access
-> struct printk_log has 4-byte alignment.
-> Specify alignment attribute in type declaration.
+On Thu 2014-11-13 20:13:03, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> The whole point of this patch is to fix deadlock which happening
-> when UBSan detects unaligned access in printk() thus UBSan recursively
-> calls printk() with logbuf_lock held by top printk() call.
-[]
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-[]
-> @@ -223,7 +223,11 @@ struct printk_log {
->  	u8 facility;		/* syslog facility */
->  	u8 flags:5;		/* internal record flags */
->  	u8 level:3;		/* syslog level */
-> -};
+> Add a helper function seq_buf_used() that replaces the SEQ_BUF_USED()
+> private macro to let callers have a method to know how much of the
+> seq_buf was written to.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+
+The patch is correct. But we should move it before "[RFC][PATCH 17/23
+v4] tracing: Have seq_buf use full buffer" and use it everywhere
+any code is accessing the internal buffer using the seq.len value.
+I mean to solve the potential buffer overflows mentioned for
+"[RFC][PATCH 13/23 v4] tracing: Create seq_buf layer in trace_seq"
+
+Best Regards,
+Petr
+
+> ---
+>  include/linux/seq_buf.h | 6 ++++++
+>  kernel/trace/seq_buf.c  | 5 +----
+>  2 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> index 3e550d214187..8fda502ee630 100644
+> --- a/include/linux/seq_buf.h
+> +++ b/include/linux/seq_buf.h
+> @@ -64,6 +64,12 @@ seq_buf_buffer_left(struct seq_buf *s)
+>  	return s->size - s->len;
+>  }
+>  
+> +/* How much buffer was written? */
+> +static inline unsigned int seq_buf_used(struct seq_buf *s)
+> +{
+> +	return min((s)->len, (s)->size);
 > +}
-> +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> +__packed __aligned(4)
-> +#endif
-
-Why is adding __packed useful or __aligned(4) useful?
-
-The struct is naturally aligned on u64 and should be
-the size of 2 u64s.
-
-struct printk_log {
-	u64 ts_nsec;		/* timestamp in nanoseconds */
-	u16 len;		/* length of entire record */
-	u16 text_len;		/* length of text buffer */
-	u16 dict_len;		/* length of dictionary buffer */
-	u8 facility;		/* syslog facility */
-	u8 flags:5;		/* internal record flags */
-	u8 level:3;		/* syslog level */
-};
-
-Is there any case when it's not sizeof(u64) * 2?
-
-
+> +
+>  /**
+>   * seq_buf_get_buf - get buffer to write arbitrary data to
+>   * @s: the seq_buf handle
+> diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+> index 4f35a783b82f..3657af4b5f53 100644
+> --- a/kernel/trace/seq_buf.c
+> +++ b/kernel/trace/seq_buf.c
+> @@ -16,9 +16,6 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/seq_buf.h>
+>  
+> -/* How much buffer is written? */
+> -#define SEQ_BUF_USED(s) min((s)->len, (s)->size)
+> -
+>  /**
+>   * seq_buf_print_seq - move the contents of seq_buf into a seq_file
+>   * @m: the seq_file descriptor that is the destination
+> @@ -28,7 +25,7 @@
+>   */
+>  int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s)
+>  {
+> -	unsigned int len = SEQ_BUF_USED(s);
+> +	unsigned int len = seq_buf_used(s);
+>  
+>  	return seq_write(m, s->buffer, len);
+>  }
+> -- 
+> 2.1.1
+> 
+> 
