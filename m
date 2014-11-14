@@ -1,123 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965359AbaKNNbU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:31:20 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:40857 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965250AbaKNNbS (ORCPT
+	id S965435AbaKNNcw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:32:52 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:32875 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965283AbaKNNcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:31:18 -0500
+	Fri, 14 Nov 2014 08:32:51 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>
+CC: <linux-audit@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <sgrubb@redhat.com>, <eparis@parisplace.org>
+Date: Fri, 14 Nov 2014 08:32:48 -0500
+Message-ID: <149ae818c30.2806.85c95baa4474aabc7814e68940a78392@paul-moore.com>
+In-Reply-To: <20141114010852.GB5960@madcap2.tricolour.ca>
+References: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com>
+ <1745832.tbkjBzSGxr@sifl>
+ <20141114010852.GB5960@madcap2.tricolour.ca>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0 AquaMail/1.5.0.19 (build: 2100846)
+Subject: Re: [PATCH] audit: convert status version to a feature bitmap
 MIME-Version: 1.0
-In-Reply-To: <1415955033-29093-6-git-send-email-k.kozlowski@samsung.com>
-References: <1415955033-29093-1-git-send-email-k.kozlowski@samsung.com>
-	<1415955033-29093-6-git-send-email-k.kozlowski@samsung.com>
-Date: Fri, 14 Nov 2014 14:31:17 +0100
-Message-ID: <CAPDyKFr+DVd0qZ=ra5W-HxHDqauX6ZwBK8S8t_fboJfk_BUTaA@mail.gmail.com>
-Subject: Re: [PATCH v12 5/6] dmaengine: pl330: Add PM sleep support
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 November 2014 09:50, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> Add system suspend/resume capabilities to the pl330 driver so the amba
-> bus clock could be also unprepared to conserve energy.
+My apologies, yes I was concerned about LATEST. Try the test that Steve 
+described and if that works I'm happy.
+--
+paul moore
+www.paul-moore.com
+
+
+
+On November 13, 2014 8:09:11 PM Richard Guy Briggs <rgb@redhat.com> wrote:
+
+> On 14/11/13, Paul Moore wrote:
+> > On Thursday, November 13, 2014 03:29:10 PM Richard Guy Briggs wrote:
+> > > The version field defined in the audit status structure was found to have
+> > > limitations in terms of its expressibility of features supported.  This is
+> > > distict from the get/set features call to be able to command those features
+> > > that are present.
+> > >
+> > > Converting this field from a version number to a feature bitmap will allow
+> > > distributions to selectively backport and support certain features and will
+> > > allow upstream to be able to deprecate features in the future.  It will
+> > > allow userspace clients to first query the kernel for which features are
+> > > actually present and supported.  Currently, EINVAL is returned rather than
+> > > EOPNOTSUP, which isn't helpful in determining if there was an error in the
+> > > command, or if it simply isn't supported yet.  Past features are not
+> > > represented by this bitmap, but their use may be converted to EOPNOTSUP if
+> > > needed in the future.
+> > >
+> > > Since "version" is too generic to convert with a #define, use a union 
+> in the
+> > > struct status, introducing the member "feature_bitmap" unionized with
+> > > "version".
+> > >
+> > > Convert existing AUDIT_VERSION_* macros over to AUDIT_FEATURE_BITMAP*
+> > > counterparts, leaving the former for backwards compatibility.
+> > >
+> > > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > > ---
+> > >  include/uapi/linux/audit.h |   17 +++++++++++++----
+> > >  kernel/audit.c             |    2 +-
+> > >  2 files changed, 14 insertions(+), 5 deletions(-)
+> >
+> > Looks good for the most part, just a naming nit pick and a question about the
+> > deprecated AUDIT_VERSION_* defines; see below ...
+> >
+> > > diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> > > index 4d100c8..74aa584 100644
+> > > --- a/include/uapi/linux/audit.h
+> > > +++ b/include/uapi/linux/audit.h
+> > > @@ -322,9 +322,15 @@ enum {
+> > >  #define AUDIT_STATUS_BACKLOG_LIMIT	0x0010
+> > >  #define AUDIT_STATUS_BACKLOG_WAIT_TIME	0x0020
+> > >
+> > > -#define AUDIT_VERSION_BACKLOG_LIMIT	1
+> > > -#define AUDIT_VERSION_BACKLOG_WAIT_TIME	2
+> > > -#define AUDIT_VERSION_LATEST AUDIT_VERSION_BACKLOG_WAIT_TIME
+> > > +#define AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT	0x00000001
+> > > +#define AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME	0x00000002
+> > > +#define AUDIT_FEATURE_BITMAP ( AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT | \
+> > > +				                AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME )
+> >
+> > How about AUDIT_FEATURE_BIMAP_ALL instead of just AUDIT_FEATURE_BITMAP?
 >
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/dma/pl330.c | 41 +++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 41 insertions(+)
+> Sure, I'm fine with that.
 >
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index c3bd3584f261..e499bb118f0a 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2627,6 +2627,46 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
->         return 0;
->  }
+> > > +/* deprecated: AUDIT_VERSION_* */
+> > > +#define AUDIT_VERSION_LATEST 		AUDIT_FEATURE_BITMAP
+> > > +#define AUDIT_VERSION_BACKLOG_LIMIT	AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT
+> > > +#define AUDIT_VERSION_BACKLOG_WAIT_TIME
+> > > ...                                AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME
+> >
+> > So what terrible things happen to userspace if 
+> AUDIT_VERSION_BACKLOG_WAIT_TIME
+> > becomes 0x03 instead of 0x02?
 >
-> +/*
-> + * Runtime PM callbacks are provided by amba/bus.c driver.
-> + *
-> + * It is assumed here that IRQ safe runtime PM is chosen in probe and amba
-> + * bus driver will only disable/enable the clock in runtime PM callbacks.
-> + */
-> +static int __maybe_unused pl330_suspend(struct device *dev)
-> +{
-> +       struct amba_device *pcdev = to_amba_device(dev);
-> +
-> +       pm_runtime_disable(dev);
-> +
-> +       if (!pm_runtime_status_suspended(dev)) {
-> +               /* amba did not disable the clock */
-> +               amba_pclk_disable(pcdev);
-> +       }
-> +       amba_pclk_unprepare(pcdev);
-
-I would also invoke pm_runtime_set_suspended() here, to reflect that's
-the current runtime PM state of the device.
-
-I guess I sounds like broken record :-), but using
-pm_runtime_force_suspend() would help to prevent some code duplication
-here.
-
-Something like this:
-
-pm_runtime_force_suspend()
-if (pm_runtime_is_irq_safe())
-   amba_pclk_unprepare(pcdev);
-
-
-Kind regards
-Uffe
-
-> +
-> +       return 0;
-> +}
-> +
-> +static int __maybe_unused pl330_resume(struct device *dev)
-> +{
-> +       struct amba_device *pcdev = to_amba_device(dev);
-> +       int ret;
-> +
-> +       ret = amba_pclk_prepare(pcdev);
-> +       if (ret)
-> +               return ret;
-> +
-> +       if (!pm_runtime_status_suspended(dev))
-> +               ret = amba_pclk_enable(pcdev);
-> +
-> +       pm_runtime_enable(dev);
-> +
-> +       return ret;
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(pl330_pm, pl330_suspend, pl330_resume);
-> +
->  static int
->  pl330_probe(struct amba_device *adev, const struct amba_id *id)
->  {
-> @@ -2853,6 +2893,7 @@ static struct amba_driver pl330_driver = {
->         .drv = {
->                 .owner = THIS_MODULE,
->                 .name = "dma-pl330",
-> +               .pm = &pl330_pm,
->         },
->         .id_table = pl330_ids,
->         .probe = pl330_probe,
+> But it won't.  It gets the value of
+> AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME, which is 0x00000002.
+>
+> I think you meant to ask about AUDIT_VERSION_LATEST, which would become 3.
+>
+> You *did* already ask that question in a previous thread, and there
+> didn't seem to be a concern.  Steve Grubb could likely answer this
+> question better than me.
+>
+> > paul moore
+>
+> - RGB
+>
 > --
-> 1.9.1
+> Richard Guy Briggs <rbriggs@redhat.com>
+> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, 
+> Red Hat
+> Remote, Ottawa, Canada
+> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
