@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161040AbaKNNI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:08:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60777 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933890AbaKNNI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:08:26 -0500
-Date: Fri, 14 Nov 2014 14:08:22 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Andrea Argangeli <andrea@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: anon_vma accumulating for certain load still not addressed
-Message-ID: <20141114130822.GC22857@dhcp22.suse.cz>
+	id S935282AbaKNNMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:12:08 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:58943 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933960AbaKNNMF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:12:05 -0500
+Date: Fri, 14 Nov 2014 08:12:02 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH vfs 1/2] lib: implement ptrset
+Message-ID: <20141114131202.GB21209@htj.dyndns.org>
+References: <20141113220927.GF2598@htj.dyndns.org>
+ <20141113142333.39fc29592019a397131fb03c@linux-foundation.org>
+ <20141113222736.GH2598@htj.dyndns.org>
+ <20141113144041.23bff773808562c699507621@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141113144041.23bff773808562c699507621@linux-foundation.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-back in 2012 [1] there was a discussion about a forking load which
-accumulates anon_vmas. There was a trivial test case which triggers this
-and can potentially deplete the memory by local user.
+Hello, Andrew.
 
-We have a report for an older enterprise distribution where nsd is
-suffering from this issue most probably (I haven't debugged it throughly
-but accumulating anon_vma structs over time sounds like a good enough
-fit) and has to be restarted after some time to release the accumulated
-anon_vma objects.
+On Thu, Nov 13, 2014 at 02:40:41PM -0800, Andrew Morton wrote:
+> In that case tjpointer_add() would need to do a kmalloc() for each inode
+> which is added to the bdev/cdev, just as ptrset_add() is doing.
+> 
+> That might require a nasty preload thing.  But really, for just two
+> known callers it would be better to require the caller to create the
+> storage.
+> 
+> 
+> 	struct tjpointer *new_tpj;
+> 
+> 	new_tpj = kmalloc(...);
+> 	lock();
+> 	tjpointer_add(&my_tjp_list, new_tjp, my_pointer);
+> 	unlock();
+> 
+> Basically what I'm saying is nuke the rbtree and use lists.
 
-There was a patch which tried to work around the issue [2] but I do not
-see any follow ups nor any indication that the issue would be addressed
-in other way. 
+Hah?  Then, each removal would be O(N) where N is the number of total
+block devices and there are cases where massive number of block
+devices exist and many are added / removed back-to-back.  I don't
+think making those operations O(N^2) is a good idea.
 
-The test program from [1] was running for around 39 mins on my laptop
-and here is the result:
+Thanks.
 
-$ date +%s; grep anon_vma /proc/slabinfo
-1415960225
-anon_vma           11664  11900    160   25    1 : tunables    0    0    0 : slabdata    476    476      0
-
-$ ./a # The reproducer
-
-$ date +%s; grep anon_vma /proc/slabinfo
-1415962592
-anon_vma           34875  34875    160   25    1 : tunables    0    0    0 : slabdata   1395   1395      0
-
-$ killall a
-$ date +%s; grep anon_vma /proc/slabinfo
-1415962607
-anon_vma           11277  12175    160   25    1 : tunables    0    0    0 : slabdata    487    487      0
-
-So we have accumulated 23211 objects over that time period before the
-offender was killed which released all of them.
-
-The proposed workaround is kind of ugly but do people have a better idea
-than reference counting? If not should we merge it?
-
----
-[1] https://lkml.org/lkml/2012/8/15/765
-[2] https://lkml.org/lkml/2013/6/3/568
 -- 
-Michal Hocko
-SUSE Labs
+tejun
