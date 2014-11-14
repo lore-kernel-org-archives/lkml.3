@@ -1,110 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965477AbaKNLXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:23:06 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43538 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965074AbaKNLVz (ORCPT
+	id S965410AbaKNLYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:24:50 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:58181 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965074AbaKNLYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:21:55 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 3.18-rc3 v3 1/2] trace: kdb: Fix kernel panic during ftdump
-Date: Fri, 14 Nov 2014 11:21:22 +0000
-Message-Id: <1415964083-10354-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415964083-10354-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
- <1415964083-10354-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 14 Nov 2014 06:24:48 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-f8-5465e67d47f1
+Date: Fri, 14 Nov 2014 12:24:37 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
+ for tegra driver
+Message-id: <20141114122437.6742ea68@amdc2363>
+In-reply-to: <5465DDC5.6090301@kapsi.fi>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
+ <5465DDC5.6090301@kapsi.fi>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAd3aZ6khBqveWlhsnLGe1WL+lWus
+	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbXF51xw2i8+9RxgtOr/MYrO4/eEAs8WDq9PYLJ48
+	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5HHp3B9mj3XT3jJ7HJh8jtWj
+	t/kdm8e3MxNZPPq2rGL0ePpjL7PH501yHhvnhgbwRHHZpKTmZJalFunbJXBldN04zlzwm7/i
+	1oa1jA2MF3i6GDk5JARMJI48/MYGYYtJXLi3Hsjm4hASWMQocfLCUiYI5xejxKOrvewgVSwC
+	qhIHPi9mBLHZBPQkPt99ClTEwSECZB9/KgJSzyzQwyqx9PBpJpAaYYF4iTvfL4H18gLVvN2z
+	hhnE5hTQkJg9/wALxIJ7jBL9H6+BNfALSEq0//vBDHGSncS5TxugmgUlfky+xwJiMwtoSWze
+	1sQKYctLbF7zlnkCo+AsJGWzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw
+	bD6T3sG4qsHiEKMAB6MSDy+jW2qIEGtiWXFl7iFGCQ5mJRHen1eAQrwpiZVVqUX58UWlOanF
+	hxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhiNfoc2pn32vXpV6v/aaedibtekNt/n
+	TDHItlmo1lfnN/M6w2PWzdl/I25eevu9gf+blHyL5A4HSWN1310KQeZeDolhEZILZzstm2ue
+	fetC73eJnJgdPyWqGr1s5deWR1QcKbzjkCshflP040ddRcXtL79Wq3DO0Dt0eJnrStUJqX9U
+	4zOO1ymxFGckGmoxFxUnAgC+E9nNyQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kdb's ftdump command unconditionally crashes due to a null
-pointer de-reference whenever the command is run. This in turn causes
-the kernel to panic.
+Hi Mikko,
 
-The abridged stacktrace (gathered with ARCH=arm) is:
--~- cut here -~-
-[<c09535ac>] (panic) from [<c02132dc>] (die+0x264/0x440)
-[<c02132dc>] (die) from [<c0952eb8>]
-(__do_kernel_fault.part.11+0x74/0x84)
-[<c0952eb8>] (__do_kernel_fault.part.11) from [<c021f954>]
-(do_page_fault+0x1d0/0x3c4)
-[<c021f954>] (do_page_fault) from [<c020846c>] (do_DataAbort+0x48/0xac)
+> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 
-[<c020846c>] (do_DataAbort) from [<c0213c58>] (__dabt_svc+0x38/0x60)
-Exception stack(0xc0deba88 to 0xc0debad0)
-ba80:                   e8c29180 00000001 e9854304 e9854300 c0f567d8
-c0df2580
-baa0: 00000000 00000000 00000000 c0f117b8 c0e3a3c0 c0debb0c 00000000
-c0debad0
-bac0: 0000672e c02f4d60 60000193 ffffffff
-[<c0213c58>] (__dabt_svc) from [<c02f4d60>] (kdb_ftdump+0x1e4/0x3d8)
-[<c02f4d60>] (kdb_ftdump) from [<c02ce328>] (kdb_parse+0x2b8/0x698)
-[<c02ce328>] (kdb_parse) from [<c02ceef0>] (kdb_main_loop+0x52c/0x784)
-[<c02ceef0>] (kdb_main_loop) from [<c02d1b0c>] (kdb_stub+0x238/0x490)
--~- cut here -~-
+Thanks for testing.
 
-The NULL deref occurs due to the initialized use of struct trace_iter's
-buffer_iter member.
+> 
+> One potential issue I can see is that if the cpufreq driver fails to 
+> probe then you'll never get the thermal driver either. For example, 
+> Tegra124 currently has no cpufreq driver, so if CONFIG_CPU_THERMAL
+> was enabled, then the soctherm driver would never be able to probe.
 
-This is a regression, albeit a fairly elderly one. It was introduced
-by commit 6d158a813efc ("tracing: Remove NR_CPUS array from
-trace_iterator").
+Yes, this is a potential issue. However, this option in tegra_defconfig
+is by default disabled when thermal is enabled.
 
-This patch solves this by providing a collection of ring_buffer_iter(s)
-and using this to initialize buffer_iter. Note that static allocation
-is used solely because the trace_iter itself is also static allocated.
-Static allocation also means that we have to NULL-ify the pointer during
-cleanup to avoid use-after-free problems.
+> But I don't really have a solution for this either.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kdb.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Ok. I see.
 
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index bd90e1b06088..8faa7ce58814 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -20,10 +20,12 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
- {
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-+	static struct ring_buffer_iter *buffer_iter[CONFIG_NR_CPUS];
- 	unsigned int old_userobj;
- 	int cnt = 0, cpu;
- 
- 	trace_init_global_iter(&iter);
-+	iter.buffer_iter = buffer_iter;
- 
- 	for_each_tracing_cpu(cpu) {
- 		atomic_inc(&per_cpu_ptr(iter.trace_buffer->data, cpu)->disabled);
-@@ -86,9 +88,12 @@ out:
- 		atomic_dec(&per_cpu_ptr(iter.trace_buffer->data, cpu)->disabled);
- 	}
- 
--	for_each_tracing_cpu(cpu)
--		if (iter.buffer_iter[cpu])
-+	for_each_tracing_cpu(cpu) {
-+		if (iter.buffer_iter[cpu]) {
- 			ring_buffer_read_finish(iter.buffer_iter[cpu]);
-+			iter.buffer_iter[cpu] = NULL;
-+		}
-+	}
- }
- 
- /*
+> 
+> Cheers,
+> Mikko
+> 
+> On 11/13/2014 07:02 PM, Lukasz Majewski wrote:
+> > When CPU freq is used as a thermal zone cooling device, one needs
+> > to wait until cpufreq subsystem is properly initialized.
+> >
+> > This code is similar to the one already available in imx_thermal.c
+> > file.
+> >
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > ---
+> >   drivers/thermal/tegra_soctherm.c | 7 +++++++
+> >   1 file changed, 7 insertions(+)
+> >
+> > diff --git a/drivers/thermal/tegra_soctherm.c
+> > b/drivers/thermal/tegra_soctherm.c index 70f7e9e..9c5aaa4 100644
+> > --- a/drivers/thermal/tegra_soctherm.c
+> > +++ b/drivers/thermal/tegra_soctherm.c
+> > @@ -26,6 +26,7 @@
+> >   #include <linux/platform_device.h>
+> >   #include <linux/reset.h>
+> >   #include <linux/thermal.h>
+> > +#include <linux/cpufreq.h>
+> >
+> >   #include <soc/tegra/fuse.h>
+> >
+> > @@ -346,6 +347,12 @@ static int tegra_soctherm_probe(struct
+> > platform_device *pdev)
+> >
+> >   	const struct tegra_tsensor *tsensors = t124_tsensors;
+> >
+> > +#ifdef CONFIG_CPU_THERMAL
+> > +	if (!cpufreq_get_current_driver()) {
+> > +		dev_dbg(&pdev->dev, "no cpufreq driver!");
+> > +		return -EPROBE_DEFER;
+> > +	}
+> > +#endif
+> >   	tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra),
+> > GFP_KERNEL); if (!tegra)
+> >   		return -ENOMEM;
+> >
+> 
+
+
+
 -- 
-1.9.3
+Best regards,
 
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
