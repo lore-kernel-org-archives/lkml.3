@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701AbaKNIU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:20:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54310 "EHLO mx2.suse.de"
+	id S1754678AbaKNIX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:23:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45658 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754440AbaKNIU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:20:57 -0500
-Message-ID: <1415953238.4534.2.camel@linux-t7sj.site>
-Subject: Re: [PATCH] mm: fix overly aggressive shmdt() when calls span
- multiple segments
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, dave.hansen@linux.intel.com
-Date: Fri, 14 Nov 2014 00:20:38 -0800
-In-Reply-To: <20141104000633.F35632C6@viggo.jf.intel.com>
-References: <20141104000633.F35632C6@viggo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754440AbaKNIXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 03:23:55 -0500
+Date: Fri, 14 Nov 2014 09:23:30 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: kan.liang@intel.com, acme@kernel.org, a.p.zijlstra@chello.nl,
+        eranian@google.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        paulus@samba.org
+Subject: Re: [PATCH V2 2/3] perf tool: re-organize
+ thread__resolve_callchain_sample
+Message-ID: <20141114082330.GA12193@krava.redhat.com>
+References: <1415837895-10275-1-git-send-email-kan.liang@intel.com>
+ <1415837895-10275-3-git-send-email-kan.liang@intel.com>
+ <20141113182123.GA6309@krava.redhat.com>
+ <20141113184810.GC4358@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113184810.GC4358@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 16:06 -0800, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@linux.intel.com>
+On Thu, Nov 13, 2014 at 10:48:10AM -0800, Andi Kleen wrote:
+> > Any chance you guys could sync on this? ..you're touching the
+> > same code.. Andi, maybe you wouldn't mind having this patch
+> > instead of your change.. looks like the only extra part is the
+> > cpumode resolve.
 > 
-> This is a highly-contrived scenario.  But, a single shmdt() call
-> can be induced in to unmapping memory from mulitple shm segments.
-> Example code is here:
+> Please just merge one of them, and the other can rebase.
 > 
-> 	http://www.sr71.net/~dave/intel/shmfun.c
+> Note the lbr as callgraph has been posted since nearly a year now
+> (v1 was in January)
 > 
-> The fix is pretty simple:  Record the 'struct file' for the first
-> VMA we encounter and then stick to it.  Decline to unmap anything
-> not from the same file and thus the same segment.
-> 
-> I found this by inspection and the odds of anyone hitting this in
-> practice are pretty darn small.
-> 
-> Lightly tested, but it's a pretty small patch.
 
-Passed shmdt ltp tests, fwiw.
+Arnaldo just took it:
+http://marc.info/?l=linux-kernel&m=141590608310095&w=2
 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Kan, please rebase once it's pushed out.
 
-Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
-
+thanks,
+jirka
