@@ -1,83 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965615AbaKNPyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:54:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:52203 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964875AbaKNPyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:54:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="487527248"
-Message-ID: <5466259A.7060505@linux.intel.com>
-Date: Fri, 14 Nov 2014 23:54:02 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <54651BE2.9080008@arm.com> <alpine.DEB.2.11.1411132207470.3935@nanos> <5465227E.6000309@arm.com>
-In-Reply-To: <5465227E.6000309@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S965704AbaKNPyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:54:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63794 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964875AbaKNPyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 10:54:39 -0500
+From: Andre Przywara <andre.przywara@arm.com>
+To: will.deacon@arm.com, catalin.marinas@arm.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6] arm64: add Cortex-A53 cache errata workaround
+Date: Fri, 14 Nov 2014 15:54:10 +0000
+Message-Id: <1415980452-20366-5-git-send-email-andre.przywara@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1415980452-20366-1-git-send-email-andre.przywara@arm.com>
+References: <1415980452-20366-1-git-send-email-andre.przywara@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/14 5:28, Marc Zyngier wrote:
-> On 13/11/14 21:11, Thomas Gleixner wrote:
->> On Thu, 13 Nov 2014, Marc Zyngier wrote:
->>> With the new stacked irq domains, it becomes pretty tempting
->>> to allocate an MSI domain per PCI bus, which would remove
->>> the requirement of either relying on arch-specific code, or
->>> a default PCI MSI domain.
->>
->> Right. That's what I roughly had in mind. And that would solve the
->> multi-iommu issue on x86 nicely as well. We establish the association
->> at the time where the bus gets populated. So the whole lookup magic
->> simply goes away.
-> 
-> Great. I've pushed the whole thing out with this patch, the couple
-> of fixes I mentioned earlier, as well as the whole ITS code:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/stacked-its-v2
-Hi Marc,
-	I have looked at the code, and found some issues.
-1) With my next version, no need to implemeent its_pci_msi_free()
-anymore. msi_domain_free_irqs() will reset desc->irq to zero
-for all architectures.
+The ARM errata 819472, 826319, 827319 and 824069 define the same
+workaround for these hardware issues in certain Cortex-A53 parts.
+Use the new alternatives framework and the CPU MIDR detection to
+patch "cache clean" into "cache clean and invalidate" instructions if
+an affected CPU is detected at runtime.
 
-2) This piece of code in its_msi_prepare() may run into trouble
-for PCI device with both MSI and MSIX capability. I will change
-msi_prepare() prototype to pass in the "nvec" parameter. And you
-may access first_pci_msi_entry()->msi_attrib.is_msix to get
-allocation type if needed.
-	nvec = pci_msix_vec_count(pdev);
-	if (nvec < 0)
-		nvec = pci_msi_vec_count(pdev);
-	if (nvec < 0)
-		return nvec;
+Signed-off-by: Andre Przywara <andre.przywara@arm.com>
+---
+ arch/arm64/include/asm/alternative-asm.h |   13 ++++++++++++
+ arch/arm64/include/asm/cpufeature.h      |    8 +++++++-
+ arch/arm64/include/asm/cputype.h         |    5 +++++
+ arch/arm64/kernel/cpu_errata.c           |   32 +++++++++++++++++++++++++++++-
+ arch/arm64/mm/cache.S                    |    4 +++-
+ 5 files changed, 59 insertions(+), 3 deletions(-)
 
-3) Do we need to increase the default of NUM_MSI_ALLOC_SCRATCHPAD_REGS
-to 4? 2 is a little too limited.
+diff --git a/arch/arm64/include/asm/alternative-asm.h b/arch/arm64/include/asm/alternative-asm.h
+index 5ee9340..919a678 100644
+--- a/arch/arm64/include/asm/alternative-asm.h
++++ b/arch/arm64/include/asm/alternative-asm.h
+@@ -11,6 +11,19 @@
+ 	.byte \alt_len
+ .endm
+ 
++.macro alternative_insn insn1 insn2 cap
++661:	\insn1
++662:	.pushsection .altinstructions, "a"
++	altinstruction_entry 661b, 663f, \cap, 662b-661b, 664f-663f
++	.popsection
++	.pushsection .altinstr_replacement, "ax"
++663:	\insn2
++664:	.popsection
++	.if ((664b-663b) != (662b-661b))
++		.error "Alternatives instruction length mismatch"
++	.endif
++.endm
++
+ #endif  /*  __ASSEMBLY__  */
+ 
+ #endif /* __ASM_ALTERNATIVE_ASM_H */
+diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
+index 744eaf7..92b6ee4 100644
+--- a/arch/arm64/include/asm/cpufeature.h
++++ b/arch/arm64/include/asm/cpufeature.h
+@@ -21,7 +21,11 @@
+ #define MAX_CPU_FEATURES	(8 * sizeof(elf_hwcap))
+ #define cpu_feature(x)		ilog2(HWCAP_ ## x)
+ 
+-#define NCAPS			0
++#define ARM64_WORKAROUND_CLEAN_CACHE	0
++
++#define NCAPS				1
++
++#ifndef __ASSEMBLY__
+ 
+ extern DECLARE_BITMAP(cpu_hwcaps, NCAPS);
+ 
+@@ -48,4 +52,6 @@ static inline void cpus_set_cap(unsigned int num)
+ 
+ void check_local_cpu_errata(void);
+ 
++#endif /* __ASSEMBLY__ */
++
+ #endif
+diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
+index 379d0b8..8adb986 100644
+--- a/arch/arm64/include/asm/cputype.h
++++ b/arch/arm64/include/asm/cputype.h
+@@ -57,6 +57,11 @@
+ #define MIDR_IMPLEMENTOR(midr)	\
+ 	(((midr) & MIDR_IMPLEMENTOR_MASK) >> MIDR_IMPLEMENTOR_SHIFT)
+ 
++#define MIDR_CPU_PART(imp, partnum) \
++	(((imp)			<< MIDR_IMPLEMENTOR_SHIFT) | \
++	(0xf			<< MIDR_ARCHITECTURE_SHIFT) | \
++	((partnum)		<< MIDR_PARTNUM_SHIFT))
++
+ #define ARM_CPU_IMP_ARM		0x41
+ #define ARM_CPU_IMP_APM		0x50
+ 
+diff --git a/arch/arm64/kernel/cpu_errata.c b/arch/arm64/kernel/cpu_errata.c
+index 9332cf7..875fb2c 100644
+--- a/arch/arm64/kernel/cpu_errata.c
++++ b/arch/arm64/kernel/cpu_errata.c
+@@ -23,6 +23,8 @@
+ #include <asm/cputype.h>
+ #include <asm/cpufeature.h>
+ 
++#define MIDR_CORTEX_A53 MIDR_CPU_PART(ARM_CPU_IMP_ARM, ARM_CPU_PART_CORTEX_A53)
++
+ /*
+  * Add a struct or another datatype to the union below if you need
+  * different means to detect an affected CPU.
+@@ -39,8 +41,36 @@ struct arm64_cpu_capabilities {
+ 	};
+ };
+ 
++#define CPU_MODEL_MASK (MIDR_IMPLEMENTOR_MASK | MIDR_PARTNUM_MASK | \
++			MIDR_ARCHITECTURE_MASK)
++
++static bool is_affected_midr_range(struct arm64_cpu_capabilities *entry)
++{
++	u32 midr = read_cpuid_id();
++
++	if ((midr & CPU_MODEL_MASK) != entry->midr_model)
++		return false;
++
++	midr &= MIDR_REVISION_MASK | MIDR_VARIANT_MASK;
++
++	return (midr >= entry->midr_range_min && midr <= entry->midr_range_max);
++}
++
++#define MIDR_RANGE(model, min, max) \
++	.is_affected = is_affected_midr_range, \
++	.midr_model = model, \
++	.midr_range_min = min, \
++	.midr_range_max = max
++
+ struct arm64_cpu_capabilities arm64_errata[] = {
+-	{}
++	{
++	/* Cortex-A53 r0p[012] */
++		.desc = "ARM errata 826319, 827319, 824069",
++		.capability = ARM64_WORKAROUND_CLEAN_CACHE,
++		MIDR_RANGE(MIDR_CORTEX_A53, 0x00, 0x02),
++	},
++	{
++	}
+ };
+ 
+ void check_local_cpu_errata(void)
+diff --git a/arch/arm64/mm/cache.S b/arch/arm64/mm/cache.S
+index 2366383..8eaf185 100644
+--- a/arch/arm64/mm/cache.S
++++ b/arch/arm64/mm/cache.S
+@@ -20,6 +20,8 @@
+ #include <linux/linkage.h>
+ #include <linux/init.h>
+ #include <asm/assembler.h>
++#include <asm/cpufeature.h>
++#include <asm/alternative-asm.h>
+ 
+ #include "proc-macros.S"
+ 
+@@ -210,7 +212,7 @@ __dma_clean_range:
+ 	dcache_line_size x2, x3
+ 	sub	x3, x2, #1
+ 	bic	x0, x0, x3
+-1:	dc	cvac, x0			// clean D / U line
++1:	alternative_insn "dc cvac, x0", "dc civac, x0", ARM64_WORKAROUND_CLEAN_CACHE
+ 	add	x0, x0, x2
+ 	cmp	x0, x1
+ 	b.lo	1b
+-- 
+1.7.9.5
 
-Regards!
-Gerry
-
-> 
-> Time to go home.
-> 
-> 	M.
-> 
