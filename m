@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935046AbaKNDvm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 22:51:42 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:14642 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934473AbaKNDvl (ORCPT
+	id S935017AbaKND7P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 22:59:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33169 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933512AbaKND7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 22:51:41 -0500
-Date: Thu, 13 Nov 2014 22:51:28 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Pranith Kumar <bobby.prani@gmail.com>,
+	Thu, 13 Nov 2014 22:59:14 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Petr Mladek <pmladek@suse.cz>, Jan Kara <jack@suse.cz>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Alex Elder <elder@linaro.org>,
-        open list <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH] printk: Use ACCESS_ONCE() instead of a volatile
- type
-Message-ID: <20141113225128.3568bae6@gandalf.local.home>
-In-Reply-To: <1415936460.5912.1.camel@perches.com>
-References: <1415935283-19198-1-git-send-email-bobby.prani@gmail.com>
-	<1415936460.5912.1.camel@perches.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] PCI: Don't reject 64bit mmio on 32bit/PAE mode
+Date: Thu, 13 Nov 2014 19:59:10 -0800
+Message-Id: <1415937550-14469-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014 19:41:00 -0800
-Joe Perches <joe@perches.com> wrote:
+Aaron reported 32bit/PAE mode, has problem with 64bit resource.
 
-> On Thu, 2014-11-13 at 22:21 -0500, Pranith Kumar wrote:
-> > Remove volatile type qualifier and use ACCESS_ONCE() in its place for each
-> > access. Using volatile is not recommended as documented in
-> > Documentation/volatile-considered-harmful.txt.
-> > 
-> > Here logbuf_cpu is a local variable and it is not clear how it is being accessed
-> > concurrently. We should remove volatile accesses entirely here, but for now make
-> > a safer change of using ACCESS_ONCE().
-> 
-> Not recommended does not mean "don't ever use".
+[    6.610012] pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
+[    6.622195] pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
+[    6.656112] pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
+[    6.668293] pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
+[    6.702055] pci 0000:00:02.2: PCI bridge to [bus 03-04]
+[    6.706434] pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
+[    6.711783] pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
+[    6.717906] pci 0000:00:02.2: can't handle 64-bit address space for bridge
 
-I would argue that the use of volatile in open code is evil and prone
-to bugs. I agree that this is one of the few occasions that this is not
-the case.
+So the kernel reject 64bit mmio on pci pref bridge that is assigned by
+firmware.
 
-> 
-> Forcing the volatile at each use site instead
-> of the declaration isn't necessarily better.
-> 
-> I think the code is more readable as-is but I'm
-> not going to object if Andrew picks this up...
-> 
+When 32bit PAE is enabled, we could support 64bit mmio.
+but BITS_PER_LONG==64 checking could reject firmware assigned mmio that
+is above 4G. On x86 32bit always has BITS_PER_LONG equal to 32.
 
-The ACCESS_ONCE() calls at each location makes it a bit uglier, but it
-drives in the point of what that is doing. Where as the volatile may be
-missed.
+We could use CONFIG_ARCH_DMA_ADDR_T_64BIT or dma_addr_t size checking instead.
+Use dma_addr_t size checking to avoid using MARCO.
 
--- Steve
+Also need to change to use dma_addr_t instead of unsigned long
+for base/limit to avoid overflow.
 
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
+Reported-by: Aaron Ma <mapengyu@gmail.com>
+Tested-by: Aaron Ma <mapengyu@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/probe.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -406,15 +406,15 @@ static void pci_read_bridge_mmio_pref(st
+ {
+ 	struct pci_dev *dev = child->self;
+ 	u16 mem_base_lo, mem_limit_lo;
+-	unsigned long base, limit;
++	dma_addr_t base, limit;
+ 	struct pci_bus_region region;
+ 	struct resource *res;
+ 
+ 	res = child->resource[2];
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
+-	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
+-	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
++	base = ((dma_addr_t) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
++	limit = ((dma_addr_t) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
+ 
+ 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
+ 		u32 mem_base_hi, mem_limit_hi;
+@@ -428,15 +428,15 @@ static void pci_read_bridge_mmio_pref(st
+ 		 * this, just assume they are not being used.
+ 		 */
+ 		if (mem_base_hi <= mem_limit_hi) {
+-#if BITS_PER_LONG == 64
+-			base |= ((unsigned long) mem_base_hi) << 32;
+-			limit |= ((unsigned long) mem_limit_hi) << 32;
+-#else
+-			if (mem_base_hi || mem_limit_hi) {
+-				dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
+-				return;
++			if (sizeof(dma_addr_t) < 8) {
++				if (mem_base_hi || mem_limit_hi) {
++					dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
++					return;
++				}
++			} else  {
++				base |= ((dma_addr_t) mem_base_hi) << 32;
++				limit |= ((dma_addr_t) mem_limit_hi) << 32;
+ 			}
+-#endif
+ 		}
+ 	}
+ 	if (base <= limit) {
