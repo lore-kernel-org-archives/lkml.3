@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161925AbaKNUj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:39:26 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:58476 "HELO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754377AbaKNUjY (ORCPT
+	id S1422651AbaKNUkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:40:05 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55033 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377AbaKNUkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:39:24 -0500
-X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 15:39:24 EST
+	Fri, 14 Nov 2014 15:40:03 -0500
+Date: Fri, 14 Nov 2014 21:39:52 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@suse.de>
+cc: Vinson Lee <vlee@twopensource.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        Suresh Siddha <sbsiddha@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: x86 math_error warning in Linux kernel 3.10
+In-Reply-To: <20141114203641.GB7825@pd.tnic>
+Message-ID: <alpine.DEB.2.11.1411142138300.3909@nanos>
+References: <CAHTgTXX=0JqGx1eYa4+Y5TuvzUpVwMNQdPe2a7m=r3pZBfGXxQ@mail.gmail.com> <20141114203641.GB7825@pd.tnic>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1415989978-28559-1-git-send-email-fabf@skynet.be>
-References: <1415989978-28559-1-git-send-email-fabf@skynet.be>
-Date: Fri, 14 Nov 2014 12:34:06 -0800
-Message-ID: <CALnjE+p1GaoCnvk_KVZu--Gmf=CK=TbmWjbpN=LqQk==dRCJMg@mail.gmail.com>
-Subject: Re: [PATCH 1/1 net-next] openvswitch: use PTR_ERR_OR_ZERO
-From: Pravin Shelar <pshelar@nicira.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 10:32 AM, Fabian Frederick <fabf@skynet.be> wrote:
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-Acked-by: Pravin B Shelar <pshelar@nicira.com>
+On Fri, 14 Nov 2014, Borislav Petkov wrote:
+> On Fri, Nov 14, 2014 at 12:19:16PM -0800, Vinson Lee wrote:
+> > Hi.
+> > 
+> > We hit this x86 math_error warning in Linux kernel 3.10.
+> > 
+> > ------------[ cut here ]------------
+> > WARNING: at arch/x86/include/asm/fpu-internal.h:524 math_error+0xd1/0x219()
+> > Modules linked in: cls_basic act_mirred cls_u32 veth sch_ingress
+> > netconsole configfs ipv6 dm_multipath scsi_dh video sbs sbshc hed
+> > acpi_pad acpi_ipmi acpi_i2c parport_pc lp parport tcp_diag inet_diag
+> > ipmi_si ipmi_devintf ipmi_msghandler dell_rbu sg iTCO_wdt
+> > iTCO_vendor_support dcdbas igb i2c_algo_bit ptp pps_core shpchp
+> > lpc_ich i2c_i801 mfd_core i2c_core ioatdma dca i7core_edac edac_core
+> > microcode freq_table mperf ahci libahci libata sd_mod scsi_mod
+> > CPU: 2 PID: 53182 Comm: java Not tainted 3.10.50 #1
+> >  0000000000000000 ffff8808e1f5be38 ffffffff8146cb74 ffff8808e1f5be70
+> >  ffffffff8103cbf9 0000000000000000 ffff88090b2c9730 ffff8808e1f5bf58
+> >  0000000000000010 0000000000000000 ffff8808e1f5be80 ffffffff8103ccbf
+> > Call Trace:
+> >  [<ffffffff8146cb74>] dump_stack+0x19/0x1b
+> >  [<ffffffff8103cbf9>] warn_slowpath_common+0x65/0x7d
+> >  [<ffffffff8103ccbf>] warn_slowpath_null+0x1a/0x1c
+> >  [<ffffffff8100317b>] math_error+0xd1/0x219
+> >  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
+> >  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
+> >  [<ffffffff8107bf32>] ? ktime_get+0x68/0x76
+> >  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
+> >  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
+> >  [<ffffffff810032d6>] do_coprocessor_error+0x13/0x15
+> >  [<ffffffff81478a38>] coprocessor_error+0x18/0x20
+> > ---[ end trace 3e4a6532a67ba6d3 ]---
+> 
+> AFAICT, you're getting an FPU exception for a task which hasn't used the
+> FPU or current is somehow pointing to the wrong task.
+> 
+> Can you trigger this with the latest kernel too, i.e., say, 3.18-rc4?
 
-> ---
->  net/openvswitch/flow_netlink.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
-> index c0d066d..c8fccdd 100644
-> --- a/net/openvswitch/flow_netlink.c
-> +++ b/net/openvswitch/flow_netlink.c
-> @@ -1425,10 +1425,8 @@ static int add_action(struct sw_flow_actions **sfa, int attrtype,
->         struct nlattr *a;
->
->         a = __add_action(sfa, attrtype, data, len, log);
-> -       if (IS_ERR(a))
-> -               return PTR_ERR(a);
->
-> -       return 0;
-> +       return PTR_ERR_OR_ZERO(a);
->  }
->
->  static inline int add_nested_action_start(struct sw_flow_actions **sfa,
-> --
-> 1.9.3
->
+Also Vinson forgot to mention HOW that is triggered. Without an
+explanation of the reproducer it's hard to tell what's going wrong.
+
+Thanks,
+
+	tglx
