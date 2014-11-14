@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934935AbaKNBK2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:10:28 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:24155 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933754AbaKNBKX (ORCPT
+	id S934961AbaKNBKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:10:53 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:53236 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934749AbaKNBKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:10:23 -0500
-Message-ID: <54655632.2040209@huawei.com>
-Date: Fri, 14 Nov 2014 09:09:06 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Marc Zyngier <marc.zyngier@arm.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        "Borislav Petkov" <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <54651BE2.9080008@arm.com> <54654C10.2040102@linux.intel.com>
-In-Reply-To: <54654C10.2040102@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+	Thu, 13 Nov 2014 20:10:51 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH] zsmalloc: correct fragile [kmap|kunmap]_atomic use
+Date: Fri, 14 Nov 2014 10:11:01 +0900
+Message-Id: <1415927461-14220-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/14 8:25, Jiang Liu wrote:
-> On 2014/11/14 5:00, Marc Zyngier wrote:
->> On 13/11/14 11:43, Jiang Liu wrote:
->>> This patch set is based on tip/irq/irqdomain and tries to refine
->>> interfaces to support irqdomain for generic MSI and PCI MSI.
->>>
->>> With this patch set applied, the generic MSI and PCI MSI interfaces
->>> are much easier to use. For extreme case, you only need to define
->>> a "struct msi_domain_info" and don't need to implement any callbacks,
->>> just using the default callbacks is OK:)
->>>
->>> This patch set is also a preparation for:
->>> 1) Kill all weak functions in drivers/pci/msi.c
->>> 2) Implement support for non-PCI-compliant MSI device
->>
->> I've rebased (once more!) the GICv3 ITS driver on top of this, and this
->> is definitely a major improvement. This is basically the first version
->> I can use without having to hack into the core code (apart from the
->> couple of nits I've mentioned earlier).
-> Sorry for the rebasing, but I hope it worthy rebasing:)
-> 
->>
->> Now, Thomas' idea of putting the irq_domain close to the bus is very
->> appealing, and I've tweaked an earlier patch in order to do this:
-> I feel that's the right direction. There are other threads discussing
-> associating an MSI controller structure with each PCI bus (at least
-> root bus).
-> http://www.spinics.net/lists/arm-kernel/msg376328.html
+The kunmap_atomic should use virtual address getting by kmap_atomic.
+However, some pieces of code in zsmalloc uses modified address,
+not the one got by kmap_atomic for kunmap_atomic.
 
-Associate the irq domain and PCI bus is not necessary, because all PCI buses under same host bridge
-always share same MSI chip/irq domain, we only need associate them and pci host bridge.
-I'm refactoring the pci_host_bridge, make it be a generic one, rip out of the pci root bus
-creation, so we could put the irq domain and pci domain etc.. in it. Finally, we could
-eliminate lots platform arch functions. I will post it out within one week.
+It's okay for working because zsmalloc modifies the address
+inner PAGE_SIZE bounday so it works with current kmap_atomic's
+implementation. But it's still fragile with potential changing
+of kmap_atomic so let's correct it.
 
-Thanks!
-Yijing.
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/zsmalloc.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-> Regards!
-> Gerry
-> 
-> .
-> 
-
-
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index b3b57ef85830..85e14f584048 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -629,6 +629,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+ 		struct page *next_page;
+ 		struct link_free *link;
+ 		unsigned int i = 1;
++		void *vaddr;
+ 
+ 		/*
+ 		 * page->index stores offset of first object starting
+@@ -639,8 +640,8 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+ 		if (page != first_page)
+ 			page->index = off;
+ 
+-		link = (struct link_free *)kmap_atomic(page) +
+-						off / sizeof(*link);
++		vaddr = kmap_atomic(page);
++		link = (struct link_free *)vaddr + off / sizeof(*link);
+ 
+ 		while ((off += class->size) < PAGE_SIZE) {
+ 			link->next = obj_location_to_handle(page, i++);
+@@ -654,7 +655,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+ 		 */
+ 		next_page = get_next_page(page);
+ 		link->next = obj_location_to_handle(next_page, 0);
+-		kunmap_atomic(link);
++		kunmap_atomic(vaddr);
+ 		page = next_page;
+ 		off %= PAGE_SIZE;
+ 	}
+@@ -1055,6 +1056,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ 	unsigned long obj;
+ 	struct link_free *link;
+ 	struct size_class *class;
++	void *vaddr;
+ 
+ 	struct page *first_page, *m_page;
+ 	unsigned long m_objidx, m_offset;
+@@ -1083,11 +1085,11 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ 	obj_handle_to_location(obj, &m_page, &m_objidx);
+ 	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
+ 
+-	link = (struct link_free *)kmap_atomic(m_page) +
+-					m_offset / sizeof(*link);
++	vaddr = kmap_atomic(m_page);
++	link = (struct link_free *)vaddr + m_offset / sizeof(*link);
+ 	first_page->freelist = link->next;
+ 	memset(link, POISON_INUSE, sizeof(*link));
+-	kunmap_atomic(link);
++	kunmap_atomic(vaddr);
+ 
+ 	first_page->inuse++;
+ 	/* Now move the zspage to another fullness group, if required */
+@@ -1103,6 +1105,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+ 	struct link_free *link;
+ 	struct page *first_page, *f_page;
+ 	unsigned long f_objidx, f_offset;
++	void *vaddr;
+ 
+ 	int class_idx;
+ 	struct size_class *class;
+@@ -1121,10 +1124,10 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+ 	spin_lock(&class->lock);
+ 
+ 	/* Insert this object in containing zspage's freelist */
+-	link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
+-							+ f_offset);
++	vaddr = kmap_atomic(f_page);
++	link = (struct link_free *)(vaddr + f_offset);
+ 	link->next = first_page->freelist;
+-	kunmap_atomic(link);
++	kunmap_atomic(vaddr);
+ 	first_page->freelist = (void *)obj;
+ 
+ 	first_page->inuse--;
 -- 
-Thanks!
-Yijing
+2.0.0
 
