@@ -1,107 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699AbaKNIQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:16:36 -0500
-Received: from mail-bn1bon0055.outbound.protection.outlook.com ([157.56.111.55]:16299
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754440AbaKNIQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:16:34 -0500
-X-Greylist: delayed 76702 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 03:16:33 EST
-From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
-To: <wg@grandegger.com>, <mkl@pengutronix.de>, <michal.simek@xilinx.com>,
-        <soren.brinkmann@xilinx.com>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>
-CC: <linux-can@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: [PATCH v2] can: Fix bug in suspend/resume
-Date: Fri, 14 Nov 2014 13:46:19 +0530
-X-Mailer: git-send-email 1.7.4
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21102.003
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <e7070431858e49e29cd03d76fd7a66c3@BN1AFFO11FD055.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(46102003)(92566001)(4396001)(31966008)(47776003)(20776003)(19580405001)(50226001)(87286001)(87936001)(62966003)(44976005)(77156002)(77096003)(2201001)(88136002)(93916002)(102836001)(104166001)(50986999)(99396003)(86362001)(64706001)(120916001)(95666004)(21056001)(6806004)(33646002)(19580395003)(53416004)(48376002)(50466002)(106466001)(107046002)(104016003)(229853001)(89996001)(108616004)(107986001)(24736002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB017;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+	id S1754647AbaKNITS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:19:18 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:43634 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440AbaKNITR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 03:19:17 -0500
+Date: Fri, 14 Nov 2014 13:49:07 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 2/2] ALSA: ice1712: remove unused variable
+Message-ID: <20141114081907.GA6796@sudip-PC>
+References: <1415891657-7244-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <1415891657-7244-2-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5h1tp7jfay.wl-tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB017;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB017;
-X-Forefront-PRVS: 03950F25EC
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB017;
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h1tp7jfay.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The drvdata in the suspend/resume is of type struct net_device,
-not the platform device.Enable the clocks in the suspend before
-accessing the registers of the CAN.
+On Thu, Nov 13, 2014 at 04:22:45PM +0100, Takashi Iwai wrote:
+> At Thu, 13 Nov 2014 20:44:17 +0530,
+> Sudip Mukherjee wrote:
+> > 
+<snip>
+> >  	if (snd_pcm_format_width(runtime->format) == 16)
+> >  		tmp &= ~0x04;
+> > diff --git a/sound/pci/ice1712/revo.c b/sound/pci/ice1712/revo.c
+> > index 1112ec1..1f40dab 100644
+> > --- a/sound/pci/ice1712/revo.c
+> > +++ b/sound/pci/ice1712/revo.c
+> > @@ -481,7 +481,6 @@ static int ap192_ak4114_init(struct snd_ice1712 *ice)
+> >  	static const unsigned char ak4114_init_txcsb[] = {
+> >  		0x41, 0x02, 0x2c, 0x00, 0x00
+> >  	};
+> > -	int err;
+> >  
+> >  	struct revo51_spec *spec;
+> >  	spec = kzalloc(sizeof(*spec), GFP_KERNEL);
+> > @@ -489,11 +488,9 @@ static int ap192_ak4114_init(struct snd_ice1712 *ice)
+> >  		return -ENOMEM;
+> >  	ice->spec = spec;
+> >  
+> > -	err = snd_ak4114_create(ice->card,
+> > -				 ap192_ak4114_read,
+> > -				 ap192_ak4114_write,
+> > -				 ak4114_init_vals, ak4114_init_txcsb,
+> > -				 ice, &spec->ak4114);
+> > +	snd_ak4114_create(ice->card, ap192_ak4114_read, ap192_ak4114_write,
+> > +			  ak4114_init_vals, ak4114_init_txcsb, ice,
+> > +			  &spec->ak4114);
+> 
+> IMO, this is rather a bug.  It should return the error (with a proper
+> error handling).
+> 
+error handling is already there. ap192_ak4114_init is being called by revo_init,
+where the return value is being checked. revo_init is the callback function of
+chip_init, so if we return the error value here then chip_init will fail.
+but since the author commented "error ignored; it's no fatal error", so i also
+thought of ignoring the error.
+I will send you a revised patch.
 
-Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
----
-Changes for v2:
-  - Removed the struct platform_device* from suspend/resume
-    as suggest by Lothar.
-  - The clocks are getting disabled and un prepared at the end of the probe. 
-    In the suspend the driver is doing a register write.In order
-    To do that register write we have to again enable and prepare the clocks.
+thanks
+sudip
 
-  
- drivers/net/can/xilinx_can.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.c
-index 5e8b560..485262f 100644
---- a/drivers/net/can/xilinx_can.c
-+++ b/drivers/net/can/xilinx_can.c
-@@ -972,15 +972,28 @@ static const struct net_device_ops xcan_netdev_ops = {
-  */
- static int __maybe_unused xcan_suspend(struct device *dev)
- {
--	struct platform_device *pdev = dev_get_drvdata(dev);
--	struct net_device *ndev = platform_get_drvdata(pdev);
-+	struct net_device *ndev = dev_get_drvdata(dev);
- 	struct xcan_priv *priv = netdev_priv(ndev);
-+	int ret;
- 
- 	if (netif_running(ndev)) {
- 		netif_stop_queue(ndev);
- 		netif_device_detach(ndev);
- 	}
- 
-+	ret = clk_prepare_enable(priv->can_clk);
-+	if (ret) {
-+		dev_err(dev, "unable to enable device clock\n");
-+		return ret;
-+	}
-+
-+	ret = clk_prepare_enable(priv->bus_clk);
-+	if (ret) {
-+		dev_err(dev, "unable to enable bus clock\n");
-+		clk_disable_unprepare(priv->can_clk);
-+		return ret;
-+	}
-+
- 	priv->write_reg(priv, XCAN_MSR_OFFSET, XCAN_MSR_SLEEP_MASK);
- 	priv->can.state = CAN_STATE_SLEEPING;
- 
-@@ -999,8 +1012,7 @@ static int __maybe_unused xcan_suspend(struct device *dev)
-  */
- static int __maybe_unused xcan_resume(struct device *dev)
- {
--	struct platform_device *pdev = dev_get_drvdata(dev);
--	struct net_device *ndev = platform_get_drvdata(pdev);
-+	struct net_device *ndev = dev_get_drvdata(dev);
- 	struct xcan_priv *priv = netdev_priv(ndev);
- 	int ret;
- 
--- 
-1.7.4
-
+> 
+> thanks,
+> 
+> Takashi
+> 
+> 
+> >  	/* AK4114 in Revo cannot detect external rate correctly.
+> >  	 * No reason to stop capture stream due to incorrect checks */
+> >  	spec->ak4114->check_flags = AK4114_CHECK_NO_RATE;
+> > -- 
+> > 1.8.1.2
+> > 
+> > _______________________________________________
+> > Alsa-devel mailing list
+> > Alsa-devel@alsa-project.org
+> > http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+> > 
