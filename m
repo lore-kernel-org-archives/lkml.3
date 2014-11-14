@@ -1,150 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935254AbaKNNoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:44:11 -0500
-Received: from mga03.intel.com ([134.134.136.65]:10568 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933815AbaKNNoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:44:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
-   d="scan'208";a="607841356"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        acme@infradead.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v8 00/14] perf: Add infrastructure and support for Intel PT
-Date: Fri, 14 Nov 2014 15:43:33 +0200
-Message-Id: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 2.1.1
+	id S935298AbaKNNoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:44:20 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:44954 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935264AbaKNNoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:44:17 -0500
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <1a5717db064258a27f3e00df81895a15>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v11 07/12] drm: bridge/dw_hdmi: add support for multi-byte register width access
+Date: Fri, 14 Nov 2014 21:43:47 +0800
+Message-Id: <1415972627-8625-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter and all,
+On rockchip rk3288, only word(32-bit) accesses are
+permitted for hdmi registers.  Byte width accesses (writeb,
+readb) generate an imprecise external abort.
 
-Since there weren't too many review comments on the two previous
-versions, here's another one with a couple more fixes.
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-[full description below the changelog]
+---
 
-Changes since v7:
-  * fixed a bug in aux allocation logic that caused more than
-    requested pages to be allocated,
-  * fixed pt_event_add() for snapshot mode, which would return an
-    error in case of successful completion.
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6:
+- move some modification to  patch#6
+- refactor register access without reg_shift
 
-Changes since v6:
-  * replaced kref with atomic in aux refcounting this time for real,
-  * added a small comment on capabilities/"caps" attribute group in PT
-    pmu.
+Changes in v5:
+- refactor reg-io-width
 
-Changes since v5:
+Changes in v4: None
+Changes in v3:
+- split multi-register access to one indepent patch
 
-  * dropped "bypass mask", bits that a privileged user could set in
-    RTIT_CTL,
-  * merged configuring and enabling RTIT_CTL writes,
-  * fixed kernel-doc comments
-  * if LBR/BTS events are present in the system, PT event creation is
-    disallowed and vice versa,
-  * fixed a bug with high order allocation under pressure,
-  * fixed undoing vm_locked accounting in case of AUX allocation
-    failure,
-  * left out kernel counters for a separate series to keep this one
-    concise.
+Changes in v2: None
 
-This patchset adds support for Intel Processor Trace (PT) extension [1] of
-Intel Architecture that allows the capture of information about software
-execution flow, to the perf kernel infrastructure.
+ drivers/gpu/drm/bridge/dw_hdmi.c | 57 +++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 51 insertions(+), 6 deletions(-)
 
-The single most notable thing is that while PT outputs trace data in a
-compressed binary format, it will still generate hundreds of megabytes
-of trace data per second per core. Decoding this binary stream takes
-2-3 orders of magnitude the cpu time that it takes to generate
-it. These considerations make it impossible to carry out decoding in
-kernel space. Therefore, the trace data is exported to userspace as a
-zero-copy mapping that userspace can collect and store for later
-decoding. To address this, this patchset extends perf ring buffer with
-an "AUX space", which is allocated for hardware blocks such as PT to
-export their trace data with minimal overhead. This space can be
-configured via buffer's user page and mmapped from the same file
-descriptor with a given offset. Data can then be collected from it
-by reading the aux_head (write) pointer from the user page and updating
-aux_tail (read) pointer similarly to data_{head,tail} of the
-traditional perf buffer. There is an api between perf core and pmu
-drivers that wish to make use of this AUX space to export their data.
-
-For tracing blocks that don't support hardware scatter-gather tables,
-we provide high-order physically contiguous allocations to minimize
-the overhead needed for software double buffering and PMI pressure.
-
-This way we get a normal perf data stream that provides sideband
-information that is required to decode the trace data, such as MMAPs,
-COMMs etc, plus the actual trace in its own logical space.
-
-If the trace buffer is mapped writable, the driver will stop tracing
-when it fills up (aux_head approaches aux_tail), till data is read,
-aux_tail pointer is moved forward and an ioctl() is issued to
-re-enable tracing. If the trace buffer is mapped read only, the
-tracing will continue, overwriting older data, so that the buffer
-always contains the most recent data. Tracing can be stopped with an
-ioctl() and restarted once the data is collected.
-
-This patchset consists of necessary changes to the perf kernel
-infrastructure, and PT and BTS pmu drivers. The tooling support is not
-included in this series, however, it can be found in my github tree [2].
-
-[1] chapter 36 of
-http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-manual-325462.pdf
-[2] http://github.com/virtuoso/linux-perf/tree/intel_pt
-
-Alexander Shishkin (13):
-  perf: Add data_{offset,size} to user_page
-  perf: Support high-order allocations for AUX space
-  perf: Add a capability for AUX_NO_SG pmus to do software double
-    buffering
-  perf: Add a pmu capability for "exclusive" events
-  perf: Add AUX record
-  perf: Add api for pmus to write to AUX area
-  perf: Support overwrite mode for AUX area
-  perf: Add wakeup watermark control to AUX area
-  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
-  x86: perf: Intel PT and LBR/BTS are mutually exclusive
-  x86: perf: intel_pt: Intel PT PMU driver
-  x86: perf: intel_bts: Add BTS PMU driver
-  perf: add ITRACE_START record to indicate that tracing has started
-
-Peter Zijlstra (1):
-  perf: Add AUX area to ring buffer for raw data streams
-
- arch/x86/include/asm/cpufeature.h          |    1 +
- arch/x86/include/uapi/asm/msr-index.h      |   18 +
- arch/x86/kernel/cpu/Makefile               |    1 +
- arch/x86/kernel/cpu/intel_pt.h             |  131 ++++
- arch/x86/kernel/cpu/perf_event.c           |   43 ++
- arch/x86/kernel/cpu/perf_event.h           |   49 ++
- arch/x86/kernel/cpu/perf_event_intel.c     |   40 +-
- arch/x86/kernel/cpu/perf_event_intel_bts.c |  525 ++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |    3 +-
- arch/x86/kernel/cpu/perf_event_intel_pt.c  | 1082 ++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/scattered.c            |    1 +
- include/linux/perf_event.h                 |   47 +-
- include/uapi/linux/perf_event.h            |   59 +-
- kernel/events/core.c                       |  268 ++++++-
- kernel/events/internal.h                   |   33 +
- kernel/events/ring_buffer.c                |  327 ++++++++-
- 16 files changed, 2577 insertions(+), 51 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/intel_pt.h
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
-
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index 08b56ea..24a66ff 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -100,6 +100,11 @@ struct hdmi_data_info {
+ 	struct hdmi_vmode video_mode;
+ };
+ 
++union dw_reg_ptr {
++	u32 __iomem *p32;
++	u8 __iomem *p8;
++};
++
+ struct dw_hdmi {
+ 	struct drm_connector connector;
+ 	struct drm_encoder *encoder;
+@@ -121,20 +126,43 @@ struct dw_hdmi {
+ 
+ 	struct regmap *regmap;
+ 	struct i2c_adapter *ddc;
+-	void __iomem *regs;
++	union dw_reg_ptr regs;
+ 
+ 	unsigned int sample_rate;
+ 	int ratio;
++
++	void (*write)(struct dw_hdmi *hdmi, u8 val, int offset);
++	u8 (*read)(struct dw_hdmi *hdmi, int offset);
+ };
+ 
++static void dw_hdmi_writel(struct dw_hdmi *hdmi, u8 val, int offset)
++{
++	writel(val, hdmi->regs.p32 + offset);
++}
++
++static u8 dw_hdmi_readl(struct dw_hdmi *hdmi, int offset)
++{
++	return readl(hdmi->regs.p32 + offset);
++}
++
++static void dw_hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
++{
++	writeb(val, hdmi->regs.p8 + offset);
++}
++
++static u8 dw_hdmi_readb(struct dw_hdmi *hdmi, int offset)
++{
++	return readb(hdmi->regs.p8 + offset);
++}
++
+ static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
+ {
+-	writeb(val, hdmi->regs + offset);
++	hdmi->write(hdmi, val, offset);
+ }
+ 
+ static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
+ {
+-	return readb(hdmi->regs + offset);
++	return hdmi->read(hdmi, offset);
+ }
+ 
+ static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
+@@ -1508,6 +1536,7 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 	struct resource *iores;
+ 	struct dw_hdmi *hdmi;
+ 	int ret, irq;
++	u32 val = 1;
+ 
+ 	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+ 	if (!hdmi)
+@@ -1520,6 +1549,22 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 	hdmi->ratio = 100;
+ 	hdmi->encoder = encoder;
+ 
++	of_property_read_u32(np, "reg-io-width", &val);
++
++	switch (val) {
++	case 4:
++		hdmi->write = dw_hdmi_writel;
++		hdmi->read = dw_hdmi_readl;
++		break;
++	case 1:
++		hdmi->write = dw_hdmi_writeb;
++		hdmi->read = dw_hdmi_readb;
++		break;
++	default:
++		dev_err(dev, "reg-io-width must be 1 or 4\n");
++		return -EINVAL;
++	}
++
+ 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
+ 	if (ddc_node) {
+ 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
+@@ -1545,9 +1590,9 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 		return ret;
+ 
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	hdmi->regs = devm_ioremap_resource(dev, iores);
+-	if (IS_ERR(hdmi->regs))
+-		return PTR_ERR(hdmi->regs);
++	hdmi->regs.p32 = devm_ioremap_resource(dev, iores);
++	if (IS_ERR(hdmi->regs.p32))
++		return PTR_ERR(hdmi->regs.p32);
+ 
+ 	/* Product and revision IDs */
+ 	dev_info(dev,
 -- 
-2.1.1
+1.9.1
 
