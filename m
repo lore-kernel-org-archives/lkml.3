@@ -1,192 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965094AbaKNGHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 01:07:43 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:49687 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965067AbaKNGHi (ORCPT
+	id S932884AbaKNGGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:06:20 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:14912
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752173AbaKNGGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 01:07:38 -0500
-From: Dudley Du <dudley.dulixin@gmail.com>
-X-Google-Original-From: Dudley Du <dudl@cypress.com>
-To: dmitry.torokhov@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v10 18/18] input: cyapa: add gen5 trackpad device read raw data function support
-Date: Fri, 14 Nov 2014 14:03:24 +0800
-Message-Id: <1415945004-19868-19-git-send-email-dudl@cypress.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415945004-19868-1-git-send-email-dudl@cypress.com>
-References: <1415945004-19868-1-git-send-email-dudl@cypress.com>
+	Fri, 14 Nov 2014 01:06:16 -0500
+X-IronPort-AV: E=Sophos;i="5.07,384,1413237600"; 
+   d="scan'208";a="88062590"
+Date: Fri, 14 Nov 2014 07:06:14 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: cocci <cocci@systeme.lip6.fr>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Cocci] spatch for trivial pointer comparison style?
+In-Reply-To: <1415908529.4223.11.camel@perches.com>
+Message-ID: <alpine.DEB.2.02.1411140700010.2035@localhost6.localdomain6>
+References: <1415908529.4223.11.camel@perches.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read raw data function supported for gen5 trackpad device,
-it can be used through debugfs raw_data interface.
-TEST=test on Chromebooks.
+On Thu, 13 Nov 2014, Joe Perches wrote:
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
----
- drivers/input/mouse/cyapa_gen5.c | 138 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 138 insertions(+)
+> I added a checkpatch entry for this.
+> Maybe some cocci test like this would be useful?
+> 
+> @@
+> type t;
+> t *p;
+> @@
+> -	p == NULL
+> +	!p
+> 
+> @@
+> type t;
+> t *p;
+> @@
+> -	p != NULL
+> +	p
+> 
+> @@
+> type t;
+> t *p;
+> @@
+> -	NULL == p
+> +	!p
+> 
+> @@
+> type t;
+> t *p;
+> @@
+> -	NULL != p
+> +	p
 
-diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
-index aee3e57..52c915b 100644
---- a/drivers/input/mouse/cyapa_gen5.c
-+++ b/drivers/input/mouse/cyapa_gen5.c
-@@ -2363,6 +2363,143 @@ resume_scanning:
- 	return size;
- }
- 
-+static int cyapa_gen5_read_electrodies_rx_tx(struct cyapa *cyapa)
-+{
-+	u8 cmd[7] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x71 };
-+	u8 resp_data[7];
-+	int resp_len;
-+	int error;
-+
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, 7,
-+			resp_data, &resp_len,
-+			150, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-+	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x71) ||
-+		!resp_data[5] || !resp_data[6])
-+		return -EINVAL;
-+
-+	cyapa->electrodes_rx = resp_data[6];
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen5_read_raw_data(struct cyapa *cyapa)
-+{
-+	int raw_cap_mutual_max, raw_cap_mutual_min, raw_cap_mutual_ave;
-+	int raw_cap_self_max, raw_cap_self_min, raw_cap_self_ave;
-+	int offset;
-+	int data_size, max, min, ave;
-+	ktime_t time_mono;
-+	int error, resume_error;
-+
-+	offset = 0;
-+	if (!cyapa->tp_raw_data) {
-+		if (cyapa->state != CYAPA_STATE_GEN5_APP ||
-+			!cyapa->electrodes_x || !cyapa->electrodes_y)
-+			return  -EINVAL;
-+
-+		cyapa->tp_raw_data_size = sizeof(s32) * (cyapa->electrodes_x *
-+			cyapa->electrodes_y + cyapa->electrodes_x +
-+			cyapa->electrodes_y) + GEN5_RAW_DATA_HEAD_SIZE;
-+		/*
-+		 * This buffer will be hold after used until the driver is
-+		 * unloaded, the purpose of it is to improve the performace
-+		 * to avoid frequently allocate and release the buffer.
-+		 */
-+		cyapa->tp_raw_data = devm_kzalloc(&cyapa->client->dev,
-+					cyapa->tp_raw_data_size, GFP_KERNEL);
-+		if (!cyapa->tp_raw_data)
-+			return -ENOMEM;
-+	}
-+
-+	/*
-+	 * 1. Suspend Scanning.
-+	 *
-+	 * After suspend scanning, the raw data will not be updated,
-+	 * so the time of the raw data is before scanning suspended.
-+	 */
-+	time_mono = ktime_get();
-+	error = cyapa_gen5_suspend_scanning(cyapa);
-+	if (error)
-+		return error;
-+
-+	/* 2. Get the correct electrodes_rx number. */
-+	if (cyapa->electrodes_rx == 0) {
-+		error = cyapa_gen5_read_electrodies_rx_tx(cyapa);
-+		if (error || cyapa->electrodes_rx == 0) {
-+			cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+			/*
-+			 * Since, old firmware doesn't support the command to
-+			 * read the electrodies' Rx and Tx values, so using
-+			 * the read global idac interface to get the Rx number,
-+			 * this value is useful to analyze and
-+			 * display the raw data map in userspace.
-+			 */
-+			data_size = 0;
-+			error = cyapa_gen5_read_idac_data(cyapa,
-+					GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
-+					GEN5_RETRIEVE_MUTUAL_PWC_DATA,
-+					&data_size, &max, &min, &ave);
-+			if (error || cyapa->electrodes_rx == 0)
-+				goto resume_scanning;
-+		}
-+	}
-+
-+	/* 3. Execuate panel scan. It must be executed before read data. */
-+	error = cyapa_gen5_execute_panel_scan(cyapa);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 4. Retrieve panel scan, mutual cap raw data. */
-+	offset = GEN5_RAW_DATA_HEAD_SIZE;
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_MUTUAL_DIFFCOUNT,
-+				cyapa->electrodes_x * cyapa->electrodes_y,
-+				&raw_cap_mutual_max, &raw_cap_mutual_min,
-+				&raw_cap_mutual_ave,
-+				cyapa->tp_raw_data + offset);
-+	if (error)
-+		goto resume_scanning;
-+
-+	offset += sizeof(s32) * cyapa->electrodes_x * cyapa->electrodes_y;
-+
-+	/* 5. Retrieve panel scan, self cap raw data. */
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_SELF_DIFFCOUNT,
-+				cyapa->electrodes_x + cyapa->electrodes_y,
-+				&raw_cap_self_max, &raw_cap_self_min,
-+				&raw_cap_self_ave,
-+				cyapa->tp_raw_data + offset);
-+	if (error)
-+		goto resume_scanning;
-+
-+	offset += sizeof(s32) * (cyapa->electrodes_x + cyapa->electrodes_y);
-+
-+resume_scanning:
-+	/* 6. Resume Scanning*/
-+	resume_error = cyapa_gen5_resume_scanning(cyapa);
-+	if (resume_error || error)
-+		return resume_error ? resume_error : error;
-+
-+	*((struct timeval *)&cyapa->tp_raw_data[0]) =
-+						ktime_to_timeval(time_mono);
-+	cyapa->tp_raw_data[16] = (u8)cyapa->electrodes_x;
-+	cyapa->tp_raw_data[17] = (u8)cyapa->electrodes_y;
-+	cyapa->tp_raw_data[18] = (u8)cyapa->x_origin;
-+	cyapa->tp_raw_data[19] = (u8)cyapa->y_origin;
-+	cyapa->tp_raw_data[20] = (u8)sizeof(s32);
-+	cyapa->tp_raw_data[21] = (u8)sizeof(s32);
-+	cyapa->tp_raw_data[22] = (u8)cyapa->electrodes_rx;
-+	cyapa->tp_raw_data[23] = 0;  /* Reserved. */
-+
-+	cyapa->tp_raw_data_size = offset;
-+	return 0;
-+}
-+
- static bool cyapa_gen5_sort_system_info_data(struct cyapa *cyapa,
- 		u8 *buf, int len)
- {
-@@ -2776,6 +2913,7 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
- 	.calibrate_store = cyapa_gen5_do_calibrate,
- 
- 	.read_fw = cyapa_gen5_read_fw,
-+	.read_raw_data = cyapa_gen5_read_raw_data,
- 
- 	.initialize = cyapa_gen5_initialize,
- 
--- 
-1.9.1
+This was discussed many years ago.  I don't think that the change is 
+desirable in all cases.  There are functions like kmalloc where NULL means 
+failure and !p seems like the reasonable choice.  But there maybe other 
+cases where NULL is somehow a meaningful value.  
 
+Here is a link to the part of the discussion:
+
+https://lkml.org/lkml/2007/7/27/103
+
+julia
