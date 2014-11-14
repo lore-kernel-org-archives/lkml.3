@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422873AbaKNWTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 17:19:09 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43697 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422640AbaKNWTH (ORCPT
+	id S1422917AbaKNWUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 17:20:19 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58482 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1422682AbaKNWUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 17:19:07 -0500
-Date: Fri, 14 Nov 2014 14:19:03 -0800
-From: Dmitry Torokhov <dtor@chromium.org>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] PCI: keystone: fix error handling of irq_of_parse_and_map
-Message-ID: <20141114221903.GA38539@dtor-ws>
+	Fri, 14 Nov 2014 17:20:16 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd enabled
+Date: Fri, 14 Nov 2014 23:41:15 +0100
+Message-ID: <5229811.LXthdvUIfI@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <7ha93t8z1q.fsf@deeprootsystems.com>
+References: <1415917702-6742-1-git-send-email-khilman@kernel.org> <CAMuHMdXB-7vBqGZ_iMaZdDWDnnzpHZa4ECkDnojbDw=ds5eTWg@mail.gmail.com> <7ha93t8z1q.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return value of irq_of_parse_and_map() is unsigned int, with 0
-indicating failure, so testing for negative result never works.
+On Friday, November 14, 2014 09:36:17 AM Kevin Hilman wrote:
+> Geert Uytterhoeven <geert@linux-m68k.org> writes:
+> 
+> > Hi Kevin,
+> >
+> > On Thu, Nov 13, 2014 at 11:28 PM, Kevin Hilman <khilman@kernel.org> wrote:
+> >> It makes little sense to use generic power domains without runtime PM.
+> >
+> > Does it?
+> > It still powers down the PM domains on system suspend (at least on my
+> > boards ;-)
+> 
+> Sure, but your devices are also using runtime PM, so I'm not sure how
+> does that change my statement above?
 
-Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
----
+Questions here are (1) how many users will actually want to disable PM_RUNTIME
+for systems using genpd (my sort of educated guess is "none") and (2) whether
+or not we need to power up stuff dynamically during initialization on systems
+using genpd (and several recent discussions indicate that the answer here is
+"yes, we need to do that").
 
-Not tested, found by casual code inspection.
+> >> Also, since the complexities of handling the !PM_RUNTIME case are
+> >> causing more trouble and confusion than they're worth, let's simplify
+> >> the world by making genpd always enable runtime PM.
+> >
+> > What do other people think?
+> 
+> Yes, I'm curious also.  This patch was supposed to be marked RFC.
 
- drivers/pci/host/pci-keystone.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm totally for making this change and I'm going to queue up this patch for
+3.19, so if anyone sees a really good reason for not doing this, please let
+me know what that reason is as soon as you can.
 
-diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-index 8a27078..f2bd48d 100644
---- a/drivers/pci/host/pci-keystone.c
-+++ b/drivers/pci/host/pci-keystone.c
-@@ -197,7 +197,7 @@ static int ks_pcie_get_irq_controller_info(struct keystone_pcie *ks_pcie,
- 	 */
- 	for (temp = 0; temp < max_host_irqs; temp++) {
- 		host_irqs[temp] = irq_of_parse_and_map(*np_temp, temp);
--		if (host_irqs[temp] < 0)
-+		if (!host_irqs[temp])
- 			break;
- 	}
- 	if (temp) {
--- 
-2.1.0.rc2.206.gedb03e5
+Rafael
 
-
--- 
-Dmitry
