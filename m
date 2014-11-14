@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144AbaKNURX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:17:23 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:50345 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754418AbaKNURV (ORCPT
+	id S1755183AbaKNUTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:19:18 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:61803 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754996AbaKNUTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:17:21 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Julius Werner <jwerner@chromium.org>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Doug Anderson <dianders@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        "Dinh Nguyen" <dinguyen@opensource.altera.com>,
-        Romain Perier <romain.perier@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        lyz <lyz@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3] usb: dwc2: add bus suspend/resume for dwc2
-Thread-Topic: [PATCH v3] usb: dwc2: add bus suspend/resume for dwc2
-Thread-Index: AQHP/OemHIpdmIh/Rku4z/uYLWGLo5xeK1WAgAAWRACAAdeFAIAAeWgg
-Date: Fri, 14 Nov 2014 20:17:16 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844EBC6A@US01WEMBX2.internal.synopsys.com>
-References: <1415624983-22413-1-git-send-email-kever.yang@rock-chips.com>
-	<CAD=FV=V-D3qTtnwjme8k=boUkoGGPmfvcF=Jboq0qcRBzKrY6g@mail.gmail.com>
-	<5463FE5E.906@rock-chips.com>
- <CAODwPW9Avc1RCdDoarGg2cZirn7ivu4JEdUTV485J=nLLmecTQ@mail.gmail.com>
-In-Reply-To: <CAODwPW9Avc1RCdDoarGg2cZirn7ivu4JEdUTV485J=nLLmecTQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 14 Nov 2014 15:19:17 -0500
 MIME-Version: 1.0
+Date: Fri, 14 Nov 2014 12:19:16 -0800
+Message-ID: <CAHTgTXX=0JqGx1eYa4+Y5TuvzUpVwMNQdPe2a7m=r3pZBfGXxQ@mail.gmail.com>
+Subject: x86 math_error warning in Linux kernel 3.10
+From: Vinson Lee <vlee@twopensource.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        Suresh Siddha <sbsiddha@gmail.com>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt.fleming@intel.com>, Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAEKHUem003473
 
-> From: jwerner@google.com [mailto:jwerner@google.com] On Behalf Of Julius Werner
-> Sent: Thursday, November 13, 2014 8:50 PM
-> 
-> > I will figure out how to make dwc2 detect the device connect after auto
-> > suspend,
-> > or disable the auto suspend feature for the dwc2 hcd.
-> 
-> I think auto-suspend of the root hub device (which is what calls
-> bus_suspend, but is not the host controller device itself) is expected
-> to always happen and not really meant to be disabled. I'm surprised
-> that the controller would fail to come back up, though. Does removing
-> the PCGCTL part make it work? That's the only thing I can think of
-> (but then again the function should immediately return if the port is
-> not in L0, so if there is nothing plugged in the suspend shouldn't
-> really do anything).
+Hi.
 
-Hi guys,
+We hit this x86 math_error warning in Linux kernel 3.10.
 
-I don't have any experience with suspend/resume on the dwc2 controller
-I'm afraid. One suggestion would be to look at our Synopsys vendor
-driver to see how it is handled there.
+------------[ cut here ]------------
+WARNING: at arch/x86/include/asm/fpu-internal.h:524 math_error+0xd1/0x219()
+Modules linked in: cls_basic act_mirred cls_u32 veth sch_ingress
+netconsole configfs ipv6 dm_multipath scsi_dh video sbs sbshc hed
+acpi_pad acpi_ipmi acpi_i2c parport_pc lp parport tcp_diag inet_diag
+ipmi_si ipmi_devintf ipmi_msghandler dell_rbu sg iTCO_wdt
+iTCO_vendor_support dcdbas igb i2c_algo_bit ptp pps_core shpchp
+lpc_ich i2c_i801 mfd_core i2c_core ioatdma dca i7core_edac edac_core
+microcode freq_table mperf ahci libahci libata sd_mod scsi_mod
+CPU: 2 PID: 53182 Comm: java Not tainted 3.10.50 #1
+ 0000000000000000 ffff8808e1f5be38 ffffffff8146cb74 ffff8808e1f5be70
+ ffffffff8103cbf9 0000000000000000 ffff88090b2c9730 ffff8808e1f5bf58
+ 0000000000000010 0000000000000000 ffff8808e1f5be80 ffffffff8103ccbf
+Call Trace:
+ [<ffffffff8146cb74>] dump_stack+0x19/0x1b
+ [<ffffffff8103cbf9>] warn_slowpath_common+0x65/0x7d
+ [<ffffffff8103ccbf>] warn_slowpath_null+0x1a/0x1c
+ [<ffffffff8100317b>] math_error+0xd1/0x219
+ [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
+ [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
+ [<ffffffff8107bf32>] ? ktime_get+0x68/0x76
+ [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
+ [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
+ [<ffffffff810032d6>] do_coprocessor_error+0x13/0x15
+ [<ffffffff81478a38>] coprocessor_error+0x18/0x20
+---[ end trace 3e4a6532a67ba6d3 ]---
 
-That driver is part of the Raspberry Pi upstream kernel, which you
-can find at https://github.com/raspberrypi/linux. The driver is
-under drivers/usb/host/dwc_otg.
 
-In particular, in dwc_otg_cil_intr.c there is a function named
-dwc_otg_handle_wakeup_detected_intr() which might be of interest.
-Unfortunately, that driver code is rather convoluted, so it may be
-difficult to figure out exactly what the driver is doing.
+Here are the CPU flags:
 
--- 
-Paul
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
+mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe
+syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts
+rep_good nopl xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64
+monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1
+sse4_2 popcnt aes lahf_lm ida arat epb dtherm tpr_shadow vnmi
+flexpriority ept vpid
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+arch/x86/include/asm/fpu-internal.h
+   519  /*
+   520   * These disable preemption on their own and are safe
+   521   */
+   522  static inline void save_init_fpu(struct task_struct *tsk)
+   523  {
+   524          WARN_ON_ONCE(!__thread_has_fpu(tsk));
+   525
+   526          if (use_eager_fpu()) {
+   527                  __save_fpu(tsk);
+   528                  return;
+   529          }
+   530
+   531          preempt_disable();
+   532          __save_init_fpu(tsk);
+   533          __thread_fpu_end(tsk);
+   534          preempt_enable();
+   535  }
+
+Cheers,
+Vinson
