@@ -1,128 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965410AbaKNLYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:24:50 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:58181 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965074AbaKNLYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:24:48 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-f8-5465e67d47f1
-Date: Fri, 14 Nov 2014 12:24:37 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Cc: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
- for tegra driver
-Message-id: <20141114122437.6742ea68@amdc2363>
-In-reply-to: <5465DDC5.6090301@kapsi.fi>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
- <5465DDC5.6090301@kapsi.fi>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAd3aZ6khBqveWlhsnLGe1WL+lWus
-	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbXF51xw2i8+9RxgtOr/MYrO4/eEAs8WDq9PYLJ48
-	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5HHp3B9mj3XT3jJ7HJh8jtWj
-	t/kdm8e3MxNZPPq2rGL0ePpjL7PH501yHhvnhgbwRHHZpKTmZJalFunbJXBldN04zlzwm7/i
-	1oa1jA2MF3i6GDk5JARMJI48/MYGYYtJXLi3Hsjm4hASWMQocfLCUiYI5xejxKOrvewgVSwC
-	qhIHPi9mBLHZBPQkPt99ClTEwSECZB9/KgJSzyzQwyqx9PBpJpAaYYF4iTvfL4H18gLVvN2z
-	hhnE5hTQkJg9/wALxIJ7jBL9H6+BNfALSEq0//vBDHGSncS5TxugmgUlfky+xwJiMwtoSWze
-	1sQKYctLbF7zlnkCo+AsJGWzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw
-	bD6T3sG4qsHiEKMAB6MSDy+jW2qIEGtiWXFl7iFGCQ5mJRHen1eAQrwpiZVVqUX58UWlOanF
-	hxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhiNfoc2pn32vXpV6v/aaedibtekNt/n
-	TDHItlmo1lfnN/M6w2PWzdl/I25eevu9gf+blHyL5A4HSWN1310KQeZeDolhEZILZzstm2ue
-	fetC73eJnJgdPyWqGr1s5deWR1QcKbzjkCshflP040ddRcXtL79Wq3DO0Dt0eJnrStUJqX9U
-	4zOO1ymxFGckGmoxFxUnAgC+E9nNyQIAAA==
+	id S935184AbaKNLZi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:25:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58293 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934404AbaKNLZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 06:25:32 -0500
+Date: Fri, 14 Nov 2014 12:25:23 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 02/23 v4] tracing: Add trace_seq_has_overflowed()
+ and trace_handle_return()
+Message-ID: <20141114112522.GA2988@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+ <20141114011410.365183157@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114011410.365183157@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mikko,
-
-> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-
-Thanks for testing.
-
+On Thu 2014-11-13 20:12:46, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> One potential issue I can see is that if the cpufreq driver fails to 
-> probe then you'll never get the thermal driver either. For example, 
-> Tegra124 currently has no cpufreq driver, so if CONFIG_CPU_THERMAL
-> was enabled, then the soctherm driver would never be able to probe.
-
-Yes, this is a potential issue. However, this option in tegra_defconfig
-is by default disabled when thermal is enabled.
-
-> But I don't really have a solution for this either.
-
-Ok. I see.
-
+> Adding a trace_seq_has_overflowed() which returns true if the trace_seq
+> had too much written into it allows us to simplify the code.
 > 
-> Cheers,
-> Mikko
+> Instead of checking the return value of every call to trace_seq_printf()
+> and friends, they can all be called normally, and at the end we can
+> return !trace_seq_has_overflowed() instead.
 > 
-> On 11/13/2014 07:02 PM, Lukasz Majewski wrote:
-> > When CPU freq is used as a thermal zone cooling device, one needs
-> > to wait until cpufreq subsystem is properly initialized.
-> >
-> > This code is similar to the one already available in imx_thermal.c
-> > file.
-> >
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > ---
-> >   drivers/thermal/tegra_soctherm.c | 7 +++++++
-> >   1 file changed, 7 insertions(+)
-> >
-> > diff --git a/drivers/thermal/tegra_soctherm.c
-> > b/drivers/thermal/tegra_soctherm.c index 70f7e9e..9c5aaa4 100644
-> > --- a/drivers/thermal/tegra_soctherm.c
-> > +++ b/drivers/thermal/tegra_soctherm.c
-> > @@ -26,6 +26,7 @@
-> >   #include <linux/platform_device.h>
-> >   #include <linux/reset.h>
-> >   #include <linux/thermal.h>
-> > +#include <linux/cpufreq.h>
-> >
-> >   #include <soc/tegra/fuse.h>
-> >
-> > @@ -346,6 +347,12 @@ static int tegra_soctherm_probe(struct
-> > platform_device *pdev)
-> >
-> >   	const struct tegra_tsensor *tsensors = t124_tsensors;
-> >
-> > +#ifdef CONFIG_CPU_THERMAL
-> > +	if (!cpufreq_get_current_driver()) {
-> > +		dev_dbg(&pdev->dev, "no cpufreq driver!");
-> > +		return -EPROBE_DEFER;
-> > +	}
-> > +#endif
-> >   	tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra),
-> > GFP_KERNEL); if (!tegra)
-> >   		return -ENOMEM;
-> >
+> Several functions also return TRACE_TYPE_PARTIAL_LINE when the trace_seq
+> overflowed and TRACE_TYPE_HANDLED otherwise. Another helper function
+> was created called trace_handle_return() which takes a trace_seq and
+> returns these enums. Using this helper function also simplifies the
+> code.
 > 
+> This change also makes it possible to remove the return values of
+> trace_seq_printf() and friends. They should instead just be
+> void functions.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/ftrace_event.h |  11 ++
+>  include/linux/trace_seq.h    |  12 ++
+>  include/trace/ftrace.h       |   6 +-
+>  kernel/trace/trace.c         |  69 +++----
+>  kernel/trace/trace.h         |   1 +
+>  kernel/trace/trace_output.c  | 416 +++++++++++++++++--------------------------
+>  kernel/trace/trace_output.h  |  16 +-
+>  7 files changed, 231 insertions(+), 300 deletions(-)
 
+[...]
 
+> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> index cfa91de22e27..163c11b6b8ff 100644
+> --- a/kernel/trace/trace_output.c
+> +++ b/kernel/trace/trace_output.c
+[...]
+> @@ -193,7 +184,6 @@ int ftrace_raw_output_prep(struct trace_iterator *iter,
+>  	struct trace_seq *s = &iter->seq;
+>  	struct trace_seq *p = &iter->tmp_seq;
+>  	struct trace_entry *entry;
+> -	int ret;
+>  
+>  	event = container_of(trace_event, struct ftrace_event_call, event);
+>  	entry = iter->ent;
+> @@ -204,8 +194,9 @@ int ftrace_raw_output_prep(struct trace_iterator *iter,
+>  	}
+>  
+>  	trace_seq_init(p);
+> -	ret = trace_seq_printf(s, "%s: ", ftrace_event_name(event));
+> -	if (!ret)
+> +	trace_seq_printf(s, "%s: ", ftrace_event_name(event));
+> +
+> +	if (trace_seq_has_overflowed(s))
+>  		return TRACE_TYPE_PARTIAL_LINE;
+>  
+>  	return 0;
 
--- 
-Best regards,
+This looks like a bug in the original code. It returns 0 in each case
+because TRACE_TYPE_PARTIAL_LINE == 0. I guess that the last three
+lines should get replaced by
 
-Lukasz Majewski
+	return trace_handle_return(s);
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+as it is done in the other functions.
+
+[...]
+
+> @@ -320,14 +302,14 @@ int seq_print_user_ip(struct trace_seq *s, struct mm_struct *mm,
+>  		if (file) {
+>  			ret = trace_seq_path(s, &file->f_path);
+>  			if (ret)
+
+I think that we could ignore the return value from trace_seq_path() as
+well. The other trace_seq*() writes will be NOP if there is an
+overflow.
+
+Or do you have some special plans with trace_seq_path(), please?
+
+> -				ret = trace_seq_printf(s, "[+0x%lx]",
+> -						       ip - vmstart);
+> +				trace_seq_printf(s, "[+0x%lx]",
+> +						 ip - vmstart);
+>  		}
+>  		up_read(&mm->mmap_sem);
+>  	}
+>  	if (ret && ((sym_flags & TRACE_ITER_SYM_ADDR) || !file))
+> -		ret = trace_seq_printf(s, " <" IP_FMT ">", ip);
+> -	return ret;
+> +		trace_seq_printf(s, " <" IP_FMT ">", ip);
+> +	return !trace_seq_has_overflowed(s);
+>  }
+
+The wrong return value was there even before. The other problem is
+just another optimization. Feel free to solve them later in another
+patch(set).
+
+I really like the simplification.
+
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+
+Best Regards,
+Petr
