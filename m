@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934953AbaKNBFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:05:00 -0500
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:33685 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934017AbaKNBE6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:04:58 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Weijie Yang <weijie.yang@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "'Rik van Riel'" <riel@redhat.com>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: mincore: add hwpoison page handle
-Thread-Topic: [PATCH] mm: mincore: add hwpoison page handle
-Thread-Index: AQHP/6ay7aowfdzmykuN6gvNmBZv8A==
-Date: Fri, 14 Nov 2014 01:02:44 +0000
-Message-ID: <20141114010320.GA15456@hori1.linux.bs1.fc.nec.co.jp>
-References: <000001cffe2a$66a95a50$33fc0ef0$%yang@samsung.com>
- <20141112142022.GA29766@phnom.home.cmpxchg.org>
-In-Reply-To: <20141112142022.GA29766@phnom.home.cmpxchg.org>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.26]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-ID: <0A7C1CF4A75A604EAC87CC5EE2420470@gisp.nec.co.jp>
-Content-Transfer-Encoding: 8BIT
+	id S934779AbaKNBI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:08:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52486 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933754AbaKNBI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 20:08:57 -0500
+Date: Thu, 13 Nov 2014 20:08:52 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, sgrubb@redhat.com,
+        eparis@parisplace.org
+Subject: Re: [PATCH] audit: convert status version to a feature bitmap
+Message-ID: <20141114010852.GB5960@madcap2.tricolour.ca>
+References: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com>
+ <1745832.tbkjBzSGxr@sifl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1745832.tbkjBzSGxr@sifl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 09:20:22AM -0500, Johannes Weiner wrote:
-> On Wed, Nov 12, 2014 at 11:39:29AM +0800, Weijie Yang wrote:
-> > When encounter pte is a swap entry, the current code handles two cases:
-> > migration and normal swapentry, but we have a third case: hwpoison page.
+On 14/11/13, Paul Moore wrote:
+> On Thursday, November 13, 2014 03:29:10 PM Richard Guy Briggs wrote:
+> > The version field defined in the audit status structure was found to have
+> > limitations in terms of its expressibility of features supported.  This is
+> > distict from the get/set features call to be able to command those features
+> > that are present.
 > > 
-> > This patch adds hwpoison page handle, consider hwpoison page incore as
-> > same as migration.
+> > Converting this field from a version number to a feature bitmap will allow
+> > distributions to selectively backport and support certain features and will
+> > allow upstream to be able to deprecate features in the future.  It will
+> > allow userspace clients to first query the kernel for which features are
+> > actually present and supported.  Currently, EINVAL is returned rather than
+> > EOPNOTSUP, which isn't helpful in determining if there was an error in the
+> > command, or if it simply isn't supported yet.  Past features are not
+> > represented by this bitmap, but their use may be converted to EOPNOTSUP if
+> > needed in the future.
 > > 
-> > Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-
-Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
+> > Since "version" is too generic to convert with a #define, use a union in the
+> > struct status, introducing the member "feature_bitmap" unionized with
+> > "version".
+> > 
+> > Convert existing AUDIT_VERSION_* macros over to AUDIT_FEATURE_BITMAP*
+> > counterparts, leaving the former for backwards compatibility.
+> > 
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  include/uapi/linux/audit.h |   17 +++++++++++++----
+> >  kernel/audit.c             |    2 +-
+> >  2 files changed, 14 insertions(+), 5 deletions(-)
 > 
-> The change makes sense:
+> Looks good for the most part, just a naming nit pick and a question about the 
+> deprecated AUDIT_VERSION_* defines; see below ...
 > 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> > diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> > index 4d100c8..74aa584 100644
+> > --- a/include/uapi/linux/audit.h
+> > +++ b/include/uapi/linux/audit.h
+> > @@ -322,9 +322,15 @@ enum {
+> >  #define AUDIT_STATUS_BACKLOG_LIMIT	0x0010
+> >  #define AUDIT_STATUS_BACKLOG_WAIT_TIME	0x0020
+> > 
+> > -#define AUDIT_VERSION_BACKLOG_LIMIT	1
+> > -#define AUDIT_VERSION_BACKLOG_WAIT_TIME	2
+> > -#define AUDIT_VERSION_LATEST AUDIT_VERSION_BACKLOG_WAIT_TIME
+> > +#define AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT	0x00000001
+> > +#define AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME	0x00000002
+> > +#define AUDIT_FEATURE_BITMAP ( AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT | \
+> > +				                AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME )
 > 
-> But please add a description of what happens when a poison entry is
-> encountered with the current code.  I'm guessing swap_address_space()
-> will return garbage and this might crash the kernel?
+> How about AUDIT_FEATURE_BIMAP_ALL instead of just AUDIT_FEATURE_BITMAP?
 
-Yes, I think that's correct.
+Sure, I'm fine with that.
 
-Thanks,
-Naoya Horiguchi
+> > +/* deprecated: AUDIT_VERSION_* */
+> > +#define AUDIT_VERSION_LATEST 		AUDIT_FEATURE_BITMAP
+> > +#define AUDIT_VERSION_BACKLOG_LIMIT	AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT
+> > +#define AUDIT_VERSION_BACKLOG_WAIT_TIME
+> > ...                                AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME
+> 
+> So what terrible things happen to userspace if AUDIT_VERSION_BACKLOG_WAIT_TIME 
+> becomes 0x03 instead of 0x02?
+
+But it won't.  It gets the value of
+AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME, which is 0x00000002.
+
+I think you meant to ask about AUDIT_VERSION_LATEST, which would become 3.
+
+You *did* already ask that question in a previous thread, and there
+didn't seem to be a concern.  Steve Grubb could likely answer this
+question better than me.
+
+> paul moore
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
