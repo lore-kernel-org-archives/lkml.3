@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964982AbaKNBjp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:39:45 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60229 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934544AbaKNBjn (ORCPT
+	id S965018AbaKNBkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:40:25 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:62698 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964984AbaKNBkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:39:43 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Date: Fri, 14 Nov 2014 10:42:35 +0900 (JST)
-Message-Id: <20141114.104235.926535445994740268.d.hatayama@jp.fujitsu.com>
-To: ptesarik@suse.cz
-Cc: vgoyal@redhat.com, kumagai-atsushi@mxc.nes.nec.co.jp, anderson@redhat.com,
-        kexec@lists.infradead.org, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in
- VMCOREINFO
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20141113154810.2ee36e72@hananiah.suse.cz>
-References: <54646C1D.1050102@jp.fujitsu.com>
-	<20141113142548.GA1978@redhat.com>
-	<20141113154810.2ee36e72@hananiah.suse.cz>
-X-Mailer: Mew version 6.6 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 13 Nov 2014 20:40:23 -0500
+Message-ID: <54655D7E.1000301@linaro.org>
+Date: Fri, 14 Nov 2014 10:40:14 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
+CC: Andreas Krebbel1 <Andreas.Krebbel@de.ibm.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        linaro-kernel@lists.linaro.org,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "roland@hack.frob.com" <roland@hack.frob.com>
+Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
+References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org> <3899236.yrOvvrZHD6@wuerfel> <OF152076B7.38277C08-ONC1257D8F.0050C2DF-C1257D8F.00516BF2@de.ibm.com> <1472197.o98pKNTkBz@wuerfel>
+In-Reply-To: <1472197.o98pKNTkBz@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Tesarik <ptesarik@suse.cz>
-Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-Date: Thu, 13 Nov 2014 15:48:10 +0100
+Ulrich, Arnd, thank you for your discussions:
 
-> On Thu, 13 Nov 2014 09:25:48 -0500
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
->> On Thu, Nov 13, 2014 at 05:30:21PM +0900, HATAYAMA, Daisuke wrote:
->> > 
->> > (2014/11/13 17:06), Petr Tesarik wrote:
->> > >On Thu, 13 Nov 2014 09:17:09 +0900 (JST)
->> > >HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
->> > >
->> > >>From: Vivek Goyal <vgoyal@redhat.com>
->> > >>Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
->> > >>Date: Wed, 12 Nov 2014 17:12:05 -0500
->> > >>
->> > >>>On Wed, Nov 12, 2014 at 03:40:42PM +0900, HATAYAMA Daisuke wrote:
->> > >>>>Currently, VMCOREINFO note information reports the virtual address of
->> > >>>>phys_base that is assigned to symbol phys_base. But this doesn't make
->> > >>>>sense because to refer to value of the phys_base, it's necessary to
->> > >>>>get the value of phys_base itself we are now about to refer to.
->> > >>>>
->> > >>>
->> > >>>Hi Hatayama,
->> > >>>
->> > >>>/proc/vmcore ELF headers have virtual address information and using
->> > >>>that you should be able to read actual value of phys_base. gdb deals
->> > >>>with virtual addresses all the time and can read value of any symbol
->> > >>>using those headers.
->> > >>>
->> > >>>So I am not sure what's the need for exporting actual value of
->> > >>>phys_base.
->> > >>>
->> > >>
->> > >>Sorry, my logic in the patch description was wrong. For /proc/vmcore,
->> > >>there's enough information for makedumpdile to get phys_base. It's
->> > >>correct. The problem here is that other crash dump mechanisms that run
->> > >>outside Linux kernel independently don't have information to get
->> > >>phys_base.
->> > >
->> > >Yes, but these mechanisms won't be able to read VMCOREINFO either, will
->> > >they?
->> > >
->> > 
->> > I don't intend such sophisticated function only by VMCOREINFO.
->> > Search vmcore for VMCOREINFO using strings + grep before opening it by crash.
->> > I intend that only here.
->> 
->> I think this is very crude and not proper way to get to vmcoreinfo.
-> 
-> Same here. If VMCOREINFO must be locatable without communicating any
-> information to the hypervisor, then I would rather go for something
-> similar to what s390(x) folks do - a well-known location in physical
-> memory that contains a pointer to a checksummed OS info structure,
-> which in turn contains the VMCOREINFO pointers.
-> 
-> I'm a bit surprised such mechanism is not needed by Fujitsu SADUMP.
-> Or is that part of the current plan, Daisuke?
-> 
+On 11/14/2014 07:25 AM, Arnd Bergmann wrote:
+> On Thursday 13 November 2014 15:49:20 Ulrich Weigand wrote:
+>> Arnd Bergmann <arnd@arndb.de> wrote on 13.11.2014 11:21:28:
+>>
+>>> I have to admit that I don't really understand gdb internals, but from
+>>> a first look I get the impression that it will just do the right thing
+>>> if you reuse NT_S390_SYSTEM_CALL on ARM64 with the same semantics.
+>>
+>> There's an interface between BFD and GDB proper involved here.  BFD will
+>> detect the presence of register set notes in the core dump, and will
+>> translate them into virtual sections; GDB will then simply look up such
+>> sections under well-known names.
+>>
+>> In particular, the NT_S390_SYSTEM_CALL note will be translated by BFD
+>> into a virtual section named ".reg-s390-system-call"; GDB platform-
+>> specific code will look for sections of this particular name.
+>>
+>> So if you were to create notes using the same note type, by default it
+>> would do nothing on ARM64.  You might add code to the ARM64 back-end
+>> to also look for a section ".reg-s390-system-call", but that would be
+>> somewhat confusing.  Using a new, platform-specific note type for ARM64
+>> would appear to fit better with existing precedent.
 
-It's useful if there is. I don't plan now. For now, the idea of this
-patch is enough for me.
+I implemented a regset of NT_SYSTEM_CALL(=NT_S390_SYSTEM_CALL) experimentally,
+and checked a generated core file:
 
-BTW, for the above idea, I suspect that if the location in the
-physical memory is unique, it cannot deal with the kdump 2nd kernel
-case. I think it better for the idea to be able to represent multiple
-kernel information.
+ >$ aarch64-linux-gnu-readelf -Wn <...>/tmp/nulltest/core
+ >
+ >Displaying notes found at file offset 0x000003c0 with length 0x00000a68:
+ >  Owner                 Data size    Description
+ >  CORE                 0x00000188    NT_PRSTATUS (prstatus structure)
+ >  CORE                 0x00000088    NT_PRPSINFO (prpsinfo structure)
+ >  CORE                 0x00000080    NT_SIGINFO (siginfo_t data)
+ >  CORE                 0x00000130    NT_AUXV (auxiliary vector)
+ >  CORE                 0x000001b4    NT_FILE (mapped files)
+ >    Page size: 4096
+ >                 Start                 End         Page Offset
+ >[snip]...
+ >  CORE                 0x00000210    NT_FPREGSET (floating point registers)
+ >  LINUX                0x00000008    NT_ARM_TLS (AArch TLS registers)
+ >  LINUX                0x00000108    NT_ARM_HW_BREAK (AArch hardware breakpoint registers)
+ >  LINUX                0x00000108    NT_ARM_HW_WATCH (AArch hardware watchpoint registers)
+ >  LINUX                0x00000004    NT_S390_SYSTEM_CALL (s390 system call restart data)
 
---
-Thanks.
-HATAYAMA, Daisuke
+Looks funny:)
 
+> Ok, thanks a lot for your insight and for confirming what Takahiro AKASHI
+> said. Let's use a new NT_ARM64_SYSTEM_CALL type with a different
+> number then.
+
+We will use NT_ARM_SYSTEM_CALL(=0x404) as other NT_ARM_*, except NT_ARM_VFP,
+are also shared by arch/arm and arch/arm64.
+
+Anyhow, gdb (and/or binutils?) should be updated as well once my coming patch is merged.
+My next question is who should know this?
+
+Thanks,
+-Takahiro AKASHI
+
+> 	Arnd
+>
