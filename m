@@ -1,76 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161638AbaKNSHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 13:07:24 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40483 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161175AbaKNSHW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 13:07:22 -0500
-Date: Fri, 14 Nov 2014 18:07:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        ulf.hansson@linaro.org, tony@atomide.com, linux-mmc@vger.kernel.org,
-        afenkart@gmail.com, nsekhar@ti.com, chris@printf.net,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 2/3] mmc: omap_hsmmc: add tuning support
-Message-ID: <20141114180707.GC4047@n2100.arm.linux.org.uk>
-References: <1415883379-19654-1-git-send-email-kishon@ti.com>
- <1415883379-19654-3-git-send-email-kishon@ti.com>
- <20141114174152.GM11538@saruman>
+	id S1161570AbaKNSOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 13:14:43 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:53551 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161175AbaKNSOm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 13:14:42 -0500
+Date: Fri, 14 Nov 2014 13:14:29 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 10/23 v4] tracing/uprobes: Do not use return values
+ of trace_seq_printf()
+Message-ID: <20141114131429.52b9345b@gandalf.local.home>
+In-Reply-To: <20141114103733.03ffc40b@gandalf.local.home>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011411.693008134@goodmis.org>
+	<54662133.4060405@hitachi.com>
+	<20141114103733.03ffc40b@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141114174152.GM11538@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 11:41:52AM -0600, Felipe Balbi wrote:
-> Hi,
-> 
-> On Thu, Nov 13, 2014 at 06:26:18PM +0530, Kishon Vijay Abraham I wrote:
-> > @@ -233,6 +263,48 @@ struct omap_mmc_of_data {
-> >  	u8 controller_flags;
-> >  };
-> >  
-> > +static const u32 ref_tuning_4bits[] = {
-> > +	0x00FF0FFF, 0xCCC3CCFF, 0xFFCC3CC3, 0xEFFEFFFE,
-> > +	0xDDFFDFFF, 0xFBFFFBFF, 0xFF7FFFBF, 0xEFBDF777,
-> > +	0xF0FFF0FF, 0x3CCCFC0F, 0xCFCC33CC, 0xEEFFEFFF,
-> > +	0xFDFFFDFF, 0xFFBFFFDF, 0xFFF7FFBB, 0xDE7B7FF7
-> > +};
-> > +
-> > +static const u32 ref_tuning_8bits[] = {
-> > +	0xFF00FFFF, 0x0000FFFF, 0xCCCCFFFF, 0xCCCC33CC,
-> > +	0xCC3333CC, 0xFFFFCCCC, 0xFFFFEEFF, 0xFFEEEEFF,
-> > +	0xFFDDFFFF, 0xDDDDFFFF, 0xBBFFFFFF, 0xBBFFFFFF,
-> > +	0xFFFFFFBB, 0XFFFFFF77, 0x77FF7777, 0xFFEEDDBB,
-> > +	0x00FFFFFF, 0x00FFFFFF, 0xCCFFFF00, 0xCC33CCCC,
-> > +	0x3333CCCC, 0xFFCCCCCC, 0xFFEEFFFF, 0xEEEEFFFF,
-> > +	0xDDFFFFFF, 0xDDFFFFFF, 0xFFFFFFDD, 0XFFFFFFBB,
-> > +	0xFFFFBBBB, 0xFFFF77FF, 0xFF7777FF, 0xEEDDBB77
-> > +};
-> 
-> yet another feature we would've gotten for free if we were already using
-> sdhci. This is just a copy of what's on sdhci-msm.c, probably because
-> they license the same IP we do.
-> 
-> It would be much better to just convert omap-hsmmc.c into sdhci-omap.c
-> much like it was done for 8250-omap.c, with the added benefit that this
-> will incur no userland regressions due to devnode names.
+On Fri, 14 Nov 2014 10:37:33 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-If someone does do that, sdhci needs more of the quirks killing - sdhci.c
-/really/ needs to become a library which all these drivers use, rather
-than interposing itself between the MMC core and the actual driver, and
-the more that can be done the better.  All the time that people expand
-on the current disaster, that job is just going to get harder and harder
-(because there'll be more and more sub-drivers, with more and more
-sub-driver specific quirks.)
+> On Sat, 15 Nov 2014 00:35:15 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>  
+> > >  	for (i = 0; i < tu->tp.nr_args; i++) {
+> > >  		struct probe_arg *parg = &tu->tp.args[i];
+> > >  
+> > > -		if (!parg->type->print(s, parg->name, data + parg->offset, entry))
+> > > -			goto partial;
+> > > +		parg->type->print(s, parg->name, data + parg->offset, entry);
+> > 
+> > In 7/23 you've left loop canceling path, why don't you do same thing here?
+> 
+> While rebasing this series on my latest code, this patch conflicted. I
+> notice the difference too (just two minutes ago!).
+> 
+> I agree, it should break out still.
+> 
+> Srikar, can I still have your Reviewed-by if I do that?
+> 
 
+Here's the new patch:
+
+-- Steve
+
+>From cd883b4c2d5d68ec598d6c6a3b5dce4dd99a4cc1 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Wed, 12 Nov 2014 17:26:57 -0500
+Subject: [PATCH] tracing/uprobes: Do not use return values of
+ trace_seq_printf()
+
+The functions trace_seq_printf() and friends will soon no longer have
+return values. Using trace_seq_has_overflowed() and trace_handle_return()
+should be used instead.
+
+Link: http://lkml.kernel.org/r/20141114011411.693008134@goodmis.org
+
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_uprobe.c | 23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
+
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index e35327c787f7..fd76f8e108ef 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -852,16 +852,14 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
+ 	tu = container_of(event, struct trace_uprobe, tp.call.event);
+ 
+ 	if (is_ret_probe(tu)) {
+-		if (!trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)",
+-					ftrace_event_name(&tu->tp.call),
+-					entry->vaddr[1], entry->vaddr[0]))
+-			goto partial;
++		trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)",
++				 ftrace_event_name(&tu->tp.call),
++				 entry->vaddr[1], entry->vaddr[0]);
+ 		data = DATAOF_TRACE_ENTRY(entry, true);
+ 	} else {
+-		if (!trace_seq_printf(s, "%s: (0x%lx)",
+-					ftrace_event_name(&tu->tp.call),
+-					entry->vaddr[0]))
+-			goto partial;
++		trace_seq_printf(s, "%s: (0x%lx)",
++				 ftrace_event_name(&tu->tp.call),
++				 entry->vaddr[0]);
+ 		data = DATAOF_TRACE_ENTRY(entry, false);
+ 	}
+ 
+@@ -869,14 +867,13 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
+ 		struct probe_arg *parg = &tu->tp.args[i];
+ 
+ 		if (!parg->type->print(s, parg->name, data + parg->offset, entry))
+-			goto partial;
++			goto out;
+ 	}
+ 
+-	if (trace_seq_putc(s, '\n'))
+-		return TRACE_TYPE_HANDLED;
++	trace_seq_putc(s, '\n');
+ 
+-partial:
+-	return TRACE_TYPE_PARTIAL_LINE;
++ out:
++	return trace_handle_return(s);
+ }
+ 
+ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.8.1.4
+
