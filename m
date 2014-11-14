@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965794AbaKNPW5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:22:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43633 "EHLO mga02.intel.com"
+	id S965810AbaKNPX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:23:26 -0500
+Received: from mga11.intel.com ([192.55.52.93]:13961 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965481AbaKNPSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:18:21 -0500
+	id S965641AbaKNPSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 10:18:18 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
-   d="scan'208";a="637019489"
-Subject: [PATCH 03/11] mips: sync struct siginfo with general version
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="416529482"
+Subject: [PATCH 01/11] x86, mpx: rename cfg_reg_u and status_reg
 To: hpa@zytor.com
 Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
         linux-mips@linux-mips.org, qiaowei.ren@intel.com,
         Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
 From: Dave Hansen <dave@sr71.net>
-Date: Fri, 14 Nov 2014 07:18:20 -0800
+Date: Fri, 14 Nov 2014 07:18:17 -0800
 References: <20141114151816.F56A3072@viggo.jf.intel.com>
 In-Reply-To: <20141114151816.F56A3072@viggo.jf.intel.com>
-Message-Id: <20141114151820.F7EDC3CC@viggo.jf.intel.com>
+Message-Id: <20141114151817.031762AC@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,30 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
 
-New fields about bound violation are added into general struct
-siginfo. This will impact MIPS and IA64, which extend general
-struct siginfo. This patch syncs this struct for MIPS with
-general version.
+According to Intel SDM extension, MPX configuration and status registers
+should be BNDCFGU and BNDSTATUS. This patch renames cfg_reg_u and
+status_reg to bndcfgu and bndstatus.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- b/arch/mips/include/uapi/asm/siginfo.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ b/arch/x86/include/asm/processor.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff -puN arch/mips/include/uapi/asm/siginfo.h~mpx-v11-mips-sync-struct-siginfo-with-general-version arch/mips/include/uapi/asm/siginfo.h
---- a/arch/mips/include/uapi/asm/siginfo.h~mpx-v11-mips-sync-struct-siginfo-with-general-version	2014-11-14 07:06:21.551576596 -0800
-+++ b/arch/mips/include/uapi/asm/siginfo.h	2014-11-14 07:06:21.554576731 -0800
-@@ -92,6 +92,10 @@ typedef struct siginfo {
- 			int _trapno;	/* TRAP # which caused the signal */
- #endif
- 			short _addr_lsb;
-+			struct {
-+				void __user *_lower;
-+				void __user *_upper;
-+			} _addr_bnd;
- 		} _sigfault;
+diff -puN arch/x86/include/asm/processor.h~mpx-v11-rename-cfg-reg-u-and-status-reg arch/x86/include/asm/processor.h
+--- a/arch/x86/include/asm/processor.h~mpx-v11-rename-cfg-reg-u-and-status-reg	2014-11-14 07:06:20.773541505 -0800
++++ b/arch/x86/include/asm/processor.h	2014-11-14 07:06:20.777541686 -0800
+@@ -380,8 +380,8 @@ struct bndreg {
+ } __packed;
  
- 		/* SIGPOLL, SIGXFSZ (To do ...)	 */
+ struct bndcsr {
+-	u64 cfg_reg_u;
+-	u64 status_reg;
++	u64 bndcfgu;
++	u64 bndstatus;
+ } __packed;
+ 
+ struct xsave_hdr_struct {
 _
