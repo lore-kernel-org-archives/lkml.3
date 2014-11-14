@@ -1,124 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935145AbaKNKXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:23:35 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:7632 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934166AbaKNKXe (ORCPT
+	id S1754983AbaKNKZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:25:08 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33451 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934579AbaKNKZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:23:34 -0500
-Message-ID: <5465D816.3020708@imgtec.com>
-Date: Fri, 14 Nov 2014 10:23:18 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 14 Nov 2014 05:25:05 -0500
+Date: Fri, 14 Nov 2014 11:22:44 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Benoit Parrot <bparrot@ti.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>
+Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
+Message-ID: <20141114102244.GX20972@lukather>
+References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+ <CAAVeFuK4PaFbbYjUsvA-oO78P5qmQvyGqG+Ov4GLghoC=yPAoA@mail.gmail.com>
+ <CACRpkdbO20No0A7ttS=kfMx9qE_MZoZzOtPObHefwnNbixpCeg@mail.gmail.com>
 MIME-Version: 1.0
-To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
-        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
-        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
-        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>,
-        <jay.xu@rock-chips.com>, Pawel Moll <pawel.moll@arm.com>,
-        <mark.yao@rock-chips.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v10 11/11] drm: bridge/dw_hdmi: add rockchip rk3288 support
-References: <1415934583-16290-1-git-send-email-andy.yan@rock-chips.com> <1415935884-17130-1-git-send-email-andy.yan@rock-chips.com>
-In-Reply-To: <1415935884-17130-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="D+UG5SQJKkIYNVx0"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbO20No0A7ttS=kfMx9qE_MZoZzOtPObHefwnNbixpCeg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy
 
-On 14/11/14 03:31, Andy Yan wrote:
-> Rockchip RK3288 hdmi is compatible with dw_hdmi
-> 
-> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-> 
-> ---
-> 
-> Changes in v10:
-> - add more display mode support mpll configuration for rk3288
-> 
-> Changes in v9:
-> - move some phy configuration to platform driver
-> 
-> Changes in v8: None
-> Changes in v7: None
-> Changes in v6: None
-> Changes in v5: None
-> Changes in v4: None
-> Changes in v3: None
-> Changes in v2: None
-> 
->  drivers/gpu/drm/bridge/dw_hdmi.c            |  10 +
->  drivers/gpu/drm/bridge/dw_hdmi.h            |   3 +-
->  drivers/gpu/drm/rockchip/Kconfig            |  10 +
->  drivers/gpu/drm/rockchip/Makefile           |   2 +-
->  drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 355 ++++++++++++++++++++++++++++
->  include/drm/bridge/dw_hdmi.h                |   1 +
->  6 files changed, 379 insertions(+), 2 deletions(-)
->  create mode 100644 drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
-> 
-> diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-> index a2876fe..1dd1f0b 100644
-> --- a/drivers/gpu/drm/bridge/dw_hdmi.c
-> +++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-> @@ -715,6 +715,13 @@ static void dw_hdmi_phy_enable_tmds(struct dw_hdmi *hdmi, u8 enable)
->  			 HDMI_PHY_CONF0_ENTMDS_MASK);
->  }
->  
-> +static void dw_hdmi_phy_enable_spare(struct dw_hdmi *hdmi, u8 enable)
-> +{
-> +	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
-> +			 HDMI_PHY_CONF0_SPARECTRL_OFFSET,
-> +			 HDMI_PHY_CONF0_SPARECTRL_MASK);
-> +}
-> +
+--D+UG5SQJKkIYNVx0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What does enable spare do? Can other future SoCs use it?
+On Fri, Nov 14, 2014 at 10:19:47AM +0100, Linus Walleij wrote:
+> On Wed, Oct 29, 2014 at 8:09 AM, Alexandre Courbot <gnurou@gmail.com> wro=
+te:
+> > On Wed, Oct 22, 2014 at 5:09 AM, Benoit Parrot <bparrot@ti.com> wrote:
+>=20
+> > +               line_b: line_b {
+> > +                       line_b {
+> > +                               gpios =3D <6 0>;
+> > +                               output-low;
+> > +                               line-name =3D "foo-bar-gpio";
+> > +                       };
+> > +               };
+> >
+> (...)
+> >
+> > I wonder if such usage of child nodes could not interfere with GPIO
+> > drivers (existing or to be) that need to use child nodes for other
+> > purposes. Right now there is no way to distinguish a hog node from a
+> > node that serves another purpose, and that might become a problem in
+> > the future.
+>=20
+> Yes, so I have suggested a hog-something; keyword in there.
+>=20
+> As long as the children don't have any compatible-strings we can
+> decide pretty much how they should be handled internally.
+>=20
+> Are there custom drivers with child nodes inside the main chip
+> today?
 
-This looks like DW specific. And can be a separate commit that adds a feature to the dw hdmi driver.
+o/
 
-Thanks
-ZubairLK
+Our pinctrl driver is also our GPIO driver, so they both share the
+same node.
 
->  static void dw_hdmi_phy_gen2_pddq(struct dw_hdmi *hdmi, u8 enable)
->  {
->  	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
-> @@ -846,6 +853,9 @@ static int hdmi_phy_configure(struct dw_hdmi *hdmi, unsigned char prep,
->  	dw_hdmi_phy_gen2_txpwron(hdmi, 1);
->  	dw_hdmi_phy_gen2_pddq(hdmi, 0);
->  
-> +	if (hdmi->dev_type == RK3288_HDMI)
-> +		dw_hdmi_phy_enable_spare(hdmi, 1);
-> +
->  	/*Wait for PHY PLL lock */
->  	msec = 5;
->  	do {
-> diff --git a/drivers/gpu/drm/bridge/dw_hdmi.h b/drivers/gpu/drm/bridge/dw_hdmi.h
-> index b8412a9..30a6b28 100644
-> --- a/drivers/gpu/drm/bridge/dw_hdmi.h
-> +++ b/drivers/gpu/drm/bridge/dw_hdmi.h
-> @@ -837,7 +837,8 @@ enum {
->  	HDMI_PHY_CONF0_PDZ_OFFSET = 7,
->  	HDMI_PHY_CONF0_ENTMDS_MASK = 0x40,
->  	HDMI_PHY_CONF0_ENTMDS_OFFSET = 6,
-> -	HDMI_PHY_CONF0_SPARECTRL = 0x20,
-> +	HDMI_PHY_CONF0_SPARECTRL_MASK = 0x20,
-> +	HDMI_PHY_CONF0_SPARECTRL_OFFSET = 5,
+Our pinctrl definitions are there.
 
-Cheers,
-ZubairLK
+Maxime
 
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--D+UG5SQJKkIYNVx0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUZdf0AAoJEBx+YmzsjxAgh5wP+gN1zLRxrEj3ftOSB5Cx5fVW
+7Sl9viBuFOfYVOEcD4bWoP6nkBw2+9dj7sNbEG/HnmcaFz7QhuzJTKGi4qmpeS1n
+MW+nMrZ/KE/ZFDT7jdC49F1zg4qUmZ2v3dRjGyVOUFG1al6j+ajhx3S6w5kAFlKb
+5EWs4JgeZxaXXJcaurVHAC+6lipq47k1Toqzcwdm0rOKmkYttaoE/LXSGcZyFpvj
+L3svmHr27VcsNj73PxErMyLEw41+vXVmSgiy3DU3vYO9HrAvxHq1amPgc9wUN0R8
+QffIbbf16cg6ar9qMAqDWa96ijG9NL5AVA3ADOn7O1gf9XHSsCbp8FXyzi6RRT6S
+yclt4H7tGxxnLbAhwTNqqKQXeUQNoLnllORSarJp7NGPcWqahVeaRJei0sKSdRzW
+AUyiBRBR79beKTABg5UyuPHvzOwW6gCw5jZHOwhDW4OS14MGvLV7fPpvz1wdaHma
+orlZXVJRBZYNLGPnM++F6/PPsOHwFQoNe3rE1ZzwHPc4KGbEEi6sQocl6dFNH8hA
+6S2tYKUzdQnM+4L9TZjIPlx8uS1pyF4pIKmoUuDIlqE1Zo15cTbzLgd+n+8H8d/t
+0OUjC1cAi1D+cTi6MwlWs0jAuPVFCmI6V7dCdzS8M/AYZTr6xLET2ZN+mWVpzec/
+mNUEaCOSNPGxXyKNjcj8
+=jUSA
+-----END PGP SIGNATURE-----
+
+--D+UG5SQJKkIYNVx0--
