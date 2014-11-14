@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935100AbaKNECk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 23:02:40 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:53529 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933512AbaKNECj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 23:02:39 -0500
+	id S935038AbaKNEIR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 23:08:17 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51485 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933512AbaKNEIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 23:08:15 -0500
+Message-ID: <54657FFA.1070200@ti.com>
+Date: Fri, 14 Nov 2014 09:37:22 +0530
+From: Vignesh R <vigneshr@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141113224733.79747593@gandalf.local.home>
-References: <1415935283-19198-1-git-send-email-bobby.prani@gmail.com> <20141113224733.79747593@gandalf.local.home>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Thu, 13 Nov 2014 23:02:07 -0500
-Message-ID: <CAJhHMCCWaQNVFuSUvpbcR=CMwxW6ownZ7W=NrXaiYjRvOQ1WDg@mail.gmail.com>
-Subject: Re: [RFC PATCH] printk: Use ACCESS_ONCE() instead of a volatile type
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Petr Mladek <pmladek@suse.cz>,
-        Jan Kara <jack@suse.cz>, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Alex Elder <elder@linaro.org>, Joe Perches <joe@perches.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] Add support for ADC on am437x-gp and am43x-epos-evm
+References: <1415099728-10959-1-git-send-email-vigneshr@ti.com>
+In-Reply-To: <1415099728-10959-1-git-send-email-vigneshr@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 10:47 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 13 Nov 2014 22:21:21 -0500
-> Pranith Kumar <bobby.prani@gmail.com> wrote:
->
->> Remove volatile type qualifier and use ACCESS_ONCE() in its place for each
->> access. Using volatile is not recommended as documented in
->> Documentation/volatile-considered-harmful.txt.
->>
->> Here logbuf_cpu is a local variable and it is not clear how it is being accessed
->> concurrently. We should remove volatile accesses entirely here, but for now make
->> a safer change of using ACCESS_ONCE().
->
-> I'm a little confused by the above paragraph about it's not clear how
-> it is being accessed concurrently. Do you mean the code is unclear, or
-> your understanding of it is unclear?
 
-It is definitely got to do with my understanding. recursion explains
-how it can be concurrently accessed. Thanks!
+On Tuesday 04 November 2014 04:45 PM, Vignesh R wrote:
+> This series of patches enable ADC on am437x-gp-evm and am43x-epos-evm.
+> The ADC clock hwmod data of am33xx has been moved to commom place so that
+> both am43xx and am33xx can reuse them.
+> tscadc DT node has been adided to am437x-gp and am43x-epos dt files.
+> With these patches, ADC functionalities are now available on am43xx.
+> 
+> Changelog:
+> 
+> v2:
+> Removed phy addresses in hwmod. Using DT instead.
+> Removed unused "ti,am4372" compatible string.
+> Use macro to set clk domain name.
+> Fixed subject format of all patches
+> 
 
->
-> Regardless of your answer, this patch is correct. logbuf_cpu is used to
-> determine if printk has recursed on itself before it takes the
-> logbuf_lock and deadlocks. Your ACCESS_ONCE keeps the compiler from
-> optimizing out the logbuf_cpu as it will see that this function is the
-> only one that can touch it and may try to do weird things to it.
->
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
->
-> -- Steve
->
->
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->> ---
->>  kernel/printk/printk.c | 8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
->> index e748971..4790191 100644
->> --- a/kernel/printk/printk.c
->> +++ b/kernel/printk/printk.c
->> @@ -1624,7 +1624,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->>       int printed_len = 0;
->>       bool in_sched = false;
->>       /* cpu currently holding logbuf_lock in this function */
->> -     static volatile unsigned int logbuf_cpu = UINT_MAX;
->> +     static unsigned int logbuf_cpu = UINT_MAX;
->>
->>       if (level == LOGLEVEL_SCHED) {
->>               level = LOGLEVEL_DEFAULT;
->> @@ -1641,7 +1641,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->>       /*
->>        * Ouch, printk recursed into itself!
->>        */
->> -     if (unlikely(logbuf_cpu == this_cpu)) {
->> +     if (unlikely(ACCESS_ONCE(logbuf_cpu) == this_cpu)) {
->>               /*
->>                * If a crash is occurring during printk() on this CPU,
->>                * then try to get the crash message out but make sure
->> @@ -1659,7 +1659,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->>
->>       lockdep_off();
->>       raw_spin_lock(&logbuf_lock);
->> -     logbuf_cpu = this_cpu;
->> +     ACCESS_ONCE(logbuf_cpu) = this_cpu;
->>
->>       if (unlikely(recursion_bug)) {
->>               static const char recursion_msg[] =
->> @@ -1754,7 +1754,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->>                                                dict, dictlen, text, text_len);
->>       }
->>
->> -     logbuf_cpu = UINT_MAX;
->> +     ACCESS_ONCE(logbuf_cpu) = UINT_MAX;
->>       raw_spin_unlock(&logbuf_lock);
->>       lockdep_on();
->>       local_irq_restore(flags);
->
+Please accept these patches.
 
+Regards
+Vignesh R
 
-
--- 
-Pranith
+> Vignesh R (3):
+>   ARM: OMAP2+: hwmod: AM335x/AM43x: Move am33xx_l4_hs_hwmod to
+>     ipblock_data
+>   ARM: OMAP2+: hwmod: AM335x/AM43x: add hwmod support for tscadc on
+>     am43x-evm
+>   ARM: dts: AM43xx: add tscadc DT entries for am437x-evm and
+>     am43x-epos-evm
+> 
+>  arch/arm/boot/dts/am4372.dtsi                      | 20 ++++++
+>  arch/arm/boot/dts/am437x-gp-evm.dts                |  8 +++
+>  arch/arm/boot/dts/am43x-epos-evm.dts               |  8 +++
+>  .../mach-omap2/omap_hwmod_33xx_43xx_common_data.h  |  2 +
+>  .../mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c | 71 ++++++++++++++++++++++
+>  arch/arm/mach-omap2/omap_hwmod_33xx_data.c         | 64 -------------------
+>  arch/arm/mach-omap2/omap_hwmod_43xx_data.c         |  1 +
+>  7 files changed, 110 insertions(+), 64 deletions(-)
+> 
