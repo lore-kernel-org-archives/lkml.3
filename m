@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965272AbaKNKwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:52:31 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33260 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965144AbaKNKw2 (ORCPT
+	id S965289AbaKNKwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:52:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48232 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965270AbaKNKwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:52:28 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 6/6] ARM: zynq: DT: Add OCM controller node
-Date: Fri, 14 Nov 2014 11:52:07 +0100
-Message-Id: <0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <cover.1415962281.git.michal.simek@xilinx.com>
-References: <cover.1415962281.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1415962281.git.michal.simek@xilinx.com>
-References: <cover.1415962281.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-14140-1415962343-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 14 Nov 2014 05:52:31 -0500
+Date: Fri, 14 Nov 2014 10:52:21 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 3.16.y-ckt 009/170] NFS: Fix /proc/fs/nfsfs/servers and
+ /proc/fs/nfsfs/volumes
+Message-ID: <20141114105221.GB7276@hercules>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+ <1415704129-12709-10-git-send-email-luis.henriques@canonical.com>
+ <1415946985.3398.125.camel@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415946985.3398.125.camel@decadent.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Fri, Nov 14, 2014 at 06:36:25AM +0000, Ben Hutchings wrote:
+> On Tue, 2014-11-11 at 11:06 +0000, Luis Henriques wrote:
+> > 3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: "Eric W. Biederman" <ebiederm@xmission.com>
+> > 
+> > commit 65b38851a17472d31fec9019fc3a55b0802dab88 upstream.
+> > 
+> > The usage of pid_ns->child_reaper->nsproxy->net_ns in
+> > nfs_server_list_open and nfs_client_list_open is not safe.
+> > 
+> > /proc for a pid namespace can remain mounted after the all of the
+> > process in that pid namespace have exited.  There are also times
+> > before the initial process in a pid namespace has started or after the
+> > initial process in a pid namespace has exited where
+> > pid_ns->child_reaper can be NULL or stale.  Making the idiom
+> > pid_ns->child_reaper->nsproxy a double whammy of problems.
+> > 
+> > Luckily all that needs to happen is to move /proc/fs/nfsfs/servers and
+> > /proc/fs/nfsfs/volumes under /proc/net to /proc/net/nfsfs/servers and
+> > /proc/net/nfsfs/volumes and add a symlink from the original location,
+> > and to use seq_open_net as it has been designed.
+> > 
+> > Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+> > Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> > Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> [...]
+> 
+> This needs a follow-up:
+> 
+> commit 21e81002f9788a3af591416b6dec60d7b67f2fb2
+> Author: Cong Wang <xiyou.wangcong@gmail.com>
+> Date:   Mon Sep 8 16:17:55 2014 -0700
+> 
+>     nfs: fix kernel warning when removing proc entry
+> 
 
---=_mimegpg-monstr-desktop-14140-1415962343-0001
+Thank you, Ben.  I missed that one.  Its now in the -review for this
+release.
 
-Add the on-chip-memory controller node to the Zynq devicetree.
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-
-Changes in v4:
-- Use memory-controller@... instead of ocmc@...
-
-Changes in v3:
-- Extract from OCM driver
-
-Changes in v2: None
-
- arch/arm/boot/dts/zynq-7000.dtsi | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index ce2ef5bec4f2..e217fb1c1169 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -150,6 +150,13 @@
- 			reg = <0xf8006000 0x1000>;
- 		};
-
-+		ocmc: memory-controller@f800c000 {
-+			compatible = "xlnx,zynq-ocmc-1.0";
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 3 4>;
-+			reg = <0xf800c000 0x1000>;
-+		};
-+
- 		uart0: serial@e0000000 {
- 			compatible = "xlnx,xuartps", "cdns,uart-r1p8";
- 			status = "disabled";
+Cheers,
 --
-1.8.2.3
+Luís
 
+> Ben.
+> 
+> -- 
+> Ben Hutchings
+> Never put off till tomorrow what you can avoid all together.
 
---=_mimegpg-monstr-desktop-14140-1415962343-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlRl3ucACgkQykllyylKDCEBmACeONWnKUPesJOfiLYv5yzZV0WP
-SaIAn0ySSoFmfvjhQTgcAvw+HVGmpr2j
-=otbC
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-14140-1415962343-0001--
