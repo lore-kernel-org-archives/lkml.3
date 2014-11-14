@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934927AbaKNCHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 21:07:50 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:26881 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933518AbaKNCHt (ORCPT
+	id S935064AbaKNCML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 21:12:11 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:8351 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933518AbaKNCMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 21:07:49 -0500
-Date: Thu, 13 Nov 2014 21:07:44 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arianna Avanzini <avanzini.arianna@gmail.com>
-Cc: namhyung@kernel.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH RFC v2] trace, blktrace: don't let the sysfs interface
- remove trace from running list
-Message-ID: <20141113210744.7a725036@gandalf.local.home>
-In-Reply-To: <1415616049-1132-1-git-send-email-avanzini.arianna@gmail.com>
-References: <8761env4vf.fsf@sejong.aot.lge.com>
-	<1415616049-1132-1-git-send-email-avanzini.arianna@gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Thu, 13 Nov 2014 21:12:09 -0500
+From: Zhen Lei <thunder.leizhen@huawei.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        "Tianhong Ding" <dingtianhong@huawei.com>,
+        Kefeng Wang <wangkefeng.wang@huawei.com>,
+        Zhen Lei <thunder.leizhen@huawei.com>
+Subject: [PATCH 1/1] clk: delete a local variable's repeated assignment
+Date: Fri, 14 Nov 2014 10:10:40 +0800
+Message-ID: <1415931040-9868-1-git-send-email-thunder.leizhen@huawei.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
+X-Originating-IP: [10.177.27.142]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.546564F7.01ED,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: f32cef477ec5a3750e0dbbc51e0c1d3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It's the same to the next statement, "ret = clk->parent". I think compiler will
+optimize it, it's just not looking well.
 
-Jens (Cc'd) maintains the blktrace. He can take this if he wants.
+Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
+---
+ drivers/clk/clk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- Steve
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 4896ae9..5307225 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1614,7 +1614,7 @@ static struct clk *__clk_init_parent(struct clk *clk)
 
+ 	if (clk->num_parents == 1) {
+ 		if (IS_ERR_OR_NULL(clk->parent))
+-			ret = clk->parent = __clk_lookup(clk->parent_names[0]);
++			clk->parent = __clk_lookup(clk->parent_names[0]);
+ 		ret = clk->parent;
+ 		goto out;
+ 	}
+--
+1.8.0
 
-On Mon, 10 Nov 2014 11:40:49 +0100
-Arianna Avanzini <avanzini.arianna@gmail.com> wrote:
-
-> Currently, blktrace can be started/stopped via its ioctl-based interface
-> (used by the userspace blktrace tool) or via its ftrace interface. The
-> function blk_trace_remove_queue(), called each time an "enable" tunable
-> of the ftrace interface transitions to zero, removes the trace from the
-> running list, even if no function from the sysfs interface adds it to
-> such a list. This leads to a null pointer dereference.
-> This commit changes the blk_trace_remove_queue() function so that it
-> does not remove the blk_trace from the running list.
-> 
-> v2:
->     - Now the patch removes the invocation of list_del() instead of
->       adding an useless if branch, as suggested by Namhyung Kim.
-> 
-> Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
-> ---
->  kernel/trace/blktrace.c | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-> index c1bd4ad..bd05fd2 100644
-> --- a/kernel/trace/blktrace.c
-> +++ b/kernel/trace/blktrace.c
-> @@ -1493,9 +1493,6 @@ static int blk_trace_remove_queue(struct request_queue *q)
->  	if (atomic_dec_and_test(&blk_probes_ref))
->  		blk_unregister_tracepoints();
->  
-> -	spin_lock_irq(&running_trace_lock);
-> -	list_del(&bt->running_list);
-> -	spin_unlock_irq(&running_trace_lock);
->  	blk_trace_free(bt);
->  	return 0;
->  }
 
