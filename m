@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934930AbaKNBOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:14:16 -0500
+	id S934764AbaKNBSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:18:04 -0500
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:43207 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934544AbaKNBOM (ORCPT
+	by vger.kernel.org with ESMTP id S934904AbaKNBOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:14:12 -0500
-Message-Id: <20141114011244.256115061@goodmis.org>
+	Thu, 13 Nov 2014 20:14:15 -0500
+Message-Id: <20141114011411.530216306@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 13 Nov 2014 20:12:44 -0500
+Date: Thu, 13 Nov 2014 20:12:53 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC][PATCH 00/23 v4] trace-seq/seq-buf/x86/printk: Print all stacks from NMI safely
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [RFC][PATCH 09/23 v4] tracing/probes: Do not use return value of trace_seq_printf()
+References: <20141114011244.256115061@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0009-tracing-probes-Do-not-use-return-value-of-trace_seq_.patch
 X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Version 4:
+The functions trace_seq_printf() and friends will soon not have a return
+value and will only be a void function. Use trace_seq_has_overflowed()
+instead to know if the trace_seq operations succeeded or not.
 
-I updated the code from most of the comments from Petr Mladek. One thing
-I wanted to do was to remove the return values of the trace_seq_*()
-functions. The ones that I plan on removing from seq_file equivalents.
-To do so, I had to restructure the use cases, which ended up cleaning
-up most of the code. Having updated the trace_seq_*() functions made
-it possible not to worry about the return values of seq_buf as they were
-no longer used.
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_probe.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index d4b9fc22cd27..b983b2fd2ca1 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -40,7 +40,8 @@ const char *reserved_field_names[] = {
+ int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s, const char *name,	\
+ 				void *data, void *ent)			\
+ {									\
+-	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
++	trace_seq_printf(s, " %s=" fmt, name, *(type *)data);		\
++	return !trace_seq_has_overflowed(s);				\
+ }									\
+ const char PRINT_TYPE_FMT_NAME(type)[] = fmt;				\
+ NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(type));
+@@ -61,10 +62,11 @@ int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s, const char *name,
+ 	int len = *(u32 *)data >> 16;
+ 
+ 	if (!len)
+-		return trace_seq_printf(s, " %s=(fault)", name);
++		trace_seq_printf(s, " %s=(fault)", name);
+ 	else
+-		return trace_seq_printf(s, " %s=\"%s\"", name,
+-					(const char *)get_loc_data(data, ent));
++		trace_seq_printf(s, " %s=\"%s\"", name,
++				 (const char *)get_loc_data(data, ent));
++	return !trace_seq_has_overflowed(s);
+ }
+ NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(string));
+ 
+-- 
+2.1.1
 
 
-Steven Rostedt (Red Hat) (23):
-      tracing: Fix trace_seq_bitmask() to start at current position
-      tracing: Add trace_seq_has_overflowed() and trace_handle_return()
-      blktrace/tracing: Use trace_seq_has_overflowed() helper function
-      ring-buffer: Remove check of trace_seq_{puts,printf}() return values
-      tracing: Have branch tracer use trace_handle_return() helper function
-      tracing: Have function_graph use trace_seq_has_overflowed()
-      kprobes/tracing: Use trace_seq_has_overflowed() for overflow checks
-      tracing: Do not check return values of trace_seq_p*() for mmio tracer
-      tracing/probes: Do not use return value of trace_seq_printf()
-      tracing/uprobes: Do not use return values of trace_seq_printf()
-      tracing: Do not use return values of trace_seq_printf() in syscall tracing
-      tracing: Remove return values of most trace_seq_*() functions
-      tracing: Create seq_buf layer in trace_seq
-      tracing: Convert seq_buf_path() to be like seq_path()
-      tracing: Convert seq_buf fields to be like seq_file fields
-      tracing: Add a seq_buf_clear() helper and clear len and readpos in init
-      tracing: Have seq_buf use full buffer
-      tracing: Add seq_buf_get_buf() and seq_buf_commit() helper functions
-      seq_buf: Create seq_buf_used() to find out how much was written
-      seq-buf: Make seq_buf_bprintf() conditional on CONFIG_BINARY_PRINTF
-      seq_buf: Move the seq_buf code to lib/
-      printk: Add per_cpu printk func to allow printk to be diverted
-      x86/nmi: Perform a safe NMI stack trace on all CPUs
-
-----
- arch/x86/kernel/apic/hw_nmi.c        |  91 +++++++-
- include/linux/ftrace_event.h         |  11 +
- include/linux/percpu.h               |   3 +
- include/linux/printk.h               |   2 +
- include/linux/seq_buf.h              | 135 ++++++++++++
- include/linux/trace_seq.h            |  59 ++---
- include/trace/ftrace.h               |   6 +-
- kernel/printk/printk.c               |  38 +++-
- kernel/trace/blktrace.c              | 148 ++++++-------
- kernel/trace/ring_buffer.c           |  75 +++----
- kernel/trace/trace.c                 | 108 ++++-----
- kernel/trace/trace.h                 |   3 +-
- kernel/trace/trace_branch.c          |  15 +-
- kernel/trace/trace_events.c          |   6 +-
- kernel/trace/trace_functions_graph.c | 380 ++++++++++----------------------
- kernel/trace/trace_kprobe.c          |  42 ++--
- kernel/trace/trace_mmiotrace.c       |  52 ++---
- kernel/trace/trace_output.c          | 416 ++++++++++++++---------------------
- kernel/trace/trace_output.h          |  16 +-
- kernel/trace/trace_probe.c           |  10 +-
- kernel/trace/trace_seq.c             | 254 +++++++++------------
- kernel/trace/trace_syscalls.c        |  43 ++--
- kernel/trace/trace_uprobe.c          |  23 +-
- lib/Makefile                         |   2 +-
- lib/seq_buf.c                        | 346 +++++++++++++++++++++++++++++
- 25 files changed, 1275 insertions(+), 1009 deletions(-)
