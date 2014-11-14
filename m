@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934699AbaKNCGz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 21:06:55 -0500
-Received: from mailout.micron.com ([137.201.242.129]:41610 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933518AbaKNCGy convert rfc822-to-8bit (ORCPT
+	id S934927AbaKNCHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 21:07:50 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:26881 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933518AbaKNCHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 21:06:54 -0500
-From: bpqw <bpqw@micron.com>
-To: Graham Moore <grmoore@opensource.altera.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>, bpqw <bpqw@micron.com>
-Subject: RE: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Topic: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Index: AQHP+W8IEF9rxWxnKkG/zeWVIWCG6Zxb9qNUgAA3tsCAAxFVgIAAJg1g
-Date: Fri, 14 Nov 2014 02:06:04 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315EBFB7@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
- <54613259.4070903@opensource.altera.com>
- <alpine.DEB.2.02.1411111336010.1356@lava-test-server>
- <A765B125120D1346A63912DDE6D8B6315EB0DA@NTXXIAMBX02.xacn.micron.com>
- <alpine.DEB.2.02.1411130945300.19890@lava-test-server>
-In-Reply-To: <alpine.DEB.2.02.1411130945300.19890@lava-test-server>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21102.001
-x-tm-as-result: No--37.232500-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Nov 2014 21:07:49 -0500
+Date: Thu, 13 Nov 2014 21:07:44 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arianna Avanzini <avanzini.arianna@gmail.com>
+Cc: namhyung@kernel.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH RFC v2] trace, blktrace: don't let the sysfs interface
+ remove trace from running list
+Message-ID: <20141113210744.7a725036@gandalf.local.home>
+In-Reply-To: <1415616049-1132-1-git-send-email-avanzini.arianna@gmail.com>
+References: <8761env4vf.fsf@sejong.aot.lge.com>
+	<1415616049-1132-1-git-send-email-avanzini.arianna@gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> This maybe your spi controller is still extended mode, Once EVCR bit 7 
->> is set to 0, the spi nor device will operate in quad I/O.Command-address-data line is 4-x-4.
->> So after send WRITE EVCR command , spi controller also  must transfer 
->> to quad I/O Mode,and set its Command-address-data line also Should be 4-x-4 .
 
->Thanks, this helped.  I added some code to snoop the command stream for WRITE EVCR with quad mode, 
->and then set up the quad mode in the controller.  Seems kinda ugly, but working now.
+Jens (Cc'd) maintains the blktrace. He can take this if he wants.
 
->-Graham
+-- Steve
 
-Yes ,if enable spi nor Quad I/O, firstly, must check spi controller if support Quad I/O protocol,
-and after enable spi nor Quad I/O mode ,spi controller also must be transferred to Quad I/O protocol.
-Their two side must be matched together.
-Maybe spi controller can do this changes.
 
-Hi,Brian
+On Mon, 10 Nov 2014 11:40:49 +0100
+Arianna Avanzini <avanzini.arianna@gmail.com> wrote:
 
-Can you give me some tips about this patch? Thanks!
+> Currently, blktrace can be started/stopped via its ioctl-based interface
+> (used by the userspace blktrace tool) or via its ftrace interface. The
+> function blk_trace_remove_queue(), called each time an "enable" tunable
+> of the ftrace interface transitions to zero, removes the trace from the
+> running list, even if no function from the sysfs interface adds it to
+> such a list. This leads to a null pointer dereference.
+> This commit changes the blk_trace_remove_queue() function so that it
+> does not remove the blk_trace from the running list.
+> 
+> v2:
+>     - Now the patch removes the invocation of list_del() instead of
+>       adding an useless if branch, as suggested by Namhyung Kim.
+> 
+> Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
+> ---
+>  kernel/trace/blktrace.c | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> index c1bd4ad..bd05fd2 100644
+> --- a/kernel/trace/blktrace.c
+> +++ b/kernel/trace/blktrace.c
+> @@ -1493,9 +1493,6 @@ static int blk_trace_remove_queue(struct request_queue *q)
+>  	if (atomic_dec_and_test(&blk_probes_ref))
+>  		blk_unregister_tracepoints();
+>  
+> -	spin_lock_irq(&running_trace_lock);
+> -	list_del(&bt->running_list);
+> -	spin_unlock_irq(&running_trace_lock);
+>  	blk_trace_free(bt);
+>  	return 0;
+>  }
 
--Bean Huo
