@@ -1,117 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbaKNJa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 04:30:26 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:62587 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547AbaKNJaW (ORCPT
+	id S1754920AbaKNJa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 04:30:59 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:50622 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaKNJa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 04:30:22 -0500
-Date: Fri, 14 Nov 2014 10:30:17 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Simon Horman <horms@verge.net.au>, Joe Perches <joe@perches.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>, Rob Herring <robh@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus <magnus.damm@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3] of: replace Asahi Kasei Corp venter prefix
-Message-ID: <20141114093016.GB3810@ulmo>
-References: <20140922130026.GK3290@leverpostej>
- <CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
- <20140922132743.GM3290@leverpostej>
- <87y4rfhmgl.wl%kuninori.morimoto.gx@renesas.com>
- <1415845309.4269.6.camel@perches.com>
- <20141113025105.GA16652@verge.net.au>
- <87vbmjhj00.wl%kuninori.morimoto.gx@renesas.com>
- <20141113110740.GE3815@sirena.org.uk>
- <87k32yd0bd.wl%kuninori.morimoto.gx@renesas.com>
- <5465BFA2.9050706@nvidia.com>
+	Fri, 14 Nov 2014 04:30:56 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PmA2V3Z32TCmWXqI"
-Content-Disposition: inline
-In-Reply-To: <5465BFA2.9050706@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141103184247.GD1618@lahna.fi.intel.com>
+References: <20141028144249.GD8123@saruman>
+	<CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
+	<20141031132005.GB1273@saruman>
+	<20141031162339.GA7136@psi-dev26.jf.intel.com>
+	<20141031184509.GA2224@psi-dev26.jf.intel.com>
+	<20141103092402.GA1304@lahna.fi.intel.com>
+	<20141103150048.GB27425@saruman>
+	<20141103152743.GB1618@lahna.fi.intel.com>
+	<20141103154207.GC1618@lahna.fi.intel.com>
+	<20141103155011.GH27425@saruman>
+	<20141103184247.GD1618@lahna.fi.intel.com>
+Date: Fri, 14 Nov 2014 10:30:55 +0100
+Message-ID: <CACRpkda8eRp5tzvUppVvAfh0djR6q=3kYuec-nvJvnd+aCHC=A@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
+ Intel Baytrail
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Felipe Balbi <balbi@ti.com>, David Cohen <david.a.cohen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 3, 2014 at 7:42 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Mon, Nov 03, 2014 at 09:50:11AM -0600, Felipe Balbi wrote:
 
---PmA2V3Z32TCmWXqI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> that's an issue that needs solving, but forcing every x86 kernel to ship
+>> with this driver, is not a proper solution.
+>
+> I would rather have the driver build in to the kernel now (and btw it
+> has been already in mainline quite some time so I suspect many distros
+> have already enabled it), than turning it module and render some devices
+> that have been working previously, fail suddenly.
 
-On Fri, Nov 14, 2014 at 05:38:58PM +0900, Alexandre Courbot wrote:
-> On 11/14/2014 10:43 AM, Kuninori Morimoto wrote:
-[...]
-> >diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/=
-tegra20-seaboard.dts
-> >index a1d4bf9..7f5cf80 100644
-> >--- a/arch/arm/boot/dts/tegra20-seaboard.dts
-> >+++ b/arch/arm/boot/dts/tegra20-seaboard.dts
-> >@@ -405,7 +405,7 @@
-> >  		clock-frequency =3D <400000>;
-> >
-> >  		magnetometer@c {
-> >-			compatible =3D "ak,ak8975";
-> >+			compatible =3D "asahi-kasei,ak8975";
->=20
-> Mmm. So does this mean this device was never probed because the driver did
-> not recognize its compatible property?
+We have an analogous problem with large device tree kernels for ARM
+(supporting a multitude of ARM subarchitectures): a lot of statically
+compiled-in drivers that just idle around after boot.
 
-I2C (like SPI) has a fallback in case the OF table yields no match. The
-of_modalias_node() that it uses extracts the module name from the device
-tree node's compatible string by skipping the vendor prefix. The
-resulting string is then set as the I2C client's name and causes the I2C
-standard ID matching to succeed (see of_i2c_register_devices() for how
-this is done in detail).
+What would be nice was for the kernel to have a way of marking some
+platform drivers such that if it has not been probed by init_late(),
+the entire driver would be discarded, like a module that gets unloaded.
 
-> I cannot find "ak,ak8975" anywhere else in the kernel.
->=20
-> If so,
->=20
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+When I posed this idea in some forum it was considered "pretty hard
+to achieve" (plus I guess it runs into the dilemma that we can never
+discard strings) but I still think it'd be the right thing to do. It'd be very
+straight-forward for driver authors to annotate their on-chip platform
+drivers with some MODULE_LATE_DISCARD() or whatever.
 
-Technically this is breaking backwards-compatibility from a DT
-perspective, but I think it's safe to do because the Linux kernel has a
-way of dealing with this and other operating systems should be able to
-deal with this in a similar way (or even easier by letting the driver
-match on the ak prefix as well for this particular chip).
-
-So:
-
-Acked-by: Thierry Reding <treding@nvidia.com>
-
---PmA2V3Z32TCmWXqI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUZcuoAAoJEN0jrNd/PrOhijEP/0fWBqWZTvD71aj6UyH4xq3U
-9EmL389EXehLKgnx7cjPW98QN0MPEDHotakxbVPD3Vn2IhU/SI2/c1w7BAQH8OdM
-FZjm1ujoHRk5ePM27/23OWPZd5L/9p54K7ko5qpZvxDj4tmxcMiOWL694RgSRW8q
-HkuFd+WcVOdD67uQRcY5xRNRB/egnLzFI5N2jaQUZE8adL9OTWo6objaOigTXAFl
-mMlqIpIwK9oGhuJygi05ESp3LcJYMA8i3kdKJv45YH8ctKonRBOmOQqjgxjgMeF6
-drzGcz/oiIgd4vV41N9OsKWyTY5gamX/6t604ur+UyKlf/7vgiW72EGMflwcMyKd
-reps8t+ZrRQfDBgqy9/+cpQsSnhnLLhFjl/b3jkveNZoEFwf7MWmNdF4VdMdD/mV
-BKPNkHHQDI5xbAZJpdZfD9o5zWupkxFt0PrvU8fg78UPXg/pG8Pa91m6S8w77iD6
-NyJmWdc8x3R0ADT4DtLelemJalcPaJzcWABYlgDQMBSCms6o6KpFVfIc0VqQUtup
-1TzB+QkXNhJdWd6cVbK/XF9wyuiwzCfmXR0+gAK1hOxHfj8IKt+4MtiRDSKmdgSH
-S3Cz7OcHCqElXp4QQpuKtNkp1CQffH9rzqF4/aH3zXxayCyz+8hI7a3Twet9UauE
-Z967FL/gqnn5QOLMuUfF
-=BXjP
------END PGP SIGNATURE-----
-
---PmA2V3Z32TCmWXqI--
+Yours,
+Linus Walleij
