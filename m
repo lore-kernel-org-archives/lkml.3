@@ -1,70 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965570AbaKNNxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:53:22 -0500
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:39410 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965331AbaKNNxU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:53:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAD6G_RSiyhD2zSxEAGY_uFz3cjHtsRb+riF9EhziA78AwqvpwA@mail.gmail.com>
-References: <CAD6G_RREb58La-pC48BHW+9r9oruUXnCrk-RS8LaKSw6y9jgxg@mail.gmail.com>
- <CAAMCDec3EJ4e=bDKwH3i0PL655yrOQkBu_typihYMGD3GHZiQA@mail.gmail.com> <CAD6G_RSiyhD2zSxEAGY_uFz3cjHtsRb+riF9EhziA78AwqvpwA@mail.gmail.com>
-From: Roger Heflin <rogerheflin@gmail.com>
-Date: Fri, 14 Nov 2014 07:52:59 -0600
-Message-ID: <CAAMCDedJnXjF+3c5vXOKsZDqk0FgBODs9zX18guuGZNKh+QSsw@mail.gmail.com>
-Subject: Re: read performance is too low compared to write - /dev/sda1
-To: Jagan Teki <jagannadh.teki@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, davem <davem@davemloft.net>,
-        linux-ide <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S935286AbaKNN7s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:59:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4466 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934426AbaKNN7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:59:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
+   d="scan'208";a="607847732"
+From: kan.liang@intel.com
+To: acme@kernel.org, jolsa@redhat.com, a.p.zijlstra@chello.nl,
+        eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        ak@linux.intel.com, Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V3 0/3] perf tool: Haswell LBR call stack support (user)
+Date: Fri, 14 Nov 2014 08:44:09 -0500
+Message-Id: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What kind of underlying disk is it?
+From: Kan Liang <kan.liang@intel.com>
 
-On Fri, Nov 14, 2014 at 7:36 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
-> On 14 November 2014 18:50, Roger Heflin <rogerheflin@gmail.com> wrote:
->> If you are robocoping small files you will hit other limits.
->>
->> Best I have seen with small files is around 30 files/second, and that
->> involves multiple copies going on.   Remember with a small files there
->> are several reads and writes that need to be done to complete a create
->> of a small file and each of these take time.    30 files/second ~ 30ms
->> per file, not that bad considering that on a real spinning disk a
->> single read/write op is 5-10ms, and creating the file entry, copying
->> data and closing the file takes several operations (at least create
->> file entry, write small amount of data, update file entry
->> date/time/info).     If the write in the middle is not a significant
->> amount of data, the 2 extra ops are what hurts.
->>
->
-> But, I tried 4gb and 1gb files both got a similar numbers.
->
->> On Fri, Nov 14, 2014 at 6:55 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
->>> Hi,
->>>
->>> I'm doing a performance testing on my bench ARM box.
->>>
->>> 1. dd test: I have validate the read and write by mounting /dev/sda1
->>> with ext4 filesystem,
->>>     able to get the good performance numbers where read is high
->>> compared to write
->>>
->>> 2.  robocopy test:
->>>      - mkfs.ext4 /dev/sda1
->>>      - mount /dev/sda1 /media/disk
->>>      - << configured samba >>
->>>      - Mapped the /media/disk on windows
->>>      - login on the mapped driver in windows
->>>      - did a robocopy test, where write got 84MBps and read 14MBps
->>>
->>> read performance is too slow when compared to write in robocopy case.
->>> Can anyone help me out, how to debug this further.
->
-> thanks!
-> --
-> Jagan.
+This is the user space patch for Haswell LBR call stack support.
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
+
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
+
+A new call chain recording option "lbr" is introduced into perf tool for
+LBR call stack. The user can use --call-graph lbr to get the call stack
+information from hardware.
+
+When profiling bc(1) on Fedora 19:
+echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph lbr bc -l < cmd
+If enabling LBR, perf report output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
+If using FP, perf report output looks like:
+echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph fp bc -l < cmd
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
+
+If using LBR, perf report -D output looks like:
+11739295893248 0x4d0 [0xe0]: PERF_RECORD_SAMPLE(IP, 0x2): 10505/10505:
+0x40054d period: 39255 addr: 0
+... LBR call chain: nr:7
+.....  0: fffffffffffffe00
+.....  1: 0000000000400540
+.....  2: 0000000000400587
+.....  3: 00000000004005b3
+.....  4: 00000000004005ef
+.....  5: 0000003d1cc21b43
+.....  6: 0000000000400474
+... FP chain: nr:6
+.....  0: fffffffffffffe00
+.....  1: 000000000040054d
+.....  2: 000000000040058c
+.....  3: 00000000004005b8
+.....  4: 00000000004005f4
+.....  5: 0000003d1cc21b45
+ ... thread: a.out:10505
+ ...... dso: /home/lk/a.out
+
+
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are captured
+
+Changes since v1
+ - Update help document
+ - Force exclude_user to 0 with warning in LBR call stack
+ - Dump both lbr and fp info when report -D
+ - Reconstruct thread__resolve_callchain_sample and split it into two patches
+ - Use has_branch_callstack function to check LBR call stack available
+
+Changes since v2
+ - Rebase to 025ce5d33373
+
+Kan Liang (3):
+  perf tools: enable LBR call stack support
+  perf tool: Move cpumode resolve code to add_callchain_ip
+  perf tools: Construct LBR call chain
+
+ tools/perf/Documentation/perf-record.txt |   8 +-
+ tools/perf/builtin-record.c              |   6 +-
+ tools/perf/builtin-report.c              |   2 +
+ tools/perf/util/callchain.c              |  10 ++-
+ tools/perf/util/callchain.h              |   1 +
+ tools/perf/util/evsel.c                  |  21 ++++-
+ tools/perf/util/evsel.h                  |   4 +
+ tools/perf/util/machine.c                | 134 +++++++++++++++++++++----------
+ tools/perf/util/session.c                |  60 ++++++++++++--
+ 9 files changed, 192 insertions(+), 54 deletions(-)
+
+-- 
+1.8.3.2
+
