@@ -1,62 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbaKNFpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 00:45:38 -0500
-Received: from smtprelay0096.hostedemail.com ([216.40.44.96]:35716 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751836AbaKNFph (ORCPT
+	id S1752191AbaKNGEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:04:13 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:41268 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaKNGEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 00:45:37 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4362:5007:6119:6261:7576:7808:7903:7904:9025:10010:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13161:13229:13311:13357:14196:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: power51_8811e77a03e4a
-X-Filterd-Recvd-Size: 1966
-Message-ID: <1415943934.5912.6.camel@perches.com>
-Subject: Re: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
-From: Joe Perches <joe@perches.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'perex@perex.cz'" <perex@perex.cz>, "'tiwai@suse.de'" <tiwai@suse.de>,
-        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Nov 2014 21:45:34 -0800
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D1829C@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E010D1829C@CNBJMBX05.corpusers.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Nov 2014 01:04:11 -0500
+From: Dudley Du <dudley.dulixin@gmail.com>
+X-Google-Original-From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com, dso@cypress.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v10 00/18] input: cyapa: instruction of cyapa patches
+Date: Fri, 14 Nov 2014 14:03:06 +0800
+Message-Id: <1415945004-19868-1-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-14 at 13:13 +0800, Wang, Yalin wrote:
-> Use the inline function instead of directly indexing the array.
-> 
-> This allows some architectures with hardware instructions for bit
-> reversals to eliminate the array.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> ---
-[]
-> diff --git a/sound/usb/6fire/firmware.c b/sound/usb/6fire/firmware.c
-[]
-> @@ -316,7 +316,7 @@ static int usb6fire_fw_fpga_upload(
->  
->  	while (c != end) {
->  		for (i = 0; c != end && i < FPGA_BUFSIZE; i++, c++)
-> -			buffer[i] = byte_rev_table[(u8) *c];
-> +			buffer[i] = bitrev8((u8) *c);
+V10 patches have below main updates compared with v9 patches:
+1) Modify code to following kernel code style.
+   e.g.: correct to use error as return name when there is only error path,
+   and fix the checkpatch.sh wanting in the driver.
+2) Remove cyapa_remove method and use input open and close interface to
+   following device resouse management infrastructure.
+3) Modify cyapa_detect method to return tristate issue to make the return value
+   much more consistent and clear.
+4) Use platform supplied functions as possible instead of driver
+   specific rewritten version.
 
-This is not what I submitted.
-What I posted did not have a space after (u8)
+V9 patches have below updates compared with v8 patches:
+1) Removed all async thread stuff from the driver.
+2) Split driver into 18 patches for each function change one patch.
 
-https://lkml.org/lkml/2014/10/28/1056
+V8 patches have below updates compared with v7 patches:
+1) [PATCH v8 01/13] - Remove the async thread for device detect in
+   probe routine, now the device detect process is completely done within
+   the device probe routine.
+2) [PATCH v8 01/13] - Split the irq cmd hander function to separated
+   function cyapa_default_irq_cmd_handler() and set it to interface
+   cyapa_default_ops.irq_cmd_handler.
+3) [PATCH v8 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+   to avoid miss-enter when device protocol is still in detecting.
 
-If you are going to resubmit or add your own sign-off,
-please try to maintain the proper patch that is
-submitted and please also use a "From:" line before
-the patch itself.
+V7 patches have below updates compared with v6 patches:
+1) [PATCH v7 01/13] - Split the irq cmd hander function to separated
+   function cyapa_default_irq_cmd_handler() and set it to interface
+   cyapa_default_ops.irq_cmd_handler.
+2) [PATCH v7 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+   to avoid miss-enter when device protocol is still in detecting.
 
-Thanks, Joe
 
+V6 patches have below updates compared with v5 patches:
+1) Remove patch 14 of the lid filtering from the cyapa driver.
+
+V5 patches have below updates compared with v4 patches:
+1) Uses get_device()/put_device() instead of kobject_get()/kobject_put();
+2) Fix memories freed before debugfs entries issue;
+3) Make cyapa_debugs_root valid in driver module level
+   in module_init()/moudle_exit() ;
+4) Fix i2c_transfer() may return partial transfer issues.
+5) Add cyapa->removed flag to avoid detecting thread may still running
+   when driver module is removed.
+6) Fix the meanings of some comments and return error code not clear issue.
+
+This patch set is aimed to re-design the cyapa driver to support
+old gen3 trackpad devices and new gen5 trackpad devices in one
+cyapa driver, it's for easily productions support based on
+customers' requirements. And add sysfs functions and interfaces
+supported that required by users and customers.
+
+Since the earlier gen3 and the latest gen5 trackpad devices using
+two different chipsets, and have different protocols and interfaces,
+so if supported these two type trackpad devices in two different drivers,
+then it will be difficult to manage productions and later firmware updates.
+e.g.: It will cause customer don't know which one trackpad device firmware
+image to use and update when it has been used and integrated
+in same one productions, so here we support these two trackpad
+devices in same on driver.
+
+The new design cyapa driver contains:
+cyapa.c - the core of the re-design, supply interfaces and
+functions to system and read trackpad devices.
+cyapa.h - header file including macros and data structure definitions.
+cyapa_gen3.c - functions support for gen3 trackpad devices,
+cyapa_gen5.c - functions support for gen5 trackpad devices.
+
+Beside this introduction patch, it has 18 patches listed as below.
+For these patches each one is patched based on previous one.
+
+patch 1/18: add device resource management infrastructure supported.
+
+patch 2/18: re-design cyapa driver with core functions and interface
+to support multi-type trackpad devices.
+
+patch 3/18: add gen3 trackpad device basic functions supported into the
+re-design cyapa driver.
+
+patch 4/18: add gen5 trackpad device basic functions supported into the
+re-design cyapa driver.
+
+patch 5/18: add power management interfaces supported for the deivce.
+
+patch 6/18: add runtime power management interfaces supported for the device.
+
+patch 7/18: add sysfs interfaces supported in the cyapa driver.
+Including read firmware version, get production ID, read baseline,
+re-calibrate trackpad baselines and do trackpad firmware update.
+
+patch 8/18: add gen3 trackpad device's firmware update function supported.
+
+patch 9/18: add gen3 trackpad device's read baseline function supported.
+
+patch 10/18: add gen3 trackpad device's force re-calibrate function supported.
+
+patch 11/18: add gen5 trackpad device's firmware update function supported.
+
+patch 12/18: add gen5 trackpad device's read baseline function supported.
+
+patch 13/18: add gen5 trackpad device's force re-calibrate function.
+
+patch 14/18: add read firmware image debugfs interface supported
+in the cyapa driver.
+
+patch 15/18: add gen3 trackpad device's read firmware image function supported.
+
+patch 16/18: add gen5 trackpad device's read firmware image function supported.
+
+patch 17/18: add read trackpad device's sensors' raw data debugfs interface
+supported in the cyapa driver.
+
+patch 18/18: add gen5 trackpad device's read read raw function supported.
