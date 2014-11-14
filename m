@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964845AbaKNHaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 02:30:06 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:45152 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568AbaKNHaC (ORCPT
+	id S965013AbaKNHcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 02:32:21 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:45753 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964866AbaKNHcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 02:30:02 -0500
+	Fri, 14 Nov 2014 02:32:20 -0500
+Date: Thu, 13 Nov 2014 23:32:14 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Barto <mister.freeman@laposte.net>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: BUG in scsi_lib.c due to a bad commit
+Message-ID: <20141114073214.GA1879@infradead.org>
+References: <54629CAE.2000207@laposte.net>
+ <CAErSpo6FFK6zMOWSK9=dOOMKjWd1soAyj9r73yP8Z_U4F9ygAA@mail.gmail.com>
+ <5462CB90.1080303@roeck-us.net>
+ <54642541.9080302@laposte.net>
+ <94D0CD8314A33A4D9D801C0FE68B4029593A1880@G9W0745.americas.hpqcorp.net>
+ <54647C10.4070506@laposte.net>
+ <20141113142907.GB29354@infradead.org>
+ <5464E6E6.3090606@laposte.net>
+ <20141113175402.GA27327@infradead.org>
+ <546536EA.4070705@laposte.net>
 MIME-Version: 1.0
-In-Reply-To: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-Date: Fri, 14 Nov 2014 08:30:01 +0100
-Message-ID: <CAPDyKFraCAVKL8cas79p_K6g-mbu-BuSPUqF0jfMw2Rz3DBrRQ@mail.gmail.com>
-Subject: Re: [PATCH] PM / Runtime: Kconfig: move ia64 dependency to arch/ia64/Kconfig
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Kevin Hilman <khilman@linaro.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        "open list:IA64 (Itanium) PL..." <linux-ia64@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546536EA.4070705@laposte.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 November 2014 23:28, Kevin Hilman <khilman@kernel.org> wrote:
-> From: Kevin Hilman <khilman@linaro.org>
->
-> The IA64_HP_SIM dependency on PM_RUNTIME should be done in the arch
-> Kconfig instead of in the PM core.  Move it accordingly.
->
-> NOTE: arch/ia64/Kconfig currently does a 'select PM', which since
-> commit 1eb208aea317 (PM: Make CONFIG_PM depend on (CONFIG_PM_SLEEP ||
-> CONFIG_PM_RUNTIME)) is effectively a noop unless PM_SLEEP or
-> PM_RUNTIME are set elsewhere.
->
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+On Thu, Nov 13, 2014 at 11:55:38PM +0100, Barto wrote:
+> it's interesting, with this commit
+> 74665016086615bbaa3fa6f83af410a0a4e029ee I have the bug :
+> 
+> scsi: convert host_busy to atomic_t :
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-
-> ---
->  arch/ia64/Kconfig    | 1 +
->  kernel/power/Kconfig | 1 -
->  2 files changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-> index c84c88bbbbd7..55bc92ca2ce6 100644
-> --- a/arch/ia64/Kconfig
-> +++ b/arch/ia64/Kconfig
-> @@ -233,6 +233,7 @@ config IA64_SGI_UV
->  config IA64_HP_SIM
->         bool "Ski-simulator"
->         select SWIOTLB
-> +       depends on !PM_RUNTIME
->
->  endchoice
->
-> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-> index bbef57f5bdfd..3d39cc0228e9 100644
-> --- a/kernel/power/Kconfig
-> +++ b/kernel/power/Kconfig
-> @@ -131,7 +131,6 @@ config PM_WAKELOCKS_GC
->
->  config PM_RUNTIME
->         bool "Run-time PM core functionality"
-> -       depends on !IA64_HP_SIM
->         ---help---
->           Enable functionality allowing I/O devices to be put into energy-saving
->           (low power) states at run time (or autosuspended) after a specified
-> --
-> 2.1.3
->
+At this point we'll need a bisction between v3.16 as the last good
+point, and 74665016086615bbaa3fa6f83af410a0a4e029ee as the known bad
+point.
