@@ -1,47 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935168AbaKNL6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:58:11 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:2952 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933262AbaKNL6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:58:09 -0500
-X-IronPort-AV: E=Sophos;i="5.07,385,1413244800"; 
-   d="scan'208";a="192816416"
-Message-ID: <5465EE4E.2010206@citrix.com>
-Date: Fri, 14 Nov 2014 11:58:06 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S935223AbaKNL63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:58:29 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:50838 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933262AbaKNL61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 06:58:27 -0500
+Date: Fri, 14 Nov 2014 06:58:09 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 02/23 v4] tracing: Add trace_seq_has_overflowed()
+ and trace_handle_return()
+Message-ID: <20141114065809.17168a1a@gandalf.local.home>
+In-Reply-To: <20141114112522.GA2988@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011410.365183157@goodmis.org>
+	<20141114112522.GA2988@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, David Vrabel <david.vrabel@citrix.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
-        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH V3 7/8] xen: switch to linear virtual mapped
- sparse p2m list
-References: <1415684626-18590-1-git-send-email-jgross@suse.com>	<1415684626-18590-8-git-send-email-jgross@suse.com>	<54624BCB.9040300@citrix.com> <546477FD.9050800@suse.com>
-In-Reply-To: <546477FD.9050800@suse.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/11/14 09:21, Juergen Gross wrote:
-> On 11/11/2014 06:47 PM, David Vrabel wrote:
->>
->> Can you please test this with the following guests/scenarios.
->>
->> * 64 bit dom0 with PCI devices with high MMIO BARs.
+On Fri, 14 Nov 2014 12:25:23 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
+
+> On Thu 2014-11-13 20:12:46, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > Adding a trace_seq_has_overflowed() which returns true if the trace_seq
+> > had too much written into it allows us to simplify the code.
+> > 
+> > Instead of checking the return value of every call to trace_seq_printf()
+> > and friends, they can all be called normally, and at the end we can
+> > return !trace_seq_has_overflowed() instead.
+> > 
+> > Several functions also return TRACE_TYPE_PARTIAL_LINE when the trace_seq
+> > overflowed and TRACE_TYPE_HANDLED otherwise. Another helper function
+> > was created called trace_handle_return() which takes a trace_seq and
+> > returns these enums. Using this helper function also simplifies the
+> > code.
+> > 
+> > This change also makes it possible to remove the return values of
+> > trace_seq_printf() and friends. They should instead just be
+> > void functions.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  include/linux/ftrace_event.h |  11 ++
+> >  include/linux/trace_seq.h    |  12 ++
+> >  include/trace/ftrace.h       |   6 +-
+> >  kernel/trace/trace.c         |  69 +++----
+> >  kernel/trace/trace.h         |   1 +
+> >  kernel/trace/trace_output.c  | 416 +++++++++++++++++--------------------------
+> >  kernel/trace/trace_output.h  |  16 +-
+> >  7 files changed, 231 insertions(+), 300 deletions(-)
 > 
-> I'm not sure I have a machine available with this configuration.
+> [...]
+> 
+> > diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> > index cfa91de22e27..163c11b6b8ff 100644
+> > --- a/kernel/trace/trace_output.c
+> > +++ b/kernel/trace/trace_output.c
+> [...]
+> > @@ -193,7 +184,6 @@ int ftrace_raw_output_prep(struct trace_iterator *iter,
+> >  	struct trace_seq *s = &iter->seq;
+> >  	struct trace_seq *p = &iter->tmp_seq;
+> >  	struct trace_entry *entry;
+> > -	int ret;
+> >  
+> >  	event = container_of(trace_event, struct ftrace_event_call, event);
+> >  	entry = iter->ent;
+> > @@ -204,8 +194,9 @@ int ftrace_raw_output_prep(struct trace_iterator *iter,
+> >  	}
+> >  
+> >  	trace_seq_init(p);
+> > -	ret = trace_seq_printf(s, "%s: ", ftrace_event_name(event));
+> > -	if (!ret)
+> > +	trace_seq_printf(s, "%s: ", ftrace_event_name(event));
+> > +
+> > +	if (trace_seq_has_overflowed(s))
+> >  		return TRACE_TYPE_PARTIAL_LINE;
+> >  
+> >  	return 0;
+> 
+> This looks like a bug in the original code. It returns 0 in each case
+> because TRACE_TYPE_PARTIAL_LINE == 0. I guess that the last three
+> lines should get replaced by
+> 
+> 	return trace_handle_return(s);
+> 
+> as it is done in the other functions.
 
-We have a bunch of them in our test lab. Unfortunately, xapi doesn't
-work on Linux 3.12 or later so I won't be able to test this series in
-the short term.
-
-David
+Yes, I noticed this too. As it was a bug in the original code, I left
+it. I do plan on changing it though. Thanks for the reminder.
 
 
+> 
+> [...]
+> 
+> > @@ -320,14 +302,14 @@ int seq_print_user_ip(struct trace_seq *s, struct mm_struct *mm,
+> >  		if (file) {
+> >  			ret = trace_seq_path(s, &file->f_path);
+> >  			if (ret)
+> 
+> I think that we could ignore the return value from trace_seq_path() as
+> well. The other trace_seq*() writes will be NOP if there is an
+> overflow.
+
+Yes I know this too, and since trace_seq_path() still has a return
+value, I left it.
+
+> 
+> Or do you have some special plans with trace_seq_path(), please?
+
+I want to understand what the seq_path() code does and why Al Viro said
+it requires having a return value. I'm just not touching that code
+until I have a full understanding. It's not needed for this patch set.
+
+
+> 
+> > -				ret = trace_seq_printf(s, "[+0x%lx]",
+> > -						       ip - vmstart);
+> > +				trace_seq_printf(s, "[+0x%lx]",
+> > +						 ip - vmstart);
+> >  		}
+> >  		up_read(&mm->mmap_sem);
+> >  	}
+> >  	if (ret && ((sym_flags & TRACE_ITER_SYM_ADDR) || !file))
+> > -		ret = trace_seq_printf(s, " <" IP_FMT ">", ip);
+> > -	return ret;
+> > +		trace_seq_printf(s, " <" IP_FMT ">", ip);
+> > +	return !trace_seq_has_overflowed(s);
+> >  }
+> 
+> The wrong return value was there even before. The other problem is
+> just another optimization. Feel free to solve them later in another
+> patch(set).
+
+Do you mean your first comment? If so, yeah, that's why I didn't change
+it. But I forgot to write a patch to fix it, so thanks for the reminder.
+
+
+> 
+> I really like the simplification.
+> 
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
+
+Thanks,
+
+-- Steve
