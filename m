@@ -1,27 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaKNFNx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 00:13:53 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:16662 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750761AbaKNFNw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 00:13:52 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'perex@perex.cz'" <perex@perex.cz>, "'tiwai@suse.de'" <tiwai@suse.de>,
-        "'joe@perches.com'" <joe@perches.com>,
-        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Fri, 14 Nov 2014 13:13:45 +0800
-Subject: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
-Thread-Topic: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
-Thread-Index: Ac//ycOD9bcU0tYhTmyRn6gG/G9r+w==
-Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1829C@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
+	id S1752097AbaKNFOs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 00:14:48 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:38083 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaKNFOq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 00:14:46 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAE5Eafl024412, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Topic: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Index: AQHP+nD06ZRj/kse50uRMFsgi72OwJxU1qgAgARRxyCAAqOJAIAAqX9g//9+RwCAAIdqwP//gQiAgACRGECAAFtcgIAA7vwg//+SFQAAJWaoAAAgJNaA
+Date: Fri, 14 Nov 2014 05:14:36 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2ED1624@RTITMBSV03.realtek.com.tw>
+References: <20141112.144949.645590790916569141.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2ECE8EF@RTITMBSV03.realtek.com.tw>
+	<20141112.223146.2221136950144767962.davem@davemloft.net>
+ <20141113.162240.1823683928052355016.davem@davemloft.net>
+In-Reply-To: <20141113.162240.1823683928052355016.davem@davemloft.net>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+x-originating-ip: [172.21.71.143]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -29,29 +37,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the inline function instead of directly indexing the array.
+David Miller [mailto:davem@davemloft.net] 
+> Sent: Friday, November 14, 2014 5:23 AM
+[...]
+> What if even the first r8152_submit_rx() fails?  What ever will cause
+> any of these retries to trigger at all?
 
-This allows some architectures with hardware instructions for bit
-reversals to eliminate the array.
+According to the patch #1 "adjust r8152_submit_rx", the
+r8152_submit_rx() would add the rx to the list and schedule
+the tasklet, when the error occurs. Each time the tasklet is
+called, the rx_bottom() would deal with all the rx in the
+list. If the actual_length isn't vaild, the rx buffer would be
+submitted directly. By this way, the retries would be done.
+That is, the retries would be triggered when the tasklet
+is called. Therefore, any tx, rx, and tasklet scheduling
+would result in the retries.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- sound/usb/6fire/firmware.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Second, why does your patch increment 'i' with 'i++;' in the error
+> break path?  You should mark the first failed entry as unallocated
+> with actual_length == 0 and place it on the rx_done queue.
 
-diff --git a/sound/usb/6fire/firmware.c b/sound/usb/6fire/firmware.c
-index 3b02e54..2e39c3f 100644
---- a/sound/usb/6fire/firmware.c
-+++ b/sound/usb/6fire/firmware.c
-@@ -316,7 +316,7 @@ static int usb6fire_fw_fpga_upload(
+Because the r8152_submit_rx() would add the failed rx to
+the list, I only have to deal with the remaining ones. That
+is why I increase the "i", otherwise the failed one would
+be added twice.
+
+I remember the usb_submit_urb() would set actual_length
+to 0, so I skip the step. I would check it again.
  
- 	while (c != end) {
- 		for (i = 0; c != end && i < FPGA_BUFSIZE; i++, c++)
--			buffer[i] = byte_rev_table[(u8) *c];
-+			buffer[i] = bitrev8((u8) *c);
- 
- 		ret = usb6fire_fw_fpga_write(device, buffer, i);
- 		if (ret < 0) {
--- 
-2.1.1
+Best Regards,
+Hayes
