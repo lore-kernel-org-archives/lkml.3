@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422875AbaKNXcA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 18:32:00 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64173 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1422670AbaKNXb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 18:31:58 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PM <linux-pm@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Ajay Thomas <ajay.thomas.david.rajamanickam@intel.com>,
-        Noor U Mubeen <noor.u.mubeen@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: Re: [PATCH v2 0/3] Intel RAPL updates for Atom CPUs
-Date: Sat, 15 Nov 2014 00:52:57 +0100
-Message-ID: <3477591.WIIFIZbsqP@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415381367-16693-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1415381367-16693-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1422977AbaKNXce (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 18:32:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45560 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422893AbaKNXcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 18:32:31 -0500
+Date: Fri, 14 Nov 2014 18:32:13 -0500
+From: Dave Jones <davej@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141114233213.GA14135@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>
+References: <20141114213124.GB3344@redhat.com>
+ <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+ <alpine.DEB.2.11.1411142326510.3909@nanos>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411142326510.3909@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 07, 2014 09:29:24 AM Jacob Pan wrote:
-> Running Average Power Limit (RAPL) is supported in Atom processors
-> with a slightly different implementation. This patchset abstracts the
-> differences and add support for newer ATOM CPUs.
-> 
-> Intel Software Developers Manual has also been updated with many changes
-> and clarifications on how RAPL units and power limits are calculated.
-> 
-> Changes:
-> 	v2: fix 32 bit divide in time window calculation  
-> 
-> Jacob Pan (3):
->   powercap/rapl: abstract per cpu type functions
->   powercap/rapl: handle atom and core differences
->   powercap/rapl: add new model ids
-> 
->  drivers/powercap/intel_rapl.c | 264 ++++++++++++++++++++++++++++--------------
->  1 file changed, 177 insertions(+), 87 deletions(-)
+On Fri, Nov 14, 2014 at 11:55:30PM +0100, Thomas Gleixner wrote:
+ 
+ > So this looks more like a smp function call fuckup.
+ > 
+ > I assume Dave is running that stuff on KVM. So it might be worth while
+ > to look at the IPI magic there.
 
-Series queued up for 3.19 (along with the later build fix), thanks!
+no, bare metal.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+    Dave
