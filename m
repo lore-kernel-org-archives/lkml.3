@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965785AbaKNSxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 13:53:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59469 "EHLO mx1.redhat.com"
+	id S965834AbaKNSxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 13:53:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:52988 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965580AbaKNSxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 13:53:30 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio\@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
-References: <cover.1415636409.git.milosz@adfin.com>
-	<20141111064417.GT23575@dastard>
-	<x49mw7tyc7e.fsf@segfault.boston.devel.redhat.com>
-	<20141114163912.GA23769@redhat.com>
-	<CANP1eJH6BNiJ8zwA2Ba4Dc-2NZ5s2TBE4NVg3Ydk_cvSdDQUFQ@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 14 Nov 2014 13:52:42 -0500
-In-Reply-To: <CANP1eJH6BNiJ8zwA2Ba4Dc-2NZ5s2TBE4NVg3Ydk_cvSdDQUFQ@mail.gmail.com>
-	(Milosz Tanski's message of "Fri, 14 Nov 2014 13:45:02 -0500")
-Message-ID: <x49r3x5vclh.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S965580AbaKNSxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 13:53:33 -0500
+Date: Fri, 14 Nov 2014 19:53:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Message-ID: <20141114185323.GG7475@pd.tnic>
+References: <20141112220058.GA5295@redhat.com>
+ <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
+ <20141114103406.GA7475@pd.tnic>
+ <CALCETrXTxJnEejqV_LjrDHO6Pur5afhYERneZD+2KrshH28tVQ@mail.gmail.com>
+ <20141114172404.GF7475@pd.tnic>
+ <CALCETrWJr_sMuKtYWF+CLnG7jDRxV7sgPvEQbtUhRokJquyq_g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrWJr_sMuKtYWF+CLnG7jDRxV7sgPvEQbtUhRokJquyq_g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milosz Tanski <milosz@adfin.com> writes:
+On Fri, Nov 14, 2014 at 09:26:26AM -0800, Andy Lutomirski wrote:
+> I was hoping for an actual worked-out example of what the parameters
+> should be :)
 
-> On a unrelated note I just back to figuring out how to add this to
-> xfstests. I got busy with other things the last few days. I'm still
-> not quite sure how to write a test using the framework, the
-> documentation (README) seams very XFS specific and otherwise the test
-> seam to be be split between many different files / directories / C
-> code / shell code. I might be me being slow... but it's just not
-> obvious for me how to glue the whole thing together.
+Sorry, I haven't played with this myself either - haven't had a box with
+EINJ yet. Maybe Tony has something.
 
-I can help you get started with this.  I'll send email off-list.
+-- 
+Regards/Gruss,
+    Boris.
 
-Cheers,
-Jeff
+Sent from a fat crate under my desk. Formatting is fine.
+--
