@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965603AbaKNOxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:53:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965504AbaKNOxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:53:21 -0500
-Message-ID: <54661758.5080707@redhat.com>
-Date: Fri, 14 Nov 2014 15:53:12 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S965626AbaKNOxn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:53:43 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:64767 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965504AbaKNOxm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 09:53:42 -0500
+Date: Fri, 14 Nov 2014 09:53:39 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 12/23 v4] tracing: Remove return values of most
+ trace_seq_*() functions
+Message-ID: <20141114095339.79e7e51c@gandalf.local.home>
+In-Reply-To: <20141114131728.GC2988@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011411.992510720@goodmis.org>
+	<20141114131728.GC2988@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] kvm: x86: increase user memory slots to 509
-References: <1415289167-24661-1-git-send-email-imammedo@redhat.com>	<545BA09E.7040301@redhat.com> <20141114151030.75f588bd@igors-macbook-pro.local>
-In-Reply-To: <20141114151030.75f588bd@igors-macbook-pro.local>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/11/2014 15:10, Igor Mammedov wrote:
-> On Thu, 06 Nov 2014 17:23:58 +0100 Paolo Bonzini <pbonzini@redhat.com> wrote:
->> It would use more memory, and some loops are now becoming more
->> expensive.  In general adding a memory slot to a VM is not cheap, and
->> I question the wisdom of having 256 hotplug memory slots.  But the
->> slowdown mostly would only happen if you actually _use_ those memory
->> slots, so it is not a blocker for this patch.
-> It might be useful to have a big amount of slots for big guests
-> and although linux works with minimum section 128Mb but Windows memory
-> hotplug works just fine even with page-sized slots so when unplug in
-> QEMU is implemented it would be possible to drop balooning driver at
-> least there.
+On Fri, 14 Nov 2014 14:17:28 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-I think for a big (64G?) guest it doesn't make much sense anyway to
-balloon at a granularity that is less than 1G or even more.  So I like
-the idea of dropping ballooning in favor of memory hotplug for big guests.
+> > -int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+> > +void trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+> >  			 unsigned int len)
+> >  {
+> >  	unsigned char hex[HEX_CHARS];
+> >  	const unsigned char *data = mem;
+> >  	unsigned int start_len;
+> >  	int i, j;
+> > -	int cnt = 0;
+> >  
+> >  	if (s->full)
+> > -		return 0;
+> > +		return;
+> >  
+> >  	while (len) {
+> >  		start_len = min(len, HEX_CHARS - 1);
+> > @@ -334,10 +297,7 @@ int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+> >  		/* j increments twice per loop */
+> >  		len -= j / 2;
+> >  		hex[j++] = ' ';
+> > -
+> > -		cnt += trace_seq_putmem(s, hex, j);
+> 
+> trace_seq_putmem(s, hex, j); should stay ;-)
 
-> And providing that memslots could be allocated during runtime when guest
-> programs devices or maps roms (i.e. no fail path), I don't see a way
-> to fix it in QEMU (i.e. avoid abort when limit is reached).
-> Hence an attempt to bump memslots limit to 512, where current 125
-> are reserved for initial memory mappings and passthrough devices 
-> 256 goes to hotplug memory slots and leaves us 128 free slots for
-> future expansion.
-> 
-> To see what would be affected by large amount of slots I played with
-> perf a bit and the biggest hotspot offender with large amount of
-> memslots was:
-> 
->  gfn_to_memslot() -> ... -> search_memslots()
-> 
-> I'll try to make it faster for this case so 512 memslots wouldn't
-> affect guest performance.
-> 
-> So please consider applying this patch.
+Ouch! Looks like I got a little happy with the delete line key stroke.
 
-Yes, sorry for the delay---I am definitely going to apply it.
+Good catch!
 
-Paolo
+Thanks,
+
+-- Steve
+
+> 
+> Best Regards,
+> Petr
+> 
+> >  	}
+> > -	return cnt;
+> >  }
+> >  EXPORT_SYMBOL_GPL(trace_seq_putmem_hex);
+> >  
+> > -- 
+> > 2.1.1
+> > 
+> > 
