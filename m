@@ -1,105 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423015AbaKNX1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 18:27:52 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:5309 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935316AbaKNXYy (ORCPT
+	id S1422956AbaKNXaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 18:30:20 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55510 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1422820AbaKNXaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 18:24:54 -0500
-Message-Id: <20141114232452.063132042@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Fri, 14 Nov 2014 18:24:02 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        lkp@01.org
-Subject: [for-next][PATCH 1/9] ftrace: Have the control_ops get a trampoline
-References: <20141114232401.493543108@goodmis.org>
+	Fri, 14 Nov 2014 18:30:18 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / Domains: Extract code to power off/on a PM domain
+Date: Sat, 15 Nov 2014 00:51:16 +0100
+Message-ID: <1583392.D9nYZvh5PK@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141113141007.GD18995@amd>
+References: <1415644759-2616-1-git-send-email-geert+renesas@glider.be> <20141113141007.GD18995@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-ftrace-Have-the-control_ops-get-a-trampoline.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thursday, November 13, 2014 03:10:07 PM Pavel Machek wrote:
+> On Mon 2014-11-10 19:39:19, Geert Uytterhoeven wrote:
+> > PM domains are powered on/off from various places. Some callers do
+> > latency measurements, others don't. Consolidate using two helper
+> > functions, which always measure the latencies, and update the stored
+> > latencies when needed.
+> > 
+> > Other minor changes:
+> >   - Use pr_warn() instead of pr_warning(),
+> >   - There's no need to check genpd->name, %s handles NULL pointers fine,
+> >   - Make the warning format strings identical, to save memory.
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> > Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+> > Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> 
+> Acked-by: Pavel Machek <pavel@ucw.cz>
 
-With the new logic, if only a single user of ftrace function hooks is
-used, it will get its own trampoline assigned to it.
+Patch queued up for 3.19, thanks!
 
-The problem is that the control_ops is an indirect ops that perf ops
-uses. What that means is that when perf registers its ops with
-register_ftrace_function(), it has the CONTROL flag set and gets added
-to the control list instead of the global ftrace list. The control_ops
-gets added to that instead and the mcount trampoline calls the control_ops
-function. The control_ops function will iterate the control list and
-call the ops functions that are attached to it.
+> > diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+> > index a841bab441147b3d..2fccf2c2575e4fa3 100644
+> > --- a/drivers/base/power/domain.c
+> > +++ b/drivers/base/power/domain.c
+> > @@ -151,6 +151,59 @@ static void genpd_recalc_cpu_exit_latency(struct generic_pm_domain *genpd)
+> >  	genpd->cpuidle_data->idle_state->exit_latency = usecs64;
+> >  }
+> >  
+> > +static int genpd_power_on(struct generic_pm_domain *genpd)
+> > +{
+> > +	ktime_t time_start;
+> > +	s64 elapsed_ns;
+> > +	int ret;
+> > +
+> > +	if (!genpd->power_on)
+> > +		return 0;
+> > +
+> > +	time_start = ktime_get();
+> > +	ret = genpd->power_on(genpd);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
+> > +	if (elapsed_ns <= genpd->power_on_latency_ns)
+> > +		return ret;
+> > +
+> > +	genpd->power_on_latency_ns = elapsed_ns;
+> > +	genpd->max_off_time_changed = true;
+> > +	genpd_recalc_cpu_exit_latency(genpd);
+> > +	pr_warn("%s: Power-%s latency exceeded, new value %lld ns\n",
+> > +		genpd->name, "on", elapsed_ns);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int genpd_power_off(struct generic_pm_domain *genpd)
+> > +{
+> > +	ktime_t time_start;
+> > +	s64 elapsed_ns;
+> > +	int ret;
+> > +
+> > +	if (!genpd->power_off)
+> > +		return 0;
+> > +
+> > +	time_start = ktime_get();
+> > +	ret = genpd->power_off(genpd);
+> > +	if (ret == -EBUSY)
+> > +		return ret;
+> > +
+> > +	elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
+> > +	if (elapsed_ns <= genpd->power_off_latency_ns)
+> > +		return ret;
+> > +
+> > +	genpd->power_off_latency_ns = elapsed_ns;
+> > +	genpd->max_off_time_changed = true;
+> > +	pr_warn("%s: Power-%s latency exceeded, new value %lld ns\n",
+> > +		genpd->name, "off", elapsed_ns);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> >  /**
+> >   * __pm_genpd_poweron - Restore power to a given PM domain and its masters.
+> >   * @genpd: PM domain to power up.
+> > @@ -222,25 +275,9 @@ static int __pm_genpd_poweron(struct generic_pm_domain *genpd)
+> >  		}
+> >  	}
+> >  
+> > -	if (genpd->power_on) {
+> > -		ktime_t time_start = ktime_get();
+> > -		s64 elapsed_ns;
+> > -
+> > -		ret = genpd->power_on(genpd);
+> > -		if (ret)
+> > -			goto err;
+> > -
+> > -		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
+> > -		if (elapsed_ns > genpd->power_on_latency_ns) {
+> > -			genpd->power_on_latency_ns = elapsed_ns;
+> > -			genpd->max_off_time_changed = true;
+> > -			genpd_recalc_cpu_exit_latency(genpd);
+> > -			if (genpd->name)
+> > -				pr_warning("%s: Power-on latency exceeded, "
+> > -					"new value %lld ns\n", genpd->name,
+> > -					elapsed_ns);
+> > -		}
+> > -	}
+> > +	ret = genpd_power_on(genpd);
+> > +	if (ret)
+> > +		goto err;
+> >  
+> >   out:
+> >  	genpd_set_active(genpd);
+> > @@ -529,16 +566,11 @@ static int pm_genpd_poweroff(struct generic_pm_domain *genpd)
+> >  	}
+> >  
+> >  	if (genpd->power_off) {
+> > -		ktime_t time_start;
+> > -		s64 elapsed_ns;
+> > -
+> >  		if (atomic_read(&genpd->sd_count) > 0) {
+> >  			ret = -EBUSY;
+> >  			goto out;
+> >  		}
+> >  
+> > -		time_start = ktime_get();
+> > -
+> >  		/*
+> >  		 * If sd_count > 0 at this point, one of the subdomains hasn't
+> >  		 * managed to call pm_genpd_poweron() for the master yet after
+> > @@ -547,21 +579,11 @@ static int pm_genpd_poweroff(struct generic_pm_domain *genpd)
+> >  		 * the pm_genpd_poweron() restore power for us (this shouldn't
+> >  		 * happen very often).
+> >  		 */
+> > -		ret = genpd->power_off(genpd);
+> > +		ret = genpd_power_off(genpd);
+> >  		if (ret == -EBUSY) {
+> >  			genpd_set_active(genpd);
+> >  			goto out;
+> >  		}
+> > -
+> > -		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
+> > -		if (elapsed_ns > genpd->power_off_latency_ns) {
+> > -			genpd->power_off_latency_ns = elapsed_ns;
+> > -			genpd->max_off_time_changed = true;
+> > -			if (genpd->name)
+> > -				pr_warning("%s: Power-off latency exceeded, "
+> > -					"new value %lld ns\n", genpd->name,
+> > -					elapsed_ns);
+> > -		}
+> >  	}
+> >  
+> >  	genpd->status = GPD_STATE_POWER_OFF;
+> > @@ -796,8 +818,7 @@ static void pm_genpd_sync_poweroff(struct generic_pm_domain *genpd)
+> >  	    || atomic_read(&genpd->sd_count) > 0)
+> >  		return;
+> >  
+> > -	if (genpd->power_off)
+> > -		genpd->power_off(genpd);
+> > +	genpd_power_off(genpd);
+> >  
+> >  	genpd->status = GPD_STATE_POWER_OFF;
+> >  
+> > @@ -828,8 +849,7 @@ static void pm_genpd_sync_poweron(struct generic_pm_domain *genpd)
+> >  		genpd_sd_counter_inc(link->master);
+> >  	}
+> >  
+> > -	if (genpd->power_on)
+> > -		genpd->power_on(genpd);
+> > +	genpd_power_on(genpd);
+> >  
+> >  	genpd->status = GPD_STATE_ACTIVE;
+> >  }
+> > @@ -1251,8 +1271,7 @@ static int pm_genpd_restore_noirq(struct device *dev)
+> >  			 * If the domain was off before the hibernation, make
+> >  			 * sure it will be off going forward.
+> >  			 */
+> > -			if (genpd->power_off)
+> > -				genpd->power_off(genpd);
+> > +			genpd_power_off(genpd);
+> >  
+> >  			return 0;
+> >  		}
+> 
+> 
 
-But currently the trampoline is added to the perf ops and not the
-control ops, and when ftrace tries to find a trampoline hook for it,
-it fails to find one and gives the following splat:
-
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 10133 at kernel/trace/ftrace.c:2033 ftrace_get_addr_new+0x6f/0xc0()
- Modules linked in: [...]
- CPU: 0 PID: 10133 Comm: perf Tainted: P               3.18.0-rc1-test+ #388
- Hardware name: Hewlett-Packard HP Compaq Pro 6300 SFF/339A, BIOS K01 v02.05 05/07/2012
-  00000000000007f1 ffff8800c2643bc8 ffffffff814fca6e ffff88011ea0ed01
-  0000000000000000 ffff8800c2643c08 ffffffff81041ffd 0000000000000000
-  ffffffff810c388c ffffffff81a5a350 ffff880119b00000 ffffffff810001c8
- Call Trace:
-  [<ffffffff814fca6e>] dump_stack+0x46/0x58
-  [<ffffffff81041ffd>] warn_slowpath_common+0x81/0x9b
-  [<ffffffff810c388c>] ? ftrace_get_addr_new+0x6f/0xc0
-  [<ffffffff810001c8>] ? 0xffffffff810001c8
-  [<ffffffff81042031>] warn_slowpath_null+0x1a/0x1c
-  [<ffffffff810c388c>] ftrace_get_addr_new+0x6f/0xc0
-  [<ffffffff8102e938>] ftrace_replace_code+0xd6/0x334
-  [<ffffffff810c4116>] ftrace_modify_all_code+0x41/0xc5
-  [<ffffffff8102eba6>] arch_ftrace_update_code+0x10/0x19
-  [<ffffffff810c293c>] ftrace_run_update_code+0x21/0x42
-  [<ffffffff810c298f>] ftrace_startup_enable+0x32/0x34
-  [<ffffffff810c3049>] ftrace_startup+0x14e/0x15a
-  [<ffffffff810c307c>] register_ftrace_function+0x27/0x40
-  [<ffffffff810dc118>] perf_ftrace_event_register+0x3e/0xee
-  [<ffffffff810dbfbe>] perf_trace_init+0x29d/0x2a9
-  [<ffffffff810eb422>] perf_tp_event_init+0x27/0x3a
-  [<ffffffff810f18bc>] perf_init_event+0x9e/0xed
-  [<ffffffff810f1ba4>] perf_event_alloc+0x299/0x330
-  [<ffffffff810f236b>] SYSC_perf_event_open+0x3ee/0x816
-  [<ffffffff8115a066>] ? mntput+0x2d/0x2f
-  [<ffffffff81142b00>] ? __fput+0xa7/0x1b2
-  [<ffffffff81091300>] ? do_gettimeofday+0x22/0x3a
-  [<ffffffff810f279c>] SyS_perf_event_open+0x9/0xb
-  [<ffffffff81502a92>] system_call_fastpath+0x12/0x17
- ---[ end trace 81a53565150e4982 ]---
- Bad trampoline accounting at: ffffffff810001c8 (run_init_process+0x0/0x2d) (10000001)
-
-Update the control_ops trampoline instead of the perf ops one.
-
-Reported-by: lkp@01.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ftrace.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4043332f6720..1a13e615a068 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -418,6 +418,8 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
- 		if (control_ops_alloc(ops))
- 			return -ENOMEM;
- 		add_ftrace_list_ops(&ftrace_control_list, &control_ops, ops);
-+		/* The control_ops needs the trampoline update */
-+		ops = &control_ops;
- 	} else
- 		add_ftrace_ops(&ftrace_ops_list, ops);
- 
 -- 
-2.1.1
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
