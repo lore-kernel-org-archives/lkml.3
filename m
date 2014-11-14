@@ -1,95 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965299AbaKNO1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:27:17 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:57952 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964875AbaKNO1P (ORCPT
+	id S965388AbaKNO2b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:28:31 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:46999 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964875AbaKNO22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:27:15 -0500
-Message-ID: <54661137.4000806@gmail.com>
-Date: Fri, 14 Nov 2014 22:27:03 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "gleb@kernel.org" <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] virt: kvm: arm: vgic: Process the failure case when kvm_register_device_ops()
- fails
-References: <5464C865.90504@gmail.com> <5464CE9A.6050209@arm.com> <54660C32.6090602@gmail.com> <54660D33.5090309@arm.com>
-In-Reply-To: <54660D33.5090309@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Nov 2014 09:28:28 -0500
+From: Aleksey Makarov <feumilieu@gmail.com>
+X-Google-Original-From: Aleksey Makarov <aleksey.makarov@auriga.com>
+To: linux-serial@vger.kernel.org
+Cc: David Daney <david.daney@cavium.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: 8250_dw: Use 64-bit access for OCTEON.
+Date: Fri, 14 Nov 2014 17:26:19 +0300
+Message-Id: <1415975244-10824-1-git-send-email-aleksey.makarov@auriga.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2014 10:09 PM, Marc Zyngier wrote:
-> On 14/11/14 14:05, Chen Gang wrote:
->> On 11/13/2014 11:30 PM, Marc Zyngier wrote:
->>> On 13/11/14 15:04, Chen Gang wrote:
->>>> When kvm_register_device_ops() fails, also need call free_percpu_irq()
->>>> just like others have down within kvm_vgic_hyp_init().
->>>>
->>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>>> ---
->>>>  virt/kvm/arm/vgic.c | 10 ++++++++--
->>>>  1 file changed, 8 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
->>>> index 3aaca49..b799f17 100644
->>>> --- a/virt/kvm/arm/vgic.c
->>>> +++ b/virt/kvm/arm/vgic.c
->>>> @@ -2470,8 +2470,14 @@ int kvm_vgic_hyp_init(void)
->>>>  
->>>>  	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
->>>>  
->>>> -	return kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
->>>> -				       KVM_DEV_TYPE_ARM_VGIC_V2);
->>>> +	ret = kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
->>>> +				      KVM_DEV_TYPE_ARM_VGIC_V2);
->>>> +	if (ret) {
->>>> +		kvm_err("Cannot register device ops\n");
->>>> +		goto out_free_irq;
->>>> +	}
->>>> +
->>>> +	return 0;
->>>>  
->>>>  out_free_irq:
->>>>  	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
->>>>
->>>
->>> Awesome. You're now freeing a per-cpu interrupt after just after having
->>> enabled it on all CPUs. What could possibly go wrong?
->>>
->>
->> OK, thanks. What you said sound reasonable to me. Need call on_each_cpu
->> for disable_percpu_irq(). Also need call __unregister_cpu_notifier(),
->> and need a new function vgic_arch_unsetup() for arm64.
-> 
-> No. Just look at the code. Why don't you just move the
-> kvm_register_device_ops call *before* enabling the interrupt?
-> 
+From: David Daney <david.daney@cavium.com>
 
-Only based on the current code, what you said is reasonable to me.
+Although the existing code appears to work on most hardware, the
+hardware designers tell us that 8-bit access to the registers is not
+guaranteed to be reliable.  Also the OCTEON simulation environments
+prohibit 8-bit accesses.
 
-But in the normal initializing sequence, firstly for architecture
-dependence features, then for common cpu features, at last for other
-devices (at least, other devices need be the last).
+For these reasons, we use __raw_readq/__raw_writeq for OCTEON.  This
+code is protected with #ifdef CONFIG_64BIT so it still builds under
+configurations lacking readq/writeq.
 
-So for me, we need still remain current initializing sequence for
-extensible in the future.
+We can get rid of the #ifdef __BIG_ENDIAN, as under 64-bit accesses,
+OCTEON is byte order invariant.
 
+Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
+---
+ drivers/tty/serial/8250/8250_dw.c | 55 +++++++++++++++++++++++++++++----------
+ 1 file changed, 41 insertions(+), 14 deletions(-)
 
-Thanks.
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index beea6ca..6232d15 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -122,13 +122,44 @@ static unsigned int dw8250_serial_in(struct uart_port *p, int offset)
+ 	return dw8250_modify_msr(p, offset, value);
+ }
+ 
+-/* Read Back (rb) version to ensure register access ording. */
+-static void dw8250_serial_out_rb(struct uart_port *p, int offset, int value)
++#ifdef CONFIG_64BIT
++static unsigned int dw8250_serial_inq(struct uart_port *p, int offset)
+ {
+-	dw8250_serial_out(p, offset, value);
+-	dw8250_serial_in(p, UART_LCR);
++	unsigned int value;
++
++	value = (u8)__raw_readq(p->membase + (offset << p->regshift));
++
++	return dw8250_modify_msr(p, offset, value);
+ }
+ 
++static void dw8250_serial_outq(struct uart_port *p, int offset, int value)
++{
++	struct dw8250_data *d = p->private_data;
++
++	if (offset == UART_MCR)
++		d->last_mcr = value;
++
++	value &= 0xff;
++	__raw_writeq(value, p->membase + (offset << p->regshift));
++	/* Read back to ensure register write ordering. */
++	__raw_readq(p->membase + (UART_LCR << p->regshift));
++
++	/* Make sure LCR write wasn't ignored */
++	if (offset == UART_LCR) {
++		int tries = 1000;
++		while (tries--) {
++			unsigned int lcr = p->serial_in(p, UART_LCR);
++			if ((value & ~UART_LCR_SPAR) == (lcr & ~UART_LCR_SPAR))
++				return;
++			dw8250_force_idle(p);
++			__raw_writeq(value & 0xff,
++				     p->membase + (UART_LCR << p->regshift));
++		}
++		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
++	}
++}
++#endif /* CONFIG_64BIT */
++
+ static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
+ {
+ 	struct dw8250_data *d = p->private_data;
+@@ -259,21 +290,17 @@ static int dw8250_probe_of(struct uart_port *p,
+ 	u32			val;
+ 	bool has_ucv = true;
+ 
++#ifdef CONFIG_64BIT
+ 	if (of_device_is_compatible(np, "cavium,octeon-3860-uart")) {
+-#ifdef __BIG_ENDIAN
+-		/*
+-		 * Low order bits of these 64-bit registers, when
+-		 * accessed as a byte, are 7 bytes further down in the
+-		 * address space in big endian mode.
+-		 */
+-		p->membase += 7;
+-#endif
+-		p->serial_out = dw8250_serial_out_rb;
++		p->serial_in = dw8250_serial_inq;
++		p->serial_out = dw8250_serial_outq;
+ 		p->flags = UPF_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
+ 		p->type = PORT_OCTEON;
+ 		data->usr_reg = 0x27;
+ 		has_ucv = false;
+-	} else if (!of_property_read_u32(np, "reg-io-width", &val)) {
++	} else
++#endif
++	if (!of_property_read_u32(np, "reg-io-width", &val)) {
+ 		switch (val) {
+ 		case 1:
+ 			break;
 -- 
-Chen Gang
+2.1.3
 
-Open share and attitude like air water and life which God blessed
