@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161933AbaKNVNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 16:13:48 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36920 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754335AbaKNVNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 16:13:46 -0500
-Date: Fri, 14 Nov 2014 15:13:34 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: Felipe Balbi <balbi@ti.com>, <sebastian.hesselbarth@gmail.com>,
-        <Peter.Chen@freescale.com>, <p.zabel@pengutronix.de>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 08/13] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20141114211334.GF16388@saruman>
-Reply-To: <balbi@ti.com>
-References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
- <1415978763-27345-9-git-send-email-antoine.tenart@free-electrons.com>
- <20141114210832.GE16388@saruman>
- <20141114211052.GA8105@kwain>
+	id S1422663AbaKNVOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 16:14:43 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35478 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaKNVOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 16:14:42 -0500
+Date: Fri, 14 Nov 2014 22:14:38 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: Sebastian Reichel <sre@kernel.org>, Pali Roh?r <pali.rohar@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: N900 modem support in 3.18-rc1
+Message-ID: <20141114211438.GA6658@amd>
+References: <20141104205117.GA17606@amd>
+ <20141106180335.GA21513@earth.universe>
+ <20141106225005.GA14002@amd>
+ <201411070001.46481@pali>
+ <545C6F14.8050303@gmail.com>
+ <20141113162420.GB8512@xo-6d-61-c0.localdomain>
+ <5465A977.4030605@gmail.com>
+ <20141114172008.GB12250@earth.universe>
+ <54665E02.8050108@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+jhVVhN62yS6hEJ8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141114211052.GA8105@kwain>
+In-Reply-To: <54665E02.8050108@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+jhVVhN62yS6hEJ8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi!
 
-On Fri, Nov 14, 2014 at 10:10:52PM +0100, Antoine Tenart wrote:
-> Felipe,
->=20
-> On Fri, Nov 14, 2014 at 03:08:32PM -0600, Felipe Balbi wrote:
-> > On Fri, Nov 14, 2014 at 04:25:58PM +0100, Antoine Tenart wrote:
-> > > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> > > and DMA mask, to support USB2 ChipIdea controllers that don't need
-> > > specific functions.
-> > >=20
-> > > Tested on the Marvell Berlin SoCs USB controllers.
-> > >=20
-> > > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> > > ---
-> > >  drivers/usb/chipidea/Makefile       |   1 +
-> > >  drivers/usb/chipidea/ci_hdrc_usb2.c | 117 ++++++++++++++++++++++++++=
-++++++++++
-> > >  2 files changed, 118 insertions(+)
-> > >  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
-> > >=20
-> > > diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Mak=
-efile
-> > > index 2f099c7df7b5..1fc86a2ca22d 100644
-> > > --- a/drivers/usb/chipidea/Makefile
-> > > +++ b/drivers/usb/chipidea/Makefile
-> > > @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+=3D otg_fsm.o
-> > > =20
-> > >  # Glue/Bridge layers go here
-> > > =20
-> > > +obj-$(CONFIG_USB_CHIPIDEA)	+=3D ci_hdrc_usb2.o
-> >=20
-> > usb2 is too generic, you should call it ci_hdcr_marvell, or something
-> > like that.
->=20
-> This driver is generic, and not only for Marvell Berlin SoCs. It is part
-> of the Berlin USB series as it is the first SoC to use it but Xilinx can
-> also use it for example.
+On Fri 2014-11-14 21:54:42, Ivaylo Dimitrov wrote:
+> On 14.11.2014 19:20, Sebastian Reichel wrote:
+> >
+> >The patch looks ok. It does not cleanup the cmt-speech driver for
+> >mainline usage, but it should work. Before adding this driver to the
+> >mainline kernel there should be open source userspace support anyway.
+> >
+> 
+> I am aware of that(patch not ready), it's one of the reasons this patch
+> still sits on gitorious IMO.
+> 
+> libcmtspeechdata was opened by Nokia long ago, so I don't understand what
+> userspace support (for inclusion of the driver in the mainline kernel that
+> is) is needed. see https://gitorious.org/meego-cellular/libcmtspeechdata/source/7f8f3ce357513e4849e1bf6d657980a514529c1a:
+> 
+> REed pulseaudio modules that use cmtspeech will be ready sooner than later
+> (I believe in 2-3 monts from now), see on gitorious how fast we progressed
+> with -record and -music modules. Sure, -voice module is way more
+> complicated, but lots of it is already opensourced, we just need to figure
+> out a couple of DSP algorithms(drc, agc, aec, etc) related to call quality.
+> But I don't think the driver should wait for those modules to be REed, they
+> can be used as is even now, in their closed form for testing. Unfortunately
+> all my spare time is dedicated to that PA stuff, so I simply can't cleanup
+> cmtspeech driver and send a patch for upstreaming. (Pavel, what
+>about you?)
 
-then how about ci_hdrc_generic.c ?
+Hey, I can try.
 
---=20
-balbi
+But there are two things I'd like to understand, first:
 
---+jhVVhN62yS6hEJ8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+a) how did Mer people solve this? Or did they just ship nokia
+binaries?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+b) do we really need those DSP algorithms? Can we just take data from
+microphone and send it down the GSM line, and take data from GSM line
+and put it to the speaker? If it will not work in the speakerphone
+mode, I can live with that... It should somehow work in normal-phone
+mode, and be definitely feasible with wired handsfree, no?
 
-iQIcBAEBAgAGBQJUZnB+AAoJEIaOsuA1yqREo/MQAKT0TREvPaCA2TaBA1KduXLp
-nZqWKVFa0AP9EE1cHW09tIbaPxhEnmfBI2/oS05/fYUmEZ4AMKIxf+dleFoqRI70
-wa0gmrtHZysOu3NpeGDvkgTepLf7lih7EcZuJmlantBY/ZUKPhyuECNVxMiuozb2
-c7jZi1Fjykg/cNy1iemgx8q0vPTvyMWgdNGp0zIakYJV+K8uj7BQh/bsiWiWyfLS
-ztZCSWqkPVNFcUtE0RdJb2l34tQ/60jFLCfNRBCRoxn3gp5k4qaNyb2/JkEGGelA
-AaAe8s4ZTklejX0Tom4+NoeHC9RCoammKKnXL6jnDLgpBEHxp5/shT4SePFIwwg9
-xHz6etaJMAIop/PUkKYIuMXq/W4wA9KZBnQAxQ6hLOocHpf0k9sVbdanoofyvMeo
-nSHff4Lf0dtn0U2he9MnUIAhCqxxq5YKSsk9vx+aVFmMlmLN5WQm3K4HDdcIWyVO
-Vnv2jrrLF49GT4oda7cPWB7Cr2PNUuF8auSFznOgoFyr6GqFqUEU0FIt20jXodkX
-PcwgzclSrQvfhDsge6f3sGp0DLqUqamUHQYDPmmz4gAlGj4czv5CRYuRL169vKbm
-7o2llS0ko9YY4b2GKTw4SpOT3u6ufHzMiQfpMFiVMqcRyzCYQn+aXm+RMdNIv6SR
-LQscvoRc5RGFLagBLE5Y
-=atk8
------END PGP SIGNATURE-----
-
---+jhVVhN62yS6hEJ8--
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
