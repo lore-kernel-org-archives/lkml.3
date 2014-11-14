@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965252AbaKNKw1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:52:27 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33926 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965144AbaKNKwW (ORCPT
+	id S965272AbaKNKwb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:52:31 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33260 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965144AbaKNKw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:52:22 -0500
+	Fri, 14 Nov 2014 05:52:28 -0500
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-arm-kernel@lists.infradead.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>,
@@ -15,17 +15,22 @@ Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
         Steffen Trumtrar <s.trumtrar@pengutronix.de>,
         Rob Herring <robherring2@gmail.com>,
         Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 4/6] ARM: zynq: Extend SLCR driver to read OCM configuration
-Date: Fri, 14 Nov 2014 11:52:05 +0100
-Message-Id: <1b945376f9979a3b3e7c1231ea7ecead78026b07.1415962281.git.michal.simek@xilinx.com>
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 6/6] ARM: zynq: DT: Add OCM controller node
+Date: Fri, 14 Nov 2014 11:52:07 +0100
+Message-Id: <0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1415962281.git.michal.simek@xilinx.com>
 References: <cover.1415962281.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1415962281.git.michal.simek@xilinx.com>
 References: <cover.1415962281.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-14121-1415962338-0001";
+    boundary="=_mimegpg-monstr-desktop-14140-1415962343-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,81 +42,56 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-14121-1415962338-0001
+--=_mimegpg-monstr-desktop-14140-1415962343-0001
 
-Get OCM configuration from SLCR.
+Add the on-chip-memory controller node to the Zynq devicetree.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
 
 Changes in v4:
-- slcr.h has moved to soc/include/ folder. Move definition there too.
+- Use memory-controller@... instead of ocmc@...
 
-Changes in v3: None
+Changes in v3:
+- Extract from OCM driver
+
 Changes in v2: None
 
- arch/arm/mach-zynq/slcr.c | 15 +++++++++++++++
- include/soc/zynq/slcr.h   |  1 +
- 2 files changed, 16 insertions(+)
+ arch/arm/boot/dts/zynq-7000.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
-index b77e42d999c8..f7c606e57525 100644
---- a/arch/arm/mach-zynq/slcr.c
-+++ b/arch/arm/mach-zynq/slcr.c
-@@ -29,6 +29,7 @@
- #define SLCR_A9_CPU_RST_CTRL_OFFSET	0x244 /* CPU Software Reset Control */
- #define SLCR_REBOOT_STATUS_OFFSET	0x258 /* PS Reboot Status */
- #define SLCR_PSS_IDCODE			0x530 /* PS IDCODE */
-+#define SLCR_OCM_CFG_OFFSET		0x910 /* OCM Address Mapping */
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index ce2ef5bec4f2..e217fb1c1169 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -150,6 +150,13 @@
+ 			reg = <0xf8006000 0x1000>;
+ 		};
 
- #define SLCR_UNLOCK_MAGIC		0xDF0D
- #define SLCR_A9_CPU_CLKSTOP		0x10
-@@ -128,6 +129,20 @@ void zynq_slcr_system_reset(void)
- }
-
- /**
-+ * zynq_slcr_get_ocm_config - Get SLCR OCM config
-+ *
-+ * Return:	OCM config bits
-+ */
-+u32 zynq_slcr_get_ocm_config(void)
-+{
-+	u32 val;
++		ocmc: memory-controller@f800c000 {
++			compatible = "xlnx,zynq-ocmc-1.0";
++			interrupt-parent = <&intc>;
++			interrupts = <0 3 4>;
++			reg = <0xf800c000 0x1000>;
++		};
 +
-+	zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
-+
-+	return val;
-+}
-+
-+/**
-  * zynq_slcr_cpu_start - Start cpu
-  * @cpu:	cpu number
-  */
-diff --git a/include/soc/zynq/slcr.h b/include/soc/zynq/slcr.h
-index 7b4edab666ee..639723c4f90c 100644
---- a/include/soc/zynq/slcr.h
-+++ b/include/soc/zynq/slcr.h
-@@ -25,5 +25,6 @@ extern void zynq_slcr_cpu_start(int cpu);
- extern bool zynq_slcr_cpu_state_read(int cpu);
- extern void zynq_slcr_cpu_state_write(int cpu, bool die);
- extern u32 zynq_slcr_get_device_id(void);
-+extern u32 zynq_slcr_get_ocm_config(void);
-
- #endif
+ 		uart0: serial@e0000000 {
+ 			compatible = "xlnx,xuartps", "cdns,uart-r1p8";
+ 			status = "disabled";
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-14121-1415962338-0001
+--=_mimegpg-monstr-desktop-14140-1415962343-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlRl3uIACgkQykllyylKDCGrMgCgiEN5CbT9Oq9/E0S1XXzzNJx6
-y5sAnAnp7JoDLpbxktnSnr7xFrtskQAp
-=9pwG
+iEYEABECAAYFAlRl3ucACgkQykllyylKDCEBmACeONWnKUPesJOfiLYv5yzZV0WP
+SaIAn0ySSoFmfvjhQTgcAvw+HVGmpr2j
+=otbC
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-14121-1415962338-0001--
+--=_mimegpg-monstr-desktop-14140-1415962343-0001--
