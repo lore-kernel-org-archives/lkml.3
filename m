@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934809AbaKNBgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:36:33 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:34253 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934017AbaKNBgc (ORCPT
+	id S934916AbaKNBhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:37:00 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:34614 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934756AbaKNBg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:36:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <FA327E3E-10C2-4CAE-A750-812BE6CF74FB@intel.com>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141112220058.GA5295@redhat.com> <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
- <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
- <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292CB9A@ORSMSX114.amr.corp.intel.com>
- <CALCETrVx7hGZodWfAoU1oee1SW7XXSn3Lr8Vs9JTOUMNtLXY4A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292D57B@ORSMSX114.amr.corp.intel.com>
- <CALCETrVB9VQPqFb7GQyxmVEKYtPhppmZS8SewQmtre+3_su9FA@mail.gmail.com>
- <CALCETrVJE25Txr5vRKAxHpeKx9p0VJBbat44w+X4gT8qX7a4bg@mail.gmail.com>
- <CALCETrVYWAOzaHqet8gS5hafvQC9prrH05qgc+v5dxSL9AF8bg@mail.gmail.com> <FA327E3E-10C2-4CAE-A750-812BE6CF74FB@intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Nov 2014 17:36:09 -0800
-Message-ID: <CALCETrVG5JrEhRNMm8VBmCKECqmQ+bcpnUVNEig96pcB3OkXuQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 13 Nov 2014 20:36:58 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 net-next 0/7] implementation of eBPF maps
+Date: Thu, 13 Nov 2014 17:36:43 -0800
+Message-Id: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 5:20 PM, Luck, Tony <tony.luck@intel.com> wrote:
-> "worst ==
-> MCE_AR_SEVERITY but regs->cs == 0 (i.e. in kernel)"
->
-> This can't happen. We can only declare AR severity for a user mode fault.
+Hi All,
 
-I believe you, and I see that in the code, but the code is mightily twisted.
+v1->v2:
+renamed flags for MAP_UPDATE_ELEM command to be more concise,
+clarified commit logs and improved comments in patches 1,3,7
+per discussions with Daniel
+ 
+Old v1 cover:
 
-Anyway, my v3 will also catch a failure in which my asm fails to
-switch to the right stack for some other reason.
+this set of patches adds implementation of HASH and ARRAY types of eBPF maps
+which were described in manpage in commit b4fc1a460f30("Merge branch 'bpf-next'")
 
-Without the scheduling in the idle thread warning, I'd believe that
-the problem is that some cpu is going out to lunch or failing to
-receive the #MC, which would make me want to consider IRET issues (w/
-my patch, there might not be an IRET until after memory_failure, and
-maybe it sometimes takes a really long time).  But I don't see why
-that would cause a scheduling in the idle thread warning.
+The difference vs previous version of these patches from August:
+- added 'flags' attribute to BPF_MAP_UPDATE_ELEM
+- in HASH type implementation removed per-map kmem_cache.
+  I was doing kmem_cache_create() for every map to enable selective slub
+  debugging to check for overflows and leaks. Now it's not needed, so just
+  use normal kmalloc() for map elements.
+- added ARRAY type which was mentioned in manpage, but wasn't public yet
+- added map testsuite and removed temporary bits from test_stubs
 
->
-> Sent from my iPhone
->
->> On Nov 13, 2014, at 16:50, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> worst ==
->> MCE_AR_SEVERITY but regs->cs == 0 (i.e. in kernel)
+Note, eBPF programs cannot be attached to events yet.
+It will come in the next set.
 
+Alexei Starovoitov (7):
+  bpf: add 'flags' attribute to BPF_MAP_UPDATE_ELEM command
+  bpf: add hashtable type of eBPF maps
+  bpf: add array type of eBPF maps
+  bpf: fix BPF_MAP_LOOKUP_ELEM command return code
+  bpf: add a testsuite for eBPF maps
+  bpf: allow eBPF programs to use maps
+  bpf: remove test map scaffolding and user proper types
 
+ include/linux/bpf.h         |    7 +-
+ include/uapi/linux/bpf.h    |   13 +-
+ kernel/bpf/Makefile         |    2 +-
+ kernel/bpf/arraymap.c       |  151 ++++++++++++++++++
+ kernel/bpf/hashtab.c        |  362 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/bpf/helpers.c        |   89 +++++++++++
+ kernel/bpf/syscall.c        |    6 +-
+ kernel/bpf/test_stub.c      |   56 ++-----
+ samples/bpf/Makefile        |    3 +-
+ samples/bpf/libbpf.c        |    3 +-
+ samples/bpf/libbpf.h        |    2 +-
+ samples/bpf/test_maps.c     |  291 ++++++++++++++++++++++++++++++++++
+ samples/bpf/test_verifier.c |   14 +-
+ 13 files changed, 936 insertions(+), 63 deletions(-)
+ create mode 100644 kernel/bpf/arraymap.c
+ create mode 100644 kernel/bpf/hashtab.c
+ create mode 100644 kernel/bpf/helpers.c
+ create mode 100644 samples/bpf/test_maps.c
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.7.9.5
+
