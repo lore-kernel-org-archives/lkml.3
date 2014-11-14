@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935128AbaKND2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 22:28:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43826 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934097AbaKND2k (ORCPT
+	id S964890AbaKND3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 22:29:04 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:37105 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934097AbaKND3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 22:28:40 -0500
-Date: Thu, 13 Nov 2014 19:27:22 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: josh@joshtriplett.org
-Cc: Pieter Smith <pieter@boesman.nl>, Arnd Bergmann <arnd@arndb.de>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 51/56] drivers/char/mem: support compiling out splice
-Message-ID: <20141114032722.GA31174@kroah.com>
-References: <pieter@boesman.nl>
- <1415913813-362-1-git-send-email-pieter@boesman.nl>
- <1415913813-362-52-git-send-email-pieter@boesman.nl>
- <20141113220911.GA546@kroah.com>
- <CAPho-_JJGy0cwBVfWKL1Gt9ZQZM+Odo7W05bKQ2JLO+TM-ABJA@mail.gmail.com>
- <20141113223150.GB30412@cloud>
- <20141113233416.GC7678@kroah.com>
- <20141114001948.GA30946@cloud>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141114001948.GA30946@cloud>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 13 Nov 2014 22:29:02 -0500
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <a2f9e8a214dee2ea20190a49de4367bc>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
+        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lucas Stach <l.stach@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        djkurtz@google.com, ykk@rock-chips.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
+        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        jay.xu@rock-chips.com, Pawel Moll <pawel.moll@arm.com>,
+        mark.yao@rock-chips.com, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v10 07/11] dt-bindings: add document for dw_hdmi
+Date: Fri, 14 Nov 2014 11:28:38 +0800
+Message-Id: <1415935718-16923-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415934583-16290-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415934583-16290-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 04:19:48PM -0800, josh@joshtriplett.org wrote:
-> On Thu, Nov 13, 2014 at 03:34:16PM -0800, Greg Kroah-Hartman wrote:
-> > On Thu, Nov 13, 2014 at 02:31:50PM -0800, josh@joshtriplett.org wrote:
-> > > [Please don't top-post.]
-> > > 
-> > > On Thu, Nov 13, 2014 at 11:23:46PM +0100, Pieter Smith wrote:
-> > > > Okay with moving the relevant functions to a new translation unit and
-> > > > squashing it out in the Makefile
-> > > 
-> > > No, you don't need to do that either.  Mark pipe_to_null and
-> > > splice_write_null as __maybe_unused, then wrap the initialization of
-> > > .splice_write = splice_write_null to make it .splice_write =
-> > > splice_p(splice_write_null).  That will avoid adding a single ifdef.
-> > 
-> > Again, ick, no.  You aren't saving anything "real" at all, just take out
-> > the splice core code, leave the file pointer alone, and never do that
-> > horrid "splice_p" stuff, ick ick ick.
-> 
-> Without doing the splice_p change (which should add zero lines of code,
-> total diffstat of -3+3 in this case, just a couple of __maybe_unused
-> tokens and a splice_p() in the initializer), the actual splice
-> implementations for filesystems and drivers won't get thrown away.  I
-> certainly agree that #ifdefs for those would be painful and not worth
-> it.  However, what problem would the proposed __maybe_unused / splice_p
-> cause?
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-I don't see what it buys you except churn and a constant need to keep
-fixing up code that doesn't use it as new drivers get added.
+---
 
-It's also "not normal" when compared to all of the other function
-pointers in the filesystem structure, what makes splice "special" here
-that everyone now needs to know it should be treated differently?
+Changes in v10: None
+Changes in v9: None
+Changes in v8:
+- correct some spelling mistake
+- modify ddc-i2c-bus and interrupt description
 
-> On the other hand, I can *definitely* understand not bothering with
-> changing filesystems that nobody will use on a space-constrained system
-> (e.g.  cluster filesystems); the patch series could likely be narrowed
-> to just a half-dozen likely filesystems and drivers, all of which could
-> be done separately from the initial series removing the core splice
-> code.  Would that be more appealing?
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
 
-As long as you aren't forcing every call-place to change, like this
-patch series did, it would be better.
+ .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 40 ++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
 
-Also, no one ever posted how much space savings overall there was here,
-so until that happens, I'm going to assume it isn't even worth the
-effort, right?
+diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+new file mode 100644
+index 0000000..0558442
+--- /dev/null
++++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+@@ -0,0 +1,40 @@
++DesignWare HDMI bridge bindings
++
++Required properities:
++- compatible: platform specific such as:
++   * "fsl,imx6q-hdmi"
++   * "fsl,imx6dl-hdmi"
++   * "rockchip,rk3288-dw-hdmi"
++- reg: physical base address of the controller and length
++- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
++- interrupts: The HDMI interrupt number
++
++Optional properties
++- reg-io-width: the width of the reg:1,4, default set to 1 if not present
++
++Example:
++	hdmi: hdmi@0120000 {
++		compatible = "fsl,imx6q-hdmi";
++		reg = <0x00120000 0x9000>;
++		interrupts = <0 115 0x04>;
++		gpr = <&gpr>;
++		clocks = <&clks 123>, <&clks 124>;
++		clock-names = "iahb", "isfr";
++		ddc-i2c-bus = <&i2c2>;
++
++		port@0 {
++			reg = <0>;
++
++			hdmi_mux_0: endpoint {
++				remote-endpoint = <&ipu1_di0_hdmi>;
++			};
++		};
++
++		port@1 {
++			reg = <1>;
++
++			hdmi_mux_1: endpoint {
++				remote-endpoint = <&ipu1_di1_hdmi>;
++			};
++		};
++	};
+-- 
+1.9.1
 
-thanks,
-
-greg k-h
