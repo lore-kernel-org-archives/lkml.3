@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965016AbaKNJk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 04:40:58 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59260 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852AbaKNJk4 (ORCPT
+	id S1754965AbaKNJo1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 04:44:27 -0500
+Received: from cmexedge2.emulex.com ([138.239.224.100]:41449 "EHLO
+	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747AbaKNJoY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 04:40:56 -0500
+	Fri, 14 Nov 2014 04:44:24 -0500
+From: Sathya Perla <Sathya.Perla@Emulex.Com>
+To: Joe Stringer <joestringer@nicira.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "shahed.shaikh@qlogic.com" <shahed.shaikh@qlogic.com>,
+        "amirv@mellanox.com" <amirv@mellanox.com>,
+        "Dept-GELinuxNICDev@qlogic.com" <Dept-GELinuxNICDev@qlogic.com>,
+        "therbert@google.com" <therbert@google.com>,
+        "gerlitz.or@gmail.com" <gerlitz.or@gmail.com>,
+        "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv2 net 2/4] be2net: Implement ndo_gso_check()
+Thread-Topic: [PATCHv2 net 2/4] be2net: Implement ndo_gso_check()
+Thread-Index: AQHP/6NVHRMIK3q5EUyQYvPYpJTwnZxf0/8g
+Date: Fri, 14 Nov 2014 09:43:52 +0000
+Message-ID: <CF9D1877D81D214CB0CA0669EFAE020C68CDD3A1@CMEXMB1.ad.emulex.com>
+References: <1415925495-59312-1-git-send-email-joestringer@nicira.com>
+ <1415925495-59312-3-git-send-email-joestringer@nicira.com>
+In-Reply-To: <1415925495-59312-3-git-send-email-joestringer@nicira.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [138.239.140.194]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20141104215153.GA25606@psi-dev26.jf.intel.com>
-References: <20141103152743.GB1618@lahna.fi.intel.com>
-	<20141103154207.GC1618@lahna.fi.intel.com>
-	<20141103155011.GH27425@saruman>
-	<20141103184247.GD1618@lahna.fi.intel.com>
-	<20141103221903.GA20305@psi-dev26.jf.intel.com>
-	<20141104075936.GF1618@lahna.fi.intel.com>
-	<20141104180526.GB2224@psi-dev26.jf.intel.com>
-	<20141104185702.GR1618@lahna.fi.intel.com>
-	<20141104191115.GC2224@psi-dev26.jf.intel.com>
-	<20141104193424.GT1618@lahna.fi.intel.com>
-	<20141104215153.GA25606@psi-dev26.jf.intel.com>
-Date: Fri, 14 Nov 2014 10:40:55 +0100
-Message-ID: <CACRpkdZ_iEy8_LbbjYm7Rp5=WeuhAwRH3Rv8GFBKOpC=ikVcZw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-From: Linus Walleij <linus.walleij@linaro.org>
-To: David Cohen <david.a.cohen@linux.intel.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 10:51 PM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
-> On Tue, Nov 04, 2014 at 09:34:24PM +0200, Mika Westerberg wrote:
+> -----Original Message-----
+> From: Joe Stringer [mailto:joestringer@nicira.com]
+> 
+> Use vxlan_gso_check() to advertise offload support for this NIC.
+> 
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
 
->> to a list of devices we depend on, we can defer this particular driver
->> going further in probe until all the dependencies listed in _DEP are
->> resolved.
->
-> That's the best way to prevent this issue IMHO, but looks like it's
-> already being addressed:
-> https://lkml.org/lkml/2014/10/27/455
+Acked-by: Sathya Perla <sperla@emulex.com>
 
--EPROVE_DEFER will solve (hackishly) the probing problem.
+Thanks!
 
-It will not solve remove() or power up/down sequencing.
+> ---
+> v2: Refactor out vxlan helper.
+> ---
+>  drivers/net/ethernet/emulex/benet/be_main.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/net/ethernet/emulex/benet/be_main.c
+> b/drivers/net/ethernet/emulex/benet/be_main.c
+> index 9a18e79..3e8475c 100644
+> --- a/drivers/net/ethernet/emulex/benet/be_main.c
+> +++ b/drivers/net/ethernet/emulex/benet/be_main.c
+> @@ -4421,6 +4421,11 @@ static void be_del_vxlan_port(struct net_device
+> *netdev, sa_family_t sa_family,
+>  		 "Disabled VxLAN offloads for UDP port %d\n",
+>  		 be16_to_cpu(port));
+>  }
+> +
+> +static bool be_gso_check(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +	return vxlan_gso_check(skb);
+> +}
+>  #endif
+> 
+>  static const struct net_device_ops be_netdev_ops = {
+> @@ -4450,6 +4455,7 @@ static const struct net_device_ops be_netdev_ops
+> = {
+>  #ifdef CONFIG_BE2NET_VXLAN
+>  	.ndo_add_vxlan_port	= be_add_vxlan_port,
+>  	.ndo_del_vxlan_port	= be_del_vxlan_port,
+> +	.ndo_gso_check		= be_gso_check,
+>  #endif
+>  };
+> 
+> --
+> 1.7.10.4
 
-Yours,
-Linus Walleij
