@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965612AbaKNPQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:16:16 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:53028 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965136AbaKNPQP convert rfc822-to-8bit (ORCPT
+	id S965639AbaKNPRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:17:19 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46845 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S965425AbaKNPRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:16:15 -0500
-Message-ID: <54661CB8.2070704@arm.com>
-Date: Fri, 14 Nov 2014 15:16:08 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: Yijing Wang <wangyijing0307@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
+	Fri, 14 Nov 2014 10:17:17 -0500
+Date: Fri, 14 Nov 2014 10:17:16 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Benson Leung <bleung@chromium.org>
+cc: johan@kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        <linux-usb@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <54651BE2.9080008@arm.com> <54654C10.2040102@linux.intel.com> <54655632.2040209@huawei.com> <alpine.DEB.2.11.1411140211480.3935@nanos> <54655D44.1070703@linux.intel.com> <54660D7F.70702@gmail.com> <54661103.8000707@linux.intel.com>
-In-Reply-To: <54661103.8000707@linux.intel.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 14 Nov 2014 15:16:09.0785 (UTC) FILETIME=[EB710A90:01D0001D]
-X-MC-Unique: 114111415161203801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Sameer Nanda <snanda@chromium.org>
+Subject: Re: [PATCH] HID: usbhid: get/put around clearing needs_remote_wakeup
+In-Reply-To: <CANLzEksHgo_tQiwJoUtXd0iV7tDXq0ieNrAXgtXwPtxxPBWrgw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1411141008020.1043-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/11/14 14:26, Jiang Liu wrote:
-> On 2014/11/14 22:11, Yijing Wang wrote:
->>
->> 在 2014/11/14 9:39, Jiang Liu 写道:
->>> On 2014/11/14 9:31, Thomas Gleixner wrote:
->>>> On Fri, 14 Nov 2014, Yijing Wang wrote:
->>>>
->>> Hi Thomas,
->>>     So we need something like:
->>> struct msi_chip *pci_get_msi_chip(struct pci_dev *);
->>> or:
->>> struct irq_domain *pci_get_msi_domain(struct pci_dev *);
->>
->> Hi Gerry,
->> what about associate the platform specific  struct msi_chip
->> *pci_get_msi_chip(struct pci_dev *)
->> with struct pci_host_bridge. we could provide the private
->> "pci_get_msi_chip()" in the PCI
->> host drivers.
-> Hi Yijing,
-> 	Still need some time to dig into msi_chip related code.
-> When refining the PCI MSI code, I feel the best way is:
-> 1) Every PCI device is associated with an PCI MSI irqdomain.
-> 2) PCI MSI core directly talks to irqdomain to allocate/free
->    interrupts.
-> 3) Kill all weak functions in pci/drivers/msi.c.
-> 4) Kill struct msi_chip.
+On Thu, 13 Nov 2014, Benson Leung wrote:
+
+> Hi Alan,
 > 
-> We have achieved 1 and 2. And seems we could also achieve 3 by
-> converting all arch specific PCI MSI code to use hierarchy
-> irqdomain. But not sure whether we could achieve 4, not familiar
-> with ARM world:)
+> On Thu, Nov 13, 2014 at 2:11 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > Wait a minute -- in your previous email you said this approach didn't
+> > work.  So does it work or doesn't it?
+> 
+> Sorry for the confusion. The approach *does* work.
+> 
+> That was actually my original idea to fix the problem, but I saw other
+> places in the kernel where it was done with a get/put.
 
-Killing all the weak functions shouldn't be a problem for ARM, we're
-trying very hard not to rely on them.
+The reason for the get/put is to force a call to autosuspend_check().  
+But in this case, if killing the interrupt URB causes 
+autosuspend_check() to run then the get/put isn't needed.
 
-Killing msi_chip is a different story, as this is what we use to match a
-PCI host controller with its MSI controller (that's what the of_node
-field in msi_chip is for). See drivers/of/of_pci.c for details.
+On the other hand, I don't see why killing the interrupt URB would 
+cause autosuspend_check() to run.  Can you explain that?
 
-Also, we use msi_chip directly in the MSI drivers as a way to go from a
-pci_dev to the MSI controller specific structure:
+Alan Stern
 
-http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3-its.c?h=irq/stacked-its-v2#n1143
 
-If we're going to kill msi_chip, we must make sure we have mechanisms
-that allow the conversion of the existing code.
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
 
