@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaKNFQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 00:16:49 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:16729 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751492AbaKNFQr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 00:16:47 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'chunkeey@googlemail.com'" <chunkeey@googlemail.com>,
-        "'linville@tuxdriver.com'" <linville@tuxdriver.com>,
-        "'linux-wireless@vger.kernel.org'" <linux-wireless@vger.kernel.org>,
-        "'netdev@vger.kernel.org'" <netdev@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'joe@perches.com'" <joe@perches.com>
-Date: Fri, 14 Nov 2014 13:16:44 +0800
-Subject: [PATCH] carl9170: Convert byte_rev_table uses to bitrev8
-Thread-Topic: [PATCH] carl9170: Convert byte_rev_table uses to bitrev8
-Thread-Index: Ac//yi5OswK5mi6ZQd+KtioFzyjodw==
-Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1829D@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751755AbaKNFWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 00:22:47 -0500
+Received: from karr.yath.de ([144.76.4.50]:57436 "EHLO karr.yath.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064AbaKNFWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 00:22:46 -0500
+X-Greylist: delayed 779 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 00:22:45 EST
+Date: Thu, 13 Nov 2014 21:22:39 -0800
+From: Sebastian Schmidt <yath@yath.de>
+To: Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jim Davis <jim.epost@gmail.com>
+Subject: [PATCH] syslog: provide stub check_syslog_permissions
+Message-ID: <20141114052239.GB7964@moniac.lan.yath.de>
+References: <CA+r1ZhjO=kxcyjRb3=d7ozZ_VT9a+iCUy27zPZ2WGVMMzP6OVA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292CD43@ORSMSX114.amr.corp.intel.com>
+ <CAGXu5jLsd3G3+PCwFSUGDxxbfnJwx8G8X4chH0WK21-kv+_ecA@mail.gmail.com>
+ <20141114050934.GA7964@moniac.lan.yath.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114050934.GA7964@moniac.lan.yath.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the inline function instead of directly indexing the array.
+When building without CONFIG_PRINTK, we need to provide a stub
+check_syslog_permissions. As there is no way to turn on the
+dmesg_restrict sysctl without CONFIG_PRINTK, return success.
 
-This allows some architectures with hardware instructions for bit
-reversals to eliminate the array.
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+Reported-by: Jim Davis <jim.epost@gmail.com>
+Signed-off-by: Sebastian Schmidt <yath@yath.de>
 ---
- drivers/net/wireless/ath/carl9170/phy.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/syslog.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/carl9170/phy.c b/drivers/net/wireless/ath/carl9170/phy.c
-index b80b213..dca6df1 100644
---- a/drivers/net/wireless/ath/carl9170/phy.c
-+++ b/drivers/net/wireless/ath/carl9170/phy.c
-@@ -994,7 +994,7 @@ static int carl9170_init_rf_bank4_pwr(struct ar9170 *ar, bool band5ghz,
- 			refsel0 = 0;
- 			refsel1 = 1;
- 		}
--		chansel = byte_rev_table[chansel];
-+		chansel = bitrev8(chansel);
- 	} else {
- 		if (freq == 2484) {
- 			chansel = 10 + (freq - 2274) / 5;
-@@ -1002,7 +1002,7 @@ static int carl9170_init_rf_bank4_pwr(struct ar9170 *ar, bool band5ghz,
- 		} else
- 			chansel = 16 + (freq - 2272) / 5;
- 		chansel *= 4;
--		chansel = byte_rev_table[chansel];
-+		chansel = bitrev8(chansel);
- 	}
+diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+index 9def529..13c05d1 100644
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -48,6 +48,14 @@
+ #define SYSLOG_FROM_PROC             1
  
- 	d1 =	chansel;
+ int do_syslog(int type, char __user *buf, int count, bool from_file);
++
++#ifdef CONFIG_PRINTK
+ int check_syslog_permissions(int type, bool from_file);
++#else
++static int check_syslog_permissions(int type, bool from_file)
++{
++	return 0;
++}
++#endif
+ 
+ #endif /* _LINUX_SYSLOG_H */
 -- 
 2.1.1
-
