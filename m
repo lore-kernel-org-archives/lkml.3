@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935198AbaKNK71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:59:27 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:58891 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934378AbaKNK7Z (ORCPT
+	id S965178AbaKNLDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:03:51 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38463 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964896AbaKNLDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:59:25 -0500
-Date: Fri, 14 Nov 2014 16:29:15 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] ALSA: ice1712: consider error value
-Message-ID: <20141114105915.GA10385@sudip-PC>
-References: <1415961547-10330-1-git-send-email-sudipm.mukherjee@gmail.com>
- <1415961547-10330-2-git-send-email-sudipm.mukherjee@gmail.com>
- <s5h61eihxkc.wl-tiwai@suse.de>
+	Fri, 14 Nov 2014 06:03:49 -0500
+Message-ID: <5465E18B.9080907@linaro.org>
+Date: Fri, 14 Nov 2014 11:03:39 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h61eihxkc.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@redhat.com>, kgdb-bugreport@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH RESEND 3.18-rc3 v2 0/2] trace: kdb: Bug fixes for ftdump
+References: <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>	<1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>	<20141106082728.5d4b7161@gandalf.local.home>	<5460884C.1050401@linaro.org> <20141113211616.0b9fbcf1@gandalf.local.home>
+In-Reply-To: <20141113211616.0b9fbcf1@gandalf.local.home>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 11:43:31AM +0100, Takashi Iwai wrote:
-> At Fri, 14 Nov 2014 16:09:06 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > earlier we were ignoring the return value of snd_ak4114_create and
-> > always returning 0.
-> > now we are returning the actual status. revo_init is calling this
-> > function, and revo_init is checking the return value.
+On 14/11/14 02:16, Steven Rostedt wrote:
+> On Mon, 10 Nov 2014 09:41:32 +0000
+> Daniel Thompson <daniel.thompson@linaro.org> wrote:
 > 
-> It's not enough only to change there.  The problem is that
-> spec->ak4114 is dereferenced after snd_ak4114_create(), and this might
-> be NULL.  So it should return the error before that point.
+>> On 06/11/14 13:27, Steven Rostedt wrote:
+>>> On Thu,  6 Nov 2014 12:41:54 +0000
+>>> Daniel Thompson <daniel.thompson@linaro.org> wrote:
+>>>
+>>>> This patchset makes it possible to use kdb's ftdump command without
+>>>> panicing, crashing or livelocking. The ftdump command cannot be used
+>>>> at all without these changes.
+>>>>
+>>>> IIRC this patches are still pending Jason's ack.
+>>>
+>>> I haven't heard from Jason in a long time. Is he still active?
+>>
+>> [sorry for the delay, I wanted to give Jason a chance to answer this]
+>>
+>> Very occasionally.
+>>
+>> I can't find anything on lkml in the last three months, and I have
+>> unreviewed kdb patches that stretch back well beyond that.
+>>
+>> That said he still helps people on kgdb-bugreport@ from time-to-time
+>> (and as recently as last week). I've also had a little bit of private
+>> contact although nothing very recent.
+>>
+>> On that basis I'd say you shouldn't feel guilty if you have to accept a
+>> change here without an ack.
+>>
 > 
+> He had more than enough time to respond. OK, I'll take it.
+> 
+> Looking at the first patch, I notice that there's no protection of the
+> static buffer_iter array. I also noticed that there's no protection of
+> the static iter itself (which was there before your patch). I take it
+> that this code is not re-entrant.
 
-oops .. i should have looked carefully.
+No.
 
-one more thought:
-shouldn't we also do a kfree(spec) on error ?
+k(g)db halts all other processors before entering the command dispatch
+loop and it forces a kernel panic if the debugger is reentered by the
+same CPU.
 
-thanks
-sudip
 
-> 
-> Takashi
-> 
-> 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> >  sound/pci/ice1712/revo.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/sound/pci/ice1712/revo.c b/sound/pci/ice1712/revo.c
-> > index 1112ec1..2835196 100644
-> > --- a/sound/pci/ice1712/revo.c
-> > +++ b/sound/pci/ice1712/revo.c
-> > @@ -498,7 +498,7 @@ static int ap192_ak4114_init(struct snd_ice1712 *ice)
-> >  	 * No reason to stop capture stream due to incorrect checks */
-> >  	spec->ak4114->check_flags = AK4114_CHECK_NO_RATE;
-> >  
-> > -	return 0; /* error ignored; it's no fatal error */
-> > +	return err;
-> >  }
-> >  
-> >  static int revo_init(struct snd_ice1712 *ice)
-> > -- 
-> > 1.8.1.2
-> > 
+Daniel.
