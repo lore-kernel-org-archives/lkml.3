@@ -1,98 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161788AbaKNSBH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 13:01:07 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:37723 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161460AbaKNSBE (ORCPT
+	id S1161799AbaKNSCB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 13:02:01 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:35124 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1161282AbaKNSB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 13:01:04 -0500
-From: Rabin Vincent <rabin@rab.in>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, bigeasy@linutronix.de,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rabin Vincent <rabin@rab.in>
-Subject: [PATCH] serial: 8250: don't attempt a trylock if in sysrq
-Date: Fri, 14 Nov 2014 19:00:41 +0100
-Message-Id: <1415988041-6124-1-git-send-email-rabin@rab.in>
-X-Mailer: git-send-email 2.1.1
+	Fri, 14 Nov 2014 13:01:59 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18p7tPU7eG2VHBUCZVgbVFI
+Date: Fri, 14 Nov 2014 10:01:04 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Tero Kristo <t-kristo@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Marek Belisko <marek@goldelico.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        bcousson@baylibre.com, linux@arm.linux.org.uk, plagnioj@jcrosoft.com,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        hns@goldelico.com
+Subject: Re: [PATCH 4/4] arm: dts: omap3-gta04: Add static configuration for
+ devconf1 register
+Message-ID: <20141114180104.GT31250@atomide.com>
+References: <1415051968-4878-1-git-send-email-marek@goldelico.com>
+ <1415051968-4878-5-git-send-email-marek@goldelico.com>
+ <5463585D.9070209@ti.com>
+ <20141112150210.GC26481@atomide.com>
+ <5464969F.30708@ti.com>
+ <20141113182848.GQ26481@atomide.com>
+ <alpine.DEB.2.02.1411132251320.17030@utopia.booyaka.com>
+ <20141113235840.GS26481@atomide.com>
+ <5465AFF6.506@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5465AFF6.506@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempting to use SysRq via the 8250 serial port with spin lock
-debugging on on a uniprocessor system results in the following splat:
+* Tero Kristo <t-kristo@ti.com> [141113 23:33]:
+> On 11/14/2014 01:58 AM, Tony Lindgren wrote:
+> 
+> The PRCM/clock cleanups that I have under work basically splits the clock
+> inits under their respective IP blocks; currently everything is registered
+> under generic PRCM. System control module will be one of the clock providers
+> (and is going to look like a driver), which will be registering its own
+> clocks.
 
- SysRq :
- BUG: spinlock trylock failure on UP on CPU#0, swapper/0
-  lock: serial8250_ports+0x0/0x8c0, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
- CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc4+ #37
- Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
-  ffffffff8245ba00 ffffffff81628b28 ffffffff812c8d27 ffffffff81628b48
-  ffffffff8106812e ffffffff8245ba00 ffffffff814e22ed ffffffff81628b68
-  ffffffff810681a6 0000000000000000 0000000000000000 ffffffff81628b88
- Call Trace:
-  <IRQ>  [<ffffffff812c8d27>] dump_stack+0x19/0x1b
-  [<ffffffff8106812e>] spin_dump+0x7e/0xd0
-  [<ffffffff810681a6>] spin_bug+0x26/0x30
-  [<ffffffff8106843c>] do_raw_spin_trylock+0x4c/0x60
-  [<ffffffff812cdb1d>] _raw_spin_trylock+0x1d/0x60
-  [<ffffffff812336d8>] serial8250_console_write+0x68/0x190
-  [<ffffffff811eb0b0>] ? sprintf+0x40/0x50
-  [<ffffffff8106ab5e>] call_console_drivers.constprop.11+0x9e/0xf0
-  [<ffffffff8106b276>] console_unlock+0x3e6/0x490
-  [<ffffffff8106b595>] vprintk_emit+0x275/0x530
-  [<ffffffff812c869a>] printk+0x4d/0x4f
-  [<ffffffff8121e612>] __handle_sysrq+0x62/0x1b0
-  [<ffffffff8121e5b5>] ? __handle_sysrq+0x5/0x1b0
-  [<ffffffff8121ebc6>] handle_sysrq+0x26/0x30
-  [<ffffffff81233157>] serial8250_rx_chars+0x1d7/0x250
-  [<ffffffff812338bb>] serial8250_handle_irq+0x7b/0x90
-  [<ffffffff812338f3>] serial8250_default_handle_irq+0x23/0x30
-  [<ffffffff812318b3>] serial8250_interrupt+0x63/0xe0
-  [<ffffffff8106d80e>] handle_irq_event_percpu+0x4e/0x200
-  [<ffffffff8106da01>] handle_irq_event+0x41/0x70
-  [<ffffffff810701ee>] ? handle_edge_irq+0x1e/0x110
-  [<ffffffff8107026e>] handle_edge_irq+0x9e/0x110
-  [<ffffffff810041c2>] handle_irq+0x22/0x40
-  [<ffffffff812d096e>] do_IRQ+0x4e/0xf0
-  [<ffffffff812cf4ed>] common_interrupt+0x6d/0x6d
-  <EOI>  [<ffffffff8100acbf>] ? default_idle+0x1f/0xd0
-  [<ffffffff8100acbd>] ? default_idle+0x1d/0xd0
-  [<ffffffff8100b61f>] arch_cpu_idle+0xf/0x20
-  [<ffffffff8105c1db>] cpu_startup_entry+0x25b/0x360
-  [<ffffffff812c726e>] rest_init+0xbe/0xd0
-  [<ffffffff816a4dcb>] start_kernel+0x339/0x346
-  [<ffffffff816a4495>] x86_64_start_reservations+0x2a/0x2c
-  [<ffffffff816a4589>] x86_64_start_kernel+0xf2/0xf6
- HELP : loglevel(0-9) reboot(b) crash(c) show-all-locks(d) te...
+Yes that's nice. The clock modules in the SCM should probably use the
+syscon mapping unless there's a clear separate IO area for them. And
+then use pinctrl for registers that are muxes for external pins unless
+they are in some dedicated clock register area.
 
-Before ebade5e833eda30 ("serial: 8250: Clean up the locking for -rt")
-this was handled by not even attempting to try the lock if port->sysrq,
-since it is known to be taken by the interrupt handler; see
-https://bugzilla.kernel.org/show_bug.cgi?id=6716#c1.  Restore that
-behavior.
+> This doesn't change the fact that pinctrl is directly mapping its
+> own register space atm though, it might be possible to re-route this to use
+> the generic system control module if need be though.
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
----
- drivers/tty/serial/8250/8250_core.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index ca5cfdc..aec51eb 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -3198,7 +3198,9 @@ serial8250_console_write(struct console *co, const char *s, unsigned int count)
+Mapping dedicated IO areas to individual drivers is not a problem. These
+drivers can eventually be children of a core SCM driver if needed.
  
- 	serial8250_rpm_get(up);
- 
--	if (port->sysrq || oops_in_progress)
-+	if (port->sysrq)
-+		locked = 0;
-+	else if (oops_in_progress)
- 		locked = spin_trylock_irqsave(&port->lock, flags);
- 	else
- 		spin_lock_irqsave(&port->lock, flags);
--- 
-2.1.1
+> I guess its just a political decision which way we want to go, currently we
+> have lots of system control clocks under the clock data (for
+> AM33xx,AM43xx,OMAP3), but we can remove these easily if need be. In some
+> cases it is nicer to have the data in the clock tree though, the drivers
+> don't need to care if they are touching a clock or a pinctrl entity. Some
+> people have been converting additional stuff to CCF outside of PRCM, like
+> Archit did some work to try and get control module clock support for DRA7,
+> and Tomi has been talking to convert some of the DSS internal clocks to CCF
+> also.
 
+Setting up CCF drivers for SCM makes sense to me. I suggest the
+following guidelines:
+
+1. If there's a clear separate dedicated IO area in SCM, it can be
+   a driver implementing a Linux generic framework for CCF, regulators,
+   pinctrl, or PHY.
+
+2. For the random control registers, we should use syscon or
+   pinctrl-single to implement Linux generic framwork functions for
+   CCF, regulators, pinctrl or PHY.
+
+3. For resource management, we can have a core SCM driver that takes
+   care of the save and restore of registers and clocking if needed.
+   I believe currently SCM clocks are always enabled though. We can
+   set the drivers in #1 and #2 abobe to be childer of the core SCM
+   driver if we ever need to manage clocks during runtime.
+
+Regards,
+
+Tony
