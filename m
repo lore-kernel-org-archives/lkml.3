@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934990AbaKNBbr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 20:31:47 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50109 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934672AbaKNBbp (ORCPT
+	id S934809AbaKNBgd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:36:33 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:34253 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934017AbaKNBgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 20:31:45 -0500
-Date: Fri, 14 Nov 2014 02:31:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yijing Wang <wangyijing@huawei.com>
-cc: Jiang Liu <jiang.liu@linux.intel.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
-In-Reply-To: <54655632.2040209@huawei.com>
-Message-ID: <alpine.DEB.2.11.1411140211480.3935@nanos>
-References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <54651BE2.9080008@arm.com> <54654C10.2040102@linux.intel.com> <54655632.2040209@huawei.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 13 Nov 2014 20:36:32 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <FA327E3E-10C2-4CAE-A750-812BE6CF74FB@intel.com>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141112220058.GA5295@redhat.com> <CALCETrWA5z7-1fiz_9N0Qi2OR5s1jCkHiynCtTD_+9taOBs-Mg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BAB4@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU8uyc4nu-5MBXQR0PY0rexUhPkuPRLK+gWt0gEWMDhTA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292BD44@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUpqSpcKFRM6a1zJWebEVZxNd-5pyBW4fU19+HgcBv+2Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292CB9A@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVx7hGZodWfAoU1oee1SW7XXSn3Lr8Vs9JTOUMNtLXY4A@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292D57B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVB9VQPqFb7GQyxmVEKYtPhppmZS8SewQmtre+3_su9FA@mail.gmail.com>
+ <CALCETrVJE25Txr5vRKAxHpeKx9p0VJBbat44w+X4gT8qX7a4bg@mail.gmail.com>
+ <CALCETrVYWAOzaHqet8gS5hafvQC9prrH05qgc+v5dxSL9AF8bg@mail.gmail.com> <FA327E3E-10C2-4CAE-A750-812BE6CF74FB@intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Nov 2014 17:36:09 -0800
+Message-ID: <CALCETrVG5JrEhRNMm8VBmCKECqmQ+bcpnUVNEig96pcB3OkXuQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014, Yijing Wang wrote:
-
-Could you please use a mail client which does proper line wraps or
-configure yours to do so?
-
-> Associate the irq domain and PCI bus is not necessary, because all
-> PCI buses under same host bridge always share same MSI chip/irq
-> domain, we only need associate them and pci host bridge.
+On Thu, Nov 13, 2014 at 5:20 PM, Luck, Tony <tony.luck@intel.com> wrote:
+> "worst ==
+> MCE_AR_SEVERITY but regs->cs == 0 (i.e. in kernel)"
 >
-> I'm refactoring the pci_host_bridge, make it be a generic one, rip
-> out of the pci root bus creation, so we could put the irq domain and
-> pci domain etc.. in it. Finally, we could eliminate lots platform
-> arch functions. I will post it out within one week.
+> This can't happen. We can only declare AR severity for a user mode fault.
 
-That's a completely orthogonal problem. From the MSI/interrupt
-handling POV it does not matter at all where that information is
-stored. All we care about is that it is retrievable via the (pci)
-device which tries to setup MSI[X].
+I believe you, and I see that in the code, but the code is mightily twisted.
 
-So we can store/retrieve it via generic functions into/from whatever
-is available right now. If the irq side has generic interfaces to do
-so then this wont conflict with your decisions to change the final
-storage point because all it takes is to tweak the storage/retrieve
-functions.
+Anyway, my v3 will also catch a failure in which my asm fails to
+switch to the right stack for some other reason.
 
-So all we need at the moment is an agreed on way to store/retrieve
-that information which is based on the current shared infrastructure,
-aka. Linus tree. If we can utilize that you are completely free to
-change the association mechanism underneath.
+Without the scheduling in the idle thread warning, I'd believe that
+the problem is that some cpu is going out to lunch or failing to
+receive the #MC, which would make me want to consider IRET issues (w/
+my patch, there might not be an IRET until after memory_failure, and
+maybe it sometimes takes a really long time).  But I don't see why
+that would cause a scheduling in the idle thread warning.
 
-Thanks,
+>
+> Sent from my iPhone
+>
+>> On Nov 13, 2014, at 16:50, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> worst ==
+>> MCE_AR_SEVERITY but regs->cs == 0 (i.e. in kernel)
 
-	tglx
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
