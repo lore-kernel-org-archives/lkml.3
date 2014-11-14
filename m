@@ -1,134 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935348AbaKNOAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:00:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:44441 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935201AbaKNN7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:59:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
-   d="scan'208";a="607847738"
-From: kan.liang@intel.com
-To: acme@kernel.org, jolsa@redhat.com, a.p.zijlstra@chello.nl,
-        eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        ak@linux.intel.com, Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V3 2/3] perf tool: Move cpumode resolve code to add_callchain_ip
-Date: Fri, 14 Nov 2014 08:44:11 -0500
-Message-Id: <1415972652-17310-3-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
-References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
+	id S1754698AbaKNOFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:05:18 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:40693 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140AbaKNOFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 09:05:15 -0500
+Date: Fri, 14 Nov 2014 19:35:06 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] ALSA: ice1712: consider error value
+Message-ID: <20141114140506.GA16619@sudip-PC>
+References: <1415968941-14181-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5h389lj4yg.wl-tiwai@suse.de>
+ <20141114134502.GA16479@sudip-PC>
+ <s5hvbmhhp30.wl-tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hvbmhhp30.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+On Fri, Nov 14, 2014 at 02:46:43PM +0100, Takashi Iwai wrote:
+> At Fri, 14 Nov 2014 19:15:02 +0530,
+> Sudip Mukherjee wrote:
+> > 
+> > On Fri, Nov 14, 2014 at 02:18:31PM +0100, Takashi Iwai wrote:
+> > > At Fri, 14 Nov 2014 18:12:21 +0530,
+> > > Sudip Mukherjee wrote:
+> > > > 
+> > > > earlier we were ignoring the return value of snd_ak4114_create and
+> > > > always returning 0.
+> > > > now we are returning the actual status. revo_init is calling this
+> > > > function, and revo_init is checking the return value.
+> > > > 
+> > > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > > > ---
+> > > > 
+> > > > change in v3: spec->ak4114 is now dereferenced if we dont get an
+> > > > error value from snd_ak4114_create.
+> > > > 
+> > > > change in v4: error value returned according to coding style.
+> > > 
+> > > Applied but I had to fix your From address (two others, too).  That
+> > > doesn't match with your sign-off.  Please fix your git config to have
+> > > a proper author address as same as sign-off.
+> > 
+> > i know it does not match. Previously Dan Carpenter also told me the same thing, and I sent a patch from my corporate account. You can find reference of that conversation here https://lkml.org/lkml/2014/9/3/473 
+> > 
+> > copying some part from there :
+> > "I have given strict DMARC check for the corporate mail server. DMARC = domain based message authentication.
+> > So the mail i sent reached all the list subscriber from a different server than our designated server,
+> > and as a result it has been marked as spam in many places. I have already received a few complaints regarding that."
+> > 
+> > since i do use office resources for patches (though it is not part of my job), so i should atleast put Signed-off to the patches i send. You will see all my patches having different Signed-off and different from adderess.
+> > 
+> > again copying from the previous conversation:
+> > "Is there any other way that i send the patch from my personal account, and use my corporate mail in Signed-off-by ... "
+> 
+> You just need to put another "From: xxx" in the patch itself.  Then
+> git will take it as the author address.
+> 
+i did that also. reference : https://lkml.org/lkml/2014/9/2/473
 
-Move the cpumode resolve code to add_callchain_ip function.
-No change in behavior.
+and reply from Dan Carpenter at: https://lkml.org/lkml/2014/9/3/135
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- tools/perf/util/machine.c | 62 ++++++++++++++++++++++-------------------------
- 1 file changed, 29 insertions(+), 33 deletions(-)
+copying from reply of  Dan Carpenter:
+"I really would prefer if you just figured out your email settings so
+this isn't needed.  The From: header is mostly used for people
+forwarding patches from other people.  We have allowed people to use
+the From header like this if they can't get their corporate email
+configured properly but I try to discorage it.  If everyone starts using
+>From headers like this then it becomes a pain to deal with."
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index d97309c..dd8496a 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1384,11 +1384,35 @@ struct mem_info *sample__resolve_mem(struct perf_sample *sample,
- static int add_callchain_ip(struct thread *thread,
- 			    struct symbol **parent,
- 			    struct addr_location *root_al,
--			    int cpumode,
-+			    u8 cpumode,
- 			    u64 ip)
- {
- 	struct addr_location al;
- 
-+	if (ip >= PERF_CONTEXT_MAX) {
-+		switch (ip) {
-+		case PERF_CONTEXT_HV:
-+			cpumode = PERF_RECORD_MISC_HYPERVISOR;
-+			break;
-+		case PERF_CONTEXT_KERNEL:
-+			cpumode = PERF_RECORD_MISC_KERNEL;
-+			break;
-+		case PERF_CONTEXT_USER:
-+			cpumode = PERF_RECORD_MISC_USER;
-+			break;
-+		default:
-+			pr_debug("invalid callchain context: "
-+				 "%"PRId64"\n", (s64) ip);
-+			/*
-+			 * It seems the callchain is corrupted.
-+			 * Discard all.
-+			 */
-+			callchain_cursor_reset(&callchain_cursor);
-+			return 1;
-+		}
-+		return 0;	
-+	}
-+
- 	al.filtered = 0;
- 	al.sym = NULL;
- 	thread__find_addr_location(thread, cpumode, MAP__FUNCTION,
-@@ -1435,9 +1459,7 @@ static int thread__resolve_callchain_sample(struct thread *thread,
- {
- 	u8 cpumode = PERF_RECORD_MISC_USER;
- 	int chain_nr = min(max_stack, (int)chain->nr);
--	int i;
--	int j;
--	int err;
-+	int i, j, err = 0;
- 	int skip_idx __maybe_unused;
- 
- 	callchain_cursor_reset(&callchain_cursor);
-@@ -1467,39 +1489,13 @@ static int thread__resolve_callchain_sample(struct thread *thread,
- #endif
- 		ip = chain->ips[j];
- 
--		if (ip >= PERF_CONTEXT_MAX) {
--			switch (ip) {
--			case PERF_CONTEXT_HV:
--				cpumode = PERF_RECORD_MISC_HYPERVISOR;
--				break;
--			case PERF_CONTEXT_KERNEL:
--				cpumode = PERF_RECORD_MISC_KERNEL;
--				break;
--			case PERF_CONTEXT_USER:
--				cpumode = PERF_RECORD_MISC_USER;
--				break;
--			default:
--				pr_debug("invalid callchain context: "
--					 "%"PRId64"\n", (s64) ip);
--				/*
--				 * It seems the callchain is corrupted.
--				 * Discard all.
--				 */
--				callchain_cursor_reset(&callchain_cursor);
--				return 0;
--			}
--			continue;
--		}
--
- 		err = add_callchain_ip(thread, parent, root_al,
- 				       cpumode, ip);
--		if (err == -EINVAL)
--			break;
- 		if (err)
--			return err;
-+			goto exit;
- 	}
--
--	return 0;
-+exit:
-+	return (err < 0) ? err : 0;
- }
- 
- static int unwind_entry(struct unwind_entry *entry, void *arg)
--- 
-1.8.3.2
+:(
 
+for my next patches to you i will add the extra "From:" in the patch.
+next is that pending one of korg1212.
+
+thanks
+sudip
+
+> 
+> Takashi
