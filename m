@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935137AbaKNKEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:04:12 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:47585 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980AbaKNKEF (ORCPT
+	id S935170AbaKNKEv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:04:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60534 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932838AbaKNKEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:04:05 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-d3-5465d393b259
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Lukasz Majewski <l.majewski@samsung.com>
-Subject: [RESEND PATCH 2/2] ARM: dts: exynos4412-trats2: Enable TMU support at
- Trats2
-Date: Fri, 14 Nov 2014 11:03:25 +0100
-Message-id: <1415959405-14157-2-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1415959405-14157-1-git-send-email-l.majewski@samsung.com>
-References: <1381300194-13134-5-git-send-email-l.majewski@samsung.com>
- <1415959405-14157-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQd3Jl1NDDJrX81lsnLGe1WLSugNM
-	FvOPnGO16H+zkNXi3KuVjBa9C66yWbx5uJnRYtPja6wWl3fNYbOYcX4fk8Xty7wWS69fZLKY
-	MH0ti0Xr3iPsFqt2/WF04PdYM28No0dLcw+bx+W+XiaPv6teMHvsnHWX3WPl8i9sHptWdbJ5
-	bF5S79G3ZRWjx+dNcgFcUVw2Kak5mWWpRfp2CVwZqw6/YS1Yylax7N9NtgbGBaxdjJwcEgIm
-	EuvuTIayxSQu3FvP1sXIxSEkMJ1R4n/3Iyini0nizL6PjCBVbAJ6Ep/vPmUCsUUE1CR6Fm8F
-	izMLzGSROPinAMQWFgiX6J77hg3EZhFQldi0YRZYPa+Am8S+d2+ZIbYpSnQ/mwBUw8HBKeAu
-	cXWdMsSuZkaJudfXsU1g5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzion0ntYFzZ
-	YHGIUYCDUYmHl8EtNUSINbGsuDL3EKMEB7OSCG/oeaAQb0piZVVqUX58UWlOavEhRmkOFiVx
-	3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxvMek+5pP2ETKZFcL7VLSplF7OgmViblmQIfi+7e
-	/nRzzZ0DD+KmCP3xD7qvnbZciOPimbSgq6XhU9extE5bxbv1nlJDAFNF+XMGp27n9yYqz04G
-	b1jy7NuJP1eip67LWXPv2E+tokWK7Hd2KKdvXDVZJ/Lv0sLPAdyFAmtMvflj6zZF7D97fJUS
-	S3FGoqEWc1FxIgC9A+ZFZgIAAA==
+	Fri, 14 Nov 2014 05:04:44 -0500
+Date: Fri, 14 Nov 2014 10:04:37 +0000
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org, lgirdwood@gmail.com, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, linus.walleij@linaro.org, gnurou@gmail.com,
+        broonie@kernel.org, tiwai@suse.de
+Cc: mark.rutland@arm.com, devicetree@vger.kernel.org,
+        alsa-devel@alsa-project.org, sameo@linux.intel.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        robh+dt@kernel.org, galak@codeaurora.org,
+        ckeepax@opensource.wolfsonmicro.com
+Subject: [PATCH 2/6 V2] Documentation: devicetree: arizona: Add bindings
+	for WM8280
+Message-ID: <20141114100437.GA12913@opensource.wolfsonmicro.com>
+References: <1415901046-3391-1-git-send-email-rf@opensource.wolfsonmicro.com> <1415901046-3391-3-git-send-email-rf@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415901046-3391-3-git-send-email-rf@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables support for TMU at Exynos4412 based Trats2 board.
-
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Reviewed-by: Tomasz Figa <tomasz.figa@gmail.com>
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 ---
- arch/arm/boot/dts/exynos4412-trats2.dts | 5 +++++
- 1 file changed, 5 insertions(+)
+ Documentation/devicetree/bindings/mfd/arizona.txt |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index 5e066cd..121430d 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -551,6 +551,11 @@
- 		status = "okay";
- 	};
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 7bd1273..dc81b71 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -8,6 +8,7 @@ Required properties:
+   - compatible : One of the following chip-specific strings:
+         "wlf,wm5102"
+         "wlf,wm5110"
++        "wlf,wm8280"
+         "wlf,wm8997"
+   - reg : I2C slave address when connected using I2C, chip select number when
+     using SPI.
+@@ -26,10 +27,16 @@ Required properties:
+   - #gpio-cells : Must be 2. The first cell is the pin number and the
+     second cell is used to specify optional parameters (currently unused).
  
-+	tmu@100C0000 {
-+		vtmu-supply = <&ldo10_reg>;
-+		status = "okay";
-+	};
+-  - AVDD-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply (wm5102, wm5110),
+-    CPVDD-supply, SPKVDDL-supply (wm5102, wm5110), SPKVDDR-supply (wm5102,
+-    wm5110), SPKVDD-supply (wm8997) : Power supplies for the device, as covered
+-    in Documentation/devicetree/bindings/regulator/regulator.txt
++  - AVDD-supply, DBVDD1-supply, CPVDD-supply : Power supplies for the device,
++    as covered in Documentation/devicetree/bindings/regulator/regulator.txt
++  
++  - DBVDD2-supply, DBVDD3-supply : Additional databus power supplies (wm5102,
++    wm5110, wm8280)
 +
- 	i2c_ak8975: i2c-gpio-0 {
- 		compatible = "i2c-gpio";
- 		gpios = <&gpy2 4 0>, <&gpy2 5 0>;
++  - SPKVDDL-supply, SPKVDDR-supply : Speaker driver power supplies (wm5102,
++    wm5110, wm8280)
++  
++  - SPKVDD-supply : Speaker driver power supply (wm8997)
+ 
+ Optional properties:
+ 
 -- 
-2.0.0.rc2
+1.7.2.5
 
