@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965445AbaKNLWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:22:08 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61502 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965313AbaKNLV4 (ORCPT
+	id S965411AbaKNLWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:22:06 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:37575 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965011AbaKNLWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:21:56 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 3.18-rc3 v3 2/2] trace: kdb: Fix kernel livelock with empty buffers
-Date: Fri, 14 Nov 2014 11:21:23 +0000
-Message-Id: <1415964083-10354-3-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415964083-10354-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
- <1415964083-10354-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 14 Nov 2014 06:22:00 -0500
+Date: Fri, 14 Nov 2014 12:21:57 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Johan Hovold <johan@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 19/22] dt/bindings: add micrel,rmii_ref_clk_sel_25_mhz to
+ eth-phy binding
+Message-ID: <20141114112157.GC18285@localhost>
+References: <1415727460-20417-1-git-send-email-johan@kernel.org>
+ <1415727460-20417-20-git-send-email-johan@kernel.org>
+ <20141111175741.GF25295@leverpostej>
+ <20141111181825.GH29789@localhost>
+ <20141112070127.GF30369@pengutronix.de>
+ <20141112091920.GC15215@localhost>
+ <20141113080927.GP30369@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113080927.GP30369@pengutronix.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kdb's ftdump command will livelock by constantly printk'ing
-the empty string at KERN_EMERG level if it run when the ftrace system is
-not in use. This occurs because trace_empty() never returns false when
-the ring buffers are left at the start of a non-consuming read [launched
-by ring_buffer_read_start()].
+On Thu, Nov 13, 2014 at 09:09:27AM +0100, Sascha Hauer wrote:
+> On Wed, Nov 12, 2014 at 10:19:20AM +0100, Johan Hovold wrote:
+> > On Wed, Nov 12, 2014 at 08:01:27AM +0100, Sascha Hauer wrote:
+> > > On Tue, Nov 11, 2014 at 07:18:25PM +0100, Johan Hovold wrote:
+> > > > On Tue, Nov 11, 2014 at 05:57:42PM +0000, Mark Rutland wrote:
+> > > > > On Tue, Nov 11, 2014 at 05:37:37PM +0000, Johan Hovold wrote:
+> > > > > > Add "micrel,rmii_ref_clk_sel_25_mhz" to Micrel ethernet PHY binding
+> > > > > > documentation.
+> > > > > > 
+> > > > > > Cc: devicetree@vger.kernel.org
+> > > > > > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > > > > > ---
+> > > > > >  Documentation/devicetree/bindings/net/micrel.txt | 5 +++++
+> > > > > >  1 file changed, 5 insertions(+)
+> > > > > > 
+> > > > > > diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
+> > > > > > index a1bab5eaae02..9b08dd6551dd 100644
+> > > > > > --- a/Documentation/devicetree/bindings/net/micrel.txt
+> > > > > > +++ b/Documentation/devicetree/bindings/net/micrel.txt
+> > > > > > @@ -19,6 +19,11 @@ Optional properties:
+> > > > > >  
+> > > > > >                See the respective PHY datasheet for the mode values.
+> > > > > >  
+> > > > > > + - micrel,rmii_ref_clk_sel_25_mhz: rmii_ref_clk_sel bit selects 25 MHz mode
+> > > > > > +
+> > > > > > +		Whether 25 MHz (rather than 50 Mhz) clock mode is selected
+> > > > > > +		when the rmii_ref_clk_sel bit is set.
+> > > > > 
+> > > > > s/_/-/ in property names please.
+> > > > 
+> > > > Ouch, copied from variable name, sorry.
+> > > > 
+> > > > > That said, I don't follow the meaning. Does this cause the kernel to do
+> > > > > something different, or is is simply that a 25MHz ref clock is wired up?
+> > > > 
+> > > > Yes, the driver currently sets this configuration bit based on a common
+> > > > clock binding.
+> > > > 
+> > > > However, it turns out the meaning of the bit is reversed on some PHY
+> > > > variants. On most PHYs 50 MHz mode is selected by setting this bit,
+> > > > whereas on the PHYs that need this new property, setting it selects 25
+> > > > MHz mode instead.
+> > > 
+> > > Maybe rename the property to something like rmii-ref-clk-25mhz-active-high
+> > > then? Also you should probably make it more explicit that this is a
+> > > hardware property and not for adjusting the clock.
+> > 
+> > You're right, but how about calling it
+> > 
+> > 	micrel,rmii-reference-clock-select-inverted
+> > 
+> > Then no one will set it believing it will change the clock mode and
+> > without reading the binding doc first.
+> > 
+> > The description could then read something like
+> > 
+> > 	micrel,rmii-reference-clock-select-inverted: RMII Reference
+> > 		Clock Select bit is inverted
+> > 
+> > 	The RMII Reference Clock Select bit is inverted so that setting
+> > 	it selects 25 MHz rather than 50 MHz clock mode. 
+> > 
+> > 	Note that this is only needed for PHY variants that has this bit
+> > 	inverted and that a clock reference ("rmii-ref" below) is always
+> > 	needed to select the actual mode.
+> 
+> "Inverted" only has a meaning when everybody agrees what's the normal
+> case. Since that not the case I really prefer talking about
+> "active-high" or "active-low".
 
-This patch changes the loop exit condition to use the result of
-trace_find_next_entry_inc(). Effectively this switches the non-consuming
-kdb dumper to follow the approach of the non-consuming userspace
-interface [s_next()] rather than the consuming ftrace_dump().
+Yes, but I'm reluctant to using "active-high" and "active-low" as this
+is not a signal (or IO pin) we're dealing with.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kdb.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+It's a configuration bit, which (if set) selects 25 MHz mode. Hence I
+still think something like 
 
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index 8faa7ce58814..b0b1c44e923a 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -59,19 +59,19 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
- 		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
- 		tracing_iter_reset(&iter, cpu_file);
- 	}
--	if (!trace_empty(&iter))
--		trace_find_next_entry_inc(&iter);
--	while (!trace_empty(&iter)) {
-+
-+	while (trace_find_next_entry_inc(&iter)) {
- 		if (!cnt)
- 			kdb_printf("---------------------------------\n");
- 		cnt++;
- 
--		if (trace_find_next_entry_inc(&iter) != NULL && !skip_lines)
-+		if (!skip_lines) {
- 			print_trace_line(&iter);
--		if (!skip_lines)
- 			trace_printk_seq(&iter.seq);
--		else
-+		} else {
- 			skip_lines--;
-+		}
-+
- 		if (KDB_FLAG(CMD_INTERRUPT))
- 			goto out;
- 	}
--- 
-1.9.3
+	micrel,rmii_ref_clk_sel_25_mhz
 
+or
+
+	micrel,rmii_reference_clock_select_selects_25_mhz
+
+is preferred. The binding documentation will still make it clear that a
+clocks reference is also needed.
+
+Johan
