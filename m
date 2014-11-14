@@ -1,148 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161356AbaKNQxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 11:53:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38003 "EHLO mx2.suse.de"
+	id S935261AbaKNQxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:53:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33406 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161065AbaKNQxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 11:53:14 -0500
-Date: Fri, 14 Nov 2014 17:53:08 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [RFC][PATCH 14/23 v4] tracing: Convert seq_buf_path() to be like
- seq_path()
-Message-ID: <20141114165308.GB14538@dhcp128.suse.cz>
-References: <20141114011244.256115061@goodmis.org>
- <20141114011412.338523371@goodmis.org>
+	id S1161065AbaKNQxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 11:53:31 -0500
+Date: Fri, 14 Nov 2014 17:53:24 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Tony Lindgren <tony@atomide.com>, Pali Roh?r <pali.rohar@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, khilman@kernel.org, aaro.koskinen@iki.fi,
+        freemangordon@abv.bg
+Subject: Re: N900 modem support in 3.18-rc1
+Message-ID: <20141114165324.GA12250@earth.universe>
+References: <201411052137.31452@pali>
+ <20141105203918.GA29199@amd>
+ <201411052206.05379@pali>
+ <20141105220359.GA32052@amd>
+ <20141105234555.GA7097@earth.universe>
+ <20141106124711.GA26944@amd>
+ <20141106180335.GA21513@earth.universe>
+ <20141113162155.GA8512@xo-6d-61-c0.localdomain>
+ <20141113174534.GO26481@atomide.com>
+ <20141114073756.GA5336@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
 Content-Disposition: inline
-In-Reply-To: <20141114011412.338523371@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141114073756.GA5336@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-11-13 20:12:58, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Rewrite seq_buf_path() like it is done in seq_path() and allow
-> it to accept any escape character instead of just "\n".
-> 
-> Making seq_buf_path() like seq_path() will help prevent problems
-> when converting seq_file to use the seq_buf logic.
-> 
-> Link: http://lkml.kernel.org/r/20141104160222.048795666@goodmis.org
-> 
-> Tested-by: Jiri Kosina <jkosina@suse.cz>
-> Acked-by: Jiri Kosina <jkosina@suse.cz>
-> Reviewed-by: Petr Mladek <pmladek@suse.cz>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/seq_buf.h  |  2 +-
->  kernel/trace/seq_buf.c   | 28 ++++++++++++++++------------
->  kernel/trace/trace_seq.c |  4 ++--
->  3 files changed, 19 insertions(+), 15 deletions(-)
-> 
-> diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-> index 4f7a96a9d71a..38770688a627 100644
-> --- a/include/linux/seq_buf.h
-> +++ b/include/linux/seq_buf.h
-> @@ -73,7 +73,7 @@ extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
->  extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
->  extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
->  			      unsigned int len);
-> -extern int seq_buf_path(struct seq_buf *s, const struct path *path);
-> +extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc);
->  
->  extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
->  			   int nmaskbits);
-> diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-> index e9a7861595d2..7dac34d1235b 100644
-> --- a/kernel/trace/seq_buf.c
-> +++ b/kernel/trace/seq_buf.c
-> @@ -272,28 +272,32 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
->   * seq_buf_path - copy a path into the sequence buffer
->   * @s: seq_buf descriptor
->   * @path: path to write into the sequence buffer.
-> + * @esc: set of characters to escape in the output
->   *
->   * Write a path name into the sequence buffer.
->   *
-> - * Returns zero on success, -1 on overflow
-> + * Returns the number of written bytes on success, -1 on overflow
->   */
-> -int seq_buf_path(struct seq_buf *s, const struct path *path)
-> +int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
->  {
-> -	unsigned int len = seq_buf_buffer_left(s);
-> -	unsigned char *p;
-> +	char *buf = s->buffer + s->len;
-> +	size_t size = seq_buf_buffer_left(s);
-> +	int res = -1;
->  
->  	WARN_ON(s->size == 0);
->  
-> -	p = d_path(path, s->buffer + s->len, len);
-> -	if (!IS_ERR(p)) {
-> -		p = mangle_path(s->buffer + s->len, p, "\n");
-> -		if (p) {
-> -			s->len = p - s->buffer;
-> -			return 0;
-> +	if (size) {
-> +		char *p = d_path(path, buf, size);
-> +		if (!IS_ERR(p)) {
-> +			char *end = mangle_path(buf, p, esc);
-> +			if (end)
-> +				res = end - buf;
->  		}
->  	}
-> -	seq_buf_set_overflow(s);
-> -	return -1;
-> +	if (res > 0)
-> +		s->len += res;
-> +
-> +	return res;
->  }
->  
->  /**
-> diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
-> index 3c63b619d6b7..475412e31de5 100644
-> --- a/kernel/trace/trace_seq.c
-> +++ b/kernel/trace/trace_seq.c
-> @@ -342,7 +342,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
->  		return 0;
->  	}
->  
-> -	ret = seq_buf_path(&s->seq, path);
-> +	ret = seq_buf_path(&s->seq, path, "\n");
->  
->  	if (unlikely(seq_buf_has_overflowed(&s->seq))) {
->  		s->seq.len = save_len;
-> @@ -350,7 +350,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
->  		return 0;
->  	}
->  
-> -	return ret;
-> +	return 1;
 
-Ah, I have just realized that this should return -1 when
-seq_buf_path() returns -1.
+--WIyZ46R2i8wDzkSu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Note that set_buf_path() does not longer calls seq_buf_set_overflow(s)
-when the path handling fails. Therefore the above check for overflow
-will probably never happen.
+On Fri, Nov 14, 2014 at 08:37:56AM +0100, Pavel Machek wrote:
+> I'm using nfsroot (no modules), .config is attached. Debian v7.7,
+> ofono installed.
+>=20
+> To launch ofono, I'm using:
+>=20
+> rmdir /dev/cmt
+> ln -s /sys/bus/hsi/devices/n900-modem/ /dev/cmt
 
-Best Regards,
-Petr
+At least with Debian as base you can add this to your /etc/rc.local
+and be happy, since the link will be created before ofono starts via
+/etc/init.d/ ;)
 
->  }
->  EXPORT_SYMBOL_GPL(trace_seq_path);
->  
-> -- 
-> 2.1.1
-> 
-> 
+I did not send ofono guys a patch to use
+/sys/bus/hsi/devices/n900-modem/, since the kernel is supposed to
+handle the PM, so there will be another, simpler interface (I plan
+to use pm=3D2 for that).
+
+> killall  ofonod
+> sleep .1
+> ofonod --nodetach --debug &
+
+or just use "/etc/init.d/ofono restart". The above is mostly useful
+for getting debug output from ofono.
+
+> [...]
+
+The short description for .config: CONFIG_NOKIA_MODEM must not be
+disabled. It should depend on everything else needed:
+
+CONFIG_PHONET
+CONFIG_HSI
+CONFIG_OMAP_SSI
+CONFIG_OMAP_SSI_PORT
+CONFIG_SSI_PROTOCOL
+CONFIG_NOKIA_MODEM
+
+
+-- Sebastian
+
+--WIyZ46R2i8wDzkSu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUZjOEAAoJENju1/PIO/qafiYP/iuHB/im26FmFvUT+RxPkuIt
+3pbxDcdCaRtr/5m5NLuHWBv6NH9qRT3y9bYjmsKFCEykYm25LNq/yIYIUdNv6UM8
+xAvCxpAntt9oCSVdqWBiqKD9HAc3hj1vqBdn2FbVEBNiCtTpTCMn1DNHgMtlZzyt
+BQuq612eGeGVba20sRtswM3aVAktzbn3nw46YP1IUhasnD/6+BfgoVHebeJBUu6W
+PaK5S0bIFjyQ04qN18ea9hDaa7Spa2qz4T9uHUZO8RzelQZnNpkVYQfEKe+BDEel
+3wUGg+NLK/w2NUspzkZVx39s8U/ePSxMfPQMx7ta3mFGj0AlTzGI0qLR/RQc4otC
+0nbdGFdTMC2UZLAfZl9Am2FweE/PuY4EMNPLb75b/8fS4CVNA/+ObCRse00f1d58
+kyle/gewxZoce3YhKSkdWPYZHtRV+O54p5D3jFPJGWu+KPI6zAvDpSuk4vMXPa/A
+DfIKDUN2kKJ7OIFvSqtOVLpMQ1KUOwhZPxlawU5VruDAYgjIBvD8HVAHSVAm3dne
+kvXhS9FYm8luUCjpp8NrjybnQF6EFMODBo/codYVutNVGaOQ+DbdVHKz063L1psJ
+WA2Qq1ZjKAANX3mKbsqMQmHiy30qsNih9N2ZIe9K9xp3u70frFI4lhVp6yWGLtLG
+/zYp14EHFS17XmpiE6Z0
+=SQ8H
+-----END PGP SIGNATURE-----
+
+--WIyZ46R2i8wDzkSu--
