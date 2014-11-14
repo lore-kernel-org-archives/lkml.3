@@ -1,124 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965585AbaKNPPl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:15:41 -0500
-Received: from mail-bn1on0065.outbound.protection.outlook.com ([157.56.110.65]:29157
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964875AbaKNPPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:15:39 -0500
-Date: Fri, 14 Nov 2014 07:15:33 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-CC: <linux-arm-kernel@lists.infradead.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <monstr@monstr.eu>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 4/6] ARM: zynq: Extend SLCR driver to read OCM
- configuration
-References: <cover.1415962281.git.michal.simek@xilinx.com>
- <1b945376f9979a3b3e7c1231ea7ecead78026b07.1415962281.git.michal.simek@xilinx.com>
+	id S965612AbaKNPQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:16:16 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:53028 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965136AbaKNPQP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 10:16:15 -0500
+Message-ID: <54661CB8.2070704@arm.com>
+Date: Fri, 14 Nov 2014 15:16:08 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1b945376f9979a3b3e7c1231ea7ecead78026b07.1415962281.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21104.000
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <f384b384e767499cafe62fed371f7ddd@BN1AFFO11FD052.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(199003)(377424004)(189002)(51704005)(77096003)(50986999)(4396001)(76176999)(54356999)(21056001)(83506001)(64706001)(575784001)(19580405001)(77156002)(19580395003)(6806004)(44976005)(62966003)(85182001)(92566001)(47776003)(85202003)(107046002)(99396003)(120916001)(106466001)(110136001)(108616004)(74316001)(87936001)(53416004)(95666004)(20776003)(102836001)(33646002)(50466002)(104016003)(86362001)(46102003)(31966008)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB026;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB026;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB026;
-X-Forefront-PRVS: 03950F25EC
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB026;
-X-OriginatorOrg: xilinx.com
+To: Jiang Liu <jiang.liu@linux.intel.com>
+CC: Yijing Wang <wangyijing0307@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
+References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <54651BE2.9080008@arm.com> <54654C10.2040102@linux.intel.com> <54655632.2040209@huawei.com> <alpine.DEB.2.11.1411140211480.3935@nanos> <54655D44.1070703@linux.intel.com> <54660D7F.70702@gmail.com> <54661103.8000707@linux.intel.com>
+In-Reply-To: <54661103.8000707@linux.intel.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 14 Nov 2014 15:16:09.0785 (UTC) FILETIME=[EB710A90:01D0001D]
+X-MC-Unique: 114111415161203801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-14 at 11:52AM +0100, Michal Simek wrote:
-> Get OCM configuration from SLCR.
+On 14/11/14 14:26, Jiang Liu wrote:
+> On 2014/11/14 22:11, Yijing Wang wrote:
+>>
+>> 在 2014/11/14 9:39, Jiang Liu 写道:
+>>> On 2014/11/14 9:31, Thomas Gleixner wrote:
+>>>> On Fri, 14 Nov 2014, Yijing Wang wrote:
+>>>>
+>>> Hi Thomas,
+>>>     So we need something like:
+>>> struct msi_chip *pci_get_msi_chip(struct pci_dev *);
+>>> or:
+>>> struct irq_domain *pci_get_msi_domain(struct pci_dev *);
+>>
+>> Hi Gerry,
+>> what about associate the platform specific  struct msi_chip
+>> *pci_get_msi_chip(struct pci_dev *)
+>> with struct pci_host_bridge. we could provide the private
+>> "pci_get_msi_chip()" in the PCI
+>> host drivers.
+> Hi Yijing,
+> 	Still need some time to dig into msi_chip related code.
+> When refining the PCI MSI code, I feel the best way is:
+> 1) Every PCI device is associated with an PCI MSI irqdomain.
+> 2) PCI MSI core directly talks to irqdomain to allocate/free
+>    interrupts.
+> 3) Kill all weak functions in pci/drivers/msi.c.
+> 4) Kill struct msi_chip.
 > 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> 
-> Changes in v4:
-> - slcr.h has moved to soc/include/ folder. Move definition there too.
-> 
-> Changes in v3: None
-> Changes in v2: None
-> 
->  arch/arm/mach-zynq/slcr.c | 15 +++++++++++++++
->  include/soc/zynq/slcr.h   |  1 +
->  2 files changed, 16 insertions(+)
-> 
-> diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
-> index b77e42d999c8..f7c606e57525 100644
-> --- a/arch/arm/mach-zynq/slcr.c
-> +++ b/arch/arm/mach-zynq/slcr.c
-> @@ -29,6 +29,7 @@
->  #define SLCR_A9_CPU_RST_CTRL_OFFSET	0x244 /* CPU Software Reset Control */
->  #define SLCR_REBOOT_STATUS_OFFSET	0x258 /* PS Reboot Status */
->  #define SLCR_PSS_IDCODE			0x530 /* PS IDCODE */
-> +#define SLCR_OCM_CFG_OFFSET		0x910 /* OCM Address Mapping */
-> 
->  #define SLCR_UNLOCK_MAGIC		0xDF0D
->  #define SLCR_A9_CPU_CLKSTOP		0x10
-> @@ -128,6 +129,20 @@ void zynq_slcr_system_reset(void)
->  }
-> 
->  /**
-> + * zynq_slcr_get_ocm_config - Get SLCR OCM config
-> + *
-> + * Return:	OCM config bits
-> + */
-> +u32 zynq_slcr_get_ocm_config(void)
-> +{
-> +	u32 val;
-> +
-> +	zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
-> +
-> +	return val;
-> +}
-> +
-> +/**
->   * zynq_slcr_cpu_start - Start cpu
->   * @cpu:	cpu number
->   */
-> diff --git a/include/soc/zynq/slcr.h b/include/soc/zynq/slcr.h
-> index 7b4edab666ee..639723c4f90c 100644
-> --- a/include/soc/zynq/slcr.h
-> +++ b/include/soc/zynq/slcr.h
-> @@ -25,5 +25,6 @@ extern void zynq_slcr_cpu_start(int cpu);
->  extern bool zynq_slcr_cpu_state_read(int cpu);
->  extern void zynq_slcr_cpu_state_write(int cpu, bool die);
->  extern u32 zynq_slcr_get_device_id(void);
-> +extern u32 zynq_slcr_get_ocm_config(void);
+> We have achieved 1 and 2. And seems we could also achieve 3 by
+> converting all arch specific PCI MSI code to use hierarchy
+> irqdomain. But not sure whether we could achieve 4, not familiar
+> with ARM world:)
 
-I still believe we should consolidate this somehow instead of adding
-another function for each and every register that might have to be read
-by something else.
+Killing all the weak functions shouldn't be a problem for ARM, we're
+trying very hard not to rely on them.
 
-Usage of syscon/regmap might be an option. Or probably something like:
-enum zynq_slcr_reg {
-	zynq_slcr_ocm_cfg,
-	zynq_slcr_device_id,
-	...
-};
-u32 zyn_slcr_read(enum zynq_slcr_reg id)
-{
-	switch (id) {
-	case ...
-}
+Killing msi_chip is a different story, as this is what we use to match a
+PCI host controller with its MSI controller (that's what the of_node
+field in msi_chip is for). See drivers/of/of_pci.c for details.
 
-	Sören
+Also, we use msi_chip directly in the MSI drivers as a way to go from a
+pci_dev to the MSI controller specific structure:
+
+http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3-its.c?h=irq/stacked-its-v2#n1143
+
+If we're going to kill msi_chip, we must make sure we have mechanisms
+that allow the conversion of the existing code.
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
+
