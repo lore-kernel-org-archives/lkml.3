@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaKNAUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:20:35 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:38830 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464AbaKNAUO (ORCPT
+	id S1754462AbaKNAUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:20:13 -0500
+Received: from exprod5og117.obsmtp.com ([64.18.0.149]:34637 "HELO
+	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754366AbaKNAUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:20:14 -0500
-Subject: Re: [PATCH] x86: remove arbitrary instruction size limit in
- instruction decoder
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com, x86@kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        jkenisto@us.ibm.com, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
-        ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        masami.hiramatsu.pt@hitachi.com
-In-Reply-To: <20141112225352.D49917A8@viggo.jf.intel.com>
-References: <20141112225352.D49917A8@viggo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Nov 2014 16:20:07 -0800
-Message-ID: <1415924407.4306.2.camel@oc1026406570.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111400-8236-0000-0000-000006E92735
+	Thu, 13 Nov 2014 19:20:03 -0500
+From: Feng Kan <fkan@apm.com>
+To: patches@apm.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, =devicetree@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>, Bao Truong <btruong@apm.com>
+Subject: [PATCH V2 1/7] arm64: dts: Add APM X-Gene USB DTS node
+Date: Thu, 13 Nov 2014 16:19:55 -0800
+Message-Id: <1415924401-3013-2-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415924401-3013-1-git-send-email-fkan@apm.com>
+References: <1415924401-3013-1-git-send-email-fkan@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-12 at 14:53 -0800, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> The current x86 instruction decoder steps along through the
-> instruction stream but always ensures that it never steps farther
-> than the largest possible instruction size (MAX_INSN_SIZE).
-...
+This parch adds the device tree nodes for APM X-Gnene USB host controller.
+Since X-Gene SOC supports maximum 2 USB ports, 2 dts node are added.
 
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Signed-off-by: Bao Truong <btruong@apm.com>
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ arch/arm64/boot/dts/apm-storm.dtsi | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
+index 295c72d..6b4c577 100644
+--- a/arch/arm64/boot/dts/apm-storm.dtsi
++++ b/arch/arm64/boot/dts/apm-storm.dtsi
+@@ -587,6 +587,22 @@
+ 			phy-names = "sata-phy";
+ 		};
+ 
++		usb0: dwusb@19000000 {
++			status = "disabled";
++			compatible = "xhci-platform";
++			reg =  <0x0 0x19000000 0x0 0x100000>;
++			interrupts = <0x0 0x89 0x4>;
++			dma-coherent;
++		};
++
++		usb1: dwusb@19800000 {
++			status = "disabled";
++			compatible = "xhci-platform";
++			reg =  <0x0 0x19800000 0x0 0x100000>;
++			interrupts = <0x0 0x8a 0x4>;
++			dma-coherent;
++		};
++
+ 		rtc: rtc@10510000 {
+ 			compatible = "apm,xgene-rtc";
+ 			reg = <0x0 0x10510000 0x0 0x400>;
+-- 
+1.9.1
 
