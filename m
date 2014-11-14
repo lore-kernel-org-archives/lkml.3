@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965704AbaKNPyl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:54:41 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63794 "EHLO
+	id S1161152AbaKNPyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:54:46 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63797 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964875AbaKNPyj (ORCPT
+	by vger.kernel.org with ESMTP id S964875AbaKNPym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:54:39 -0500
+	Fri, 14 Nov 2014 10:54:42 -0500
 From: Andre Przywara <andre.przywara@arm.com>
 To: will.deacon@arm.com, catalin.marinas@arm.com
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] arm64: add Cortex-A53 cache errata workaround
-Date: Fri, 14 Nov 2014 15:54:10 +0000
-Message-Id: <1415980452-20366-5-git-send-email-andre.przywara@arm.com>
+Subject: [PATCH 2/6] arm64: add alternative runtime patching
+Date: Fri, 14 Nov 2014 15:54:08 +0000
+Message-Id: <1415980452-20366-3-git-send-email-andre.przywara@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1415980452-20366-1-git-send-email-andre.przywara@arm.com>
 References: <1415980452-20366-1-git-send-email-andre.przywara@arm.com>
@@ -20,158 +20,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ARM errata 819472, 826319, 827319 and 824069 define the same
-workaround for these hardware issues in certain Cortex-A53 parts.
-Use the new alternatives framework and the CPU MIDR detection to
-patch "cache clean" into "cache clean and invalidate" instructions if
-an affected CPU is detected at runtime.
+With a blatant copy of some x86 bits we introduce the alternative
+runtime patching "framework" to arm64.
+This is quite basic for now and we only provide the functions we need
+at this time.
+This is connected to the newly introduced feature bits.
 
 Signed-off-by: Andre Przywara <andre.przywara@arm.com>
 ---
- arch/arm64/include/asm/alternative-asm.h |   13 ++++++++++++
- arch/arm64/include/asm/cpufeature.h      |    8 +++++++-
- arch/arm64/include/asm/cputype.h         |    5 +++++
- arch/arm64/kernel/cpu_errata.c           |   32 +++++++++++++++++++++++++++++-
- arch/arm64/mm/cache.S                    |    4 +++-
- 5 files changed, 59 insertions(+), 3 deletions(-)
+ arch/arm64/include/asm/alternative-asm.h |   16 ++++++++
+ arch/arm64/include/asm/alternative.h     |   43 ++++++++++++++++++++
+ arch/arm64/kernel/Makefile               |    2 +-
+ arch/arm64/kernel/alternative.c          |   64 ++++++++++++++++++++++++++++++
+ arch/arm64/kernel/smp.c                  |    2 +
+ arch/arm64/kernel/vmlinux.lds.S          |   11 +++++
+ arch/arm64/mm/init.c                     |    2 +
+ 7 files changed, 139 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/include/asm/alternative-asm.h
+ create mode 100644 arch/arm64/include/asm/alternative.h
+ create mode 100644 arch/arm64/kernel/alternative.c
 
 diff --git a/arch/arm64/include/asm/alternative-asm.h b/arch/arm64/include/asm/alternative-asm.h
-index 5ee9340..919a678 100644
---- a/arch/arm64/include/asm/alternative-asm.h
+new file mode 100644
+index 0000000..5ee9340
+--- /dev/null
 +++ b/arch/arm64/include/asm/alternative-asm.h
-@@ -11,6 +11,19 @@
- 	.byte \alt_len
- .endm
- 
-+.macro alternative_insn insn1 insn2 cap
-+661:	\insn1
-+662:	.pushsection .altinstructions, "a"
-+	altinstruction_entry 661b, 663f, \cap, 662b-661b, 664f-663f
-+	.popsection
-+	.pushsection .altinstr_replacement, "ax"
-+663:	\insn2
-+664:	.popsection
-+	.if ((664b-663b) != (662b-661b))
-+		.error "Alternatives instruction length mismatch"
-+	.endif
+@@ -0,0 +1,16 @@
++#ifndef __ASM_ALTERNATIVE_ASM_H
++#define __ASM_ALTERNATIVE_ASM_H
++
++#ifdef __ASSEMBLY__
++
++.macro altinstruction_entry orig_offset alt_offset feature orig_len alt_len
++	.word \orig_offset - .
++	.word \alt_offset - .
++	.hword \feature
++	.byte \orig_len
++	.byte \alt_len
 +.endm
 +
- #endif  /*  __ASSEMBLY__  */
- 
- #endif /* __ASM_ALTERNATIVE_ASM_H */
-diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
-index 744eaf7..92b6ee4 100644
---- a/arch/arm64/include/asm/cpufeature.h
-+++ b/arch/arm64/include/asm/cpufeature.h
-@@ -21,7 +21,11 @@
- #define MAX_CPU_FEATURES	(8 * sizeof(elf_hwcap))
- #define cpu_feature(x)		ilog2(HWCAP_ ## x)
- 
--#define NCAPS			0
-+#define ARM64_WORKAROUND_CLEAN_CACHE	0
++#endif  /*  __ASSEMBLY__  */
 +
-+#define NCAPS				1
++#endif /* __ASM_ALTERNATIVE_ASM_H */
+diff --git a/arch/arm64/include/asm/alternative.h b/arch/arm64/include/asm/alternative.h
+new file mode 100644
+index 0000000..f6d206e
+--- /dev/null
++++ b/arch/arm64/include/asm/alternative.h
+@@ -0,0 +1,43 @@
++#ifndef __ASM_ALTERNATIVE_H
++#define __ASM_ALTERNATIVE_H
 +
-+#ifndef __ASSEMBLY__
- 
- extern DECLARE_BITMAP(cpu_hwcaps, NCAPS);
- 
-@@ -48,4 +52,6 @@ static inline void cpus_set_cap(unsigned int num)
- 
- void check_local_cpu_errata(void);
- 
-+#endif /* __ASSEMBLY__ */
++#include <linux/types.h>
++#include <linux/stddef.h>
++#include <linux/stringify.h>
 +
- #endif
-diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
-index 379d0b8..8adb986 100644
---- a/arch/arm64/include/asm/cputype.h
-+++ b/arch/arm64/include/asm/cputype.h
-@@ -57,6 +57,11 @@
- #define MIDR_IMPLEMENTOR(midr)	\
- 	(((midr) & MIDR_IMPLEMENTOR_MASK) >> MIDR_IMPLEMENTOR_SHIFT)
- 
-+#define MIDR_CPU_PART(imp, partnum) \
-+	(((imp)			<< MIDR_IMPLEMENTOR_SHIFT) | \
-+	(0xf			<< MIDR_ARCHITECTURE_SHIFT) | \
-+	((partnum)		<< MIDR_PARTNUM_SHIFT))
++struct alt_instr {
++	s32 orig_offset;	/* offset to original instruction */
++	s32 alt_offset;		/* offset to replacement instruction */
++	u16 cpufeature;		/* cpufeature bit set for replacement */
++	u8  orig_len;		/* size of original instruction(s) */
++	u8  alt_len;		/* size of new instruction(s), <= orig_len */
++};
 +
- #define ARM_CPU_IMP_ARM		0x41
- #define ARM_CPU_IMP_APM		0x50
- 
-diff --git a/arch/arm64/kernel/cpu_errata.c b/arch/arm64/kernel/cpu_errata.c
-index 9332cf7..875fb2c 100644
---- a/arch/arm64/kernel/cpu_errata.c
-+++ b/arch/arm64/kernel/cpu_errata.c
-@@ -23,6 +23,8 @@
- #include <asm/cputype.h>
- #include <asm/cpufeature.h>
- 
-+#define MIDR_CORTEX_A53 MIDR_CPU_PART(ARM_CPU_IMP_ARM, ARM_CPU_PART_CORTEX_A53)
++void apply_alternatives(void);
++void free_alternatives_memory(void);
 +
- /*
-  * Add a struct or another datatype to the union below if you need
-  * different means to detect an affected CPU.
-@@ -39,8 +41,36 @@ struct arm64_cpu_capabilities {
- 	};
- };
- 
-+#define CPU_MODEL_MASK (MIDR_IMPLEMENTOR_MASK | MIDR_PARTNUM_MASK | \
-+			MIDR_ARCHITECTURE_MASK)
++#define ALTINSTR_ENTRY(feature)						      \
++	" .word 661b - .\n"				/* label           */ \
++	" .word 663f - .\n"				/* new instruction */ \
++	" .hword " __stringify(feature) "\n"		/* feature bit     */ \
++	" .byte 662b-661b\n"				/* source len      */ \
++	" .byte 664f-663f\n"				/* replacement len */
 +
-+static bool is_affected_midr_range(struct arm64_cpu_capabilities *entry)
++/* alternative assembly primitive: */
++#define ALTERNATIVE(oldinstr, newinstr, feature)			\
++	"661:\n\t"							\
++	oldinstr "\n"							\
++	"662:\n"							\
++	".pushsection .altinstructions,\"a\"\n"				\
++	ALTINSTR_ENTRY(feature)						\
++	".popsection\n"							\
++	".pushsection .altinstr_replacement, \"a\"\n"			\
++	"663:\n\t"							\
++	newinstr "\n"							\
++	"664:\n\t"							\
++	".popsection\n\t"						\
++	".if ((664b-663b) != (662b-661b))\n\t"				\
++	"	.error \"Alternatives instruction length mismatch\"\n\t"\
++	".endif\n"
++
++#endif /* __ASM_ALTERNATIVE_H */
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index 5bd029b..65b5a8e 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -15,7 +15,7 @@ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
+ 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
+ 			   sys.o stacktrace.o time.o traps.o io.o vdso.o	\
+ 			   hyp-stub.o psci.o cpu_ops.o insn.o return_address.o	\
+-			   cpuinfo.o
++			   cpuinfo.o alternative.o
+ 
+ arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
+ 					   sys_compat.o
+diff --git a/arch/arm64/kernel/alternative.c b/arch/arm64/kernel/alternative.c
+new file mode 100644
+index 0000000..5992ea4
+--- /dev/null
++++ b/arch/arm64/kernel/alternative.c
+@@ -0,0 +1,64 @@
++/*
++ * alternative runtime patching
++ * inspired by the x86 version
++ *
++ * Copyright (C) 2014 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#define pr_fmt(fmt) "alternative: " fmt
++
++#include <linux/init.h>
++#include <linux/cpu.h>
++#include <asm/cacheflush.h>
++#include <asm/alternative.h>
++#include <asm/cpufeature.h>
++#include <linux/stop_machine.h>
++
++extern struct alt_instr __alt_instructions[], __alt_instructions_end[];
++
++static int __apply_alternatives(void *dummy)
 +{
-+	u32 midr = read_cpuid_id();
++	struct alt_instr *alt;
++	u8 *origptr, *replptr;
 +
-+	if ((midr & CPU_MODEL_MASK) != entry->midr_model)
-+		return false;
++	for (alt = __alt_instructions; alt < __alt_instructions_end; alt++) {
++		if (!cpus_have_cap(alt->cpufeature))
++			continue;
 +
-+	midr &= MIDR_REVISION_MASK | MIDR_VARIANT_MASK;
++		BUG_ON(alt->alt_len > alt->orig_len);
 +
-+	return (midr >= entry->midr_range_min && midr <= entry->midr_range_max);
++		pr_info_once("patching kernel code\n");
++
++		origptr = (u8 *)&alt->orig_offset + alt->orig_offset;
++		replptr = (u8 *)&alt->alt_offset + alt->alt_offset;
++		memcpy(origptr, replptr, alt->alt_len);
++		flush_icache_range((uintptr_t)origptr,
++				   (uintptr_t)(origptr + alt->alt_len));
++	}
++
++	return 0;
 +}
 +
-+#define MIDR_RANGE(model, min, max) \
-+	.is_affected = is_affected_midr_range, \
-+	.midr_model = model, \
-+	.midr_range_min = min, \
-+	.midr_range_max = max
++void apply_alternatives(void)
++{
++	/* better not try code patching on a live SMP system */
++	stop_machine(__apply_alternatives, NULL, NULL);
++}
 +
- struct arm64_cpu_capabilities arm64_errata[] = {
--	{}
-+	{
-+	/* Cortex-A53 r0p[012] */
-+		.desc = "ARM errata 826319, 827319, 824069",
-+		.capability = ARM64_WORKAROUND_CLEAN_CACHE,
-+		MIDR_RANGE(MIDR_CORTEX_A53, 0x00, 0x02),
-+	},
-+	{
++void free_alternatives_memory(void)
++{
++	free_reserved_area(__alt_instructions, __alt_instructions_end,
++			   0, "alternatives");
++}
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index b06d1d9..0ef8789 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -37,6 +37,7 @@
+ #include <linux/of.h>
+ #include <linux/irq_work.h>
+ 
++#include <asm/alternative.h>
+ #include <asm/atomic.h>
+ #include <asm/cacheflush.h>
+ #include <asm/cpu.h>
+@@ -309,6 +310,7 @@ void cpu_die(void)
+ void __init smp_cpus_done(unsigned int max_cpus)
+ {
+ 	pr_info("SMP: Total of %d processors activated.\n", num_online_cpus());
++	apply_alternatives();
+ }
+ 
+ void __init smp_prepare_boot_cpu(void)
+diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+index edf8715..2f60029 100644
+--- a/arch/arm64/kernel/vmlinux.lds.S
++++ b/arch/arm64/kernel/vmlinux.lds.S
+@@ -100,6 +100,17 @@ SECTIONS
+ 	. = ALIGN(PAGE_SIZE);
+ 	__init_end = .;
+ 
++	. = ALIGN(4);
++	.altinstructions : {
++		__alt_instructions = .;
++		*(.altinstructions)
++		__alt_instructions_end = .;
 +	}
- };
++	.altinstr_replacement : {
++		*(.altinstr_replacement)
++	}
++
++	. = ALIGN(PAGE_SIZE);
+ 	_data = .;
+ 	_sdata = .;
+ 	RW_DATA_SECTION(64, PAGE_SIZE, THREAD_SIZE)
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+index 494297c..bac492c 100644
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -39,6 +39,7 @@
+ #include <asm/setup.h>
+ #include <asm/sizes.h>
+ #include <asm/tlb.h>
++#include <asm/alternative.h>
  
- void check_local_cpu_errata(void)
-diff --git a/arch/arm64/mm/cache.S b/arch/arm64/mm/cache.S
-index 2366383..8eaf185 100644
---- a/arch/arm64/mm/cache.S
-+++ b/arch/arm64/mm/cache.S
-@@ -20,6 +20,8 @@
- #include <linux/linkage.h>
- #include <linux/init.h>
- #include <asm/assembler.h>
-+#include <asm/cpufeature.h>
-+#include <asm/alternative-asm.h>
+ #include "mm.h"
  
- #include "proc-macros.S"
+@@ -325,6 +326,7 @@ void __init mem_init(void)
+ void free_initmem(void)
+ {
+ 	free_initmem_default(0);
++	free_alternatives_memory();
+ }
  
-@@ -210,7 +212,7 @@ __dma_clean_range:
- 	dcache_line_size x2, x3
- 	sub	x3, x2, #1
- 	bic	x0, x0, x3
--1:	dc	cvac, x0			// clean D / U line
-+1:	alternative_insn "dc cvac, x0", "dc civac, x0", ARM64_WORKAROUND_CLEAN_CACHE
- 	add	x0, x0, x2
- 	cmp	x0, x1
- 	b.lo	1b
+ #ifdef CONFIG_BLK_DEV_INITRD
 -- 
 1.7.9.5
 
