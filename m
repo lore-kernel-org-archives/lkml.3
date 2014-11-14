@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161738AbaKNR4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 12:56:34 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38601 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161640AbaKNR4c (ORCPT
+	id S1161759AbaKNR4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 12:56:51 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:49710 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161632AbaKNR4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 12:56:32 -0500
-Date: Fri, 14 Nov 2014 17:55:02 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, sameo@linux.intel.com, lee.jone@linaro.org,
-        lgirdwood@gmail.com, sre@kernel.org, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, cw00.choi@samsung.com, geunsik.lim@samsung.com,
-        inki.dae@samsung.com, sw0312.kim@samsung.com
-Message-ID: <20141114175502.GL3815@sirena.org.uk>
-References: <1415794082-30277-1-git-send-email-beomho.seo@samsung.com>
- <1415794082-30277-3-git-send-email-beomho.seo@samsung.com>
+	Fri, 14 Nov 2014 12:56:49 -0500
+Message-ID: <5466425D.1060100@cogentembedded.com>
+Date: Fri, 14 Nov 2014 20:56:45 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+msPJjaBje60IBrx"
-Content-Disposition: inline
-In-Reply-To: <1415794082-30277-3-git-send-email-beomho.seo@samsung.com>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 2/5] regulator: rt5033: Add RT5033 Regulator device
- driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Dave Hansen <dave@sr71.net>, hpa@zytor.com
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, qiaowei.ren@intel.com,
+        dave.hansen@linux.intel.com
+Subject: Re: [PATCH 05/11] x86, mpx: add MPX to disaabled features
+References: <20141114151816.F56A3072@viggo.jf.intel.com> <20141114151823.B358EAD2@viggo.jf.intel.com>
+In-Reply-To: <20141114151823.B358EAD2@viggo.jf.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---+msPJjaBje60IBrx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 11/14/2014 06:18 PM, Dave Hansen wrote:
 
-On Wed, Nov 12, 2014 at 09:07:59PM +0900, Beomho Seo wrote:
-> This patch add device driver of Richtek RT5033 PMIC.
-> The driver support multiple regulator like LDO and synchronous Buck.
+> From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Applied, thanks.
+> This allows us to use cpu_feature_enabled(X86_FEATURE_MPX) as
+> both a runtime and compile-time check.
 
---+msPJjaBje60IBrx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> When CONFIG_X86_INTEL_MPX is disabled,
+> cpu_feature_enabled(X86_FEATURE_MPX) will evaluate at
+> compile-time to 0. If CONFIG_X86_INTEL_MPX=y, then the cpuid
+> flag will be checked at runtime.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
 
-iQEcBAEBAgAGBQJUZkH1AAoJECTWi3JdVIfQpMsH/RCG1UZh7KNXgIB5zwmI08E7
-zw+CEGw98x1TL/N1ANdUiVq0SpjF7LV8/kfIQKIsiUP6xsQEKrxiRtpefMEFUnPQ
-ONkL4k++SB2BMQBDhacKYdQxq1p7YrkKqrAwOUru7MRgk2n4pJ3LsZwDIH68iylU
-uqeI7YMzUP7o6MAc+yZQF/BorjyJ9FUEj59QEcc0/5HHmKCrDIZQsnQdWV57DVt5
-H271/qDkLpwrJvQKBTWtZsTWvXmMFMcWI/DZ7wcfBL6ejdReHRqu2TOmxUKnRGvS
-59Dpgbuvj7Qv0l72yJzfyRW0eIPLNTziqd7t+FzeQ8TK5djoDYyC51kEy1qhdx4=
-=pfhN
------END PGP SIGNATURE-----
+>   b/arch/x86/include/asm/disabled-features.h |    8 +++++++-
+>   1 file changed, 7 insertions(+), 1 deletion(-)
 
---+msPJjaBje60IBrx--
+> diff -puN arch/x86/include/asm/disabled-features.h~mpx-v11-add-MPX-to-disaabled-features arch/x86/include/asm/disabled-features.h
+> --- a/arch/x86/include/asm/disabled-features.h~mpx-v11-add-MPX-to-disaabled-features	2014-11-14 07:06:22.297610243 -0800
+> +++ b/arch/x86/include/asm/disabled-features.h	2014-11-14 07:06:22.300610378 -0800
+[...]
+> @@ -34,6 +40,6 @@
+>   #define DISABLED_MASK6	0
+>   #define DISABLED_MASK7	0
+>   #define DISABLED_MASK8	0
+> -#define DISABLED_MASK9	0
+> +#define DISABLED_MASK9	(DISABLE_MPX)
+
+    These parens are not really needed. Sorry to be a PITA and not saying this 
+before.
+
+[...]
+
+WBR, Sergei
+
