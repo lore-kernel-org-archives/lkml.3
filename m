@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934914AbaKNCet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 21:34:49 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:26228 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934682AbaKNCes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 21:34:48 -0500
-Date: Thu, 13 Nov 2014 21:34:36 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2 3/3] trace: Replace single-character seq_puts with
- seq_putc
-Message-ID: <20141113213436.347351cb@gandalf.local.home>
-In-Reply-To: <1415479332-25944-4-git-send-email-linux@rasmusvillemoes.dk>
-References: <1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
-	<1415479332-25944-1-git-send-email-linux@rasmusvillemoes.dk>
-	<1415479332-25944-4-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S934908AbaKNCvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 21:51:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933080AbaKNCvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 21:51:39 -0500
+From: Steve Grubb <sgrubb@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: Paul Moore <pmoore@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, eparis@parisplace.org
+Subject: Re: [PATCH] audit: convert status version to a feature bitmap
+Date: Thu, 13 Nov 2014 21:51:36 -0500
+Message-ID: <2673987.auILhPtmMS@x2>
+Organization: Red Hat
+User-Agent: KMail/4.14.2 (Linux/3.17.2-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20141114010852.GB5960@madcap2.tricolour.ca>
+References: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com> <1745832.tbkjBzSGxr@sifl> <20141114010852.GB5960@madcap2.tricolour.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  8 Nov 2014 21:42:12 +0100
-Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
-
-> Printing a single character to a seqfile might as well be done with
-> seq_putc instead of seq_puts; this avoids a strlen() call and a memory
-> access. It also shaves another few bytes off the generated code.
+On Thursday, November 13, 2014 08:08:52 PM Richard Guy Briggs wrote:
+> > So what terrible things happen to userspace if
+> > AUDIT_VERSION_BACKLOG_WAIT_TIME  becomes 0x03 instead of 0x02?
 > 
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  kernel/trace/ftrace.c                |  2 +-
->  kernel/trace/trace_events_trigger.c  |  4 ++--
->  kernel/trace/trace_functions_graph.c |  4 ++--
->  kernel/trace/trace_kprobe.c          | 10 +++++-----
->  kernel/trace/trace_printk.c          |  2 +-
->  kernel/trace/trace_uprobe.c          |  4 ++--
->  6 files changed, 13 insertions(+), 13 deletions(-)
+> But it won't.  It gets the value of
+> AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME, which is 0x00000002.
 > 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 7890718..9ffd006 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -2969,7 +2969,7 @@ static int t_show(struct seq_file *m, void *v)
->  		}
->  	}	
->  
-> -	seq_puts(m, "\n");
-> +	seq_putc(m, '\n');
+> I think you meant to ask about AUDIT_VERSION_LATEST, which would become 3.
+> 
+> You *did* already ask that question in a previous thread, and there
+> didn't seem to be a concern.  Steve Grubb could likely answer this
+> question better than me.
 
-Ah, you did it here. Well, it is fine to have it in the first patch
-anyway.
+The audit 2.4.1 package has been pushed to everything from F20 -> rawhide. If 
+you don't see any problems, then its safe. But check carefully around the 
+things that you did change. Right now, we only are caring about only one 
+kernel feature, --loginuid-immutable. Check that it still works, auditctl -s.
 
--- Steve
-
+-Steve
