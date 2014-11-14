@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161022AbaKNOnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:43:33 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:57880 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965179AbaKNOnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:43:31 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
-        Johan Hovold <johan@kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: drivers for 3.19 #1
-Date: Fri, 14 Nov 2014 15:43:30 +0100
-Message-ID: <1415976210-3665-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-Organization: atmel
+	id S1161074AbaKNOoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:44:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161026AbaKNOoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 09:44:18 -0500
+Message-ID: <54661530.6090301@redhat.com>
+Date: Fri, 14 Nov 2014 15:44:00 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Igor Mammedov <imammedo@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        yoshikawa_takuya_b1@lab.ntt.co.jp
+Subject: Re: [PATCH 1/3] kvm: memslots: track id_to_index changes during the
+ insertion sort
+References: <1415963522-5255-1-git-send-email-pbonzini@redhat.com> <1415963522-5255-2-git-send-email-pbonzini@redhat.com> <20141114133500.GA10593@potion.brq.redhat.com> <20141114151725.55774165@igors-macbook-pro.local> <20141114144135.GC27697@potion.brq.redhat.com>
+In-Reply-To: <20141114144135.GC27697@potion.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
 
-This is a pull-request about AT91-related drivers that are easier to take via
-arm-soc.
 
-There is a little merge conflict with the "cleanup" branch because of removal
-of at91sam9g45 and at91sam9rl legacy code. The resolution is pretty simple but
-you can have a look at the resolution example here:
-https://git.kernel.org/cgit/linux/kernel/git/nferre/linux-at91.git/log/?h=at91-next
+On 14/11/2014 15:41, Radim Krčmář wrote:
+> Yes, your improvement is great and would work even for higher amounts.
+> 
+> I meant that our lookup is currently pretty sad -- O(N) that is
+> presumably optimized by looking at the largest regions first.
 
-Thanks, best regards,
+Yes, that's the optimization.
 
-The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+> Maybe we would benefit from O(log N) lookup even with 128 memslots.
 
-  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+Maybe, but the common case so far is about 10, and all but two of them
+are only used at boot time. :)
 
-are available in the git repository at:
+Perhaps we could add a one-item MRU cache, that could help lookups a
+bit.  That's what QEMU does too, by the way.  It used to sort the list
+in MRU-to-LRU order, but that wasn't too thread-friendly so it was
+switched to biggest-to-smallest (with inspiration taken from KVM).
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-drivers
-
-for you to fetch changes up to 2c91e61dc97cce57ffd9dd654a6ee284e1f45a1f:
-
-  rtc: at91sam9: add DT bindings documentation (2014-11-13 16:08:48 +0100)
-
-----------------------------------------------------------------
-First batch of drivers for 3.19:
-It is only about a not so recent driver for old platforms: RTT as RTC driver:
-- RTT as RTC driver enhancements and machine specific include files removal
-- RTT as RTC driver conversion to device tree
-
-----------------------------------------------------------------
-Boris BREZILLON (9):
-      rtc: at91sam9: remove references to mach specific headers
-      rtc: at91sam9: use standard readl/writel functions instead of raw versions
-      rtc: at91sam9: replace devm_ioremap by devm_ioremap_resource
-      rtc: at91sam9: add DT support
-      rtc: at91sam9: make use of syscon/regmap to access GPBR registers
-      rtc: at91sam9: rework the Kconfig description
-      ARM: at91: add clk_lookup entry for RTT devices
-      rtc: at91sam9: use clk API instead of relying on AT91_SLOW_CLOCK
-      rtc: at91sam9: add DT bindings documentation
-
- .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt |  23 ++++
- arch/arm/mach-at91/at91sam9260.c                   |   2 +
- arch/arm/mach-at91/at91sam9261.c                   |   2 +
- arch/arm/mach-at91/at91sam9263.c                   |   4 +
- arch/arm/mach-at91/at91sam9g45.c                   |   2 +
- arch/arm/mach-at91/at91sam9rl.c                    |   2 +
- arch/arm/mach-at91/clock.c                         |   2 +-
- arch/arm/mach-at91/clock.h                         |   1 +
- drivers/rtc/Kconfig                                |  24 ++--
- drivers/rtc/rtc-at91sam9.c                         | 138 ++++++++++++++++-----
- 10 files changed, 162 insertions(+), 38 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-
--- 
-Nicolas Ferre
+Paolo
