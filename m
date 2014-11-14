@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161805AbaKNSsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 13:48:40 -0500
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:35785 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161603AbaKNSsg (ORCPT
+	id S1161787AbaKNSsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 13:48:39 -0500
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:55289 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161589AbaKNSsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 13:48:36 -0500
+	Fri, 14 Nov 2014 13:48:35 -0500
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Mark Brown <broonie@kernel.org>
 Cc: Andrew Bresticker <abrestic@chromium.org>,
@@ -19,74 +19,42 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-spi@vger.kernel.org
-Subject: [PATCH V3 1/2] spi: Add binding document for IMG SPFI controller
-Date: Fri, 14 Nov 2014 10:48:31 -0800
-Message-Id: <1415990912-31744-2-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V3 0/2] spi: IMG SPFI driver
+Date: Fri, 14 Nov 2014 10:48:30 -0800
+Message-Id: <1415990912-31744-1-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1415990912-31744-1-git-send-email-abrestic@chromium.org>
-References: <1415990912-31744-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Synchronous Peripheral Flash Interface (SPFI) controller found
-on IMG SoCs supports single, dual, and (optionally) quad mode SPI
-transfers.
+This series adds support for the Sychronous Peripheral Flash Interface
+master found on IMG SoCs.  The controller supports up to 5 chip-select
+lines and single, dual, and optionally quad, mode transfers.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-No changes from v2.
+Tested on a platform using the MIPS-based Pistachio SoC with additional
+out-of-tree patches - support for Pistachio will be submitted soon.
+
+Based on 3.18-rc4.
+
+Changes from v2:
+ - fixed build errors due to missing #include
 Changes from v1:
- - spi-img.txt -> spi-img-spfi.txt
- - fixed commit subject
----
- .../devicetree/bindings/spi/spi-img-spfi.txt       | 37 ++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-img-spfi.txt
+ - added runtime PM support
+ - renamed spi-img -> spi-img-spfi
+ - addressed Mark's review comments
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-img-spfi.txt b/Documentation/devicetree/bindings/spi/spi-img-spfi.txt
-new file mode 100644
-index 0000000..c7dd50f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-img-spfi.txt
-@@ -0,0 +1,37 @@
-+IMG Synchronous Peripheral Flash Interface (SPFI) controller
-+
-+Required properties:
-+- compatible: Must be "img,spfi".
-+- reg: Must contain the base address and length of the SPFI registers.
-+- interrupts: Must contain the SPFI interrupt.
-+- clocks: Must contain an entry for each entry in clock-names.
-+  See ../clock/clock-bindings.txt for details.
-+- clock-names: Must include the following entries:
-+  - spfi: SPI operating clock
-+  - sys: SPI system interface clock
-+- dmas: Must contain an entry for each entry in dma-names.
-+  See ../dma/dma.txt for details.
-+- dma-names: Must include the following entries:
-+  - rx
-+  - tx
-+- #address-cells: Must be 1.
-+- #size-cells: Must be 0.
-+
-+Optional properties:
-+- img,supports-quad-mode: Should be set if the interface supports quad mode
-+  SPI transfers.
-+
-+Example:
-+
-+spi@18100f00 {
-+	compatible = "img,spfi";
-+	reg = <0x18100f00 0x100>;
-+	interrupts = <GIC_SHARED 22 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&spi_clk>, <&system_clk>;
-+	clock-names = "spfi", "sys";
-+	dmas = <&mdc 9 0xffffffff 0>, <&mdc 10 0xffffffff 0>;
-+	dma-names = "rx", "tx";
-+
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+};
+Andrew Bresticker (2):
+  spi: Add binding document for IMG SPFI controller
+  spi: Add driver for IMG SPFI controller
+
+ .../devicetree/bindings/spi/spi-img-spfi.txt       |  37 +
+ drivers/spi/Kconfig                                |   7 +
+ drivers/spi/Makefile                               |   1 +
+ drivers/spi/spi-img-spfi.c                         | 746 +++++++++++++++++++++
+ 4 files changed, 791 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-img-spfi.txt
+ create mode 100644 drivers/spi/spi-img-spfi.c
+
 -- 
 2.1.0.rc2.206.gedb03e5
 
