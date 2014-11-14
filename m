@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422777AbaKNV7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 16:59:52 -0500
-Received: from mail-oi0-f74.google.com ([209.85.218.74]:54139 "EHLO
-	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422730AbaKNV7s (ORCPT
+	id S1422759AbaKNV7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 16:59:50 -0500
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:45764 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422676AbaKNV7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 16:59:48 -0500
+	Fri, 14 Nov 2014 16:59:47 -0500
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
 Cc: Andrew Bresticker <abrestic@chromium.org>,
@@ -21,90 +21,49 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Damien Horsley <Damien.Horsley@imgtec.com>,
         Arnd Bergmann <arnd@arndb.de>, dmaengine@vger.kernel.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 1/2] dmaengine: Add binding document for IMG MDC
-Date: Fri, 14 Nov 2014 13:59:42 -0800
-Message-Id: <1416002384-3525-2-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V2 0/2] dmaengine: Support for IMG MDC
+Date: Fri, 14 Nov 2014 13:59:41 -0800
+Message-Id: <1416002384-3525-1-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1416002384-3525-1-git-send-email-abrestic@chromium.org>
-References: <1416002384-3525-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a binding document for the IMG Multi-threaded DMA Controller (MDC)
-present on the MIPS-based Pistachio and other IMG SoCs.
+This series adds support for the IMG Multi-threaded DMA Controller (MDC)
+which is found on IMG SoCs.  Currently this driver only supports the
+variant found on the MIPS-based Pistachio SoC.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-No changes from v1.
----
- .../devicetree/bindings/dma/img-mdc-dma.txt        | 57 ++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
+The MDC supports slave and memory-to-memory transfers on up to 32 channels.
+Requests from channels are handled by MDC threads.  Thread assignments are
+per-channel and are specified in the device-tree.
+
+Tested on a platform based on the Pistachio SoC with additional patches.
+Support for Pistachio will be submitted later.  Slave DMA was tested
+with the recently submitted IMG SPFI driver [1] and memory-to-memory
+DMA was tested with the dmatest module.
+
+Based on Vinod's slave-dma/next + Maxime's device_control and slave caps
+cleanup series [2].
+
+Changes from v1:
+ - addressed Arnd's review comments
+ - rebased on Maxime's dmaengine cleanups
+
+[1] https://lkml.org/lkml/2014/11/12/763
+[2] https://lkml.org/lkml/2014/10/28/1067
+
+Andrew Bresticker (2):
+  dmaengine: Add binding document for IMG MDC
+  dmaengine: Add driver for IMG MDC
+
+ .../devicetree/bindings/dma/img-mdc-dma.txt        |  57 ++
+ drivers/dma/Kconfig                                |   9 +
+ drivers/dma/Makefile                               |   1 +
+ drivers/dma/img-mdc-dma.c                          | 973 +++++++++++++++++++++
+ 4 files changed, 1040 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/dma/img-mdc-dma.txt
+ create mode 100644 drivers/dma/img-mdc-dma.c
 
-diff --git a/Documentation/devicetree/bindings/dma/img-mdc-dma.txt b/Documentation/devicetree/bindings/dma/img-mdc-dma.txt
-new file mode 100644
-index 0000000..28c1341
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/img-mdc-dma.txt
-@@ -0,0 +1,57 @@
-+* IMG Multi-threaded DMA Controller (MDC)
-+
-+Required properties:
-+- compatible: Must be "img,pistachio-mdc-dma".
-+- reg: Must contain the base address and length of the MDC registers.
-+- interrupts: Must contain all the per-channel DMA interrupts.
-+- clocks: Must contain an entry for each entry in clock-names.
-+  See ../clock/clock-bindings.txt for details.
-+- clock-names: Must include the following entries:
-+  - sys: MDC system interface clock.
-+- img,cr-periph: Must contain a phandle to the peripheral control syscon
-+  node which contains the DMA request to channel mapping registers.
-+- img,max-burst-multiplier: Must be the maximum supported burst size multiplier.
-+  The maximum burst size is this value multiplied by the hardware-reported bus
-+  width.
-+- #dma-cells: Must be 3:
-+  - The first cell is the peripheral's DMA request line.
-+  - The second cell is a bitmap specifying to which channels the DMA request
-+    line may be mapped (i.e. bit N set indicates channel N is usable).
-+  - The third cell is the thread ID to be used by the channel.
-+
-+Optional properties:
-+- dma-channels: Number of supported DMA channels, up to 32.  If not specified
-+  the number reported by the hardware is used.
-+
-+Example:
-+
-+mdc: dma-controller@18143000 {
-+	compatible = "img,pistachio-mdc-dma";
-+	reg = <0x18143000 0x1000>;
-+	interrupts = <GIC_SHARED 27 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 28 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 29 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 30 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 31 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 32 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 33 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 34 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 35 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 36 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 37 IRQ_TYPE_LEVEL_HIGH>,
-+		     <GIC_SHARED 38 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&system_clk>;
-+	clock-names = "sys";
-+
-+	img,max-burst-multiplier = <16>;
-+	img,cr-periph = <&cr_periph>;
-+
-+	#dma-cells = <3>;
-+};
-+
-+spi@18100f00 {
-+	...
-+	dmas = <&mdc 9 0xffffffff 0>, <&mdc 10 0xffffffff 0>;
-+	dma-names = "tx", "rx";
-+	...
-+};
 -- 
 2.1.0.rc2.206.gedb03e5
 
