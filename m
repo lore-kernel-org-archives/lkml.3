@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934712AbaKNAyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:54:25 -0500
-Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:44487 "HELO
-	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S934546AbaKNAyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:54:23 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: "Vick, Matthew" <matthew.vick@intel.com>
-Subject: Re: [PATCHv2 net 1/2] fm10k: Check tunnel header length in encap offload
-Date: Thu, 13 Nov 2014 16:54:19 -0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "therbert@google.com" <therbert@google.com>,
-        "gerlitz.or@gmail.com" <gerlitz.or@gmail.com>,
-        "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1415921801-10452-1-git-send-email-joestringer@nicira.com> <D08A8E37.5FC83%matthew.vick@intel.com>
-In-Reply-To: <D08A8E37.5FC83%matthew.vick@intel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411131654.19998.joestringer@nicira.com>
+	id S934768AbaKNA7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:59:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42342 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933409AbaKNA7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 19:59:39 -0500
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 1/3] f2fs: reduce the number of inline_data inode before clearing it
+Date: Thu, 13 Nov 2014 16:59:32 -0800
+Message-Id: <1415926774-49230-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 13, 2014 16:41:03 Vick, Matthew wrote:
-> On 11/13/14, 3:36 PM, "Joe Stringer" <joestringer@nicira.com> wrote:
-> >fm10k supports up to 184 bytes of inner+outer headers. Add an initial
-> >check to fail encap offload if these are too large.
-> >
-> >Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> >---
-> >Matthew, I didn't see the equivalent patch on netdev so I went ahead and
-> >created it. If I've missed this somewhere, then please disregard.
-> >
-> >v2: First post.
-> 
-> You didn't miss it Joe--it just hasn't made it up yet. :) It's currently
-> in Jeff's tree for testing. You're on the CC for the patch, so you'll get
-> a notification once it goes up. It's basically the same as what you have,
-> except the #define I use is 184 and I use inner_tcp_hdrlen() to account
-> for the inner TCP header length.
-> 
-> Since your second patch should apply cleanly on top of mine, what do you
-> think about dropping the first patch in this series and Jeff can send our
-> two patches up together once they've passed testing?
+The # of inline_data inode is decreased only when it has inline_data.
+After clearing the flag, we can't decreased the number.
 
-Ah, that sounds great.
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+---
+ fs/f2fs/inline.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Cheers,
-Joe
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index 8b66109..2310670 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -116,8 +116,8 @@ no_update:
+ 	/* clear inline data and flag after data writeback */
+ 	truncate_inline_data(dn->inode_page, 0);
+ clear_out:
+-	f2fs_clear_inline_inode(dn->inode);
+ 	stat_dec_inline_inode(dn->inode);
++	f2fs_clear_inline_inode(dn->inode);
+ 	sync_inode_page(dn);
+ 	f2fs_put_dnode(dn);
+ 	return 0;
+-- 
+2.1.1
+
