@@ -1,100 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422688AbaKNU6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:58:12 -0500
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:50835 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161200AbaKNU6K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:58:10 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "balbi@ti.com" <balbi@ti.com>
-CC: "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>,
-        "matthijs@stdin.nl" <matthijs@stdin.nl>,
-        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv7 7/8] usb: dwc2: move usb_disabled() call to host
- driver only
-Thread-Topic: [PATCHv7 7/8] usb: dwc2: move usb_disabled() call to host
- driver only
-Thread-Index: AQHP/dN4r6syP3bW60qIHFvIYWVYGpxgnusg
-Date: Fri, 14 Nov 2014 20:58:08 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844EBCF2@US01WEMBX2.internal.synopsys.com>
-References: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
- <1415726020-19238-8-git-send-email-dinguyen@opensource.altera.com>
-In-Reply-To: <1415726020-19238-8-git-send-email-dinguyen@opensource.altera.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1161971AbaKNU6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:58:51 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:15012 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161200AbaKNU6t convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 15:58:49 -0500
+Date: Fri, 14 Nov 2014 15:58:47 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 18/23 v4] tracing: Add seq_buf_get_buf() and
+ seq_buf_commit() helper functions
+Message-ID: <20141114155847.5e82af8f@gandalf.local.home>
+In-Reply-To: <20141114153123.2e1d8db6@gandalf.local.home>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011412.977571447@goodmis.org>
+	<20141114171828.GD14538@dhcp128.suse.cz>
+	<20141114153123.2e1d8db6@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: dinguyen@opensource.altera.com [mailto:dinguyen@opensource.altera.com]
-> Sent: Tuesday, November 11, 2014 9:14 AM
-> 
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> 
-> Since platform.c will get built for both Host and Gadget, if we leave the
-> usb_disabled() call in platform.c, it results in the following build error
-> when (!USB && USB_GADGET) condition is met.
-> 
-> ERROR: "usb_disabled" [drivers/usb/dwc2/dwc2_platform.ko] undefined!
-> 
-> Since usb_disabled() is mostly used to disable USB host functionality, move
-> the call the host portion for the DWC2 driver.
-> 
-> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
-> ---
->  drivers/usb/dwc2/hcd.c      | 3 +++
->  drivers/usb/dwc2/platform.c | 3 ---
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
-> index fa60f4a..755e16b 100644
-> --- a/drivers/usb/dwc2/hcd.c
-> +++ b/drivers/usb/dwc2/hcd.c
-> @@ -2780,6 +2780,9 @@ int dwc2_hcd_init(struct dwc2_hsotg *hsotg, int irq,
->  	int i, num_channels;
->  	int retval;
-> 
-> +	if (usb_disabled())
-> +		return -ENODEV;
-> +
->  	dev_dbg(hsotg->dev, "DWC OTG HCD INIT\n");
-> 
->  	/* Detect config values from hardware */
-> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-> index 3552602..57eb8a3 100644
-> --- a/drivers/usb/dwc2/platform.c
-> +++ b/drivers/usb/dwc2/platform.c
-> @@ -157,9 +157,6 @@ static int dwc2_driver_probe(struct platform_device *dev)
->  	int retval;
->  	int irq;
-> 
-> -	if (usb_disabled())
-> -		return -ENODEV;
-> -
->  	match = of_match_device(dwc2_of_match_table, &dev->dev);
->  	if (match && match->data) {
->  		params = match->data;
+On Fri, 14 Nov 2014 15:31:23 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-This patch also fixes a minor buglet, in that we were missing the
-usb_disabled() check in pci.c.
+> Hmm, I guess I can still make this change. The seq_commit() comment
+> states that @num needs to be < 0 if the data did not fit, and if it is
+> in overflow state, then it should be -1 not size + 1 (or size for the
+> old way).
 
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
+I made the change, and here it is:
+
+-- Steve
+
+>From 69488bad76c4af9f9b5948c8990b5ed1196b2bc1 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Wed, 29 Oct 2014 17:30:50 -0400
+Subject: [PATCH] tracing: Add seq_buf_get_buf() and seq_buf_commit() helper
+ functions
+
+Add two helper functions; seq_buf_get_buf() and seq_buf_commit() that
+are used by seq_buf_path(). This makes the code similar to the
+seq_file: seq_path() function, and will help to be able to consolidate
+the functions between seq_file and trace_seq.
+
+Link: http://lkml.kernel.org/r/20141104160222.644881406@goodmis.org
+Link: http://lkml.kernel.org/r/20141114011412.977571447@goodmis.org
+
+Tested-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/seq_buf.h | 41 +++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/seq_buf.c  |  7 +++----
+ 2 files changed, 44 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+index 0800a24b4348..12c64282aa98 100644
+--- a/include/linux/seq_buf.h
++++ b/include/linux/seq_buf.h
+@@ -70,6 +70,47 @@ static inline unsigned int seq_buf_used(struct seq_buf *s)
+ 	return min(s->len, s->size);
+ }
+ 
++/**
++ * seq_buf_get_buf - get buffer to write arbitrary data to
++ * @s: the seq_buf handle
++ * @bufp: the beginning of the buffer is stored here
++ *
++ * Return the number of bytes available in the buffer, or zero if
++ * there's no space.
++ */
++static inline size_t seq_buf_get_buf(struct seq_buf *s, char **bufp)
++{
++	WARN_ON(s->len > s->size + 1);
++
++	if (s->len < s->size) {
++		*bufp = s->buffer + s->len;
++		return s->size - s->len;
++	}
++
++	*bufp = NULL;
++	return 0;
++}
++
++/**
++ * seq_buf_commit - commit data to the buffer
++ * @s: the seq_buf handle
++ * @num: the number of bytes to commit
++ *
++ * Commit @num bytes of data written to a buffer previously acquired
++ * by seq_buf_get.  To signal an error condition, or that the data
++ * didn't fit in the available space, pass a negative @num value.
++ */
++static inline void seq_buf_commit(struct seq_buf *s, int num)
++{
++	if (num < 0) {
++		seq_buf_set_overflow(s);
++	} else {
++		/* num must be negative on overflow */
++		BUG_ON(s->len + num > s->size);
++		s->len += num;
++	}
++}
++
+ extern __printf(2, 3)
+ int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
+ extern __printf(2, 0)
+diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+index 86e50f47894b..3657af4b5f53 100644
+--- a/kernel/trace/seq_buf.c
++++ b/kernel/trace/seq_buf.c
+@@ -280,8 +280,8 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+  */
+ int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
+ {
+-	char *buf = s->buffer + s->len;
+-	size_t size = seq_buf_buffer_left(s);
++	char *buf;
++	size_t size = seq_buf_get_buf(s, &buf);
+ 	int res = -1;
+ 
+ 	WARN_ON(s->size == 0);
+@@ -294,8 +294,7 @@ int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
+ 				res = end - buf;
+ 		}
+ 	}
+-	if (res > 0)
+-		s->len += res;
++	seq_buf_commit(s, res);
+ 
+ 	return res;
+ }
+-- 
+1.8.1.4
 
