@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161764AbaKNSd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 13:33:59 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54806 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161259AbaKNSd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 13:33:57 -0500
-Date: Fri, 14 Nov 2014 10:33:55 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: frowand.list@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-Message-ID: <20141114183355.GC11808@codeaurora.org>
-References: <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
- <5461150B.2010907@codeaurora.org>
- <54616CB3.5000405@gmail.com>
- <54616F74.5010408@codeaurora.org>
- <54618077.9000108@gmail.com>
- <5463A381.9060305@gmail.com>
- <5465072F.6040509@codeaurora.org>
- <546550FF.2080409@gmail.com>
- <54655409.6030604@codeaurora.org>
- <7htx217k5n.fsf@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7htx217k5n.fsf@deeprootsystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754829AbaKNSew (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 13:34:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964931AbaKNSev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 13:34:51 -0500
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: do not overwrite reserved pages counter at show_mem()
+Date: Fri, 14 Nov 2014 13:34:29 -0500
+Message-Id: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14, Kevin Hilman wrote:
-> 
-> Due to the length of the thread, I haven't followed all the details, and
-> I suspect Greg hasn't either, so I'm not sure if you're discssuing what
-> the right fix is for what's in -next (still broken[1], or what should be done
-> with the device board files.
-> 
-> If the fix from earlier in this thread is still the right one for fixing
-> -next, could you repost it separately for Greg to queue/squash and for
-> me to re-test (if needed.)
-> 
+Minor fixlet to perform the reserved pages counter aggregation
+for each node, at show_mem()
 
-No problem. I'll pick up your tested-by and resend.
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+ lib/show_mem.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/lib/show_mem.c b/lib/show_mem.c
+index 0922579..5e25627 100644
+--- a/lib/show_mem.c
++++ b/lib/show_mem.c
+@@ -28,7 +28,7 @@ void show_mem(unsigned int filter)
+ 				continue;
+ 
+ 			total += zone->present_pages;
+-			reserved = zone->present_pages - zone->managed_pages;
++			reserved += zone->present_pages - zone->managed_pages;
+ 
+ 			if (is_highmem_idx(zoneid))
+ 				highmem += zone->present_pages;
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+1.9.3
+
