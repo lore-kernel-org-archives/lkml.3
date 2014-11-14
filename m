@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935382AbaKNOAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:00:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4466 "EHLO mga02.intel.com"
+	id S935348AbaKNOAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:00:23 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44441 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934667AbaKNN7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935201AbaKNN7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Nov 2014 08:59:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,386,1413270000"; 
-   d="scan'208";a="607847735"
+   d="scan'208";a="607847738"
 From: kan.liang@intel.com
 To: acme@kernel.org, jolsa@redhat.com, a.p.zijlstra@chello.nl,
         eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         ak@linux.intel.com, Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V3 1/3] perf tools: enable LBR call stack support
-Date: Fri, 14 Nov 2014 08:44:10 -0500
-Message-Id: <1415972652-17310-2-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V3 2/3] perf tool: Move cpumode resolve code to add_callchain_ip
+Date: Fri, 14 Nov 2014 08:44:11 -0500
+Message-Id: <1415972652-17310-3-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
 References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
@@ -26,176 +26,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-Currently, there are two call chain recording options, fp and dwarf.
-Haswell has a new feature that utilizes the existing LBR facility to
-record call chains. So it provides the third options to record call
-chain. This patch enables the lbr call stack support.
-
-LBR call stack has some limitations. It reuses current LBR facility, so
-LBR call stack and branch record can not be enabled at the same time. It
-is only available for user callchain.
-However, LBR call stack can work on the user app which doesn't have
-frame-pointer or dwarf debug info compiled. It is a good alternative
-when nothing else works.
+Move the cpumode resolve code to add_callchain_ip function.
+No change in behavior.
 
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- tools/perf/Documentation/perf-record.txt |  8 +++++++-
- tools/perf/builtin-record.c              |  6 +++---
- tools/perf/builtin-report.c              |  2 ++
- tools/perf/util/callchain.c              | 10 +++++++++-
- tools/perf/util/callchain.h              |  1 +
- tools/perf/util/evsel.c                  | 21 +++++++++++++++++++--
- 6 files changed, 41 insertions(+), 7 deletions(-)
+ tools/perf/util/machine.c | 62 ++++++++++++++++++++++-------------------------
+ 1 file changed, 29 insertions(+), 33 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 398f8d5..03d9939 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -100,13 +100,19 @@ OPTIONS
- 	implies -g.
- 
- 	Allows specifying "fp" (frame pointer) or "dwarf"
--	(DWARF's CFI - Call Frame Information) as the method to collect
-+	(DWARF's CFI - Call Frame Information) or "lbr"
-+	(Hardware Last Branch Record facility) as the method to collect
- 	the information used to show the call graphs.
- 
- 	In some systems, where binaries are build with gcc
- 	--fomit-frame-pointer, using the "fp" method will produce bogus
- 	call graphs, using "dwarf", if available (perf tools linked to
- 	the libunwind library) should be used instead.
-+	Using the "lbr" method doesn't require any compiler options. It
-+	will produce call graphs from the hardware LBR registers. The
-+	main limition is that it is only available on new Intel
-+	platforms, such as Haswell. It can only get user call chain. It
-+	doesn't work with branch stack sampling at the same time.
- 
- -q::
- --quiet::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 582c4da..e486627 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -639,7 +639,7 @@ error:
- 
- static void callchain_debug(void)
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index d97309c..dd8496a 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1384,11 +1384,35 @@ struct mem_info *sample__resolve_mem(struct perf_sample *sample,
+ static int add_callchain_ip(struct thread *thread,
+ 			    struct symbol **parent,
+ 			    struct addr_location *root_al,
+-			    int cpumode,
++			    u8 cpumode,
+ 			    u64 ip)
  {
--	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF" };
-+	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF", "LBR" };
+ 	struct addr_location al;
  
- 	pr_debug("callchain: type %s\n", str[callchain_param.record_mode]);
- 
-@@ -725,9 +725,9 @@ static struct record record = {
- #define CALLCHAIN_HELP "setup and enables call-graph (stack chain/backtrace) recording: "
- 
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
--const char record_callchain_help[] = CALLCHAIN_HELP "fp dwarf";
-+const char record_callchain_help[] = CALLCHAIN_HELP "fp dwarf lbr";
- #else
--const char record_callchain_help[] = CALLCHAIN_HELP "fp";
-+const char record_callchain_help[] = CALLCHAIN_HELP "fp lbr";
- #endif
- 
- /*
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 140a6cd..43babdb 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -261,6 +261,8 @@ static int report__setup_sample_type(struct report *rep)
- 		if ((sample_type & PERF_SAMPLE_REGS_USER) &&
- 		    (sample_type & PERF_SAMPLE_STACK_USER))
- 			callchain_param.record_mode = CALLCHAIN_DWARF;
-+		else if (sample_type & PERF_SAMPLE_BRANCH_STACK)
-+			callchain_param.record_mode = CALLCHAIN_LBR;
- 		else
- 			callchain_param.record_mode = CALLCHAIN_FP;
- 	}
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 38da69c..138c5d6 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -77,7 +77,7 @@ int parse_callchain_record_opt(const char *arg)
- 				ret = 0;
- 			} else
- 				pr_err("callchain: No more arguments "
--				       "needed for -g fp\n");
-+				       "needed for --call-graph fp\n");
- 			break;
- 
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
-@@ -97,6 +97,14 @@ int parse_callchain_record_opt(const char *arg)
- 				callchain_param.dump_size = size;
- 			}
- #endif /* HAVE_DWARF_UNWIND_SUPPORT */
-+		} else if (!strncmp(name, "lbr", sizeof("lbr"))) {
-+			if (!strtok_r(NULL, ",", &saveptr)) {
-+				callchain_param.record_mode = CALLCHAIN_LBR;
-+				ret = 0;
-+			} else
-+				pr_err("callchain: No more arguments "
-+					"needed for --call-graph lbr\n");
++	if (ip >= PERF_CONTEXT_MAX) {
++		switch (ip) {
++		case PERF_CONTEXT_HV:
++			cpumode = PERF_RECORD_MISC_HYPERVISOR;
 +			break;
- 		} else {
- 			pr_err("callchain: Unknown --call-graph option "
- 			       "value: %s\n", arg);
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3e1ed15..a60a7b5 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -11,6 +11,7 @@ enum perf_call_graph_mode {
- 	CALLCHAIN_NONE,
- 	CALLCHAIN_FP,
- 	CALLCHAIN_DWARF,
-+	CALLCHAIN_LBR,
- 	CALLCHAIN_MAX
- };
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 12b4396..7cbe2e9 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -537,13 +537,30 @@ int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size)
- }
- 
- static void
--perf_evsel__config_callgraph(struct perf_evsel *evsel)
-+perf_evsel__config_callgraph(struct perf_evsel *evsel,
-+			     struct record_opts *opts)
- {
- 	bool function = perf_evsel__is_function_event(evsel);
- 	struct perf_event_attr *attr = &evsel->attr;
- 
- 	perf_evsel__set_sample_bit(evsel, CALLCHAIN);
- 
-+	if (callchain_param.record_mode == CALLCHAIN_LBR) {
-+		if (!opts->branch_stack) {
-+			perf_evsel__set_sample_bit(evsel, BRANCH_STACK);
-+			attr->branch_sample_type = PERF_SAMPLE_BRANCH_USER |
-+						PERF_SAMPLE_BRANCH_CALL_STACK;
-+			if (attr->exclude_user) {
-+				attr->exclude_user = 0;
-+
-+				pr_warning("LBR callstack option is only available"
-+					   " to get user callchain information."
-+					   " Force exclude_user to 0.\n");
-+			}
-+		} else
-+			 pr_info("Cannot use LBR callstack with branch stack\n");
++		case PERF_CONTEXT_KERNEL:
++			cpumode = PERF_RECORD_MISC_KERNEL;
++			break;
++		case PERF_CONTEXT_USER:
++			cpumode = PERF_RECORD_MISC_USER;
++			break;
++		default:
++			pr_debug("invalid callchain context: "
++				 "%"PRId64"\n", (s64) ip);
++			/*
++			 * It seems the callchain is corrupted.
++			 * Discard all.
++			 */
++			callchain_cursor_reset(&callchain_cursor);
++			return 1;
++		}
++		return 0;	
 +	}
 +
- 	if (callchain_param.record_mode == CALLCHAIN_DWARF) {
- 		if (!function) {
- 			perf_evsel__set_sample_bit(evsel, REGS_USER);
-@@ -659,7 +676,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 	al.filtered = 0;
+ 	al.sym = NULL;
+ 	thread__find_addr_location(thread, cpumode, MAP__FUNCTION,
+@@ -1435,9 +1459,7 @@ static int thread__resolve_callchain_sample(struct thread *thread,
+ {
+ 	u8 cpumode = PERF_RECORD_MISC_USER;
+ 	int chain_nr = min(max_stack, (int)chain->nr);
+-	int i;
+-	int j;
+-	int err;
++	int i, j, err = 0;
+ 	int skip_idx __maybe_unused;
+ 
+ 	callchain_cursor_reset(&callchain_cursor);
+@@ -1467,39 +1489,13 @@ static int thread__resolve_callchain_sample(struct thread *thread,
+ #endif
+ 		ip = chain->ips[j];
+ 
+-		if (ip >= PERF_CONTEXT_MAX) {
+-			switch (ip) {
+-			case PERF_CONTEXT_HV:
+-				cpumode = PERF_RECORD_MISC_HYPERVISOR;
+-				break;
+-			case PERF_CONTEXT_KERNEL:
+-				cpumode = PERF_RECORD_MISC_KERNEL;
+-				break;
+-			case PERF_CONTEXT_USER:
+-				cpumode = PERF_RECORD_MISC_USER;
+-				break;
+-			default:
+-				pr_debug("invalid callchain context: "
+-					 "%"PRId64"\n", (s64) ip);
+-				/*
+-				 * It seems the callchain is corrupted.
+-				 * Discard all.
+-				 */
+-				callchain_cursor_reset(&callchain_cursor);
+-				return 0;
+-			}
+-			continue;
+-		}
+-
+ 		err = add_callchain_ip(thread, parent, root_al,
+ 				       cpumode, ip);
+-		if (err == -EINVAL)
+-			break;
+ 		if (err)
+-			return err;
++			goto exit;
  	}
+-
+-	return 0;
++exit:
++	return (err < 0) ? err : 0;
+ }
  
- 	if (callchain_param.enabled && !evsel->no_aux_samples)
--		perf_evsel__config_callgraph(evsel);
-+		perf_evsel__config_callgraph(evsel, opts);
- 
- 	if (target__has_cpu(&opts->target))
- 		perf_evsel__set_sample_bit(evsel, CPU);
+ static int unwind_entry(struct unwind_entry *entry, void *arg)
 -- 
 1.8.3.2
 
