@@ -1,120 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162040AbaKNWHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 17:07:24 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:60724 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161814AbaKNWHU (ORCPT
+	id S1422858AbaKNWHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 17:07:42 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:38282 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaKNWHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 17:07:20 -0500
-Message-ID: <54667D13.2070105@gmail.com>
-Date: Fri, 14 Nov 2014 14:07:15 -0800
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 14 Nov 2014 17:07:39 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: [PATCH]  tty: serial: msm_serial: document DT alias
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+References: <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+ <20141111230926.GR31490@pd.tnic> <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
+ <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic> <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic> <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 14 Nov 2014 14:07:16 -0800
+Message-ID: <CALCETrW+3TQvZAQfo5HsiHDku8C125sn5dNffOGKOeCHjZZrbw@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Rowand <frank.rowand@sonymobile.com>
+On Fri, Nov 14, 2014 at 1:56 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>>> Right, I can do it in the meantime and we can always experiment more
+>>> later. Getting rid of _TIF_MCE_NOTIFY is a good thing already.
+>>
+>> Yep, it looks pretty simple - not tested yet, it builds though.
+>
+> It seems pretty solid under test so far.
+>
+> Can we make it pass the address/flag to mce_notify_process() too? So
+> we can get rid of mce_save_info() and mce_find_info().
+>
+> We'd need to wrap mce_task_work inside a bigger structure with fields
+> to have the address and flags - then use "container_of" inside mce_notify_process().
+>
+> But I think that means we need more than one of these structures ... we may not
+> be done with one before a new machine check occurs. So we'd have to make an
+> NMI-safe allocator to grab one for use inside do_machine_check()
 
-Update devicetree binding for msm_serial to reflect msm_serial_probe()
-getting line id (port number) from the serialN alias.
+I think that this is a considerable benefit of my code, aside from the
+non-working-ness part.  :-/
 
-Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
----
- Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt |   15 +++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+--Andy
 
-Index: linux/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-===================================================================
---- linux.orig/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-+++ linux/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-@@ -27,27 +27,52 @@ Optional properties:
- - dmas: Should contain dma specifiers for transmit and receive channels
- - dma-names: Should contain "tx" for transmit and "rx" for receive channels
- 
-+Note: Aliases may be defined to ensure the correct ordering of the UARTs.
-+The alias serialN will result in the UART being assigned port N.  If any
-+serialN alias exists, then an alias must exist for each enabled UART.  The
-+serialN aliases should be in a .dts file instead of in a .dtsi file.
-+
- Examples:
- 
--A uartdm v1.4 device with dma capabilities.
-+- A uartdm v1.4 device with dma capabilities.
-+
-+	serial@f991e000 {
-+		compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
-+		reg = <0xf991e000 0x1000>;
-+		interrupts = <0 108 0x0>;
-+		clocks = <&blsp1_uart2_apps_cxc>, <&blsp1_ahb_cxc>;
-+		clock-names = "core", "iface";
-+		dmas = <&dma0 0>, <&dma0 1>;
-+		dma-names = "tx", "rx";
-+	};
-+
-+- A uartdm v1.3 device without dma capabilities and part of a GSBI complex.
-+
-+	serial@19c40000 {
-+		compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
-+		reg = <0x19c40000 0x1000>,
-+	      	<0x19c00000 0x1000>;
-+		interrupts = <0 195 0x0>;
-+		clocks = <&gsbi5_uart_cxc>, <&gsbi5_ahb_cxc>;
-+		clock-names = "core", "iface";
-+	};
-+
-+- serialN alias.
-+
-+	aliases {
-+		serial0 = &uarta;
-+		serial1 = &uartc;
-+		serial2 = &uartb;
-+	};
-+
-+	uarta: serial@12490000 {
-+		status = "ok";
-+	};
-+
-+	uartb: serial@16340000 {
-+		status = "ok";
-+	};
- 
--serial@f991e000 {
--	compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
--	reg = <0xf991e000 0x1000>;
--	interrupts = <0 108 0x0>;
--	clocks = <&blsp1_uart2_apps_cxc>, <&blsp1_ahb_cxc>;
--	clock-names = "core", "iface";
--	dmas = <&dma0 0>, <&dma0 1>;
--	dma-names = "tx", "rx";
--};
--
--A uartdm v1.3 device without dma capabilities and part of a GSBI complex.
--
--serial@19c40000 {
--	compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
--	reg = <0x19c40000 0x1000>,
--	      <0x19c00000 0x1000>;
--	interrupts = <0 195 0x0>;
--	clocks = <&gsbi5_uart_cxc>, <&gsbi5_ahb_cxc>;
--	clock-names = "core", "iface";
--};
-+	uartc: serial@1a240000 {
-+		status = "ok";
-+	};
+>
+> -Tony
+>
+> General testing note - one thing I did see was that if inject 1000 errors at 0.3s interval from
+> my ssh'd login ... the serial console keeps streaming messages for about 40 seconds
+> after my test says it is all done. This might be a factor in the other tests I've been
+> running against the stack-switching code (especially with extra debug) ... at some
+> point __log_buf must get full - what happens then?
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
