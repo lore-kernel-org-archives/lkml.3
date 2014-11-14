@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422844AbaKNXNJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 18:13:09 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49470 "HELO
+	id S1422871AbaKNXOQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 18:14:16 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56217 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1161484AbaKNXNH (ORCPT
+	with SMTP id S1422798AbaKNXOP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 18:13:07 -0500
+	Fri, 14 Nov 2014 18:14:15 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, Robert Moore <robert.moore@intel.com>,
-        Corey Minyard <minyard@acm.org>, devel@acpica.org,
-        openipmi-developer@lists.sourceforge.net
-Subject: Re: [PATCH] ACPI/OSL: Add IRQ handler flushing support in the OSL.
-Date: Sat, 15 Nov 2014 00:34:05 +0100
-Message-ID: <1691764.Wi9xRTfTU8@vostro.rjw.lan>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 3/3] ACPI / processor: Rename acpi_(un)map_lsapic() to acpi_(un)map_cpu()
+Date: Sat, 15 Nov 2014 00:35:14 +0100
+Message-ID: <1820875.eppNBckBcQ@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <454129232241014e949861cc07a7f3ff6c80bd52.1415156960.git.lv.zheng@intel.com>
-References: <454129232241014e949861cc07a7f3ff6c80bd52.1415156960.git.lv.zheng@intel.com>
+In-Reply-To: <10283319.F5QMI6fbWn@vostro.rjw.lan>
+References: <1414662780-2147-1-git-send-email-hanjun.guo@linaro.org> <5452CE9D.6000403@linaro.org> <10283319.F5QMI6fbWn@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 05, 2014 03:06:13 PM Lv Zheng wrote:
-> It is possible that a GPE handler or a fixed event handler still accessed
-> after removing the handlers by invoking acpi_remove_gpe_handler() or
-> acpi_remove_fixed_event_handler(), this possibility can crash OPSM after a
-> module removal. In the Linux kernel, though all other GPE drivers are not
-> modules, since the IPMI_SI (ipmi_si_intf.c) can be compiled as a module, we
-> still need to consider a solution for this issue when the driver switches
-> to ACPI_GPE_RAW_HANDLER mode in order to invoke GPE APIs.
+On Friday, October 31, 2014 11:55:46 PM Rafael J. Wysocki wrote:
+> On Friday, October 31, 2014 07:49:49 AM Hanjun Guo wrote:
+> > On 2014年10月31日 04:12, Rafael J. Wysocki wrote:
+> > > On Thursday, October 30, 2014 05:53:00 PM Hanjun Guo wrote:
+> > >> acpi_map_lsapic() will allocate a logical CPU number and map it to
+> > >> physical CPU id (such as APIC id) for the hot-added CPU, it will also
+> > >> do some mapping for NUMA node id and etc, acpi_unmap_lsapic() will
+> > >> do the reverse.
+> > >>
+> > >> We can see that the name of the function is a little bit confusing and
+> > >> arch dependent so rename them as acpi_(un)map_map() to make arch
+> > >
+> > > That's acpi_(un)map_cpu() I guess?
+> > 
+> > ah, yes, typos, it should be acpi_(un)map_cpu(), my fault.
+> > should I send another version?
 > 
-> ACPICA expects acpi_os_wait_events_complete() to be invoked after GPE
-> disabling so that OSPM can ensure all running GPE handlers have exitted.
-> But currently acpi_os_wait_events_complete() can only flush _Lxx/_Exx
-> evaluation work queue and this philosophy cannot work for drivers that have
-> installed a dedicated GPE handler.
-> 
-> The only way to protect a callback is to perform some state holders
-> (reference count, state machine) before invoking the callback. Then this
-> issue can only be fixed by the following means:
-> 1. Flush GPE in ACPICA before invoking the GPE handler. But currently,
->    there is no such implementation in acpi_ev_gpe_dispatch().
-> 2. Flush GPE in ACPICA OSL before invoking the SCI handler. But currently,
->    there is no such implementation in acpi_irq().
-> 3. Flush IRQ in OSPM IRQ layer before invoking the IRQ handler. In Linus
->    kernel, this can be done by synchronize_irq().
-> 4. Flush scheduling in OSPM vector entry layer before invoking the vector.
->    In Linux, this can be done by synchronize_sched().
-> 
-> Since ACPICA expects the GPE handlers to be flushed by the ACPICA OSL or
-> the GPE drivers. If it is implemented by the GPE driver, we should see
-> synchronize_irq()/synchronize_sched() invoked in such drivers. If it is
-> implemented by the ACPICA OSL, ACPICA currently provides
-> acpi_os_wait_events_complete() hook to achieve this. After the following
-> commit:
->   Commit: 69c841b6dd8313c9a673246cc0e2535174272cab
->   Author: Lv Zheng <lv.zheng@intel.com>
->   Subject: ACPICA: Update use of acpi_os_wait_events_complete interface.
-> The OSL acpi_os_wait_events_complete() is invoked after a GPE handler is
-> removed from acpi_remove_gpe_handler() or a fixed event handler is removed
-> from acpi_remove_fixed_event_handler(). Thus it is possible to implement
-> GPE handler flushing using this ACPICA OSL now. So the solution 1 is
-> currently not taken into account.
-> 
-> By examining the IPMI_SI driver, we noticed that the IPMI_SI driver:
-> 1. Uses free_irq() to flush non GPE based IRQ handlers, in free_irq(),
->    synchronize_irq() is invoked, and
-> 2. Uses acpi_remove_gpe_handler() to flush GPE based IRQ handlers, for such
->    IRQ handlers, there is no synchronize_irq() invoked.
-> Since there isn't synchronize_sched() implemented for this driver, from the
-> driver's perspective, acpi_remove_gpe_handler() should have properly
-> flushed the GPE handlers for it. Since the driver doesn't invoke
-> synchronize_irq(), the solution 3 is not what the drivers expect.
-> 
-> This patch implements solution 2. But since given the fact that the GPE is
-> managed inside of ACPICA, and implementing the GPE flushing requires to
-> implement the whole GPE management code again in the OSL, instead of
-> flushing GPE, this patch flushes IRQ in acpi_os_wait_events_complete(). The
-> flushing could last longer than expected as though the target GPE/fixed
-> event that is removed can be fastly flushed, other GPEs/fix events can still
-> be issued during the flushing period.
-> 
-> This patch fixes this issue by invoking synchronize_hardirq() in
-> acpi_os_wait_events_complete(). The reason why we don't invoke
-> synchronize_irq() is: currently ACPICA is not threaded IRQ capable and the
-> only difference between synchronize_irq() and synchronize_hardirq() is
-> synchronize_irq() also flushes threaded IRQ handlers. Thus using
-> synchronize_hardirq() can help to reduce the overall synchronization time
-> for the current ACPICA implementation.
-> 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: Robert Moore <robert.moore@intel.com>
-> Cc: Corey Minyard <minyard@acm.org>
-> Cc: linux-acpi@vger.kernel.org
-> Cc: devel@acpica.org
-> Cc: openipmi-developer@lists.sourceforge.net
+> No, I can fix this up.
 
-Queued up for 3.19, thanks!
+I've queued up the series for 3.19, thanks!
 
-> ---
->  drivers/acpi/osl.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 9964f70..2524196 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -1188,6 +1188,12 @@ EXPORT_SYMBOL(acpi_os_execute);
->  
->  void acpi_os_wait_events_complete(void)
->  {
-> +	/*
-> +	 * Make sure the GPE handler or the fixed event handler is not used
-> +	 * on another CPU after removal.
-> +	 */
-> +	if (acpi_irq_handler)
-> +		synchronize_hardirq(acpi_gbl_FADT.sci_interrupt);
->  	flush_workqueue(kacpid_wq);
->  	flush_workqueue(kacpi_notify_wq);
->  }
-> 
 
 -- 
 I speak only for myself.
