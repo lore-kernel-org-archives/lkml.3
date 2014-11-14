@@ -1,63 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaKNOPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:15:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:21188 "EHLO mga01.intel.com"
+	id S1755082AbaKNORf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:17:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56165 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597AbaKNOPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:15:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="416507383"
-Date: Fri, 14 Nov 2014 16:15:35 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        andrew.kim@intel.com
-Subject: Re: [PATCHv4 2/6] phy: improved lookup method
-Message-ID: <20141114141535.GB7512@kuha.fi.intel.com>
-References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com>
- <CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com>
- <5461AFD3.5020302@ti.com>
- <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com>
- <5461CDDF.4090209@ti.com>
- <CAFp+6iGAQMgX8S6dfPO44U=r6QJ4fT+1FX2uHNF9KK4sYs+=XA@mail.gmail.com>
- <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com>
+	id S1754511AbaKNORd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 09:17:33 -0500
+Date: Fri, 14 Nov 2014 15:17:25 +0100
+From: Igor Mammedov <imammedo@redhat.com>
+To: Radim =?UTF-8?Q?Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, yoshikawa_takuya_b1@lab.ntt.co.jp
+Subject: Re: [PATCH 1/3] kvm: memslots: track id_to_index changes during the
+ insertion sort
+Message-ID: <20141114151725.55774165@igors-macbook-pro.local>
+In-Reply-To: <20141114133500.GA10593@potion.brq.redhat.com>
+References: <1415963522-5255-1-git-send-email-pbonzini@redhat.com>
+	<1415963522-5255-2-git-send-email-pbonzini@redhat.com>
+	<20141114133500.GA10593@potion.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
+On Fri, 14 Nov 2014 14:35:00 +0100
+Radim Krčmář <rkrcmar@redhat.com> wrote:
 
-On Thu, Nov 13, 2014 at 07:03:01PM +0530, Vivek Gautam wrote:
-> Hi Heikki, Kishon,
+> 2014-11-14 12:12+0100, Paolo Bonzini:
+> > This completes the optimization from the previous patch, by
+> > removing the KVM_MEM_SLOTS_NUM-iteration loop from insert_memslot.
+> > 
+> > Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> > ---
+> >  virt/kvm/kvm_main.c | 39 +++++++++++++++++++--------------------
+> >  1 file changed, 19 insertions(+), 20 deletions(-)
+> > 
+> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > index c0c2202e6c4f..c8ff99cc0ccb 100644
+> > --- a/virt/kvm/kvm_main.c
+> > +++ b/virt/kvm/kvm_main.c
+> > @@ -677,31 +677,30 @@ static int kvm_create_dirty_bitmap(struct
+> > kvm_memory_slot *memslot) static void insert_memslot(struct
+> > kvm_memslots *slots, struct kvm_memory_slot *new)
+> >  {
+> > -	int i = slots->id_to_index[new->id];
+> > -	struct kvm_memory_slot *old = id_to_memslot(slots,
+> > new->id);
+> > +	int id = new->id;
+> > +	int i = slots->id_to_index[id];
+> >  	struct kvm_memory_slot *mslots = slots->memslots;
+> >  
+> > -	if (new->npages == old->npages) {
+> > -		*old = *new;
+> > -		return;
+> > -	}
+> > -
+> > -	while (1) {
+> > -		if (i < (KVM_MEM_SLOTS_NUM - 1) &&
+> > -			new->npages < mslots[i + 1].npages) {
+> > -			mslots[i] = mslots[i + 1];
+> > -			i++;
+> > -		} else if (i > 0 && new->npages > mslots[i -
+> > 1].npages) {
+> > -			mslots[i] = mslots[i - 1];
+> > -			i--;
+> > -		} else {
+> > -			mslots[i] = *new;
+> > -			break;
+> > +	WARN_ON(mslots[i].id != id);
+> > +	if (new->npages != mslots[i].npages) {
+> > +		while (1) {
+> > +			if (i < (KVM_MEM_SLOTS_NUM - 1) &&
+> > +    			    new->npages < mslots[i +
+> > 1].npages) {
+>   (^^^^ whitespace error)
+> > +				mslots[i] = mslots[i + 1];
+> > +				slots->id_to_index[mslots[i].id] =
+> > i;
+> > +				i++;
+> > +			} else if (i > 0 &&
+> > +				   new->npages > mslots[i -
+> > 1].npages) {
+> > +				mslots[i] = mslots[i - 1];
+> > +				slots->id_to_index[mslots[i].id] =
+> > i;
+> > +				i--;
+> > +			} else
+> > +				break;
 > 
-> How about adding the change in attached patch [1] on top of this patch.
-> Just introduced the phy pointer in "phy_lookup" structure, and
-> modified phy_find() accordingly.
+> We are replacing in a sorted array, so the the direction of our
+> traversal doesn't change, (and we could lose one tab level here,)
 > 
-> [1] Attachment:
->     0001-phy-core-Use-phy-pointer-with-phy_lookup_table.patch
+> 	if (new->npages < mslots[i].npages) {
+> 		while (i < (KVM_MEM_SLOTS_NUM - 1) &&
+> 		       new->npages < mslots[i + 1].npages) {
+> 			mslots[i] = mslots[i + 1];
+> 			slots->id_to_index[mslots[i].id] = i;
+> 			i++;
+> 		}
+> 	else if (new->npages > mslots[i].npages)
+> 		while (i > 0 &&
+> 		       new->npages > mslots[i - 1].npages) {
+> 			mslots[i] = mslots[i - 1];
+> 			slots->id_to_index[mslots[i].id] = i;
+> 			i--;
+> 		}
+> 
+> (I guess you don't want me to abstract these two loops further :)
+> 
+> If the probability of slots with same npages was high, we could also
+> move just the last one from each group, but I think that the current
+> algorithm is already faster than we need.
+> 
+> (We'll have to change it into an interval tree, or something, if the
+>  number of slots rises anyway.)
+Only if it rises to huge amount, I've played with proposed 512 memslots
+and it takes ~10000 cycles which is 5% of current heapsort overhead.
+Taking in account that it's slow path anyway, it's unlikely that there
+would be need to speedup this case even more.
 
-Just to let you know, I'm finally able to work on this again.
-
-I was actually thinking that we should just roll back to the previous
-version where I didn't yet use the parent name, and rethink how to
-solve the problem Kishon pointed out.
-
-But, I'll take a look at this properly on Monday.
-
-
-Cheers,
-
--- 
-heikki
