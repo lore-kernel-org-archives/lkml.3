@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935133AbaKNGGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 01:06:44 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:55478 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934999AbaKNGGm (ORCPT
+	id S935160AbaKNGG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:06:56 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46650 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299AbaKNGGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 01:06:42 -0500
+	Fri, 14 Nov 2014 01:06:53 -0500
 From: Dudley Du <dudley.dulixin@gmail.com>
 X-Google-Original-From: Dudley Du <dudl@cypress.com>
 To: dmitry.torokhov@gmail.com, rydberg@euromail.se
 Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v10 13/18] input: cyapa: add gen5 trackpad device force re-calibrate function support
-Date: Fri, 14 Nov 2014 14:03:19 +0800
-Message-Id: <1415945004-19868-14-git-send-email-dudl@cypress.com>
+Subject: [PATCH v10 14/18] input: cyapa: add read firmware image debugfs interface support
+Date: Fri, 14 Nov 2014 14:03:20 +0800
+Message-Id: <1415945004-19868-15-git-send-email-dudl@cypress.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415945004-19868-1-git-send-email-dudl@cypress.com>
 References: <1415945004-19868-1-git-send-email-dudl@cypress.com>
@@ -22,98 +22,266 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add force re-calibrate function supported for gen5 trackpad device,
-it can be used through sysfs calibrate interface.
+Add read firmware image from trackpad device interface supported in cyapa
+driver through debugfs read_fw interface.
+Through this interface user can read out, check and backup the firmware image
+of the trackpad device before any firmware update, or can use the backed image
+to do firmware image recovery.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudl@cypress.com>
 ---
- drivers/input/mouse/cyapa_gen5.c | 65 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
+ drivers/input/mouse/cyapa.c | 176 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/input/mouse/cyapa.h |  10 +++
+ 2 files changed, 185 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
-index b401b2a..51bdf06 100644
---- a/drivers/input/mouse/cyapa_gen5.c
-+++ b/drivers/input/mouse/cyapa_gen5.c
-@@ -1580,6 +1580,70 @@ static int cyapa_gen5_suspend_scanning(struct cyapa *cyapa)
- 	return 0;
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index 80a21ed..5c07ac0 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -14,6 +14,7 @@
+  * more details.
+  */
+ 
++#include <linux/debugfs.h>
+ #include <linux/delay.h>
+ #include <linux/i2c.h>
+ #include <linux/input.h>
+@@ -32,10 +33,14 @@
+ #define CYAPA_ADAPTER_FUNC_SMBUS  2
+ #define CYAPA_ADAPTER_FUNC_BOTH   3
+ 
++#define CYAPA_DEBUGFS_READ_FW	"read_fw"
+ #define CYAPA_FW_NAME		"cyapa.bin"
+ 
+ const char unique_str[] = "CYTRA";
+ 
++/* Global root node of the cyapa debugfs directory. */
++static struct dentry *cyapa_debugfs_root;
++
+ /* Returns 0 on success, else negative errno on failure. */
+ ssize_t cyapa_i2c_read(struct cyapa *cyapa, u8 reg, size_t len,
+ 					u8 *values)
+@@ -476,6 +481,135 @@ int cyapa_detect(struct cyapa *cyapa)
  }
  
-+static int cyapa_gen5_calibrate_pwcs(struct cyapa *cyapa,
-+		u8 calibrate_sensing_mode_type)
+ /*
++ **************************************************************
++ * debugfs interface
++ **************************************************************
++*/
++static int cyapa_debugfs_open(struct inode *inode, struct file *file)
 +{
-+	u8 cmd[8];
-+	u8 resp_data[6];
-+	int resp_len;
++	struct cyapa *cyapa = inode->i_private;
 +	int error;
 +
-+	/* Try to dump all bufferred data before doing command. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
++	if (!cyapa)
++		return -ENODEV;
 +
-+	cmd[0] = 0x04;
-+	cmd[1] = 0x00;
-+	cmd[2] = 0x06;
-+	cmd[3] = 0x00;
-+	cmd[4] = GEN5_APP_CMD_REPORT_ID;
-+	cmd[5] = 0x00;
-+	cmd[6] = GEN5_CMD_CALIBRATE;
-+	cmd[7] = calibrate_sensing_mode_type;
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			5000, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-+	if (error || !VALID_CMD_RESP_HEADER(resp_data, GEN5_CMD_CALIBRATE) ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return error < 0 ? error : -EAGAIN;
++	error = mutex_lock_interruptible(&cyapa->debugfs_mutex);
++	if (error)
++		return error;
++
++	if (!get_device(&cyapa->client->dev)) {
++		error = -ENODEV;
++		goto out;
++	}
++
++	file->private_data = cyapa;
++
++	if (cyapa->fw_image && cyapa->fw_image_size) {
++		error = 0;
++		goto out;
++	}
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		goto out;
++	/*
++	 * If firmware hasn't been read yet, read it all in one pass.
++	 * Subsequent opens will reuse the data in this same buffer.
++	 */
++	if (cyapa->ops->read_fw) {
++		error = cyapa->ops->read_fw(cyapa);
++
++		/*
++		 * Redetect trackpad device states because read_fw will
++		 * reset trackpad device into bootloader mode.
++		 */
++		cyapa_detect(cyapa);
++	} else {
++		error = -EPERM;
++	}
++
++	mutex_unlock(&cyapa->state_sync_lock);
++out:
++	mutex_unlock(&cyapa->debugfs_mutex);
++	return error;
++}
++
++static int cyapa_debugfs_release(struct inode *inode, struct file *file)
++{
++	struct cyapa *cyapa = file->private_data;
++	int error;
++
++	if (!cyapa)
++		return 0;
++
++	error = mutex_lock_interruptible(&cyapa->debugfs_mutex);
++	if (error)
++		return error;
++	file->private_data = NULL;
++	put_device(&cyapa->client->dev);
++	mutex_unlock(&cyapa->debugfs_mutex);
 +
 +	return 0;
 +}
 +
-+static ssize_t cyapa_gen5_do_calibrate(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
++/* Return some bytes from the buffered firmware image, starting from *ppos */
++static ssize_t cyapa_debugfs_read_fw(struct file *file, char __user *buffer,
++				     size_t count, loff_t *ppos)
 +{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int error, calibrate_error;
++	struct cyapa *cyapa = file->private_data;
 +
-+	/* 1. Suspend Scanning*/
-+	error = cyapa_gen5_suspend_scanning(cyapa);
-+	if (error)
-+		return error;
++	if (!cyapa->fw_image)
++		return -EINVAL;
 +
-+	/* 2. Do mutual capacitance fine calibrate. */
-+	calibrate_error = cyapa_gen5_calibrate_pwcs(cyapa,
-+				CYAPA_SENSING_MODE_MUTUAL_CAP_FINE);
-+	if (calibrate_error)
-+		goto resume_scanning;
++	if (*ppos >= cyapa->fw_image_size)
++		return 0;
 +
-+	/* 3. Do self capacitance calibrate. */
-+	calibrate_error = cyapa_gen5_calibrate_pwcs(cyapa,
-+				CYAPA_SENSING_MODE_SELF_CAP);
-+	if (calibrate_error)
-+		goto resume_scanning;
++	if (count + *ppos > cyapa->fw_image_size)
++		count = cyapa->fw_image_size - *ppos;
 +
-+resume_scanning:
-+	/* 4. Resume Scanning*/
-+	error = cyapa_gen5_resume_scanning(cyapa);
-+	if (error || calibrate_error)
-+		return error ? error : calibrate_error;
++	if (copy_to_user(buffer, &cyapa->fw_image[*ppos], count))
++		return -EFAULT;
 +
++	*ppos += count;
 +	return count;
 +}
 +
- static s32 two_complement_to_s32(s32 value, int num_bits)
- {
- 	if (value >> (num_bits - 1))
-@@ -2556,6 +2620,7 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
- 	.update_fw = cyapa_gen5_do_fw_update,
++static const struct file_operations cyapa_read_fw_fops = {
++	.open = cyapa_debugfs_open,
++	.release = cyapa_debugfs_release,
++	.read = cyapa_debugfs_read_fw
++};
++
++static int cyapa_debugfs_init(struct cyapa *cyapa)
++{
++	struct device *dev = &cyapa->client->dev;
++
++	if (!cyapa_debugfs_root)
++		return -ENODEV;
++
++	cyapa->dentry_dev = debugfs_create_dir(kobject_name(&dev->kobj),
++					       cyapa_debugfs_root);
++
++	if (!cyapa->dentry_dev)
++		return -ENODEV;
++
++	mutex_init(&cyapa->debugfs_mutex);
++
++	debugfs_create_file(CYAPA_DEBUGFS_READ_FW, S_IRUSR, cyapa->dentry_dev,
++			    cyapa, &cyapa_read_fw_fops);
++
++	return 0;
++}
++
++static void cyapa_remove_debugfs(void *data)
++{
++	struct cyapa *cyapa = data;
++
++	debugfs_remove_recursive(cyapa->dentry_dev);
++	mutex_destroy(&cyapa->debugfs_mutex);
++}
++
++/*
+  * Sysfs Interface.
+  */
  
- 	.show_baseline = cyapa_gen5_show_baseline,
-+	.calibrate_store = cyapa_gen5_do_calibrate,
+@@ -1040,6 +1174,20 @@ static int cyapa_probe(struct i2c_client *client,
+ 		return error;
+ 	}
  
- 	.initialize = cyapa_gen5_initialize,
++	error = cyapa_debugfs_init(cyapa);
++	if (error) {
++		dev_err(dev, "failed to create debugfs entries: %d\n", error);
++		return error;
++	}
++
++	error = devm_add_action(dev, cyapa_remove_debugfs, cyapa);
++	if (error) {
++		cyapa_remove_debugfs(cyapa);
++		dev_err(dev, "failed to add debugfs cleanup action :%d\n",
++			error);
++		return error;
++	}
++
+ #ifdef CONFIG_PM_SLEEP
+ 	if (device_can_wakeup(dev)) {
+ 		error = sysfs_merge_group(&client->dev.kobj,
+@@ -1218,7 +1366,33 @@ static struct i2c_driver cyapa_driver = {
+ 	.id_table = cyapa_id_table,
+ };
  
+-module_i2c_driver(cyapa_driver);
++static int __init cyapa_init(void)
++{
++	int error;
++
++	/* Create a global debugfs root for all cyapa devices */
++	cyapa_debugfs_root = debugfs_create_dir("cyapa", NULL);
++	if (cyapa_debugfs_root == ERR_PTR(-ENODEV))
++		cyapa_debugfs_root = NULL;
++
++	error = i2c_add_driver(&cyapa_driver);
++	if (error) {
++		pr_err("cyapa driver register FAILED.\n");
++		return error;
++	}
++
++	return 0;
++}
++
++static void __exit cyapa_exit(void)
++{
++	debugfs_remove_recursive(cyapa_debugfs_root);
++
++	i2c_del_driver(&cyapa_driver);
++}
++
++module_init(cyapa_init);
++module_exit(cyapa_exit);
+ 
+ MODULE_DESCRIPTION("Cypress APA I2C Trackpad Driver");
+ MODULE_AUTHOR("Dudley Du <dudl@cypress.com>");
+diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
+index 1420b7e..3d139bc 100644
+--- a/drivers/input/mouse/cyapa.h
++++ b/drivers/input/mouse/cyapa.h
+@@ -186,6 +186,8 @@ struct cyapa_dev_ops {
+ 	ssize_t (*calibrate_store)(struct device *,
+ 			struct device_attribute *, const char *, size_t);
+ 
++	int (*read_fw)(struct cyapa *);
++
+ 	int (*initialize)(struct cyapa *cyapa);
+ 
+ 	int (*state_parse)(struct cyapa *cyapa, u8 *reg_status, int len);
+@@ -297,6 +299,14 @@ struct cyapa {
+ 	 */
+ 	struct mutex state_sync_lock;
+ 
++	/* Per-instance debugfs root */
++	struct dentry *dentry_dev;
++
++	/* Buffer to store firmware read using debugfs */
++	struct mutex debugfs_mutex;
++	u8 *fw_image;
++	size_t fw_image_size;
++
+ 	const struct cyapa_dev_ops *ops;
+ 
+ 	union cyapa_cmd_states cmd_states;
 -- 
 1.9.1
 
