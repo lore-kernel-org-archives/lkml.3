@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934537AbaKNAUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:20:16 -0500
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:52901 "HELO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754365AbaKNAUD (ORCPT
+	id S1754472AbaKNAUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:20:35 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38830 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464AbaKNAUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:20:03 -0500
-From: Feng Kan <fkan@apm.com>
-To: patches@apm.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, =devicetree@vger.kernel.org
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V2 0/7] APM X-Gene SoC platform device tree cleanup
-Date: Thu, 13 Nov 2014 16:19:54 -0800
-Message-Id: <1415924401-3013-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 13 Nov 2014 19:20:14 -0500
+Subject: Re: [PATCH] x86: remove arbitrary instruction size limit in
+ instruction decoder
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
+        jkenisto@us.ibm.com, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <20141112225352.D49917A8@viggo.jf.intel.com>
+References: <20141112225352.D49917A8@viggo.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Nov 2014 16:20:07 -0800
+Message-ID: <1415924407.4306.2.camel@oc1026406570.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111400-8236-0000-0000-000006E92735
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This sums up the dts changes of the recent committed drivers into the kernel.
-This will grant PMU, reboot, USB and gpio functionalities to the platform.
-These patches are all based on existing and approved driver that is in the
-kernel tree today.
+On Wed, 2014-11-12 at 14:53 -0800, Dave Hansen wrote:
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> The current x86 instruction decoder steps along through the
+> instruction stream but always ensures that it never steps farther
+> than the largest possible instruction size (MAX_INSN_SIZE).
+...
 
-V2 Changes:
-	- add dma-coherent attribute for usb node.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-Feng Kan (7):
-  arm64: dts: Add APM X-Gene USB DTS node
-  Documentation: arm64: add SCU dts binding documentation to linux
-    kernel
-  arm64: dts: Add X-Gene reboot driver dts node
-  arm64: dts: Add Designware GPIO dts binding to APM X-Gene platform
-  arm64: dts: Add APM X-Gene SoC GFC GPIO controller DTS entries
-  Documentation: arm: pmu: Add Potenza PMU binding
-  arm64: dts: Add PMU node for APM X-Gene Storm SOC
-
- Documentation/devicetree/bindings/arm/apm/scu.txt | 17 +++++++
- Documentation/devicetree/bindings/arm/pmu.txt     |  1 +
- arch/arm64/boot/dts/apm-storm.dtsi                | 55 +++++++++++++++++++++++
- 3 files changed, 73 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/apm/scu.txt
-
--- 
-1.9.1
+Acked-by: Jim Keniston <jkenisto@us.ibm.com>
 
