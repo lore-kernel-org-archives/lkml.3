@@ -1,108 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225AbaKNARg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:17:36 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38879 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753163AbaKNARe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:17:34 -0500
-Date: Fri, 14 Nov 2014 00:17:21 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Message-ID: <20141114001720.GD4042@n2100.arm.linux.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
- <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
- <20141030135749.GE32589@arm.com>
- <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
- <20141113235322.GC4042@n2100.arm.linux.org.uk>
- <1415923530.4223.17.camel@perches.com>
+	id S1754324AbaKNASt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:18:49 -0500
+Received: from mga03.intel.com ([134.134.136.65]:64772 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754061AbaKNASs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 19:18:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="487365591"
+Message-ID: <54654A63.6040202@linux.intel.com>
+Date: Fri, 14 Nov 2014 08:18:43 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415923530.4223.17.camel@perches.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch V1 3/6] genirq: Introduce msi_domain_{alloc|free}_irqs()
+References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <1415879029-20098-4-git-send-email-jiang.liu@linux.intel.com> <5465134B.7070709@arm.com>
+In-Reply-To: <5465134B.7070709@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 04:05:30PM -0800, Joe Perches wrote:
-> On Thu, 2014-11-13 at 23:53 +0000, Russell King - ARM Linux wrote:
-> > On Fri, Oct 31, 2014 at 01:42:44PM +0800, Wang, Yalin wrote:
-> > > This patch add bitrev.h file to support rbit instruction,
-> > > so that we can do bitrev operation by hardware.
-> > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> > > ---
-> > >  arch/arm/Kconfig              |  1 +
-> > >  arch/arm/include/asm/bitrev.h | 21 +++++++++++++++++++++
-> > >  2 files changed, 22 insertions(+)
-> > >  create mode 100644 arch/arm/include/asm/bitrev.h
-> > > 
-> > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > > index 89c4b5c..be92b3b 100644
-> > > --- a/arch/arm/Kconfig
-> > > +++ b/arch/arm/Kconfig
-> > > @@ -28,6 +28,7 @@ config ARM
-> > >  	select HANDLE_DOMAIN_IRQ
-> > >  	select HARDIRQS_SW_RESEND
-> > >  	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
-> > > +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
-> > 
-> > Looking at this, this is just wrong.  Take a moment to consider what
-> > happens if we build a kernel which supports both ARMv6 _and_ ARMv7 CPUs.
-> > What happens if an ARMv6 CPU tries to execute an rbit instruction?
-> > 
-> > Second point (which isn't obvious from your submissions on-list) is that
-> > you've loaded the patch system up with patches for other parts of the
-> > kernel tree for which I am not responsible for.  As such, I can't take
-> > those patches without the sub-tree maintainer acking them.  Also, the
-> > commit text in those patches look weird:
-> > 
-> > 6fire: Convert byte_rev_table uses to bitrev8
-> > 
-> > Use the inline function instead of directly indexing the array.
-> > 
-> > This allows some architectures with hardware instructions for bit
-> > reversals to eliminate the array.
-> > 
-> > Signed-off-by: Joe Perches <(address hidden)>
-> > Signed-off-by: Yalin Wang <(address hidden)>
-> > 
-> > Why is Joe signing off on these patches?
-> > Shouldn't his entry be an Acked-by: ?
+On 2014/11/14 4:23, Marc Zyngier wrote:
+> On 13/11/14 11:43, Jiang Liu wrote:
+>> Introduce msi_domain_{alloc|free}_irqs() to alloc/free interrupts
+>> from generic MSI irqdomain.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  include/linux/msi.h |   35 ++++++++++++++++++++++++++++++
+>>  kernel/irq/msi.c    |   59 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 94 insertions(+)
+>>
+>> +/*
+>> + * Default structure for MSI interrupt allocation.
+>> + * Arch may overwrite it by define msi_alloc_info_t.
+>> + */
+>> +struct msi_alloc_info {
+>> +	struct msi_desc *desc;
+>> +	irq_hw_number_t hwirq;
+>> +	long		scratchpad[NUM_MSI_ALLOC_SCRATCHPAD_REGS];
 > 
-> I didn't sign off on or ack the "add bitrev.h" patch.
+> As much as I'm relieved to see a generic structure here, could
+> scratchpad be slightly less awkward to use? Something like:
+> 
+> struct msi_alloc_info {
+> 	[...]
+> 	union	{
+> 		unsigned long ul;
+> 		void *ptr;
+> 	} scratchpad[NUM_MSI_ALLOC_SCRATCHPAD_REGS];
+> };
+> 
+> That would avoid some very ugly casting.
+Great, will changed to this way in next version:)
 
-Correct, I never said you did.  Please read my message a bit more carefully
-next time, huh?
-
-> I created 2 patches that converted direct uses of byte_rev_table
-> to that bitrev8 static inline.  One of them is already in -next
 > 
-> 7a1283d8f5298437a454ec477384dcd9f9f88bac carl9170: Convert byte_rev_table uses to bitrev8
+> Thanks,
 > 
-> The other hasn't been applied.
+> 	M.
 > 
-> https://lkml.org/lkml/2014/10/28/1056
-> 
-> Maybe Takashi Iwai will get around to it one day.
-
-Great, so I can just discard these that were incorrectly submitted to me
-then.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
