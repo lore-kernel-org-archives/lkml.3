@@ -1,221 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965607AbaKNNeP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:34:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33132 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965480AbaKNNdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:33:13 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/7] mm: Convert p[te|md]_mknonnuma and remaining page table manipulations
-Date: Fri, 14 Nov 2014 13:33:02 +0000
-Message-Id: <1415971986-16143-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1415971986-16143-1-git-send-email-mgorman@suse.de>
-References: <1415971986-16143-1-git-send-email-mgorman@suse.de>
+	id S965621AbaKNNed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:34:33 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:61908 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965282AbaKNNea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:34:30 -0500
+Date: Fri, 14 Nov 2014 13:34:25 +0000
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, patrice.chotard@st.com,
+        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
+        maxime.coquelin@st.com
+Subject: Re: [PATCH v2 13/14] ARM: STi: DT: STiH410: Add usb2 picophy dt nodes
+Message-ID: <20141114133425.GA28680@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1415876417-28728-1-git-send-email-peter.griffin@linaro.org>
+ <2401196.5cvW5dPSz2@wuerfel>
+ <20141114095621.GA1648@griffinp-ThinkPad-X1-Carbon-2nd>
+ <1546892.RCPeXgVQNJ@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1546892.RCPeXgVQNJ@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With PROT_NONE, the traditional page table manipulation functions are
-sufficient.
+Hi Arnd,
 
-Needs-signed-off: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Needs-signed-off: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/huge_mm.h |  3 +--
- mm/huge_memory.c        | 33 +++++++--------------------------
- mm/memory.c             | 17 +++++++++++------
- mm/mempolicy.c          |  2 +-
- mm/migrate.c            |  2 +-
- mm/mprotect.c           |  2 +-
- mm/pgtable-generic.c    |  2 --
- 7 files changed, 22 insertions(+), 39 deletions(-)
+Thanks for taking the time to explain this.
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index ad9051b..554bbe3 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -31,8 +31,7 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
- 			 unsigned long new_addr, unsigned long old_end,
- 			 pmd_t *old_pmd, pmd_t *new_pmd);
- extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, pgprot_t newprot,
--			int prot_numa);
-+			unsigned long addr, pgprot_t newprot);
- 
- enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_FLAG,
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index f6e5a8b..8295c9a 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1366,9 +1366,8 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	goto out;
- clear_pmdnuma:
- 	BUG_ON(!PageLocked(page));
--	pmd = pmd_mknonnuma(pmd);
-+	pmd = pmd_modify(pmd, vma->vm_page_prot);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
--	VM_BUG_ON(pmd_protnone_numa(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
- 	unlock_page(page);
- out_unlock:
-@@ -1502,7 +1501,7 @@ out:
-  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
-  */
- int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, pgprot_t newprot, int prot_numa)
-+		unsigned long addr, pgprot_t newprot)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	spinlock_t *ptl;
-@@ -1511,29 +1510,11 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
- 		pmd_t entry;
- 		ret = 1;
--		if (!prot_numa) {
--			entry = pmdp_get_and_clear(mm, addr, pmd);
--			if (pmd_protnone_numa(entry))
--				entry = pmd_mknonnuma(entry);
--			entry = pmd_modify(entry, newprot);
--			ret = HPAGE_PMD_NR;
--			set_pmd_at(mm, addr, pmd, entry);
--			BUG_ON(pmd_write(entry));
--		} else {
--			struct page *page = pmd_page(*pmd);
--
--			/*
--			 * Do not trap faults against the zero page. The
--			 * read-only data is likely to be read-cached on the
--			 * local CPU cache and it is less useful to know about
--			 * local vs remote hits on the zero page.
--			 */
--			if (!is_huge_zero_page(page) &&
--			    !pmd_protnone_numa(*pmd)) {
--				pmdp_set_numa(mm, addr, pmd);
--				ret = HPAGE_PMD_NR;
--			}
--		}
-+		entry = pmdp_get_and_clear(mm, addr, pmd);
-+		entry = pmd_modify(entry, newprot);
-+		ret = HPAGE_PMD_NR;
-+		set_pmd_at(mm, addr, pmd, entry);
-+		BUG_ON(pmd_write(entry));
- 		spin_unlock(ptl);
- 	}
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index 96ceb0a..62604b1 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3105,7 +3105,8 @@ static int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
- }
- 
- static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
--		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
-+		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd,
-+		   unsigned int fault_flags)
- {
- 	struct page *page = NULL;
- 	spinlock_t *ptl;
-@@ -3120,9 +3121,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	* validation through pte_unmap_same(). It's of NUMA type but
- 	* the pfn may be screwed if the read is non atomic.
- 	*
--	* ptep_modify_prot_start is not called as this is clearing
--	* the _PAGE_NUMA bit and it is not really expected that there
--	* would be concurrent hardware modifications to the PTE.
-+	* We can safely just do a "set_pte_at()", because the old
-+	* page table entry is not accessible, so there would be no
-+	* concurrent hardware modifications to the PTE.
- 	*/
- 	ptl = pte_lockptr(mm, pmd);
- 	spin_lock(ptl);
-@@ -3131,7 +3132,11 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		goto out;
- 	}
- 
--	pte = pte_mknonnuma(pte);
-+	/* Make it present again */
-+	pte = pte_modify(pte, vma->vm_page_prot);
-+	pte = pte_mkyoung(pte);
-+	if (fault_flags & FAULT_FLAG_WRITE)
-+		pte = maybe_mkwrite(pte_mkdirty(pte), vma);
- 	set_pte_at(mm, addr, ptep, pte);
- 	update_mmu_cache(vma, addr, ptep);
- 
-@@ -3221,7 +3226,7 @@ static int handle_pte_fault(struct mm_struct *mm,
- 	}
- 
- 	if (pte_protnone_numa(entry))
--		return do_numa_page(mm, vma, address, entry, pte, pmd);
-+		return do_numa_page(mm, vma, address, entry, pte, pmd, flags);
- 
- 	ptl = pte_lockptr(mm, pmd);
- 	spin_lock(ptl);
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index e58725a..9d61dce 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -633,7 +633,7 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
- {
- 	int nr_updated;
- 
--	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1);
-+	nr_updated = change_protection(vma, addr, end, PAGE_NONE, 0, 1);
- 	if (nr_updated)
- 		count_vm_numa_events(NUMA_PTE_UPDATES, nr_updated);
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 0143995..26fa71f 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1896,7 +1896,7 @@ out_fail:
- out_dropref:
- 	ptl = pmd_lock(mm, pmd);
- 	if (pmd_same(*pmd, entry)) {
--		entry = pmd_mknonnuma(entry);
-+		entry = pmd_modify(entry, vma->vm_page_prot);
- 		set_pmd_at(mm, mmun_start, pmd, entry);
- 		update_mmu_cache_pmd(vma, address, &entry);
- 	}
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index e93ddac..dc65c0f 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -141,7 +141,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else {
- 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
--						newprot, prot_numa);
-+						newprot);
- 
- 				if (nr_ptes) {
- 					if (nr_ptes == HPAGE_PMD_NR) {
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index a2d8587..c25f94b 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -193,8 +193,6 @@ void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
- 		     pmd_t *pmdp)
- {
- 	pmd_t entry = *pmdp;
--	if (pmd_protnone_numa(entry))
--		entry = pmd_mknonnuma(entry);
- 	set_pmd_at(vma->vm_mm, address, pmdp, pmd_mknotpresent(entry));
- 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
- }
--- 
-1.8.4.5
+On Fri, 14 Nov 2014, Arnd Bergmann wrote:
+<snip>
+> > address of the device's resources within the address space defined by its parent bus").
+> 
+> You will also have to add an appropriate 'ranges' property then.
+> 
+> > Or maybe you meant, if I want to keep the picophy node where it is (under soc), I need to stop using the reg
+> > property?
+> 
+> That would also be possible, just put the register numbers into your 'st,syscfg'
+> property after the phandle, and leave the reg property empty then.
 
+I think this is the best approach and whay I will do, as it would also extend well to devices with sysconfig
+registers in different banks.
+> 
+> > The other problem I was describing is a device with some memory mapped registers and some
+> > sysconfig registers you can find examples already upstream in stih416.dtsi file with the
+> > ethernet0 and miphy365x_phy nodes.
+> > 
+> > Here the first 1/2 reg properties are expressed as a 32 bit physical address and size (meets the spec definition),
+> > and the last is expressed as a sysconfig offset and size (which AFAIK doesn't match the spec definition).
+> > This change in address space is however documented in the bindings documentation.
+> > 
+> > How should devices which have multiple address spaces ideally be handled?
+> 
+> There should at most be one 'reg' address space, so put it under the node whose
+> bus these refer to. Put all offsets that are relative to a syscon link into
+> the phandle that refers to the syscon device, or hardcode the offsets in the
+> driver.
+
+Ok makes sense.
+> 
+> > From looking around in the source I see a few different ways people have done this: -
+> > 
+> > 1) Some drivers encode the data statically into the source and make a decision based on compatible string.
+> > 2) Some drivers add a couple of extra dt properties to encode the offset (spifsm in stih416)
+> > 3) Some drivers mix address spaces in the reg properties (examples given above) 
+> > 3) Probably some other ways I've not found yet
+> >
+> > Is there a blessed way of doing this? It would be nice at least for all the drivers in STI to be doing
+> > it the same as currently there seems to be a mix of implementations.
+> 
+> You can do 1 or 2, not 3.
+
+Yep got it.
+
+One last question, what are the rules about updating ethernet and miphy365 over to using this method for there sysconfig registers? 
+
+regards,
+
+Peter.
