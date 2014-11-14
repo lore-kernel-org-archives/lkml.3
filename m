@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964850AbaKNAVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:21:49 -0500
-Received: from exprod5og121.obsmtp.com ([64.18.0.139]:43617 "HELO
-	exprod5og121.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754398AbaKNAUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754404AbaKNAUI (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 Nov 2014 19:20:08 -0500
+Received: from exprod5og113.obsmtp.com ([64.18.0.26]:59570 "HELO
+	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754371AbaKNAUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 19:20:06 -0500
 From: Feng Kan <fkan@apm.com>
 To: patches@apm.com, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, =devicetree@vger.kernel.org
-Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: [PATCH V2 6/7] Documentation: arm: pmu: Add Potenza PMU binding
-Date: Thu, 13 Nov 2014 16:20:00 -0800
-Message-Id: <1415924401-3013-7-git-send-email-fkan@apm.com>
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V2 4/7] arm64: dts: Add Designware GPIO dts binding to APM X-Gene platform
+Date: Thu, 13 Nov 2014 16:19:58 -0800
+Message-Id: <1415924401-3013-5-git-send-email-fkan@apm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415924401-3013-1-git-send-email-fkan@apm.com>
 References: <1415924401-3013-1-git-send-email-fkan@apm.com>
@@ -21,26 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch documents the compatible string for APM X-Gene Potenza CPU's PMU.
+Add Designware GPIO dts binding to APM X-Gene platform
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
 Signed-off-by: Feng Kan <fkan@apm.com>
 ---
- Documentation/devicetree/bindings/arm/pmu.txt | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm64/boot/dts/apm-storm.dtsi | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
-index 75ef91d..6d268b3 100644
---- a/Documentation/devicetree/bindings/arm/pmu.txt
-+++ b/Documentation/devicetree/bindings/arm/pmu.txt
-@@ -7,6 +7,7 @@ representation in the device tree should be done as under:-
- Required properties:
+diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
+index 9a28d3a..35f66fe 100644
+--- a/arch/arm64/boot/dts/apm-storm.dtsi
++++ b/arch/arm64/boot/dts/apm-storm.dtsi
+@@ -525,6 +525,21 @@
+ 			interrupts = <0x0 0x4f 0x4>;
+ 		};
  
- - compatible : should be one of
-+	"apm,potenza-pmu"
- 	"arm,armv8-pmuv3"
- 	"arm,cortex-a17-pmu"
- 	"arm,cortex-a15-pmu"
++		dwgpio: dwgpio@1c024000 {
++			compatible = "snps,dw-apb-gpio";
++			reg = <0x0 0x1c024000 0x0 0x1000>;
++			reg-io-width = <4>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			porta: gpio-controller@0 {
++				compatible = "snps,dw-apb-gpio-port";
++				gpio-controller;
++				snps,nr-gpios = <32>;
++				reg = <0>;
++			};
++		};
++
+ 		phy1: phy@1f21a000 {
+ 			compatible = "apm,xgene-phy";
+ 			reg = <0x0 0x1f21a000 0x0 0x100>;
 -- 
 1.9.1
 
