@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaKNAMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:12:00 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:51325 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950AbaKNAL7 (ORCPT
+	id S1754223AbaKNAMf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:12:35 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53404 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950AbaKNAMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:11:59 -0500
-Date: Thu, 13 Nov 2014 20:11:47 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Rui Zhang <rui.zhang@intel.com>, Wei Ni <wni@nvidia.com>,
-        Javi Merino <javi.merino@arm.com>,
-        Punit Agrawal <punit.agrawal@arm.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] ##thermal channel at freenode
-Message-ID: <20141114001145.GA8259@developer>
+	Thu, 13 Nov 2014 19:12:33 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 14 Nov 2014 09:14:52 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@sr71.net>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Alexander Nyberg <alexn@dsv.su.se>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/5] mm/page_ext: resurrect struct page extending
+ code for debugging
+Message-ID: <20141114001451.GA22952@js1304-P5Q-DELUXE>
+References: <1415780835-24642-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1415780835-24642-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <54638BE4.3080509@sr71.net>
+ <20141113064035.GB18369@js1304-P5Q-DELUXE>
+ <20141113124035.35bc5bb743affddf7f425825@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141113124035.35bc5bb743affddf7f425825@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 13, 2014 at 12:40:35PM -0800, Andrew Morton wrote:
+> On Thu, 13 Nov 2014 15:40:35 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> 
+> > On Wed, Nov 12, 2014 at 08:33:40AM -0800, Dave Hansen wrote:
+> > > On 11/12/2014 12:27 AM, Joonsoo Kim wrote:
+> > > > @@ -1092,6 +1096,14 @@ struct mem_section {
+> > > >  
+> > > >  	/* See declaration of similar field in struct zone */
+> > > >  	unsigned long *pageblock_flags;
+> > > > +#ifdef CONFIG_PAGE_EXTENSION
+> > > > +	/*
+> > > > +	 * If !SPARSEMEM, pgdat doesn't have page_ext pointer. We use
+> > > > +	 * section. (see page_ext.h about this.)
+> > > > +	 */
+> > > > +	struct page_ext *page_ext;
+> > > > +	unsigned long pad;
+> > > > +#endif
+> > > 
+> > > Will the distributions be amenable to enabling this?  If so, I'm all for
+> > > it if it gets us things like page_owner at runtime.
+> > 
+> > Yes, I hope so.
+> > At least, I can make it default to our product. But, how distributions
+> > will do is beyond my power. :)
+> > 
+> 
+> >From my reading of the code, the overhead is very low if nobody is
+> using it.  In which case things should be OK and we can perhaps do away
+> with CONFIG_PAGE_EXTENSION altogether.
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yeap!
 
-Folks,
+> 
+> But my reading of the code may be wrong.  It is very poorly documented.
+> As far as I can tell, invoke_need_callbacks() works out whether there
+> are any clients of this feature and if not, we avoid allocating that
+> huge chunk of memory.
+> 
 
-As the audience interested in the thermal topic has grown, I find
-interesting to have an IRC channel to discuss the topic in a more
-interactive way. Some of you has already suggested to have this, so here
-it is.
+Your understanding is correct.
 
-server: irc.freenode.net
-channel: ##thermal
+> And the way we register clients is to enter a pointer into the global
+> page_ext_ops[].  So this requires a kernel rebuild anyway, so there's
+> no point in distros enabling CONFIG_PAGE_EXTENSION.  The way to do this
+> is for CONFIG_PAGE_OWNER (for example) to `select'
+> CONFIG_PAGE_EXTENSION.
+> 
 
-As I mentioned, the idea is to discuss the current work on the Linux
-kernel thermal framework, its drivers, and its relations to other parts
-of Linux.
+Yes. Without any client, CONFIG_PAGE_EXTENSION has no point to be
+enabled. So, each client, DEBUG_PAGEALLOC, PAGE_OWNER has 'select
+CONFIG_PAGE_EXTENSION' in it's Kconfig, repectively. (Patch 2, 5)
 
-I hope this help to speed things a little bit.
+> It's unclear to me why invoke_need_callbacks() walks the page_ext_ops[]
+> entries, inspecting them.  Perhaps this is so that clients of
+> CONFIG_PAGE_EXTENSION can be enabled/disabled at boot time, dunno.
 
-All the best,
+Yes, if user decides not to use certain debugging feature at boot time,
+it's very wasting to have that huge memory chunk for page extension.
+invoke_need_callbacks() is introduced to determine and reduce this
+overhead in boot time.
 
-Eduardo Valentin
+> Please, can we get all this design and behaviour appropriately
+> documented in the code and changelogs?
 
+Yes! 
+With pleasure, I will do it. :)
 
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUZUi1AAoJEMLUO4d9pOJWg74H/1JEZleBPiZdEasHCdJeYPZU
-YgVnt5d73Qm46gH7+B7qDZ+swhTOn/PTStf7zHgutOmTWCaMA/JFQcEI8YcU2u8x
-ztpcZYqmnKKANEQK6LnVRw2+gT1VO54zJmrZOqBSzaNMTXiW8XLvxuuVo9W9xFeR
-aJfOnEnMp5wnfkKoZxhrQs1/Bpd2oK38XnWna5GXeBEBn6b+xnCXxfNZJIFnw+Mu
-i5Pv6sgaDF0ZQvDkRBcltcCKm6vqdfHdyF+dY2InnzOL8k0E5XhFP/HEEImoWtns
-w1wOlnQfW4xQI3AsXjAf2O0txLVfAvsGqMjJAyuGavbp0pRUCYXznjGKl3Bp2e8=
-=5uQC
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
+Thanks.
