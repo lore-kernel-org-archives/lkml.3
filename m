@@ -1,61 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935405AbaKNQbh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 11:31:37 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58357 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935390AbaKNQbe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 11:31:34 -0500
-Date: Fri, 14 Nov 2014 16:31:24 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andre Przywara <Andre.Przywara@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] arm64: alternatives runtime patching
-Message-ID: <20141114163123.GC6755@e104818-lin.cambridge.arm.com>
-References: <1415980452-20366-1-git-send-email-andre.przywara@arm.com>
- <2041011.PXfvHs4Xp7@wuerfel>
+	id S1161305AbaKNQdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:33:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161108AbaKNQds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 11:33:48 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-api@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        linux-arch@vger.kernel.org, davej@redhat.com
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
+References: <cover.1415636409.git.milosz@adfin.com>
+	<20141111064417.GT23575@dastard>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 14 Nov 2014 11:32:53 -0500
+In-Reply-To: <20141111064417.GT23575@dastard> (Dave Chinner's message of "Tue,
+	11 Nov 2014 17:44:17 +1100")
+Message-ID: <x49mw7tyc7e.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2041011.PXfvHs4Xp7@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 04:20:10PM +0000, Arnd Bergmann wrote:
-> On Friday 14 November 2014 15:54:06 Andre Przywara wrote:
-> > This series introduces alternatives runtime patching to arm64.
-> > This allows to patch assembly instruction at runtime to either
-> > fix hardware bugs or optimize for certain hardware features. Look
-> > at patch 5/6 for an example on how to use this.
-> 
-> Does it provide a measurable performance benefit? The implementation
-> seems ok, but we should only add the complexity for things that
-> actually need it and can't be handled just as well with a run-time
-> conditional.
+Dave Chinner <david@fromorbit.com> writes:
 
-I'm not a fan of run-time code patching, however, I'm not sure we can
-avoid them long term in an optimal way.
+> On Mon, Nov 10, 2014 at 11:40:23AM -0500, Milosz Tanski wrote:
+>> This patcheset introduces an ability to perform a non-blocking read from
+>> regular files in buffered IO mode. This works by only for those filesystems
+>> that have data in the page cache.
+>> 
+>> It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
+>> new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
+>> extra flag argument (RWF_NONBLOCK).
+>> 
+>> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
+>> perform buffered IO operations. They submit the work form another thread
+>> that performs network IO and epoll or other threads that perform CPU work. This
+>> leads to increased latency for processing, esp. in the case of data that's
+>> already cached in the page cache.
+>> 
+>> With the new interface the applications will now be able to fetch the data in
+>> their network / cpu bound thread(s) and only defer to a threadpool if it's not
+>> there. In our own application (VLDB) we've observed a decrease in latency for
+>> "fast" request by avoiding unnecessary queuing and having to swap out current
+>> tasks in IO bound work threads.
+>
+> Can you write a test (or set of) for fstests that exercises this new
+> functionality? I'm not worried about performance, just
+> correctness....
 
-One example is errata workarounds we cannot predict. They may require
-changing of a critical code path.
+On the subject of testing, I added support to trinity (attached,
+untested).  That did raise one question.  Do we expect applications to
+#include <linux/fs.h> to get the RWF_NONBLOCK definition?
 
-Another example is code like local_irq_disable which at some point we
-may want to implement using GICv3 priority mask rather than PSTATE.I bit
-change to allow NMI via standard IRQ.
+Cheers,
+Jeff
 
-And another big use-case I can't yet talk openly about is architecture
-extensions.
-
-What I would like to see at some point is a way to choose alternatives
-at run-time via branches rather than code patching or even deciding at
-compile time what features we have. These would help with debugging.
-
--- 
-Catalin
+diff --git a/include/syscalls-i386.h b/include/syscalls-i386.h
+index 767be6e..3125064 100644
+--- a/include/syscalls-i386.h
++++ b/include/syscalls-i386.h
+@@ -365,4 +365,6 @@ struct syscalltable syscalls_i386[] = {
+ 	{ .entry = &syscall_getrandom },
+ 	{ .entry = &syscall_memfd_create },
+ 	{ .entry = &syscall_bpf },
++	{ .entry = &syscall_preadv2 },
++	{ .entry = &syscall_pwritev2 },
+ };
+diff --git a/include/syscalls-x86_64.h b/include/syscalls-x86_64.h
+index cb609ad..8d32571 100644
+--- a/include/syscalls-x86_64.h
++++ b/include/syscalls-x86_64.h
+@@ -329,4 +329,6 @@ struct syscalltable syscalls_x86_64[] = {
+ 	{ .entry = &syscall_memfd_create },
+ 	{ .entry = &syscall_kexec_file_load },
+ 	{ .entry = &syscall_bpf },
++	{ .entry = &syscall_preadv2 },
++	{ .entry = &syscall_pwritev2 },
+ };
+diff --git a/syscalls/read.c b/syscalls/read.c
+index e0948a2..adbf146 100644
+--- a/syscalls/read.c
++++ b/syscalls/read.c
+@@ -3,6 +3,7 @@
+  */
+ #include <stdlib.h>
+ #include <string.h>
++#include <linux/fs.h>
+ #include "arch.h"
+ #include "maps.h"
+ #include "random.h"
+@@ -94,3 +95,29 @@ struct syscallentry syscall_preadv = {
+ 	.arg5name = "pos_h",
+ 	.flags = NEED_ALARM,
+ };
++
++/*
++ * SYSCALL_DEFINE6(preadv2, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
++		int, flags)
++ */
++
++struct syscallentry syscall_preadv2 = {
++	.name = "preadv2",
++	.num_args = 5,
++	.arg1name = "fd",
++	.arg1type = ARG_FD,
++	.arg2name = "vec",
++	.arg2type = ARG_IOVEC,
++	.arg3name = "vlen",
++	.arg3type = ARG_IOVECLEN,
++	.arg4name = "pos_l",
++	.arg5name = "pos_h",
++	.arg6name = "flags",
++	.arg6type = ARG_OP,
++	.arg6list = {
++		.num = 1,
++		.values = { RWF_NONBLOCK, },
++	},
++	.flags = NEED_ALARM,
++};
+diff --git a/syscalls/syscalls.h b/syscalls/syscalls.h
+index 5a7748b..04400dd 100644
+--- a/syscalls/syscalls.h
++++ b/syscalls/syscalls.h
+@@ -375,5 +375,7 @@ extern struct syscallentry syscall_seccomp;
+ extern struct syscallentry syscall_memfd_create;
+ extern struct syscallentry syscall_kexec_file_load;
+ extern struct syscallentry syscall_bpf;
++extern struct syscallentry syscall_preadv2;
++extern struct syscallentry syscall_pwritev2;
+ 
+ unsigned int random_fcntl_setfl_flags(void);
+diff --git a/syscalls/write.c b/syscalls/write.c
+index f37e760..4218ccc 100644
+--- a/syscalls/write.c
++++ b/syscalls/write.c
+@@ -2,6 +2,7 @@
+  * SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf, size_t, count)
+  */
+ #include <stdlib.h>
++#include <linux/fs.h>
+ #include "arch.h"	// page_size
+ #include "maps.h"
+ #include "random.h"
+@@ -95,3 +96,30 @@ struct syscallentry syscall_pwritev = {
+ 	.arg5name = "pos_h",
+ 	.flags = NEED_ALARM,
+ };
++
++
++/*
++ * SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
++		int, flags)
++ */
++
++struct syscallentry syscall_pwritev2 = {
++	.name = "pwritev2",
++	.num_args = 6,
++	.arg1name = "fd",
++	.arg1type = ARG_FD,
++	.arg2name = "vec",
++	.arg2type = ARG_IOVEC,
++	.arg3name = "vlen",
++	.arg3type = ARG_IOVECLEN,
++	.arg4name = "pos_l",
++	.arg5name = "pos_h",
++	.arg6name = "flags",
++	.arg6type = ARG_OP,
++	.arg6list = {
++		.num = 1,
++		.values = { RWF_NONBLOCK, },
++	},
++	.flags = NEED_ALARM,
++};
