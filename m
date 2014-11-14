@@ -1,201 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935218AbaKNNHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:07:53 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:38301 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933890AbaKNNHv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:07:51 -0500
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <8b746ddb5ebdcdca8f66070ec3c1d909>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, dianders@chromium.org,
-        sonnyrao@chromium.org, amstan@chromium.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
-        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
-        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
-        Addy <addy.ke@rock-chips.com>
-Subject: [PATCH] mmc: dw_mmc: add quirk for data over interrupt timeout
-Date: Fri, 14 Nov 2014 21:05:38 +0800
-Message-Id: <1415970338-2637-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1161040AbaKNNI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:08:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60777 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933890AbaKNNI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 08:08:26 -0500
+Date: Fri, 14 Nov 2014 14:08:22 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Andrea Argangeli <andrea@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: anon_vma accumulating for certain load still not addressed
+Message-ID: <20141114130822.GC22857@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Addy <addy.ke@rock-chips.com>
+Hi,
+back in 2012 [1] there was a discussion about a forking load which
+accumulates anon_vmas. There was a trivial test case which triggers this
+and can potentially deplete the memory by local user.
 
-This patch add a new quirk to notify the driver to teminate
-current transfer and report a data timeout to the core,
-if data over interrupt does NOT come within the given time.
+We have a report for an older enterprise distribution where nsd is
+suffering from this issue most probably (I haven't debugged it throughly
+but accumulating anon_vma structs over time sounds like a good enough
+fit) and has to be restarted after some time to release the accumulated
+anon_vma objects.
 
-dw_mmc call mmc_request_done func to finish transfer depends on
-data over interrupt. If data over interrupt does not come in
-sending data state, the current transfer will be blocked.
+There was a patch which tried to work around the issue [2] but I do not
+see any follow ups nor any indication that the issue would be addressed
+in other way. 
 
-But this case really exists, when driver reads tuning data from
-card on rk3288-pink2 board. I measured waveforms by oscilloscope
-and found that card clock was always on and data lines were always
-holded high level in sending data state. This is the cause that
-card does NOT send data to host.
+The test program from [1] was running for around 39 mins on my laptop
+and here is the result:
 
-According to synopsys designware databook, the timeout counter is
-started only after the card clock is stopped.
+$ date +%s; grep anon_vma /proc/slabinfo
+1415960225
+anon_vma           11664  11900    160   25    1 : tunables    0    0    0 : slabdata    476    476      0
 
-So if card clock is always on, data read timeout interrupt will NOT come,
-and if data lines are always holded high level, all data-related
-interrupt such as start-bit error, data crc error, data over interrupt,
-end-bit error, and so on, will NOT come too.
+$ ./a # The reproducer
 
-So driver can't get the current state, it can do nothing but wait for.
+$ date +%s; grep anon_vma /proc/slabinfo
+1415962592
+anon_vma           34875  34875    160   25    1 : tunables    0    0    0 : slabdata   1395   1395      0
 
-This patch is based on https://patchwork.kernel.org/patch/5227941/
+$ killall a
+$ date +%s; grep anon_vma /proc/slabinfo
+1415962607
+anon_vma           11277  12175    160   25    1 : tunables    0    0    0 : slabdata    487    487      0
 
-Signed-off-by: Addy <addy.ke@rock-chips.com>
+So we have accumulated 23211 objects over that time period before the
+offender was killed which released all of them.
+
+The proposed workaround is kind of ugly but do people have a better idea
+than reference counting? If not should we merge it?
+
 ---
- drivers/mmc/host/dw_mmc.c  | 47 +++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/mmc/dw_mmc.h |  5 +++++
- 2 files changed, 51 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index b4c3044..3960fc3 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1448,6 +1448,17 @@ static int dw_mci_data_complete(struct dw_mci *host, struct mmc_data *data)
- 	return data->error;
- }
- 
-+static inline void dw_mci_dto_start_monitor(struct dw_mci *host)
-+{
-+	unsigned int data_tmout_clks;
-+	unsigned int data_tmout_ms;
-+
-+	data_tmout_clks = (mci_readl(host, TMOUT) >> 8);
-+	data_tmout_ms = (data_tmout_clks * 1000 / host->bus_hz) + 250;
-+
-+	mod_timer(&host->dto_timer, jiffies + msecs_to_jiffies(data_tmout_ms));
-+}
-+
- static void dw_mci_tasklet_func(unsigned long priv)
- {
- 	struct dw_mci *host = (struct dw_mci *)priv;
-@@ -1522,8 +1533,11 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 			}
- 
- 			if (!test_and_clear_bit(EVENT_XFER_COMPLETE,
--						&host->pending_events))
-+						&host->pending_events)) {
-+				if (host->quirks & DW_MCI_QUIRK_DTO_TIMER)
-+					dw_mci_dto_start_monitor(host);
- 				break;
-+			}
- 
- 			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
- 
-@@ -2115,6 +2129,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 		}
- 
- 		if (pending & SDMMC_INT_DATA_OVER) {
-+			if (host->quirks & DW_MCI_QUIRK_DTO_TIMER)
-+				del_timer(&host->dto_timer);
-+
- 			mci_writel(host, RINTSTS, SDMMC_INT_DATA_OVER);
- 			if (!host->data_status)
- 				host->data_status = pending;
-@@ -2502,6 +2519,28 @@ ciu_out:
- 	return ret;
- }
- 
-+static void dw_mci_dto_timer(unsigned long arg)
-+{
-+	struct dw_mci *host = (struct dw_mci *)arg;
-+
-+	switch (host->state) {
-+	case STATE_SENDING_DATA:
-+	case STATE_DATA_BUSY:
-+		/*
-+		* If data over interrupt does NOT come in sending data state,
-+		* we should notify the driver to teminate current transfer
-+		* and report a data timeout to the core.
-+		*/
-+		host->data_status = SDMMC_INT_DRTO;
-+		set_bit(EVENT_DATA_ERROR, &host->pending_events);
-+		set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
-+		tasklet_schedule(&host->tasklet);
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
- #ifdef CONFIG_OF
- static struct dw_mci_of_quirks {
- 	char *quirk;
-@@ -2513,6 +2552,9 @@ static struct dw_mci_of_quirks {
- 	}, {
- 		.quirk	= "disable-wp",
- 		.id	= DW_MCI_QUIRK_NO_WRITE_PROTECT,
-+	}, {
-+		.quirk	= "dto-timer",
-+		.id	= DW_MCI_QUIRK_DTO_TIMER,
- 	},
- };
- 
-@@ -2654,6 +2696,9 @@ int dw_mci_probe(struct dw_mci *host)
- 
- 	spin_lock_init(&host->lock);
- 	INIT_LIST_HEAD(&host->queue);
-+	if (host->quirks & DW_MCI_QUIRK_DTO_TIMER)
-+		setup_timer(&host->dto_timer,
-+			    dw_mci_dto_timer, (unsigned long)host);
- 
- 	/*
- 	 * Get the host data width - this assumes that HCON has been set with
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 42b724e..2477813 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -98,6 +98,7 @@ struct mmc_data;
-  * @irq_flags: The flags to be passed to request_irq.
-  * @irq: The irq value to be passed to request_irq.
-  * @sdio_id0: Number of slot0 in the SDIO interrupt registers.
-+ * @dto_timer: Timer for data over interrupt timeout.
-  *
-  * Locking
-  * =======
-@@ -196,6 +197,8 @@ struct dw_mci {
- 	int			irq;
- 
- 	int			sdio_id0;
-+
-+	struct timer_list	dto_timer;
- };
- 
- /* DMA ops for Internal/External DMAC interface */
-@@ -220,6 +223,8 @@ struct dw_mci_dma_ops {
- #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
- /* No write protect */
- #define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
-+/* Timer for data over interrupt timeout */
-+#define DW_MCI_QUIRK_DTO_TIMER			BIT(5)
- 
- /* Slot level quirks */
- /* This slot has no write protect */
+[1] https://lkml.org/lkml/2012/8/15/765
+[2] https://lkml.org/lkml/2013/6/3/568
 -- 
-1.8.3.2
-
+Michal Hocko
+SUSE Labs
