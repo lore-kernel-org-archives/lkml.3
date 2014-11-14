@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019AbaKNOYb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 09:24:31 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:63996 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754728AbaKNOYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 09:24:30 -0500
-From: Cecil Westerhof <Cecil@decebal.nl>
-To: "George Malone" <georgemaloneiii@mail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: SystemD fanboi Erich Schubert claims others have done no contributions to opensource software. (information within)
-Organization: Decebal Computing
-References: <trinity-3e250db2-9060-4c0e-baa9-ca1c831ac585-1415948052393@3capp-mailcom-lxa14>
-X-Face: "(y8cC@tg_12{">GF'UXTW]FHI2wMiZNrnf'1EFQ&O#$m:f#O7+7}kR<J%a^F2lh4[N~Yz4
- nSp#c+aQo1b5=?HcNEkQ7QzF<])O3X4MDL/AYjys&*mt>,v+Pti8=Vi/Z"g^?b"E
-X-Homepage: http://www.decebal.nl/
-Date: Fri, 14 Nov 2014 15:24:24 +0100
-In-Reply-To: <trinity-3e250db2-9060-4c0e-baa9-ca1c831ac585-1415948052393@3capp-mailcom-lxa14>
-	(George Malone's message of "Fri, 14 Nov 2014 07:54:12 +0100")
-Message-ID: <874mu1dfmv.fsf@Equus.decebal.nl>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1755107AbaKNOYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 09:24:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58096 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755057AbaKNOYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 09:24:33 -0500
+Date: Fri, 14 Nov 2014 15:24:26 +0100
+From: Igor Mammedov <imammedo@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        yoshikawa_takuya_b1@lab.ntt.co.jp
+Subject: Re: [PATCH 3/3] kvm: simplify update_memslots invocation
+Message-ID: <20141114152426.397aa1d8@igors-macbook-pro.local>
+In-Reply-To: <1415963522-5255-4-git-send-email-pbonzini@redhat.com>
+References: <1415963522-5255-1-git-send-email-pbonzini@redhat.com>
+	<1415963522-5255-4-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginalArrivalTime: 14 Nov 2014 14:24:26.0214 (UTC) FILETIME=[B191B060:01D00016]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op Friday 14 Nov 2014 07:54 CET schreef George Malone:
+On Fri, 14 Nov 2014 12:12:02 +0100
+Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-> I expect this post to be censored, it is par for the course for
-> people like you.
+> The update_memslots invocation is only needed in one case.  Make
+> the code clearer by moving it to __kvm_set_memory_region, and
+> removing the wrapper around insert_memslot.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  virt/kvm/kvm_main.c | 20 ++++++--------------
+>  1 file changed, 6 insertions(+), 14 deletions(-)
+> 
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 7bfc842b96d7..a5ed3a9f7522 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -674,8 +674,8 @@ static int kvm_create_dirty_bitmap(struct
+> kvm_memory_slot *memslot)
+>   * takes advantage of having initially sorted array and
+>   * known changed memslot position.
+>   */
+> -static void insert_memslot(struct kvm_memslots *slots,
+> -			   struct kvm_memory_slot *new)
+> +static void update_memslots(struct kvm_memslots *slots,
+> +			    struct kvm_memory_slot *new)
+>  {
+>  	int id = new->id;
+>  	int i = slots->id_to_index[id];
+> @@ -703,14 +703,6 @@ static void insert_memslot(struct kvm_memslots
+> *slots, slots->id_to_index[mslots[i].id] = i;
+>  }
+>  
+> -static void update_memslots(struct kvm_memslots *slots,
+> -			    struct kvm_memory_slot *new)
+> -{
+> -	if (new) {
+> -		insert_memslot(slots, new);
+> -	}
+> -}
+> -
+>  static int check_memory_region_flags(struct
+> kvm_userspace_memory_region *mem) {
+>  	u32 valid_flags = KVM_MEM_LOG_DIRTY_PAGES;
+> @@ -726,7 +718,7 @@ static int check_memory_region_flags(struct
+> kvm_userspace_memory_region *mem) }
+>  
+>  static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
+> -		struct kvm_memslots *slots, struct kvm_memory_slot
+> *new)
+> +		struct kvm_memslots *slots)
+>  {
+>  	struct kvm_memslots *old_memslots = kvm->memslots;
+>  
+> @@ -737,7 +729,6 @@ static struct kvm_memslots
+> *install_new_memslots(struct kvm *kvm,
+> WARN_ON(old_memslots->generation & 1); slots->generation =
+> old_memslots->generation + 1; 
+> -	update_memslots(slots, new);
+>  	rcu_assign_pointer(kvm->memslots, slots);
+>  	synchronize_srcu_expedited(&kvm->srcu);
+>  
+> @@ -874,7 +865,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+>  		slot = id_to_memslot(slots, mem->slot);
+>  		slot->flags |= KVM_MEMSLOT_INVALID;
+>  
+> -		old_memslots = install_new_memslots(kvm, slots,
+> NULL);
+> +		old_memslots = install_new_memslots(kvm, slots);
+>  
+>  		/* slot was deleted or moved, clear iommu mapping */
+>  		kvm_iommu_unmap_pages(kvm, &old);
+> @@ -905,7 +896,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
+>  		memset(&new.arch, 0, sizeof(new.arch));
+>  	}
+>  
+> -	old_memslots = install_new_memslots(kvm, slots, &new);
+> +	update_memslots(slots, &new);
+> +	old_memslots = install_new_memslots(kvm, slots);
+>  
+>  	kvm_arch_commit_memory_region(kvm, mem, &old, change);
+>  
 
-Could you stop flaming? I have seen this at least ten times. This does
-beg the question: could the problem be with you?
-
--- 
-Cecil Westerhof
-Senior Software Engineer
-M Cecil@Decebal.nl
-
-LinkedIn: http://www.linkedin.com/in/cecilwesterhof
-
-O< ascii ribbon campaign - stop html mail - www.asciiribbon.org
-
-Please do not send me Microsoft Office/Apple iWork documents.
-Send OpenDocument instead! http://fsf.org/campaigns/opendocument/
+Reviewed-by: Igor Mammedov <imammedo@redhat.com>
