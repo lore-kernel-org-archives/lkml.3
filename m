@@ -1,102 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaKNIyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:54:53 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38461 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505AbaKNIyw (ORCPT
+	id S1754974AbaKNIzU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:55:20 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:52294 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661AbaKNIzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:54:52 -0500
-Message-ID: <5465C34D.4030805@pengutronix.de>
-Date: Fri, 14 Nov 2014 09:54:37 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 14 Nov 2014 03:55:18 -0500
+Date: Fri, 14 Nov 2014 09:55:11 +0100
+From: Jordi Pujol Palomer <jordipujolp@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, "A. Wan" <jm@mokwan.com>,
+        Patrick Frisch <patrick@mekufemo6lbi9soa.myfritz.net>,
+        Aaron Campbell <aaron@arbor.net>
+Subject: Re: [RFC PATCH] overlayfs: support more than one read-only layer
+Message-ID: <20141114095511.789a76ac@gmail.com>
+In-Reply-To: <20141110090954.GB333@tucsk>
+References: <20141107170242.GA333@tucsk>
+	<20141108192723.444cecd2@gmail.com>
+	<20141110090954.GB333@tucsk>
 MIME-Version: 1.0
-To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
-        michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v2] can: Fix bug in suspend/resume
-References: <e7070431858e49e29cd03d76fd7a66c3@BN1AFFO11FD055.protection.gbl>
-In-Reply-To: <e7070431858e49e29cd03d76fd7a66c3@BN1AFFO11FD055.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="ltEHrpT5jBt0FRIGHauvjCHACWPVtkxvj"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary="MP_/p_vrJLhdahIXUlaTpGM6w0h"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---ltEHrpT5jBt0FRIGHauvjCHACWPVtkxvj
+--MP_/p_vrJLhdahIXUlaTpGM6w0h
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-On 11/14/2014 09:16 AM, Kedareswara rao Appana wrote:
-> The drvdata in the suspend/resume is of type struct net_device,
-> not the platform device.Enable the clocks in the suspend before
-> accessing the registers of the CAN.
->=20
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> ---
-> Changes for v2:
->   - Removed the struct platform_device* from suspend/resume
->     as suggest by Lothar.
->   - The clocks are getting disabled and un prepared at the end of the p=
-robe.=20
->     In the suspend the driver is doing a register write.In order
->     To do that register write we have to again enable and prepare the c=
-locks.
+EL Mon, 10 Nov 2014 10:09:54 +0100
+Miklos Szeredi <miklos@szeredi.hu> escrigu=C3=A9:
 
-Please look the at suspend/resume code and count the
-clock_enable/disable manually. After a suspend/resume cycle, you have
-enabled the clock twice, but disabled it once.
+> Maybe it wasn't clear, but the number of lower layers isn't limited by
+> FILESYSTEM_MAX_STACK_DEPTH,=20
+sorry, you have been clear, it's me that have not explained the purpose
+of that patch. This idea is also valid for the main overlayfs
+development.
+Consider that we have an encrypted partition and a live OS that
+uses overlayfs and works over it, when the OS is started already
+reaches the maximum stacking depth (2). Also, hardcoding parameters
+into the code may be annoying because a change implies creating and
+mantaining patches, otherwise when the parameter is configurable we can
+change it in a config value.
 
-I think you have to abstract the clock handling behind runtime PM. I
-haven't done this myself yet, but the strong feeling that this is a
-possible solution to your problem. These links might help:
+Also, I include a patch to explain better my first statement,
+would say lowerdirs has extended the functionality of lowerdir,
+therefore we can discard the lowerdir case that only works with one
+lower layer and rename lowerdirs to lowerdir. It's more simple and all
+the functionality is preserved.=20
+Regards,
 
-http://lwn.net/Articles/505683/
-http://www.slideshare.net/linaroorg/runtime-pm
-http://www.slideshare.net/linaroorg/lca14-407-deployingruntimepmonarmsocs=
-
-http://www.slideshare.net/SamsungOSG/shuah-khan-lpcpmops
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Jordi Pujol
 
 
---ltEHrpT5jBt0FRIGHauvjCHACWPVtkxvj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--MP_/p_vrJLhdahIXUlaTpGM6w0h
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename=23-overlayfs_discard_specifically_support_only_one_read-only_layer.patch.txt
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c	2014-11-12 10:23:54.285960418 +0100
+@@ -29,7 +29,6 @@ MODULE_VERSION(OVERLAYFS_VERSION);
+ 
+ struct ovl_config {
+ 	char *lowerdir;
+-	char *lowerdirs;
+ 	char *upperdir;
+ 	char *workdir;
+ };
+@@ -497,8 +496,6 @@ static int ovl_show_options(struct seq_f
+ 
+ 	if (ufs->config.lowerdir)
+ 		seq_printf(m, ",lowerdir=%s", ufs->config.lowerdir);
+-	if (ufs->config.lowerdirs)
+-		seq_printf(m, ",lowerdirs=%s", ufs->config.lowerdirs);
+ 	if (ufs->config.upperdir) {
+ 		seq_printf(m, ",upperdir=%s", ufs->config.upperdir);
+ 		seq_printf(m, ",workdir=%s", ufs->config.workdir);
+@@ -522,7 +519,6 @@ enum {
+ 
+ static const match_table_t ovl_tokens = {
+ 	{OPT_LOWERDIR,			"lowerdir=%s"},
+-	{OPT_LOWERDIRS,			"lowerdirs=%s"},
+ 	{OPT_UPPERDIR,			"upperdir=%s"},
+ 	{OPT_WORKDIR,			"workdir=%s"},
+ 	{OPT_ERR,			NULL}
+@@ -555,13 +551,6 @@ static int ovl_parse_opt(char *opt, stru
+ 				return -ENOMEM;
+ 			break;
+ 
+-		case OPT_LOWERDIRS:
+-			kfree(config->lowerdirs);
+-			config->lowerdirs = match_strdup(&args[0]);
+-			if (!config->lowerdirs)
+-				return -ENOMEM;
+-			break;
+-
+ 		case OPT_WORKDIR:
+ 			kfree(config->workdir);
+ 			config->workdir = match_strdup(&args[0]);
+@@ -718,24 +707,18 @@ static int ovl_fill_super(struct super_b
+ 		goto out_free_config;
+ 
+ 	err = -EINVAL;
+-	if (ufs->config.lowerdir && ufs->config.lowerdirs) {
+-		pr_err("overlayfs: both 'lowerdir' and 'lowerdirs' not allowed\n");
+-		goto out_free_config;
+-	}
+ 	if (ufs->config.upperdir && !ufs->config.workdir) {
+ 		pr_err("overlayfs: missing 'workdir'\n");
+ 		goto out_free_config;
+ 	}
+ 	if (!ufs->config.upperdir &&
+-	    !ufs->config.lowerdir && !ufs->config.lowerdirs) {
+-		pr_err("overlayfs: no 'upperdir', 'lowerdir' or 'lowerdirs' specified\n");
++	    !ufs->config.lowerdir) {
++		pr_err("overlayfs: no 'upperdir' or 'lowerdir' specified\n");
+ 		goto out_free_config;
+ 	}
+ 
+ 	if (ufs->config.lowerdir) {
+-		stacklen = 1;
+-	} else if (ufs->config.lowerdirs) {
+-		char *p = ufs->config.lowerdirs;
++		char *p = ufs->config.lowerdir;
+ 
+ 		for (;;) {
+ 			stacklen++;
+@@ -780,15 +763,7 @@ static int ovl_fill_super(struct super_b
+ 	}
+ 
+ 	if (ufs->config.lowerdir) {
+-		BUG_ON(numlower >= stacklen);
+-
+-		err = ovl_lower_dir(ufs->config.lowerdir, &stack[numlower], &ufs->lower_namelen, &sb->s_stack_depth);
+-		if (err)
+-			goto out_put_workpath;
+-
+-		numlower++;
+-	} else if (ufs->config.lowerdirs) {
+-		char *p = ufs->config.lowerdirs;
++		char *p = ufs->config.lowerdir;
+ 
+ 		for (;;) {
+ 			char *next = strchr(p, ':');
 
-iQIcBAEBAgAGBQJUZcNNAAoJECte4hHFiupU2BcP/2PbjcCxYTc2eER4ciRO5yVW
-/EdpvEwBdceEoEvsAg0QTe0tguA24+dVLIh6nR0ytWUFcjqAjUnPV9uTJIWNUP2n
-1/x1DtPz/ZGa13UZiLrJCqo6ycFBmw6ug7LUtVG7WGjiDsu/Msj5APFOIrP/ROnP
-nwUZa8YXolJt7IfuLAvcUpfzM05zkuXJd2LRajyqeeeUydy1mVkEiIt/4g8N+fo/
-3CjVafqo26QmWoTjDLqmCqFl0doEIz2uzpMZKoGokmZAF0++mVK9fNJVmi3FTv3j
-HVOTyYtNj3qkQooN0SaJ6071Vny6pbbK0/1bU3GELoxZSPZOgmjNo/cyP1zTsTYZ
-JbkAVayRUzngd83WtLsaNmkbhyDKUrNs+oXKBshZrLxnUQG2PcyzZdaOYdzV+DrQ
-NQUqG/ZGSKhOQds9VzNdHNgzv7CtOZJhdok6ghLc7uPyvJ1KqcljYTCTJL8QLebc
-ed4ht/9XRd6s3l8iFB3IUgv3XStk7f6NzzMopgJG0zKIdDlO80s9du2zBysBHbq9
-0fuyEbFXs1x94k9WQgFzkF7C6RmxMApnjRhTe0DmN7hj32iqCYDlxkyl0LykwBFK
-QAcBXf00Jha7yLFcNKFmV9y7fHWEIm547eM8/l/3uwSm41Du9ckiCMem4hR044sG
-PM8jxtvSuScx01KRx5t5
-=QqCy
------END PGP SIGNATURE-----
-
---ltEHrpT5jBt0FRIGHauvjCHACWPVtkxvj--
+--MP_/p_vrJLhdahIXUlaTpGM6w0h--
