@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934902AbaKNA77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:59:59 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59481 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933409AbaKNA74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:59:56 -0500
-Message-ID: <54655409.6030604@codeaurora.org>
-Date: Thu, 13 Nov 2014 16:59:53 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S934919AbaKNBBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 20:01:36 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:49424 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933409AbaKNBBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 20:01:35 -0500
+Date: Fri, 14 Nov 2014 02:58:33 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jerome Glisse <j.glisse@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
+Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page
+ table (gpt) v2.
+Message-ID: <20141114005833.GA1572@node.dhcp.inet.fi>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+ <1415644096-3513-4-git-send-email-j.glisse@gmail.com>
+ <CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
+ <20141110205814.GA4186@gmail.com>
+ <CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
+ <20141110225036.GB4186@gmail.com>
+ <CA+55aFyfgj5ntoXEJeTZyGdOZ9_A_TK0fwt1px_FUhemXGgr0Q@mail.gmail.com>
+ <CA+55aFxYnBxGZr3ed0i46SpSdOj+3VSVBZiqRbdJuwFMuTmxDw@mail.gmail.com>
 MIME-Version: 1.0
-To: frowand.list@gmail.com
-CC: Kevin Hilman <khilman@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com> <5461150B.2010907@codeaurora.org> <54616CB3.5000405@gmail.com> <54616F74.5010408@codeaurora.org> <54618077.9000108@gmail.com> <5463A381.9060305@gmail.com> <5465072F.6040509@codeaurora.org> <546550FF.2080409@gmail.com>
-In-Reply-To: <546550FF.2080409@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxYnBxGZr3ed0i46SpSdOj+3VSVBZiqRbdJuwFMuTmxDw@mail.gmail.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2014 04:46 PM, Frank Rowand wrote:
-> On 11/13/2014 11:31 AM, Stephen Boyd wrote:
->> Sorry, I'm sort of lost. If there are serial aliases in the dts file,
->> then we should alias all of the serial ports. If there aren't aliases
->> then we're backwards compatible with the dts we have now and we'll do
->> dynamic generation. Putting code into the driver to validate that
->> this is true is not the job of the driver. If anything, it should
->> validated when the dts file is created. If one day we screw up and
->> have a dts file with such a bad configuration we'll have to work
->> around it, but until that day comes I'd rather not think about it. 
-> Maybe I did not understand when you said "Perhaps we should use an ida".
-> That sentence led me to think the driver should check for misconfiguration.
-> The case I was trying to handle was if there was at least one serialN
-> alias and at least one UART without an alias.  For example, if there
-> are three UARTs (serial_a, serial_b, serial_c, probed in that order)
-> and one alias (serial0 = &serial_c;) then the result would be:
->
->    serial_a  line 0 (from msm_uart_next_id)
->    serial_b  line 1 (from msm_uart_next_id)
->    serial_c  line 0 (from the alias)
->
->    Two UARTs probed with line == 0.  This is an error.
->
-> Most of the serial drivers don't check for this type of bad configuration.
-> Some drivers keep a bit map of which lines have been used.  I'm not sure
-> what they do in case of a conflict (I did not read to that level of detail).
->
-> I thought you were suggesting the driver check for the bad configuration,
-> so I was proposing a somewhat simple way of forcing a boot error for the
-> bad configuration.
->
-> Since you are not suggesting the driver check for the bad configuration,
-> you can ignore my proposal.  I agree that it is ok for the driver to
-> expect the board dts to be correct.  The problem should be detected by
-> the dts author on first boot as part of normal bring up testing, and
-> then corrected.
->
+On Thu, Nov 13, 2014 at 03:50:02PM -0800, Linus Torvalds wrote:
+> +/*
+> + * The 'tree_level' data only describes one particular level
+> + * of the tree. The upper levels are totally invisible to the
+> + * user of the tree walker, since the tree walker will walk
+> + * those using the tree definitions.
+> + *
+> + * NOTE! "struct tree_entry" is an opaque type, and is just a
+> + * used as a pointer to the particular level. You can figure
+> + * out which level you are at by looking at the "tree_level",
+> + * but even better is to just use different "lookup()"
+> + * functions for different levels, at which point the
+> + * function is inherent to the level.
 
-Ah ok. I was just saying we could use an ida instead of an atomic
-increment so that this driver works properly with driver
-binding/unbinding, otherwise the line number keeps increasing and
-quickly goes beyond the static array of ports (which I still don't
-understand why we have at all btw).
+Please, don't.
+
+We will end up with the same last-level centric code as we have now in mm
+subsystem: all code only cares about pte. It makes implementing variable
+page size support really hard and lead to copy-paste approach. And to
+hugetlb parallel world...
+
+It would be nice to have tree_level description generic enough to get rid
+of pte_present()/pte_dirty()/pte_* and implement generic helpers instead.
+
+Apart from variable page size problem, we could get one day support
+different CPU page table format supported in runtime: PAE/non-PAE on
+32-bit x86 or LPAE/non-LPAE on ARM in one binary kernel image.
+
+The big topic is how to get it done without significant runtime cost :-/
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+ Kirill A. Shutemov
