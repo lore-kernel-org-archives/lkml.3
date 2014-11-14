@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935262AbaKNL7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:59:31 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:65051 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933262AbaKNL7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:59:30 -0500
-Date: Fri, 14 Nov 2014 06:59:27 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Ingo Molnar <mingo@redhat.com>, kgdb-bugreport@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH RESEND 3.18-rc3 v2 1/2] trace: kdb: Fix kernel panic
- during ftdump
-Message-ID: <20141114065927.4156ef8e@gandalf.local.home>
-In-Reply-To: <5465C685.9060006@linaro.org>
-References: <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>
-	<1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
-	<1415277716-19419-2-git-send-email-daniel.thompson@linaro.org>
-	<20141113212646.6d720886@gandalf.local.home>
-	<5465C685.9060006@linaro.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S935276AbaKNMAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 07:00:13 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:29861 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933262AbaKNMAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 07:00:12 -0500
+X-IronPort-AV: E=Sophos;i="5.07,385,1413244800"; 
+   d="scan'208";a="191351169"
+Date: Fri, 14 Nov 2014 11:59:53 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <catalin.marinas@arm.com>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v9 05/13] arm: introduce is_device_dma_coherent
+In-Reply-To: <1415792454-23161-5-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.DEB.2.02.1411141158560.26318@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com> <1415792454-23161-5-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014 09:08:21 +0000
-Daniel Thompson <daniel.thompson@linaro.org> wrote:
+Russell,
+this patch needs your feedback.
 
-> On 14/11/14 02:26, Steven Rostedt wrote:
-> > On Thu,  6 Nov 2014 12:41:55 +0000
-> > Daniel Thompson <daniel.thompson@linaro.org> wrote:
-> > 
-> >> Currently kdb's ftdump command unconditionally crashes due to a null
-> >> pointer de-reference whenever the command is run. This in turn causes
-> >> the kernel to panic.
-> >>
-> >> The abridged stacktrace (gathered with ARCH=arm) is:
-> >> --- cut here ---
-> > 
-> > This is a nasty line. "git am " truncated the change log there thinking
-> > it was the end of the change log (that '---' did it).
+- Stefano
+
+On Wed, 12 Nov 2014, Stefano Stabellini wrote:
+> Introduce a boolean flag and an accessor function to check whether a
+> device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
 > 
-> Oops. Looks like I shall have to train myself out of that particular
-> habit (which will be tough, since I've used it long enough to be ingrained).
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> CC: linux@arm.linux.org.uk
+> ---
+>  arch/arm/include/asm/device.h      |    1 +
+>  arch/arm/include/asm/dma-mapping.h |    6 ++++++
+>  2 files changed, 7 insertions(+)
 > 
-> Will repost as soon as I've thought about your other comments.
-
-I was just telling you so that you wouldn't do it again. I already
-pulled in your patches. You didn't need to resend. But at least it
-would help you get out of that habit! J
-
--- Steve
+> diff --git a/arch/arm/include/asm/device.h b/arch/arm/include/asm/device.h
+> index dc662fc..4111592 100644
+> --- a/arch/arm/include/asm/device.h
+> +++ b/arch/arm/include/asm/device.h
+> @@ -17,6 +17,7 @@ struct dev_archdata {
+>  #ifdef CONFIG_ARM_DMA_USE_IOMMU
+>  	struct dma_iommu_mapping	*mapping;
+>  #endif
+> +	bool dma_coherent;
+>  };
+>  
+>  struct omap_device;
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index 85738b2..8c3b616 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -123,11 +123,17 @@ static inline unsigned long dma_max_pfn(struct device *dev)
+>  
+>  static inline int set_arch_dma_coherent_ops(struct device *dev)
+>  {
+> +	dev->archdata.dma_coherent = true;
+>  	set_dma_ops(dev, &arm_coherent_dma_ops);
+>  	return 0;
+>  }
+>  #define set_arch_dma_coherent_ops(dev)	set_arch_dma_coherent_ops(dev)
+>  
+> +static inline bool is_device_dma_coherent(struct device *dev)
+> +{
+> +	return dev->archdata.dma_coherent;
+> +}
+> +
+>  static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+>  {
+>  	unsigned int offset = paddr & ~PAGE_MASK;
+> -- 
+> 1.7.10.4
+> 
