@@ -1,356 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935293AbaKNMhR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 07:37:17 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58846 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161052AbaKNMgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 07:36:03 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: [PATCH 3.18-rc3 v8 2/4] irqchip: gic: Introduce plumbing for IPI FIQ
-Date: Fri, 14 Nov 2014 12:35:41 +0000
-Message-Id: <1415968543-29469-3-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
- <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
+	id S935329AbaKNMlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 07:41:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60241 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934994AbaKNMle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 07:41:34 -0500
+Date: Fri, 14 Nov 2014 13:41:26 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 06/23 v4] tracing: Have function_graph use
+ trace_seq_has_overflowed()
+Message-ID: <20141114124126.GB2988@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+ <20141114011410.987913836@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114011410.987913836@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently it is not possible to exploit FIQ for systems with a GIC, even if
-the systems are otherwise capable of it. This patch makes it possible
-for IPIs to be delivered using FIQ.
+On Thu 2014-11-13 20:12:50, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> Instead of doing individual checks all over the place that makes the code
+> very messy. Just check trace_seq_has_overflowed() at the end or in
+> strategic places.
+> 
+> This makes the code much cleaner and also helps with getting closer
+> to removing the return values of trace_seq_printf() and friends.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/trace/trace.h                 |   2 +-
+>  kernel/trace/trace_functions_graph.c | 374 +++++++++++------------------------
+>  2 files changed, 116 insertions(+), 260 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 19418221b302..c3a37e55ec8b 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -726,7 +726,7 @@ extern unsigned long trace_flags;
+>  extern enum print_line_t
+>  print_graph_function_flags(struct trace_iterator *iter, u32 flags);
+>  extern void print_graph_headers_flags(struct seq_file *s, u32 flags);
+> -extern enum print_line_t
+> +extern void
+>  trace_print_graph_duration(unsigned long long duration, struct trace_seq *s);
+>  extern void graph_trace_open(struct trace_iterator *iter);
+>  extern void graph_trace_close(struct trace_iterator *iter);
+> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> index f0a0c982cde3..477a7c65cf08 100644
+> --- a/kernel/trace/trace_functions_graph.c
+> +++ b/kernel/trace/trace_functions_graph.c
+[...]
+> @@ -682,94 +639,69 @@ get_return_for_leaf(struct trace_iterator *iter,
+>  	return next;
+>  }
+>  
+> -static int print_graph_abs_time(u64 t, struct trace_seq *s)
+> +static void print_graph_abs_time(u64 t, struct trace_seq *s)
+>  {
+>  	unsigned long usecs_rem;
+>  
+>  	usecs_rem = do_div(t, NSEC_PER_SEC);
+>  	usecs_rem /= 1000;
+>  
+> -	return trace_seq_printf(s, "%5lu.%06lu |  ",
+> -			(unsigned long)t, usecs_rem);
+> +	trace_seq_printf(s, "%5lu.%06lu |  ",
+> +			 (unsigned long)t, usecs_rem);
+>  }
+>  
+> -static enum print_line_t
+> +static void
+>  print_graph_irq(struct trace_iterator *iter, unsigned long addr,
+>  		enum trace_type type, int cpu, pid_t pid, u32 flags)
+>  {
+> -	int ret;
+>  	struct trace_seq *s = &iter->seq;
+>  
+>  	if (addr < (unsigned long)__irqentry_text_start ||
+>  		addr >= (unsigned long)__irqentry_text_end)
+> -		return TRACE_TYPE_UNHANDLED;
+> +		return;
 
-To do so it modifies the register state so that normal interrupts are
-placed in group 1 and specific IPIs are placed into group 0. It also
-configures the controller to raise group 0 interrupts using the FIQ
-signal. It provides a means for architecture code to define which IPIs
-shall use FIQ and to acknowledge any IPIs that are raised.
+I was curious if the TRACE_TYPE_UNHANDLED return value has any special
+effect. But it seems to be ignored. There are only two callers and
+they take care only of the PARTIAL_LINE return value.
 
-All GIC hardware except GICv1-without-TrustZone support provides a means
-to group exceptions into group 0 and group 1 but the hardware
-functionality is unavailable to the kernel when a secure monitor is
-present because access to the grouping registers are prohibited outside
-"secure world". However when grouping is not available (or in the case
-of early GICv1 implementations is very hard to configure) the code to
-change groups does not deploy and all IPIs will be raised via IRQ.
+[...]
 
-It has been tested and shown working on two systems capable of
-supporting grouping (Freescale i.MX6 and STiH416). It has also been
-tested for boot regressions on two systems that do not support grouping
-(vexpress-a9 and Qualcomm Snapdragon 600).
+> @@ -953,62 +856,43 @@ print_graph_entry_nested(struct trace_iterator *iter,
+>  	return TRACE_TYPE_NO_CONSUME;
+>  }
+>  
+> -static enum print_line_t
+> +static void
+>  print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
+>  		     int type, unsigned long addr, u32 flags)
+>  {
+>  	struct fgraph_data *data = iter->private;
+>  	struct trace_entry *ent = iter->ent;
+>  	int cpu = iter->cpu;
+> -	int ret;
+>  
+>  	/* Pid */
+> -	if (verif_pid(s, ent->pid, cpu, data) == TRACE_TYPE_PARTIAL_LINE)
+> -		return TRACE_TYPE_PARTIAL_LINE;
+> +	verif_pid(s, ent->pid, cpu, data);
+>  
+> -	if (type) {
+> +	if (type)
+>  		/* Interrupt */
+> -		ret = print_graph_irq(iter, addr, type, cpu, ent->pid, flags);
+> -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> -			return TRACE_TYPE_PARTIAL_LINE;
+> -	}
+> +		print_graph_irq(iter, addr, type, cpu, ent->pid, flags);
+>  
+>  	if (!(trace_flags & TRACE_ITER_CONTEXT_INFO))
+> -		return 0;
+> +		return;
+>  
+>  	/* Absolute time */
+> -	if (flags & TRACE_GRAPH_PRINT_ABS_TIME) {
+> -		ret = print_graph_abs_time(iter->ts, s);
+> -		if (!ret)
+> -			return TRACE_TYPE_PARTIAL_LINE;
+> -	}
+> +	if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
+> +		print_graph_abs_time(iter->ts, s);
+>  
+>  	/* Cpu */
+> -	if (flags & TRACE_GRAPH_PRINT_CPU) {
+> -		ret = print_graph_cpu(s, cpu);
+> -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> -			return TRACE_TYPE_PARTIAL_LINE;
+> -	}
+> +	if (flags & TRACE_GRAPH_PRINT_CPU)
+> +		print_graph_cpu(s, cpu);
+>  
+>  	/* Proc */
+>  	if (flags & TRACE_GRAPH_PRINT_PROC) {
+> -		ret = print_graph_proc(s, ent->pid);
+> -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> -			return TRACE_TYPE_PARTIAL_LINE;
+> -
+> -		ret = trace_seq_puts(s, " | ");
+> -		if (!ret)
+> -			return TRACE_TYPE_PARTIAL_LINE;
+> +		print_graph_proc(s, ent->pid);
+> +		trace_seq_puts(s, " | ");
+>  	}
+>  
+>  	/* Latency format */
+> -	if (trace_flags & TRACE_ITER_LATENCY_FMT) {
+> -		ret = print_graph_lat_fmt(s, ent);
+> -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> -			return TRACE_TYPE_PARTIAL_LINE;
+> -	}
+> +	if (trace_flags & TRACE_ITER_LATENCY_FMT)
+> +		print_graph_lat_fmt(s, ent);
+>  
+> -	return 0;
+> +	return;
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Tested-by: Jon Medhurst <tixy@linaro.org>
----
- arch/arm/kernel/traps.c         |   5 +-
- drivers/irqchip/irq-gic.c       | 155 +++++++++++++++++++++++++++++++++++++---
- include/linux/irqchip/arm-gic.h |   8 +++
- 3 files changed, 158 insertions(+), 10 deletions(-)
+This probably even fixed a bug. The function returned
+TRACE_TYPE_PARTIAL_LINE (0) even when it did not print anything.
 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 0c8b10801d36..4dc45b38e56e 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -26,6 +26,7 @@
- #include <linux/init.h>
- #include <linux/sched.h>
- #include <linux/irq.h>
-+#include <linux/irqchip/arm-gic.h>
- 
- #include <linux/atomic.h>
- #include <asm/cacheflush.h>
-@@ -479,7 +480,9 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
- 
- 	nmi_enter();
- 
--	/* nop. FIQ handlers for special arch/arm features can be added here. */
-+#ifdef CONFIG_ARM_GIC
-+	gic_handle_fiq_ipi();
-+#endif
- 
- 	nmi_exit();
- 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 0db62a6f1ee3..fe6a35f891ac 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -39,6 +39,7 @@
- #include <linux/slab.h>
- #include <linux/irqchip/chained_irq.h>
- #include <linux/irqchip/arm-gic.h>
-+#include <linux/ratelimit.h>
- 
- #include <asm/cputype.h>
- #include <asm/irq.h>
-@@ -48,6 +49,10 @@
- #include "irq-gic-common.h"
- #include "irqchip.h"
- 
-+#ifndef SMP_IPI_FIQ_MASK
-+#define SMP_IPI_FIQ_MASK 0
-+#endif
-+
- union gic_base {
- 	void __iomem *common_base;
- 	void __percpu * __iomem *percpu_base;
-@@ -331,6 +336,93 @@ static struct irq_chip gic_chip = {
- 	.irq_set_wake		= gic_set_wake,
- };
- 
-+/*
-+ * Shift an interrupt between Group 0 and Group 1.
-+ *
-+ * In addition to changing the group we also modify the priority to
-+ * match what "ARM strongly recommends" for a system where no Group 1
-+ * interrupt must ever preempt a Group 0 interrupt.
-+ *
-+ * If is safe to call this function on systems which do not support
-+ * grouping (it will have no effect).
-+ */
-+static void gic_set_group_irq(void __iomem *base, unsigned int hwirq,
-+				int group)
-+{
-+	unsigned int grp_reg = hwirq / 32 * 4;
-+	u32 grp_mask = BIT(hwirq % 32);
-+	u32 grp_val;
-+
-+	unsigned int pri_reg = (hwirq / 4) * 4;
-+	u32 pri_mask = BIT(7 + ((hwirq % 4) * 8));
-+	u32 pri_val;
-+
-+	/*
-+	 * Systems which do not support grouping will have not have
-+	 * the EnableGrp1 bit set.
-+	 */
-+	if (!(GICD_ENABLE_GRP1 & readl_relaxed(base + GIC_DIST_CTRL)))
-+		return;
-+
-+	raw_spin_lock(&irq_controller_lock);
-+
-+	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
-+	pri_val = readl_relaxed(base + GIC_DIST_PRI + pri_reg);
-+
-+	if (group) {
-+		grp_val |= grp_mask;
-+		pri_val |= pri_mask;
-+	} else {
-+		grp_val &= ~grp_mask;
-+		pri_val &= ~pri_mask;
-+	}
-+
-+	writel_relaxed(grp_val, base + GIC_DIST_IGROUP + grp_reg);
-+	writel_relaxed(pri_val, base + GIC_DIST_PRI + pri_reg);
-+
-+	raw_spin_unlock(&irq_controller_lock);
-+}
-+
-+/*
-+ * Test which group an interrupt belongs to.
-+ *
-+ * Returns 0 if the controller does not support grouping.
-+ */
-+static int gic_get_group_irq(void __iomem *base, unsigned int hwirq)
-+{
-+	unsigned int grp_reg = hwirq / 32 * 4;
-+	u32 grp_val;
-+
-+	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
-+
-+	return (grp_val >> (hwirq % 32)) & 1;
-+}
-+
-+/*
-+ * Fully acknowledge (both ack and eoi) any outstanding FIQ-based IPI,
-+ * otherwise do nothing.
-+ */
-+void gic_handle_fiq_ipi(void)
-+{
-+	struct gic_chip_data *gic = &gic_data[0];
-+	void __iomem *cpu_base = gic_data_cpu_base(gic);
-+	unsigned long irqstat, irqnr;
-+
-+	if (WARN_ON(!in_nmi()))
-+		return;
-+
-+	while ((1u << readl_relaxed(cpu_base + GIC_CPU_HIGHPRI)) &
-+	       SMP_IPI_FIQ_MASK) {
-+		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
-+		writel_relaxed(irqstat, cpu_base + GIC_CPU_EOI);
-+
-+		irqnr = irqstat & GICC_IAR_INT_ID_MASK;
-+		WARN_RATELIMIT(irqnr > 16,
-+			       "Unexpected irqnr %lu (bad prioritization?)\n",
-+			       irqnr);
-+	}
-+}
-+
- void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
- {
- 	if (gic_nr >= MAX_GIC_NR)
-@@ -362,15 +454,24 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
- static void gic_cpu_if_up(void)
- {
- 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
--	u32 bypass = 0;
-+	void __iomem *dist_base = gic_data_dist_base(&gic_data[0]);
-+	u32 ctrl = 0;
- 
- 	/*
--	* Preserve bypass disable bits to be written back later
--	*/
--	bypass = readl(cpu_base + GIC_CPU_CTRL);
--	bypass &= GICC_DIS_BYPASS_MASK;
-+	 * Preserve bypass disable bits to be written back later
-+	 */
-+	ctrl = readl(cpu_base + GIC_CPU_CTRL);
-+	ctrl &= GICC_DIS_BYPASS_MASK;
- 
--	writel_relaxed(bypass | GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
-+	/*
-+	 * If EnableGrp1 is set in the distributor then enable group 1
-+	 * support for this CPU (and route group 0 interrupts to FIQ).
-+	 */
-+	if (GICD_ENABLE_GRP1 & readl_relaxed(dist_base + GIC_DIST_CTRL))
-+		ctrl |= GICC_COMMON_BPR | GICC_FIQ_EN | GICC_ACK_CTL |
-+			GICC_ENABLE_GRP1;
-+
-+	writel_relaxed(ctrl | GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
- }
- 
- 
-@@ -394,7 +495,23 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
- 
- 	gic_dist_config(base, gic_irqs, NULL);
- 
--	writel_relaxed(GICD_ENABLE, base + GIC_DIST_CTRL);
-+	/*
-+	 * Set EnableGrp1/EnableGrp0 (bit 1 and 0) or EnableGrp (bit 0 only,
-+	 * bit 1 ignored) depending on current mode.
-+	 */
-+	writel_relaxed(GICD_ENABLE_GRP1 | GICD_ENABLE, base + GIC_DIST_CTRL);
-+
-+	/*
-+	 * Set all global interrupts to be group 1 if (and only if) it
-+	 * is possible to enable group 1 interrupts. This register is RAZ/WI
-+	 * if not accessible or not implemented, however some GICv1 devices
-+	 * do not implement the EnableGrp1 bit making it unsafe to set
-+	 * this register unconditionally.
-+	 */
-+	if (GICD_ENABLE_GRP1 & readl_relaxed(base + GIC_DIST_CTRL))
-+		for (i = 32; i < gic_irqs; i += 32)
-+			writel_relaxed(0xffffffff,
-+				       base + GIC_DIST_IGROUP + i * 4 / 32);
- }
- 
- static void gic_cpu_init(struct gic_chip_data *gic)
-@@ -403,6 +520,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 	void __iomem *base = gic_data_cpu_base(gic);
- 	unsigned int cpu_mask, cpu = smp_processor_id();
- 	int i;
-+	unsigned long secure_irqs, secure_irq;
- 
- 	/*
- 	 * Get what the GIC says our CPU mask is.
-@@ -421,6 +539,19 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 
- 	gic_cpu_config(dist_base, NULL);
- 
-+	/*
-+	 * If the distributor is configured to support interrupt grouping
-+	 * then set any PPI and SGI interrupts not set in SMP_IPI_FIQ_MASK
-+	 * to be group1 and ensure any remaining group 0 interrupts have
-+	 * the right priority.
-+	 */
-+	if (GICD_ENABLE_GRP1 & readl_relaxed(dist_base + GIC_DIST_CTRL)) {
-+		secure_irqs = SMP_IPI_FIQ_MASK;
-+		writel_relaxed(~secure_irqs, dist_base + GIC_DIST_IGROUP + 0);
-+		for_each_set_bit(secure_irq, &secure_irqs, 16)
-+			gic_set_group_irq(dist_base, secure_irq, 0);
-+	}
-+
- 	writel_relaxed(GICC_INT_PRI_THRESHOLD, base + GIC_CPU_PRIMASK);
- 	gic_cpu_if_up();
- }
-@@ -510,7 +641,8 @@ static void gic_dist_restore(unsigned int gic_nr)
- 		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
- 			dist_base + GIC_DIST_ENABLE_SET + i * 4);
- 
--	writel_relaxed(GICD_ENABLE, dist_base + GIC_DIST_CTRL);
-+	writel_relaxed(GICD_ENABLE_GRP1 | GICD_ENABLE,
-+		       dist_base + GIC_DIST_CTRL);
- }
- 
- static void gic_cpu_save(unsigned int gic_nr)
-@@ -630,6 +762,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- {
- 	int cpu;
- 	unsigned long flags, map = 0;
-+	unsigned long softint;
- 
- 	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
- 
-@@ -644,7 +777,11 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	dmb(ishst);
- 
- 	/* this always happens on GIC0 */
--	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
-+	softint = map << 16 | irq;
-+	if (gic_get_group_irq(gic_data_dist_base(&gic_data[0]), irq))
-+		softint |= 0x8000;
-+	writel_relaxed(softint,
-+		       gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
- 	read_unlock_irqrestore(&fiq_safe_cpu_map_lock, flags);
- }
-diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
-index 13eed92c7d24..a906fb7ac11f 100644
---- a/include/linux/irqchip/arm-gic.h
-+++ b/include/linux/irqchip/arm-gic.h
-@@ -22,6 +22,10 @@
- #define GIC_CPU_IDENT			0xfc
- 
- #define GICC_ENABLE			0x1
-+#define GICC_ENABLE_GRP1                0x2
-+#define GICC_ACK_CTL                    0x4
-+#define GICC_FIQ_EN                     0x8
-+#define GICC_COMMON_BPR                 0x10
- #define GICC_INT_PRI_THRESHOLD		0xf0
- #define GICC_IAR_INT_ID_MASK		0x3ff
- #define GICC_INT_SPURIOUS		1023
-@@ -44,6 +48,7 @@
- #define GIC_DIST_SGI_PENDING_SET	0xf20
- 
- #define GICD_ENABLE			0x1
-+#define GICD_ENABLE_GRP1		0x2
- #define GICD_DISABLE			0x0
- #define GICD_INT_ACTLOW_LVLTRIG		0x0
- #define GICD_INT_EN_CLR_X32		0xffffffff
-@@ -117,5 +122,8 @@ static inline void __init register_routable_domain_ops
- {
- 	gic_routable_irq_domain_ops = ops;
- }
-+
-+void gic_handle_fiq_ipi(void);
-+
- #endif /* __ASSEMBLY */
- #endif
--- 
-1.9.3
+The simplification is really cool.
 
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+
+Best Regards,
+Petr Mladek
