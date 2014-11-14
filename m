@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaKNIOx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:14:53 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:16485 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610AbaKNIOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:14:51 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-29-5465b9f924eb
-Message-id: <1415952888.25732.3.camel@AMDC1943>
-Subject: Re: [PATCH v11 1/6] PM / Runtime: Add getter for querying the IRQ safe
- option
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Fri, 14 Nov 2014 09:14:48 +0100
-In-reply-to: <3087810.nyWZ4cyKAA@vostro.rjw.lan>
-References: <1415802748-30530-1-git-send-email-k.kozlowski@samsung.com>
- <1415802748-30530-2-git-send-email-k.kozlowski@samsung.com>
- <3087810.nyWZ4cyKAA@vostro.rjw.lan>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e/4Fd1fO1NDDC4GW2ycsZ7VYvrUC4wW
-	q6f+ZbV4uvkxk8XZpjfsFp0Tl7BbzJqyl8ni8q45bBafe48wWty+zGux9shddou7p46yWZw5
-	fYnVYsLvC2wWx9eGW7zs28/iIODR0tzD5jG7Yyarx+I9L5k8Nq3qZPO4c20Pm8eWq+0sHrPv
-	/mD06NuyitFjxerv7B6fN8kFcEVx2aSk5mSWpRbp2yVwZcz/NJ+lYAlbxb1jzcwNjP9Yuhg5
-	OSQETCQe7Z3MBmGLSVy4tx7I5uIQEljKKLHnTAuU85lRYuOaq4wgVbwC+hKHNr5lBrGFBSIk
-	bnduBouzCRhLbF6+BGySiIC2xNyeU8wgzcwCZ1kk7s1azwqSYBFQlZi2chFYA6eAgUT7lcnM
-	EBtWM0qsXfmEHSTBLKAuMWneIqAEB9BNyhKN/W4QiwUlfky+xwJRIi+xec1b5gmMArOQdMxC
-	UjYLSdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCHx9nUH49JjVocYBTgYlXh4NTJT
-	Q4RYE8uKK3MPMUpwMCuJ8F7bDhTiTUmsrEotyo8vKs1JLT7EyMTBKdXAaHV54cavgR3b9l+a
-	9iB65reCE21sXOprQuV1lj5ONSx4dnS59dJinViL5icN51K0+Gdk1oenMKYK6G7bMye901n6
-	f5F9xBzJv4oGXe5hahPEBB9vX76VZdrFI1tXpzyo009oOyjDac+V1uytWFfNoijb8Lul8wKX
-	3rNCwwpTu96LgTdvfvNWYinOSDTUYi4qTgQA2I7M+ZUCAAA=
+	id S1754699AbaKNIQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:16:36 -0500
+Received: from mail-bn1bon0055.outbound.protection.outlook.com ([157.56.111.55]:16299
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754440AbaKNIQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 03:16:34 -0500
+X-Greylist: delayed 76702 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 03:16:33 EST
+From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+To: <wg@grandegger.com>, <mkl@pengutronix.de>, <michal.simek@xilinx.com>,
+        <soren.brinkmann@xilinx.com>, <grant.likely@linaro.org>,
+        <robh+dt@kernel.org>
+CC: <linux-can@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: [PATCH v2] can: Fix bug in suspend/resume
+Date: Fri, 14 Nov 2014 13:46:19 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21102.003
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <e7070431858e49e29cd03d76fd7a66c3@BN1AFFO11FD055.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(46102003)(92566001)(4396001)(31966008)(47776003)(20776003)(19580405001)(50226001)(87286001)(87936001)(62966003)(44976005)(77156002)(77096003)(2201001)(88136002)(93916002)(102836001)(104166001)(50986999)(99396003)(86362001)(64706001)(120916001)(95666004)(21056001)(6806004)(33646002)(19580395003)(53416004)(48376002)(50466002)(106466001)(107046002)(104016003)(229853001)(89996001)(108616004)(107986001)(24736002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB017;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB017;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB017;
+X-Forefront-PRVS: 03950F25EC
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=appana.durga.rao@xilinx.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB017;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-11-13 at 02:34 +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 12, 2014 03:32:23 PM Krzysztof Kozlowski wrote:
-> > Add a simple getter pm_runtime_is_irq_safe() for querying whether runtime
-> > PM IRQ safe was set or not.
-> > 
-> > Various bus drivers implementing runtime PM may use choose to suspend
-> > differently based on IRQ safeness status of child driver (e.g. do not
-> > unprepare the clock if IRQ safe is not set).
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-> 
-> I'm fine with this one, please feel free to add my ACK if that needs to go
-> through a different tree.
+The drvdata in the suspend/resume is of type struct net_device,
+not the platform device.Enable the clocks in the suspend before
+accessing the registers of the CAN.
 
-Thanks!
+Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+---
+Changes for v2:
+  - Removed the struct platform_device* from suspend/resume
+    as suggest by Lothar.
+  - The clocks are getting disabled and un prepared at the end of the probe. 
+    In the suspend the driver is doing a register write.In order
+    To do that register write we have to again enable and prepare the clocks.
 
-With your ack I'll push patchset through Russell's patch system.
+  
+ drivers/net/can/xilinx_can.c |   20 ++++++++++++++++----
+ 1 files changed, 16 insertions(+), 4 deletions(-)
 
-Best regards,
-Krzysztof
-
-
+diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.c
+index 5e8b560..485262f 100644
+--- a/drivers/net/can/xilinx_can.c
++++ b/drivers/net/can/xilinx_can.c
+@@ -972,15 +972,28 @@ static const struct net_device_ops xcan_netdev_ops = {
+  */
+ static int __maybe_unused xcan_suspend(struct device *dev)
+ {
+-	struct platform_device *pdev = dev_get_drvdata(dev);
+-	struct net_device *ndev = platform_get_drvdata(pdev);
++	struct net_device *ndev = dev_get_drvdata(dev);
+ 	struct xcan_priv *priv = netdev_priv(ndev);
++	int ret;
+ 
+ 	if (netif_running(ndev)) {
+ 		netif_stop_queue(ndev);
+ 		netif_device_detach(ndev);
+ 	}
+ 
++	ret = clk_prepare_enable(priv->can_clk);
++	if (ret) {
++		dev_err(dev, "unable to enable device clock\n");
++		return ret;
++	}
++
++	ret = clk_prepare_enable(priv->bus_clk);
++	if (ret) {
++		dev_err(dev, "unable to enable bus clock\n");
++		clk_disable_unprepare(priv->can_clk);
++		return ret;
++	}
++
+ 	priv->write_reg(priv, XCAN_MSR_OFFSET, XCAN_MSR_SLEEP_MASK);
+ 	priv->can.state = CAN_STATE_SLEEPING;
+ 
+@@ -999,8 +1012,7 @@ static int __maybe_unused xcan_suspend(struct device *dev)
+  */
+ static int __maybe_unused xcan_resume(struct device *dev)
+ {
+-	struct platform_device *pdev = dev_get_drvdata(dev);
+-	struct net_device *ndev = platform_get_drvdata(pdev);
++	struct net_device *ndev = dev_get_drvdata(dev);
+ 	struct xcan_priv *priv = netdev_priv(ndev);
+ 	int ret;
+ 
+-- 
+1.7.4
 
