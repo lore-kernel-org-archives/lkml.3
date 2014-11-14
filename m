@@ -1,232 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaKNIwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 03:52:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54980 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918AbaKNIwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 03:52:35 -0500
-Message-ID: <5465C2CF.4000902@suse.cz>
-Date: Fri, 14 Nov 2014 09:52:31 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 1/5] mm, compaction: pass classzone_idx and alloc_flags
- to watermark checking
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-2-git-send-email-vbabka@suse.cz> <20141027064651.GA23379@js1304-P5Q-DELUXE> <544E0C43.3030009@suse.cz> <20141028071625.GB27813@js1304-P5Q-DELUXE> <5450F0CF.3030504@suse.cz> <20141031074944.GA14642@js1304-P5Q-DELUXE>
-In-Reply-To: <20141031074944.GA14642@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1754891AbaKNIwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 03:52:23 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36630 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661AbaKNIun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 03:50:43 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-f9-5465c260c3ef
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Cc: Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v12 3/6] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+Date: Fri, 14 Nov 2014 09:50:30 +0100
+Message-id: <1415955033-29093-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1415955033-29093-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415955033-29093-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xy7oJh1JDDPY90LPYOGM9q8X0qRcY
+	LVZP/ctq8fqFocXTzY+ZLM42vWG36Jy4hN1i1pS9TBaXd81hs/jce4TR4vZlXou1R+6yW9w9
+	dZTN4szpS6wWE35fYLM4vjbc4mXffhYHQY+W5h42j9kdM1k9Fu95yeSxaVUnm8eda3vYPLZc
+	bWfxmH33B6NH35ZVjB4rVn9n9/i8SS6AK4rLJiU1J7MstUjfLoErY+OTCewFh/kqjhzZy9jA
+	+Im7i5GTQ0LARGLfxcXsELaYxIV769m6GLk4hASWMko0nJ7BDOH0MUls/biPEaSKTcBYYvPy
+	JWBVIgLtzBJ966aygSSYBRYxSTRNVQSxhQXSJE6tWMkEYrMIqEpcm34ZrJlXwF3i8aKTrBDr
+	5CROHpsMZnMKeEhM3riKBcQWAqr5fPkP8wRG3gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLz
+	czcxQgL9yw7GxcesDjEKcDAq8fAaFKSGCLEmlhVX5h5ilOBgVhLhVdoNFOJNSaysSi3Kjy8q
+	zUktPsTIxMEp1cBYnxNdN6dEc7Wyl2V00J31wfeF/6TaMZbPE5KbHyFsbXDt+4LPV1UuF9w6
+	9fWQ85RZPPoZvd+Zv2mu1V+hwvoxWetpl37WqYv/nnm+mz/j0TGX1lyfcpsq/S+uPjxFMtnJ
+	7/xfCR9sW/vLJb1NqmSXwevTHju6mj2WZHD9rQkwu6Yhwn6sylKJpTgj0VCLuag4EQA1jbkm
+	UgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 08:49 AM, Joonsoo Kim wrote:
-> On Wed, Oct 29, 2014 at 02:51:11PM +0100, Vlastimil Babka wrote:
->> On 10/28/2014 08:16 AM, Joonsoo Kim wrote:> On Mon, Oct 27, 2014 at
->> 10:11:31AM +0100, Vlastimil Babka wrote:
->>
->> I thought that the second check in compaction_suitable() makes sure
->> of this, but now I see it's in fact not.
->> But i'm not sure if we should just put the flags in the first check,
->> as IMHO the flags should only affect the final high-order
->> allocation, not also the temporary pages needed for migration?
-> 
-> I don't think so.
-> As mentioned before, if we don't have not enough freepages, compaction
-> will fail due to shortage of freepage at final high-order watermark
-> check. Maybe it failes due to not enough freepage rather than ordered
-> freepage. Proper flags and index make us avoid useless compaction so
-> I prefer put the flags in the first check.
-> 
->>
->> BTW now I'm not even sure that the 2UL << order part makes sense
->> anymore. The number of pages migrated at once is always restricted
->> by COMPACT_CLUSTER_MAX, so why would we need more than that to cover
->> migration?
-> 
-> In fact, any values seems to be wrong. We can isolate high order freepage
-> for this temporary use. I don't have any idea what the proper value is.
-> 
->> Also the order of checks seems wrong. It should return
->> COMPACT_PARTIAL "If the allocation would succeed without compaction"
->> but that only can happen after passing the check if the zone has the
->> extra 1UL << order for migration. Do you agree?
-> 
-> Yes, agree!
-> 
->>> I guess that __isolate_free_page() is also good candidate to need this
->>> information in order to prevent compaction from isolating too many
->>> freepage in low memory condition.
->>
->> I don't see how it would help here. It's temporary allocations for
->> page migration. How would passing classzone_idx and alloc_flags
->> prevent isolating too many?
-> 
-> It is temporary allocation, but, anyway, it could holds many freepage
-> in some duration. As mentioned above, if we isolate high order freepage,
-> we can hold 1MB or more freepage at once. I guess that passing flags helps
-> system stability.
+The AMBA bus driver defines runtime Power Management functions which
+disable and unprepare AMBA bus clock. This is problematic for runtime PM
+because unpreparing a clock might sleep so it is not interrupt safe.
 
-OK, here's a patch-fix to address everything discussed above. My testing
-didn't show much difference, but I know it's limited anyway.
+However some drivers may want to implement runtime PM functions in
+interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
+bus driver should only disable/enable the clock in runtime suspend and
+resume callbacks.
 
-------8<------
-From: Vlastimil Babka <vbabka@suse.cz>
-Date: Mon, 3 Nov 2014 15:26:40 +0100
-Subject: mm-compaction-pass-classzone_idx-and-alloc_flags-to-watermark-checking-fix
-
-This patch-fix changes zone watermark checking in compaction_suitable()
-as we discussed with Joonsoo Kim. First, it moves up the watermark check for
-answering the question "does the zone need compaction at all?". Before this
-change, the check is preceded by a check that answers the question "does the
-zone have enough free pages to succeed compaction". So it might happen that
-there is already a high-order page available, but not enough pages for
-performing the compaction (which assumes extra pages for the migrations).
-Before the patch, compaction_suitable() would return COMPACT_SKIPPED which
-means "compaction cannot succeed, reclaim more", after this change it returns
-COMPACT_PARTIAL which means "compaction not needed, try allocating".
-
-Second, the check for answering "can the compaction succeed?" now also
-includes classzone_idx and alloc_flags parameters. This prevents starting
-compaction that would not lead to successful allocation due to not having
-enough free pages. The addition of extra pages for migration is left in the
-check. Although these are temporary allocations and thus should not be
-affected by alloc_flags and classzone_idx, it only matters when we are close
-to the watermark, where it does not hurt to be a bit pessimistic.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 ---
+ drivers/amba/bus.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-When squashed, full changelog of the patch+fix should be:
-
-Compaction relies on zone watermark checks for decisions such as if it's
-worth to start compacting in compaction_suitable() or whether compaction
-should stop in compact_finished().  The watermark checks take
-classzone_idx and alloc_flags parameters, which are related to the memory
-allocation request.  But from the context of compaction they are currently
-passed as 0, including the direct compaction which is invoked to satisfy
-the allocation request, and could therefore know the proper values.
-
-The lack of proper values can lead to mismatch between decisions taken
-during compaction and decisions related to the allocation request.  Lack
-of proper classzone_idx value means that lowmem_reserve is not taken into
-account.  This has manifested (during recent changes to deferred
-compaction) when DMA zone was used as fallback for preferred Normal zone.
-compaction_suitable() without proper classzone_idx would think that the
-watermarks are already satisfied, but watermark check in
-get_page_from_freelist() would fail.  Because of this problem, deferring
-compaction has extra complexity that can be removed in the following
-patch.
-
-The issue (not confirmed in practice) with missing alloc_flags is opposite
-in nature.  For allocations that include ALLOC_HIGH, ALLOC_HIGHER or
-ALLOC_CMA in alloc_flags (the last includes all MOVABLE allocations on
-CMA-enabled systems) the watermark checking in compaction with 0 passed
-will be stricter than in get_page_from_freelist().  In these cases
-compaction might be running for a longer time than is really needed.
-
-Another issue compaction_suitable() is that the check for "does the zone need
-compaction at all?" comes only after the check "does the zone have enough free
-free pages to succeed compaction". The latter considers extra pages for
-migration and can therefore in some situations fail and return COMPACT_SKIPPED,
-although the high-order allocation would succeed and we should return
-COMPACT_PARTIAL.
-
-This patch fixes these problems by adding alloc_flags and classzone_idx to
-struct compact_control and related functions involved in direct compaction
-and watermark checking.  Where possible, all other callers of
-compaction_suitable() pass proper values where those are known.  This is
-currently limited to classzone_idx, which is sometimes known in kswapd
-context.  However, the direct reclaim callers should_continue_reclaim()
-and compaction_ready() do not currently know the proper values, so the
-coordination between reclaim and compaction may still not be as accurate
-as it could.  This can be fixed later, if it's shown to be an issue.
-
-Additionaly the checks in compact_suitable() are reordered to address the
-second issue described above.
-
-The effect of this patch should be slightly better high-order allocation
-success rates and/or less compaction overhead, depending on the type of
-allocations and presence of CMA.  It allows simplifying deferred
-compaction code in a followup patch.
-
-When testing with stress-highalloc, there was some slight improvement
-(which might be just due to variance) in success rates of non-THP-like
-allocations.
-
- mm/compaction.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index ba8bdb9..f15e8e5 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1113,21 +1113,30 @@ unsigned long compaction_suitable(struct zone *zone, int order,
- 	if (order == -1)
- 		return COMPACT_CONTINUE;
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index a4ac490dd784..c2153a1d1981 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -95,8 +95,12 @@ static int amba_pm_runtime_suspend(struct device *dev)
+ 	struct amba_device *pcdev = to_amba_device(dev);
+ 	int ret = pm_generic_runtime_suspend(dev);
  
-+	watermark = low_wmark_pages(zone);
-+	/*
-+	 * If watermarks for high-order allocation are already met, there
-+	 * should be no need for compaction at all.
-+	 */
-+	if (zone_watermark_ok(zone, order, watermark, classzone_idx,
-+								alloc_flags))
-+		return COMPACT_PARTIAL;
-+
- 	/*
- 	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
- 	 * This is because during migration, copies of pages need to be
- 	 * allocated and for a short time, the footprint is higher
- 	 */
--	watermark = low_wmark_pages(zone) + (2UL << order);
--	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
-+	watermark += (2UL << order);
-+	if (!zone_watermark_ok(zone, 0, watermark, classzone_idx, alloc_flags))
- 		return COMPACT_SKIPPED;
+-	if (ret == 0 && dev->driver)
+-		clk_disable_unprepare(pcdev->pclk);
++	if (ret == 0 && dev->driver) {
++		if (pm_runtime_is_irq_safe(dev))
++			clk_disable(pcdev->pclk);
++		else
++			clk_disable_unprepare(pcdev->pclk);
++	}
  
- 	/*
- 	 * fragmentation index determines if allocation failures are due to
- 	 * low memory or external fragmentation
- 	 *
--	 * index of -1000 implies allocations might succeed depending on
--	 * watermarks
-+	 * index of -1000 would imply allocations might succeed depending on
-+	 * watermarks, but we already failed the high-order watermark check
- 	 * index towards 0 implies failure is due to lack of memory
- 	 * index towards 1000 implies failure is due to fragmentation
- 	 *
-@@ -1137,10 +1146,6 @@ unsigned long compaction_suitable(struct zone *zone, int order,
- 	if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
- 		return COMPACT_SKIPPED;
- 
--	if (fragindex == -1000 && zone_watermark_ok(zone, order, watermark,
--	    classzone_idx, alloc_flags))
--		return COMPACT_PARTIAL;
--
- 	return COMPACT_CONTINUE;
+ 	return ret;
  }
+@@ -107,7 +111,10 @@ static int amba_pm_runtime_resume(struct device *dev)
+ 	int ret;
  
+ 	if (dev->driver) {
+-		ret = clk_prepare_enable(pcdev->pclk);
++		if (pm_runtime_is_irq_safe(dev))
++			ret = clk_enable(pcdev->pclk);
++		else
++			ret = clk_prepare_enable(pcdev->pclk);
+ 		/* Failure is probably fatal to the system, but... */
+ 		if (ret)
+ 			return ret;
+@@ -115,7 +122,7 @@ static int amba_pm_runtime_resume(struct device *dev)
+ 
+ 	return pm_generic_runtime_resume(dev);
+ }
+-#endif
++#endif /* CONFIG_PM */
+ 
+ static const struct dev_pm_ops amba_pm = {
+ 	.suspend	= pm_generic_suspend,
 -- 
-2.1.2
-
-
+1.9.1
 
