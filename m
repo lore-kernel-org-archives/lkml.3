@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161655AbaKNRqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 12:46:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50683 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161182AbaKNRqn (ORCPT
+	id S1161723AbaKNRr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 12:47:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:60230 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161182AbaKNRr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 12:46:43 -0500
-Date: Fri, 14 Nov 2014 09:46:42 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.17 023/319] drivers/net: Disable UFO through virtio
-Message-ID: <20141114174642.GA2895@kroah.com>
-References: <20141112010952.553519040@linuxfoundation.org>
- <20141112010956.540146480@linuxfoundation.org>
- <1415826239.3398.113.camel@decadent.org.uk>
+	Fri, 14 Nov 2014 12:47:58 -0500
+Date: Fri, 14 Nov 2014 12:47:47 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 14/23 v4] tracing: Convert seq_buf_path() to be
+ like seq_path()
+Message-ID: <20141114124747.4a1ca768@gandalf.local.home>
+In-Reply-To: <20141114165308.GB14538@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011412.338523371@goodmis.org>
+	<20141114165308.GB14538@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415826239.3398.113.camel@decadent.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 09:03:59PM +0000, Ben Hutchings wrote:
-> On Wed, 2014-11-12 at 10:12 +0900, Greg Kroah-Hartman wrote:
-> > 3.17-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Ben Hutchings <ben@decadent.org.uk>
-> > 
-> > [ Upstream commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 ]
-> > 
-> > IPv6 does not allow fragmentation by routers, so there is no
-> > fragmentation ID in the fixed header.  UFO for IPv6 requires the ID to
-> > be passed separately, but there is no provision for this in the virtio
-> > net protocol.
-> > 
-> > Until recently our software implementation of UFO/IPv6 generated a new
-> > ID, but this was a bug.  Now we will use ID=0 for any UFO/IPv6 packet
-> > passed through a tap, which is even worse.
-> > 
-> > Unfortunately there is no distinction between UFO/IPv4 and v6
-> > features, so disable UFO on taps and virtio_net completely until we
-> > have a proper solution.
-> [...]
+On Fri, 14 Nov 2014 17:53:08 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
+
+
+> >  /**
+> > diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
+> > index 3c63b619d6b7..475412e31de5 100644
+> > --- a/kernel/trace/trace_seq.c
+> > +++ b/kernel/trace/trace_seq.c
+> > @@ -342,7 +342,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
+> >  		return 0;
+> >  	}
+> >  
+> > -	ret = seq_buf_path(&s->seq, path);
+> > +	ret = seq_buf_path(&s->seq, path, "\n");
+> >  
+> >  	if (unlikely(seq_buf_has_overflowed(&s->seq))) {
+> >  		s->seq.len = save_len;
+> > @@ -350,7 +350,7 @@ int trace_seq_path(struct trace_seq *s, const struct path *path)
+> >  		return 0;
+> >  	}
+> >  
+> > -	return ret;
+> > +	return 1;
 > 
-> Please drop this patch for 3.14 and 3.17.  It causes problems for
-> migration of VMs and we're probably going to revert part of this.  The
-> following patch ("drivers/net, ipv6: Select IPv6 fragment idents for
-> virtio UFO packets") might no longer apply, in which case you can drop
-> that as well until we have this sorted out upstream.
+> Ah, I have just realized that this should return -1 when
+> seq_buf_path() returns -1.
 
-Oops, I missed this for 3.14-stable, I'll go revert that as the first
-patch to be queued up for the next round there.
+It really doesn't matter as long as it's not zero. The one user just
+tests if the return is zero or not.
 
-I've dropped this from 3.17-stable, and the patch "drivers/net, ipv6:
-Select IPv6 fragment idents for virtio UFO packets" still applied with
-some fuzz, I'll do a test build to ensure I didn't break anything there.
+trace_seq() doesn't have to follow all the same rules as seq_buf()
+does, as seq_buf() is more in line with seq_file().
 
-thanks,
 
-greg k-h
+> 
+> Note that set_buf_path() does not longer calls seq_buf_set_overflow(s)
+> when the path handling fails. Therefore the above check for overflow
+> will probably never happen.
+
+This is in a transitional state of the patch series. The final version
+of seq_buf_path() will call seq_buf_commit() which will put the seq_buf
+in an overflow state if it isn't correct. Trying to fix this version
+here will probably just cause me to make another stupid mistake and
+ruin the final version ;-)
+
+-- Steve
+
+> 
+> Best Regards,
+> Petr
+> 
+> >  }
+> >  EXPORT_SYMBOL_GPL(trace_seq_path);
+> >  
+> > -- 
+> > 2.1.1
+> > 
+> > 
+
