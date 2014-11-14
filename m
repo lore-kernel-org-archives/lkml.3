@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964950AbaKNAW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:22:59 -0500
-Received: from exprod5og126.obsmtp.com ([64.18.0.251]:42174 "HELO
-	exprod5og126.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S964856AbaKNAW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:22:56 -0500
+	id S964962AbaKNA0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:26:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:18964 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964789AbaKNA0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 19:26:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="487367179"
+Message-ID: <54654C10.2040102@linux.intel.com>
+Date: Fri, 14 Nov 2014 08:25:52 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1415128009-12182-1-git-send-email-fkan@apm.com>
-References: <1415128009-12182-1-git-send-email-fkan@apm.com>
-Date: Thu, 13 Nov 2014 16:22:55 -0800
-Message-ID: <CAL85gmA=dD7RC2MW5qTsOS+SmcptVuj4PMVo7CKd8v1KbDSz0g@mail.gmail.com>
-Subject: Re: [PATCH V2] usb:host:xhci-plat: 64-bit dma addressing support
-From: Feng Kan <fkan@apm.com>
-To: patches <patches@apm.com>, linux-usb@vger.kernel.org,
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Tony Luck <tony.luck@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mathias.nyman@intel.com
-Cc: Feng Kan <fkan@apm.com>, Bao Truong <btruong@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch V1 0/6] Refine generic/PCI MSI irqodmian interfaces
+References: <1415879029-20098-1-git-send-email-jiang.liu@linux.intel.com> <54651BE2.9080008@arm.com>
+In-Reply-To: <54651BE2.9080008@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just want to ping this again to see if there is any comments, thanks.
+On 2014/11/14 5:00, Marc Zyngier wrote:
+> On 13/11/14 11:43, Jiang Liu wrote:
+>> This patch set is based on tip/irq/irqdomain and tries to refine
+>> interfaces to support irqdomain for generic MSI and PCI MSI.
+>>
+>> With this patch set applied, the generic MSI and PCI MSI interfaces
+>> are much easier to use. For extreme case, you only need to define
+>> a "struct msi_domain_info" and don't need to implement any callbacks,
+>> just using the default callbacks is OK:)
+>>
+>> This patch set is also a preparation for:
+>> 1) Kill all weak functions in drivers/pci/msi.c
+>> 2) Implement support for non-PCI-compliant MSI device
+> 
+> I've rebased (once more!) the GICv3 ITS driver on top of this, and this
+> is definitely a major improvement. This is basically the first version
+> I can use without having to hack into the core code (apart from the
+> couple of nits I've mentioned earlier).
+Sorry for the rebasing, but I hope it worthy rebasing:)
 
-On Tue, Nov 4, 2014 at 11:06 AM, Feng Kan <fkan@apm.com> wrote:
-> Use dma_addr_t to support 64-bit plaforms, which access beyond the default
-> 32 bit address range.
->
-> Signed-off-by: Bao Truong <btruong@apm.com>
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
->  Changes:
->         V2: fixed GKH's comment regarding not mark up the comment after
->             code change.
->
->  drivers/usb/host/xhci-plat.c | 10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-> index 3d78b0c..f75764f 100644
-> --- a/drivers/usb/host/xhci-plat.c
-> +++ b/drivers/usb/host/xhci-plat.c
-> @@ -96,14 +96,18 @@ static int xhci_plat_probe(struct platform_device *pdev)
->                         return ret;
->         }
->
-> -       /* Initialize dma_mask and coherent_dma_mask to 32-bits */
-> -       ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-> +       /*
-> +        * Initialize dma_mask and coherent_dma_mask to valid DMA or bus
-> +        * address for the platform.
-> +        */
-> +       ret = dma_set_coherent_mask(&pdev->dev,
-> +                                       DMA_BIT_MASK(sizeof(dma_addr_t)*8));
->         if (ret)
->                 return ret;
->         if (!pdev->dev.dma_mask)
->                 pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
->         else
-> -               dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-> +               dma_set_mask(&pdev->dev, DMA_BIT_MASK(sizeof(dma_addr_t)*8));
->
->         hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
->         if (!hcd)
-> --
-> 1.9.1
->
+> 
+> Now, Thomas' idea of putting the irq_domain close to the bus is very
+> appealing, and I've tweaked an earlier patch in order to do this:
+I feel that's the right direction. There are other threads discussing
+associating an MSI controller structure with each PCI bus (at least
+root bus).
+http://www.spinics.net/lists/arm-kernel/msg376328.html
+Regards!
+Gerry
