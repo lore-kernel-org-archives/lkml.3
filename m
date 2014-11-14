@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161909AbaKNUgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 15:36:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43333 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754189AbaKNUgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 15:36:53 -0500
-Date: Fri, 14 Nov 2014 21:36:42 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Vinson Lee <vlee@twopensource.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        Suresh Siddha <sbsiddha@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: x86 math_error warning in Linux kernel 3.10
-Message-ID: <20141114203641.GB7825@pd.tnic>
-References: <CAHTgTXX=0JqGx1eYa4+Y5TuvzUpVwMNQdPe2a7m=r3pZBfGXxQ@mail.gmail.com>
+	id S1161898AbaKNUil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 15:38:41 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:35587 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377AbaKNUij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 15:38:39 -0500
+X-Originating-IP: 173.246.103.110
+Date: Fri, 14 Nov 2014 12:38:30 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Catalina Mocanu <catalina.mocanu@gmail.com>
+Subject: Re: linux-next: build warnings after merge of the tiny tree
+Message-ID: <20141114203830.GA16553@jtriplet-mobl1>
+References: <20141111174304.69b9ed45@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHTgTXX=0JqGx1eYa4+Y5TuvzUpVwMNQdPe2a7m=r3pZBfGXxQ@mail.gmail.com>
+In-Reply-To: <20141111174304.69b9ed45@canb.auug.org.au>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 12:19:16PM -0800, Vinson Lee wrote:
-> Hi.
+On Tue, Nov 11, 2014 at 05:43:04PM +1100, Stephen Rothwell wrote:
+> Hi Josh,
 > 
-> We hit this x86 math_error warning in Linux kernel 3.10.
+> After merging the tiny tree, today's linux-next build (powerpc64
+> allnoconfig) produced these warnings:
 > 
-> ------------[ cut here ]------------
-> WARNING: at arch/x86/include/asm/fpu-internal.h:524 math_error+0xd1/0x219()
-> Modules linked in: cls_basic act_mirred cls_u32 veth sch_ingress
-> netconsole configfs ipv6 dm_multipath scsi_dh video sbs sbshc hed
-> acpi_pad acpi_ipmi acpi_i2c parport_pc lp parport tcp_diag inet_diag
-> ipmi_si ipmi_devintf ipmi_msghandler dell_rbu sg iTCO_wdt
-> iTCO_vendor_support dcdbas igb i2c_algo_bit ptp pps_core shpchp
-> lpc_ich i2c_i801 mfd_core i2c_core ioatdma dca i7core_edac edac_core
-> microcode freq_table mperf ahci libahci libata sd_mod scsi_mod
-> CPU: 2 PID: 53182 Comm: java Not tainted 3.10.50 #1
->  0000000000000000 ffff8808e1f5be38 ffffffff8146cb74 ffff8808e1f5be70
->  ffffffff8103cbf9 0000000000000000 ffff88090b2c9730 ffff8808e1f5bf58
->  0000000000000010 0000000000000000 ffff8808e1f5be80 ffffffff8103ccbf
-> Call Trace:
->  [<ffffffff8146cb74>] dump_stack+0x19/0x1b
->  [<ffffffff8103cbf9>] warn_slowpath_common+0x65/0x7d
->  [<ffffffff8103ccbf>] warn_slowpath_null+0x1a/0x1c
->  [<ffffffff8100317b>] math_error+0xd1/0x219
->  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
->  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
->  [<ffffffff8107bf32>] ? ktime_get+0x68/0x76
->  [<ffffffff81007f6c>] ? read_tsc+0x9/0x19
->  [<ffffffff8107bab8>] ? timekeeping_get_ns.constprop.10+0x11/0x36
->  [<ffffffff810032d6>] do_coprocessor_error+0x13/0x15
->  [<ffffffff81478a38>] coprocessor_error+0x18/0x20
-> ---[ end trace 3e4a6532a67ba6d3 ]---
+> kernel/compat.c:33:12: warning: 'compat_get_timex' defined but not used [-Wunused-function]
+>  static int compat_get_timex(struct timex *txc, struct compat_timex __user *utp)
+>             ^
+> kernel/compat.c:63:12: warning: 'compat_put_timex' defined but not used [-Wunused-function]
+>  static int compat_put_timex(struct compat_timex __user *utp, struct timex *txc)
+>             ^
+> 
+> Introduced by commit 7beb114f18e0 ("kernel: time: Compile out NTP
+> support").  Neither of these functions is needed if CONFIG_NTP is not
+> set.
 
-AFAICT, you're getting an FPU exception for a task which hasn't used the
-FPU or current is somehow pointing to the wrong task.
+Fixed.
 
-Can you trigger this with the latest kernel too, i.e., say, 3.18-rc4?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+- Josh Triplett
