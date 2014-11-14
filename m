@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161495AbaKNP2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:28:01 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:36157 "EHLO
+	id S965680AbaKNP3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:29:36 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:36163 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161469AbaKNP16 (ORCPT
+	with ESMTP id S1161471AbaKNP16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Nov 2014 10:27:58 -0500
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
@@ -16,9 +16,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 09/13] Documentation: bindings: add doc for the USB2 ChipIdea USB driver
-Date: Fri, 14 Nov 2014 16:25:59 +0100
-Message-Id: <1415978763-27345-10-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v7 10/13] ARM: dts: berlin: add BG2Q nodes for USB support
+Date: Fri, 14 Nov 2014 16:26:00 +0100
+Message-Id: <1415978763-27345-11-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -26,44 +26,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the USB2 ChipIdea driver (ci13xxx) bindings.
+Adds nodes describing the Marvell Berlin BG2Q USB PHY and USB. The BG2Q
+SoC has 3 USB host controller, compatible with ChipIdea.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- .../devicetree/bindings/usb/ci-hdrc-usb2.txt       | 24 ++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+ arch/arm/boot/dts/berlin2q.dtsi | 55 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt b/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
-new file mode 100644
-index 000000000000..27f8b1e5ee46
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
-@@ -0,0 +1,24 @@
-+* USB2 ChipIdea USB controller for ci13xxx
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 2de8d6f8973c..834142bdfbb1 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -114,6 +114,40 @@
+ 			#interrupt-cells = <3>;
+ 		};
+ 
++		usb_phy2: phy@a2f400 {
++			compatible = "marvell,berlin2-usb-phy";
++			reg = <0xa2f400 0x128>;
++			#phy-cells = <0>;
++			resets = <&chip 0x104 14>;
++			status = "disabled";
++		};
 +
-+Required properties:
-+- compatible: should be "chipidea,usb2"
-+- reg: base address and length of the registers
-+- interrupts: interrupt for the USB controller
++		usb2: usb@a30000 {
++			compatible = "chipidea,usb2";
++			reg = <0xa30000 0x10000>;
++			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&chip CLKID_USB2>;
++			phys = <&usb_phy2>;
++			phy-names = "usb-phy";
++			status = "disabled";
++		};
 +
-+Optional properties:
-+- clocks: reference to the USB clock
-+- phys: reference to the USB PHY
-+- phy-names: should be "usb-phy"
-+- vbus-supply: reference to the VBUS regulator
++		usb_phy0: phy@b74000 {
++			compatible = "marvell,berlin2-usb-phy";
++			reg = <0xb74000 0x128>;
++			#phy-cells = <0>;
++			resets = <&chip 0x104 12>;
++			status = "disabled";
++		};
 +
-+Example:
++		usb_phy1: phy@b78000 {
++			compatible = "marvell,berlin2-usb-phy";
++			reg = <0xb78000 0x128>;
++			#phy-cells = <0>;
++			resets = <&chip 0x104 13>;
++			status = "disabled";
++		};
 +
-+	usb@f7ed0000 {
-+		compatible = "chipidea,usb2";
-+		reg = <0xf7ed0000 0x10000>;
-+		interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&chip CLKID_USB0>;
-+		phys = <&usb_phy0>;
-+		phy-names = "usb-phy";
-+		vbus-supply = <&reg_usb0_vbus>;
-+	};
+ 		eth0: ethernet@b90000 {
+ 			compatible = "marvell,pxa168-eth";
+ 			reg = <0xb90000 0x10000>;
+@@ -365,6 +399,26 @@
+ 			};
+ 		};
+ 
++		usb0: usb@ed0000 {
++			compatible = "chipidea,usb2";
++			reg = <0xed0000 0x10000>;
++			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&chip CLKID_USB0>;
++			phys = <&usb_phy0>;
++			phy-names = "usb-phy";
++			status = "disabled";
++		};
++
++		usb1: usb@ee0000 {
++			compatible = "chipidea,usb2";
++			reg = <0xee0000 0x10000>;
++			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&chip CLKID_USB1>;
++			phys = <&usb_phy1>;
++			phy-names = "usb-phy";
++			status = "disabled";
++		};
++
+ 		apb@fc0000 {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
+@@ -457,5 +511,6 @@
+ 				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
+ 			};
+ 		};
++
+ 	};
+ };
 -- 
 2.1.0
 
