@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaKNFJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 00:09:47 -0500
-Received: from karr.yath.de ([144.76.4.50]:57337 "EHLO karr.yath.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986AbaKNFJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 00:09:46 -0500
-Date: Thu, 13 Nov 2014 21:09:34 -0800
-From: Sebastian Schmidt <yath@yath.de>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "anton@enomsg.org" <anton@enomsg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jim Davis <jim.epost@gmail.com>
-Subject: Re: randconfig build error with next-20141113, in fs/pstore/inode.c
-Message-ID: <20141114050934.GA7964@moniac.lan.yath.de>
-References: <CA+r1ZhjO=kxcyjRb3=d7ozZ_VT9a+iCUy27zPZ2WGVMMzP6OVA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292CD43@ORSMSX114.amr.corp.intel.com>
- <CAGXu5jLsd3G3+PCwFSUGDxxbfnJwx8G8X4chH0WK21-kv+_ecA@mail.gmail.com>
+	id S1751518AbaKNFNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 00:13:53 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:16662 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750761AbaKNFNw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 00:13:52 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'perex@perex.cz'" <perex@perex.cz>, "'tiwai@suse.de'" <tiwai@suse.de>,
+        "'joe@perches.com'" <joe@perches.com>,
+        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Fri, 14 Nov 2014 13:13:45 +0800
+Subject: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
+Thread-Topic: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
+Thread-Index: Ac//ycOD9bcU0tYhTmyRn6gG/G9r+w==
+Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1829C@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jLsd3G3+PCwFSUGDxxbfnJwx8G8X4chH0WK21-kv+_ecA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Use the inline function instead of directly indexing the array.
 
-On Thu, Nov 13, 2014 at 11:21:18AM -0800, Kees Cook wrote:
-> > This looks to come from your "Honor dmesg_restrict sysctl on dmesg dumps" patch
+This allows some architectures with hardware instructions for bit
+reversals to eliminate the array.
 
-Oops, you are right.
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ sound/usb/6fire/firmware.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> > The randconfig doesn't have CONFIG_PRINTK.  I guess we need to provide a stub
-> > in <linux/syslog.h> to cover this.
-> 
-> Without CONFIG_PRINTK, check_syslog_permissions should probably fail.
-
-Kees, I disagree. Without CONFIG_PRINTK, there isn't even a
-dmesg_restrict sysctl, so there is no way to turn that on (AFAICS) and
-we should retain the default behaviour.
-
-I'll send a patch shortly.
-
-Sebastian
+diff --git a/sound/usb/6fire/firmware.c b/sound/usb/6fire/firmware.c
+index 3b02e54..2e39c3f 100644
+--- a/sound/usb/6fire/firmware.c
++++ b/sound/usb/6fire/firmware.c
+@@ -316,7 +316,7 @@ static int usb6fire_fw_fpga_upload(
+ 
+ 	while (c != end) {
+ 		for (i = 0; c != end && i < FPGA_BUFSIZE; i++, c++)
+-			buffer[i] = byte_rev_table[(u8) *c];
++			buffer[i] = bitrev8((u8) *c);
+ 
+ 		ret = usb6fire_fw_fpga_write(device, buffer, i);
+ 		if (ret < 0) {
+-- 
+2.1.1
