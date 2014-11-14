@@ -1,107 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161055AbaKNPFx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:05:53 -0500
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:35366 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935310AbaKNPFu (ORCPT
+	id S935337AbaKNPGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:06:23 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:50112 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934535AbaKNPGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:05:50 -0500
+	Fri, 14 Nov 2014 10:06:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Feng Kan <fkan@apm.com>, patches@apm.com, linux-kernel@vger.kernel.org,
+        =devicetree@vger.kernel.org
+Subject: Re: [PATCH V2 4/7] arm64: dts: Add Designware GPIO dts binding to APM X-Gene platform
+Date: Fri, 14 Nov 2014 16:06:15 +0100
+Message-ID: <1829495.FoDfH1G36W@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1415924401-3013-5-git-send-email-fkan@apm.com>
+References: <1415924401-3013-1-git-send-email-fkan@apm.com> <1415924401-3013-5-git-send-email-fkan@apm.com>
 MIME-Version: 1.0
-Date: Fri, 14 Nov 2014 16:05:49 +0100
-X-Google-Sender-Auth: UIqAdwMRKLAx4aNWELvR64oGYIE
-Message-ID: <CAJZ5v0hpu+tdc06_zz+5K-RmuTD+oy_Z9nJZtyXKafQD+Rrv5w@mail.gmail.com>
-Subject: [GIT PULL] ACPI and power management fixes for 3.18-rc5
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:lG+56G5dsWb7+w3Dr7LKgdfPzDtpxErvMxjNCq+mC72
+ aYOkySD0dXPfjoi3Cz9QLDpf2KO/qs8Bl/PkRE6Jixy841zlyH
+ SI4xn4Xk41GCSIys+uwP1zKVNbWxj0jaT5Q0gqDOXBWYdXtV9K
+ fxjy5CTHN04tSzb40LPvMc+9/dvtfLIia0PRjiCpkZ63kyTJmK
+ xqrGgZvEhUUvRJ9mrNH2M1l40Ey6w7L+WENNAfrg+fM3eR2IrO
+ jQ9qFcXLoEL7mqAr3rPB1fgyaPvXtPhuCmT6JFq58DlfKNRPlR
+ BFUE0ciLMOrw5lIcd7nxG+Ma+8RKpBbVdQLb/ZCYLHYilw5D0S
+ Y6FY1Du/lAAfqHmRtvPk=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thursday 13 November 2014 16:19:58 Feng Kan wrote:
+> +               dwgpio: dwgpio@1c024000 {
+> +                       compatible = "snps,dw-apb-gpio";
+> +                       reg = <0x0 0x1c024000 0x0 0x1000>;
+> +                       reg-io-width = <4>;
+> +                       #address-cells = <1>;
+> +                       #size-cells = <0>;
+> 
 
-Please pull from
+Same comment as patch 1: make the node name 'gpio', not 'dwgpio'.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.18-rc5
-
-to receive ACPI and power management fixes for v3.18-rc5 with
-top-most commit 31689497d90e589d7050fc7bc850b4b46e632bfc
-
- Merge branches 'pm-domains', 'pm-sleep' and 'pm-cpufreq'
-
-on top of commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108
-
- Linux 3.18-rc4
-
-These are three regression fixes, two recent (generic power domains,
-suspend-to-idle) and one older (cpufreq), an ACPI blacklist entry for
-one more machine having problems with Windows 8 compatibility, a
-minor cpufreq driver fix (cpufreq-dt) and a fixup for new callback
-definitions (generic power domains).
-
-Specifics:
-
- - Fix a crash in the suspend-to-idle code path introduced by a
-   recent commit that forgot to check a pointer against NULL before
-   dereferencing it (Dmitry Eremin-Solenikov).
-
- - Fix a boot crash on Exynos5 introduced by a recent commit making
-   that platform use generic Device Tree bindings for power domains
-   which exposed a weakness in the generic power domains framework
-   leading to that crash (Ulf Hansson).
-
- - Fix a crash during system resume on systems where cpufreq depends
-   on Operation Performance Points (OPP) for functionality, but
-   CONFIG_OPP is not set.  This leads the cpufreq driver registration
-   to fail, but the resume code attempts to restore the pre-suspend
-   cpufreq configuration (which does not exist) nevertheless and
-   crashes.  From Geert Uytterhoeven.
-
- - Add a new ACPI blacklist entry for Dell Vostro 3546 that has
-   problems if it is reported as Windows 8 compatible to the BIOS
-   (Adam Lee).
-
- - Fix swapped arguments in an error message in the cpufreq-dt
-   driver (Abhilash Kesavan).
-
- - Fix up the prototypes of new callbacks in struct generic_pm_domain
-   to make them more useful.  Users of those callbacks will be added
-   in 3.19 and it's better for them to be based on the correct struct
-   definition in mainline from the start.  From Ulf Hansson and
-   Kevin Hilman.
-
-Thanks!
-
-
----------------
-
-Abhilash Kesavan (1):
-      cpufreq: cpufreq-dt: Fix arguments in clock failure error message
-
-Adam Lee (1):
-      ACPI / blacklist: blacklist Win8 OSI for Dell Vostro 3546
-
-Dmitry Eremin-Solenikov (1):
-      PM / sleep: Fix entering suspend-to-IDLE if no freeze_oops is set
-
-Geert Uytterhoeven (1):
-      cpufreq: Avoid crash in resume on SMP without OPP
-
-Ulf Hansson (2):
-      PM / Domains: Change prototype for the attach and detach callbacks
-      PM / Domains: Fix initial default state of the need_restore flag
-
----------------
-
- drivers/acpi/blacklist.c     |  8 ++++++++
- drivers/base/power/domain.c  | 42 ++++++++++++++++++++++++++++++++++--------
- drivers/cpufreq/cpufreq-dt.c |  4 ++--
- drivers/cpufreq/cpufreq.c    |  3 ++-
- include/linux/pm_domain.h    |  8 +++++---
- kernel/power/suspend.c       |  4 ++--
- 6 files changed, 53 insertions(+), 16 deletions(-)
+	Arnd
