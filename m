@@ -1,91 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965463AbaKNMvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 07:51:42 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:50681 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbaKNMvK (ORCPT
+	id S935333AbaKNMwt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 07:52:49 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:59909 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934994AbaKNMws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 07:51:10 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-ce-5465fabb3bbb
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+	Fri, 14 Nov 2014 07:52:48 -0500
+Date: Fri, 14 Nov 2014 07:52:09 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Jonathan Corbet <corbet@lwn.net>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yury Gribov <y.gribov@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: [PATCH v2 1/2] kernel: printk: specify alignment for struct printk_log
-Date: Fri, 14 Nov 2014 15:50:45 +0300
-Message-id: <1415969446-26356-2-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.3
-In-reply-to: <1415969446-26356-1-git-send-email-a.ryabinin@samsung.com>
-References: <1415969446-26356-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xK7q7f6WGGLxq1bLY9usRm8Wc9WvY
-	LJ4caGe0mPCwjd1i2kZxi5WdD1gtFrYtYbH4s2sHk8XlXXPYLB7PmsdmcenAAiaLln0XmCyO
-	9x5gsnh7ZzqLxeIjt5ktNm+aymzxY8NjVotDnxczOQh57Jx1l91jwaZSj80rtDw2repk83h3
-	7hy7x4kZv1k8FvdNZvX4+PQWi8eFrmyP9/uusnn0bVnF6HFmwRF2j8+b5DxOtHxhDeCL4rJJ
-	Sc3JLEst0rdL4Mr4dmE1U8F07orV/3cyNjAu5uxi5OCQEDCR+LLdp4uRE8gUk7hwbz1bFyMX
-	h5DAUkaJaX1zWSCcPiaJzo03mEGq2AT0JP7N2s4GYosIKEhs7n3GClLELPCWRWLe5rtgRcIC
-	/hLbFrcygmxgEVCVWH0sAyTMK+Am0XBrDjvEYjmJreu8QcKcAu4SE6ZfZAGxhYBKJh6+wTSB
-	kXcBI8MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJCY+LqDcekxq0OMAhyMSjy8GpmpIUKs
-	iWXFlbmHGCU4mJVEeL8/BwrxpiRWVqUW5ccXleakFh9iZOLglGpgjHvwXEz+3aw/2+3MUy8V
-	9qic7Q1drbjx3572kO0nT758KqzumTqp+Gujgd7OFzmO57c3hgfJ1h7ltNz9bpk9x3q2eT+j
-	YidEW3xm+/n1sVqwwqmz3VeYuOx3Ruz+0x6f/O3uI7uLK7/YRp4PP7329slX8cySITuqe0Qe
-	MDZM+NPMb7AjarbyTiWW4oxEQy3mouJEAPP9IW5nAgAA
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC][PATCH 06/23 v4] tracing: Have function_graph use
+ trace_seq_has_overflowed()
+Message-ID: <20141114075209.5a358890@gandalf.local.home>
+In-Reply-To: <20141114124126.GB2988@dhcp128.suse.cz>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011410.987913836@goodmis.org>
+	<20141114124126.GB2988@dhcp128.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On architectures that have support for efficient unaligned access
-struct printk_log has 4-byte alignment.
-Specify alignment attribute in type declaration.
+On Fri, 14 Nov 2014 13:41:26 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-The whole point of this patch is to fix deadlock which happening
-when UBSan detects unaligned access in printk() thus UBSan recursively
-calls printk() with logbuf_lock held by top printk() call.
+  
+> > -static enum print_line_t
+> > +static void
+> >  print_graph_irq(struct trace_iterator *iter, unsigned long addr,
+> >  		enum trace_type type, int cpu, pid_t pid, u32 flags)
+> >  {
+> > -	int ret;
+> >  	struct trace_seq *s = &iter->seq;
+> >  
+> >  	if (addr < (unsigned long)__irqentry_text_start ||
+> >  		addr >= (unsigned long)__irqentry_text_end)
+> > -		return TRACE_TYPE_UNHANDLED;
+> > +		return;
+> 
+> I was curious if the TRACE_TYPE_UNHANDLED return value has any special
+> effect. But it seems to be ignored. There are only two callers and
+> they take care only of the PARTIAL_LINE return value.
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- kernel/printk/printk.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Yep, I noticed that too, and did the same check before I made the
+change. IIRC, that UNHANDLED was written in case anyone did care.
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ced2b84..39be027 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -223,7 +223,11 @@ struct printk_log {
- 	u8 facility;		/* syslog facility */
- 	u8 flags:5;		/* internal record flags */
- 	u8 level:3;		/* syslog level */
--};
-+}
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+__packed __aligned(4)
-+#endif
-+;
- 
- /*
-  * The logbuf_lock protects kmsg buffer, indices, counters.  This can be taken
-@@ -261,11 +265,7 @@ static u32 clear_idx;
- #define LOG_LINE_MAX		(1024 - PREFIX_MAX)
- 
- /* record buffer */
--#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--#define LOG_ALIGN 4
--#else
- #define LOG_ALIGN __alignof__(struct printk_log)
--#endif
- #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
- static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
--- 
-2.1.3
+> 
+> [...]
+> 
+> > @@ -953,62 +856,43 @@ print_graph_entry_nested(struct trace_iterator *iter,
+> >  	return TRACE_TYPE_NO_CONSUME;
+> >  }
+> >  
+> > -static enum print_line_t
+> > +static void
+> >  print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
+> >  		     int type, unsigned long addr, u32 flags)
+> >  {
+> >  	struct fgraph_data *data = iter->private;
+> >  	struct trace_entry *ent = iter->ent;
+> >  	int cpu = iter->cpu;
+> > -	int ret;
+> >  
+> >  	/* Pid */
+> > -	if (verif_pid(s, ent->pid, cpu, data) == TRACE_TYPE_PARTIAL_LINE)
+> > -		return TRACE_TYPE_PARTIAL_LINE;
+> > +	verif_pid(s, ent->pid, cpu, data);
+> >  
+> > -	if (type) {
+> > +	if (type)
+> >  		/* Interrupt */
+> > -		ret = print_graph_irq(iter, addr, type, cpu, ent->pid, flags);
+> > -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> > -			return TRACE_TYPE_PARTIAL_LINE;
+> > -	}
+> > +		print_graph_irq(iter, addr, type, cpu, ent->pid, flags);
+> >  
+> >  	if (!(trace_flags & TRACE_ITER_CONTEXT_INFO))
+> > -		return 0;
+> > +		return;
+> >  
+> >  	/* Absolute time */
+> > -	if (flags & TRACE_GRAPH_PRINT_ABS_TIME) {
+> > -		ret = print_graph_abs_time(iter->ts, s);
+> > -		if (!ret)
+> > -			return TRACE_TYPE_PARTIAL_LINE;
+> > -	}
+> > +	if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
+> > +		print_graph_abs_time(iter->ts, s);
+> >  
+> >  	/* Cpu */
+> > -	if (flags & TRACE_GRAPH_PRINT_CPU) {
+> > -		ret = print_graph_cpu(s, cpu);
+> > -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> > -			return TRACE_TYPE_PARTIAL_LINE;
+> > -	}
+> > +	if (flags & TRACE_GRAPH_PRINT_CPU)
+> > +		print_graph_cpu(s, cpu);
+> >  
+> >  	/* Proc */
+> >  	if (flags & TRACE_GRAPH_PRINT_PROC) {
+> > -		ret = print_graph_proc(s, ent->pid);
+> > -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> > -			return TRACE_TYPE_PARTIAL_LINE;
+> > -
+> > -		ret = trace_seq_puts(s, " | ");
+> > -		if (!ret)
+> > -			return TRACE_TYPE_PARTIAL_LINE;
+> > +		print_graph_proc(s, ent->pid);
+> > +		trace_seq_puts(s, " | ");
+> >  	}
+> >  
+> >  	/* Latency format */
+> > -	if (trace_flags & TRACE_ITER_LATENCY_FMT) {
+> > -		ret = print_graph_lat_fmt(s, ent);
+> > -		if (ret == TRACE_TYPE_PARTIAL_LINE)
+> > -			return TRACE_TYPE_PARTIAL_LINE;
+> > -	}
+> > +	if (trace_flags & TRACE_ITER_LATENCY_FMT)
+> > +		print_graph_lat_fmt(s, ent);
+> >  
+> > -	return 0;
+> > +	return;
+> 
+> This probably even fixed a bug. The function returned
+> TRACE_TYPE_PARTIAL_LINE (0) even when it did not print anything.
+> 
+> The simplification is really cool.
+
+Thanks,
+
+-- Steve
+
+> 
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
+> 
+> Best Regards,
+> Petr Mladek
 
