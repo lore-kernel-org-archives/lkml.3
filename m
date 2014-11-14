@@ -1,72 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965862AbaKNPbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 10:31:17 -0500
-Received: from smtprelay-b32.telenor.se ([213.150.131.21]:54721 "EHLO
-	smtprelay-b32.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965838AbaKNPbN (ORCPT
+	id S965873AbaKNPby (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 10:31:54 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:44986 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965567AbaKNPbv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 10:31:13 -0500
-X-Greylist: delayed 1409 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Nov 2014 10:31:12 EST
-X-SENDER-IP: [213.113.165.61]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgMCAPQZZlTVcaU9PGdsb2JhbAANTodChDfJd4MgAoE1AQEBAQEBBQEBAQE4hD0BAQEBAgEjBAsBRQEFCwsYAgIFFgsCAgkDAgECARsWFAYNAQcBAYg0DroleJY+AQEBAQEBAQEBAQEBAQEBAQEBGoEtj3UHgneBVAEEmW2fVoM3AQEB
-X-IPAS-Result: AgMCAPQZZlTVcaU9PGdsb2JhbAANTodChDfJd4MgAoE1AQEBAQEBBQEBAQE4hD0BAQEBAgEjBAsBRQEFCwsYAgIFFgsCAgkDAgECARsWFAYNAQcBAYg0DroleJY+AQEBAQEBAQEBAQEBAQEBAQEBGoEtj3UHgneBVAEEmW2fVoM3AQEB
-X-IronPort-AV: E=Sophos;i="5.07,386,1413237600"; 
-   d="scan'208";a="112187854"
-Message-ID: <54661A94.4000107@euromail.se>
-Date: Fri, 14 Nov 2014 16:07:00 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 14 Nov 2014 10:31:51 -0500
+Message-ID: <54662062.8030807@arm.com>
+Date: Fri, 14 Nov 2014 15:31:46 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-CC: Peter Jones <pjones@redhat.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, ia64: Do not lose track of the EFI default VGA device
-References: <1415969610-1469-1-git-send-email-rydberg@euromail.se> <20141114154252.0fb66bba@pluto.restena.lu>
-In-Reply-To: <20141114154252.0fb66bba@pluto.restena.lu>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
+ to reduce duplicated code
+References: <20141112133941.647950773@linutronix.de> <20141112134120.393705922@linutronix.de>
+In-Reply-To: <20141112134120.393705922@linutronix.de>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 14 Nov 2014 15:31:47.0113 (UTC) FILETIME=[1A21F190:01D00020]
+X-MC-Unique: 114111415314908801
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2014 03:42 PM, Bruno Prémont wrote:
-> On Fri, 14 Nov 2014 13:53:30 +0100 Henrik Rydberg wrote:
->> Since commit 20cde694027e ("x86, ia64: Move EFI_FB
->> vga_default_device() initialization to pci_vga_fixup()") in the 3.17
->> merge window, the EFI framebuffer depends on the VGA arbitration
->> layer. However, the configuration does not reflect this, which leads
->> to a hard-to-find bug when FB_EFI is configured without VGA_ARB. Add a
->> select clause to remedy this.
+On 12/11/14 13:43, Thomas Gleixner wrote:
+> From: Jiang Liu <jiang.liu@linux.intel.com>
 > 
-> Could you be more verbose in why it depends on/needs VGA_ARB?
-
-When the EFI framebuffer is configured but not VGA_ARB, the kernel manages to
-lose track of the default VGA device in some cases. As a result, the X11
-nouveau driver fails on my MacBookAir3,1 (GeForce 320M, nv50, 0xaf), which
-is booting in EFI_STUB mode.
-
-The code to select the right PCI device was literally moved from efifb.c to the
-internals of vgaarb. The PCI sysfs layer seems to depend on
-vga_default_device(), which is only defined when VGA_ARB is set.
-
-> With EFI starting to show up on ARM this is not necessarily true
-> (no PCI -> no VGA_ARB arbitration).
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> Cc: Yijing Wang <wangyijing@huawei.com>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  include/linux/irqdomain.h |    5 +++++
+>  kernel/irq/irqdomain.c    |   10 ++++++++++
+>  2 files changed, 15 insertions(+)
 > 
-> So it would need to at least be select VGA_ARB if (PCI && !S390)
-> in order to not have broken kernel configuration (in more or less
-> exotic cases) while depends on VGA_ARB would be the only correct option
-> if the rule 'select only allowed for leafs' is enforced.
+> Index: tip/include/linux/irqdomain.h
+> ===================================================================
+> --- tip.orig/include/linux/irqdomain.h
+> +++ tip/include/linux/irqdomain.h
+> @@ -33,6 +33,7 @@
+>  #define _LINUX_IRQDOMAIN_H
+>  
+>  #include <linux/types.h>
+> +#include <linux/irqhandler.h>
+>  #include <linux/radix-tree.h>
+>  
+>  struct device_node;
+> @@ -263,6 +264,10 @@ extern int irq_domain_set_hwirq_and_chip
+>  					 irq_hw_number_t hwirq,
+>  					 struct irq_chip *chip,
+>  					 void *chip_data);
+> +extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
+> +				irq_hw_number_t hwirq, struct irq_chip *chip,
+> +				void *chip_data, irq_flow_handler_t handler,
+> +				void *handler_data, const char *handler_name);
+>  extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
+>  extern void irq_domain_free_irqs_common(struct irq_domain *domain,
+>  					int virq, int nr_irqs);
+> Index: tip/kernel/irq/irqdomain.c
+> ===================================================================
+> --- tip.orig/kernel/irq/irqdomain.c
+> +++ tip/kernel/irq/irqdomain.c
+> @@ -882,6 +882,16 @@ int irq_domain_set_hwirq_and_chip(struct
+>  	return 0;
+>  }
+>  
+> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
+> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
+> +			 void *chip_data, irq_flow_handler_t handler,
+> +			 void *handler_data, const char *handler_name)
+> +{
+> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
+> +	__irq_set_handler(virq, handler, 0, handler_name);
+> +	irq_set_handler_data(virq, handler_data);
+> +}
+> +
 
-I agree that the tie probably should be somewhere else. I am fine with any
-combination of flags that respects the fact that efifb used to define
-vga_default_device(), apparently for good reason.
+We still have the issue that, depending on where in the stack this is
+ called, this will succeed or fail: If this is called from the inner
+irqchip, __irq_set_handler() will fail, as it will look at the outer
+domain as the (desc->irq_data.chip == &no_irq_chip) test fails (we
+haven't set the top level yet).
+
+I have this very imperfect workaround in my tree:
+
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index d028b34..91e6515 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -731,7 +731,16 @@ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+ 	if (!handle) {
+ 		handle = handle_bad_irq;
+ 	} else {
+-		if (WARN_ON(desc->irq_data.chip == &no_irq_chip))
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++		struct irq_data *irq_data = &desc->irq_data;
++		while (irq_data) {
++			if (irq_data->chip != &no_irq_chip)
++				break;
++			irq_data = irq_data->parent_data;
++		}
++#endif
++
++		if (WARN_ON(!irq_data || irq_data->chip == &no_irq_chip))
+ 			goto out;
+ 	}
+ 
+Which translate into: If there is at least one irqchip in the domain,
+it will probably sort itself out. Not ideal. Any real solution to
+this problem?
+
+GICv2 faces this exact problem, as some of its interrupts are used
+directly, and some others are used through the MSI domain. In the
+GIC driver, it is almost impossible to find out...
 
 Thanks,
-Henrik
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
