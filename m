@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026AbaKNKJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 05:09:11 -0500
-Received: from mout.web.de ([212.227.17.12]:52707 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754806AbaKNKJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 05:09:09 -0500
-Message-ID: <5465D4B2.4020000@users.sourceforge.net>
-Date: Fri, 14 Nov 2014 11:08:50 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755007AbaKNKRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 05:17:38 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:49984 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815AbaKNKRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 05:17:35 -0500
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>
-CC: Coccinelle <cocci@systeme.lip6.fr>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Cocci] spatch for trivial pointer comparison style?
-References: <1415908529.4223.11.camel@perches.com> <alpine.DEB.2.02.1411140700010.2035@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1411140700010.2035@localhost6.localdomain6>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ewlkaDKefEqOMlHOzv+7/nUNDs9rit46J81noo0u6AZe1+JGQfJ
- 2Oto06XkCW9PEfH74w/YR0w7Iab3KUclV28P7/gPfZ6RmJ3Ni6A5892VggLa1DS4i/fr8CO
- 8l5Qxy5aWJ/BINuUArAcNxmz0IUxqUdp/Kv9jibOrCMkOwnqOyFp9QhpsH4XUAGTuD1BNLw
- i/YnWPer8NOfd5GPNUFow==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1415901046-3391-5-git-send-email-rf@opensource.wolfsonmicro.com>
+References: <1415901046-3391-1-git-send-email-rf@opensource.wolfsonmicro.com>
+	<1415901046-3391-5-git-send-email-rf@opensource.wolfsonmicro.com>
+Date: Fri, 14 Nov 2014 11:17:34 +0100
+Message-ID: <CACRpkdaioWGtJ6HAOK629Z166uvnD22TkdTEgGpQ7Veu4PpxiQ@mail.gmail.com>
+Subject: Re: [PATCH 4/6] gpio: arizona: Add support for WM8280/WM8281
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Takashi Iwai <tiwai@suse.de>, "perex@perex.cz" <perex@perex.cz>,
+        Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches@opensource.wolfsonmicro.com,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't think that the change is desirable in all cases.  There are
-> functions like kmalloc where NULL means failure and !p seems like the
-> reasonable choice.  But there maybe other cases where NULL is somehow
-> a meaningful value.
+On Thu, Nov 13, 2014 at 6:50 PM, Richard Fitzgerald
+<rf@opensource.wolfsonmicro.com> wrote:
 
-How do you think about to adjust checks for null pointers not only
-in Linux source files but also in other applications?
-Are there any more software design challenges to consider with the
-definition of the preprocessor symbol "NULL"?
+> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 
-Regards,
-Markus
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
