@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161089AbaKNNjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 08:39:39 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:34279 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161046AbaKNNji (ORCPT
+	id S1161109AbaKNNj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 08:39:59 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38216 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161032AbaKNNj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 08:39:38 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <ac7b883b003fe5092c6277e2554ddd85>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v11 02/12] staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
-Date: Fri, 14 Nov 2014 21:39:08 +0800
-Message-Id: <1415972348-8382-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com>
+	Fri, 14 Nov 2014 08:39:58 -0500
+Date: Fri, 14 Nov 2014 11:10:00 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Johan Havold <johan@kernel.org>
+Cc: Laurentiu Palcu <laurentiu.palcu@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20141114111000.GY3815@sirena.org.uk>
+References: <1415799490-27989-1-git-send-email-laurentiu.palcu@intel.com>
+ <1415799490-27989-2-git-send-email-laurentiu.palcu@intel.com>
+ <20141113122728.GA18285@localhost>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="S+nDaPSl8JRieaZD"
+Content-Disposition: inline
+In-Reply-To: <20141113122728.GA18285@localhost>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/2] spi: add support for DLN-2 USB-SPI adapter
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm driver may probe before the i2c bus, so the driver should
-defer probing until it is available
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+--S+nDaPSl8JRieaZD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
+On Thu, Nov 13, 2014 at 01:27:28PM +0100, Johan Havold wrote:
+> On Wed, Nov 12, 2014 at 03:38:09PM +0200, Laurentiu Palcu wrote:
+> > This adds support for Diolan DLN2 USB-SPI adapter.
+> >=20
+> > Information about the USB protocol interface can be found in the
+> > Programmer's Reference Manual [1], see section 5.4.6 for the SPI
+> > master module commands and responses.
 
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4:
-- defer probe ddc i2c adapter
+John, please delete unneeded context from your replies - it makes it
+much easier to find any content you've added.
 
-Changes in v3: None
-Changes in v2: None
+--S+nDaPSl8JRieaZD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- drivers/staging/imx-drm/imx-hdmi.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff --git a/drivers/staging/imx-drm/imx-hdmi.c b/drivers/staging/imx-drm/imx-hdmi.c
-index 79daec4..c2b035a 100644
---- a/drivers/staging/imx-drm/imx-hdmi.c
-+++ b/drivers/staging/imx-drm/imx-hdmi.c
-@@ -1611,8 +1611,11 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
--		if (!hdmi->ddc)
-+		if (!hdmi->ddc) {
- 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
-+			of_node_put(ddc_node);
-+			return -EPROBE_DEFER;
-+		}
- 
- 		of_node_put(ddc_node);
- 	} else {
--- 
-1.9.1
+iQEcBAEBAgAGBQJUZeMHAAoJECTWi3JdVIfQKEgH/ijHSJnt0GOQSZDIqfCAp1Bd
+a9M9otWx6UxdnsVsjv7/pfMialqcTTwyB/MzpzK023g19H4gwo9QVKby/XIk0lVB
+8YXfxwFSLY12YGOuW13wR9/z0jj2HyT31dz9f/5L4n5pW1KWNynEVqtgjDdEng26
+qmWJxO7CD5FxUJP1qfuE8lBdKX6ozdGkH6Y4k+t8RJg1RX3n6mSrOiEwg1MNkfp6
+WUawqwG+G2B/E9C/c6k2NKpiDTxT3elySqDjsGVafsQ91TuC/SNXm38GgJ205i6a
+U3XqdW/ksckUij2ThBJgmu3+B23rS2NqakCe79swKQbhWyHvhArbs+J/d0HZ+3w=
+=ODX4
+-----END PGP SIGNATURE-----
 
+--S+nDaPSl8JRieaZD--
