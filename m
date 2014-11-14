@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935227AbaKNL1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 06:27:04 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:46761 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934404AbaKNL1C (ORCPT
+	id S965249AbaKNL2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 06:28:34 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:38933 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965121AbaKNL2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 06:27:02 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3] ALSA: ice1712: consider error value
-Date: Fri, 14 Nov 2014 16:56:49 +0530
-Message-Id: <1415964409-12580-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 14 Nov 2014 06:28:33 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 14 Nov 2014 12:28:21 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire fix
+Message-ID: <20141114122821.08399196@kant>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-earlier we were ignoring the return value of snd_ak4114_create and
-always returning 0.
-now we are returning the actual status. revo_init is calling this
-function, and revo_init is checking the return value.
+Linus,
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+please pull from the tag "firewire-fix" at
 
-change in v3: spec->ak4114 is now dereferenced if we dont get an
-error value from snd_ak4114_create.
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-fix
 
- sound/pci/ice1712/revo.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+to receive an IEEE 1394 (FireWire) subsystem fix:
+The character device file interface for raw 1394 I/O took uninitialized
+kernel stack as substitute for missing ioctl() argument data.  This could
+partially show up in subsequent read() output.
 
-diff --git a/sound/pci/ice1712/revo.c b/sound/pci/ice1712/revo.c
-index 1112ec1..24a7c6a 100644
---- a/sound/pci/ice1712/revo.c
-+++ b/sound/pci/ice1712/revo.c
-@@ -496,9 +496,10 @@ static int ap192_ak4114_init(struct snd_ice1712 *ice)
- 				 ice, &spec->ak4114);
- 	/* AK4114 in Revo cannot detect external rate correctly.
- 	 * No reason to stop capture stream due to incorrect checks */
--	spec->ak4114->check_flags = AK4114_CHECK_NO_RATE;
-+	if (err == 0)
-+		spec->ak4114->check_flags = AK4114_CHECK_NO_RATE;
- 
--	return 0; /* error ignored; it's no fatal error */
-+	return err;
- }
- 
- static int revo_init(struct snd_ice1712 *ice)
+Stefan Richter (1):
+      firewire: cdev: prevent kernel stack leaking into ioctl arguments
+
+ drivers/firewire/core-cdev.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+Thanks,
 -- 
-1.8.1.2
-
+Stefan Richter
+-=====-====- =-== -===-
+http://arcgraph.de/sr/
