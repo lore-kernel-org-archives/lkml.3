@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964992AbaKNA12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 19:27:28 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:42086 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934023AbaKNA11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 19:27:27 -0500
-Message-ID: <54654C61.8070002@interlog.com>
-Date: Thu, 13 Nov 2014 19:27:13 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S934650AbaKNA24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 19:28:56 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:33784 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993AbaKNA2z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Nov 2014 19:28:55 -0500
+Date: Thu, 13 Nov 2014 16:28:50 -0800
+From: josh@joshtriplett.org
+To: Pieter Smith <pieter@boesman.nl>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "open list:EXT4 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 20/56] fs/ext4: support compiling out splice
+Message-ID: <20141114002850.GA31015@cloud>
+References: <pieter@boesman.nl>
+ <1415913813-362-1-git-send-email-pieter@boesman.nl>
+ <1415913813-362-21-git-send-email-pieter@boesman.nl>
 MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>,
-        Martin Pitt <mpitt@debian.org>
-CC: David Sommerseth <davids@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Ritesh Raj Sarraf <rrs@researchut.com>,
-        "Robin H. Johnson" <robbat2@gentoo.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [Announce] sg3_utils-1.40 available
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415913813-362-21-git-send-email-pieter@boesman.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sg3_utils is a package of command line utilities for sending
-SCSI and some ATA commands to devices. This package targets
-the Linux 3, 2.6 and 2.4 kernel series. It has ports to
-FreeBSD, Tru64, Solaris, and Windows (cygwin and MinGW).
+On Thu, Nov 13, 2014 at 10:22:57PM +0100, Pieter Smith wrote:
+> Compile out splice support from ext4 when the splice-family of syscalls is not
+> supported by the system (i.e. CONFIG_SYSCALL_SPLICE is undefined).
+> 
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
 
-There are three new utilities and major additions to several
-others, see the ChangeLog below. This version tracks various
-changes made by www.t10.org since June 2014.
+See below; you shouldn't need this or similar patches for most
+filesystems at all.
 
-For an overview of sg3_utils and downloads see this page:
-     http://sg.danny.cz/sg/sg3_utils.html
-The sg_ses utility (for enclosure devices) is discussed at:
-     http://sg.danny.cz/sg/sg_ses.html
-A full changelog can be found at:
-     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
+>  fs/ext4/file.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+> index aca7b24..c9d2962 100644
+> --- a/fs/ext4/file.c
+> +++ b/fs/ext4/file.c
+> @@ -595,8 +595,8 @@ const struct file_operations ext4_file_operations = {
+>  	.open		= ext4_file_open,
+>  	.release	= ext4_release_file,
+>  	.fsync		= ext4_sync_file,
+> -	.splice_read	= generic_file_splice_read,
+> -	.splice_write	= iter_file_splice_write,
+> +	SPLICE_READ_INIT(generic_file_splice_read)
+> +	SPLICE_WRITE_INIT(iter_file_splice_write)
 
+You can just define iter_file_splice_write as NULL when configuring out
+splice.  You could almost do the same for generic_file_splice_read, but
+a couple of implementations of filesystem-specific splice functions
+actually call it; you can make it a no-op static inline, though.
 
-Changelog for sg3_utils-1.40 [20141110] [svn: r620]
-   - sg_write_verify: new utility for WRITE AND VERIFY
-   - sg_ses_microcode: new utility
-   - sg_sat_read_gplog: new utility
-   - sg_senddiag: add --maxlen= option
-   - sg_copy_results: correct response length calculations
-   - sg_format: make '-FFF' bypass mode sense/select
-     - add --mode=MP to supply alternate mode page,
-       default remains read-write error recovery mpage
-     - output unit serial number and LU name prior to
-   - sg_inq: expand Block limits VPD page output
-     - fix --cmddt output if not supported by device
-     - more sanity checks on vendor supplied fields
-   - sg_vpd: add --all option
-     - more TPC VPD page decoding
-     - add zoned block device characteristics page
-     - more sanity checks on vendor supplied fields
-   - sg_ses: fix problem with --index=sse (and ssc)
-     - mask status element before using as control
-     - defeat previous item with --mask (ignore) option
-     - SAS connector status element: add overcurrent bit
-     - handle element descriptor names that count a
-       trailing NULL
-     - add --warn option mainly for broken joins
-     - add optional descriptions to -ee output
-     - sync with ses3r07
-   - sg_sanitize: add --desc and --zero options
-     - output unit serial number and LU name prior to
-   - sg_rep_zones: corrections, sync with zbc-r01c
-   - sg_persist: split help into two pages, '-hh' for 2nd
-   - sg_logs: refine tape drive output
-   - sg_raw: with -vvv decode T10 CDB name
-     - do not output/print data-in if error
-   - sg_opcodes: add --compact field
-   - sg_senddiag: add --page=PG option
-   - sg_reset: add words for EAGAIN from reset ioctl
-   - sg_sat_*: mention t_type and multiple_count fields
-   - win32: sg_scan: handle larger configurations
-   - sg_lib: trim trailing spaces in dStrHex() and friends
-   - sg_lib_data: sync asc/ascq codes with T10 20140924
-     - clean up service action string functions
-     - sg_ll_unmap_v2(): fix group number
-     - sg_ll_inquiry(), sg_ll_mode_sense*(),
-       sg_ll_log_sense(): use resid to clear unfilled
-       data-in buffer
-   - sg_unaligned.h: add header for building parameters
-   - examples/sg_tst_async: new Linux sg test utility
-
-Changelog for sg3_utils-1.39 [20140612] [svn: r588]
-...
-
-Doug Gilbert
+- Josh Triplett
