@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161438AbaKNQ54 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 11:57:56 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:23683 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161318AbaKNQ5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 11:57:53 -0500
-Date: Fri, 14 Nov 2014 11:57:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alex Elder <elder@linaro.org>
-Cc: Pranith Kumar <bobby.prani@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Petr Mladek <pmladek@suse.cz>, Jan Kara <jack@suse.cz>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Joe Perches <joe@perches.com>,
-        open list <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH] printk: Use ACCESS_ONCE() instead of a volatile
- type
-Message-ID: <20141114115749.1514ec0a@gandalf.local.home>
-In-Reply-To: <54663046.7050800@linaro.org>
-References: <1415935283-19198-1-git-send-email-bobby.prani@gmail.com>
-	<546589A1.9040100@linaro.org>
-	<20141113235722.7457f9c7@gandalf.local.home>
-	<20141114002436.535a16a9@gandalf.local.home>
-	<54663046.7050800@linaro.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1161456AbaKNQ7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 11:59:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161207AbaKNQ7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 11:59:47 -0500
+Message-ID: <546634AC.9070902@redhat.com>
+Date: Fri, 14 Nov 2014 08:58:20 -0800
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: David Laight <David.Laight@ACULAB.COM>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "mikey@neuling.org" <mikey@neuling.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "matthew.vick@intel.com" <matthew.vick@intel.com>,
+        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+Subject: Re: [PATCH 1/3] arch: Introduce load_acquire() and store_release()
+References: <20141113191250.12579.19694.stgit@ahduyck-server> <20141113192723.12579.25343.stgit@ahduyck-server> <063D6719AE5E284EB5DD2968C1650D6D1C9F0780@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9F0780@AcuExch.aculab.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014 10:39:34 -0600
-Alex Elder <elder@linaro.org> wrote:
- 
-> There is only one read of logbuf_cpu:
->         if (unlikely(logbuf_cpu == this_cpu)) {
-> This is called only while local interrupts are disabled, so
-> if this condition holds it cannot be due to an interrupt--it
 
-Unless an NMI called printk.
+On 11/14/2014 02:45 AM, David Laight wrote:
+> From: Alexander Duyck
+>> It is common for device drivers to make use of acquire/release semantics
+>> when dealing with descriptors stored in device memory.  On reviewing the
+>> documentation and code for smp_load_acquire() and smp_store_release() as
+>> well as reviewing an IBM website that goes over the use of PowerPC barriers
+>> at http://www.ibm.com/developerworks/systems/articles/powerpc.html it
+>> occurred to me that the same code could likely be applied to device drivers.
+>>
+>> As a result this patch introduces load_acquire() and store_release().  The
+>> load_acquire() function can be used in the place of situations where a test
+>> for ownership must be followed by a memory barrier.  The below example is
+>> from ixgbe:
+>>
+>> 	if (!rx_desc->wb.upper.status_error)
+>> 		break;
+>>
+>> 	/* This memory barrier is needed to keep us from reading
+>> 	 * any other fields out of the rx_desc until we know the
+>> 	 * descriptor has been written back
+>> 	 */
+>> 	rmb();
+>>
+>> With load_acquire() this can be changed to:
+>>
+>> 	if (!load_acquire(&rx_desc->wb.upper.status_error))
+>> 		break;
+> If I'm quickly reading the 'new' code I need to look up yet another
+> function, with the 'old' code I can easily see the logic.
+>
+> You've also added a memory barrier to the 'break' path - which isn't needed.
+>
+> The driver might also have additional code that can be added before the barrier
+> so reducing the cost of the barrier.
+>
+> The driver may also be able to perform multiple actions before a barrier is needed.
+>
+> Hiding barriers isn't necessarily a good idea anyway.
+> If you are writing a driver you need to understand when and where they are needed.
+>
+> Maybe you need a new (weaker) barrier to replace rmb() on some architectures.
+>
+> ...
+>
+>
+> 	David
 
-> must be due to simple recursion into printk() while inside
-> the spinlock-protected critical section.
+Yeah, I think I might explore creating some lightweight barriers. The 
+load/acquire stuff is a bit overkill for what is needed.
 
+Thanks,
 
-> QED.  (Well, please correct me where I'm wrong...)
-> 
-
-Except for the NMI case, I believe you are correct with the rest of
-your analysis.
-
--- Steve
+Alex
