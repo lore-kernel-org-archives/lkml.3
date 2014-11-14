@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964944AbaKNDiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Nov 2014 22:38:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:7204 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934141AbaKNDiH (ORCPT
+	id S935021AbaKNDlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Nov 2014 22:41:06 -0500
+Received: from smtprelay0054.hostedemail.com ([216.40.44.54]:58719 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934141AbaKNDlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Nov 2014 22:38:07 -0500
-Date: Thu, 13 Nov 2014 22:38:01 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: byungchul.park@lge.com
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH v2 3/3] tracing: add additional marks to signal very
- large delay
-Message-ID: <20141113223801.367a5f33@gandalf.local.home>
-In-Reply-To: <1415171926-9782-4-git-send-email-byungchul.park@lge.com>
-References: <1415171926-9782-1-git-send-email-byungchul.park@lge.com>
-	<1415171926-9782-4-git-send-email-byungchul.park@lge.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 13 Nov 2014 22:41:05 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:2901:2918:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:6120:6261:7974:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12663:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bit80_4335e22c7c63c
+X-Filterd-Recvd-Size: 1760
+Message-ID: <1415936460.5912.1.camel@perches.com>
+Subject: Re: [RFC PATCH] printk: Use ACCESS_ONCE() instead of a volatile type
+From: Joe Perches <joe@perches.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Petr Mladek <pmladek@suse.cz>,
+        Jan Kara <jack@suse.cz>, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Alex Elder <elder@linaro.org>, Steven Rostedt <rostedt@goodmis.org>,
+        open list <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
+Date: Thu, 13 Nov 2014 19:41:00 -0800
+In-Reply-To: <1415935283-19198-1-git-send-email-bobby.prani@gmail.com>
+References: <1415935283-19198-1-git-send-email-bobby.prani@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Nov 2014 16:18:46 +0900
-byungchul.park@lge.com wrote:
+On Thu, 2014-11-13 at 22:21 -0500, Pranith Kumar wrote:
+> Remove volatile type qualifier and use ACCESS_ONCE() in its place for each
+> access. Using volatile is not recommended as documented in
+> Documentation/volatile-considered-harmful.txt.
+> 
+> Here logbuf_cpu is a local variable and it is not clear how it is being accessed
+> concurrently. We should remove volatile accesses entirely here, but for now make
+> a safer change of using ACCESS_ONCE().
 
-> -static unsigned long preempt_mark_thresh_us = 100;
-> +DEFINE_MARK_STRUCT = {
-> +	DEFINE_MARK(0ULL		, ' '), /* 0 usecs */
-> +	DEFINE_MARK(10000ULL		, '+'), /* 10 usecs */
-> +	DEFINE_MARK(100000ULL		, '!'), /* 100 usecs */
-> +	DEFINE_MARK(1000000ULL		, '#'), /* 1000 usecs */
-> +	DEFINE_MARK(1000000000ULL	, '$'), /* 1 sec */
-> +};
+Not recommended does not mean "don't ever use".
 
-OK, I see why you did the macro magic here. But it's still obfuscates
-the code.
+Forcing the volatile at each use site instead
+of the declaration isn't necessarily better.
 
-Instead of having that find_trace_mark() be a static function, just
-make it defined in trace_output.c that function_graph calls. This code
-is used for outputting to userspace and a function call is not going to
-be noticed.
+I think the code is more readable as-is but I'm
+not going to object if Andrew picks this up...
 
-As it would now be a global function (although only defined in
-kernel/trace), we need to make the name a bit more specific. Instead of
-calling it find_trace_mark(), call it trace_duration_mark().
-
--- Steve
-
->  
->  static int
->  lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
-> @@ -506,8 +512,7 @@ lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
->  		return trace_seq_printf(
->  				s, " %4lldus%c: ",
->  				abs_ts,
-> -				rel_ts > preempt_mark_thresh_us ? '!' :
-> -				  rel_ts > 1 ? '+' : ' ');
-> +				MARK(rel_ts * NSEC_PER_USEC));
->  	} else { /* !verbose && !in_ns */
->  		return trace_seq_printf(s, " %4lld: ", abs_ts);
->  	}
-> @@ -692,7 +697,7 @@ int register_ftrace_event(struct trace_event *event)
->  				goto out;
->  
->  		} else {
-> -			
-> +
->  			event->type = next_event_type++;
->  			list = &ftrace_event_list;
->  		}
 
