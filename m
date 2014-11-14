@@ -1,79 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437AbaKNGMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 01:12:42 -0500
-Received: from smtprelay0114.hostedemail.com ([216.40.44.114]:55831 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751146AbaKNGMl (ORCPT
+	id S1754584AbaKNGNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 01:13:24 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:14283 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751729AbaKNGNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 01:12:41 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2899:2902:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6261:7904:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13019:13069:13161:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cub16_51691095c0f30
-X-Filterd-Recvd-Size: 1859
-Message-ID: <1415945558.5912.10.camel@perches.com>
-Subject: Re: [Cocci] spatch for trivial pointer comparison style?
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: cocci <cocci@systeme.lip6.fr>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Nov 2014 22:12:38 -0800
-In-Reply-To: <alpine.DEB.2.02.1411140700010.2035@localhost6.localdomain6>
-References: <1415908529.4223.11.camel@perches.com>
-	 <alpine.DEB.2.02.1411140700010.2035@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Fri, 14 Nov 2014 01:13:23 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="43383583"
+Message-ID: <54659D59.8020905@cn.fujitsu.com>
+Date: Fri, 14 Nov 2014 14:12:41 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Tiejun Chen <tiejun.chen@intel.com>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] KVM: x86: fix access memslots w/o hold srcu read lock
+References: <1414912063-10923-1-git-send-email-wanpeng.li@linux.intel.com> <5461A021.8000305@cn.fujitsu.com> <20141113233903.GA26686@kernel>
+In-Reply-To: <20141113233903.GA26686@kernel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-14 at 07:06 +0100, Julia Lawall wrote:
-> On Thu, 13 Nov 2014, Joe Perches wrote:
-> 
-> > I added a checkpatch entry for this.
-> > Maybe some cocci test like this would be useful?
-> > 
-> > @@
-> > type t;
-> > t *p;
-> > @@
-> > -	p == NULL
-> > +	!p
-> > 
-> > @@
-> > type t;
-> > t *p;
-> > @@
-> > -	p != NULL
-> > +	p
-> > 
-> > @@
-> > type t;
-> > t *p;
-> > @@
-> > -	NULL == p
-> > +	!p
-> > 
-> > @@
-> > type t;
-> > t *p;
-> > @@
-> > -	NULL != p
-> > +	p
-> 
-> This was discussed many years ago.  I don't think that the change is 
-> desirable in all cases.  There are functions like kmalloc where NULL means 
-> failure and !p seems like the reasonable choice.  But there maybe other 
-> cases where NULL is somehow a meaningful value.  
-> 
-> Here is a link to the part of the discussion:
-> 
-> https://lkml.org/lkml/2007/7/27/103
 
-Yes, I agree with some of the things Al Viro said
-there, but isn't 'type t; t *p;' a subset of
-"expression *e"?
+Thanks for the sharing. Will do more tests. :)
 
-
+On 11/14/2014 07:39 AM, Wanpeng Li wrote:
+> Hi Tang,
+> On Tue, Nov 11, 2014 at 01:35:29PM +0800, Tang Chen wrote:
+>> Hi Wanpeng,
+>>
+> Sorry for the late.
+>
+>> I think I have totally missed this thread.
+>> I opened lockdep and RCU debug, and tried on 3.18-rc1. But I didn't
+>> get the warning.
+> I also opened lockdep and RCU debug, and tried 3.18.0-rc2 on a Ivy
+> bridge, the warning will be triggered after run qemu immediately. There
+> is no need to try any hotplug related stuff.
+>
+> In addition, Paolo's patch is merged upstream to fix this.
+>
+> commit a73896cb5bbdce672945745db8224352a689f580
+> Author: Paolo Bonzini <pbonzini@redhat.com>
+> Date:   Sun Nov 2 07:54:30 2014 +0100
+>
+> KVM: vmx: defer load of APIC access page address during reset
+>
+> Regards,
+> Wanpeng Li
+>
+>> My steps are:
+>>
+>> 1. Use numactl to bind a qemu process to node1.
+>> 2. Offline all node1 memory. And the qemu process is still running.
+>>
+>> Would you please tell me how did you reproduce it ?
+>>
+>> Thanks.
+>>
+>> On 11/02/2014 03:07 PM, Wanpeng Li wrote:
+>>> The srcu read lock must be held while accessing memslots (e.g.
+>>> when using gfn_to_* functions), however, commit c24ae0dcd3e8
+>>> ("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
+>>> gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it in
+>>> vmx_vcpu_reset() path which leads to suspicious rcu_dereference_check()
+>>> usage warning. This patch fix it by holding srcu read lock in all
+>>> kvm_vcpu_reset() call path.
+>>>
+>>>
+>>> [ INFO: suspicious RCU usage. ]
+>>> 3.18.0-rc2-test2+ #70 Not tainted
+>>> -------------------------------
+>>> include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
+>>>
+>>> other info that might help us debug this:
+>>>
+>>> rcu_scheduler_active = 1, debug_locks = 0
+>>> 1 lock held by qemu-system-x86/2371:
+>>>   #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
+>>>
+>>> stack backtrace:
+>>> CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
+>>> Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
+>>>   0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
+>>>   ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
+>>>   ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
+>>> Call Trace:
+>>>   [<ffffffff816f514f>] dump_stack+0x4e/0x71
+>>>   [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
+>>>   [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
+>>>   [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
+>>>   [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
+>>>   [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
+>>>   [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
+>>>   [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
+>>>   [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+>>>   [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
+>>>   [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
+>>>   [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
+>>>   [<ffffffff8122ee45>] ? __fget+0x5/0x250
+>>>   [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
+>>>   [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
+>>>   [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
+>>>
+>>> Reported-by: Takashi Iwai <tiwai@suse.de>
+>>> Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+>>> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>> ---
+>>> v3 -> v4:
+>>>   * bypass the problem altoghter by kvm_make_request
+>>> v2 -> v3:
+>>>   * take care all vmx_vcpu_reset call path
+>>> v1 -> v2:
+>>>   * just fix hold the srcu read lock in vmx_vcpu_reset path
+>>>
+>>>   arch/x86/kvm/vmx.c |    2 +-
+>>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>>> index a0f78db..3e556c6 100644
+>>> --- a/arch/x86/kvm/vmx.c
+>>> +++ b/arch/x86/kvm/vmx.c
+>>> @@ -4579,7 +4579,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+>>>   		vmcs_write32(TPR_THRESHOLD, 0);
+>>>   	}
+>>> -	kvm_vcpu_reload_apic_access_page(vcpu);
+>>> +	kvm_make_request(KVM_REQ_APIC_PAGE_RELOAD, vcpu);
+>>>   	if (vmx_vm_has_apicv(vcpu->kvm))
+>>>   		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
+> .
+>
 
