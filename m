@@ -1,147 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161627AbaKNTCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 14:02:42 -0500
-Received: from mailsec109.isp.belgacom.be ([195.238.20.105]:23560 "EHLO
-	mailsec109.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161184AbaKNTCl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 14:02:41 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=hkFBDakPHWYIOok4y3pcivnmCJQbEK2MeX2RAJ8hs1E= c=1 sm=2
- a=IkcTkHD0fZMA:10 a=IJv9LcIfAAAA:8 a=3cbR1qjfxt248F5kRaMA:9
- a=QEXdDO2ut3YA:10 a=4xDA9G98_CFVIJ_7:21 a=UyE1A0K5uo-cE5ke:21
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoMMAPtQZlTD7hTT/2dsb2JhbAAZAUGDDoEugwa2PQabCgKBHRYBAQEBAX2EAgEBAQMBIwRSBQsFBAIYAgIYDgICVwYTEYgnDZ4wRZxxhwKPMAEBCAIBH4EthRGKFhszB4J3gVQFq16JaIN9PDCCSwEBAQ
-Date: Fri, 14 Nov 2014 20:02:38 +0100 (CET)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Message-ID: <2104595537.56209.1415991758726.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <1415990835.5912.20.camel@perches.com>
-References: <1415990202-28673-1-git-send-email-fabf@skynet.be> <1415990835.5912.20.camel@perches.com>
-Subject: Re: [PATCH 1/1 net-next] net: dsa: replace count*size kmalloc by
- kmalloc_array
+	id S1161698AbaKNTDK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 14:03:10 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:41467 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161184AbaKNTDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 14:03:08 -0500
+Date: Fri, 14 Nov 2014 11:02:51 -0800
+From: Kees Cook <kees@outflux.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: RW and executable hole in page tables on x86_64
+Message-ID: <20141114190251.GT5451@outflux.net>
+References: <20131025133454.GC4994@outflux.net>
+ <526A874B.2040108@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526A874B.2040108@zytor.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Continuing a thread from a year ago...
 
+On Fri, Oct 25, 2013 at 03:59:23PM +0100, H. Peter Anvin wrote:
+> On 10/25/2013 02:34 PM, Kees Cook wrote:
+> > Hi,
+> > 
+> > I've noticed there's a chunk of kernel memory still marked RW and x. See
+> > 0xffffffff82956000 below...
+> > 
+> > ---[ High Kernel Mapping ]---
+> > 0xffffffff80000000-0xffffffff81000000          16M                           pmd
+> > 0xffffffff81000000-0xffffffff81a00000          10M     ro         PSE GLB x  pmd
+> > 0xffffffff81a00000-0xffffffff81e00000           4M     ro         PSE GLB NX pmd
+> > 0xffffffff81e00000-0xffffffff82200000           4M     RW             GLB NX pte
+> > 0xffffffff82200000-0xffffffff82800000           6M     RW         PSE GLB NX pmd
+> > 0xffffffff82800000-0xffffffff82956000        1368K     RW             GLB NX pte
+> > 0xffffffff82956000-0xffffffff82a00000         680K     RW             GLB x  pte
+> > 0xffffffff82a00000-0xffffffffa0000000         470M                           pmd
+> > 
+> > HPA looked at it for a bit, but it wasn't obvious what was going on. It's
+> > after the end of bss. I do note that the two adjacent regions add up to
+> > 2MiB. Is this some kind of leftover mapping? What is this region? Is there
+> > a sensible place to clean it up?
+> > 
+> 
+> It looks to be what is left after the 2 MB page for bss is broken up.
+> It doesn't mean it isn't broken, though.
 
-> On 14 November 2014 at 19:47 Joe Perches <joe@perches.com> wrote:
->
->
-> On Fri, 2014-11-14 at 19:36 +0100, Fabian Frederick wrote:
-> > kmalloc_array manages count*sizeof overflow.
->
-> Fundamentally correct, but is this necessary or useful?
-> sizeof(s8) isn't often going to be anything other than 1.
-Absolutely, I thought it was a struct :)
+It looks like the problem still exists:
 
-There must be a reason for so many cases though ...
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff9ca00000     458M                   pmd
+0xffffffff9ca00000-0xffffffff9d200000       8M   ro   PSE GLB x  pmd
+0xffffffff9d200000-0xffffffff9d3f3000    1996K   ro       GLB x  pte
+0xffffffff9d3f3000-0xffffffff9d400000      52K   ro           x  pte
+0xffffffff9d400000-0xffffffff9d600000       2M   ro   PSE GLB NX pmd
+0xffffffff9d600000-0xffffffff9d7e8000    1952K   ro       GLB NX pte
+0xffffffff9d7e8000-0xffffffff9d800000      96K   ro           NX pte
+0xffffffff9d800000-0xffffffff9d8ff000    1020K   RW       GLB NX pte
+0xffffffff9d8ff000-0xffffffff9da2d000    1208K   RW           NX pte
+0xffffffff9da2d000-0xffffffff9dc00000    1868K   RW       GLB NX pte
+0xffffffff9dc00000-0xffffffff9e600000      10M   RW   PSE GLB NX pmd
+0xffffffff9e600000-0xffffffff9e7f5000    2004K   RW       GLB NX pte
+0xffffffff9e7f5000-0xffffffff9e800000      44K   RW       GLB x  pte
+0xffffffff9e800000-0xffffffffc0000000     536M                   pmd
 
-Regards,
-Fabian
+Still seems to be the bss getting broken up. What is this left-over
+memory used for? Any pointers to where it happens? I'd really like to
+kill this area.
 
->
-> Would the kernel even work without that assumption?
->
->
-> > diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
-> []
-> > @@ -526,7 +526,8 @@ static int dsa_of_setup_routing_table(struct
-> > dsa_platform_data *pd,
-> > 
-> >     /* First time routing table allocation */
-> >     if (!cd->rtable) {
-> > -           cd->rtable = kmalloc(pd->nr_chips * sizeof(s8), GFP_KERNEL);
-> > +           cd->rtable = kmalloc_array(pd->nr_chips, sizeof(s8),
-> > +                                      GFP_KERNEL);
-> >             if (!cd->rtable)
-> >                     return -ENOMEM;
-> > 
->
-> Maybe all of these could be simplified
->
-> $ git grep -E "\*\s*sizeof\s*\(\s*[us]8\s*\)"
-> arch/arm/common/edma.c:                                   (edma_cc->num_tc +
-> 1) * sizeof(s8),
-> drivers/acpi/utils.c:                               (element->buffer.length *
-> sizeof(u8));
-> drivers/acpi/utils.c:                           tail += element->buffer.length
-> * sizeof(u8);
-> drivers/char/tpm/tpm_i2c_stm_st33.c:        kmalloc(TPM_BUFSIZE * sizeof(u8),
-> GFP_KERNEL);
-> drivers/char/tpm/tpm_i2c_stm_st33.c:        kmalloc(TPM_BUFSIZE * sizeof(u8),
-> GFP_KERNEL);
-> drivers/gpu/drm/r128/r128_state.c:      mask_size = depth->n * sizeof(u8);
-> drivers/gpu/drm/r128/r128_state.c:              mask_size = depth->n *
-> sizeof(u8);
-> drivers/iio/common/st_sensors/st_sensors_spi.c: memcpy(data, tb->rx_buf,
-> len*sizeof(u8));
-> drivers/infiniband/hw/amso1100/c2_mq.h: u8 pad[64 - sizeof(u16) - 2 *
-> sizeof(u8) - sizeof(u32) - sizeof(u16)];
-> drivers/input/tablet/aiptek.c:  const int sizeof_buf = 3 * sizeof(u8);
-> drivers/input/tablet/aiptek.c:  const int sizeof_buf = 3 * sizeof(u8);
-> drivers/md/dm-crypt.c:  memset(&cc->key, 0, cc->key_size * sizeof(u8));
-> drivers/md/dm-crypt.c:  cc = kzalloc(sizeof(*cc) + key_size * sizeof(u8),
-> GFP_KERNEL);
-> drivers/media/dvb-frontends/dib7000p.c: tx = kzalloc(2*sizeof(u8),
-> GFP_KERNEL);
-> drivers/media/dvb-frontends/dib7000p.c: rx = kzalloc(2*sizeof(u8),
-> GFP_KERNEL);
-> drivers/media/dvb-frontends/dib8000.c:  client.i2c_write_buffer = kzalloc(4 *
-> sizeof(u8), GFP_KERNEL);
-> drivers/media/dvb-frontends/dib8000.c:  client.i2c_read_buffer = kzalloc(4 *
-> sizeof(u8), GFP_KERNEL);
-> drivers/media/dvb-frontends/dib9000.c:  client.i2c_write_buffer = kzalloc(4 *
-> sizeof(u8), GFP_KERNEL);
-> drivers/media/dvb-frontends/dib9000.c:  client.i2c_read_buffer = kzalloc(4 *
-> sizeof(u8), GFP_KERNEL);
-> drivers/media/pci/ttpci/av7110_ipack.c: if (!(p->buf =
-> vmalloc(size*sizeof(u8)))) {
-> drivers/mtd/inftlmount.c:                               s->nb_blocks *
-> sizeof(u8));
-> drivers/net/wireless/ath/ath10k/htt.h:   *  b) num_chars * sizeof(u8) aligned
-> to 4bytes */
-> drivers/net/wireless/b43/ppr.c: BUILD_BUG_ON(sizeof(struct b43_ppr) !=
-> B43_PPR_RATES_NUM * sizeof(u8));
-> drivers/net/wireless/iwlwifi/pcie/trans.c:                   
->  trans_pcie->n_no_reclaim_cmds * sizeof(u8));
-> drivers/net/wireless/rtlwifi/efuse.c:   memset(data, 0xff, PGPKT_DATA_SIZE *
-> sizeof(u8));
-> drivers/net/wireless/rtlwifi/efuse.c:   memset(tmpdata, 0xff, PGPKT_DATA_SIZE
-> * sizeof(u8));
-> drivers/net/wireless/rtlwifi/efuse.c:   u8 originaldata[8 * sizeof(u8)];
-> drivers/net/wireless/rtlwifi/efuse.c:   u8 originaldata[8 * sizeof(u8)];
-> drivers/net/wireless/rtlwifi/efuse.c:           memset(originaldata, 0xff,  8
-> * sizeof(u8));
-> drivers/net/wireless/rtlwifi/efuse.c:   memset(target_pkt.data, 0xFF,  8 *
-> sizeof(u8));
-> drivers/power/ds2781_battery.c: ret = w1_ds2781_read(dev_info, val,
-> DS2781_VOLT_MSB, 2 * sizeof(u8));
-> drivers/power/ds2781_battery.c: ret = w1_ds2781_read(dev_info, val,
-> DS2781_TEMP_MSB, 2 * sizeof(u8));
-> drivers/rtc/rtc-pcf2123.c:      ret = spi_write(spi, txbuf, 2 * sizeof(u8));
-> drivers/rtc/rtc-pcf2123.c:      ret = spi_write(spi, txbuf, 2 * sizeof(u8));
-> drivers/rtc/rtc-pcf2123.c:      ret = spi_write_then_read(spi, txbuf, 1 *
-> sizeof(u8),
-> drivers/rtc/rtc-pcf2123.c:                                      rxbuf, 2 *
-> sizeof(u8));
-> drivers/thermal/x86_pkg_temp_thermal.c:                 (max_phy_id+1) *
-> sizeof(u8), GFP_ATOMIC);
-> fs/compat_ioctl.c:      if (__copy_in_user(&tdata->read_write,
-> &udata->read_write, 2 * sizeof(u8)))
-> net/dsa/dsa.c:          cd->rtable = kmalloc(pd->nr_chips * sizeof(s8),
-> GFP_KERNEL);
-> net/dsa/dsa.c:          memset(cd->rtable, -1, pd->nr_chips * sizeof(s8));
->
->
+-Kees
+
+-- 
+Kees Cook                                            @outflux.net
