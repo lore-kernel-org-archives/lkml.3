@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbaKOQNa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 11:13:30 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42853 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159AbaKOQN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 11:13:28 -0500
-Message-ID: <54677BA6.1030205@kernel.org>
-Date: Sat, 15 Nov 2014 16:13:26 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754300AbaKORLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 12:11:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754203AbaKORLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 12:11:07 -0500
+Message-ID: <5467891B.2010100@redhat.com>
+Date: Sat, 15 Nov 2014 12:10:51 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Daniel Baluta <daniel.baluta@intel.com>
-CC: srinivas.pandruvada@linux.intel.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: accel: kxcjk-1013: Fix kxcjk10013_set_range
-References: <1415607616-17215-1-git-send-email-daniel.baluta@intel.com>
-In-Reply-To: <1415607616-17215-1-git-send-email-daniel.baluta@intel.com>
-Content-Type: text/plain; charset=windows-1252
+To: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: do not overwrite reserved pages counter at show_mem()
+References: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
+In-Reply-To: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/14 08:20, Daniel Baluta wrote:
-> Currently, we get the new GSEL bits by OR-ing the old values
-> with the new ones. This only works first time when the old
-> values are 0.
-> 
-> Startup:
-> 	* GSEL0 = 0, GSEL1 = 0
-> 
-> Set range to 4G: (GSEL0 = 1, GSEL1 = 0)
-> 	* GSEL0 = 0 | 1 = 1
-> 	* GSEL1 = 0 | 0 = 0
-> 	* correct
-> 
-> Change range to 2G: (GSEL0 = 0, GSEL1 = 0)
-> 	* GSEL0 = 1 | 0 = 1
-> 	* GSEL1 = 0 | 0 = 0
-> 	* wrong, GSEL0 should be 0
-> 
-> This has the nice effect that we can use the full scale range,
-> exported in in_accel_scale_available.
-> 
-> Fixes: a735e3d7f03 (iio: accel: kxcjk-1013: Set adjustable range)
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-> Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Applied to the fixes-togreg branch of iio.git and marked for stable.
-Thanks,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> ---
->  drivers/iio/accel/kxcjk-1013.c | 2 ++
->  1 file changed, 2 insertions(+)
+On 11/14/2014 01:34 PM, Rafael Aquini wrote:
+> Minor fixlet to perform the reserved pages counter aggregation for
+> each node, at show_mem()
 > 
-> diff --git a/drivers/iio/accel/kxcjk-1013.c b/drivers/iio/accel/kxcjk-1013.c
-> index 98909a9..21f1279 100644
-> --- a/drivers/iio/accel/kxcjk-1013.c
-> +++ b/drivers/iio/accel/kxcjk-1013.c
-> @@ -269,6 +269,8 @@ static int kxcjk1013_set_range(struct kxcjk1013_data *data, int range_index)
->  		return ret;
->  	}
->  
-> +	ret &= ~(KXCJK1013_REG_CTRL1_BIT_GSEL0 |
-> +		 KXCJK1013_REG_CTRL1_BIT_GSEL1);
->  	ret |= (KXCJK1013_scale_table[range_index].gsel_0 << 3);
->  	ret |= (KXCJK1013_scale_table[range_index].gsel_1 << 4);
->  
-> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
 
+Acked-by: Rik van Riel <riel@redhat.com>
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUZ4kbAAoJEM553pKExN6DtgUH/32t89g4pK7Tqgj6jSs2nzGq
+AHLma8dL12/JABVPBBqHxwSXCRDF6klCuQPx9v1RMiaksGf4TNNjDnEwDJ65Out4
+I0ckZoc2bXRZi9i4IGZEuaAoBjN2CUL2tbgxqQLjO17nLlS+NDJuhtqQzFTE2EyO
+uO3wtLBPEtQa7HaBNsElzdauU/pKgT/67s0PtExCTdQAIjLDEqjSI8pT0ltPx0xk
+UG9l1ffFy5UhScugoSJDOfbWoZ3YjBZeWwZZ4so4u503TyNOPbucMi8lYyMDMxKd
+67SyN2hWb6eKm1d4MXZZwibrbx/YGg/Ngc8kqoC1IDS7Xsl1jPgD3K5IeDMIFFs=
+=yglK
+-----END PGP SIGNATURE-----
