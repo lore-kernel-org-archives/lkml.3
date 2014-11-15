@@ -1,124 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaKOPcL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 10:32:11 -0500
-Received: from mx.datacom.ind.br ([177.66.5.10]:47587 "EHLO
-	mail.datacom.ind.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754080AbaKOPcJ (ORCPT
+	id S1754219AbaKOPij (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 10:38:39 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:46796 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049AbaKOPig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 10:32:09 -0500
-Message-ID: <546771F7.1000805@datacom.ind.br>
-Date: Sat, 15 Nov 2014 13:32:07 -0200
-From: DATACOM - Erico Nunes <erico.nunes@datacom.ind.br>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Sat, 15 Nov 2014 10:38:36 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, mtk.manpages@gmail.com,
+        linux-api@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+	<0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+Date: Sat, 15 Nov 2014 09:37:27 -0600
+In-Reply-To: <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+	(Josh Triplett's message of "Sat, 15 Nov 2014 01:01:02 -0800")
+Message-ID: <87d28osceg.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-CC: robh+dt@kernel.org, devicetree@vger.kernel.org, sameo@linux.intel.com,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: Creating a new platform_bus inside a spi_driver
-References: <545BD3EC.6050503@datacom.ind.br>	<707686811.tbHdnxXMgE@wuerfel> <545CF546.8090703@datacom.ind.br>	<2501338.EAyTJJ482M@wuerfel> <20141111110757.3DFFAC40D48@trevor.secretlab.ca> <54647133.1030801@mm-sol.com>
-In-Reply-To: <54647133.1030801@mm-sol.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19Voq+N6L8xmV2k+EhoD9Mjl0l61+xdUSk=
+X-SA-Exim-Connect-IP: 97.121.92.161
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4999]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Josh Triplett <josh@joshtriplett.org>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 971 ms - load_scoreonly_sql: 0.11 (0.0%),
+	signal_user_changed: 6 (0.6%), b_tie_ro: 3.5 (0.4%), parse: 1.22 (0.1%),
+	extract_message_metadata: 20 (2.1%), get_uri_detail_list: 3.8 (0.4%),
+	tests_pri_-1000: 6 (0.6%), tests_pri_-950: 1.52 (0.2%), tests_pri_-900: 1.30
+	(0.1%), tests_pri_-400: 30 (3.1%), check_bayes: 28 (2.9%), b_tokenize: 9
+	(0.9%), b_tok_get_all: 9 (1.0%), b_comp_prob: 4.0 (0.4%), b_tok_touch_all:
+	3.0 (0.3%), b_finish: 1.01 (0.1%), tests_pri_0: 894 (92.1%), tests_pri_500: 5
+	(0.6%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups to drop groups
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Josh Triplett <josh@joshtriplett.org> writes:
 
+> Currently, unprivileged processes (without CAP_SETGID) cannot call
+> setgroups at all.  In particular, processes with a set of supplementary
+> groups cannot further drop permissions without obtaining elevated
+> permissions first.
+>
+> Allow unprivileged processes to call setgroups with a subset of their
+> current groups; only require CAP_SETGID to add a group the process does
+> not currently have.
 
-On 11/13/2014 06:52 AM, Stanimir Varbanov wrote:
-> Hi Grant, Arnd and Erico
-> 
-> On 11/11/2014 01:07 PM, Grant Likely wrote:
->> On Fri, 07 Nov 2014 18:04:35 +0100
->> , Arnd Bergmann <arnd@arndb.de>
->>  wrote:
->>> On Friday 07 November 2014 14:37:26 DATACOM - Érico Nunes wrote:
->>>> Hello Arnd and all,
->>>>
->>>> On 11/07/2014 08:04 AM, Arnd Bergmann wrote:
->>>>> On Thursday 06 November 2014 18:02:52 DATACOM - Érico Nunes wrote:
->>>>>> The idea is that "fpga-spi" is a spi_driver which instantiates all of the
->>>>>> "fpga-deviceN" as platform_devices, through the use of
->>>>>> of_platform_populate(dev->of_node, NULL, NULL, dev).
->>>>>>
->>>>>> The visible problem we're facing with this approach is that, as the internal
->>>>>> platform_devices have a "reg" property, of_platform_populate() eventually
->>>>>> triggers an address translation which is apparently trying to translate the
->>>>>> addresses of the internal platform_bus to addresses of the processor memory
->>>>>> map.
->>>>>> This translation is however not part of our intention, as we intend to have an
->>>>>> internal bus with its own memory map.
->>>>>> This fails when __of_translate_address() reaches the spi-master boundary
->>>>>> because (as it seems to make sense) it isn't possible to translate them past
->>>>>> that.
->>>>>> A KERN_ERR rated message like
->>>>>> "prom_parse: Bad cell count for /soc@f0000000/spi@2000/fpga@1"
->>>>>> is thrown by __of_translate_address() and later it is not possible to obtain
->>>>>> the "reg" address with platform_get_resource().
->>>>>>
->>>>>> On this scenario, we have a few questions and, depending on the outcome of
->>>>>> these, possibly a patch.
->>>>>>
->>>>>> 1. Is it possible to have an internal platform_bus with a different memory map
->>>>>> as we intended? Or are platform_busses and platform_devices supposed to always
->>>>>> be mapped on the processor memory map?
->>>>> It's inconsistent. We have some code that assumes that platform devices
->>>>> are always memory mapped, and some other code that breaks this assumption.
->>>>
->>>> By this I take that the platform subsystem could be made generic so it can be
->>>> used in both ways (mapped to processor memory map or mapped to a private memory
->>>> map). There seems to be no strict requirement enforcing it to be processor
->>>> memory map.
->>>>
->>>> Is this correct?
->>>
->>> It could be, but I'm sure if that is a good idea or not. It might complicate
->>> things elsewhere, so it would at least need careful testing and consensus
->>> among a broader group of developers.
->>
->> I don't think it is a good idea. I would prefer to make the behaviour of
->> of_platform_populate() generic so it could work for multiple bus
->> types rather than reusing/abusing platform_device in this way.
->>
->> If the devices on the FPGA were memory mapped, it would be a different
->> situation, but being behind an SPI bus where the access to those devices
->> must always be mediated by the SPI controller, it would be better to
->> have a separate bus type and a separate pool of drivers for those
->> devices.
->>
+A couple of questions.
+- Is there precedence in other unix flavors for this?
+- What motiviates this change?
+- Have you looked to see if anything might for bug compatibilty
+  require applications not to be able to drop supplementary groups?
 
-Grant,
-could you please elaborate a little on "making the behaviour of
-of_platform_populate() generic so it could work for multiple bus types
-without reusing/abusing platform_device"?
-
-Initially we thought of having a separate bus type, but that felt such a
-duplication of a platform_bus that we decided to try to reuse.
-
-On the other thread line about the patch posted in my opening comment,
-it was suggested that we could change __of_translate_address(), for
-example to allow a translation end-point to be passed it. This seems
-like a good idea to me, however with this comment here it is still not
-clear to me whether this change would be likely accepted or not.
-
-> 
-> This is exactly the same problem that we have on Qualcomm SPMI PMIC mfd
-> driver. We had a discussion at [1] where we tried to solve it by
-> IORESOURCE_REG. Unfortunately there is no conclusion yet.
-> 
-> I'm glad to see that someone else have the same issue, maybe it is time
-> to restart the discussion. The last proposal from Grant was to implement
-> dev_get_localbus_address() API in drivers/base.
-
-I took the time to read through your thread and indeed a lot of this
-discussion is common. It is now clear that we should not be using
-IORESOURCE_MEM as it was assumed in the original patch, which was one of
-my original questions.
-We are still not using the mfd framework because of the need to maintain
-the table of "compatible" drivers in code, and this requires double
-maintenance of code instead of adding a new device to the dts.
-Nevertheless, I tested your "RFC: add function for localbus address"
-patch, and your solution worked right away for my case too (without mfd)
-by just changing my drivers to get IORESOURCE_REG instead.
+> The kernel already maintains the list of supplementary group IDs in
+> sorted order, and setgroups already needs to sort the new list, so this
+> just requires a linear comparison of the two sorted lists.
+>
+> This moves the CAP_SETGID test from setgroups into set_current_groups.
+>
+> Tested via the following test program:
+>
+> #include <err.h>
+> #include <grp.h>
+> #include <stdio.h>
+> #include <sys/types.h>
+> #include <unistd.h>
+>
+> void run_id(void)
+> {
+>     pid_t p = fork();
+>     switch (p) {
+>         case -1:
+>             err(1, "fork");
+>         case 0:
+>             execl("/usr/bin/id", "id", NULL);
+>             err(1, "exec");
+>         default:
+>             if (waitpid(p, NULL, 0) < 0)
+>                 err(1, "waitpid");
+>     }
+> }
+>
+> int main(void)
+> {
+>     gid_t list1[] = { 1, 2, 3, 4, 5 };
+>     gid_t list2[] = { 2, 3, 4 };
+>     run_id();
+>     if (setgroups(5, list1) < 0)
+>         err(1, "setgroups 1");
+>     run_id();
+>     if (setresgid(1, 1, 1) < 0)
+>         err(1, "setresgid");
+>     if (setresuid(1, 1, 1) < 0)
+>         err(1, "setresuid");
+>     run_id();
+>     if (setgroups(3, list2) < 0)
+>         err(1, "setgroups 2");
+>     run_id();
+>     if (setgroups(5, list1) < 0)
+>         err(1, "setgroups 3");
+>     run_id();
+>
+>     return 0;
+> }
+>
+> Without this patch, the test program gets EPERM from the second
+> setgroups call, after dropping root privileges.  With this patch, the
+> test program successfully drops groups 1 and 5, but then gets EPERM from
+> the third setgroups call, since that call attempts to add groups the
+> process does not currently have.
+>
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  kernel/groups.c | 33 ++++++++++++++++++++++++++++++---
+>  kernel/uid16.c  |  2 --
+>  2 files changed, 30 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/groups.c b/kernel/groups.c
+> index f0667e7..fe7367d 100644
+> --- a/kernel/groups.c
+> +++ b/kernel/groups.c
+> @@ -153,6 +153,29 @@ int groups_search(const struct group_info *group_info, kgid_t grp)
+>  	return 0;
+>  }
+>  
+> +/* Compare two sorted group lists; return true if the first is a subset of the
+> + * second.
+> + */
+> +static bool is_subset(const struct group_info *g1, const struct group_info *g2)
+> +{
+> +	unsigned int i, j;
+> +
+> +	for (i = 0, j = 0; i < g1->ngroups; i++) {
+> +		kgid_t gid1 = GROUP_AT(g1, i);
+> +		kgid_t gid2;
+> +		for (; j < g2->ngroups; j++) {
+> +			gid2 = GROUP_AT(g2, j);
+> +			if (gid_lte(gid1, gid2))
+> +				break;
+> +		}
+> +		if (j >= g2->ngroups || !gid_eq(gid1, gid2))
+> +			return false;
+> +		j++;
+> +	}
+> +
+> +	return true;
+> +}
+> +
+>  /**
+>   * set_groups_sorted - Change a group subscription in a set of credentials
+>   * @new: The newly prepared set of credentials to alter
+> @@ -189,11 +212,17 @@ int set_current_groups(struct group_info *group_info)
+>  {
+>  	struct cred *new;
+>  
+> +	groups_sort(group_info);
+>  	new = prepare_creds();
+>  	if (!new)
+>  		return -ENOMEM;
+> +	if (!ns_capable(current_user_ns(), CAP_SETGID)
+> +	    && !is_subset(group_info, new->group_info)) {
+> +		abort_creds(new);
+> +		return -EPERM;
+> +	}
+>  
+> -	set_groups(new, group_info);
+> +	set_groups_sorted(new, group_info);
+>  	return commit_creds(new);
+>  }
+>  
+> @@ -233,8 +262,6 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+>  	struct group_info *group_info;
+>  	int retval;
+>  
+> -	if (!ns_capable(current_user_ns(), CAP_SETGID))
+> -		return -EPERM;
+>  	if ((unsigned)gidsetsize > NGROUPS_MAX)
+>  		return -EINVAL;
+>  
+> diff --git a/kernel/uid16.c b/kernel/uid16.c
+> index 602e5bb..b27e167 100644
+> --- a/kernel/uid16.c
+> +++ b/kernel/uid16.c
+> @@ -176,8 +176,6 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+>  	struct group_info *group_info;
+>  	int retval;
+>  
+> -	if (!ns_capable(current_user_ns(), CAP_SETGID))
+> -		return -EPERM;
+>  	if ((unsigned)gidsetsize > NGROUPS_MAX)
+>  		return -EINVAL;
