@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaKOOUt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 09:20:49 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61272 "EHLO mga01.intel.com"
+	id S1754225AbaKOOVc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 09:21:32 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61402 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914AbaKOOUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 09:20:48 -0500
+	id S1753914AbaKOOVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 09:21:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,391,1413270000"; 
-   d="scan'208";a="632446144"
+   d="scan'208";a="632446175"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
@@ -16,86 +16,59 @@ To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Yijing Wang <wangyijing@huawei.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
         Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [Patch V2 0/9] Refine generic/PCI MSI irqodmian interfaces
-Date: Sat, 15 Nov 2014 22:23:58 +0800
-Message-Id: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Alexander Gordeev <agordeev@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch V2 1/9] PCI, MSI: Fix errors caused by commit e5f1a59c4e12
+Date: Sat, 15 Nov 2014 22:23:59 +0800
+Message-Id: <1416061447-9472-2-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is based on tip/irq/irqdomain and tries to refine
-interfaces to support irqdomain for generic MSI and PCI MSI.
+Better to fold into commit e5f1a59c4e12 ("PCI/MSI: Rename write_msi_msg()
+to pci_write_msi_msg()").
 
-Patch 1 is just minor fixes for tip/irq/irqdomain.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/pci/msi.c   |    2 +-
+ include/linux/msi.h |    2 --
+ 2 files changed, 1 insertion(+), 3 deletions(-)
 
-Patch 2-4 introduce mechanisms to help reduce irqdomain users' code size.
-When converting XEN to use hierarchy irqdomain, I found the code size
-increases about 100 lines. So we still need helpers to reduce code size.
-
-Patch 5 introduces some helpers to hide struct msi_desc implementation
-details, so later we could move msi_list from struct pci_dev into
-struct device to enable generic MSI support.
-
-Patch 6 introduces msi_domain_{alloc|free}_irqs() which generalize
-pci_msi_domain_alloc_irqs() to support generic MSI.
-
-Patch 7 introduces default data structures and callback implementations
-to support msi_domain_alloc_irqs(), so reduce burden on generic MSI
-users.
-
-Patch 8 converts PCI MSI to use generic MSI interfaces, and also
-implement default callbacks for PCI MSI.
-
-Patch 9 introduces a mechanism to replace arch_setup_msi_irq()/
-arch_setup_msi_irqs()/arch_teardown_msi_irq()/arch_teardown_msi_irqs().
-
-With this patch set applied, the generic MSI and PCI MSI interfaces
-are much easier to use. For extreme case, you only need to define
-a "struct msi_domain_info" and don't need to implement any callbacks,
-just using the default callbacks is OK:)
-
-This patch set is also a preparation for:
-1) Kill all weak functions in drivers/pci/msi.c
-2) Implement support for non-PCI-compliant MSI device
-
-It has been tested on x86 platforms, comments are welcomed!
-
-V1->V2:
-1) Fix bugs reported by Marc
-2) Rename MSI_FLAG_USE_DEF_OPS as MSI_FLAG_USE_DEF_DOM_OPS
-3) Add support of MSI_FLAG_USE_DEF_CHIP_OPS
-4) Include linxu/irqhandler.h to use irq_flow_handler_t instead of "void *"
-5) Change iterfaces to pass in "nvect" to msi_domain_ops.msi_prepare()
-6) Add new interfaces/flags to help reduce irqdomain users' code size
-
-Jiang Liu (8):
-  PCI, MSI: Fix errors caused by commit e5f1a59c4e12
-  irqdomain: Implement a method to automatically call parent domain's
-    alloc/free
-  irqdomain: Introduce helper function irq_domain_add_hierarchy()
-  PCI, MSI: Introduce helpers to hide struct msi_desc implementation
-    details
-  genirq: Introduce msi_domain_{alloc|free}_irqs()
-  genirq: Provide default callbacks for msi_domain_ops
-  PCI, MSI: Refine irqdomain interfaces to simplify its usage
-  PCI, MSI: Provide mechanism to alloc/free MSI/MSIX interrupt from
-    irqdomain
-
-Yingjoe Chen (1):
-  irqdomain: Use consistent prototype for irq_domain_free_irqs_*
-
- drivers/pci/msi.c         |  181 ++++++++++++++++++++++++++++++++++++---------
- include/linux/irqdomain.h |   33 ++++-----
- include/linux/msi.h       |   99 ++++++++++++++++++++++---
- kernel/irq/irqdomain.c    |   93 +++++++++++++++++++++--
- kernel/irq/msi.c          |  169 ++++++++++++++++++++++++++++++++++++++++--
- 5 files changed, 502 insertions(+), 73 deletions(-)
-
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 564850b1316e..9c53b865cb1b 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -1084,7 +1084,7 @@ void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *msg)
+ 	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
+ 	 */
+ 	if (desc->irq == irq_data->irq)
+-		pci_write_msi_msg(desc, msg);
++		__pci_write_msi_msg(desc, msg);
+ }
+ 
+ /*
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 8112a17cdca1..190c7abbec84 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -44,11 +44,9 @@ struct msi_desc {
+ 	struct msi_msg msg;
+ };
+ 
+-#ifdef CONFIG_PCI_MSI
+ void __pci_read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
+ void __pci_write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
+ void pci_write_msi_msg(unsigned int irq, struct msi_msg *msg);
+-#endif
+ 
+ /*
+  * The arch hooks to setup up msi irqs. Those functions are
 -- 
 1.7.10.4
 
