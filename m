@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225AbaKOPzl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 10:55:41 -0500
-Received: from mail-la0-f65.google.com ([209.85.215.65]:42365 "EHLO
-	mail-la0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009AbaKOPzk (ORCPT
+	id S1754314AbaKOQAY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 11:00:24 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42771 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207AbaKOQAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 10:55:40 -0500
-From: Marcus Hufvudsson <marcushuf@gmail.com>
-To: abbotti@mev.co.uk
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marcus Hufvudsson <marcushuf@gmail.com>
-Subject: [PATCH] staging: comedi: me4000: Fixed code style issue
-Date: Sat, 15 Nov 2014 16:55:20 +0100
-Message-Id: <1416066920-10012-1-git-send-email-marcushuf@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 15 Nov 2014 11:00:22 -0500
+Message-ID: <54677893.9070707@kernel.org>
+Date: Sat, 15 Nov 2014 16:00:19 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, IIO <linux-iio@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Carlo Caione <carlo@caione.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Todd Brandt <todd.e.brandt@linux.intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Hartmut Knaack <knaack.h@gmx.de>, Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 1/3] iio: adc: Add module device table for autoloading
+References: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com> <1415734210-5657-2-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1415734210-5657-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed checkpatch.pl error message. Space prohibited before that ','
-
-Signed-off-by: Marcus Hufvudsson <marcushuf@gmail.com>
----
- drivers/staging/comedi/drivers/me4000.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/me4000.c b/drivers/staging/comedi/drivers/me4000.c
-index ae6ac49..fc67419 100644
---- a/drivers/staging/comedi/drivers/me4000.c
-+++ b/drivers/staging/comedi/drivers/me4000.c
-@@ -416,7 +416,7 @@ static void me4000_reset(struct comedi_device *dev)
- 	val |= PLX9052_CNTRL_PCI_RESET;
- 	outl(val, info->plx_regbase + PLX9052_CNTRL);
- 	val &= ~PLX9052_CNTRL_PCI_RESET;
--	outl(val , info->plx_regbase + PLX9052_CNTRL);
-+	outl(val, info->plx_regbase + PLX9052_CNTRL);
- 
- 	/* 0x8000 to the DACs means an output voltage of 0V */
- 	for (chan = 0; chan < 4; chan++)
--- 
-1.7.10.4
+On 11/11/14 19:30, Jacob Pan wrote:
+> From: Aaron Lu <aaron.lu@intel.com>
+> 
+> Add the module device id table so that the driver can be automatically
+> loaded once the platform device is created.
+> 
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+> ---
+>  drivers/iio/adc/axp288_adc.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/iio/adc/axp288_adc.c b/drivers/iio/adc/axp288_adc.c
+> index 4800286..4a6cf43 100644
+> --- a/drivers/iio/adc/axp288_adc.c
+> +++ b/drivers/iio/adc/axp288_adc.c
+> @@ -238,15 +238,23 @@ static int axp288_adc_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +static struct platform_device_id axp288_adc_id_table[] = {
+> +	{ .name = "axp288_adc" },
+> +	{},
+> +};
+> +
+>  static struct platform_driver axp288_adc_driver = {
+>  	.probe = axp288_adc_probe,
+>  	.remove = axp288_adc_remove,
+> +	.id_table = axp288_adc_id_table,
+>  	.driver = {
+>  		.name = "axp288_adc",
+>  		.owner = THIS_MODULE,
+>  	},
+>  };
+>  
+> +MODULE_DEVICE_TABLE(platform, axp288_adc_id_table);
+> +
+>  module_platform_driver(axp288_adc_driver);
+>  
+>  MODULE_AUTHOR("Jacob Pan <jacob.jun.pan@linux.intel.com>");
+> 
 
