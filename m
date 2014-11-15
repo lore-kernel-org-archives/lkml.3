@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaKOFIm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 00:08:42 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:48451 "EHLO
+	id S1755453AbaKOFIk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 00:08:40 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:39441 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751903AbaKOFGH (ORCPT
+	by vger.kernel.org with ESMTP id S1751940AbaKOFGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 15 Nov 2014 00:06:07 -0500
-Message-Id: <20141115050604.377172084@goodmis.org>
+Message-Id: <20141115050603.509169884@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 14 Nov 2014 23:59:09 -0500
+Date: Fri, 14 Nov 2014 23:59:04 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 22/26 v5] tracing: Add seq_buf_get_buf() and seq_buf_commit() helper functions
+Subject: [PATCH 17/26 v5] tracing: Add a seq_buf_clear() helper and clear len and readpos in
+ init
 References: <20141115045847.712848224@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0022-tracing-Add-seq_buf_get_buf-and-seq_buf_commit-helpe.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0017-tracing-Add-a-seq_buf_clear-helper-and-clear-len-and.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,100 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add two helper functions; seq_buf_get_buf() and seq_buf_commit() that
-are used by seq_buf_path(). This makes the code similar to the
-seq_file: seq_path() function, and will help to be able to consolidate
-the functions between seq_file and trace_seq.
+Add a helper function seq_buf_clear() that resets the len and readpos
+fields of a seq_buf. Currently it is only used in the seq_buf_init()
+but will be used later when updating the seq_file code.
 
-Link: http://lkml.kernel.org/r/20141104160222.644881406@goodmis.org
-Link: http://lkml.kernel.org/r/20141114011412.977571447@goodmis.org
+Link: http://lkml.kernel.org/r/20141104160222.352309995@goodmis.org
 
 Tested-by: Jiri Kosina <jkosina@suse.cz>
 Acked-by: Jiri Kosina <jkosina@suse.cz>
 Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/seq_buf.h | 41 +++++++++++++++++++++++++++++++++++++++++
- kernel/trace/seq_buf.c  |  7 +++----
- 2 files changed, 44 insertions(+), 4 deletions(-)
+ include/linux/seq_buf.h | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-index 0800a24b4348..12c64282aa98 100644
+index d14dc9023dde..5d91262433e2 100644
 --- a/include/linux/seq_buf.h
 +++ b/include/linux/seq_buf.h
-@@ -70,6 +70,47 @@ static inline unsigned int seq_buf_used(struct seq_buf *s)
- 	return min(s->len, s->size);
- }
+@@ -22,13 +22,18 @@ struct seq_buf {
+ 	loff_t			readpos;
+ };
  
-+/**
-+ * seq_buf_get_buf - get buffer to write arbitrary data to
-+ * @s: the seq_buf handle
-+ * @bufp: the beginning of the buffer is stored here
-+ *
-+ * Return the number of bytes available in the buffer, or zero if
-+ * there's no space.
-+ */
-+static inline size_t seq_buf_get_buf(struct seq_buf *s, char **bufp)
++static inline void seq_buf_clear(struct seq_buf *s)
 +{
-+	WARN_ON(s->len > s->size + 1);
-+
-+	if (s->len < s->size) {
-+		*bufp = s->buffer + s->len;
-+		return s->size - s->len;
-+	}
-+
-+	*bufp = NULL;
-+	return 0;
++	s->len = 0;
++	s->readpos = 0;
 +}
 +
-+/**
-+ * seq_buf_commit - commit data to the buffer
-+ * @s: the seq_buf handle
-+ * @num: the number of bytes to commit
-+ *
-+ * Commit @num bytes of data written to a buffer previously acquired
-+ * by seq_buf_get.  To signal an error condition, or that the data
-+ * didn't fit in the available space, pass a negative @num value.
-+ */
-+static inline void seq_buf_commit(struct seq_buf *s, int num)
-+{
-+	if (num < 0) {
-+		seq_buf_set_overflow(s);
-+	} else {
-+		/* num must be negative on overflow */
-+		BUG_ON(s->len + num > s->size);
-+		s->len += num;
-+	}
-+}
-+
- extern __printf(2, 3)
- int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
- extern __printf(2, 0)
-diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-index 27e48348ae67..3319dfbbb75b 100644
---- a/kernel/trace/seq_buf.c
-+++ b/kernel/trace/seq_buf.c
-@@ -285,8 +285,8 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-  */
- int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
+ static inline void
+ seq_buf_init(struct seq_buf *s, unsigned char *buf, unsigned int size)
  {
--	char *buf = s->buffer + s->len;
--	size_t size = seq_buf_buffer_left(s);
-+	char *buf;
-+	size_t size = seq_buf_get_buf(s, &buf);
- 	int res = -1;
- 
- 	WARN_ON(s->size == 0);
-@@ -299,8 +299,7 @@ int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
- 				res = end - buf;
- 		}
- 	}
--	if (res > 0)
--		s->len += res;
-+	seq_buf_commit(s, res);
- 
- 	return res;
+ 	s->buffer = buf;
+ 	s->size = size;
+-	s->len = 0;
+-	s->readpos = 0;
++	seq_buf_clear(s);
  }
+ 
+ /*
 -- 
 2.1.1
 
