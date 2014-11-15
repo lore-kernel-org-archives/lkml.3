@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaKOFll (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 00:41:41 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:57516 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaKOFlh (ORCPT
+	id S1755061AbaKOFmk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 00:42:40 -0500
+Received: from message.langara.bc.ca ([209.87.29.115]:60480 "EHLO
+	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaKOFmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 00:41:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <1415972348-8382-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415972231-8283-1-git-send-email-andy.yan@rock-chips.com> <1415972348-8382-1-git-send-email-andy.yan@rock-chips.com>
-From: Daniel Kurtz <djkurtz@google.com>
-Date: Sat, 15 Nov 2014 13:41:16 +0800
-Message-ID: <CAGS+omCQ97eo6BhhfCucgeAK8Kq0GtR8jOiv2AF7x=w2d9F8yw@mail.gmail.com>
-Subject: Re: [PATCH v11 02/12] staging: imx-drm: imx-hdmi: return defer if
- can't get ddc i2c adapter
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: David Airlie <airlied@linux.ie>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        Yakir Yang <ykk@rock-chips.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        devel@driverdev.osuosl.org,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Xu Jianqun <jay.xu@rock-chips.com>, Pawel Moll <pawel.moll@arm.com>,
-        "mark.yao@rock-chips.com" <mark.yao@rock-chips.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 15 Nov 2014 00:42:35 -0500
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Nov 2014 00:42:35 EST
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+Content-type: text/plain; charset=us-ascii
+From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Doug Ledford <dledford@redhat.com>, linux-newbie@vger.kernel.org
+Message-id: <fb7fa4d76314.5466d9ba@langara.bc.ca>
+Date: Sat, 15 Nov 2014 04:42:34 +0000 (GMT)
+X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
+ 32bit)
+Content-language: en
+Subject: Re: [PATCH 1/1] ipc/mqueue.c: Drag unneeded code out of locks
+X-Accept-Language: en
+In-reply-to: <20141111162146.6e72c3fb0858df4945096c47@linux-foundation.org>
+References: <fae396b9bc15.545c5b55@langara.bc.ca>
+ <20141111162146.6e72c3fb0858df4945096c47@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 9:39 PM, Andy Yan <andy.yan@rock-chips.com> wrote:
-> drm driver may probe before the i2c bus, so the driver should
-> defer probing until it is available
->
-> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
->
-> ---
->
-> Changes in v11: None
-> Changes in v10: None
-> Changes in v9: None
-> Changes in v8: None
-> Changes in v7: None
-> Changes in v6: None
-> Changes in v5: None
-> Changes in v4:
-> - defer probe ddc i2c adapter
->
-> Changes in v3: None
-> Changes in v2: None
->
->  drivers/staging/imx-drm/imx-hdmi.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/staging/imx-drm/imx-hdmi.c b/drivers/staging/imx-drm/imx-hdmi.c
-> index 79daec4..c2b035a 100644
-> --- a/drivers/staging/imx-drm/imx-hdmi.c
-> +++ b/drivers/staging/imx-drm/imx-hdmi.c
-> @@ -1611,8 +1611,11 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
->         ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
->         if (ddc_node) {
->                 hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
-> -               if (!hdmi->ddc)
-> +               if (!hdmi->ddc) {
->                         dev_dbg(hdmi->dev, "failed to read ddc node\n");
-> +                       of_node_put(ddc_node);
-> +                       return -EPROBE_DEFER;
-> +               }
+Hello, thank you for the criticism.
 
-Nit:  You could move "of_node_put()" above "if (!hdmi->ddc)", and not
-need it in two places.
+> It's probably better to do this as three or four separate patches.
 
-Either way, this one is:
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+Really? Alright if you insist I'll do the next version as multiple
+patches.
 
->
->                 of_node_put(ddc_node);
->         } else {
-> --
-> 1.9.1
->
+> Well yes, that's what EMFILE means but "too_many_open_files" doesn't
+> make sense in this context!
 
+Fair enough, I'll rename it in the next version.
 
+> Thatsabug.  It only requires CAP_SYS_RESOURCE if we're trying with
+> queues_count >= queues_max.
 
--- 
-Daniel Kurtz | Software Engineer | djkurtz@google.com | 650.204.0722
+Right, that was dumb of me.
+
+> This test isn't really needed.
+
+I don't follow. If the queue creation is not rejected then the
+resource user has to be accounted for right? And we can't add the
+resource to accounting if it is not created right?
+
+Thank you,
+Steven Stewart-Gallus
