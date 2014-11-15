@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaKOVeR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 16:34:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47495 "EHLO mx1.redhat.com"
+	id S932099AbaKOWAz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 17:00:55 -0500
+Received: from mout.gmx.net ([212.227.15.19]:54363 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754640AbaKOVeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 16:34:16 -0500
-Date: Sat, 15 Nov 2014 16:34:05 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141115213405.GA31971@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>
-References: <20141114213124.GB3344@redhat.com>
- <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+	id S1754152AbaKOWAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 17:00:54 -0500
+Date: Sat, 15 Nov 2014 23:00:48 +0100
+From: Helge Deller <deller@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [GIT PULL] parisc architecture patches for v3.18
+Message-ID: <20141115220048.GA19278@ls3530.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Provags-ID: V03:K0:5ut4SzSBIRKdczORblUbX690ciYcTIpQ6cfVlyHtMkQ7u4kfQgf
+ /g8hs11j7oyNep3kKHMOSSx5aiiciDYviu2mL68bYOChBXkwBzeg8MF7/ltwoSFpG3OLcDg
+ ocRcdeR8bGPH15GzJ8+7uBbfmYJL+m9d0bSNQ7gHr4w/sKZYwgfibghe5yYpfNGK60WqsUz
+ PtqqmYW146i92rXejGppw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 02:01:27PM -0800, Linus Torvalds wrote:
+Hi Linus,
 
- > But since you say "several times a day", just for fun, can you test
- > the follow-up patch to that one-liner fix that Will Deacon posted
- > today (Subject: "[PATCH] mmu_gather: move minimal range calculations
- > into generic code"). That does some further cleanup in this area.
+please pull some patches for the parisc architecture for kernel 3.18 from 
+  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.18-2
 
-A few hours ago it hit the NMI watchdog again with that patch applied.
-Incomplete trace, but it looks different based on what did make it over.
-Different RIP at least.
+Changes include:
+- wire up the bpf syscall
+- Remove CONFIG_64BIT usage from some userspace-exported header files
+- Use compat functions for msgctl, shmat, shmctl and semtimedop syscalls 
 
-[65155.054155] NMI watchdog: BUG: soft lockup - CPU#1 stuck for 22s! [trinity-c127:12559]
-[65155.054573] irq event stamp: 296752
-[65155.054589] hardirqs last  enabled at (296751): [<ffffffff9d87403d>] _raw_spin_unlock_irqrestore+0x5d/0x80
-[65155.054625] hardirqs last disabled at (296752): [<ffffffff9d875cea>] apic_timer_interrupt+0x6a/0x80
-[65155.054657] softirqs last  enabled at (296188): [<ffffffff9d259943>] bdi_queue_work+0x83/0x270
-[65155.054688] softirqs last disabled at (296184): [<ffffffff9d259920>] bdi_queue_work+0x60/0x270
-[65155.054721] CPU: 1 PID: 12559 Comm: trinity-c127 Not tainted 3.18.0-rc4+ #84 [loadavg: 209.68 187.90 185.33 34/431 17515]
-[65155.054795] task: ffff88023f664680 ti: ffff8801649f0000 task.ti: ffff8801649f0000
-[65155.054820] RIP: 0010:[<ffffffff9d87403f>]  [<ffffffff9d87403f>] _raw_spin_unlock_irqrestore+0x5f/0x80
-[65155.054852] RSP: 0018:ffff8801649f3be8  EFLAGS: 00000292
-[65155.054872] RAX: ffff88023f664680 RBX: 0000000000000007 RCX: 0000000000000007
-[65155.054895] RDX: 00000000000029e0 RSI: ffff88023f664ea0 RDI: ffff88023f664680
-[65155.054919] RBP: ffff8801649f3bf8 R08: 0000000000000000 R09: 0000000000000000
-[65155.055956] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-[65155.056985] R13: ffff8801649f3b58 R14: ffffffff9d3e7d0e R15: 00000000000003e0
-[65155.058037] FS:  00007f0dc957c700(0000) GS:ffff880244200000(0000) knlGS:0000000000000000
-[65155.059083] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[65155.060121] CR2: 00007f0dc958e000 CR3: 000000022f31e000 CR4: 00000000001407e0
-[65155.061152] DR0: 00007f54162bc000 DR1: 00007feb92c3d000 DR2: 0000000000000000
-[65155.062180] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[65155.063202] Stack:
+Thanks,
+Helge
 
-And that's all she wrote.
+----------------------------------------------------------------
+Helge Deller (4):
+      parisc: Wire up bpf syscall
+      parisc: Use BUILD_BUG() instead of undefined functions
+      parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
+      parisc: Avoid using CONFIG_64BIT in userspace exported headers
 
- > If Will's patch doesn't make a difference, what about reverting that
- > ce9ec37bddb6? Although it really *is* a "obvious bugfix", and I really
- > don't see why any of this would be noticeable on x86 (it triggered
- > issues on ARM64, but that was because ARM64 cared much more about the
- > exact range).
-
-I'll try that next, and check in on it tomorrow.
-
-	Dave
+ arch/parisc/include/asm/uaccess.h          | 19 +++++++---------
+ arch/parisc/include/uapi/asm/bitsperlong.h |  8 +------
+ arch/parisc/include/uapi/asm/msgbuf.h      |  8 ++++---
+ arch/parisc/include/uapi/asm/sembuf.h      |  6 +++--
+ arch/parisc/include/uapi/asm/shmbuf.h      | 35 +++++++++++++-----------------
+ arch/parisc/include/uapi/asm/signal.h      |  2 +-
+ arch/parisc/include/uapi/asm/unistd.h      |  3 ++-
+ arch/parisc/kernel/syscall_table.S         |  9 ++++----
+ 8 files changed, 41 insertions(+), 49 deletions(-)
