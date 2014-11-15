@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaKOSmk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 13:42:40 -0500
-Received: from mout.web.de ([212.227.17.11]:60134 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754360AbaKOSmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 13:42:38 -0500
-Message-ID: <54679E97.5000801@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 19:42:31 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754542AbaKOSpm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 13:45:42 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:45991 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273AbaKOSpl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 13:45:41 -0500
 MIME-Version: 1.0
-To: Anton Altaparmakov <anton@tuxera.com>,
-        linux-ntfs-dev@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] ntfs: Deletion of unnecessary checks before the function
- call "iput"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:3pfejiVjkX3PZAJW0XcnSyaij5U/puBtza1MdeozdMpVMTL3ZoV
- 8M3t2J5DzBy3qsh9Yf/P+h1dgTw6EepocrP3WVYGVHxQHcOa/3ULRqbHqBqPCI1zel9UyWk
- 0ELxxeTQBwY7gGwiVL0de5naZi7nIH1qgfUiW30gP89iTilEOva5odteVKRnExTHbsgxPcj
- MjjM1DrJOTzxcWPYiKpAg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141115182806.GZ12538@two.firstfloor.org>
+References: <CALCETrXdaEYjjfsTYySDXZvBHON10-EQRftV-OSCWTKMsUfOtg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293D455@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVLwzhQVMbu2c=NCzAfEBWa8=SOpfu5gPoxpuTBcNngRA@mail.gmail.com> <20141115182806.GZ12538@two.firstfloor.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 15 Nov 2014 10:45:19 -0800
+Message-ID: <CALCETrUNcAwg7mSvxOQjPrvNpe=acqkhgSo8OJLyCA+WRJ3cOg@mail.gmail.com>
+Subject: Re: Request for help: what did I do wrong with idtentry?
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 19:35:05 +0100
+On Sat, Nov 15, 2014 at 10:28 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> I'm not
+>> completely thrilled with what it does to double_fault, though.  If we
+>> somehow get a double fault caused by an interrupt hitting userspace
+>> with a bad kernel_stack, then we'll end up page faulting in the
+>> double_fault prologue.  I'm not convinced that this is worth worrying
+>> about.  It would be easy enough to fix, though, even if it would
+>> further uglify the code.
+>
+> If you're "cleaning up" good and working code the functionality should
+> be the same as before. The old code handled this situation fine.
+> So your new code should handle this too.
 
-The iput() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+First, this failure mode should be almost impossible.  We'd really
+have to screw up to have the kernel stack point to a bad address.
+(This isn't the stack *pointer* being bad -- it's the value in the
+TSS.)
 
-This issue was detected by using the Coccinelle software.
+If this happens, the existing code will die (no recovery possible
+unlike with normal OOPSes).  The new code will log a kernel-mode page
+fault on the DF stack (as shown on the stack trace, assuming that
+logic works), complain some more in do_exit, and make some sort of
+effort to recover, which might even work.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- fs/ntfs/super.c | 21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+In other words, I'd be happy to "fix" it, but I'm not entirely
+convinced that this change should count as a regression in the first
+place.
 
-diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
-index 6c3296e..8f22a47 100644
---- a/fs/ntfs/super.c
-+++ b/fs/ntfs/super.c
-@@ -2204,17 +2204,12 @@ get_ctx_vol_failed:
- 	return true;
- #ifdef NTFS_RW
- iput_usnjrnl_err_out:
--	if (vol->usnjrnl_j_ino)
--		iput(vol->usnjrnl_j_ino);
--	if (vol->usnjrnl_max_ino)
--		iput(vol->usnjrnl_max_ino);
--	if (vol->usnjrnl_ino)
--		iput(vol->usnjrnl_ino);
-+	iput(vol->usnjrnl_j_ino);
-+	iput(vol->usnjrnl_max_ino);
-+	iput(vol->usnjrnl_ino);
- iput_quota_err_out:
--	if (vol->quota_q_ino)
--		iput(vol->quota_q_ino);
--	if (vol->quota_ino)
--		iput(vol->quota_ino);
-+	iput(vol->quota_q_ino);
-+	iput(vol->quota_ino);
- 	iput(vol->extend_ino);
- #endif /* NTFS_RW */
- iput_sec_err_out:
-@@ -2223,8 +2218,7 @@ iput_root_err_out:
- 	iput(vol->root_ino);
- iput_logfile_err_out:
- #ifdef NTFS_RW
--	if (vol->logfile_ino)
--		iput(vol->logfile_ino);
-+	iput(vol->logfile_ino);
- iput_vol_err_out:
- #endif /* NTFS_RW */
- 	iput(vol->vol_ino);
-@@ -2254,8 +2248,7 @@ iput_mftbmp_err_out:
- 	iput(vol->mftbmp_ino);
- iput_mirr_err_out:
- #ifdef NTFS_RW
--	if (vol->mftmirr_ino)
--		iput(vol->mftmirr_ino);
-+	iput(vol->mftmirr_ino);
- #endif /* NTFS_RW */
- 	return false;
- }
--- 
-2.1.3
+If we go for the fix-it approach, we could add a fixup in sync_regs
+and probe the kernel_stack or we could add a paranoid=2 mode for
+double_fault.
 
+>
+> In general yes handling all the corner cases makes code ugly.
+> That is how the existing code got how it became.
 
+Most of those corner cases are at least in code paths that are
+supposed to work.  This particular corner case is in a handler that's
+just trying to print something useful rather than silently rebooting,
+and it should still work well enough to print something useful.
+
+--Andy
