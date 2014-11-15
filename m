@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264AbaKOFGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 00:06:23 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:38644 "EHLO
+	id S1753854AbaKOFGL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 00:06:11 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:4037 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751723AbaKOFGH (ORCPT
+	by vger.kernel.org with ESMTP id S1750815AbaKOFGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 00:06:07 -0500
-Message-Id: <20141115050602.655414633@goodmis.org>
+	Sat, 15 Nov 2014 00:06:03 -0500
+Message-Id: <20141115050601.107102597@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 14 Nov 2014 23:58:59 -0500
+Date: Fri, 14 Nov 2014 23:58:50 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 12/26 v5] tracing: Remove return values of most trace_seq_*() functions
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 03/26 v5] blktrace/tracing: Use trace_seq_has_overflowed() helper function
 References: <20141115045847.712848224@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0012-tracing-Remove-return-values-of-most-trace_seq_-func.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0003-blktrace-tracing-Use-trace_seq_has_overflowed-helper.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,357 +28,322 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The trace_seq_printf() and friends are used to store strings into a buffer
-that can be passed around from function to function. If the trace_seq buffer
-fills up, it will not print any more. The return values were somewhat
-inconsistant and using trace_seq_has_overflowed() was a better way to know
-if the write to the trace_seq buffer succeeded or not.
+Checking the return code of every trace_seq_printf() operation and having
+to return early if it overflowed makes the code messy.
 
-Now that all users have removed reading the return value of the printf()
-type functions, they can safely return void and keep future users of them
-from reading the inconsistent values as well.
+Using the new trace_seq_has_overflowed() and trace_handle_return() functions
+allows us to clean up the code.
 
-Link: http://lkml.kernel.org/r/20141114011411.992510720@goodmis.org
+In the future, trace_seq_printf() and friends will be turning into void
+functions and not returning a value. The trace_seq_has_overflowed() is to
+be used instead. This cleanup allows that change to take place.
 
+Cc: Jens Axboe <axboe@fb.com>
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/trace_seq.h | 37 +++++++++------------
- kernel/trace/trace_seq.c  | 84 +++++++++++++----------------------------------
- 2 files changed, 38 insertions(+), 83 deletions(-)
+ kernel/trace/blktrace.c | 148 +++++++++++++++++++++---------------------------
+ 1 file changed, 66 insertions(+), 82 deletions(-)
 
-diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
-index 07eda413dfcf..db8a73224f1a 100644
---- a/include/linux/trace_seq.h
-+++ b/include/linux/trace_seq.h
-@@ -57,40 +57,37 @@ static inline bool trace_seq_has_overflowed(struct trace_seq *s)
-  */
- #ifdef CONFIG_TRACING
- extern __printf(2, 3)
--int trace_seq_printf(struct trace_seq *s, const char *fmt, ...);
-+void trace_seq_printf(struct trace_seq *s, const char *fmt, ...);
- extern __printf(2, 0)
--int trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args);
--extern int
-+void trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args);
-+extern void
- trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary);
- extern int trace_print_seq(struct seq_file *m, struct trace_seq *s);
- extern int trace_seq_to_user(struct trace_seq *s, char __user *ubuf,
- 			     int cnt);
--extern int trace_seq_puts(struct trace_seq *s, const char *str);
--extern int trace_seq_putc(struct trace_seq *s, unsigned char c);
--extern int trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len);
--extern int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
-+extern void trace_seq_puts(struct trace_seq *s, const char *str);
-+extern void trace_seq_putc(struct trace_seq *s, unsigned char c);
-+extern void trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len);
-+extern void trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
- 				unsigned int len);
- extern int trace_seq_path(struct trace_seq *s, const struct path *path);
- 
--extern int trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
-+extern void trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
- 			     int nmaskbits);
- 
- #else /* CONFIG_TRACING */
--static inline int trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
-+static inline void trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
- {
--	return 0;
- }
--static inline int
-+static inline void
- trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
- {
--	return 0;
+diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+index c1bd4ada2a04..11b9cb36092b 100644
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -1142,9 +1142,9 @@ static void get_pdu_remap(const struct trace_entry *ent,
+ 	r->sector_from = be64_to_cpu(sector_from);
  }
  
--static inline int
-+static inline void
- trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
- 		  int nmaskbits)
+-typedef int (blk_log_action_t) (struct trace_iterator *iter, const char *act);
++typedef void (blk_log_action_t) (struct trace_iterator *iter, const char *act);
+ 
+-static int blk_log_action_classic(struct trace_iterator *iter, const char *act)
++static void blk_log_action_classic(struct trace_iterator *iter, const char *act)
  {
--	return 0;
+ 	char rwbs[RWBS_LEN];
+ 	unsigned long long ts  = iter->ts;
+@@ -1154,33 +1154,33 @@ static int blk_log_action_classic(struct trace_iterator *iter, const char *act)
+ 
+ 	fill_rwbs(rwbs, t);
+ 
+-	return trace_seq_printf(&iter->seq,
+-				"%3d,%-3d %2d %5d.%09lu %5u %2s %3s ",
+-				MAJOR(t->device), MINOR(t->device), iter->cpu,
+-				secs, nsec_rem, iter->ent->pid, act, rwbs);
++	trace_seq_printf(&iter->seq,
++			 "%3d,%-3d %2d %5d.%09lu %5u %2s %3s ",
++			 MAJOR(t->device), MINOR(t->device), iter->cpu,
++			 secs, nsec_rem, iter->ent->pid, act, rwbs);
  }
  
- static inline int trace_print_seq(struct seq_file *m, struct trace_seq *s)
-@@ -102,23 +99,19 @@ static inline int trace_seq_to_user(struct trace_seq *s, char __user *ubuf,
+-static int blk_log_action(struct trace_iterator *iter, const char *act)
++static void blk_log_action(struct trace_iterator *iter, const char *act)
  {
- 	return 0;
- }
--static inline int trace_seq_puts(struct trace_seq *s, const char *str)
-+static inline void trace_seq_puts(struct trace_seq *s, const char *str)
- {
--	return 0;
- }
--static inline int trace_seq_putc(struct trace_seq *s, unsigned char c)
-+static inline void trace_seq_putc(struct trace_seq *s, unsigned char c)
- {
--	return 0;
- }
--static inline int
-+static inline void
- trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len)
- {
--	return 0;
- }
--static inline int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
-+static inline void trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
- 				       unsigned int len)
- {
--	return 0;
- }
- static inline int trace_seq_path(struct trace_seq *s, const struct path *path)
- {
-diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
-index b100994a17fe..fabfa0f190a3 100644
---- a/kernel/trace/trace_seq.c
-+++ b/kernel/trace/trace_seq.c
-@@ -69,20 +69,15 @@ int trace_print_seq(struct seq_file *m, struct trace_seq *s)
-  * trace_seq_printf() is used to store strings into a special
-  * buffer (@s). Then the output may be either used by
-  * the sequencer or pulled into another buffer.
-- *
-- * Returns 1 if we successfully written all the contents to
-- *   the buffer.
--  * Returns 0 if we the length to write is bigger than the
-- *   reserved buffer space. In this case, nothing gets written.
-  */
--int trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
-+void trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
- {
- 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
- 	va_list ap;
- 	int ret;
+ 	char rwbs[RWBS_LEN];
+ 	const struct blk_io_trace *t = te_blk_io_trace(iter->ent);
  
- 	if (s->full || !len)
--		return 0;
+ 	fill_rwbs(rwbs, t);
+-	return trace_seq_printf(&iter->seq, "%3d,%-3d %2s %3s ",
+-				MAJOR(t->device), MINOR(t->device), act, rwbs);
++	trace_seq_printf(&iter->seq, "%3d,%-3d %2s %3s ",
++			 MAJOR(t->device), MINOR(t->device), act, rwbs);
+ }
+ 
+-static int blk_log_dump_pdu(struct trace_seq *s, const struct trace_entry *ent)
++static void blk_log_dump_pdu(struct trace_seq *s, const struct trace_entry *ent)
+ {
+ 	const unsigned char *pdu_buf;
+ 	int pdu_len;
+-	int i, end, ret;
++	int i, end;
+ 
+ 	pdu_buf = pdu_start(ent);
+ 	pdu_len = te_blk_io_trace(ent)->pdu_len;
+ 
+ 	if (!pdu_len)
+-		return 1;
 +		return;
  
- 	va_start(ap, fmt);
- 	ret = vsnprintf(s->buffer + s->len, len, fmt, ap);
-@@ -91,12 +86,10 @@ int trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
- 	/* If we can't write it all, don't bother writing anything */
- 	if (ret >= len) {
- 		s->full = 1;
+ 	/* find the last zero that needs to be printed */
+ 	for (end = pdu_len - 1; end >= 0; end--)
+@@ -1188,119 +1188,107 @@ static int blk_log_dump_pdu(struct trace_seq *s, const struct trace_entry *ent)
+ 			break;
+ 	end++;
+ 
+-	if (!trace_seq_putc(s, '('))
 -		return 0;
-+		return;
++	trace_seq_putc(s, '(');
+ 
+ 	for (i = 0; i < pdu_len; i++) {
+ 
+-		ret = trace_seq_printf(s, "%s%02x",
+-				       i == 0 ? "" : " ", pdu_buf[i]);
+-		if (!ret)
+-			return ret;
++		trace_seq_printf(s, "%s%02x",
++				 i == 0 ? "" : " ", pdu_buf[i]);
+ 
+ 		/*
+ 		 * stop when the rest is just zeroes and indicate so
+ 		 * with a ".." appended
+ 		 */
+-		if (i == end && end != pdu_len - 1)
+-			return trace_seq_puts(s, " ..) ");
++		if (i == end && end != pdu_len - 1) {
++			trace_seq_puts(s, " ..) ");
++			return;
++		}
  	}
  
- 	s->len += ret;
--
--	return 1;
+-	return trace_seq_puts(s, ") ");
++	trace_seq_puts(s, ") ");
  }
- EXPORT_SYMBOL_GPL(trace_seq_printf);
  
-@@ -107,25 +100,18 @@ EXPORT_SYMBOL_GPL(trace_seq_printf);
-  * @nmaskbits:	The number of bits that are valid in @maskp
-  *
-  * Writes a ASCII representation of a bitmask string into @s.
-- *
-- * Returns 1 if we successfully written all the contents to
-- *   the buffer.
-- * Returns 0 if we the length to write is bigger than the
-- *   reserved buffer space. In this case, nothing gets written.
-  */
--int trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
-+void trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
- 		      int nmaskbits)
+-static int blk_log_generic(struct trace_seq *s, const struct trace_entry *ent)
++static void blk_log_generic(struct trace_seq *s, const struct trace_entry *ent)
  {
- 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
- 	int ret;
+ 	char cmd[TASK_COMM_LEN];
  
- 	if (s->full || !len)
--		return 0;
-+		return;
+ 	trace_find_cmdline(ent->pid, cmd);
  
- 	ret = bitmap_scnprintf(s->buffer + s->len, len, maskp, nmaskbits);
- 	s->len += ret;
+ 	if (t_action(ent) & BLK_TC_ACT(BLK_TC_PC)) {
+-		int ret;
 -
--	return 1;
+-		ret = trace_seq_printf(s, "%u ", t_bytes(ent));
+-		if (!ret)
+-			return 0;
+-		ret = blk_log_dump_pdu(s, ent);
+-		if (!ret)
+-			return 0;
+-		return trace_seq_printf(s, "[%s]\n", cmd);
++		trace_seq_printf(s, "%u ", t_bytes(ent));
++		blk_log_dump_pdu(s, ent);
++		trace_seq_printf(s, "[%s]\n", cmd);
+ 	} else {
+ 		if (t_sec(ent))
+-			return trace_seq_printf(s, "%llu + %u [%s]\n",
++			trace_seq_printf(s, "%llu + %u [%s]\n",
+ 						t_sector(ent), t_sec(ent), cmd);
+-		return trace_seq_printf(s, "[%s]\n", cmd);
++		else
++			trace_seq_printf(s, "[%s]\n", cmd);
+ 	}
  }
- EXPORT_SYMBOL_GPL(trace_seq_bitmask);
  
-@@ -139,28 +125,24 @@ EXPORT_SYMBOL_GPL(trace_seq_bitmask);
-  * trace_seq_printf is used to store strings into a special
-  * buffer (@s). Then the output may be either used by
-  * the sequencer or pulled into another buffer.
-- *
-- * Returns how much it wrote to the buffer.
-  */
--int trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
-+void trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
+-static int blk_log_with_error(struct trace_seq *s,
++static void blk_log_with_error(struct trace_seq *s,
+ 			      const struct trace_entry *ent)
  {
- 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
- 	int ret;
- 
- 	if (s->full || !len)
+ 	if (t_action(ent) & BLK_TC_ACT(BLK_TC_PC)) {
+-		int ret;
+-
+-		ret = blk_log_dump_pdu(s, ent);
+-		if (ret)
+-			return trace_seq_printf(s, "[%d]\n", t_error(ent));
 -		return 0;
-+		return;
++		blk_log_dump_pdu(s, ent);
++		trace_seq_printf(s, "[%d]\n", t_error(ent));
+ 	} else {
+ 		if (t_sec(ent))
+-			return trace_seq_printf(s, "%llu + %u [%d]\n",
+-						t_sector(ent),
+-						t_sec(ent), t_error(ent));
+-		return trace_seq_printf(s, "%llu [%d]\n",
+-					t_sector(ent), t_error(ent));
++			trace_seq_printf(s, "%llu + %u [%d]\n",
++					 t_sector(ent),
++					 t_sec(ent), t_error(ent));
++		else
++			trace_seq_printf(s, "%llu [%d]\n",
++					 t_sector(ent), t_error(ent));
+ 	}
+ }
  
- 	ret = vsnprintf(s->buffer + s->len, len, fmt, args);
+-static int blk_log_remap(struct trace_seq *s, const struct trace_entry *ent)
++static void blk_log_remap(struct trace_seq *s, const struct trace_entry *ent)
+ {
+ 	struct blk_io_trace_remap r = { .device_from = 0, };
  
- 	/* If we can't write it all, don't bother writing anything */
- 	if (ret >= len) {
- 		s->full = 1;
--		return 0;
-+		return;
+ 	get_pdu_remap(ent, &r);
+-	return trace_seq_printf(s, "%llu + %u <- (%d,%d) %llu\n",
+-				t_sector(ent), t_sec(ent),
+-				MAJOR(r.device_from), MINOR(r.device_from),
+-				(unsigned long long)r.sector_from);
++	trace_seq_printf(s, "%llu + %u <- (%d,%d) %llu\n",
++			 t_sector(ent), t_sec(ent),
++			 MAJOR(r.device_from), MINOR(r.device_from),
++			 (unsigned long long)r.sector_from);
+ }
+ 
+-static int blk_log_plug(struct trace_seq *s, const struct trace_entry *ent)
++static void blk_log_plug(struct trace_seq *s, const struct trace_entry *ent)
+ {
+ 	char cmd[TASK_COMM_LEN];
+ 
+ 	trace_find_cmdline(ent->pid, cmd);
+ 
+-	return trace_seq_printf(s, "[%s]\n", cmd);
++	trace_seq_printf(s, "[%s]\n", cmd);
+ }
+ 
+-static int blk_log_unplug(struct trace_seq *s, const struct trace_entry *ent)
++static void blk_log_unplug(struct trace_seq *s, const struct trace_entry *ent)
+ {
+ 	char cmd[TASK_COMM_LEN];
+ 
+ 	trace_find_cmdline(ent->pid, cmd);
+ 
+-	return trace_seq_printf(s, "[%s] %llu\n", cmd, get_pdu_int(ent));
++	trace_seq_printf(s, "[%s] %llu\n", cmd, get_pdu_int(ent));
+ }
+ 
+-static int blk_log_split(struct trace_seq *s, const struct trace_entry *ent)
++static void blk_log_split(struct trace_seq *s, const struct trace_entry *ent)
+ {
+ 	char cmd[TASK_COMM_LEN];
+ 
+ 	trace_find_cmdline(ent->pid, cmd);
+ 
+-	return trace_seq_printf(s, "%llu / %llu [%s]\n", t_sector(ent),
+-				get_pdu_int(ent), cmd);
++	trace_seq_printf(s, "%llu / %llu [%s]\n", t_sector(ent),
++			 get_pdu_int(ent), cmd);
+ }
+ 
+-static int blk_log_msg(struct trace_seq *s, const struct trace_entry *ent)
++static void blk_log_msg(struct trace_seq *s, const struct trace_entry *ent)
+ {
+-	int ret;
+ 	const struct blk_io_trace *t = te_blk_io_trace(ent);
+ 
+-	ret = trace_seq_putmem(s, t + 1, t->pdu_len);
+-	if (ret)
+-		return trace_seq_putc(s, '\n');
+-	return ret;
++	trace_seq_putmem(s, t + 1, t->pdu_len);
++	trace_seq_putc(s, '\n');
+ }
+ 
+ /*
+@@ -1339,7 +1327,7 @@ static void blk_tracer_reset(struct trace_array *tr)
+ 
+ static const struct {
+ 	const char *act[2];
+-	int	   (*print)(struct trace_seq *s, const struct trace_entry *ent);
++	void	   (*print)(struct trace_seq *s, const struct trace_entry *ent);
+ } what2act[] = {
+ 	[__BLK_TA_QUEUE]	= {{  "Q", "queue" },	   blk_log_generic },
+ 	[__BLK_TA_BACKMERGE]	= {{  "M", "backmerge" },  blk_log_generic },
+@@ -1364,7 +1352,6 @@ static enum print_line_t print_one_line(struct trace_iterator *iter,
+ 	struct trace_seq *s = &iter->seq;
+ 	const struct blk_io_trace *t;
+ 	u16 what;
+-	int ret;
+ 	bool long_act;
+ 	blk_log_action_t *log_action;
+ 
+@@ -1374,21 +1361,18 @@ static enum print_line_t print_one_line(struct trace_iterator *iter,
+ 	log_action = classic ? &blk_log_action_classic : &blk_log_action;
+ 
+ 	if (t->action == BLK_TN_MESSAGE) {
+-		ret = log_action(iter, long_act ? "message" : "m");
+-		if (ret)
+-			ret = blk_log_msg(s, iter->ent);
+-		goto out;
++		log_action(iter, long_act ? "message" : "m");
++		blk_log_msg(s, iter->ent);
  	}
  
- 	s->len += ret;
--
--	return len;
- }
- EXPORT_SYMBOL_GPL(trace_seq_vprintf);
- 
-@@ -178,28 +160,24 @@ EXPORT_SYMBOL_GPL(trace_seq_vprintf);
-  *
-  * This function will take the format and the binary array and finish
-  * the conversion into the ASCII string within the buffer.
-- *
-- * Returns how much it wrote to the buffer.
-  */
--int trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
-+void trace_seq_bprintf(struct trace_seq *s, const char *fmt, const u32 *binary)
- {
- 	unsigned int len = TRACE_SEQ_BUF_LEFT(s);
- 	int ret;
- 
- 	if (s->full || !len)
--		return 0;
-+		return;
- 
- 	ret = bstr_printf(s->buffer + s->len, len, fmt, binary);
- 
- 	/* If we can't write it all, don't bother writing anything */
- 	if (ret >= len) {
- 		s->full = 1;
--		return 0;
-+		return;
+ 	if (unlikely(what == 0 || what >= ARRAY_SIZE(what2act)))
+-		ret = trace_seq_printf(s, "Unknown action %x\n", what);
++		trace_seq_printf(s, "Unknown action %x\n", what);
+ 	else {
+-		ret = log_action(iter, what2act[what].act[long_act]);
+-		if (ret)
+-			ret = what2act[what].print(s, iter->ent);
++		log_action(iter, what2act[what].act[long_act]);
++		what2act[what].print(s, iter->ent);
  	}
- 
- 	s->len += ret;
--
--	return len;
+-out:
+-	return ret ? TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
++
++	return trace_handle_return(s);
  }
- EXPORT_SYMBOL_GPL(trace_seq_bprintf);
  
-@@ -212,25 +190,21 @@ EXPORT_SYMBOL_GPL(trace_seq_bprintf);
-  * copy to user routines. This function records a simple string
-  * into a special buffer (@s) for later retrieval by a sequencer
-  * or other mechanism.
-- *
-- * Returns how much it wrote to the buffer.
-  */
--int trace_seq_puts(struct trace_seq *s, const char *str)
-+void trace_seq_puts(struct trace_seq *s, const char *str)
+ static enum print_line_t blk_trace_event_print(struct trace_iterator *iter,
+@@ -1397,7 +1381,7 @@ static enum print_line_t blk_trace_event_print(struct trace_iterator *iter,
+ 	return print_one_line(iter, false);
+ }
+ 
+-static int blk_trace_synthesize_old_trace(struct trace_iterator *iter)
++static void blk_trace_synthesize_old_trace(struct trace_iterator *iter)
  {
- 	unsigned int len = strlen(str);
+ 	struct trace_seq *s = &iter->seq;
+ 	struct blk_io_trace *t = (struct blk_io_trace *)iter->ent;
+@@ -1407,18 +1391,18 @@ static int blk_trace_synthesize_old_trace(struct trace_iterator *iter)
+ 		.time     = iter->ts,
+ 	};
  
- 	if (s->full)
+-	if (!trace_seq_putmem(s, &old, offset))
 -		return 0;
-+		return;
- 
- 	if (len > TRACE_SEQ_BUF_LEFT(s)) {
- 		s->full = 1;
--		return 0;
-+		return;
- 	}
- 
- 	memcpy(s->buffer + s->len, str, len);
- 	s->len += len;
--
--	return len;
+-	return trace_seq_putmem(s, &t->sector,
+-				sizeof(old) - offset + t->pdu_len);
++	trace_seq_putmem(s, &old, offset);
++	trace_seq_putmem(s, &t->sector,
++			 sizeof(old) - offset + t->pdu_len);
  }
- EXPORT_SYMBOL_GPL(trace_seq_puts);
  
-@@ -243,22 +217,18 @@ EXPORT_SYMBOL_GPL(trace_seq_puts);
-  * copy to user routines. This function records a simple charater
-  * into a special buffer (@s) for later retrieval by a sequencer
-  * or other mechanism.
-- *
-- * Returns how much it wrote to the buffer.
-  */
--int trace_seq_putc(struct trace_seq *s, unsigned char c)
-+void trace_seq_putc(struct trace_seq *s, unsigned char c)
+ static enum print_line_t
+ blk_trace_event_print_binary(struct trace_iterator *iter, int flags,
+ 			     struct trace_event *event)
  {
- 	if (s->full)
--		return 0;
-+		return;
- 
- 	if (TRACE_SEQ_BUF_LEFT(s) < 1) {
- 		s->full = 1;
--		return 0;
-+		return;
- 	}
- 
- 	s->buffer[s->len++] = c;
--
--	return 1;
+-	return blk_trace_synthesize_old_trace(iter) ?
+-			TRACE_TYPE_HANDLED : TRACE_TYPE_PARTIAL_LINE;
++	blk_trace_synthesize_old_trace(iter);
++
++	return trace_handle_return(&iter->seq);
  }
- EXPORT_SYMBOL_GPL(trace_seq_putc);
  
-@@ -271,23 +241,19 @@ EXPORT_SYMBOL_GPL(trace_seq_putc);
-  * There may be cases where raw memory needs to be written into the
-  * buffer and a strcpy() would not work. Using this function allows
-  * for such cases.
-- *
-- * Returns how much it wrote to the buffer.
-  */
--int trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len)
-+void trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len)
- {
- 	if (s->full)
--		return 0;
-+		return;
- 
- 	if (len > TRACE_SEQ_BUF_LEFT(s)) {
- 		s->full = 1;
--		return 0;
-+		return;
- 	}
- 
- 	memcpy(s->buffer + s->len, mem, len);
- 	s->len += len;
--
--	return len;
- }
- EXPORT_SYMBOL_GPL(trace_seq_putmem);
- 
-@@ -303,20 +269,17 @@ EXPORT_SYMBOL_GPL(trace_seq_putmem);
-  * This is similar to trace_seq_putmem() except instead of just copying the
-  * raw memory into the buffer it writes its ASCII representation of it
-  * in hex characters.
-- *
-- * Returns how much it wrote to the buffer.
-  */
--int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
-+void trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
- 			 unsigned int len)
- {
- 	unsigned char hex[HEX_CHARS];
- 	const unsigned char *data = mem;
- 	unsigned int start_len;
- 	int i, j;
--	int cnt = 0;
- 
- 	if (s->full)
--		return 0;
-+		return;
- 
- 	while (len) {
- 		start_len = min(len, HEX_CHARS - 1);
-@@ -335,9 +298,8 @@ int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
- 		len -= j / 2;
- 		hex[j++] = ' ';
- 
--		cnt += trace_seq_putmem(s, hex, j);
-+		trace_seq_putmem(s, hex, j);
- 	}
--	return cnt;
- }
- EXPORT_SYMBOL_GPL(trace_seq_putmem_hex);
- 
+ static enum print_line_t blk_tracer_print_line(struct trace_iterator *iter)
 -- 
 2.1.1
 
