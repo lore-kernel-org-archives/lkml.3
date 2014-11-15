@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639AbaKOUGp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 15:06:45 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:55748 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532AbaKOUGn (ORCPT
+	id S1754678AbaKOUM0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 15:12:26 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:47592 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754410AbaKOUMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 15:06:43 -0500
+	Sat, 15 Nov 2014 15:12:24 -0500
+Date: Sat, 15 Nov 2014 21:12:18 +0100
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: Christian Resell <christian.resell@gmail.com>
+Cc: m.chehab@samsung.com, devel@driverdev.osuosl.org, askb23@gmail.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        yongjun_wei@trendmicro.com.cn, hans.verkuil@cisco.com, pavel@ucw.cz,
+        pali.rohar@gmail.com, fengguang.wu@intel.com,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] staging: media: bcm2048: fix coding style error
+Message-ID: <20141115201218.GC8088@t400>
+References: <20141115194337.GF15904@Kosekroken.jensen.com>
 MIME-Version: 1.0
-In-Reply-To: <20141115192924.GB19060@thin>
-References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
- <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
- <87d28osceg.fsf@x220.int.ebiederm.org> <20141115192924.GB19060@thin>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 15 Nov 2014 12:06:20 -0800
-Message-ID: <CALCETrUM=GqsOumTmDMF4B5GS1w=x56t41eE-2xW1bBOfUz02w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
- to drop groups
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141115194337.GF15904@Kosekroken.jensen.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 15, 2014 at 11:29 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> On Sat, Nov 15, 2014 at 09:37:27AM -0600, Eric W. Biederman wrote:
->> Josh Triplett <josh@joshtriplett.org> writes:
->>
->> > Currently, unprivileged processes (without CAP_SETGID) cannot call
->> > setgroups at all.  In particular, processes with a set of supplementary
->> > groups cannot further drop permissions without obtaining elevated
->> > permissions first.
->> >
->> > Allow unprivileged processes to call setgroups with a subset of their
->> > current groups; only require CAP_SETGID to add a group the process does
->> > not currently have.
->>
->> A couple of questions.
->> - Is there precedence in other unix flavors for this?
->
-> I found a few references to now-nonexistent pages at MIT about a system
-> with this property, but other than that no.
->
-> I've also found more than a few references to people wanting this
-> functionality.
->
->> - What motiviates this change?
->
-> I have a series of patches planned to add more ways to drop elevated
-> privileges without requiring a transition through root to do so.  That
-> would improve the ability for unprivileged users to run programs
-> sandboxed with even *less* privileges.  (Among other things, that would
-> also allow programs running with no_new_privs to further *reduce* their
-> privileges, which they can't currently do in this case.)
->
->> - Have you looked to see if anything might for bug compatibilty
->>   require applications not to be able to drop supplementary groups?
->
-> I haven't found any such case; that doesn't mean such a case does not
-> exist.  Feedback welcome.
->
-> The only case I can think of (and I don't know of any examples of such a
-> system): some kind of quota system that limits the members of a group to
-> a certain amount of storage, but places no such limit on non-members.
->
-> However, the idea of *holding* a credential (a supplementary group ID)
-> giving *less* privileges, and *dropping* a credential giving *more*
-> privileges, would completely invert normal security models.  (The sane
-> way to design such a system would be to have a privileged group for
-> "users who can exceed the quota".)
+On 11/15, Christian Resell wrote:
+> Simple style fix (checkpatch.pl: "space prohibited before that ','").
+> For the eudyptula challenge (http://eudyptula-challenge.org/).
 
-Agreed.  And, if you want to bypass quotas by dropping a supplementary
-group, you already can by unsharing your user namespace.
+Nice, however we do not need the information about the 'eudyptula
+challenge' in the commit message.
 
-However, sudoers seems to allow negative group matches.  So maybe
-allowing this only with no_new_privs already set would make sense.
+If you want to include extra information please do it after the '---'
+line (just below the signed-off). You will find more details in the
+SubmittingPatches (chapter 15) of the kernel documentation.
 
---Andy
+Thanks,
+Konrad
+ 
+> Signed-off-by: Christian F. Resell <christian.resell@gmail.com>
+> ---
+> diff --git a/drivers/staging/media/bcm2048/radio-bcm2048.c b/drivers/staging/media/bcm2048/radio-bcm2048.c
+> index 2bba370..bdc6854 100644
+> --- a/drivers/staging/media/bcm2048/radio-bcm2048.c
+> +++ b/drivers/staging/media/bcm2048/radio-bcm2048.c
+> @@ -2707,7 +2707,7 @@ static int __exit bcm2048_i2c_driver_remove(struct i2c_client *client)
+>   *	bcm2048_i2c_driver - i2c driver interface
+>   */
+>  static const struct i2c_device_id bcm2048_id[] = {
+> -	{ "bcm2048" , 0 },
+> +	{ "bcm2048", 0 },
+>  	{ },
+>  };
+>  MODULE_DEVICE_TABLE(i2c, bcm2048_id);
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
