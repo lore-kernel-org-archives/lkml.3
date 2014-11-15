@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935AbaKOH6h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 02:58:37 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:52082 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaKOH6g convert rfc822-to-8bit (ORCPT
+	id S1751700AbaKOJA6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 04:00:58 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:55903 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaKOJA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 02:58:36 -0500
+	Sat, 15 Nov 2014 04:00:56 -0500
+X-Originating-IP: 50.43.41.112
+Date: Sat, 15 Nov 2014 01:00:40 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, mtk.manpages@gmail.com,
+        linux-api@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] groups: Factor out a function to set a pre-sorted group
+ list
+Message-ID: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
-Subject: Re: [PATCH] ieee802154: fix error handling in ieee802154fake_probe()
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20141115071603.GA3481@omega>
-Date: Sat, 15 Nov 2014 16:58:28 +0900
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-wpan@vger.kernel.org,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        ldv-project@linuxtesting.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B1D43522-B042-4D92-8F8A-D2AD89A3F0F9@holtmann.org>
-References: <1416006719-3450-1-git-send-email-khoroshilov@ispras.ru> <20141115071603.GA3481@omega>
-To: Alexander Aring <alex.aring@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-X-Mailer: Apple Mail (2.1990.1)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+This way, functions that already need to sort the group list need not do
+so twice.
 
->> In case of any failure ieee802154fake_probe() just calls unregister_netdev().
->> But it does not look safe to unregister netdevice before it was registered.
->> 
->> The patch implements straightforward resource deallocation in case of
->> failure in ieee802154fake_probe().
->> 
->> Found by Linux Driver Verification project (linuxtesting.org).
->> 
-> 
-> Thanks for the patch! But I already delete the whole fakehard driver.
-> The patch to remove this driver is already in net-next.
-> 
-> There was too many issues with the fake hardMAC drivers and we don't
-> really supported a "real" hardMAC transceiver. For my rework to grab the
-> good things from wireless implementation and put 802.15.4 functionality
-> on it I simple delete the whole driver and _maybe_ add a new one with
-> the new introduced interfaces for possible hardMAC functionality.
-> 
-> This patch could go into bluetooth(net)/stable but I don't think that
-> there are many users for this driver.
+The new set_groups_sorted is intentionally not exported.
 
-I am not sure that this is worth it then.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/groups.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-Dave, do you want to just take it via net-stable tree? We currently have no urgent bluetooth-stable tree patches pending.
-
-Regards
-
-Marcel
-
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 451698f..f0667e7 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -154,16 +154,26 @@ int groups_search(const struct group_info *group_info, kgid_t grp)
+ }
+ 
+ /**
++ * set_groups_sorted - Change a group subscription in a set of credentials
++ * @new: The newly prepared set of credentials to alter
++ * @group_info: The group list to install; must be sorted
++ */
++static void set_groups_sorted(struct cred *new, struct group_info *group_info)
++{
++	put_group_info(new->group_info);
++	get_group_info(group_info);
++	new->group_info = group_info;
++}
++
++/**
+  * set_groups - Change a group subscription in a set of credentials
+  * @new: The newly prepared set of credentials to alter
+  * @group_info: The group list to install
+  */
+ void set_groups(struct cred *new, struct group_info *group_info)
+ {
+-	put_group_info(new->group_info);
+ 	groups_sort(group_info);
+-	get_group_info(group_info);
+-	new->group_info = group_info;
++	set_groups_sorted(new, group_info);
+ }
+ 
+ EXPORT_SYMBOL(set_groups);
+-- 
+2.1.3
