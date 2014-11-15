@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730AbaKOFMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 00:12:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:38644 "EHLO
+	id S1755713AbaKOFMH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 00:12:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:48451 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750855AbaKOFGD (ORCPT
+	by vger.kernel.org with ESMTP id S1750857AbaKOFGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 00:06:03 -0500
-Message-Id: <20141115050601.346708841@goodmis.org>
+	Sat, 15 Nov 2014 00:06:04 -0500
+Message-Id: <20141115050601.520764174@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 14 Nov 2014 23:58:51 -0500
+Date: Fri, 14 Nov 2014 23:58:52 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 04/26 v5] ring-buffer: Remove check of trace_seq_{puts,printf}() return values
+Subject: [PATCH 05/26 v5] tracing: Have branch tracer use trace_handle_return() helper function
 References: <20141115045847.712848224@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0004-ring-buffer-Remove-check-of-trace_seq_-puts-printf-r.patch
+Content-Disposition: inline; filename=0005-tracing-Have-branch-tracer-use-trace_handle_return-h.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,114 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Remove checking the return value of all trace_seq_puts(). It was wrong
-anyway as only the last return value mattered. But as the trace_seq_puts()
-is going to be a void function in the future, we should not be checking
-the return value of it anyway.
-
-Just return !trace_seq_has_overflowed() instead.
+The branch tracer should not be checking the trace_seq_printf() return value
+as that will soon be void. There's a new trace_handle_return() helper function
+that will return TRACE_TYPE_PARTIAL_LINE if the trace_seq overflowed
+and TRACE_TYPE_HANDLED otherwise.
 
 Reviewed-by: Petr Mladek <pmladek@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ring_buffer.c | 75 ++++++++++++++++++++++------------------------
- 1 file changed, 36 insertions(+), 39 deletions(-)
+ kernel/trace/trace_branch.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 2d75c94ae87d..a28bdd17c853 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -34,21 +34,19 @@ static void update_pages_handler(struct work_struct *work);
-  */
- int ring_buffer_print_entry_header(struct trace_seq *s)
- {
--	int ret;
--
--	ret = trace_seq_puts(s, "# compressed entry header\n");
--	ret = trace_seq_puts(s, "\ttype_len    :    5 bits\n");
--	ret = trace_seq_puts(s, "\ttime_delta  :   27 bits\n");
--	ret = trace_seq_puts(s, "\tarray       :   32 bits\n");
--	ret = trace_seq_putc(s, '\n');
--	ret = trace_seq_printf(s, "\tpadding     : type == %d\n",
--			       RINGBUF_TYPE_PADDING);
--	ret = trace_seq_printf(s, "\ttime_extend : type == %d\n",
--			       RINGBUF_TYPE_TIME_EXTEND);
--	ret = trace_seq_printf(s, "\tdata max type_len  == %d\n",
--			       RINGBUF_TYPE_DATA_TYPE_LEN_MAX);
-+	trace_seq_puts(s, "# compressed entry header\n");
-+	trace_seq_puts(s, "\ttype_len    :    5 bits\n");
-+	trace_seq_puts(s, "\ttime_delta  :   27 bits\n");
-+	trace_seq_puts(s, "\tarray       :   32 bits\n");
-+	trace_seq_putc(s, '\n');
-+	trace_seq_printf(s, "\tpadding     : type == %d\n",
-+			 RINGBUF_TYPE_PADDING);
-+	trace_seq_printf(s, "\ttime_extend : type == %d\n",
-+			 RINGBUF_TYPE_TIME_EXTEND);
-+	trace_seq_printf(s, "\tdata max type_len  == %d\n",
-+			 RINGBUF_TYPE_DATA_TYPE_LEN_MAX);
+diff --git a/kernel/trace/trace_branch.c b/kernel/trace/trace_branch.c
+index a3916f68a1c7..7d6e2afde669 100644
+--- a/kernel/trace/trace_branch.c
++++ b/kernel/trace/trace_branch.c
+@@ -151,14 +151,13 @@ static enum print_line_t trace_branch_print(struct trace_iterator *iter,
  
--	return ret;
-+	return !trace_seq_has_overflowed(s);
+ 	trace_assign_type(field, iter->ent);
+ 
+-	if (trace_seq_printf(&iter->seq, "[%s] %s:%s:%d\n",
+-			     field->correct ? "  ok  " : " MISS ",
+-			     field->func,
+-			     field->file,
+-			     field->line))
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	return TRACE_TYPE_HANDLED;
++	trace_seq_printf(&iter->seq, "[%s] %s:%s:%d\n",
++			 field->correct ? "  ok  " : " MISS ",
++			 field->func,
++			 field->file,
++			 field->line);
++
++	return trace_handle_return(&iter->seq);
  }
  
- /*
-@@ -419,32 +417,31 @@ static inline int test_time_stamp(u64 delta)
- int ring_buffer_print_page_header(struct trace_seq *s)
- {
- 	struct buffer_data_page field;
--	int ret;
--
--	ret = trace_seq_printf(s, "\tfield: u64 timestamp;\t"
--			       "offset:0;\tsize:%u;\tsigned:%u;\n",
--			       (unsigned int)sizeof(field.time_stamp),
--			       (unsigned int)is_signed_type(u64));
--
--	ret = trace_seq_printf(s, "\tfield: local_t commit;\t"
--			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
--			       (unsigned int)offsetof(typeof(field), commit),
--			       (unsigned int)sizeof(field.commit),
--			       (unsigned int)is_signed_type(long));
--
--	ret = trace_seq_printf(s, "\tfield: int overwrite;\t"
--			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
--			       (unsigned int)offsetof(typeof(field), commit),
--			       1,
--			       (unsigned int)is_signed_type(long));
--
--	ret = trace_seq_printf(s, "\tfield: char data;\t"
--			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
--			       (unsigned int)offsetof(typeof(field), data),
--			       (unsigned int)BUF_PAGE_SIZE,
--			       (unsigned int)is_signed_type(char));
- 
--	return ret;
-+	trace_seq_printf(s, "\tfield: u64 timestamp;\t"
-+			 "offset:0;\tsize:%u;\tsigned:%u;\n",
-+			 (unsigned int)sizeof(field.time_stamp),
-+			 (unsigned int)is_signed_type(u64));
-+
-+	trace_seq_printf(s, "\tfield: local_t commit;\t"
-+			 "offset:%u;\tsize:%u;\tsigned:%u;\n",
-+			 (unsigned int)offsetof(typeof(field), commit),
-+			 (unsigned int)sizeof(field.commit),
-+			 (unsigned int)is_signed_type(long));
-+
-+	trace_seq_printf(s, "\tfield: int overwrite;\t"
-+			 "offset:%u;\tsize:%u;\tsigned:%u;\n",
-+			 (unsigned int)offsetof(typeof(field), commit),
-+			 1,
-+			 (unsigned int)is_signed_type(long));
-+
-+	trace_seq_printf(s, "\tfield: char data;\t"
-+			 "offset:%u;\tsize:%u;\tsigned:%u;\n",
-+			 (unsigned int)offsetof(typeof(field), data),
-+			 (unsigned int)BUF_PAGE_SIZE,
-+			 (unsigned int)is_signed_type(char));
-+
-+	return !trace_seq_has_overflowed(s);
- }
- 
- struct rb_irq_work {
+ static void branch_print_header(struct seq_file *s)
 -- 
 2.1.1
 
