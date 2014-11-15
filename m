@@ -1,125 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728AbaKOUoj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 15:44:39 -0500
-Received: from mout.web.de ([212.227.15.3]:53342 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754472AbaKOUoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 15:44:37 -0500
-Message-ID: <5467BB2A.2030108@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 21:44:26 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754759AbaKOUs6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 15:48:58 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:40786 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567AbaKOUs5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 15:48:57 -0500
+Date: Sat, 15 Nov 2014 21:48:51 +0100
+From: Christophe RICARD <christophe.ricard@gmail.com>
+To: Dmitry Torokhov <dtor@chromium.org>
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfc@ml01.01.org
+Subject: Re: [PATCH] NFC: st21nfca: fix error handling of
+ irq_of_parse_and_map
+Message-ID: <20141115214851.182e9cb5@toffy-MacBookPro>
+In-Reply-To: <20141114223224.GA1448@dtor-ws>
+References: <20141114223224.GA1448@dtor-ws>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] lib/mpi: Deletion of unnecessary checks before the function
- call "mpi_free_limb_space"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:+h40hZeRnXGjZqvdxdSXlWzk+IojcDFL32cPYwjz5Ez0XLEGWfy
- 2qgWAorxtrPBvoG5eoV7mpnDAia+uPJDigEuBFxGtKzn6b0UYk2XzNcmiwNJgHELbpoI0Do
- LB8lFVCtrUgo9GPjpcDiDTb9spU/AskGjFQuxOVKsrvevsr3Yal948UkiJLIUfjhMmMR5I8
- kllT43CybCNACBnjkoO1A==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 21:33:26 +0100
+Hi Dmitry,
 
-The mpi_free_limb_space() function tests whether its argument is NULL and
-then returns immediately. Thus the test around the call is not needed.
+Thank you for your feedback.
+A patch got already pushed earlier this month:
+https://lists.01.org/pipermail/linux-nfc/2014-November/003123.html
 
-This issue was detected by using the Coccinelle software.
+The i2c-core is already running the i2c_of_parse_and_map function when
+registering the slave device when using dts. This step got removed for
+this reason. 
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- lib/mpi/mpi-pow.c  | 15 +++++----------
- lib/mpi/mpih-mul.c | 21 +++++++--------------
- 2 files changed, 12 insertions(+), 24 deletions(-)
+However, i will take into account your second point in order to report
+devm_gpio_request_one instead of -ENODEV in a future patchset.
 
-diff --git a/lib/mpi/mpi-pow.c b/lib/mpi/mpi-pow.c
-index 5464c87..c28882f 100644
---- a/lib/mpi/mpi-pow.c
-+++ b/lib/mpi/mpi-pow.c
-@@ -308,16 +308,11 @@ leave:
- enomem:
- 	if (assign_rp)
- 		mpi_assign_limb_space(res, rp, size);
--	if (mp_marker)
--		mpi_free_limb_space(mp_marker);
--	if (bp_marker)
--		mpi_free_limb_space(bp_marker);
--	if (ep_marker)
--		mpi_free_limb_space(ep_marker);
--	if (xp_marker)
--		mpi_free_limb_space(xp_marker);
--	if (tspace)
--		mpi_free_limb_space(tspace);
-+	mpi_free_limb_space(mp_marker);
-+	mpi_free_limb_space(bp_marker);
-+	mpi_free_limb_space(ep_marker);
-+	mpi_free_limb_space(xp_marker);
-+	mpi_free_limb_space(tspace);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(mpi_powm);
-diff --git a/lib/mpi/mpih-mul.c b/lib/mpi/mpih-mul.c
-index 7c84171..ff021cc 100644
---- a/lib/mpi/mpih-mul.c
-+++ b/lib/mpi/mpih-mul.c
-@@ -339,8 +339,7 @@ mpihelp_mul_karatsuba_case(mpi_ptr_t prodp,
- 	mpi_limb_t cy;
- 
- 	if (!ctx->tspace || ctx->tspace_size < vsize) {
--		if (ctx->tspace)
--			mpi_free_limb_space(ctx->tspace);
-+		mpi_free_limb_space(ctx->tspace);
- 		ctx->tspace = mpi_alloc_limb_space(2 * vsize);
- 		if (!ctx->tspace)
- 			return -ENOMEM;
-@@ -354,12 +353,10 @@ mpihelp_mul_karatsuba_case(mpi_ptr_t prodp,
- 	usize -= vsize;
- 	if (usize >= vsize) {
- 		if (!ctx->tp || ctx->tp_size < vsize) {
--			if (ctx->tp)
--				mpi_free_limb_space(ctx->tp);
-+			mpi_free_limb_space(ctx->tp);
- 			ctx->tp = mpi_alloc_limb_space(2 * vsize);
- 			if (!ctx->tp) {
--				if (ctx->tspace)
--					mpi_free_limb_space(ctx->tspace);
-+				mpi_free_limb_space(ctx->tspace);
- 				ctx->tspace = NULL;
- 				return -ENOMEM;
- 			}
-@@ -407,16 +404,12 @@ void mpihelp_release_karatsuba_ctx(struct karatsuba_ctx *ctx)
- {
- 	struct karatsuba_ctx *ctx2;
- 
--	if (ctx->tp)
--		mpi_free_limb_space(ctx->tp);
--	if (ctx->tspace)
--		mpi_free_limb_space(ctx->tspace);
-+	mpi_free_limb_space(ctx->tp);
-+	mpi_free_limb_space(ctx->tspace);
- 	for (ctx = ctx->next; ctx; ctx = ctx2) {
- 		ctx2 = ctx->next;
--		if (ctx->tp)
--			mpi_free_limb_space(ctx->tp);
--		if (ctx->tspace)
--			mpi_free_limb_space(ctx->tspace);
-+		mpi_free_limb_space(ctx->tp);
-+		mpi_free_limb_space(ctx->tspace);
- 		kfree(ctx);
- 	}
- }
--- 
-2.1.3
+Best Regards
+Christophe 
 
+On Fri, 14 Nov 2014 14:32:24 -0800
+Dmitry Torokhov <dtor@chromium.org> wrote:
+
+> Return value of irq_of_parse_and_map() is unsigned int, with 0
+> indicating failure, so testing for negative result never works.
+> 
+> Also report error returned by devm_gpio_request_one instead of
+> clobbering it with -ENODEV.
+> 
+> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+> ---
+>  drivers/nfc/st21nfca/i2c.c | 11 +++++------
+>  1 file changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/nfc/st21nfca/i2c.c b/drivers/nfc/st21nfca/i2c.c
+> index 0ea756b..6d6d282 100644
+> --- a/drivers/nfc/st21nfca/i2c.c
+> +++ b/drivers/nfc/st21nfca/i2c.c
+> @@ -531,20 +531,19 @@ static int
+> st21nfca_hci_i2c_of_request_resources(struct i2c_client *client)
+> "clf_enable"); if (r) {
+>  		nfc_err(&client->dev, "Failed to request enable
+> pin\n");
+> -		return -ENODEV;
+> +		return r;
+>  	}
+>  
+>  	phy->gpio_ena = gpio;
+>  
+>  	/* IRQ */
+> -	r = irq_of_parse_and_map(pp, 0);
+> -	if (r < 0) {
+> -		nfc_err(&client->dev, "Unable to get irq, error:
+> %d\n", r);
+> -		return r;
+> +	client->irq = irq_of_parse_and_map(pp, 0);
+> +	if (!client->irq) {
+> +		nfc_err(&client->dev, "Unable to get irq\n");
+> +		return -EINVAL;
+>  	}
+>  
+>  	phy->irq_polarity = irq_get_trigger_type(r);
+> -	client->irq = r;
+>  
+>  	return 0;
+>  }
 
