@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081AbaKOLO1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 06:14:27 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:58549 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaKOLOY (ORCPT
+	id S1754033AbaKOL1g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 06:27:36 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56476 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310AbaKOL1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 06:14:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        James Hartley <james.hartley@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        Damien Horsley <Damien.Horsley@imgtec.com>, dmaengine@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/2] dmaengine: Add binding document for IMG MDC
-Date: Sat, 15 Nov 2014 12:14:12 +0100
-Message-ID: <7125302.mfyq7e6fDY@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1416002384-3525-2-git-send-email-abrestic@chromium.org>
-References: <1416002384-3525-1-git-send-email-abrestic@chromium.org> <1416002384-3525-2-git-send-email-abrestic@chromium.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:r06PbO4qobf2UisQMElynxWqsT0EUprfa92/GhYw9of
- gWLt+klZu8tdiY+i7Bsbv/JbrPJ1cNrVsJYgoYy4zjeZ66fzbq
- LHWpsENpbnjVcx43WieXF70S5aahsMWipV/z8oXJlyzN1TPthh
- 6kwW4nuIKcOwA9azUFMkkGBChPfapI2K3vwSriI8+X7asWRbsx
- zkhiorZnc86bz2mcP9ijQIupb/af5nscf7ruP1YdTLTlS0dGv6
- /ZksU+OMvlJxDS/KPteHoetSychgOLjai0OhJqbAMgd3694pvy
- JQaNKqHjUP0Iijr91CPD0tUtMUgqGFPI6D6PnLr3Amq56p7khV
- cdWwAxJk7jCpks1SrXPQ=
-X-UI-Out-Filterresults: notjunk:1;
+	Sat, 15 Nov 2014 06:27:35 -0500
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] genirq: Add IRQ 0 to domain debug file
+Date: Sat, 15 Nov 2014 14:27:20 +0300
+Message-Id: <1416050840-24721-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 November 2014 13:59:42 Andrew Bresticker wrote:
-> Add a binding document for the IMG Multi-threaded DMA Controller (MDC)
-> present on the MIPS-based Pistachio and other IMG SoCs.
-> 
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> 
+Currently irq_domain_mapping debugfs file dumps IRQ information starting
+from IRQ 1. IRQ 0 is missing from that file. Add it to have the complete
+picture of IRQ/domains mappings.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ kernel/irq/irqdomain.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 6534ff6..0e0c7a8 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -585,7 +585,7 @@ static int virq_debug_show(struct seq_file *m, void *private)
+ 		      "chip name", (int)(2 * sizeof(void *) + 2), "chip data",
+ 		      "active", "type", "domain");
+ 
+-	for (i = 1; i < nr_irqs; i++) {
++	for (i = 0; i < nr_irqs; i++) {
+ 		desc = irq_to_desc(i);
+ 		if (!desc)
+ 			continue;
+-- 
+2.1.1
+
