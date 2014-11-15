@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935384AbaKOD36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 22:29:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42894 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934378AbaKOD35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 22:29:57 -0500
-Message-ID: <5466C8A5.3000402@oracle.com>
-Date: Fri, 14 Nov 2014 22:29:41 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S935418AbaKODc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 22:32:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60092 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934378AbaKODc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 22:32:56 -0500
+Date: Fri, 14 Nov 2014 22:32:51 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Paul Moore <pmoore@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, eparis@parisplace.org
+Subject: Re: [PATCH] audit: convert status version to a feature bitmap
+Message-ID: <20141115033251.GB31373@madcap2.tricolour.ca>
+References: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com>
+ <1745832.tbkjBzSGxr@sifl>
+ <20141114010852.GB5960@madcap2.tricolour.ca>
+ <2673987.auILhPtmMS@x2>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Linux-MM <linux-mm@kvack.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/7] Replace _PAGE_NUMA with PAGE_NONE protections
-References: <1415971986-16143-1-git-send-email-mgorman@suse.de>
-In-Reply-To: <1415971986-16143-1-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2673987.auILhPtmMS@x2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2014 08:32 AM, Mel Gorman wrote:> This is follow up from the "pipe/page fault oddness" thread.
+On 14/11/13, Steve Grubb wrote:
+> On Thursday, November 13, 2014 08:08:52 PM Richard Guy Briggs wrote:
+> > > So what terrible things happen to userspace if
+> > > AUDIT_VERSION_BACKLOG_WAIT_TIME  becomes 0x03 instead of 0x02?
+> > 
+> > But it won't.  It gets the value of
+> > AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME, which is 0x00000002.
+> > 
+> > I think you meant to ask about AUDIT_VERSION_LATEST, which would become 3.
+> > 
+> > You *did* already ask that question in a previous thread, and there
+> > didn't seem to be a concern.  Steve Grubb could likely answer this
+> > question better than me.
+> 
+> The audit 2.4.1 package has been pushed to everything from F20 -> rawhide. If 
+> you don't see any problems, then its safe. But check carefully around the 
+> things that you did change. Right now, we only are caring about only one 
+> kernel feature, --loginuid-immutable. Check that it still works, auditctl -s.
 
-Hi Mel,
+Here's my output, which I assume looks sane:
 
-Applying this patch series I've started seeing the following straight away:
+[root@f20 ~]# rpm -q audit
+audit-2.4.1-1.fc20.x86_64
+[root@f20 ~]# auditctl -s
+enabled 1
+flag 1
+pid 307
+rate_limit 0
+backlog_limit 320
+lost 0
+backlog 0
+backlog_wait_time 60000
+loginuid_immutable 0 unlocked
 
-[  367.547848] page:ffffea0003fb7db0 count:1007 mapcount:1005 mapping:ffff8800691f2f58 index:0x37
-[  367.551481] flags: 0x5001aa8030202d(locked|referenced|uptodate|lru|writeback|unevictable|mlocked)
-[  367.555382] page dumped because: VM_BUG_ON_PAGE(!v9inode->writeback_fid)
-[  367.558262] page->mem_cgroup:ffff88006d8a1bd8
-[  367.560403] ------------[ cut here ]------------
-[  367.562343] kernel BUG at fs/9p/vfs_addr.c:190!
-[  367.564239] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC KASAN
-[  367.566991] Dumping ftrace buffer:
-[  367.568481]    (ftrace buffer empty)
-[  367.569914] Modules linked in:
-[  367.570254] CPU: 3 PID: 8234 Comm: kworker/u52:1 Not tainted 3.18.0-rc4-next-20141114-sasha-00054-ga9ff95e-dirty #1459
-[  367.570254] Workqueue: writeback bdi_writeback_workfn (flush-9p-1)
-[  367.570254] task: ffff8801e21d8000 ti: ffff8801e1f34000 task.ti: ffff8801e1f34000
-[  367.570254] RIP: v9fs_vfs_writepage_locked (fs/9p/vfs_addr.c:190 (discriminator 1))
-[  367.570254] RSP: 0018:ffff8801e1f376c8  EFLAGS: 00010286
-[  367.570254] RAX: 0000000000000021 RBX: ffffea0003fb7db0 RCX: 0000000000000000
-[  367.570254] RDX: 0000000000000021 RSI: ffffffff9208b2e6 RDI: ffff8801e21d8d0c
-[  367.570254] RBP: ffff8801e1f37728 R08: 0000000000000001 R09: 0000000000000000
-[  367.570254] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8800691f2d48
-[  367.570254] R13: 0000000000001000 R14: ffff8800691f2c30 R15: ffff8800691f2c98
-[  367.570254] FS:  0000000000000000(0000) GS:ffff8801e5c00000(0000) knlGS:0000000000000000
-[  367.570254] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  367.570254] CR2: 0000000000000000 CR3: 00000000ca00c000 CR4: 00000000000006a0
-[  367.570254] DR0: ffffffff81000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  367.570254] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[  367.570254] Stack:
-[  367.570254]  ffffda003c43b1a1 ffffda003c43b1a1 0000000000000000 0000000000000002
-[  367.570254]  0000000000000002 0000000000037000 ffff8801e1f37758 ffffea0003fb7db0
-[  367.570254]  0000000000000000 ffff8801e1f37a60 ffff8801e1f37a60 ffffea0003fb7db0
-[  367.570254] Call Trace:
-[  367.570254] v9fs_vfs_writepage (fs/9p/vfs_addr.c:212)
-[  367.570254] __writepage (include/linux/pagemap.h:32 mm/page-writeback.c:2006)
-[  367.570254] write_cache_pages (mm/page-writeback.c:1943)
-[  367.570254] ? bdi_set_max_ratio (mm/page-writeback.c:2003)
-[  367.570254] ? sched_clock_local (kernel/sched/clock.c:202)
-[  367.570254] generic_writepages (mm/page-writeback.c:2030)
-[  367.570254] do_writepages (mm/page-writeback.c:2047)
-[  367.570254] __writeback_single_inode (fs/fs-writeback.c:461 (discriminator 3))
-[  367.570254] writeback_sb_inodes (fs/fs-writeback.c:706)
-[  367.570254] __writeback_inodes_wb (fs/fs-writeback.c:749)
-[  367.570254] wb_writeback (fs/fs-writeback.c:880)
-[  367.570254] ? __lock_is_held (kernel/locking/lockdep.c:3518)
-[  367.570254] bdi_writeback_workfn (fs/fs-writeback.c:1015 fs/fs-writeback.c:1060)
-[  367.570254] process_one_work (kernel/workqueue.c:2023 include/linux/jump_label.h:114 include/trace/events/workqueue.h:111 kernel/workqueue.c:2028)
-[  367.570254] ? process_one_work (kernel/workqueue.c:2020)
-[  367.570254] ? get_lock_stats (kernel/locking/lockdep.c:249)
-[  367.570254] worker_thread (include/linux/list.h:189 kernel/workqueue.c:2156)
-[  367.570254] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2939 kernel/sched/core.c:2848)
-[  367.570254] ? rescuer_thread (kernel/workqueue.c:2100)
-[  367.570254] kthread (kernel/kthread.c:207)
-[  367.570254] ? flush_kthread_work (kernel/kthread.c:176)
-[  367.570254] ret_from_fork (arch/x86/kernel/entry_64.S:348)
-[  367.570254] ? flush_kthread_work (kernel/kthread.c:176)
-[ 367.570254] Code: 48 83 c4 38 44 89 f0 5b 41 5c 41 5d 41 5e 41 5f 5d c3 66 2e 0f 1f 84 00 00 00 00 00 48 c7 c6 f8 18 37 93 48 89 df e8 e1 8b 93 fe <0f> 0b 48 89 de 48 c7 c7 30 bd 9f 95 48 89 4d b8 e8 10 5f 02 0f
+> -Steve
 
-All code
-========
-   0:	48 83 c4 38          	add    $0x38,%rsp
-   4:	44 89 f0             	mov    %r14d,%eax
-   7:	5b                   	pop    %rbx
-   8:	41 5c                	pop    %r12
-   a:	41 5d                	pop    %r13
-   c:	41 5e                	pop    %r14
-   e:	41 5f                	pop    %r15
-  10:	5d                   	pop    %rbp
-  11:	c3                   	retq
-  12:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
-  19:	00 00 00
-  1c:	48 c7 c6 f8 18 37 93 	mov    $0xffffffff933718f8,%rsi
-  23:	48 89 df             	mov    %rbx,%rdi
-  26:	e8 e1 8b 93 fe       	callq  0xfffffffffe938c0c
-  2b:*	0f 0b                	ud2    		<-- trapping instruction
-  2d:	48 89 de             	mov    %rbx,%rsi
-  30:	48 c7 c7 30 bd 9f 95 	mov    $0xffffffff959fbd30,%rdi
-  37:	48 89 4d b8          	mov    %rcx,-0x48(%rbp)
-  3b:	e8 10 5f 02 0f       	callq  0xf025f50
-	...
+- RGB
 
-Code starting with the faulting instruction
-===========================================
-   0:	0f 0b                	ud2
-   2:	48 89 de             	mov    %rbx,%rsi
-   5:	48 c7 c7 30 bd 9f 95 	mov    $0xffffffff959fbd30,%rdi
-   c:	48 89 4d b8          	mov    %rcx,-0x48(%rbp)
-  10:	e8 10 5f 02 0f       	callq  0xf025f25
-	...
-[  367.570254] RIP v9fs_vfs_writepage_locked (fs/9p/vfs_addr.c:190 (discriminator 1))
-[  367.570254]  RSP <ffff8801e1f376c8>
-
-(Note that I replaced the BUG_ON with a VM_BUG_ON_PAGE to get some extra information.)
-
-
-Thanks,
-Sasha
-
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
