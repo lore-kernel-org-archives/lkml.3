@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673AbaKOOWt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 09:22:49 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61465 "EHLO mga01.intel.com"
+	id S1754794AbaKOOXm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 09:23:42 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61402 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456AbaKOOV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 09:21:59 -0500
+	id S1754071AbaKOOVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 09:21:31 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,391,1413270000"; 
-   d="scan'208";a="632446351"
+   d="scan'208";a="632446186"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
@@ -16,14 +16,14 @@ To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Yijing Wang <wangyijing@huawei.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
         Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Alexander Gordeev <agordeev@redhat.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>
 Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [Patch V2 7/9] genirq: Provide default callbacks for msi_domain_ops
-Date: Sat, 15 Nov 2014 22:24:05 +0800
-Message-Id: <1416061447-9472-8-git-send-email-jiang.liu@linux.intel.com>
+        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [Patch V2 2/9] irqdomain: Use consistent prototype for irq_domain_free_irqs_*
+Date: Sat, 15 Nov 2014 22:24:00 +0800
+Message-Id: <1416061447-9472-3-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
@@ -31,223 +31,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend struct msi_domain_info and provide default callbacks for
-msi_domain_ops.
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
 
+When using irq_domain_free_irqs_top() directly in irq_domain_ops, gcc
+generate the following warnings:
+
+../drivers/irqchip/irq-gic.c:879:2: warning: initialization from incompatible pointer type [enabled by default]
+../drivers/irqchip/irq-gic.c:879:2: warning: (near initialization for 'gic_irq_domain_hierarchy_ops.free') [enabled by default]
+
+Change to use consistent prototype for all irq_domain_free_irqs*
+
+Better to fold this into "irqdomain: Introduce new interfaces to
+support hierarchy irqdomains".
+
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- include/linux/msi.h |   29 ++++++++++---
- kernel/irq/msi.c    |  113 +++++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 129 insertions(+), 13 deletions(-)
+ include/linux/irqdomain.h |    9 +++++----
+ kernel/irq/irqdomain.c    |    8 ++++----
+ 2 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 7283e155afef..96ee8c3b98cc 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -3,6 +3,7 @@
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 640a1ec54772..fbe542967c20 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -270,12 +270,13 @@ extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
+ 				void *handler_data, const char *handler_name);
+ extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
+ extern void irq_domain_free_irqs_common(struct irq_domain *domain,
+-					int virq, int nr_irqs);
++					unsigned int virq,
++					unsigned int nr_irqs);
+ extern void irq_domain_free_irqs_top(struct irq_domain *domain,
+-				     int virq, int nr_irqs);
++				     unsigned int virq, unsigned int nr_irqs);
  
- #include <linux/kobject.h>
- #include <linux/list.h>
-+#include <linux/irqhandler.h>
- #include <asm/hw_irq.h>		/* for msi_alloc_info_t */
- 
- struct msi_msg {
-@@ -124,13 +125,15 @@ typedef struct msi_alloc_info msi_alloc_info_t;
- 
- struct msi_domain_ops {
- 	/* Callbacks for msi_create_irq_domain() */
--	void		(*calc_hwirq)(struct msi_domain_info *info, void *arg,
-+	void		(*calc_hwirq)(struct msi_domain_info *info,
-+				      msi_alloc_info_t *arg,
- 				      struct msi_desc *desc);
--	irq_hw_number_t	(*get_hwirq)(struct msi_domain_info *info, void *arg);
-+	irq_hw_number_t	(*get_hwirq)(struct msi_domain_info *info,
-+				     msi_alloc_info_t *arg);
- 	int		(*msi_init)(struct irq_domain *domain,
- 				    struct msi_domain_info *info,
- 				    unsigned int virq, irq_hw_number_t hwirq,
--				    void *arg);
-+				    msi_alloc_info_t *arg);
- 	void		(*msi_free)(struct irq_domain *domain,
- 				    struct msi_domain_info *info,
- 				    unsigned int virq);
-@@ -150,15 +153,31 @@ struct msi_domain_ops {
- };
- 
- struct msi_domain_info {
-+	u32			flags;
- 	struct msi_domain_ops	*ops;
- 	struct irq_chip		*chip;
--	void			*data;
-+	void			*chip_data;	/* optional chip data */
-+	irq_flow_handler_t	handler;	/* optional flow handler */
-+	void			*handler_data;	/* optional handler data */
-+	const char		*handler_name;	/* optional handler name */
-+	void			*data;		/* optional private data */
- };
- 
-+/* Use default MSI domain ops if possible */
-+#define MSI_FLAG_USE_DEF_DOM_OPS	0x1
-+/* Use default MSI chip ops if possible */
-+#define MSI_FLAG_USE_DEF_CHIP_OPS	0x2
-+/* Build identity map between hwirq and irq */
-+#define MSI_FLAG_IDENTITY_MAP		0x10
-+/* Support multiple PCI MSI interrupts */
-+#define MSI_FLAG_MULTI_PCI_MSI		0x100
-+/* Support PCI MSIX interrupts */
-+#define MSI_FLAG_PCI_MSIX		0x200
-+
- int msi_domain_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			    bool force);
- 
--struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
-+struct irq_domain *msi_create_irq_domain(struct device_node *node,
- 					 struct msi_domain_info *info,
- 					 struct irq_domain *parent);
- int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev,
-diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
-index ce054566edf5..ff15fd643b3d 100644
---- a/kernel/irq/msi.c
-+++ b/kernel/irq/msi.c
-@@ -9,6 +9,8 @@
-  * This file contains common code to support Message Signalled Interrupt for
-  * PCI compatible and non PCI compatible devices.
-  */
-+#include <linux/types.h>
-+#include <linux/device.h>
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
- #include <linux/msi.h>
-@@ -114,17 +116,108 @@ static struct irq_domain_ops msi_domain_ops = {
- 	.deactivate	= msi_domain_deactivate,
- };
- 
--struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
-+#ifndef msi_alloc_info_t
-+static irq_hw_number_t msi_domain_ops_get_hwirq(struct msi_domain_info *info,
-+						struct msi_alloc_info *arg)
-+{
-+	return arg->hwirq;
-+}
-+
-+static int msi_domain_ops_prepare(struct irq_domain *domain, struct device *dev,
-+				  int nvec, struct msi_alloc_info *arg)
-+{
-+	memset(arg, 0, sizeof(*arg));
-+
-+	return 0;
-+}
-+
-+static void msi_domain_ops_set_desc(struct msi_alloc_info *arg,
-+				    struct msi_desc *desc)
-+{
-+	arg->desc = desc;
-+}
-+#else
-+#define msi_domain_ops_get_hwirq	NULL
-+#define msi_domain_ops_prepare		NULL
-+#define msi_domain_ops_set_desc		NULL
-+#endif /* msi_alloc_info_t */
-+
-+static int msi_domain_ops_init(struct irq_domain *domain,
-+			       struct msi_domain_info *info,
-+			       unsigned int virq, irq_hw_number_t hwirq,
-+			       msi_alloc_info_t *arg)
-+{
-+	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, info->chip,
-+				      info->chip_data);
-+	if (info->handler && info->handler_name) {
-+		__irq_set_handler(virq, info->handler, 0, info->handler_name);
-+		if (info->handler_data)
-+			irq_set_handler_data(virq, info->handler_data);
-+	}
-+
-+	return 0;
-+}
-+
-+static int msi_domain_ops_check(struct irq_domain *domain,
-+				struct msi_domain_info *info,
-+				struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static struct msi_domain_ops msi_domain_ops_default = {
-+	.get_hwirq	= msi_domain_ops_get_hwirq,
-+	.msi_init	= msi_domain_ops_init,
-+	.msi_check	= msi_domain_ops_check,
-+	.msi_prepare	= msi_domain_ops_prepare,
-+	.set_desc	= msi_domain_ops_set_desc,
-+};
-+
-+static void msi_domain_update_dom_ops(struct msi_domain_info *info)
-+{
-+	struct msi_domain_ops *ops = info->ops;
-+
-+	if (ops == NULL) {
-+		info->ops = &msi_domain_ops_default;
-+		return;
-+	}
-+
-+	if (ops->get_hwirq == NULL)
-+		ops->get_hwirq = msi_domain_ops_default.get_hwirq;
-+	if (ops->msi_init == NULL)
-+		ops->msi_init = msi_domain_ops_default.msi_init;
-+	if (ops->msi_check == NULL)
-+		ops->msi_check = msi_domain_ops_default.msi_check;
-+	if (ops->msi_prepare == NULL)
-+		ops->msi_prepare = msi_domain_ops_default.msi_prepare;
-+	if (ops->set_desc == NULL)
-+		ops->set_desc = msi_domain_ops_default.set_desc;
-+}
-+
-+static void msi_domain_update_chip_ops(struct msi_domain_info *info)
-+{
-+	struct irq_chip *chip = info->chip;
-+
-+	BUG_ON(!chip);
-+	if (!chip->irq_mask)
-+		chip->irq_mask = mask_msi_irq;
-+	if (!chip->irq_unmask)
-+		chip->irq_unmask = unmask_msi_irq;
-+	if (!chip->irq_set_affinity)
-+		chip->irq_set_affinity = msi_domain_set_affinity;
-+}
-+
-+struct irq_domain *msi_create_irq_domain(struct device_node *node,
- 					 struct msi_domain_info *info,
- 					 struct irq_domain *parent)
+ static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
+-				int irq_base, unsigned int nr_irqs, void *arg)
++			unsigned int irq_base, unsigned int nr_irqs, void *arg)
  {
--	struct irq_domain *domain;
-+	if (info->flags & MSI_FLAG_USE_DEF_DOM_OPS)
-+		msi_domain_update_dom_ops(info);
-+	if (info->flags & MSI_FLAG_USE_DEF_CHIP_OPS)
-+		msi_domain_update_chip_ops(info);
- 
--	domain = irq_domain_add_tree(of_node, &msi_domain_ops, info);
--	if (domain)
--		domain->parent = parent;
--
--	return domain;
-+	return irq_domain_add_hierarchy(parent, 0, 0, node, &msi_domain_ops,
-+					info);
+ 	if (domain->parent && domain->parent->ops->alloc)
+ 		return domain->parent->ops->alloc(domain->parent, irq_base,
+@@ -284,7 +285,7 @@ static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
  }
  
- int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev,
-@@ -144,8 +237,12 @@ int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev,
+ static inline void irq_domain_free_irqs_parent(struct irq_domain *domain,
+-					int irq_base, unsigned int nr_irqs)
++				unsigned int irq_base, unsigned int nr_irqs)
+ {
+ 	if (domain->parent && domain->parent->ops->free)
+ 		domain->parent->ops->free(domain->parent, irq_base, nr_irqs);
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 8b0eddee0b21..705fb573e509 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -899,8 +899,8 @@ void irq_domain_reset_irq_data(struct irq_data *irq_data)
+ 	irq_data->chip_data = NULL;
+ }
  
- 	for_each_msi_entry(desc, dev) {
- 		ops->set_desc(&arg, desc);
-+		if (info->flags & MSI_FLAG_IDENTITY_MAP)
-+			virq = (int)ops->get_hwirq(info, &arg);
-+		else
-+			virq = -1;
+-void irq_domain_free_irqs_common(struct irq_domain *domain, int virq,
+-				 int nr_irqs)
++void irq_domain_free_irqs_common(struct irq_domain *domain, unsigned int virq,
++				 unsigned int nr_irqs)
+ {
+ 	int i;
+ 	struct irq_data *irq_data;
+@@ -913,8 +913,8 @@ void irq_domain_free_irqs_common(struct irq_domain *domain, int virq,
+ 	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
+ }
  
--		virq = __irq_domain_alloc_irqs(domain, -1, desc->nvec_used,
-+		virq = __irq_domain_alloc_irqs(domain, virq, desc->nvec_used,
- 					       dev_to_node(dev), &arg, false);
- 		if (virq < 0) {
- 			ret = -ENOSPC;
+-void irq_domain_free_irqs_top(struct irq_domain *domain, int virq,
+-			      int nr_irqs)
++void irq_domain_free_irqs_top(struct irq_domain *domain, unsigned int virq,
++			      unsigned int nr_irqs)
+ {
+ 	int i;
+ 
 -- 
 1.7.10.4
 
