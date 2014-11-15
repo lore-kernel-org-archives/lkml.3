@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaKOUvz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 15:51:55 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51230 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567AbaKOUvx (ORCPT
+	id S1754797AbaKOUyt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 15:54:49 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36886 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567AbaKOUys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 15:51:53 -0500
-Date: Sat, 15 Nov 2014 21:51:49 +0100
-From: Christophe RICARD <christophe.ricard@gmail.com>
-To: Dmitry Torokhov <dtor@chromium.org>
-Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
-        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfc@ml01.01.org
-Subject: Re: [PATCH] NFC: st21nfcb: fix error handling of
- irq_of_parse_and_map
-Message-ID: <20141115215149.5d68464f@toffy-MacBookPro>
-In-Reply-To: <20141114223527.GA2622@dtor-ws>
-References: <20141114223527.GA2622@dtor-ws>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Sat, 15 Nov 2014 15:54:48 -0500
+Date: Sat, 15 Nov 2014 21:54:45 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Kevin Hilman <khilman@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Len Brown <len.brown@intel.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when
+ genpd enabled
+Message-ID: <20141115205445.GA21240@amd>
+References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
+ <CAMuHMdXB-7vBqGZ_iMaZdDWDnnzpHZa4ECkDnojbDw=ds5eTWg@mail.gmail.com>
+ <7ha93t8z1q.fsf@deeprootsystems.com>
+ <5229811.LXthdvUIfI@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5229811.LXthdvUIfI@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-Thank you for your feedback.
-A patch got already pushed earlier this month:
-https://lists.01.org/pipermail/linux-nfc/2014-November/003126.html
-
-The i2c-core is already running the i2c_of_parse_and_map function when
-registering the slave device when using dts. This step got removed for
-this reason. 
-
-However, i will take into account your second point in order to report
-devm_gpio_request_one instead of -ENODEV in a future patchset.
-
-Best Regards
-Christophe
-
-On Fri, 14 Nov 2014 14:35:27 -0800
-Dmitry Torokhov <dtor@chromium.org> wrote:
-
-> Return value of irq_of_parse_and_map() is unsigned int, with 0
-> indicating failure, so testing for negative result never works.
+On Fri 2014-11-14 23:41:15, Rafael J. Wysocki wrote:
+> On Friday, November 14, 2014 09:36:17 AM Kevin Hilman wrote:
+> > Geert Uytterhoeven <geert@linux-m68k.org> writes:
+> > 
+> > > Hi Kevin,
+> > >
+> > > On Thu, Nov 13, 2014 at 11:28 PM, Kevin Hilman <khilman@kernel.org> wrote:
+> > >> It makes little sense to use generic power domains without runtime PM.
+> > >
+> > > Does it?
+> > > It still powers down the PM domains on system suspend (at least on my
+> > > boards ;-)
+> > 
+> > Sure, but your devices are also using runtime PM, so I'm not sure how
+> > does that change my statement above?
 > 
-> Also report error returned by devm_gpio_request_one instead of
-> clobbering it with -ENODEV.
-> 
-> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-> ---
-> 
-> Not tested, found by casual code inspection.
-> 
->  drivers/nfc/st21nfcb/i2c.c | 11 +++++------
->  1 file changed, 5 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/nfc/st21nfcb/i2c.c b/drivers/nfc/st21nfcb/i2c.c
-> index c5d2427..abe73ec 100644
-> --- a/drivers/nfc/st21nfcb/i2c.c
-> +++ b/drivers/nfc/st21nfcb/i2c.c
-> @@ -258,19 +258,18 @@ static int
-> st21nfcb_nci_i2c_of_request_resources(struct i2c_client *client)
-> GPIOF_OUT_INIT_HIGH, "clf_reset"); if (r) {
->  		nfc_err(&client->dev, "Failed to request reset
-> pin\n");
-> -		return -ENODEV;
-> +		return r;
->  	}
->  	phy->gpio_reset = gpio;
->  
->  	/* IRQ */
-> -	r = irq_of_parse_and_map(pp, 0);
-> -	if (r < 0) {
-> -		nfc_err(&client->dev, "Unable to get irq, error:
-> %d\n", r);
-> -		return r;
-> +	client->irq = irq_of_parse_and_map(pp, 0);
-> +	if (!client->irq) {
-> +		nfc_err(&client->dev, "Unable to get irq\n");
-> +		return -EINVAL;
->  	}
->  
->  	phy->irq_polarity = irq_get_trigger_type(r);
-> -	client->irq = r;
->  
->  	return 0;
->  }
+> Questions here are (1) how many users will actually want to disable PM_RUNTIME
+> for systems using genpd (my sort of educated guess is "none") and
 
+Well. Developers sometimes want to disable power management so that
+they don't have to debug it just now... disabling PM_RUNTIME is a way
+to do that.
+
+OTOH making code more complex to make new board bring-up easier may
+not be good idea..
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
