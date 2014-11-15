@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaKOQAk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 11:00:40 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42778 "EHLO
+	id S1754305AbaKOQEw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 11:04:52 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42797 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397AbaKOQAj (ORCPT
+	with ESMTP id S1754144AbaKOQEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 11:00:39 -0500
-Message-ID: <546778A5.90303@kernel.org>
-Date: Sat, 15 Nov 2014 16:00:37 +0000
+	Sat, 15 Nov 2014 11:04:50 -0500
+Message-ID: <546779A0.1040507@kernel.org>
+Date: Sat, 15 Nov 2014 16:04:48 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, IIO <linux-iio@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Carlo Caione <carlo@caione.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Todd Brandt <todd.e.brandt@linux.intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Hartmut Knaack <knaack.h@gmx.de>
-Subject: Re: [PATCH 3/3] iio/axp288_adc: remove THIS_MODULE owner
-References: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com> <1415734210-5657-4-git-send-email-jacob.jun.pan@linux.intel.com>
-In-Reply-To: <1415734210-5657-4-git-send-email-jacob.jun.pan@linux.intel.com>
+To: Cristina Ciocan <cristina.ciocan@intel.com>, linux-iio@vger.kernel.org
+CC: lars@metafoo.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: Fix IIO_EVENT_CODE_EXTRACT_DIR bit mask
+References: <1415714862-5709-1-git-send-email-cristina.ciocan@intel.com>
+In-Reply-To: <1415714862-5709-1-git-send-email-cristina.ciocan@intel.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/14 19:30, Jacob Pan wrote:
-> This is no longer needed in that platform driver_register will do it.
+On 11/11/14 14:07, Cristina Ciocan wrote:
+> The direction field is set on 7 bits, thus we need to AND it with 0111 111 mask
+> in order to retrieve it, that is 0x7F, not 0xCF as it is now.
 > 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
+> Fixes: ade7ef7ba (staging:iio: Differential channel handling)
+> Signed-off-by: Cristina Ciocan <cristina.ciocan@intel.com>
+Applied to the fixes togreg branch of iio,git.
+
+Thanks,
+
+Jonathan
 > ---
->  drivers/iio/adc/axp288_adc.c | 1 -
->  1 file changed, 1 deletion(-)
+>  include/linux/iio/events.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/iio/adc/axp288_adc.c b/drivers/iio/adc/axp288_adc.c
-> index 4a6cf43..08bcfb0 100644
-> --- a/drivers/iio/adc/axp288_adc.c
-> +++ b/drivers/iio/adc/axp288_adc.c
-> @@ -249,7 +249,6 @@ static struct platform_driver axp288_adc_driver = {
->  	.id_table = axp288_adc_id_table,
->  	.driver = {
->  		.name = "axp288_adc",
-> -		.owner = THIS_MODULE,
->  	},
->  };
->  
+> diff --git a/include/linux/iio/events.h b/include/linux/iio/events.h
+> index 8bbd7bc..03fa332 100644
+> --- a/include/linux/iio/events.h
+> +++ b/include/linux/iio/events.h
+> @@ -72,7 +72,7 @@ struct iio_event_data {
+> 
+>  #define IIO_EVENT_CODE_EXTRACT_TYPE(mask) ((mask >> 56) & 0xFF)
+> 
+> -#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0xCF)
+> +#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0x7F)
+> 
+>  #define IIO_EVENT_CODE_EXTRACT_CHAN_TYPE(mask) ((mask >> 32) & 0xFF)
+> 
+> --
+> 1.8.1.2
 > 
 
