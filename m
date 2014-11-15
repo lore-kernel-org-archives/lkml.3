@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635AbaKOFKx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 00:10:53 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:27267 "EHLO
+	id S1755654AbaKOFK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 00:10:57 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:4037 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750982AbaKOFGF (ORCPT
+	by vger.kernel.org with ESMTP id S1750927AbaKOFGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 15 Nov 2014 00:06:05 -0500
-Message-Id: <20141115050602.481889146@goodmis.org>
+Message-Id: <20141115050602.184862988@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 14 Nov 2014 23:58:58 -0500
+Date: Fri, 14 Nov 2014 23:58:56 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 11/26 v5] tracing: Do not use return values of trace_seq_printf() in syscall
- tracing
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH 09/26 v5] tracing/probes: Do not use return value of trace_seq_printf()
 References: <20141115045847.712848224@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0011-tracing-Do-not-use-return-values-of-trace_seq_printf.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0009-tracing-probes-Do-not-use-return-value-of-trace_seq_.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,109 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The functions trace_seq_printf() and friends will not be returning values
-soon and will be void functions. To know if they succeeded or not, the
-functions trace_seq_has_overflowed() and trace_handle_return() should be
-used instead.
+The functions trace_seq_printf() and friends will soon not have a return
+value and will only be a void function. Use trace_seq_has_overflowed()
+instead to know if the trace_seq operations succeeded or not.
 
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
+Link: http://lkml.kernel.org/r/20141114011411.530216306@goodmis.org
+
+Cc: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_syscalls.c | 43 +++++++++++++++----------------------------
- 1 file changed, 15 insertions(+), 28 deletions(-)
+ kernel/trace/trace_probe.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 4dc8b79c5f75..2193e8038681 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -114,7 +114,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
- 	struct trace_entry *ent = iter->ent;
- 	struct syscall_trace_enter *trace;
- 	struct syscall_metadata *entry;
--	int i, ret, syscall;
-+	int i, syscall;
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index d4b9fc22cd27..b983b2fd2ca1 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -40,7 +40,8 @@ const char *reserved_field_names[] = {
+ int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s, const char *name,	\
+ 				void *data, void *ent)			\
+ {									\
+-	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
++	trace_seq_printf(s, " %s=" fmt, name, *(type *)data);		\
++	return !trace_seq_has_overflowed(s);				\
+ }									\
+ const char PRINT_TYPE_FMT_NAME(type)[] = fmt;				\
+ NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(type));
+@@ -61,10 +62,11 @@ int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s, const char *name,
+ 	int len = *(u32 *)data >> 16;
  
- 	trace = (typeof(trace))ent;
- 	syscall = trace->nr;
-@@ -128,35 +128,24 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
- 		goto end;
- 	}
- 
--	ret = trace_seq_printf(s, "%s(", entry->name);
--	if (!ret)
--		return TRACE_TYPE_PARTIAL_LINE;
-+	trace_seq_printf(s, "%s(", entry->name);
- 
- 	for (i = 0; i < entry->nb_args; i++) {
- 		/* parameter types */
--		if (trace_flags & TRACE_ITER_VERBOSE) {
--			ret = trace_seq_printf(s, "%s ", entry->types[i]);
--			if (!ret)
--				return TRACE_TYPE_PARTIAL_LINE;
--		}
-+		if (trace_flags & TRACE_ITER_VERBOSE)
-+			trace_seq_printf(s, "%s ", entry->types[i]);
-+
- 		/* parameter values */
--		ret = trace_seq_printf(s, "%s: %lx%s", entry->args[i],
--				       trace->args[i],
--				       i == entry->nb_args - 1 ? "" : ", ");
--		if (!ret)
--			return TRACE_TYPE_PARTIAL_LINE;
-+		trace_seq_printf(s, "%s: %lx%s", entry->args[i],
-+				 trace->args[i],
-+				 i == entry->nb_args - 1 ? "" : ", ");
- 	}
- 
--	ret = trace_seq_putc(s, ')');
--	if (!ret)
--		return TRACE_TYPE_PARTIAL_LINE;
--
-+	trace_seq_putc(s, ')');
- end:
--	ret =  trace_seq_putc(s, '\n');
--	if (!ret)
--		return TRACE_TYPE_PARTIAL_LINE;
-+	trace_seq_putc(s, '\n');
- 
--	return TRACE_TYPE_HANDLED;
-+	return trace_handle_return(s);
+ 	if (!len)
+-		return trace_seq_printf(s, " %s=(fault)", name);
++		trace_seq_printf(s, " %s=(fault)", name);
+ 	else
+-		return trace_seq_printf(s, " %s=\"%s\"", name,
+-					(const char *)get_loc_data(data, ent));
++		trace_seq_printf(s, " %s=\"%s\"", name,
++				 (const char *)get_loc_data(data, ent));
++	return !trace_seq_has_overflowed(s);
  }
+ NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(string));
  
- static enum print_line_t
-@@ -168,7 +157,6 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
- 	struct syscall_trace_exit *trace;
- 	int syscall;
- 	struct syscall_metadata *entry;
--	int ret;
- 
- 	trace = (typeof(trace))ent;
- 	syscall = trace->nr;
-@@ -176,7 +164,7 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
- 
- 	if (!entry) {
- 		trace_seq_putc(s, '\n');
--		return TRACE_TYPE_HANDLED;
-+		goto out;
- 	}
- 
- 	if (entry->exit_event->event.type != ent->type) {
-@@ -184,12 +172,11 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
- 		return TRACE_TYPE_UNHANDLED;
- 	}
- 
--	ret = trace_seq_printf(s, "%s -> 0x%lx\n", entry->name,
-+	trace_seq_printf(s, "%s -> 0x%lx\n", entry->name,
- 				trace->ret);
--	if (!ret)
--		return TRACE_TYPE_PARTIAL_LINE;
- 
--	return TRACE_TYPE_HANDLED;
-+ out:
-+	return trace_handle_return(s);
- }
- 
- extern char *__bad_type_size(void);
 -- 
 2.1.1
 
