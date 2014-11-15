@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaKOT1u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 14:27:50 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:46022 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249AbaKOT1r (ORCPT
+	id S1754596AbaKOT3f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 14:29:35 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60916 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312AbaKOT3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 14:27:47 -0500
-Date: Sat, 15 Nov 2014 20:27:39 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Brad Griffis <bgriffis@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v4 2/6] input: touchscreen: ti_am335x_tsc: Remove udelay
- in interrupt handler
-Message-ID: <20141115192739.GA18766@localhost.localdomain>
-References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
- <1415941651-28962-3-git-send-email-vigneshr@ti.com>
+	Sat, 15 Nov 2014 14:29:33 -0500
+X-Originating-IP: 50.43.41.112
+Date: Sat, 15 Nov 2014 11:29:25 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, mtk.manpages@gmail.com,
+        linux-api@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use
+ setgroups to drop groups
+Message-ID: <20141115192924.GB19060@thin>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+ <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+ <87d28osceg.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415941651-28962-3-git-send-email-vigneshr@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87d28osceg.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 10:37:27AM +0530, Vignesh R wrote:
-> From: Brad Griffis <bgriffis@ti.com>
+On Sat, Nov 15, 2014 at 09:37:27AM -0600, Eric W. Biederman wrote:
+> Josh Triplett <josh@joshtriplett.org> writes:
 > 
-> TSC interrupt handler had udelay to avoid reporting of false pen-up
-> interrupt to user space. This patch implements workaround suggesting in
-> Advisory 1.0.31 of silicon errata for am335x, thus eliminating udelay
-> and touchscreen lag. This also improves performance of touchscreen and
-> eliminates sudden jump of cursor at touch release.
+> > Currently, unprivileged processes (without CAP_SETGID) cannot call
+> > setgroups at all.  In particular, processes with a set of supplementary
+> > groups cannot further drop permissions without obtaining elevated
+> > permissions first.
+> >
+> > Allow unprivileged processes to call setgroups with a subset of their
+> > current groups; only require CAP_SETGID to add a group the process does
+> > not currently have.
+> 
+> A couple of questions.
+> - Is there precedence in other unix flavors for this?
 
-I back ported this series onto v3.15.1 in order to try this out on a
-custom, beaglebone-like board. With this series, the touch is really
-broken. (I had fixed the pen up problem in a totally different way for
-a customer, and so I wanted to try out your solution.)
+I found a few references to now-nonexistent pages at MIT about a system
+with this property, but other than that no.
 
-I will try to port the board code to a more recent kernel to try your
-series again. With which kernel version did you test your patches?
+I've also found more than a few references to people wanting this
+functionality.
 
-And which board?
+> - What motiviates this change?
 
-Thanks,
-Richard
+I have a series of patches planned to add more ways to drop elevated
+privileges without requiring a transition through root to do so.  That
+would improve the ability for unprivileged users to run programs
+sandboxed with even *less* privileges.  (Among other things, that would
+also allow programs running with no_new_privs to further *reduce* their
+privileges, which they can't currently do in this case.)
 
+> - Have you looked to see if anything might for bug compatibilty
+>   require applications not to be able to drop supplementary groups?
 
+I haven't found any such case; that doesn't mean such a case does not
+exist.  Feedback welcome.
+
+The only case I can think of (and I don't know of any examples of such a
+system): some kind of quota system that limits the members of a group to
+a certain amount of storage, but places no such limit on non-members.
+
+However, the idea of *holding* a credential (a supplementary group ID)
+giving *less* privileges, and *dropping* a credential giving *more*
+privileges, would completely invert normal security models.  (The sane
+way to design such a system would be to have a privileged group for
+"users who can exceed the quota".)
+
+If it turns out that a real case exists that people care about, I could
+easily make this configurable, either at compile time or via a sysctl.
+
+- Josh Triplett
