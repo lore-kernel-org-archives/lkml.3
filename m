@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087AbaKOOSK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 09:18:10 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:59754 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914AbaKOOSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 09:18:09 -0500
-Date: Sat, 15 Nov 2014 15:18:04 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Bruno Thomsen <bth@kamstrup.dk>
-Cc: Johan Hovold <johan@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "f.fainelli@gmail.com" <f.fainelli@gmail.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "bruno.thomsen@gmail.com" <bruno.thomsen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: phy/micrel: KSZ8031RNL RMII clock reconfiguration bug
-Message-ID: <20141115141804.GA24633@localhost>
-References: <1412866094-4972-1-git-send-email-bth@kamstrup.dk>
- <20141111194101.GI29789@localhost>
- <915054555B5659448ACF8A70E114824D01704B9131@Exchange2010.kamstrup.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <915054555B5659448ACF8A70E114824D01704B9131@Exchange2010.kamstrup.dk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1754160AbaKOOUt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 09:20:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61272 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753914AbaKOOUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 09:20:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,391,1413270000"; 
+   d="scan'208";a="632446144"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [Patch V2 0/9] Refine generic/PCI MSI irqodmian interfaces
+Date: Sat, 15 Nov 2014 22:23:58 +0800
+Message-Id: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 12:17:57PM +0000, Bruno Thomsen wrote:
-> Hi Johan,
-> 
-> > As you may have seen by now, I've been working on refactoring the
-> > micrel phy driver to be able to use common initialisation code.
-> >
-> > Specifically, I've added generic support for disabling the broadcast
-> > address, which is what the MII_KSZPHY_OMSO write above does.
-> >
-> > Generally you want this to be the first thing you do in order to
-> > avoid unnecessary reconfigurations. If we ever were to allow
-> > concurrent probing this would also be a requirement.
-> >
-> > Could you provide some detail about the setup were you find that the
-> > PHY becomes unresponsive without your patch? Do you have more than
-> > one PHY on the bus? Using what addresses? And using what clock modes
-> > (i.e. 25 MHz or 50 MHz)?
-> > 
-> > Also, what exactly do you mean by "unresponsive"? Are you still able
-> > to read the PHY registers for example?
->  
-> I think it sounds like a good idea to refactor the init code.
-> 
-> My setup:
-> iMX28 processor with dual Ethernet MAC; FEC0 (enabled) and FEC1 (disabled).
-> There is a single KSZ8031 PHY that receives 50MHz RMII clock from the MAC.
-> I am unable to read PHY registers from both user-land tools and extra
-> debug PHY reads in driver code.
+This patch set is based on tip/irq/irqdomain and tries to refine
+interfaces to support irqdomain for generic MSI and PCI MSI.
 
-Did you specify a led-mode as well, or was the Operation Mode Strap
-Override (OMSO) write the first access after the soft reset?
+Patch 1 is just minor fixes for tip/irq/irqdomain.
 
-Did you try any other workarounds besides setting the clock mode before
-doing the OMSO write?
+Patch 2-4 introduce mechanisms to help reduce irqdomain users' code size.
+When converting XEN to use hierarchy irqdomain, I found the code size
+increases about 100 lines. So we still need helpers to reduce code size.
 
-And REF_CLK (pin 16) is not connected? 
+Patch 5 introduces some helpers to hide struct msi_desc implementation
+details, so later we could move msi_list from struct pci_dev into
+struct device to enable generic MSI support.
 
-> Boot trace:
-> [   22.277785] fec 800f0000.ethernet eth0: Freescale FEC PHY driver [Micrel KSZ8031] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-> [   22.292527] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [   24.276217] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
-> [   24.285094] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+Patch 6 introduces msi_domain_{alloc|free}_irqs() which generalize
+pci_msi_domain_alloc_irqs() to support generic MSI.
 
-Ok, so you use a single PHY strapped to address 0. 
+Patch 7 introduces default data structures and callback implementations
+to support msi_domain_alloc_irqs(), so reduce burden on generic MSI
+users.
 
-Would you able to test my series on your setup, and possibly a couple of
-diagnostic patches on top?
+Patch 8 converts PCI MSI to use generic MSI interfaces, and also
+implement default callbacks for PCI MSI.
 
-Thanks,
-Johan
+Patch 9 introduces a mechanism to replace arch_setup_msi_irq()/
+arch_setup_msi_irqs()/arch_teardown_msi_irq()/arch_teardown_msi_irqs().
+
+With this patch set applied, the generic MSI and PCI MSI interfaces
+are much easier to use. For extreme case, you only need to define
+a "struct msi_domain_info" and don't need to implement any callbacks,
+just using the default callbacks is OK:)
+
+This patch set is also a preparation for:
+1) Kill all weak functions in drivers/pci/msi.c
+2) Implement support for non-PCI-compliant MSI device
+
+It has been tested on x86 platforms, comments are welcomed!
+
+V1->V2:
+1) Fix bugs reported by Marc
+2) Rename MSI_FLAG_USE_DEF_OPS as MSI_FLAG_USE_DEF_DOM_OPS
+3) Add support of MSI_FLAG_USE_DEF_CHIP_OPS
+4) Include linxu/irqhandler.h to use irq_flow_handler_t instead of "void *"
+5) Change iterfaces to pass in "nvect" to msi_domain_ops.msi_prepare()
+6) Add new interfaces/flags to help reduce irqdomain users' code size
+
+Jiang Liu (8):
+  PCI, MSI: Fix errors caused by commit e5f1a59c4e12
+  irqdomain: Implement a method to automatically call parent domain's
+    alloc/free
+  irqdomain: Introduce helper function irq_domain_add_hierarchy()
+  PCI, MSI: Introduce helpers to hide struct msi_desc implementation
+    details
+  genirq: Introduce msi_domain_{alloc|free}_irqs()
+  genirq: Provide default callbacks for msi_domain_ops
+  PCI, MSI: Refine irqdomain interfaces to simplify its usage
+  PCI, MSI: Provide mechanism to alloc/free MSI/MSIX interrupt from
+    irqdomain
+
+Yingjoe Chen (1):
+  irqdomain: Use consistent prototype for irq_domain_free_irqs_*
+
+ drivers/pci/msi.c         |  181 ++++++++++++++++++++++++++++++++++++---------
+ include/linux/irqdomain.h |   33 ++++-----
+ include/linux/msi.h       |   99 ++++++++++++++++++++++---
+ kernel/irq/irqdomain.c    |   93 +++++++++++++++++++++--
+ kernel/irq/msi.c          |  169 ++++++++++++++++++++++++++++++++++++++++--
+ 5 files changed, 502 insertions(+), 73 deletions(-)
+
+-- 
+1.7.10.4
+
