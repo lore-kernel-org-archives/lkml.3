@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654AbaKOFK5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 00:10:57 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:4037 "EHLO
+	id S1755601AbaKOFKq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 00:10:46 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:48451 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750927AbaKOFGF (ORCPT
+	by vger.kernel.org with ESMTP id S1751056AbaKOFGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 15 Nov 2014 00:06:05 -0500
-Message-Id: <20141115050602.184862988@goodmis.org>
+Message-Id: <20141115050602.333705855@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 14 Nov 2014 23:58:56 -0500
+Date: Fri, 14 Nov 2014 23:58:57 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Namhyung Kim <namhyung@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH 09/26 v5] tracing/probes: Do not use return value of trace_seq_printf()
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [PATCH 10/26 v5] tracing/uprobes: Do not use return values of trace_seq_printf()
 References: <20141115045847.712848224@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0009-tracing-probes-Do-not-use-return-value-of-trace_seq_.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0010-tracing-uprobes-Do-not-use-return-values-of-trace_se.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,48 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The functions trace_seq_printf() and friends will soon not have a return
-value and will only be a void function. Use trace_seq_has_overflowed()
-instead to know if the trace_seq operations succeeded or not.
+The functions trace_seq_printf() and friends will soon no longer have
+return values. Using trace_seq_has_overflowed() and trace_handle_return()
+should be used instead.
 
-Link: http://lkml.kernel.org/r/20141114011411.530216306@goodmis.org
+Link: http://lkml.kernel.org/r/20141114011411.693008134@goodmis.org
 
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_probe.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ kernel/trace/trace_uprobe.c | 23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index d4b9fc22cd27..b983b2fd2ca1 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -40,7 +40,8 @@ const char *reserved_field_names[] = {
- int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s, const char *name,	\
- 				void *data, void *ent)			\
- {									\
--	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
-+	trace_seq_printf(s, " %s=" fmt, name, *(type *)data);		\
-+	return !trace_seq_has_overflowed(s);				\
- }									\
- const char PRINT_TYPE_FMT_NAME(type)[] = fmt;				\
- NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(type));
-@@ -61,10 +62,11 @@ int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s, const char *name,
- 	int len = *(u32 *)data >> 16;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index e35327c787f7..fd76f8e108ef 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -852,16 +852,14 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
+ 	tu = container_of(event, struct trace_uprobe, tp.call.event);
  
- 	if (!len)
--		return trace_seq_printf(s, " %s=(fault)", name);
-+		trace_seq_printf(s, " %s=(fault)", name);
- 	else
--		return trace_seq_printf(s, " %s=\"%s\"", name,
--					(const char *)get_loc_data(data, ent));
-+		trace_seq_printf(s, " %s=\"%s\"", name,
-+				 (const char *)get_loc_data(data, ent));
-+	return !trace_seq_has_overflowed(s);
+ 	if (is_ret_probe(tu)) {
+-		if (!trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)",
+-					ftrace_event_name(&tu->tp.call),
+-					entry->vaddr[1], entry->vaddr[0]))
+-			goto partial;
++		trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)",
++				 ftrace_event_name(&tu->tp.call),
++				 entry->vaddr[1], entry->vaddr[0]);
+ 		data = DATAOF_TRACE_ENTRY(entry, true);
+ 	} else {
+-		if (!trace_seq_printf(s, "%s: (0x%lx)",
+-					ftrace_event_name(&tu->tp.call),
+-					entry->vaddr[0]))
+-			goto partial;
++		trace_seq_printf(s, "%s: (0x%lx)",
++				 ftrace_event_name(&tu->tp.call),
++				 entry->vaddr[0]);
+ 		data = DATAOF_TRACE_ENTRY(entry, false);
+ 	}
+ 
+@@ -869,14 +867,13 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
+ 		struct probe_arg *parg = &tu->tp.args[i];
+ 
+ 		if (!parg->type->print(s, parg->name, data + parg->offset, entry))
+-			goto partial;
++			goto out;
+ 	}
+ 
+-	if (trace_seq_putc(s, '\n'))
+-		return TRACE_TYPE_HANDLED;
++	trace_seq_putc(s, '\n');
+ 
+-partial:
+-	return TRACE_TYPE_PARTIAL_LINE;
++ out:
++	return trace_handle_return(s);
  }
- NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(string));
  
+ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
 -- 
 2.1.1
 
