@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099AbaKOWAz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 17:00:55 -0500
-Received: from mout.gmx.net ([212.227.15.19]:54363 "EHLO mout.gmx.net"
+	id S932112AbaKOXAN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 18:00:13 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:59310 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152AbaKOWAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 17:00:54 -0500
-Date: Sat, 15 Nov 2014 23:00:48 +0100
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [GIT PULL] parisc architecture patches for v3.18
-Message-ID: <20141115220048.GA19278@ls3530.box>
+	id S1754152AbaKOXAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 18:00:11 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
+        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
+        dkl@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: rockchip: fix clk_usbphy480m_gate bit location in register
+Date: Sun, 16 Nov 2014 00:03:33 +0100
+Message-ID: <1455255.dvOV4oYdNo@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1415863161-15495-1-git-send-email-kever.yang@rock-chips.com>
+References: <1415863161-15495-1-git-send-email-kever.yang@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Provags-ID: V03:K0:5ut4SzSBIRKdczORblUbX690ciYcTIpQ6cfVlyHtMkQ7u4kfQgf
- /g8hs11j7oyNep3kKHMOSSx5aiiciDYviu2mL68bYOChBXkwBzeg8MF7/ltwoSFpG3OLcDg
- ocRcdeR8bGPH15GzJ8+7uBbfmYJL+m9d0bSNQ7gHr4w/sKZYwgfibghe5yYpfNGK60WqsUz
- PtqqmYW146i92rXejGppw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Am Donnerstag, 13. November 2014, 15:19:21 schrieb Kever Yang:
+> According to rk3288 trm, the clk_usbphy480m_gate is locate at
+> bit 14 of CRU_CLKGATE5_CON register.
+> 
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 
-please pull some patches for the parisc architecture for kernel 3.18 from 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.18-2
+applied this to my clk branch.
 
-Changes include:
-- wire up the bpf syscall
-- Remove CONFIG_64BIT usage from some userspace-exported header files
-- Use compat functions for msgctl, shmat, shmctl and semtimedop syscalls 
 
-Thanks,
-Helge
-
-----------------------------------------------------------------
-Helge Deller (4):
-      parisc: Wire up bpf syscall
-      parisc: Use BUILD_BUG() instead of undefined functions
-      parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
-      parisc: Avoid using CONFIG_64BIT in userspace exported headers
-
- arch/parisc/include/asm/uaccess.h          | 19 +++++++---------
- arch/parisc/include/uapi/asm/bitsperlong.h |  8 +------
- arch/parisc/include/uapi/asm/msgbuf.h      |  8 ++++---
- arch/parisc/include/uapi/asm/sembuf.h      |  6 +++--
- arch/parisc/include/uapi/asm/shmbuf.h      | 35 +++++++++++++-----------------
- arch/parisc/include/uapi/asm/signal.h      |  2 +-
- arch/parisc/include/uapi/asm/unistd.h      |  3 ++-
- arch/parisc/kernel/syscall_table.S         |  9 ++++----
- 8 files changed, 41 insertions(+), 49 deletions(-)
+Heiko
