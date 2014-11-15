@@ -1,186 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019AbaKONUM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 08:20:12 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:46374 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaKONUJ (ORCPT
+	id S1754087AbaKOOSK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 09:18:10 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:59754 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914AbaKOOSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 08:20:09 -0500
-Date: Sat, 15 Nov 2014 22:20:30 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Seth Jennings <sjennings@variantweb.net>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [PATCH] zsmalloc: correct fragile [kmap|kunmap]_atomic use
-Message-ID: <20141115132030.GB1046@swordfish>
-References: <1415927461-14220-1-git-send-email-minchan@kernel.org>
- <20141114150732.GA2402@cerebellum.variantweb.net>
+	Sat, 15 Nov 2014 09:18:09 -0500
+Date: Sat, 15 Nov 2014 15:18:04 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Bruno Thomsen <bth@kamstrup.dk>
+Cc: Johan Hovold <johan@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "f.fainelli@gmail.com" <f.fainelli@gmail.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "bruno.thomsen@gmail.com" <bruno.thomsen@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: phy/micrel: KSZ8031RNL RMII clock reconfiguration bug
+Message-ID: <20141115141804.GA24633@localhost>
+References: <1412866094-4972-1-git-send-email-bth@kamstrup.dk>
+ <20141111194101.GI29789@localhost>
+ <915054555B5659448ACF8A70E114824D01704B9131@Exchange2010.kamstrup.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141114150732.GA2402@cerebellum.variantweb.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <915054555B5659448ACF8A70E114824D01704B9131@Exchange2010.kamstrup.dk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (11/14/14 09:07), Seth Jennings wrote:
-> On Fri, Nov 14, 2014 at 10:11:01AM +0900, Minchan Kim wrote:
-> > The kunmap_atomic should use virtual address getting by kmap_atomic.
-> > However, some pieces of code in zsmalloc uses modified address,
-> > not the one got by kmap_atomic for kunmap_atomic.
+On Wed, Nov 12, 2014 at 12:17:57PM +0000, Bruno Thomsen wrote:
+> Hi Johan,
+> 
+> > As you may have seen by now, I've been working on refactoring the
+> > micrel phy driver to be able to use common initialisation code.
+> >
+> > Specifically, I've added generic support for disabling the broadcast
+> > address, which is what the MII_KSZPHY_OMSO write above does.
+> >
+> > Generally you want this to be the first thing you do in order to
+> > avoid unnecessary reconfigurations. If we ever were to allow
+> > concurrent probing this would also be a requirement.
+> >
+> > Could you provide some detail about the setup were you find that the
+> > PHY becomes unresponsive without your patch? Do you have more than
+> > one PHY on the bus? Using what addresses? And using what clock modes
+> > (i.e. 25 MHz or 50 MHz)?
 > > 
-> > It's okay for working because zsmalloc modifies the address
-> > inner PAGE_SIZE bounday so it works with current kmap_atomic's
-> > implementation. But it's still fragile with potential changing
-> > of kmap_atomic so let's correct it.
-> 
-> Seems like you could just use PAGE_MASK to get the base page address
-> from link like this:
-> 
-
-both solutions look good to me:
-Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
-	-ss
-
-> ---
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index b3b57ef..d6ca05a 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -654,7 +654,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
->                  */
->                 next_page = get_next_page(page);
->                 link->next = obj_location_to_handle(next_page, 0);
-> -               kunmap_atomic(link);
-> +               kunmap_atomic((void *)((unsigned long)link & PAGE_MASK));
->                 page = next_page;
->                 off %= PAGE_SIZE;
->         }
-> @@ -1087,7 +1087,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->                                         m_offset / sizeof(*link);
->         first_page->freelist = link->next;
->         memset(link, POISON_INUSE, sizeof(*link));
-> -       kunmap_atomic(link);
-> +       kunmap_atomic((void *)((unsigned long)link & PAGE_MASK));
+> > Also, what exactly do you mean by "unresponsive"? Are you still able
+> > to read the PHY registers for example?
 >  
->         first_page->inuse++;
->         /* Now move the zspage to another fullness group, if required */
-> @@ -1124,7 +1124,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->         link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
->                                                         + f_offset);
->         link->next = first_page->freelist;
-> -       kunmap_atomic(link);
-> +       kunmap_atomic((void *)((unsigned long)link & PAGE_MASK));
->         first_page->freelist = (void *)obj;
->  
->         first_page->inuse--;
-> ---
+> I think it sounds like a good idea to refactor the init code.
 > 
-> This seems cleaner, but, at the same time, it isn't obvious that we are
-> passing the same value to kunmap_atomic() that we got from
-> kmap_atomic().  Just a thought.
-> 
-> Either way:
-> 
-> Reviewed-by: Seth Jennings <sjennings@variantweb.net>
-> 
-> > 
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  mm/zsmalloc.c | 21 ++++++++++++---------
-> >  1 file changed, 12 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> > index b3b57ef85830..85e14f584048 100644
-> > --- a/mm/zsmalloc.c
-> > +++ b/mm/zsmalloc.c
-> > @@ -629,6 +629,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
-> >  		struct page *next_page;
-> >  		struct link_free *link;
-> >  		unsigned int i = 1;
-> > +		void *vaddr;
-> >  
-> >  		/*
-> >  		 * page->index stores offset of first object starting
-> > @@ -639,8 +640,8 @@ static void init_zspage(struct page *first_page, struct size_class *class)
-> >  		if (page != first_page)
-> >  			page->index = off;
-> >  
-> > -		link = (struct link_free *)kmap_atomic(page) +
-> > -						off / sizeof(*link);
-> > +		vaddr = kmap_atomic(page);
-> > +		link = (struct link_free *)vaddr + off / sizeof(*link);
-> >  
-> >  		while ((off += class->size) < PAGE_SIZE) {
-> >  			link->next = obj_location_to_handle(page, i++);
-> > @@ -654,7 +655,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
-> >  		 */
-> >  		next_page = get_next_page(page);
-> >  		link->next = obj_location_to_handle(next_page, 0);
-> > -		kunmap_atomic(link);
-> > +		kunmap_atomic(vaddr);
-> >  		page = next_page;
-> >  		off %= PAGE_SIZE;
-> >  	}
-> > @@ -1055,6 +1056,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
-> >  	unsigned long obj;
-> >  	struct link_free *link;
-> >  	struct size_class *class;
-> > +	void *vaddr;
-> >  
-> >  	struct page *first_page, *m_page;
-> >  	unsigned long m_objidx, m_offset;
-> > @@ -1083,11 +1085,11 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
-> >  	obj_handle_to_location(obj, &m_page, &m_objidx);
-> >  	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
-> >  
-> > -	link = (struct link_free *)kmap_atomic(m_page) +
-> > -					m_offset / sizeof(*link);
-> > +	vaddr = kmap_atomic(m_page);
-> > +	link = (struct link_free *)vaddr + m_offset / sizeof(*link);
-> >  	first_page->freelist = link->next;
-> >  	memset(link, POISON_INUSE, sizeof(*link));
-> > -	kunmap_atomic(link);
-> > +	kunmap_atomic(vaddr);
-> >  
-> >  	first_page->inuse++;
-> >  	/* Now move the zspage to another fullness group, if required */
-> > @@ -1103,6 +1105,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
-> >  	struct link_free *link;
-> >  	struct page *first_page, *f_page;
-> >  	unsigned long f_objidx, f_offset;
-> > +	void *vaddr;
-> >  
-> >  	int class_idx;
-> >  	struct size_class *class;
-> > @@ -1121,10 +1124,10 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
-> >  	spin_lock(&class->lock);
-> >  
-> >  	/* Insert this object in containing zspage's freelist */
-> > -	link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
-> > -							+ f_offset);
-> > +	vaddr = kmap_atomic(f_page);
-> > +	link = (struct link_free *)(vaddr + f_offset);
-> >  	link->next = first_page->freelist;
-> > -	kunmap_atomic(link);
-> > +	kunmap_atomic(vaddr);
-> >  	first_page->freelist = (void *)obj;
-> >  
-> >  	first_page->inuse--;
-> > -- 
-> > 2.0.0
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+> My setup:
+> iMX28 processor with dual Ethernet MAC; FEC0 (enabled) and FEC1 (disabled).
+> There is a single KSZ8031 PHY that receives 50MHz RMII clock from the MAC.
+> I am unable to read PHY registers from both user-land tools and extra
+> debug PHY reads in driver code.
+
+Did you specify a led-mode as well, or was the Operation Mode Strap
+Override (OMSO) write the first access after the soft reset?
+
+Did you try any other workarounds besides setting the clock mode before
+doing the OMSO write?
+
+And REF_CLK (pin 16) is not connected? 
+
+> Boot trace:
+> [   22.277785] fec 800f0000.ethernet eth0: Freescale FEC PHY driver [Micrel KSZ8031] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+> [   22.292527] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+> [   24.276217] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+> [   24.285094] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+
+Ok, so you use a single PHY strapped to address 0. 
+
+Would you able to test my series on your setup, and possibly a couple of
+diagnostic patches on top?
+
+Thanks,
+Johan
