@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaKOHvq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 02:51:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35639 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730AbaKOHvp (ORCPT
+	id S1753935AbaKOH6h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 02:58:37 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:52082 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaKOH6g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 02:51:45 -0500
-Date: Sat, 15 Nov 2014 10:51:33 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dmitry Kalinkin <dmitry.kalinkin@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Martyn Welch <martyn.welch@ge.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Manohar Vanga <manohar.vanga@gmail.com>,
-        Igor Alekseev <igor.alekseev@itep.ru>
-Subject: Re: [PATCH 2/3] staging: vme: mmap() support for vme_user
-Message-ID: <20141115075133.GP6749@mwanda>
-References: <1416008178-9393-1-git-send-email-dmitry.kalinkin@gmail.com>
- <1416008178-9393-3-git-send-email-dmitry.kalinkin@gmail.com>
-MIME-Version: 1.0
+	Sat, 15 Nov 2014 02:58:36 -0500
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416008178-9393-3-git-send-email-dmitry.kalinkin@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Subject: Re: [PATCH] ieee802154: fix error handling in ieee802154fake_probe()
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20141115071603.GA3481@omega>
+Date: Sat, 15 Nov 2014 16:58:28 +0900
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-wpan@vger.kernel.org,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ldv-project@linuxtesting.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B1D43522-B042-4D92-8F8A-D2AD89A3F0F9@holtmann.org>
+References: <1416006719-3450-1-git-send-email-khoroshilov@ispras.ru> <20141115071603.GA3481@omega>
+To: Alexander Aring <alex.aring@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 15, 2014 at 02:36:17AM +0300, Dmitry Kalinkin wrote:
-> +int vme_master_mmap(struct vme_resource *resource, struct vm_area_struct *vma)
-> +{
-> +	struct vme_master_resource *image;
-> +	phys_addr_t phys_addr;
-> +	unsigned long vma_size;
-> +
-> +	if (resource->type != VME_MASTER) {
-> +		printk(KERN_ERR "Not a master resource\n");
+Hi Alex,
 
-Run your patch through scripts/checkpatch.pl
+>> In case of any failure ieee802154fake_probe() just calls unregister_netdev().
+>> But it does not look safe to unregister netdevice before it was registered.
+>> 
+>> The patch implements straightforward resource deallocation in case of
+>> failure in ieee802154fake_probe().
+>> 
+>> Found by Linux Driver Verification project (linuxtesting.org).
+>> 
+> 
+> Thanks for the patch! But I already delete the whole fakehard driver.
+> The patch to remove this driver is already in net-next.
+> 
+> There was too many issues with the fake hardMAC drivers and we don't
+> really supported a "real" hardMAC transceiver. For my rework to grab the
+> good things from wireless implementation and put 802.15.4 functionality
+> on it I simple delete the whole driver and _maybe_ add a new one with
+> the new introduced interfaces for possible hardMAC functionality.
+> 
+> This patch could go into bluetooth(net)/stable but I don't think that
+> there are many users for this driver.
 
-Also warning messages let people flood /var/log/messages so they can be
-a DoS vector.
+I am not sure that this is worth it then.
 
-regards,
-dan carpenter
+Dave, do you want to just take it via net-stable tree? We currently have no urgent bluetooth-stable tree patches pending.
+
+Regards
+
+Marcel
 
