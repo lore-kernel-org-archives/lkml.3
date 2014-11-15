@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaKORLJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 12:11:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55409 "EHLO mx1.redhat.com"
+	id S1754381AbaKOSTr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 13:19:47 -0500
+Received: from mout.web.de ([212.227.15.14]:58821 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203AbaKORLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 12:11:07 -0500
-Message-ID: <5467891B.2010100@redhat.com>
-Date: Sat, 15 Nov 2014 12:10:51 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754238AbaKOSTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 13:19:45 -0500
+Message-ID: <54679938.3020106@users.sourceforge.net>
+Date: Sat, 15 Nov 2014 19:19:36 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: do not overwrite reserved pages counter at show_mem()
-References: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
-In-Reply-To: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] fs-ext4: Deletion of an unnecessary check before the
+ function call "iput"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:XebhKE57yDu80JQXNQjYjuNuEVNe8n0VhDz0RTLltULIUjoy2+I
+ yPFBl8pUVAsWGTYuQFc2Gm1ZalkqW1zipgoexYt2QYiru98P9DV9eNEcNIcozi5VVJPlqoN
+ WIpSbBSkLGpfJF49Ph4bviZUiEntNVlh4ETMz4chT0KlM8hdwnxQ85e7HD2nJtM530LUk8U
+ SbUhwFm+cauoNZR4yG4kQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sat, 15 Nov 2014 19:04:06 +0100
 
-On 11/14/2014 01:34 PM, Rafael Aquini wrote:
-> Minor fixlet to perform the reserved pages counter aggregation for
-> each node, at show_mem()
-> 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+The iput() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+This issue was detected by using the Coccinelle software.
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ fs/ext4/mballoc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-iQEcBAEBAgAGBQJUZ4kbAAoJEM553pKExN6DtgUH/32t89g4pK7Tqgj6jSs2nzGq
-AHLma8dL12/JABVPBBqHxwSXCRDF6klCuQPx9v1RMiaksGf4TNNjDnEwDJ65Out4
-I0ckZoc2bXRZi9i4IGZEuaAoBjN2CUL2tbgxqQLjO17nLlS+NDJuhtqQzFTE2EyO
-uO3wtLBPEtQa7HaBNsElzdauU/pKgT/67s0PtExCTdQAIjLDEqjSI8pT0ltPx0xk
-UG9l1ffFy5UhScugoSJDOfbWoZ3YjBZeWwZZ4so4u503TyNOPbucMi8lYyMDMxKd
-67SyN2hWb6eKm1d4MXZZwibrbx/YGg/Ngc8kqoC1IDS7Xsl1jPgD3K5IeDMIFFs=
-=yglK
------END PGP SIGNATURE-----
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 8b0f9ef..e1a2521 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2712,8 +2712,7 @@ int ext4_mb_release(struct super_block *sb)
+ 	}
+ 	kfree(sbi->s_mb_offsets);
+ 	kfree(sbi->s_mb_maxs);
+-	if (sbi->s_buddy_cache)
+-		iput(sbi->s_buddy_cache);
++	iput(sbi->s_buddy_cache);
+ 	if (sbi->s_mb_stats) {
+ 		ext4_msg(sb, KERN_INFO,
+ 		       "mballoc: %u blocks %u reqs (%u success)",
+-- 
+2.1.3
+
+
