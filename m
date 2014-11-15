@@ -1,105 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaKOPb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 10:31:28 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:56941 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbaKOPb1 (ORCPT
+	id S1754249AbaKOPcL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 10:32:11 -0500
+Received: from mx.datacom.ind.br ([177.66.5.10]:47587 "EHLO
+	mail.datacom.ind.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754080AbaKOPcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 10:31:27 -0500
-Message-ID: <546771CD.3020307@lwfinger.net>
-Date: Sat, 15 Nov 2014 09:31:25 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 15 Nov 2014 10:32:09 -0500
+Message-ID: <546771F7.1000805@datacom.ind.br>
+Date: Sat, 15 Nov 2014 13:32:07 -0200
+From: DATACOM - Erico Nunes <erico.nunes@datacom.ind.br>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Christian Resell <christian.resell@gmail.com>, devel@driverdev.osuosl.org
-CC: florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
-        marcus.farkas@finitebox.com, dan.carpenter@oracle.com,
-        sudipm.mukherjee@gmail.com, paul.gortmaker@windriver.com,
-        tapaswenipathak@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8712: fix coding style warning
-References: <20141115142535.GB15904@Kosekroken.jensen.com>
-In-Reply-To: <20141115142535.GB15904@Kosekroken.jensen.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+CC: robh+dt@kernel.org, devicetree@vger.kernel.org, sameo@linux.intel.com,
+        lee.jones@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: Creating a new platform_bus inside a spi_driver
+References: <545BD3EC.6050503@datacom.ind.br>	<707686811.tbHdnxXMgE@wuerfel> <545CF546.8090703@datacom.ind.br>	<2501338.EAyTJJ482M@wuerfel> <20141111110757.3DFFAC40D48@trevor.secretlab.ca> <54647133.1030801@mm-sol.com>
+In-Reply-To: <54647133.1030801@mm-sol.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2014 08:25 AM, Christian Resell wrote:
-> Simple style fix ("else is not generally useful after a break or return").
-> For the eudyptula challenge (http://eudyptula-challenge.org/).
->
-> Signed-off-by: Christian F. Resell <christian.resell@gmail.com>
-> ---
 
-This patch leads to the following build warnings:
 
-   CC [M]  drivers/staging/rtl8712/rtl871x_security.o
-In file included from drivers/staging/rtl8712/osdep_service.h:43:0,
-                  from drivers/staging/rtl8712/rtl871x_security.c:45:
-drivers/staging/rtl8712/rtl871x_security.c: In function ‘crc32_init’:
-drivers/staging/rtl8712/basic_types.h:35:14: warning: ISO C90 forbids mixed 
-declarations and code [-Wdeclaration-after-statement]
-  #define sint signed int
-               ^
-drivers/staging/rtl8712/rtl871x_security.c:129:2: note: in expansion of macro ‘sint’
-   sint i, j;
-   ^
-The previous code had braces around the code in question. Either you need to 
-leave those braces, or you need to move the declarations.
+On 11/13/2014 06:52 AM, Stanimir Varbanov wrote:
+> Hi Grant, Arnd and Erico
+> 
+> On 11/11/2014 01:07 PM, Grant Likely wrote:
+>> On Fri, 07 Nov 2014 18:04:35 +0100
+>> , Arnd Bergmann <arnd@arndb.de>
+>>  wrote:
+>>> On Friday 07 November 2014 14:37:26 DATACOM - Ã‰rico Nunes wrote:
+>>>> Hello Arnd and all,
+>>>>
+>>>> On 11/07/2014 08:04 AM, Arnd Bergmann wrote:
+>>>>> On Thursday 06 November 2014 18:02:52 DATACOM - Ã‰rico Nunes wrote:
+>>>>>> The idea is that "fpga-spi" is a spi_driver which instantiates all of the
+>>>>>> "fpga-deviceN" as platform_devices, through the use of
+>>>>>> of_platform_populate(dev->of_node, NULL, NULL, dev).
+>>>>>>
+>>>>>> The visible problem we're facing with this approach is that, as the internal
+>>>>>> platform_devices have a "reg" property, of_platform_populate() eventually
+>>>>>> triggers an address translation which is apparently trying to translate the
+>>>>>> addresses of the internal platform_bus to addresses of the processor memory
+>>>>>> map.
+>>>>>> This translation is however not part of our intention, as we intend to have an
+>>>>>> internal bus with its own memory map.
+>>>>>> This fails when __of_translate_address() reaches the spi-master boundary
+>>>>>> because (as it seems to make sense) it isn't possible to translate them past
+>>>>>> that.
+>>>>>> A KERN_ERR rated message like
+>>>>>> "prom_parse: Bad cell count for /soc@f0000000/spi@2000/fpga@1"
+>>>>>> is thrown by __of_translate_address() and later it is not possible to obtain
+>>>>>> the "reg" address with platform_get_resource().
+>>>>>>
+>>>>>> On this scenario, we have a few questions and, depending on the outcome of
+>>>>>> these, possibly a patch.
+>>>>>>
+>>>>>> 1. Is it possible to have an internal platform_bus with a different memory map
+>>>>>> as we intended? Or are platform_busses and platform_devices supposed to always
+>>>>>> be mapped on the processor memory map?
+>>>>> It's inconsistent. We have some code that assumes that platform devices
+>>>>> are always memory mapped, and some other code that breaks this assumption.
+>>>>
+>>>> By this I take that the platform subsystem could be made generic so it can be
+>>>> used in both ways (mapped to processor memory map or mapped to a private memory
+>>>> map). There seems to be no strict requirement enforcing it to be processor
+>>>> memory map.
+>>>>
+>>>> Is this correct?
+>>>
+>>> It could be, but I'm sure if that is a good idea or not. It might complicate
+>>> things elsewhere, so it would at least need careful testing and consensus
+>>> among a broader group of developers.
+>>
+>> I don't think it is a good idea. I would prefer to make the behaviour of
+>> of_platform_populate() generic so it could work for multiple bus
+>> types rather than reusing/abusing platform_device in this way.
+>>
+>> If the devices on the FPGA were memory mapped, it would be a different
+>> situation, but being behind an SPI bus where the access to those devices
+>> must always be mediated by the SPI controller, it would be better to
+>> have a separate bus type and a separate pool of drivers for those
+>> devices.
+>>
 
-Please compile test your patches!
+Grant,
+could you please elaborate a little on "making the behaviour of
+of_platform_populate() generic so it could work for multiple bus types
+without reusing/abusing platform_device"?
 
-Larry
+Initially we thought of having a separate bus type, but that felt such a
+duplication of a platform_bus that we decided to try to reuse.
 
-> diff --git a/drivers/staging/rtl8712/rtl871x_security.c b/drivers/staging/rtl8712/rtl871x_security.c
-> index c653ad6..cc3a446 100644
-> --- a/drivers/staging/rtl8712/rtl871x_security.c
-> +++ b/drivers/staging/rtl8712/rtl871x_security.c
-> @@ -126,26 +126,24 @@ static void crc32_init(void)
->   {
->   	if (bcrc32initialized == 1)
->   		return;
-> -	else {
-> -		sint i, j;
-> -		u32 c;
-> -		u8 *p = (u8 *)&c, *p1;
-> -		u8 k;
-> -
-> -		c = 0x12340000;
-> -		for (i = 0; i < 256; ++i) {
-> -			k = crc32_reverseBit((u8)i);
-> -			for (c = ((u32)k) << 24, j = 8; j > 0; --j)
-> -				c = c & 0x80000000 ? (c << 1) ^ CRC32_POLY :
-> -				    (c << 1);
-> -			p1 = (u8 *)&crc32_table[i];
-> -			p1[0] = crc32_reverseBit(p[3]);
-> -			p1[1] = crc32_reverseBit(p[2]);
-> -			p1[2] = crc32_reverseBit(p[1]);
-> -			p1[3] = crc32_reverseBit(p[0]);
-> -		}
-> -		bcrc32initialized = 1;
-> +	sint i, j;
-> +	u32 c;
-> +	u8 *p = (u8 *)&c, *p1;
-> +	u8 k;
-> +
-> +	c = 0x12340000;
-> +	for (i = 0; i < 256; ++i) {
-> +		k = crc32_reverseBit((u8)i);
-> +		for (c = ((u32)k) << 24, j = 8; j > 0; --j)
-> +			c = c & 0x80000000 ? (c << 1) ^ CRC32_POLY :
-> +				(c << 1);
-> +		p1 = (u8 *)&crc32_table[i];
-> +		p1[0] = crc32_reverseBit(p[3]);
-> +		p1[1] = crc32_reverseBit(p[2]);
-> +		p1[2] = crc32_reverseBit(p[1]);
-> +		p1[3] = crc32_reverseBit(p[0]);
->   	}
-> +	bcrc32initialized = 1;
->   }
->
->   static u32 getcrc32(u8 *buf, u32 len)
->
+On the other thread line about the patch posted in my opening comment,
+it was suggested that we could change __of_translate_address(), for
+example to allow a translation end-point to be passed it. This seems
+like a good idea to me, however with this comment here it is still not
+clear to me whether this change would be likely accepted or not.
 
+> 
+> This is exactly the same problem that we have on Qualcomm SPMI PMIC mfd
+> driver. We had a discussion at [1] where we tried to solve it by
+> IORESOURCE_REG. Unfortunately there is no conclusion yet.
+> 
+> I'm glad to see that someone else have the same issue, maybe it is time
+> to restart the discussion. The last proposal from Grant was to implement
+> dev_get_localbus_address() API in drivers/base.
+
+I took the time to read through your thread and indeed a lot of this
+discussion is common. It is now clear that we should not be using
+IORESOURCE_MEM as it was assumed in the original patch, which was one of
+my original questions.
+We are still not using the mfd framework because of the need to maintain
+the table of "compatible" drivers in code, and this requires double
+maintenance of code instead of adding a new device to the dts.
+Nevertheless, I tested your "RFC: add function for localbus address"
+patch, and your solution worked right away for my case too (without mfd)
+by just changing my drivers to get IORESOURCE_REG instead.
