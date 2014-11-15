@@ -1,46 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778AbaKOXh6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 18:37:58 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:59734 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754604AbaKOXh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 18:37:57 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        dkl@rock-chips.com, huangtao@rock-chips.com,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: rockchip: fix clock select order for usbphy480m_src
-Date: Sun, 16 Nov 2014 00:41:27 +0100
-Message-ID: <8965478.SpyRElfG0W@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1415866309-3277-1-git-send-email-kever.yang@rock-chips.com>
-References: <1415866309-3277-1-git-send-email-kever.yang@rock-chips.com>
+	id S1754990AbaKOXuT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 18:50:19 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45442 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754701AbaKOXuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 18:50:17 -0500
+X-Originating-IP: 50.43.41.112
+Date: Sat, 15 Nov 2014 15:50:07 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, mtk.manpages@gmail.com,
+        linux-api@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 2/2] groups: Allow unprivileged processes to use setgroups
+ to drop groups
+Message-ID: <dbb1f7e5ee501741db0579bfb4178340668e23e5.1416095211.git.josh@joshtriplett.org>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416095211.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416095211.git.josh@joshtriplett.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 13. November 2014, 16:11:49 schrieb Kever Yang:
-> According to rk3288 trm, the mux selector locate at bit[12:11]
-> of CRU_CLKSEL13_CON shows:
-> 2'b00: select HOST0 USB pll clock (clk_otgphy1)
-> 2'b01: select HOST1 USB pll clock (clk_otgphy2)
-> 2'b10: select OTG USB pll clock   (clk_otgphy0)
-> 
-> The clock map is in Fig. 3-4 CRU Clock Architecture Diagram 3
-> - clk_otgphy0 -> USB PHY OTG
-> - clk_otgphy1 -> USB PHY host0
-> - clk_otgphy2 -> USB PHY host1
-> 
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+Currently, unprivileged processes (without CAP_SETGID) cannot call
+setgroups at all.  In particular, processes with a set of supplementary
+groups cannot further drop permissions without obtaining elevated
+permissions first.
 
-applied this to my clk branch for 3.19
+Allow unprivileged processes to call setgroups with a subset of their
+current groups; only require CAP_SETGID to add a group the process does
+not currently have (either as a supplementary group, or as its gid,
+egid, or sgid).
 
+Since some privileged programs (such as sudo) allow tests for
+non-membership in a group, require no_new_privs to drop group
+privileges.
 
-Heiko
+The kernel already maintains the list of supplementary group IDs in
+sorted order, and setgroups already needs to sort the new list, so this
+just requires a linear comparison of the two sorted lists.
+
+This moves the CAP_SETGID test from setgroups into set_current_groups.
+
+Tested via the following test program:
+
+void run_id(void)
+{
+    pid_t p = fork();
+    switch (p) {
+        case -1:
+            err(1, "fork");
+        case 0:
+            execl("/usr/bin/id", "id", NULL);
+            err(1, "exec");
+        default:
+            if (waitpid(p, NULL, 0) < 0)
+                err(1, "waitpid");
+    }
+}
+
+int main(void)
+{
+    gid_t list1[] = { 1, 2, 3, 4, 5 };
+    gid_t list2[] = { 2, 3, 4 };
+    run_id();
+    if (setgroups(5, list1) < 0)
+        err(1, "setgroups 1");
+    run_id();
+    if (setresgid(1, 1, 1) < 0)
+        err(1, "setresgid");
+    if (setresuid(1, 1, 1) < 0)
+        err(1, "setresuid");
+    run_id();
+    if (setgroups(3, list2) < 0)
+        err(1, "setgroups 2");
+    run_id();
+    if (setgroups(5, list1) < 0)
+        err(1, "setgroups 3");
+    run_id();
+
+    return 0;
+}
+
+Without this patch, the test program gets EPERM from the second
+setgroups call, after dropping root privileges.  With this patch, the
+test program successfully drops groups 1 and 5, but then gets EPERM from
+the third setgroups call, since that call attempts to add groups the
+process does not currently have.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+v3: Allow gid, egid, or sgid.
+v2: Require no_new_privs.
+
+ kernel/groups.c | 42 +++++++++++++++++++++++++++++++++++++++---
+ kernel/uid16.c  |  2 --
+ 2 files changed, 39 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/groups.c b/kernel/groups.c
+index f0667e7..5114155 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -153,6 +153,37 @@ int groups_search(const struct group_info *group_info, kgid_t grp)
+ 	return 0;
+ }
+ 
++/* Return true if the group_info is a subset of the group_info of the specified
++ * credentials.  Also allow the first group_info to contain the gid, egid, or
++ * sgid of the credentials.
++ */
++static bool group_subset(const struct group_info *g1,
++			 const struct cred *cred2)
++{
++	const struct group_info *g2 = cred2->group_info;
++	unsigned int i, j;
++
++	for (i = 0, j = 0; i < g1->ngroups; i++) {
++		kgid_t gid1 = GROUP_AT(g1, i);
++		kgid_t gid2;
++		for (; j < g2->ngroups; j++) {
++			gid2 = GROUP_AT(g2, j);
++			if (gid_lte(gid1, gid2))
++				break;
++		}
++		if (j >= g2->ngroups || !gid_eq(gid1, gid2)) {
++			if (!gid_eq(gid1, cred2->gid)
++			    && !gid_eq(gid1, cred2->egid)
++			    && !gid_eq(gid1, cred2->sgid))
++				return false;
++		} else {
++			j++;
++		}
++	}
++
++	return true;
++}
++
+ /**
+  * set_groups_sorted - Change a group subscription in a set of credentials
+  * @new: The newly prepared set of credentials to alter
+@@ -189,11 +220,18 @@ int set_current_groups(struct group_info *group_info)
+ {
+ 	struct cred *new;
+ 
++	groups_sort(group_info);
+ 	new = prepare_creds();
+ 	if (!new)
+ 		return -ENOMEM;
++	if (!(ns_capable(current_user_ns(), CAP_SETGID)
++	      || (task_no_new_privs(current)
++		  && group_subset(group_info, new)))) {
++		abort_creds(new);
++		return -EPERM;
++	}
+ 
+-	set_groups(new, group_info);
++	set_groups_sorted(new, group_info);
+ 	return commit_creds(new);
+ }
+ 
+@@ -233,8 +271,6 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!ns_capable(current_user_ns(), CAP_SETGID))
+-		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+ 
+diff --git a/kernel/uid16.c b/kernel/uid16.c
+index 602e5bb..b27e167 100644
+--- a/kernel/uid16.c
++++ b/kernel/uid16.c
+@@ -176,8 +176,6 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!ns_capable(current_user_ns(), CAP_SETGID))
+-		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+ 
+-- 
+2.1.3
+
