@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaKOAAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 19:00:23 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:60441 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125AbaKOAAS (ORCPT
+	id S1755080AbaKOATJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 19:19:09 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55672 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162AbaKOATH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 19:00:18 -0500
-From: Alexandru M Stan <amstan@chromium.org>
-To: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Doug Anderson <dianders@chromium.org>,
-        addy ke <addy.ke@rock-chips.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>, Kever Yang <kever.yang@rock-chips.com>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Alexandru M Stan <amstan@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        mark.yao@rock-chips.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] clk: rockchip: add bindings for the mmc clock phases
-Date: Fri, 14 Nov 2014 16:00:03 -0800
-Message-Id: <1416009604-31545-2-git-send-email-amstan@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1416009604-31545-1-git-send-email-amstan@chromium.org>
-References: <1416009604-31545-1-git-send-email-amstan@chromium.org>
+	Fri, 14 Nov 2014 19:19:07 -0500
+Date: Sat, 15 Nov 2014 01:18:57 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+cc: Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, Mark Rutland <mark.rutland@arm.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] timekeeping: Move persistent clock registration code
+ from ARM to kernel
+In-Reply-To: <CAOMFOmVziftM=pWGG-L9J-E6AHYAK7k9bmBcpS1adPboLciX9g@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1411150115390.3909@nanos>
+References: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com> <20141110095325.GC12126@ulmo> <CAOMFOmXpAm5iKCLFyorTW+n9YmgZMmrDGGe736tJX8C6BYQv-A@mail.gmail.com> <alpine.DEB.2.11.1411132334400.3935@nanos>
+ <CAOMFOmVziftM=pWGG-L9J-E6AHYAK7k9bmBcpS1adPboLciX9g@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used in a later patch for clock phase tuning.
+On Fri, 14 Nov 2014, Anatol Pomozov wrote:
+> On Thu, Nov 13, 2014 at 2:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Mon, 10 Nov 2014, Anatol Pomozov wrote:
+> >> On Mon, Nov 10, 2014 at 1:53 AM, Thierry Reding
+> >> <thierry.reding@gmail.com> wrote:
+> >> > On Fri, Nov 07, 2014 at 11:34:15AM -0800, Anatol Pomozov wrote:
+> >> >> ARM timekeeping functionality allows to register persistent/boot clock dynamically.
+> >> >> This code is arch-independent and can be useful on other plaforms as well.
+> >> >>
+> >> >> As a byproduct of this change, tegra20_timer becomes ARM64 compatible.
+> >> >>
+> >> >> Tested: backported the change to chromeos-3.14 kernel ran on tegra 64bit
+> >> >> board, made sure high-resolution clock works.
+> >> >
+> >> > Using this on an upstream kernel doesn't work, though, because 64-bit
+> >> > ARM doesn't implement struct delay_timer which the driver needs since
+> >> > v3.17.
+> >> >
+> >> > But I suppose the delay timer infrastructure could be moved into the
+> >> > core similar to the persistent and boot clock as this patch does.
+> >>
+> >> Thanks. It makes sense, I will send it in a separate patch, once this
+> >> one will be reviewed. On our kernel I haven't seen this issue as we
+> >> still use 3.14.
+> >
+> > That's why you should test/compile your stuff on latest greatest and
+> > not on a year old conglomorate of unknown provenance. :)
+> 
+> Unfortunately it is not possible to test this patch with upstream.
+> There is no ARM64 bit support for Tegra yet. I am trying to
+> cleanup/upstream my ChromeOS patches and this clock patch in
+> particular makes one small step towards this goal. Also Thierry
+> mentioned that he works on full ARM64 Tegra support and it is really
+> exciting!
 
-Suggested-by: Heiko Stuebner <heiko@sntech.de>
-Signed-off-by: Alexandru M Stan <amstan@chromium.org>
----
-Changes in v2: None
+Everything is exciting, but it does not change the fact, that this
+patch cannot work on current upstream.
 
- include/dt-bindings/clock/rk3288-cru.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+> So what I suppose to do with my patch? If it does not work could
+> anyone provide patch that removes ARM arch dependency from
+> tegra20_timer.c?
 
-diff --git a/include/dt-bindings/clock/rk3288-cru.h b/include/dt-bindings/clock/rk3288-cru.h
-index 100a08c..465d0f6 100644
---- a/include/dt-bindings/clock/rk3288-cru.h
-+++ b/include/dt-bindings/clock/rk3288-cru.h
-@@ -72,6 +72,16 @@
- #define SCLK_HEVC_CABAC		111
- #define SCLK_HEVC_CORE		112
- 
-+#define SCLK_SDMMC_DRV_PHASE	113
-+#define SCLK_SDIO0_DRV_PHASE	114
-+#define SCLK_SDIO1_DRV_PHASE	115
-+#define SCLK_EMMC_DRV_PHASE	116
-+
-+#define SCLK_SDMMC_SAMPLE_PHASE	117
-+#define SCLK_SDIO0_SAMPLE_PHASE	118
-+#define SCLK_SDIO1_SAMPLE_PHASE	119
-+#define SCLK_EMMC_SAMPLE_PHASE	120
-+
- #define DCLK_VOP0		190
- #define DCLK_VOP1		191
- 
--- 
-2.1.0.rc2.206.gedb03e5
+Huch? You want other people to solve your problems?
 
+Thanks,
+
+	tglx
