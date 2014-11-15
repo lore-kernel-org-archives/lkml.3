@@ -1,144 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaKOB04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 20:26:56 -0500
-Received: from mga03.intel.com ([134.134.136.65]:62717 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679AbaKOB0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 20:26:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="487655219"
-Message-ID: <5466ABDA.8070804@linux.intel.com>
-Date: Sat, 15 Nov 2014 09:26:50 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755250AbaKOB3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 20:29:49 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:63333 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470AbaKOB3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 20:29:48 -0500
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
- to reduce duplicated code
-References: <20141112133941.647950773@linutronix.de> <20141112134120.393705922@linutronix.de> <54662062.8030807@arm.com> <546622A1.1030308@linux.intel.com> <54663D7C.7020104@arm.com>
-In-Reply-To: <54663D7C.7020104@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141114204517.GA24402@www.outflux.net>
+References: <20141114204517.GA24402@www.outflux.net>
+Date: Fri, 14 Nov 2014 17:29:47 -0800
+X-Google-Sender-Auth: Qq44kPzNDMBhz3euYXRulDjdyms
+Message-ID: <CAE9FiQULexNgTYCrQgQK+ccNTVDyiJCWkgiDVgbPG-5SY0uPGQ@mail.gmail.com>
+Subject: Re: [PATCH v2] x86, mm: set NX across entire PMD at boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wang Nan <wangnan0@huawei.com>, David Vrabel <david.vrabel@citrix.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/15 1:35, Marc Zyngier wrote:
-> On 14/11/14 15:41, Jiang Liu wrote:
->> On 2014/11/14 23:31, Marc Zyngier wrote:
->>> On 12/11/14 13:43, Thomas Gleixner wrote:
->>>> From: Jiang Liu <jiang.liu@linux.intel.com>
->>>>
->>>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
->>>> Cc: Grant Likely <grant.likely@linaro.org>
->>>> Cc: Marc Zyngier <marc.zyngier@arm.com>
->>>> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
->>>> Cc: Yijing Wang <wangyijing@huawei.com>
->>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->>>> ---
->>>>  include/linux/irqdomain.h |    5 +++++
->>>>  kernel/irq/irqdomain.c    |   10 ++++++++++
->>>>  2 files changed, 15 insertions(+)
->>>>
->>>> Index: tip/include/linux/irqdomain.h
->>>> ===================================================================
->>>> --- tip.orig/include/linux/irqdomain.h
->>>> +++ tip/include/linux/irqdomain.h
->>>> @@ -33,6 +33,7 @@
->>>>  #define _LINUX_IRQDOMAIN_H
->>>>  
->>>>  #include <linux/types.h>
->>>> +#include <linux/irqhandler.h>
->>>>  #include <linux/radix-tree.h>
->>>>  
->>>>  struct device_node;
->>>> @@ -263,6 +264,10 @@ extern int irq_domain_set_hwirq_and_chip
->>>>  					 irq_hw_number_t hwirq,
->>>>  					 struct irq_chip *chip,
->>>>  					 void *chip_data);
->>>> +extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
->>>> +				irq_hw_number_t hwirq, struct irq_chip *chip,
->>>> +				void *chip_data, irq_flow_handler_t handler,
->>>> +				void *handler_data, const char *handler_name);
->>>>  extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
->>>>  extern void irq_domain_free_irqs_common(struct irq_domain *domain,
->>>>  					int virq, int nr_irqs);
->>>> Index: tip/kernel/irq/irqdomain.c
->>>> ===================================================================
->>>> --- tip.orig/kernel/irq/irqdomain.c
->>>> +++ tip/kernel/irq/irqdomain.c
->>>> @@ -882,6 +882,16 @@ int irq_domain_set_hwirq_and_chip(struct
->>>>  	return 0;
->>>>  }
->>>>  
->>>> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
->>>> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
->>>> +			 void *chip_data, irq_flow_handler_t handler,
->>>> +			 void *handler_data, const char *handler_name)
->>>> +{
->>>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
->>>> +	__irq_set_handler(virq, handler, 0, handler_name);
->>>> +	irq_set_handler_data(virq, handler_data);
->>>> +}
->>>> +
->>>
->>> We still have the issue that, depending on where in the stack this is
->>>  called, this will succeed or fail: If this is called from the inner
->>> irqchip, __irq_set_handler() will fail, as it will look at the outer
->>> domain as the (desc->irq_data.chip == &no_irq_chip) test fails (we
->>> haven't set the top level yet).
->>>
->>> I have this very imperfect workaround in my tree:
->>>
->>> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
->>> index d028b34..91e6515 100644
->>> --- a/kernel/irq/chip.c
->>> +++ b/kernel/irq/chip.c
->>> @@ -731,7 +731,16 @@ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
->>>  	if (!handle) {
->>>  		handle = handle_bad_irq;
->>>  	} else {
->>> -		if (WARN_ON(desc->irq_data.chip == &no_irq_chip))
->>> +#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
->>> +		struct irq_data *irq_data = &desc->irq_data;
->>> +		while (irq_data) {
->>> +			if (irq_data->chip != &no_irq_chip)
->>> +				break;
->>> +			irq_data = irq_data->parent_data;
->>> +		}
->>> +#endif
->>> +
->>> +		if (WARN_ON(!irq_data || irq_data->chip == &no_irq_chip))
->>>  			goto out;
->>>  	}
->>>  
->>> Which translate into: If there is at least one irqchip in the domain,
->>> it will probably sort itself out. Not ideal. Any real solution to
->>> this problem?
->>>
->>> GICv2 faces this exact problem, as some of its interrupts are used
->>> directly, and some others are used through the MSI domain. In the
->>> GIC driver, it is almost impossible to find out...
->> Hi Marc,
->> 	I prefer the above solution to relax the warning conditions.
->> Changing the calling order in irq_domain_ops->alloc() looks a little
->> strange, and other interrupt drivers may still run into the same issue.
-> 
-> OK. Where do we from from there? Do you want a proper patch, or will you
-> fold this into the existing code?
-A patch will be great:)
+On Fri, Nov 14, 2014 at 12:45 PM, Kees Cook <keescook@chromium.org> wrote:
+> When setting up permissions on kernel memory at boot, the end of the
+> PMD that was split from bss remained executable. It should be NX like
+> the rest. This performs a PMD alignment instead of a PAGE alignment to
+> get the correct span of memory, and should be freed.
+>
+> Before:
+> ---[ High Kernel Mapping ]---
+> ...
+> 0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+> 0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
+> 0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
+> 0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
+> 0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+>
+> After:
+> ---[ High Kernel Mapping ]---
+> ...
+> 0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+> 0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
+> 0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
+> 0xffffffff82df5000-0xffffffff82e00000    44K     RW           NX pte
+> 0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+> v2:
+>  - added call to free_init_pages(), as suggested by tglx
+> ---
+>  arch/x86/mm/init_64.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 4cb8763868fc..0d498c922668 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -1124,6 +1124,7 @@ void mark_rodata_ro(void)
+>         unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
+>         unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
+>         unsigned long all_end = PFN_ALIGN(&_end);
+> +       unsigned long pmd_end = roundup(all_end, PMD_SIZE);
+>
+>         printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+>                (end - start) >> 10);
+> @@ -1135,7 +1136,7 @@ void mark_rodata_ro(void)
+>          * The rodata/data/bss/brk section (but not the kernel text!)
+>          * should also be not-executable.
+>          */
+> -       set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
+> +       set_memory_nx(rodata_start, (pmd_end - rodata_start) >> PAGE_SHIFT);
+>
+>         rodata_test();
+>
+> @@ -1147,6 +1148,7 @@ void mark_rodata_ro(void)
+>         set_memory_ro(start, (end-start) >> PAGE_SHIFT);
+>  #endif
+>
+> +       free_init_pages("unused kernel", all_end, pmd_end);
+>         free_init_pages("unused kernel",
+>                         (unsigned long) __va(__pa_symbol(text_end)),
+>                         (unsigned long) __va(__pa_symbol(rodata_start)));
 
-> 
-> Thanks,
-> 
-> 	M.
-> 
+something is wrong:
+
+[    7.842479] Freeing unused kernel memory: 3844K (ffffffff82e52000 -
+ffffffff83213000)
+[    7.843305] Write protecting the kernel read-only data: 28672k
+[    7.844433] BUG: Bad page state in process swapper/0  pfn:043c0
+[    7.845093] page:ffffea000010f000 count:0 mapcount:-127 mapping:
+      (null) index:0x2
+[    7.846388] flags: 0x10000000000000()
+[    7.846871] page dumped because: nonzero mapcount
+[    7.847343] Modules linked in:
+[    7.847719] CPU: 2 PID: 1 Comm: swapper/0 Not tainted
+3.18.0-rc4-yh-01896-g40204c8-dirty #23
+[    7.848809] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996),
+BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org
+04/01/2014
+[    7.850014]  ffffffff828300ca ffff880078babd68 ffffffff81ff47d0
+0000000000000001
+[    7.850857]  ffffea000010f000 ffff880078babd98 ffffffff8118c2bd
+00000000001d4cc0
+[    7.851791]  ffffea000010f000 ffffea000010f000 0000000000000000
+ffff880078babdf8
+[    7.852700] Call Trace:
+[    7.852991]  [<ffffffff81ff47d0>] dump_stack+0x45/0x57
+[    7.853494]  [<ffffffff8118c2bd>] bad_page+0xfd/0x130
+[    7.854130]  [<ffffffff8118c42c>] free_pages_prepare+0x13c/0x1c0
+[    7.854808]  [<ffffffff8118c64d>] ? adjust_managed_page_count+0x5d/0x70
+[    7.855575]  [<ffffffff8118f285>] free_hot_cold_page+0x35/0x180
+[    7.856326]  [<ffffffff8118f3e3>] __free_pages+0x13/0x40
+[    7.856854]  [<ffffffff8118f4dd>] free_reserved_area+0xcd/0x140
+[    7.857442]  [<ffffffff81091778>] free_init_pages+0x98/0xb0
+[    7.858001]  [<ffffffff81092085>] mark_rodata_ro+0xb5/0x120
+[    7.858622]  [<ffffffff81fe3240>] ? rest_init+0xc0/0xc0
+[    7.859174]  [<ffffffff81fe325d>] kernel_init+0x1d/0x100
+[    7.859724]  [<ffffffff820066ec>] ret_from_fork+0x7c/0xb0
+[    7.860279]  [<ffffffff81fe3240>] ? rest_init+0xc0/0xc0
+[    7.860836] Disabling lock debugging due to kernel taint
+[    7.861432] Freeing unused kernel memory: 376K (ffffffff843a2000 -
+ffffffff84400000)
+[    7.866118] Freeing unused kernel memory: 1980K (ffff880002011000 -
+ffff880002200000)
+[    7.870525] Freeing unused kernel memory: 1932K (ffff880002a1d000 -
+ffff880002c00000)
+
+[    0.000000]   .text: [0x01000000-0x0200d548]
+[    0.000000] .rodata: [0x02200000-0x02a1cfff]
+[    0.000000]   .data: [0x02c00000-0x02e50e7f]
+[    0.000000]   .init: [0x02e52000-0x03212fff]
+[    0.000000]    .bss: [0x03221000-0x0437bfff]
+[    0.000000]    .brk: [0x0437c000-0x043a1fff]
