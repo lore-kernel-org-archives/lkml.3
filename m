@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935418AbaKODc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Nov 2014 22:32:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934378AbaKODc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Nov 2014 22:32:56 -0500
-Date: Fri, 14 Nov 2014 22:32:51 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Paul Moore <pmoore@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, eparis@parisplace.org
-Subject: Re: [PATCH] audit: convert status version to a feature bitmap
-Message-ID: <20141115033251.GB31373@madcap2.tricolour.ca>
-References: <a98e3f45dbffd086c872f249b650b405f5cb8d2c.1415909269.git.rgb@redhat.com>
- <1745832.tbkjBzSGxr@sifl>
- <20141114010852.GB5960@madcap2.tricolour.ca>
- <2673987.auILhPtmMS@x2>
+	id S935434AbaKODed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Nov 2014 22:34:33 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:56467 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934378AbaKODec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Nov 2014 22:34:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2673987.auILhPtmMS@x2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jKVbEDCyu7p0_9CHKm81j+DCqr-tToYq_KAPBieNkkwmw@mail.gmail.com>
+References: <20141114204517.GA24402@www.outflux.net>
+	<CAE9FiQULexNgTYCrQgQK+ccNTVDyiJCWkgiDVgbPG-5SY0uPGQ@mail.gmail.com>
+	<CAGXu5jKVbEDCyu7p0_9CHKm81j+DCqr-tToYq_KAPBieNkkwmw@mail.gmail.com>
+Date: Fri, 14 Nov 2014 19:34:31 -0800
+X-Google-Sender-Auth: KEd9mt0inC6wZZmVjFmMJC17ufg
+Message-ID: <CAE9FiQVLqh=xm+y5PwrZ1t2+PReWnN_YENMqEmEW6jMbooYi3g@mail.gmail.com>
+Subject: Re: [PATCH v2] x86, mm: set NX across entire PMD at boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wang Nan <wangnan0@huawei.com>, David Vrabel <david.vrabel@citrix.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/11/13, Steve Grubb wrote:
-> On Thursday, November 13, 2014 08:08:52 PM Richard Guy Briggs wrote:
-> > > So what terrible things happen to userspace if
-> > > AUDIT_VERSION_BACKLOG_WAIT_TIME  becomes 0x03 instead of 0x02?
-> > 
-> > But it won't.  It gets the value of
-> > AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME, which is 0x00000002.
-> > 
-> > I think you meant to ask about AUDIT_VERSION_LATEST, which would become 3.
-> > 
-> > You *did* already ask that question in a previous thread, and there
-> > didn't seem to be a concern.  Steve Grubb could likely answer this
-> > question better than me.
-> 
-> The audit 2.4.1 package has been pushed to everything from F20 -> rawhide. If 
-> you don't see any problems, then its safe. But check carefully around the 
-> things that you did change. Right now, we only are caring about only one 
-> kernel feature, --loginuid-immutable. Check that it still works, auditctl -s.
+On Fri, Nov 14, 2014 at 7:06 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Fri, Nov 14, 2014 at 5:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>> [    0.000000]   .text: [0x01000000-0x0200d548]
+>> [    0.000000] .rodata: [0x02200000-0x02a1cfff]
+>> [    0.000000]   .data: [0x02c00000-0x02e50e7f]
+>> [    0.000000]   .init: [0x02e52000-0x03212fff]
+>> [    0.000000]    .bss: [0x03221000-0x0437bfff]
+>> [    0.000000]    .brk: [0x0437c000-0x043a1fff]
+>
+> And which CONFIG turns on this reporting?
+>
 
-Here's my output, which I assume looks sane:
+My local patch.
 
-[root@f20 ~]# rpm -q audit
-audit-2.4.1-1.fc20.x86_64
-[root@f20 ~]# auditctl -s
-enabled 1
-flag 1
-pid 307
-rate_limit 0
-backlog_limit 320
-lost 0
-backlog 0
-backlog_wait_time 60000
-loginuid_immutable 0 unlocked
+this brk does not shrink yet.
 
-> -Steve
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Yinghai
