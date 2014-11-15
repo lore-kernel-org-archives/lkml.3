@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112AbaKOTym (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 14:54:42 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:52626 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647AbaKOTyk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 14:54:40 -0500
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mfd: tc6387xb: prepare/unprepare clocks
-Date: Sat, 15 Nov 2014 22:54:29 +0300
-Message-Id: <1416081269-28567-2-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1416081269-28567-1-git-send-email-dbaryshkov@gmail.com>
-References: <1416081269-28567-1-git-send-email-dbaryshkov@gmail.com>
+	id S932121AbaKOUCA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 15:02:00 -0500
+Received: from mout.web.de ([212.227.17.11]:57841 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754406AbaKOUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 15:01:59 -0500
+Message-ID: <5467B12C.4010602@users.sourceforge.net>
+Date: Sat, 15 Nov 2014 21:01:48 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] fs-fat: Less function calls in fat_fill_super() after
+ error detection
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:KOhrgJUn6906nuqJvYCXQh+rwv3nudTV47ybZAz3fcXqB4YVgMt
+ Jh4nWXOeHwTGt7mb623X3DvcLHLQaSQNXY0eHAQ1c3KLUifuxzcyLdJG16wsLGjMY9B+Ps8
+ 4xjSgCWcux0HQB+3UgiFrKRlEiRbZW2U6J0s5ECnYNT734k9jN9RGMS+xJ4mPRscOZU6iwM
+ 37tzPmdW5nDotLPKxgOWA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change clk_enable/disable() calls to clk_prepare_enable() and
-clk_disable_unrepapre().
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sat, 15 Nov 2014 20:55:23 +0100
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+The iput() function was called in an inefficient way by the implementation
+of the fat_fill_super() function in case of an allocation failure.
+The corresponding source code was improved by deletion of two unnecessary
+null pointer checks and a few adjustments for jump labels.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- drivers/mfd/tc6387xb.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/fat/inode.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mfd/tc6387xb.c b/drivers/mfd/tc6387xb.c
-index e71f880..85fab37 100644
---- a/drivers/mfd/tc6387xb.c
-+++ b/drivers/mfd/tc6387xb.c
-@@ -52,7 +52,7 @@ static int tc6387xb_suspend(struct platform_device *dev, pm_message_t state)
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 756aead..138ab9a 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1716,20 +1716,20 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
  
- 	if (pdata && pdata->suspend)
- 		pdata->suspend(dev);
--	clk_disable(tc6387xb->clk32k);
-+	clk_disable_unprepare(tc6387xb->clk32k);
+ 	fsinfo_inode = new_inode(sb);
+ 	if (!fsinfo_inode)
+-		goto out_fail;
++		goto fsinfo_inode_failure;
+ 	fsinfo_inode->i_ino = MSDOS_FSINFO_INO;
+ 	sbi->fsinfo_inode = fsinfo_inode;
+ 	insert_inode_hash(fsinfo_inode);
  
- 	return 0;
- }
-@@ -62,7 +62,7 @@ static int tc6387xb_resume(struct platform_device *dev)
- 	struct tc6387xb *tc6387xb = platform_get_drvdata(dev);
- 	struct tc6387xb_platform_data *pdata = dev_get_platdata(&dev->dev);
+ 	root_inode = new_inode(sb);
+ 	if (!root_inode)
+-		goto out_fail;
++		goto other_failure;
+ 	root_inode->i_ino = MSDOS_ROOT_INO;
+ 	root_inode->i_version = 1;
+ 	error = fat_read_root(root_inode);
+ 	if (error < 0) {
+ 		iput(root_inode);
+-		goto out_fail;
++		goto other_failure;
+ 	}
+ 	error = -ENOMEM;
+ 	insert_inode_hash(root_inode);
+@@ -1737,7 +1737,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+ 	sb->s_root = d_make_root(root_inode);
+ 	if (!sb->s_root) {
+ 		fat_msg(sb, KERN_ERR, "get root inode failed");
+-		goto out_fail;
++		goto other_failure;
+ 	}
  
--	clk_enable(tc6387xb->clk32k);
-+	clk_prepare_enable(tc6387xb->clk32k);
- 	if (pdata && pdata->resume)
- 		pdata->resume(dev);
+ 	if (sbi->options.discard) {
+@@ -1756,11 +1756,13 @@ out_invalid:
+ 	if (!silent)
+ 		fat_msg(sb, KERN_INFO, "Can't find a valid FAT filesystem");
  
-@@ -100,7 +100,7 @@ static int tc6387xb_mmc_enable(struct platform_device *mmc)
- 	struct platform_device *dev      = to_platform_device(mmc->dev.parent);
- 	struct tc6387xb *tc6387xb = platform_get_drvdata(dev);
- 
--	clk_enable(tc6387xb->clk32k);
-+	clk_prepare_enable(tc6387xb->clk32k);
- 
- 	tmio_core_mmc_enable(tc6387xb->scr + 0x200, 0,
- 		tc6387xb_mmc_resources[0].start & 0xfffe);
-@@ -113,7 +113,7 @@ static int tc6387xb_mmc_disable(struct platform_device *mmc)
- 	struct platform_device *dev      = to_platform_device(mmc->dev.parent);
- 	struct tc6387xb *tc6387xb = platform_get_drvdata(dev);
- 
--	clk_disable(tc6387xb->clk32k);
-+	clk_disable_unprepare(tc6387xb->clk32k);
- 
- 	return 0;
- }
-@@ -214,7 +214,7 @@ static int tc6387xb_remove(struct platform_device *dev)
- 	mfd_remove_devices(&dev->dev);
- 	iounmap(tc6387xb->scr);
- 	release_resource(&tc6387xb->rscr);
--	clk_disable(tc6387xb->clk32k);
-+	clk_disable_unprepare(tc6387xb->clk32k);
- 	clk_put(tc6387xb->clk32k);
- 	kfree(tc6387xb);
- 
++other_failure:
++	iput(fsinfo_inode);
++
++fsinfo_inode_failure:
++	iput(fat_inode);
++
+ out_fail:
+-	if (fsinfo_inode)
+-		iput(fsinfo_inode);
+-	if (fat_inode)
+-		iput(fat_inode);
+ 	unload_nls(sbi->nls_io);
+ 	unload_nls(sbi->nls_disk);
+ 	if (sbi->options.iocharset != fat_default_iocharset)
 -- 
-2.1.1
+2.1.3
+
 
