@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121AbaKOUCA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 15:02:00 -0500
-Received: from mout.web.de ([212.227.17.11]:57841 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406AbaKOUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 15:01:59 -0500
-Message-ID: <5467B12C.4010602@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 21:01:48 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754639AbaKOUGp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 15:06:45 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55748 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532AbaKOUGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 15:06:43 -0500
 MIME-Version: 1.0
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] fs-fat: Less function calls in fat_fill_super() after
- error detection
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:KOhrgJUn6906nuqJvYCXQh+rwv3nudTV47ybZAz3fcXqB4YVgMt
- Jh4nWXOeHwTGt7mb623X3DvcLHLQaSQNXY0eHAQ1c3KLUifuxzcyLdJG16wsLGjMY9B+Ps8
- 4xjSgCWcux0HQB+3UgiFrKRlEiRbZW2U6J0s5ECnYNT734k9jN9RGMS+xJ4mPRscOZU6iwM
- 37tzPmdW5nDotLPKxgOWA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141115192924.GB19060@thin>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+ <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+ <87d28osceg.fsf@x220.int.ebiederm.org> <20141115192924.GB19060@thin>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 15 Nov 2014 12:06:20 -0800
+Message-ID: <CALCETrUM=GqsOumTmDMF4B5GS1w=x56t41eE-2xW1bBOfUz02w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
+ to drop groups
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 20:55:23 +0100
+On Sat, Nov 15, 2014 at 11:29 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+> On Sat, Nov 15, 2014 at 09:37:27AM -0600, Eric W. Biederman wrote:
+>> Josh Triplett <josh@joshtriplett.org> writes:
+>>
+>> > Currently, unprivileged processes (without CAP_SETGID) cannot call
+>> > setgroups at all.  In particular, processes with a set of supplementary
+>> > groups cannot further drop permissions without obtaining elevated
+>> > permissions first.
+>> >
+>> > Allow unprivileged processes to call setgroups with a subset of their
+>> > current groups; only require CAP_SETGID to add a group the process does
+>> > not currently have.
+>>
+>> A couple of questions.
+>> - Is there precedence in other unix flavors for this?
+>
+> I found a few references to now-nonexistent pages at MIT about a system
+> with this property, but other than that no.
+>
+> I've also found more than a few references to people wanting this
+> functionality.
+>
+>> - What motiviates this change?
+>
+> I have a series of patches planned to add more ways to drop elevated
+> privileges without requiring a transition through root to do so.  That
+> would improve the ability for unprivileged users to run programs
+> sandboxed with even *less* privileges.  (Among other things, that would
+> also allow programs running with no_new_privs to further *reduce* their
+> privileges, which they can't currently do in this case.)
+>
+>> - Have you looked to see if anything might for bug compatibilty
+>>   require applications not to be able to drop supplementary groups?
+>
+> I haven't found any such case; that doesn't mean such a case does not
+> exist.  Feedback welcome.
+>
+> The only case I can think of (and I don't know of any examples of such a
+> system): some kind of quota system that limits the members of a group to
+> a certain amount of storage, but places no such limit on non-members.
+>
+> However, the idea of *holding* a credential (a supplementary group ID)
+> giving *less* privileges, and *dropping* a credential giving *more*
+> privileges, would completely invert normal security models.  (The sane
+> way to design such a system would be to have a privileged group for
+> "users who can exceed the quota".)
 
-The iput() function was called in an inefficient way by the implementation
-of the fat_fill_super() function in case of an allocation failure.
-The corresponding source code was improved by deletion of two unnecessary
-null pointer checks and a few adjustments for jump labels.
+Agreed.  And, if you want to bypass quotas by dropping a supplementary
+group, you already can by unsharing your user namespace.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- fs/fat/inode.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+However, sudoers seems to allow negative group matches.  So maybe
+allowing this only with no_new_privs already set would make sense.
 
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 756aead..138ab9a 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1716,20 +1716,20 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 
- 	fsinfo_inode = new_inode(sb);
- 	if (!fsinfo_inode)
--		goto out_fail;
-+		goto fsinfo_inode_failure;
- 	fsinfo_inode->i_ino = MSDOS_FSINFO_INO;
- 	sbi->fsinfo_inode = fsinfo_inode;
- 	insert_inode_hash(fsinfo_inode);
- 
- 	root_inode = new_inode(sb);
- 	if (!root_inode)
--		goto out_fail;
-+		goto other_failure;
- 	root_inode->i_ino = MSDOS_ROOT_INO;
- 	root_inode->i_version = 1;
- 	error = fat_read_root(root_inode);
- 	if (error < 0) {
- 		iput(root_inode);
--		goto out_fail;
-+		goto other_failure;
- 	}
- 	error = -ENOMEM;
- 	insert_inode_hash(root_inode);
-@@ -1737,7 +1737,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	sb->s_root = d_make_root(root_inode);
- 	if (!sb->s_root) {
- 		fat_msg(sb, KERN_ERR, "get root inode failed");
--		goto out_fail;
-+		goto other_failure;
- 	}
- 
- 	if (sbi->options.discard) {
-@@ -1756,11 +1756,13 @@ out_invalid:
- 	if (!silent)
- 		fat_msg(sb, KERN_INFO, "Can't find a valid FAT filesystem");
- 
-+other_failure:
-+	iput(fsinfo_inode);
-+
-+fsinfo_inode_failure:
-+	iput(fat_inode);
-+
- out_fail:
--	if (fsinfo_inode)
--		iput(fsinfo_inode);
--	if (fat_inode)
--		iput(fat_inode);
- 	unload_nls(sbi->nls_io);
- 	unload_nls(sbi->nls_disk);
- 	if (sbi->options.iocharset != fat_default_iocharset)
--- 
-2.1.3
-
-
+--Andy
