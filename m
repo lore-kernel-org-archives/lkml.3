@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297AbaKOOVg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 09:21:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61402 "EHLO mga01.intel.com"
+	id S1754420AbaKOOVy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 09:21:54 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61413 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754190AbaKOOVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754109AbaKOOVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 15 Nov 2014 09:21:32 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,391,1413270000"; 
-   d="scan'208";a="632446325"
+   d="scan'208";a="632446322"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
@@ -21,9 +21,9 @@ To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [Patch V2 4/9] irqdomain: Introduce helper function irq_domain_add_hierarchy()
-Date: Sat, 15 Nov 2014 22:24:02 +0800
-Message-Id: <1416061447-9472-5-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch V2 3/9] irqdomain: Implement a method to automatically call parent domain's alloc/free
+Date: Sat, 15 Nov 2014 22:24:01 +0800
+Message-Id: <1416061447-9472-4-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1416061447-9472-1-git-send-email-jiang.liu@linux.intel.com>
@@ -31,61 +31,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper function irq_domain_add_hierarchy(), which creates
-a linear irqdomain if parameter 'size' is not zero, otherwise creates
-a tree irqdomain.
+Add a flags to irq_domain.flags to control whether the irqdomain core
+should automatically call parent irqdomain's alloc/free callbacks. It
+help to reduce hierarchy irqdomains users' code size.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- include/linux/irqdomain.h |    4 ++++
- kernel/irq/irqdomain.c    |   19 +++++++++++++++++++
- 2 files changed, 23 insertions(+)
+ include/linux/irqdomain.h |   24 ++++++-----------
+ kernel/irq/irqdomain.c    |   66 +++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 72 insertions(+), 18 deletions(-)
 
 diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index ad92b0b15945..30e8c753fa98 100644
+index fbe542967c20..ad92b0b15945 100644
 --- a/include/linux/irqdomain.h
 +++ b/include/linux/irqdomain.h
-@@ -248,6 +248,10 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d, struct device_node *ctrlr,
- extern struct irq_data *irq_domain_get_irq_data(struct irq_domain *domain,
- 						unsigned int virq);
- #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-+extern struct irq_domain *irq_domain_add_hierarchy(struct irq_domain *parent,
-+			unsigned int flags, unsigned int size,
-+			struct device_node *node,
-+			const struct irq_domain_ops *ops, void *host_data);
- extern int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
- 				   unsigned int nr_irqs, int node, void *arg,
- 				   bool realloc);
+@@ -130,6 +130,8 @@ struct irq_domain {
+ };
+ 
+ #define	IRQ_DOMAIN_FLAG_HIERARCHY	0x1
++/* Framework automatically calls parent domain's alloc()/free() */
++#define	IRQ_DOMAIN_FLAG_AUTO_RECURSIVE	0x2
+ #define	IRQ_DOMAIN_FLAG_ARCH1		0x10000
+ 
+ #ifdef CONFIG_IRQ_DOMAIN
+@@ -274,22 +276,12 @@ extern void irq_domain_free_irqs_common(struct irq_domain *domain,
+ 					unsigned int nr_irqs);
+ extern void irq_domain_free_irqs_top(struct irq_domain *domain,
+ 				     unsigned int virq, unsigned int nr_irqs);
+-
+-static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
+-			unsigned int irq_base, unsigned int nr_irqs, void *arg)
+-{
+-	if (domain->parent && domain->parent->ops->alloc)
+-		return domain->parent->ops->alloc(domain->parent, irq_base,
+-						  nr_irqs, arg);
+-	return -ENOSYS;
+-}
+-
+-static inline void irq_domain_free_irqs_parent(struct irq_domain *domain,
+-				unsigned int irq_base, unsigned int nr_irqs)
+-{
+-	if (domain->parent && domain->parent->ops->free)
+-		domain->parent->ops->free(domain->parent, irq_base, nr_irqs);
+-}
++extern int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
++					unsigned int irq_base,
++					unsigned int nr_irqs, void *arg);
++extern void irq_domain_free_irqs_parent(struct irq_domain *domain,
++					unsigned int irq_base,
++					unsigned int nr_irqs);
+ 
+ static inline bool irq_domain_is_hierarchy(struct irq_domain *domain)
+ {
 diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 03fc7d018324..73c66d6f9ffc 100644
+index 705fb573e509..03fc7d018324 100644
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -742,6 +742,25 @@ static int irq_domain_alloc_descs(int virq, unsigned int cnt,
+@@ -925,6 +925,43 @@ void irq_domain_free_irqs_top(struct irq_domain *domain, unsigned int virq,
+ 	irq_domain_free_irqs_common(domain, virq, nr_irqs);
  }
  
- #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-+struct irq_domain *irq_domain_add_hierarchy(struct irq_domain *parent,
-+			unsigned int flags, unsigned int size,
-+			struct device_node *node,
-+			const struct irq_domain_ops *ops, void *host_data)
++static bool irq_domain_is_auto_recursive(struct irq_domain *domain)
 +{
-+	struct irq_domain *domain;
-+
-+	if (size)
-+		domain = irq_domain_add_linear(node, size, ops, host_data);
-+	else
-+		domain = irq_domain_add_tree(node, ops, host_data);
-+	if (domain) {
-+		domain->parent = parent;
-+		domain->flags |= flags;
-+	}
-+
-+	return domain;
++	return domain->flags & IRQ_DOMAIN_FLAG_AUTO_RECURSIVE;
 +}
 +
- static void irq_domain_insert_irq(int virq)
- {
- 	struct irq_data *data;
++static void irq_domain_free_irqs_recursive(struct irq_domain *domain,
++					   unsigned int irq_base,
++					   unsigned int nr_irqs)
++{
++	domain->ops->free(domain, irq_base, nr_irqs);
++	if (irq_domain_is_auto_recursive(domain)) {
++		BUG_ON(!domain->parent);
++		irq_domain_free_irqs_recursive(domain->parent, irq_base,
++					       nr_irqs);
++	}
++}
++
++static int irq_domain_alloc_irqs_recursive(struct irq_domain *domain,
++					   unsigned int irq_base,
++					   unsigned int nr_irqs, void *arg)
++{
++	int ret = 0;
++	struct irq_domain *parent = domain->parent;
++	bool recursive = irq_domain_is_auto_recursive(domain);
++
++	BUG_ON(recursive && !parent);
++	if (recursive)
++		ret = irq_domain_alloc_irqs_recursive(parent, irq_base,
++						      nr_irqs, arg);
++	if (ret >= 0)
++		ret = domain->ops->alloc(domain, irq_base, nr_irqs, arg);
++	if (ret < 0 && recursive)
++		irq_domain_free_irqs_recursive(parent, irq_base, nr_irqs);
++
++	return ret;
++}
++
+ /**
+  * __irq_domain_alloc_irqs - Allocate IRQs from domain
+  * @domain: domain to allocate from
+@@ -981,7 +1018,7 @@ int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
+ 	}
+ 
+ 	mutex_lock(&irq_domain_mutex);
+-	ret = domain->ops->alloc(domain, virq, nr_irqs, arg);
++	ret = irq_domain_alloc_irqs_recursive(domain, virq, nr_irqs, arg);
+ 	if (ret < 0) {
+ 		mutex_unlock(&irq_domain_mutex);
+ 		goto out_free_irq_data;
+@@ -1016,13 +1053,38 @@ void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
+ 	mutex_lock(&irq_domain_mutex);
+ 	for (i = 0; i < nr_irqs; i++)
+ 		irq_domain_remove_irq(virq + i);
+-	data->domain->ops->free(data->domain, virq, nr_irqs);
++	irq_domain_free_irqs_recursive(data->domain, virq, nr_irqs);
+ 	mutex_unlock(&irq_domain_mutex);
+ 
+ 	irq_domain_free_irq_data(virq, nr_irqs);
+ 	irq_free_descs(virq, nr_irqs);
+ }
+ 
++int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
++				 unsigned int irq_base, unsigned int nr_irqs,
++				 void *arg)
++{
++	/* irq_domain_alloc_irqs_recursive() has called parent's alloc() */
++	if (irq_domain_is_auto_recursive(domain))
++		return 0;
++
++	domain = domain->parent;
++	if (domain)
++		return irq_domain_alloc_irqs_recursive(domain, irq_base,
++						       nr_irqs, arg);
++
++	return -ENOSYS;
++}
++
++void irq_domain_free_irqs_parent(struct irq_domain *domain,
++				 unsigned int irq_base, unsigned int nr_irqs)
++{
++	/* irq_domain_free_irqs_recursive() will call parent's free */
++	if (!irq_domain_is_auto_recursive(domain))
++		irq_domain_free_irqs_recursive(domain->parent, irq_base,
++					       nr_irqs);
++}
++
+ /**
+  * irq_domain_activate_irq - Call domain_ops->activate recursively to activate
+  *			     interrupt
 -- 
 1.7.10.4
 
