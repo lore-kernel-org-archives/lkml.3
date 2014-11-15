@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaKOSTr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 13:19:47 -0500
-Received: from mout.web.de ([212.227.15.14]:58821 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754238AbaKOSTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 13:19:45 -0500
-Message-ID: <54679938.3020106@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 19:19:36 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754410AbaKOS2L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 13:28:11 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:45251 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaKOS2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 13:28:10 -0500
+Date: Sat, 15 Nov 2014 19:28:06 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Luck, Tony" <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Request for help: what did I do wrong with idtentry?
+Message-ID: <20141115182806.GZ12538@two.firstfloor.org>
+References: <CALCETrXdaEYjjfsTYySDXZvBHON10-EQRftV-OSCWTKMsUfOtg@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293D455@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVLwzhQVMbu2c=NCzAfEBWa8=SOpfu5gPoxpuTBcNngRA@mail.gmail.com>
 MIME-Version: 1.0
-To: Andreas Dilger <adilger.kernel@dilger.ca>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] fs-ext4: Deletion of an unnecessary check before the
- function call "iput"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:XebhKE57yDu80JQXNQjYjuNuEVNe8n0VhDz0RTLltULIUjoy2+I
- yPFBl8pUVAsWGTYuQFc2Gm1ZalkqW1zipgoexYt2QYiru98P9DV9eNEcNIcozi5VVJPlqoN
- WIpSbBSkLGpfJF49Ph4bviZUiEntNVlh4ETMz4chT0KlM8hdwnxQ85e7HD2nJtM530LUk8U
- SbUhwFm+cauoNZR4yG4kQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVLwzhQVMbu2c=NCzAfEBWa8=SOpfu5gPoxpuTBcNngRA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 15 Nov 2014 19:04:06 +0100
+> I'm not
+> completely thrilled with what it does to double_fault, though.  If we
+> somehow get a double fault caused by an interrupt hitting userspace
+> with a bad kernel_stack, then we'll end up page faulting in the
+> double_fault prologue.  I'm not convinced that this is worth worrying
+> about.  It would be easy enough to fix, though, even if it would
+> further uglify the code.
 
-The iput() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+If you're "cleaning up" good and working code the functionality should
+be the same as before. The old code handled this situation fine. 
+So your new code should handle this too.
 
-This issue was detected by using the Coccinelle software.
+In general yes handling all the corner cases makes code ugly.
+That is how the existing code got how it became.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- fs/ext4/mballoc.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 8b0f9ef..e1a2521 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2712,8 +2712,7 @@ int ext4_mb_release(struct super_block *sb)
- 	}
- 	kfree(sbi->s_mb_offsets);
- 	kfree(sbi->s_mb_maxs);
--	if (sbi->s_buddy_cache)
--		iput(sbi->s_buddy_cache);
-+	iput(sbi->s_buddy_cache);
- 	if (sbi->s_mb_stats) {
- 		ext4_msg(sb, KERN_INFO,
- 		       "mballoc: %u blocks %u reqs (%u success)",
--- 
-2.1.3
-
+-Andi
 
