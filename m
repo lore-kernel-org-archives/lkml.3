@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaKPWBO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:01:14 -0500
-Received: from 1wt.eu ([62.212.114.60]:47945 "EHLO 1wt.eu"
+	id S1752493AbaKPWFg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:05:36 -0500
+Received: from 1wt.eu ([62.212.114.60]:47969 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866AbaKPWBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:01:04 -0500
-Message-Id: <20141116215330.062359607@1wt.eu>
+	id S1751981AbaKPWBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:01:13 -0500
+Message-Id: <20141116215330.434026972@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:54:02 +0100
+Date: Sun, 16 Nov 2014 22:54:11 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 34/48] net: sctp: fix skb_over_panic when receiving malformed
+Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 43/48] lib/lzo: Update LZO compression to current upstream
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,344 +21,954 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- ASCONF chunks
+ version
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
 
-Commit 6f4c618ddb0 ("SCTP : Add paramters validity check for
-ASCONF chunk") added basic verification of ASCONF chunks, however,
-it is still possible to remotely crash a server by sending a
-special crafted ASCONF chunk, even up to pre 2.6.12 kernels:
+This commit updates the kernel LZO code to the current upsteam version
+which features a significant speed improvement - benchmarking the Calgary
+and Silesia test corpora typically shows a doubled performance in
+both compression and decompression on modern i386/x86_64/powerpc machines.
 
-skb_over_panic: text:ffffffffa01ea1c3 len:31056 put:30768
- head:ffff88011bd81800 data:ffff88011bd81800 tail:0x7950
- end:0x440 dev:<NULL>
- ------------[ cut here ]------------
-kernel BUG at net/core/skbuff.c:129!
-[...]
-Call Trace:
- <IRQ>
- [<ffffffff8144fb1c>] skb_put+0x5c/0x70
- [<ffffffffa01ea1c3>] sctp_addto_chunk+0x63/0xd0 [sctp]
- [<ffffffffa01eadaf>] sctp_process_asconf+0x1af/0x540 [sctp]
- [<ffffffff8152d025>] ? _read_unlock_bh+0x15/0x20
- [<ffffffffa01e0038>] sctp_sf_do_asconf+0x168/0x240 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffff8147645d>] ? fib_rules_lookup+0xad/0xf0
- [<ffffffffa01e6b22>] ? sctp_cmp_addr_exact+0x32/0x40 [sctp]
- [<ffffffffa01e8393>] sctp_assoc_bh_rcv+0xd3/0x180 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff81496ded>] ip_local_deliver_finish+0xdd/0x2d0
- [<ffffffff81497078>] ip_local_deliver+0x98/0xa0
- [<ffffffff8149653d>] ip_rcv_finish+0x12d/0x440
- [<ffffffff81496ac5>] ip_rcv+0x275/0x350
- [<ffffffff8145c88b>] __netif_receive_skb+0x4ab/0x750
- [<ffffffff81460588>] netif_receive_skb+0x58/0x60
-
-This can be triggered e.g., through a simple scripted nmap
-connection scan injecting the chunk after the handshake, for
-example, ...
-
-  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
-  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
-  ------------------ ASCONF; UNKNOWN ------------------>
-
-... where ASCONF chunk of length 280 contains 2 parameters ...
-
-  1) Add IP address parameter (param length: 16)
-  2) Add/del IP address parameter (param length: 255)
-
-... followed by an UNKNOWN chunk of e.g. 4 bytes. Here, the
-Address Parameter in the ASCONF chunk is even missing, too.
-This is just an example and similarly-crafted ASCONF chunks
-could be used just as well.
-
-The ASCONF chunk passes through sctp_verify_asconf() as all
-parameters passed sanity checks, and after walking, we ended
-up successfully at the chunk end boundary, and thus may invoke
-sctp_process_asconf(). Parameter walking is done with
-WORD_ROUND() to take padding into account.
-
-In sctp_process_asconf()'s TLV processing, we may fail in
-sctp_process_asconf_param() e.g., due to removal of the IP
-address that is also the source address of the packet containing
-the ASCONF chunk, and thus we need to add all TLVs after the
-failure to our ASCONF response to remote via helper function
-sctp_add_asconf_response(), which basically invokes a
-sctp_addto_chunk() adding the error parameters to the given
-skb.
-
-When walking to the next parameter this time, we proceed
-with ...
-
-  length = ntohs(asconf_param->param_hdr.length);
-  asconf_param = (void *)asconf_param + length;
-
-... instead of the WORD_ROUND()'ed length, thus resulting here
-in an off-by-one that leads to reading the follow-up garbage
-parameter length of 12336, and thus throwing an skb_over_panic
-for the reply when trying to sctp_addto_chunk() next time,
-which implicitly calls the skb_put() with that length.
-
-Fix it by using sctp_walk_params() [ which is also used in
-INIT parameter processing ] macro in the verification *and*
-in ASCONF processing: it will make sure we don't spill over,
-that we walk parameters WORD_ROUND()'ed. Moreover, we're being
-more defensive and guard against unknown parameter types and
-missized addresses.
-
-Joint work with Vlad Yasevich.
-
-Fixes: b896b82be4ae ("[SCTP] ADDIP: Support for processing incoming ASCONF_ACK chunks.")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-(cherry picked from commit 9de7922bc709eee2f609cd01d98aaedc4cf5ea74)
+Signed-off-by: Markus F.X.J. Oberhumer <markus@oberhumer.com>
+(cherry picked from commit 8b975bd3f9089f8ee5d7bbfd798537b992bbc7e7)
+[wt: this update was only needed to apply the following security fixes]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/net/sctp/sm.h    |   6 +--
- net/sctp/sm_make_chunk.c | 100 ++++++++++++++++++++++++++---------------------
- net/sctp/sm_statefuns.c  |  18 +--------
- 3 files changed, 60 insertions(+), 64 deletions(-)
+ include/linux/lzo.h        |  15 +-
+ lib/lzo/lzo1x_compress.c   | 335 +++++++++++++++++++++++++------------------
+ lib/lzo/lzo1x_decompress.c | 349 +++++++++++++++++++++------------------------
+ lib/lzo/lzodefs.h          |  38 +++--
+ 4 files changed, 395 insertions(+), 342 deletions(-)
 
-diff --git a/include/net/sctp/sm.h b/include/net/sctp/sm.h
-index 76abe6c..85844ce 100644
---- a/include/net/sctp/sm.h
-+++ b/include/net/sctp/sm.h
-@@ -251,9 +251,9 @@ struct sctp_chunk *sctp_make_asconf_update_ip(struct sctp_association *,
- 					      int, __be16);
- struct sctp_chunk *sctp_make_asconf_set_prim(struct sctp_association *asoc,
- 					     union sctp_addr *addr);
--int sctp_verify_asconf(const struct sctp_association *asoc,
--		       struct sctp_paramhdr *param_hdr, void *chunk_end,
--		       struct sctp_paramhdr **errp);
-+bool sctp_verify_asconf(const struct sctp_association *asoc,
-+			struct sctp_chunk *chunk, bool addr_param_needed,
-+			struct sctp_paramhdr **errp);
- struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 				       struct sctp_chunk *asconf);
- int sctp_process_asconf_ack(struct sctp_association *asoc,
-diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
-index 22d4ed8..5f2dc3f 100644
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -3023,50 +3023,63 @@ static __be16 sctp_process_asconf_param(struct sctp_association *asoc,
- 	return SCTP_ERROR_NO_ERROR;
- }
+diff --git a/include/linux/lzo.h b/include/linux/lzo.h
+index d793497..a0848d9 100644
+--- a/include/linux/lzo.h
++++ b/include/linux/lzo.h
+@@ -4,28 +4,28 @@
+  *  LZO Public Kernel Interface
+  *  A mini subset of the LZO real-time data compression library
+  *
+- *  Copyright (C) 1996-2005 Markus F.X.J. Oberhumer <markus@oberhumer.com>
++ *  Copyright (C) 1996-2012 Markus F.X.J. Oberhumer <markus@oberhumer.com>
+  *
+  *  The full LZO package can be found at:
+  *  http://www.oberhumer.com/opensource/lzo/
+  *
+- *  Changed for kernel use by:
++ *  Changed for Linux kernel use by:
+  *  Nitin Gupta <nitingupta910@gmail.com>
+  *  Richard Purdie <rpurdie@openedhand.com>
+  */
  
--/* Verify the ASCONF packet before we process it.  */
--int sctp_verify_asconf(const struct sctp_association *asoc,
--		       struct sctp_paramhdr *param_hdr, void *chunk_end,
--		       struct sctp_paramhdr **errp) {
--	sctp_addip_param_t *asconf_param;
-+/* Verify the ASCONF packet before we process it. */
-+bool sctp_verify_asconf(const struct sctp_association *asoc,
-+			struct sctp_chunk *chunk, bool addr_param_needed,
-+			struct sctp_paramhdr **errp)
-+{
-+	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) chunk->chunk_hdr;
- 	union sctp_params param;
--	int length, plen;
+-#define LZO1X_MEM_COMPRESS	(16384 * sizeof(unsigned char *))
+-#define LZO1X_1_MEM_COMPRESS	LZO1X_MEM_COMPRESS
++#define LZO1X_1_MEM_COMPRESS	(8192 * sizeof(unsigned short))
++#define LZO1X_MEM_COMPRESS	LZO1X_1_MEM_COMPRESS
+ 
+ #define lzo1x_worst_compress(x) ((x) + ((x) / 16) + 64 + 3)
+ 
+-/* This requires 'workmem' of size LZO1X_1_MEM_COMPRESS */
++/* This requires 'wrkmem' of size LZO1X_1_MEM_COMPRESS */
+ int lzo1x_1_compress(const unsigned char *src, size_t src_len,
+-			unsigned char *dst, size_t *dst_len, void *wrkmem);
++		     unsigned char *dst, size_t *dst_len, void *wrkmem);
+ 
+ /* safe decompression with overrun testing */
+ int lzo1x_decompress_safe(const unsigned char *src, size_t src_len,
+-			unsigned char *dst, size_t *dst_len);
++			  unsigned char *dst, size_t *dst_len);
+ 
+ /*
+  * Return values (< 0 = Error)
+@@ -40,5 +40,6 @@ int lzo1x_decompress_safe(const unsigned char *src, size_t src_len,
+ #define LZO_E_EOF_NOT_FOUND		(-7)
+ #define LZO_E_INPUT_NOT_CONSUMED	(-8)
+ #define LZO_E_NOT_YET_IMPLEMENTED	(-9)
++#define LZO_E_INVALID_ARGUMENT		(-10)
+ 
+ #endif
+diff --git a/lib/lzo/lzo1x_compress.c b/lib/lzo/lzo1x_compress.c
+index a604099..236eb21 100644
+--- a/lib/lzo/lzo1x_compress.c
++++ b/lib/lzo/lzo1x_compress.c
+@@ -1,194 +1,243 @@
+ /*
+- *  LZO1X Compressor from MiniLZO
++ *  LZO1X Compressor from LZO
+  *
+- *  Copyright (C) 1996-2005 Markus F.X.J. Oberhumer <markus@oberhumer.com>
++ *  Copyright (C) 1996-2012 Markus F.X.J. Oberhumer <markus@oberhumer.com>
+  *
+  *  The full LZO package can be found at:
+  *  http://www.oberhumer.com/opensource/lzo/
+  *
+- *  Changed for kernel use by:
++ *  Changed for Linux kernel use by:
+  *  Nitin Gupta <nitingupta910@gmail.com>
+  *  Richard Purdie <rpurdie@openedhand.com>
+  */
+ 
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+-#include <linux/lzo.h>
+ #include <asm/unaligned.h>
++#include <linux/lzo.h>
+ #include "lzodefs.h"
+ 
+ static noinline size_t
+-_lzo1x_1_do_compress(const unsigned char *in, size_t in_len,
+-		unsigned char *out, size_t *out_len, void *wrkmem)
++lzo1x_1_do_compress(const unsigned char *in, size_t in_len,
++		    unsigned char *out, size_t *out_len,
++		    size_t ti, void *wrkmem)
+ {
++	const unsigned char *ip;
++	unsigned char *op;
+ 	const unsigned char * const in_end = in + in_len;
+-	const unsigned char * const ip_end = in + in_len - M2_MAX_LEN - 5;
+-	const unsigned char ** const dict = wrkmem;
+-	const unsigned char *ip = in, *ii = ip;
+-	const unsigned char *end, *m, *m_pos;
+-	size_t m_off, m_len, dindex;
+-	unsigned char *op = out;
++	const unsigned char * const ip_end = in + in_len - 20;
++	const unsigned char *ii;
++	lzo_dict_t * const dict = (lzo_dict_t *) wrkmem;
+ 
+-	ip += 4;
++	op = out;
++	ip = in;
++	ii = ip;
++	ip += ti < 4 ? 4 - ti : 0;
+ 
+ 	for (;;) {
+-		dindex = ((size_t)(0x21 * DX3(ip, 5, 5, 6)) >> 5) & D_MASK;
+-		m_pos = dict[dindex];
 -
--	param.v = (sctp_paramhdr_t *) param_hdr;
--	while (param.v <= chunk_end - sizeof(sctp_paramhdr_t)) {
--		length = ntohs(param.p->length);
--		*errp = param.p;
-+	bool addr_param_seen = false;
- 
--		if (param.v > chunk_end - length ||
--		    length < sizeof(sctp_paramhdr_t))
--			return 0;
-+	sctp_walk_params(param, addip, addip_hdr.params) {
-+		size_t length = ntohs(param.p->length);
- 
-+		*errp = param.p;
- 		switch (param.p->type) {
-+		case SCTP_PARAM_ERR_CAUSE:
-+			break;
-+		case SCTP_PARAM_IPV4_ADDRESS:
-+			if (length != sizeof(sctp_ipv4addr_param_t))
-+				return false;
-+			addr_param_seen = true;
-+			break;
-+		case SCTP_PARAM_IPV6_ADDRESS:
-+			if (length != sizeof(sctp_ipv6addr_param_t))
-+				return false;
-+			addr_param_seen = true;
-+			break;
- 		case SCTP_PARAM_ADD_IP:
- 		case SCTP_PARAM_DEL_IP:
- 		case SCTP_PARAM_SET_PRIMARY:
--			asconf_param = (sctp_addip_param_t *)param.v;
--			plen = ntohs(asconf_param->param_hdr.length);
--			if (plen < sizeof(sctp_addip_param_t) +
--			    sizeof(sctp_paramhdr_t))
--				return 0;
-+			/* In ASCONF chunks, these need to be first. */
-+			if (addr_param_needed && !addr_param_seen)
-+				return false;
-+			length = ntohs(param.addip->param_hdr.length);
-+			if (length < sizeof(sctp_addip_param_t) +
-+				     sizeof(sctp_paramhdr_t))
-+				return false;
- 			break;
- 		case SCTP_PARAM_SUCCESS_REPORT:
- 		case SCTP_PARAM_ADAPTATION_LAYER_IND:
- 			if (length != sizeof(sctp_addip_param_t))
--				return 0;
+-		if (m_pos < in)
+-			goto literal;
 -
-+				return false;
+-		if (ip == m_pos || ((size_t)(ip - m_pos) > M4_MAX_OFFSET))
+-			goto literal;
+-
+-		m_off = ip - m_pos;
+-		if (m_off <= M2_MAX_OFFSET || m_pos[3] == ip[3])
+-			goto try_match;
+-
+-		dindex = (dindex & (D_MASK & 0x7ff)) ^ (D_HIGH | 0x1f);
+-		m_pos = dict[dindex];
+-
+-		if (m_pos < in)
+-			goto literal;
+-
+-		if (ip == m_pos || ((size_t)(ip - m_pos) > M4_MAX_OFFSET))
+-			goto literal;
+-
+-		m_off = ip - m_pos;
+-		if (m_off <= M2_MAX_OFFSET || m_pos[3] == ip[3])
+-			goto try_match;
+-
+-		goto literal;
+-
+-try_match:
+-		if (get_unaligned((const unsigned short *)m_pos)
+-				== get_unaligned((const unsigned short *)ip)) {
+-			if (likely(m_pos[2] == ip[2]))
+-					goto match;
+-		}
+-
++		const unsigned char *m_pos;
++		size_t t, m_len, m_off;
++		u32 dv;
+ literal:
+-		dict[dindex] = ip;
+-		++ip;
++		ip += 1 + ((ip - ii) >> 5);
++next:
+ 		if (unlikely(ip >= ip_end))
  			break;
- 		default:
--			break;
-+			/* This is unkown to us, reject! */
-+			return false;
+-		continue;
+-
+-match:
+-		dict[dindex] = ip;
+-		if (ip != ii) {
+-			size_t t = ip - ii;
++		dv = get_unaligned_le32(ip);
++		t = ((dv * 0x1824429d) >> (32 - D_BITS)) & D_MASK;
++		m_pos = in + dict[t];
++		dict[t] = (lzo_dict_t) (ip - in);
++		if (unlikely(dv != get_unaligned_le32(m_pos)))
++			goto literal;
+ 
++		ii -= ti;
++		ti = 0;
++		t = ip - ii;
++		if (t != 0) {
+ 			if (t <= 3) {
+ 				op[-2] |= t;
+-			} else if (t <= 18) {
++				COPY4(op, ii);
++				op += t;
++			} else if (t <= 16) {
+ 				*op++ = (t - 3);
++				COPY8(op, ii);
++				COPY8(op + 8, ii + 8);
++				op += t;
+ 			} else {
+-				size_t tt = t - 18;
+-
+-				*op++ = 0;
+-				while (tt > 255) {
+-					tt -= 255;
++				if (t <= 18) {
++					*op++ = (t - 3);
++				} else {
++					size_t tt = t - 18;
+ 					*op++ = 0;
++					while (unlikely(tt > 255)) {
++						tt -= 255;
++						*op++ = 0;
++					}
++					*op++ = tt;
+ 				}
+-				*op++ = tt;
++				do {
++					COPY8(op, ii);
++					COPY8(op + 8, ii + 8);
++					op += 16;
++					ii += 16;
++					t -= 16;
++				} while (t >= 16);
++				if (t > 0) do {
++					*op++ = *ii++;
++				} while (--t > 0);
+ 			}
+-			do {
+-				*op++ = *ii++;
+-			} while (--t > 0);
+ 		}
+ 
+-		ip += 3;
+-		if (m_pos[3] != *ip++ || m_pos[4] != *ip++
+-				|| m_pos[5] != *ip++ || m_pos[6] != *ip++
+-				|| m_pos[7] != *ip++ || m_pos[8] != *ip++) {
+-			--ip;
+-			m_len = ip - ii;
++		m_len = 4;
++		{
++#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && defined(LZO_USE_CTZ64)
++		u64 v;
++		v = get_unaligned((const u64 *) (ip + m_len)) ^
++		    get_unaligned((const u64 *) (m_pos + m_len));
++		if (unlikely(v == 0)) {
++			do {
++				m_len += 8;
++				v = get_unaligned((const u64 *) (ip + m_len)) ^
++				    get_unaligned((const u64 *) (m_pos + m_len));
++				if (unlikely(ip + m_len >= ip_end))
++					goto m_len_done;
++			} while (v == 0);
++		}
++#  if defined(__LITTLE_ENDIAN)
++		m_len += (unsigned) __builtin_ctzll(v) / 8;
++#  elif defined(__BIG_ENDIAN)
++		m_len += (unsigned) __builtin_clzll(v) / 8;
++#  else
++#    error "missing endian definition"
++#  endif
++#elif defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && defined(LZO_USE_CTZ32)
++		u32 v;
++		v = get_unaligned((const u32 *) (ip + m_len)) ^
++		    get_unaligned((const u32 *) (m_pos + m_len));
++		if (unlikely(v == 0)) {
++			do {
++				m_len += 4;
++				v = get_unaligned((const u32 *) (ip + m_len)) ^
++				    get_unaligned((const u32 *) (m_pos + m_len));
++				if (v != 0)
++					break;
++				m_len += 4;
++				v = get_unaligned((const u32 *) (ip + m_len)) ^
++				    get_unaligned((const u32 *) (m_pos + m_len));
++				if (unlikely(ip + m_len >= ip_end))
++					goto m_len_done;
++			} while (v == 0);
++		}
++#  if defined(__LITTLE_ENDIAN)
++		m_len += (unsigned) __builtin_ctz(v) / 8;
++#  elif defined(__BIG_ENDIAN)
++		m_len += (unsigned) __builtin_clz(v) / 8;
++#  else
++#    error "missing endian definition"
++#  endif
++#else
++		if (unlikely(ip[m_len] == m_pos[m_len])) {
++			do {
++				m_len += 1;
++				if (ip[m_len] != m_pos[m_len])
++					break;
++				m_len += 1;
++				if (ip[m_len] != m_pos[m_len])
++					break;
++				m_len += 1;
++				if (ip[m_len] != m_pos[m_len])
++					break;
++				m_len += 1;
++				if (ip[m_len] != m_pos[m_len])
++					break;
++				m_len += 1;
++				if (ip[m_len] != m_pos[m_len])
++					break;
++				m_len += 1;
++				if (ip[m_len] != m_pos[m_len])
++					break;
++				m_len += 1;
++				if (ip[m_len] != m_pos[m_len])
++					break;
++				m_len += 1;
++				if (unlikely(ip + m_len >= ip_end))
++					goto m_len_done;
++			} while (ip[m_len] == m_pos[m_len]);
++		}
++#endif
++		}
++m_len_done:
+ 
+-			if (m_off <= M2_MAX_OFFSET) {
+-				m_off -= 1;
+-				*op++ = (((m_len - 1) << 5)
+-						| ((m_off & 7) << 2));
+-				*op++ = (m_off >> 3);
+-			} else if (m_off <= M3_MAX_OFFSET) {
+-				m_off -= 1;
++		m_off = ip - m_pos;
++		ip += m_len;
++		ii = ip;
++		if (m_len <= M2_MAX_LEN && m_off <= M2_MAX_OFFSET) {
++			m_off -= 1;
++			*op++ = (((m_len - 1) << 5) | ((m_off & 7) << 2));
++			*op++ = (m_off >> 3);
++		} else if (m_off <= M3_MAX_OFFSET) {
++			m_off -= 1;
++			if (m_len <= M3_MAX_LEN)
+ 				*op++ = (M3_MARKER | (m_len - 2));
+-				goto m3_m4_offset;
+-			} else {
+-				m_off -= 0x4000;
+-
+-				*op++ = (M4_MARKER | ((m_off & 0x4000) >> 11)
+-						| (m_len - 2));
+-				goto m3_m4_offset;
++			else {
++				m_len -= M3_MAX_LEN;
++				*op++ = M3_MARKER | 0;
++				while (unlikely(m_len > 255)) {
++					m_len -= 255;
++					*op++ = 0;
++				}
++				*op++ = (m_len);
+ 			}
++			*op++ = (m_off << 2);
++			*op++ = (m_off >> 6);
+ 		} else {
+-			end = in_end;
+-			m = m_pos + M2_MAX_LEN + 1;
+-
+-			while (ip < end && *m == *ip) {
+-				m++;
+-				ip++;
+-			}
+-			m_len = ip - ii;
+-
+-			if (m_off <= M3_MAX_OFFSET) {
+-				m_off -= 1;
+-				if (m_len <= 33) {
+-					*op++ = (M3_MARKER | (m_len - 2));
+-				} else {
+-					m_len -= 33;
+-					*op++ = M3_MARKER | 0;
+-					goto m3_m4_len;
+-				}
+-			} else {
+-				m_off -= 0x4000;
+-				if (m_len <= M4_MAX_LEN) {
+-					*op++ = (M4_MARKER
+-						| ((m_off & 0x4000) >> 11)
++			m_off -= 0x4000;
++			if (m_len <= M4_MAX_LEN)
++				*op++ = (M4_MARKER | ((m_off >> 11) & 8)
+ 						| (m_len - 2));
+-				} else {
+-					m_len -= M4_MAX_LEN;
+-					*op++ = (M4_MARKER
+-						| ((m_off & 0x4000) >> 11));
+-m3_m4_len:
+-					while (m_len > 255) {
+-						m_len -= 255;
+-						*op++ = 0;
+-					}
+-
+-					*op++ = (m_len);
++			else {
++				m_len -= M4_MAX_LEN;
++				*op++ = (M4_MARKER | ((m_off >> 11) & 8));
++				while (unlikely(m_len > 255)) {
++					m_len -= 255;
++					*op++ = 0;
+ 				}
++				*op++ = (m_len);
+ 			}
+-m3_m4_offset:
+-			*op++ = ((m_off & 63) << 2);
++			*op++ = (m_off << 2);
+ 			*op++ = (m_off >> 6);
  		}
 -
--		param.v += WORD_ROUND(length);
+-		ii = ip;
+-		if (unlikely(ip >= ip_end))
+-			break;
++		goto next;
  	}
- 
--	if (param.v != chunk_end)
--		return 0;
-+	/* Remaining sanity checks. */
-+	if (addr_param_needed && !addr_param_seen)
-+		return false;
-+	if (!addr_param_needed && addr_param_seen)
-+		return false;
-+	if (param.v != chunk->chunk_end)
-+		return false;
- 
--	return 1;
-+	return true;
+-
+ 	*out_len = op - out;
+-	return in_end - ii;
++	return in_end - (ii - ti);
  }
  
- /* Process an incoming ASCONF chunk with the next expected serial no. and
-@@ -3075,16 +3088,17 @@ int sctp_verify_asconf(const struct sctp_association *asoc,
- struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 				       struct sctp_chunk *asconf)
+-int lzo1x_1_compress(const unsigned char *in, size_t in_len, unsigned char *out,
+-			size_t *out_len, void *wrkmem)
++int lzo1x_1_compress(const unsigned char *in, size_t in_len,
++		     unsigned char *out, size_t *out_len,
++		     void *wrkmem)
  {
-+	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) asconf->chunk_hdr;
-+	bool all_param_pass = true;
-+	union sctp_params param;
- 	sctp_addiphdr_t		*hdr;
- 	union sctp_addr_param	*addr_param;
- 	sctp_addip_param_t	*asconf_param;
- 	struct sctp_chunk	*asconf_ack;
--
- 	__be16	err_code;
- 	int	length = 0;
- 	int	chunk_len;
- 	__u32	serial;
--	int	all_param_pass = 1;
+-	const unsigned char *ii;
++	const unsigned char *ip = in;
+ 	unsigned char *op = out;
+-	size_t t;
++	size_t l = in_len;
++	size_t t = 0;
  
- 	chunk_len = ntohs(asconf->chunk_hdr->length) - sizeof(sctp_chunkhdr_t);
- 	hdr = (sctp_addiphdr_t *)asconf->skb->data;
-@@ -3112,9 +3126,14 @@ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 		goto done;
- 
- 	/* Process the TLVs contained within the ASCONF chunk. */
--	while (chunk_len > 0) {
-+	sctp_walk_params(param, addip, addip_hdr.params) {
-+		/* Skip preceeding address parameters. */
-+		if (param.p->type == SCTP_PARAM_IPV4_ADDRESS ||
-+		    param.p->type == SCTP_PARAM_IPV6_ADDRESS)
-+			continue;
-+
- 		err_code = sctp_process_asconf_param(asoc, asconf,
--						     asconf_param);
-+						     param.addip);
- 		/* ADDIP 4.1 A7)
- 		 * If an error response is received for a TLV parameter,
- 		 * all TLVs with no response before the failed TLV are
-@@ -3122,29 +3141,20 @@ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 		 * the failed response are considered unsuccessful unless
- 		 * a specific success indication is present for the parameter.
- 		 */
--		if (SCTP_ERROR_NO_ERROR != err_code)
--			all_param_pass = 0;
--
-+		if (err_code != SCTP_ERROR_NO_ERROR)
-+			all_param_pass = false;
- 		if (!all_param_pass)
--			sctp_add_asconf_response(asconf_ack,
--						 asconf_param->crr_id, err_code,
--						 asconf_param);
-+			sctp_add_asconf_response(asconf_ack, param.addip->crr_id,
-+						 err_code, param.addip);
- 
- 		/* ADDIP 4.3 D11) When an endpoint receiving an ASCONF to add
- 		 * an IP address sends an 'Out of Resource' in its response, it
- 		 * MUST also fail any subsequent add or delete requests bundled
- 		 * in the ASCONF.
- 		 */
--		if (SCTP_ERROR_RSRC_LOW == err_code)
-+		if (err_code == SCTP_ERROR_RSRC_LOW)
- 			goto done;
--
--		/* Move to the next ASCONF param. */
--		length = ntohs(asconf_param->param_hdr.length);
--		asconf_param = (sctp_addip_param_t *)((void *)asconf_param +
--						      length);
--		chunk_len -= length;
+-	if (unlikely(in_len <= M2_MAX_LEN + 5)) {
+-		t = in_len;
+-	} else {
+-		t = _lzo1x_1_do_compress(in, in_len, op, out_len, wrkmem);
++	while (l > 20) {
++		size_t ll = l <= (M4_MAX_OFFSET + 1) ? l : (M4_MAX_OFFSET + 1);
++		uintptr_t ll_end = (uintptr_t) ip + ll;
++		if ((ll_end + ((t + ll) >> 5)) <= ll_end)
++			break;
++		BUILD_BUG_ON(D_SIZE * sizeof(lzo_dict_t) > LZO1X_1_MEM_COMPRESS);
++		memset(wrkmem, 0, D_SIZE * sizeof(lzo_dict_t));
++		t = lzo1x_1_do_compress(ip, ll, op, out_len, t, wrkmem);
++		ip += ll;
+ 		op += *out_len;
++		l  -= ll;
  	}
++	t += l;
+ 
+ 	if (t > 0) {
+-		ii = in + in_len - t;
++		const unsigned char *ii = in + in_len - t;
+ 
+ 		if (op == out && t <= 238) {
+ 			*op++ = (17 + t);
+@@ -198,16 +247,21 @@ int lzo1x_1_compress(const unsigned char *in, size_t in_len, unsigned char *out,
+ 			*op++ = (t - 3);
+ 		} else {
+ 			size_t tt = t - 18;
 -
- done:
- 	asoc->peer.addip_serial++;
- 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 6da0171..ac98a1e 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -3481,9 +3481,7 @@ sctp_disposition_t sctp_sf_do_asconf(const struct sctp_endpoint *ep,
- 	struct sctp_chunk	*asconf_ack = NULL;
- 	struct sctp_paramhdr	*err_param = NULL;
- 	sctp_addiphdr_t		*hdr;
--	union sctp_addr_param	*addr_param;
- 	__u32			serial;
--	int			length;
- 
- 	if (!sctp_vtag_verify(chunk, asoc)) {
- 		sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_BAD_TAG,
-@@ -3508,17 +3506,8 @@ sctp_disposition_t sctp_sf_do_asconf(const struct sctp_endpoint *ep,
- 	hdr = (sctp_addiphdr_t *)chunk->skb->data;
- 	serial = ntohl(hdr->serial);
- 
--	addr_param = (union sctp_addr_param *)hdr->params;
--	length = ntohs(addr_param->p.length);
--	if (length < sizeof(sctp_paramhdr_t))
--		return sctp_sf_violation_paramlen(ep, asoc, type, arg,
--			   (void *)addr_param, commands);
+ 			*op++ = 0;
+ 			while (tt > 255) {
+ 				tt -= 255;
+ 				*op++ = 0;
+ 			}
 -
- 	/* Verify the ASCONF chunk before processing it. */
--	if (!sctp_verify_asconf(asoc,
--			    (sctp_paramhdr_t *)((void *)addr_param + length),
--			    (void *)chunk->chunk_end,
--			    &err_param))
-+	if (!sctp_verify_asconf(asoc, chunk, true, &err_param))
- 		return sctp_sf_violation_paramlen(ep, asoc, type, arg,
- 						  (void *)err_param, commands);
+ 			*op++ = tt;
+ 		}
+-		do {
++		if (t >= 16) do {
++			COPY8(op, ii);
++			COPY8(op + 8, ii + 8);
++			op += 16;
++			ii += 16;
++			t -= 16;
++		} while (t >= 16);
++		if (t > 0) do {
+ 			*op++ = *ii++;
+ 		} while (--t > 0);
+ 	}
+@@ -223,4 +277,3 @@ EXPORT_SYMBOL_GPL(lzo1x_1_compress);
  
-@@ -3630,10 +3619,7 @@ sctp_disposition_t sctp_sf_do_asconf_ack(const struct sctp_endpoint *ep,
- 	rcvd_serial = ntohl(addip_hdr->serial);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("LZO1X-1 Compressor");
+-
+diff --git a/lib/lzo/lzo1x_decompress.c b/lib/lzo/lzo1x_decompress.c
+index 5dc6b29..2aa2915 100644
+--- a/lib/lzo/lzo1x_decompress.c
++++ b/lib/lzo/lzo1x_decompress.c
+@@ -1,12 +1,12 @@
+ /*
+- *  LZO1X Decompressor from MiniLZO
++ *  LZO1X Decompressor from LZO
+  *
+- *  Copyright (C) 1996-2005 Markus F.X.J. Oberhumer <markus@oberhumer.com>
++ *  Copyright (C) 1996-2012 Markus F.X.J. Oberhumer <markus@oberhumer.com>
+  *
+  *  The full LZO package can be found at:
+  *  http://www.oberhumer.com/opensource/lzo/
+  *
+- *  Changed for kernel use by:
++ *  Changed for Linux kernel use by:
+  *  Nitin Gupta <nitingupta910@gmail.com>
+  *  Richard Purdie <rpurdie@openedhand.com>
+  */
+@@ -18,220 +18,203 @@
+ #include <asm/unaligned.h>
+ #include "lzodefs.h"
  
- 	/* Verify the ASCONF-ACK chunk before processing it. */
--	if (!sctp_verify_asconf(asoc,
--	    (sctp_paramhdr_t *)addip_hdr->params,
--	    (void *)asconf_ack->chunk_end,
--	    &err_param))
-+	if (!sctp_verify_asconf(asoc, asconf_ack, false, &err_param))
- 		return sctp_sf_violation_paramlen(ep, asoc, type, arg,
- 			   (void *)err_param, commands);
+-#define HAVE_IP(x, ip_end, ip) ((size_t)(ip_end - ip) < (x))
+-#define HAVE_OP(x, op_end, op) ((size_t)(op_end - op) < (x))
+-#define HAVE_LB(m_pos, out, op) (m_pos < out || m_pos >= op)
+-
+-#define COPY4(dst, src)	\
+-		put_unaligned(get_unaligned((const u32 *)(src)), (u32 *)(dst))
++#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
++#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
++#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
++#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
++#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
  
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+-			unsigned char *out, size_t *out_len)
++			  unsigned char *out, size_t *out_len)
+ {
++	unsigned char *op;
++	const unsigned char *ip;
++	size_t t, next;
++	size_t state = 0;
++	const unsigned char *m_pos;
+ 	const unsigned char * const ip_end = in + in_len;
+ 	unsigned char * const op_end = out + *out_len;
+-	const unsigned char *ip = in, *m_pos;
+-	unsigned char *op = out;
+-	size_t t;
+ 
+-	*out_len = 0;
++	op = out;
++	ip = in;
+ 
++	if (unlikely(in_len < 3))
++		goto input_overrun;
+ 	if (*ip > 17) {
+ 		t = *ip++ - 17;
+-		if (t < 4)
++		if (t < 4) {
++			next = t;
+ 			goto match_next;
+-		if (HAVE_OP(t, op_end, op))
+-			goto output_overrun;
+-		if (HAVE_IP(t + 1, ip_end, ip))
+-			goto input_overrun;
+-		do {
+-			*op++ = *ip++;
+-		} while (--t > 0);
+-		goto first_literal_run;
+-	}
+-
+-	while ((ip < ip_end)) {
+-		t = *ip++;
+-		if (t >= 16)
+-			goto match;
+-		if (t == 0) {
+-			if (HAVE_IP(1, ip_end, ip))
+-				goto input_overrun;
+-			while (*ip == 0) {
+-				t += 255;
+-				ip++;
+-				if (HAVE_IP(1, ip_end, ip))
+-					goto input_overrun;
+-			}
+-			t += 15 + *ip++;
+-		}
+-		if (HAVE_OP(t + 3, op_end, op))
+-			goto output_overrun;
+-		if (HAVE_IP(t + 4, ip_end, ip))
+-			goto input_overrun;
+-
+-		COPY4(op, ip);
+-		op += 4;
+-		ip += 4;
+-		if (--t > 0) {
+-			if (t >= 4) {
+-				do {
+-					COPY4(op, ip);
+-					op += 4;
+-					ip += 4;
+-					t -= 4;
+-				} while (t >= 4);
+-				if (t > 0) {
+-					do {
+-						*op++ = *ip++;
+-					} while (--t > 0);
+-				}
+-			} else {
+-				do {
+-					*op++ = *ip++;
+-				} while (--t > 0);
+-			}
+ 		}
++		goto copy_literal_run;
++	}
+ 
+-first_literal_run:
++	for (;;) {
+ 		t = *ip++;
+-		if (t >= 16)
+-			goto match;
+-		m_pos = op - (1 + M2_MAX_OFFSET);
+-		m_pos -= t >> 2;
+-		m_pos -= *ip++ << 2;
+-
+-		if (HAVE_LB(m_pos, out, op))
+-			goto lookbehind_overrun;
+-
+-		if (HAVE_OP(3, op_end, op))
+-			goto output_overrun;
+-		*op++ = *m_pos++;
+-		*op++ = *m_pos++;
+-		*op++ = *m_pos;
+-
+-		goto match_done;
+-
+-		do {
+-match:
+-			if (t >= 64) {
+-				m_pos = op - 1;
+-				m_pos -= (t >> 2) & 7;
+-				m_pos -= *ip++ << 3;
+-				t = (t >> 5) - 1;
+-				if (HAVE_LB(m_pos, out, op))
+-					goto lookbehind_overrun;
+-				if (HAVE_OP(t + 3 - 1, op_end, op))
+-					goto output_overrun;
+-				goto copy_match;
+-			} else if (t >= 32) {
+-				t &= 31;
+-				if (t == 0) {
+-					if (HAVE_IP(1, ip_end, ip))
+-						goto input_overrun;
+-					while (*ip == 0) {
++		if (t < 16) {
++			if (likely(state == 0)) {
++				if (unlikely(t == 0)) {
++					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						if (HAVE_IP(1, ip_end, ip))
+-							goto input_overrun;
++						NEED_IP(1);
+ 					}
+-					t += 31 + *ip++;
++					t += 15 + *ip++;
+ 				}
+-				m_pos = op - 1;
+-				m_pos -= get_unaligned_le16(ip) >> 2;
+-				ip += 2;
+-			} else if (t >= 16) {
+-				m_pos = op;
+-				m_pos -= (t & 8) << 11;
+-
+-				t &= 7;
+-				if (t == 0) {
+-					if (HAVE_IP(1, ip_end, ip))
+-						goto input_overrun;
+-					while (*ip == 0) {
+-						t += 255;
+-						ip++;
+-						if (HAVE_IP(1, ip_end, ip))
+-							goto input_overrun;
+-					}
+-					t += 7 + *ip++;
++				t += 3;
++copy_literal_run:
++#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
++				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
++					const unsigned char *ie = ip + t;
++					unsigned char *oe = op + t;
++					do {
++						COPY8(op, ip);
++						op += 8;
++						ip += 8;
++						COPY8(op, ip);
++						op += 8;
++						ip += 8;
++					} while (ip < ie);
++					ip = ie;
++					op = oe;
++				} else
++#endif
++				{
++					NEED_OP(t);
++					NEED_IP(t + 3);
++					do {
++						*op++ = *ip++;
++					} while (--t > 0);
+ 				}
+-				m_pos -= get_unaligned_le16(ip) >> 2;
+-				ip += 2;
+-				if (m_pos == op)
+-					goto eof_found;
+-				m_pos -= 0x4000;
+-			} else {
++				state = 4;
++				continue;
++			} else if (state != 4) {
++				next = t & 3;
+ 				m_pos = op - 1;
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+-
+-				if (HAVE_LB(m_pos, out, op))
+-					goto lookbehind_overrun;
+-				if (HAVE_OP(2, op_end, op))
+-					goto output_overrun;
+-
+-				*op++ = *m_pos++;
+-				*op++ = *m_pos;
+-				goto match_done;
++				TEST_LB(m_pos);
++				NEED_OP(2);
++				op[0] = m_pos[0];
++				op[1] = m_pos[1];
++				op += 2;
++				goto match_next;
++			} else {
++				next = t & 3;
++				m_pos = op - (1 + M2_MAX_OFFSET);
++				m_pos -= t >> 2;
++				m_pos -= *ip++ << 2;
++				t = 3;
+ 			}
+-
+-			if (HAVE_LB(m_pos, out, op))
+-				goto lookbehind_overrun;
+-			if (HAVE_OP(t + 3 - 1, op_end, op))
+-				goto output_overrun;
+-
+-			if (t >= 2 * 4 - (3 - 1) && (op - m_pos) >= 4) {
+-				COPY4(op, m_pos);
+-				op += 4;
+-				m_pos += 4;
+-				t -= 4 - (3 - 1);
++		} else if (t >= 64) {
++			next = t & 3;
++			m_pos = op - 1;
++			m_pos -= (t >> 2) & 7;
++			m_pos -= *ip++ << 3;
++			t = (t >> 5) - 1 + (3 - 1);
++		} else if (t >= 32) {
++			t = (t & 31) + (3 - 1);
++			if (unlikely(t == 2)) {
++				while (unlikely(*ip == 0)) {
++					t += 255;
++					ip++;
++					NEED_IP(1);
++				}
++				t += 31 + *ip++;
++				NEED_IP(2);
++			}
++			m_pos = op - 1;
++			next = get_unaligned_le16(ip);
++			ip += 2;
++			m_pos -= next >> 2;
++			next &= 3;
++		} else {
++			m_pos = op;
++			m_pos -= (t & 8) << 11;
++			t = (t & 7) + (3 - 1);
++			if (unlikely(t == 2)) {
++				while (unlikely(*ip == 0)) {
++					t += 255;
++					ip++;
++					NEED_IP(1);
++				}
++				t += 7 + *ip++;
++				NEED_IP(2);
++			}
++			next = get_unaligned_le16(ip);
++			ip += 2;
++			m_pos -= next >> 2;
++			next &= 3;
++			if (m_pos == op)
++				goto eof_found;
++			m_pos -= 0x4000;
++		}
++		TEST_LB(m_pos);
++#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
++		if (op - m_pos >= 8) {
++			unsigned char *oe = op + t;
++			if (likely(HAVE_OP(t + 15))) {
+ 				do {
+-					COPY4(op, m_pos);
+-					op += 4;
+-					m_pos += 4;
+-					t -= 4;
+-				} while (t >= 4);
+-				if (t > 0)
+-					do {
+-						*op++ = *m_pos++;
+-					} while (--t > 0);
++					COPY8(op, m_pos);
++					op += 8;
++					m_pos += 8;
++					COPY8(op, m_pos);
++					op += 8;
++					m_pos += 8;
++				} while (op < oe);
++				op = oe;
++				if (HAVE_IP(6)) {
++					state = next;
++					COPY4(op, ip);
++					op += next;
++					ip += next;
++					continue;
++				}
+ 			} else {
+-copy_match:
+-				*op++ = *m_pos++;
+-				*op++ = *m_pos++;
++				NEED_OP(t);
+ 				do {
+ 					*op++ = *m_pos++;
+-				} while (--t > 0);
++				} while (op < oe);
+ 			}
+-match_done:
+-			t = ip[-2] & 3;
+-			if (t == 0)
+-				break;
++		} else
++#endif
++		{
++			unsigned char *oe = op + t;
++			NEED_OP(t);
++			op[0] = m_pos[0];
++			op[1] = m_pos[1];
++			op += 2;
++			m_pos += 2;
++			do {
++				*op++ = *m_pos++;
++			} while (op < oe);
++		}
+ match_next:
+-			if (HAVE_OP(t, op_end, op))
+-				goto output_overrun;
+-			if (HAVE_IP(t + 1, ip_end, ip))
+-				goto input_overrun;
+-
+-			*op++ = *ip++;
+-			if (t > 1) {
++		state = next;
++		t = next;
++#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
++		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
++			COPY4(op, ip);
++			op += t;
++			ip += t;
++		} else
++#endif
++		{
++			NEED_IP(t + 3);
++			NEED_OP(t);
++			while (t > 0) {
+ 				*op++ = *ip++;
+-				if (t > 2)
+-					*op++ = *ip++;
++				t--;
+ 			}
+-
+-			t = *ip++;
+-		} while (ip < ip_end);
++		}
+ 	}
+ 
+-	*out_len = op - out;
+-	return LZO_E_EOF_NOT_FOUND;
+-
+ eof_found:
+ 	*out_len = op - out;
+-	return (ip == ip_end ? LZO_E_OK :
+-		(ip < ip_end ? LZO_E_INPUT_NOT_CONSUMED : LZO_E_INPUT_OVERRUN));
++	return (t != 3       ? LZO_E_ERROR :
++		ip == ip_end ? LZO_E_OK :
++		ip <  ip_end ? LZO_E_INPUT_NOT_CONSUMED : LZO_E_INPUT_OVERRUN);
++
+ input_overrun:
+ 	*out_len = op - out;
+ 	return LZO_E_INPUT_OVERRUN;
+diff --git a/lib/lzo/lzodefs.h b/lib/lzo/lzodefs.h
+index b6d482c..6710b83 100644
+--- a/lib/lzo/lzodefs.h
++++ b/lib/lzo/lzodefs.h
+@@ -1,19 +1,37 @@
+ /*
+  *  lzodefs.h -- architecture, OS and compiler specific defines
+  *
+- *  Copyright (C) 1996-2005 Markus F.X.J. Oberhumer <markus@oberhumer.com>
++ *  Copyright (C) 1996-2012 Markus F.X.J. Oberhumer <markus@oberhumer.com>
+  *
+  *  The full LZO package can be found at:
+  *  http://www.oberhumer.com/opensource/lzo/
+  *
+- *  Changed for kernel use by:
++ *  Changed for Linux kernel use by:
+  *  Nitin Gupta <nitingupta910@gmail.com>
+  *  Richard Purdie <rpurdie@openedhand.com>
+  */
+ 
+-#define LZO_VERSION		0x2020
+-#define LZO_VERSION_STRING	"2.02"
+-#define LZO_VERSION_DATE	"Oct 17 2005"
++
++#define COPY4(dst, src)	\
++		put_unaligned(get_unaligned((const u32 *)(src)), (u32 *)(dst))
++#if defined(__x86_64__)
++#define COPY8(dst, src)	\
++		put_unaligned(get_unaligned((const u64 *)(src)), (u64 *)(dst))
++#else
++#define COPY8(dst, src)	\
++		COPY4(dst, src); COPY4((dst) + 4, (src) + 4)
++#endif
++
++#if defined(__BIG_ENDIAN) && defined(__LITTLE_ENDIAN)
++#error "conflicting endian definitions"
++#elif defined(__x86_64__)
++#define LZO_USE_CTZ64	1
++#define LZO_USE_CTZ32	1
++#elif defined(__i386__) || defined(__powerpc__)
++#define LZO_USE_CTZ32	1
++#elif defined(__arm__) && (__LINUX_ARM_ARCH__ >= 5)
++#define LZO_USE_CTZ32	1
++#endif
+ 
+ #define M1_MAX_OFFSET	0x0400
+ #define M2_MAX_OFFSET	0x0800
+@@ -34,10 +52,8 @@
+ #define M3_MARKER	32
+ #define M4_MARKER	16
+ 
+-#define D_BITS		14
+-#define D_MASK		((1u << D_BITS) - 1)
++#define lzo_dict_t      unsigned short
++#define D_BITS		13
++#define D_SIZE		(1u << D_BITS)
++#define D_MASK		(D_SIZE - 1)
+ #define D_HIGH		((D_MASK >> 1) + 1)
+-
+-#define DX2(p, s1, s2)	(((((size_t)((p)[2]) << (s2)) ^ (p)[1]) \
+-							<< (s1)) ^ (p)[0])
+-#define DX3(p, s1, s2, s3)	((DX2((p)+1, s2, s3) << (s1)) ^ (p)[0])
 -- 
 1.7.12.2.21.g234cd45.dirty
 
