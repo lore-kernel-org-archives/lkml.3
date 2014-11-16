@@ -1,33 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066AbaKPCr4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 21:47:56 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48303 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857AbaKPCry (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 21:47:54 -0500
-Date: Sun, 16 Nov 2014 02:47:52 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ionut Alexa <ionut.m.alexa@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel:signal.c Fix coding style errors and warnings.
-Message-ID: <20141116024752.GP7996@ZenIV.linux.org.uk>
-References: <1415980615-12345-1-git-send-email-ionut.m.alexa@gmail.com>
+	id S1755084AbaKPCsD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 21:48:03 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54562 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755080AbaKPCsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 21:48:00 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: [PATCH v2 09/10] crypto: AF_ALG: user space interface for hash info
+Date: Sun, 16 Nov 2014 03:28:52 +0100
+Message-ID: <1907032.lnybFlp3cC@tachyon.chronox.de>
+User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <5365136.g8vbXlhRyC@tachyon.chronox.de>
+References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415980615-12345-1-git-send-email-ionut.m.alexa@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 05:56:55PM +0200, Ionut Alexa wrote:
->     Fix various coding style errors and warnings as:
->         - space before tabs
->         - exiting a function from different points (else after return
->           ..)
+The AF_ALG interface allows normal cipher (hash, encrypt, decrypt).
+However, it does not allow user space to obtain the following generic
+information about the currently active hash:
 
-How the hell is that goto any better than plain return?  Because some
-moronic script^W^Wholy oracle says so?
+	* digestsize
+
+The patch adds a getsockopt interface for the hash ciphers to
+answer such information requests from user space.
+
+The kernel crypto API function calls are used to obtain the real data.
+As all data are simple integer values, the getsockopt handler function
+uses put_user() to return the integer value to user space in the
+*optval parameter of getsockopt.
+
+A fully working example using the digestsize interface is provided at
+http://www.chronox.de/libkcapi.html
+
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/algif_hash.c         | 35 ++++++++++++++++++++++++++++++++++-
+ include/uapi/linux/if_alg.h |  1 +
+ 2 files changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index f75db4c..68ae34c 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -216,6 +216,39 @@ static int hash_accept(struct socket *sock, struct socket *newsock, int flags)
+ 	return err;
+ }
+ 
++static int hash_getsockopt(struct socket *sock, int level, int optname,
++			   char __user *optval, int __user *optlen)
++{
++	struct sock *sk = sock->sk;
++	struct alg_sock *ask = alg_sk(sk);
++	struct hash_ctx *ctx = ask->private;
++	const struct af_alg_type *type;
++	int len = 0;
++	int err = -EOPNOTSUPP;
++
++	lock_sock(sk);
++	type = ask->type;
++
++	if (level != SOL_ALG || !type)
++		goto unlock;
++
++	switch (optname) {
++	case ALG_GET_DIGESTSIZE:
++		len = crypto_ahash_digestsize(crypto_ahash_reqtfm(&ctx->req));
++		err = 0;
++		break;
++	default:
++		break;
++	}
++
++unlock:
++	release_sock(sk);
++	if (err >= 0)
++		err = put_user(len, optlen);
++
++	return err;
++}
++
+ static struct proto_ops algif_hash_ops = {
+ 	.family		=	PF_ALG,
+ 
+@@ -225,7 +258,6 @@ static struct proto_ops algif_hash_ops = {
+ 	.ioctl		=	sock_no_ioctl,
+ 	.listen		=	sock_no_listen,
+ 	.shutdown	=	sock_no_shutdown,
+-	.getsockopt	=	sock_no_getsockopt,
+ 	.mmap		=	sock_no_mmap,
+ 	.bind		=	sock_no_bind,
+ 	.setsockopt	=	sock_no_setsockopt,
+@@ -236,6 +268,7 @@ static struct proto_ops algif_hash_ops = {
+ 	.sendpage	=	hash_sendpage,
+ 	.recvmsg	=	hash_recvmsg,
+ 	.accept		=	hash_accept,
++	.getsockopt	=	hash_getsockopt,
+ };
+ 
+ static void *hash_bind(const char *name, u32 type, u32 mask)
+diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
+index b8fb714..3759d3c 100644
+--- a/include/uapi/linux/if_alg.h
++++ b/include/uapi/linux/if_alg.h
+@@ -44,6 +44,7 @@ struct af_alg_aead_assoc {
+ #define ALG_GET_BLOCKSIZE		1
+ #define ALG_GET_IVSIZE			2
+ #define ALG_GET_AEAD_AUTHSIZE		3
++#define ALG_GET_DIGESTSIZE		4
+ 
+ /* Operations */
+ #define ALG_OP_DECRYPT			0
+-- 
+2.1.0
+
+
