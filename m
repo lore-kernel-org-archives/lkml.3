@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755099AbaKPJuE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 04:50:04 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:49689 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771AbaKPJuA (ORCPT
+	id S1755262AbaKPJuV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 04:50:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34371 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153AbaKPJuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 04:50:00 -0500
-Date: Sun, 16 Nov 2014 10:49:55 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] EFI changes for v3.19
-Message-ID: <20141116094955.GA20154@gmail.com>
-References: <20141114214223.GA6810@console-pimps.org>
+	Sun, 16 Nov 2014 04:50:12 -0500
+Date: Sun, 16 Nov 2014 01:49:42 -0800
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-68055915c1c22489f9658bd2b7391bb11b2cf4e4@git.kernel.org>
+Cc: tglx@linutronix.de, patrick.lu@intel.com, ak@linux.intel.com,
+        alexei.starovoitov@gmail.com, mingo@kernel.org, acme@kernel.org,
+        peterz@infradead.org, linux-kernel@vger.kernel.org, hpa@zytor.com
+Reply-To: tglx@linutronix.de, patrick.lu@intel.com,
+        alexei.starovoitov@gmail.com, ak@linux.intel.com, mingo@kernel.org,
+        peterz@infradead.org, acme@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1415062828-19759-4-git-send-email-andi@firstfloor.org>
+References: <1415062828-19759-4-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86/intel/uncore:
+  Fix boot crash on SBOX PMU on Haswell-EP
+Git-Commit-ID: 68055915c1c22489f9658bd2b7391bb11b2cf4e4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20141114214223.GA6810@console-pimps.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  68055915c1c22489f9658bd2b7391bb11b2cf4e4
+Gitweb:     http://git.kernel.org/tip/68055915c1c22489f9658bd2b7391bb11b2cf4e4
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Mon, 3 Nov 2014 17:00:28 -0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 16 Nov 2014 09:53:36 +0100
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+perf/x86/intel/uncore: Fix boot crash on SBOX PMU on Haswell-EP
 
-> Folks,
-> 
-> Please queue up the following changes for v3.19. 
-> 
-> Inclued are two straight forward changes from Mathias, and another
-> attempt from Ard at moving the x86 EFI boot stub to the libstub library.
-> 
-> It would be great to get these baking in linux-next for a bit.
-> 
-> The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
-> 
->   Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
-> 
-> for you to fetch changes up to 8266e31ed0fedb7ee16ebc86e80468f7cc1bbb4e:
-> 
->   x86, ptdump: Add section for EFI runtime services (2014-11-11 22:28:57 +0000)
-> 
-> ----------------------------------------------------------------
->  * Support module unload for efivarfs - Mathias Krause
-> 
->  * Another attempt at moving x86 to libstub taking advantage of the
->    __pure attribute - Ard Biesheuvel
-> 
->  * Add EFI runtime services section to ptdump - Mathias Krause
-> 
-> ----------------------------------------------------------------
-> Ard Biesheuvel (1):
->       efi/x86: Move x86 back to libstub
-> 
-> Mathias Krause (2):
->       efivarfs: Allow unloading when build as module
->       x86, ptdump: Add section for EFI runtime services
-> 
->  arch/x86/boot/compressed/Makefile       |  3 ++-
->  arch/x86/boot/compressed/eboot.c        |  8 ++++----
->  arch/x86/boot/compressed/eboot.h        | 16 ----------------
->  arch/x86/include/asm/efi.h              | 24 ++++++++++++++++++++++++
->  arch/x86/include/asm/pgtable_64_types.h |  2 ++
->  arch/x86/mm/dump_pagetables.c           |  3 +++
->  arch/x86/platform/efi/efi_64.c          |  3 +--
->  drivers/firmware/efi/Makefile           |  2 +-
->  fs/efivarfs/super.c                     | 11 +++++++++--
->  9 files changed, 46 insertions(+), 26 deletions(-)
+There were several reports that on some systems writing the SBOX0 PMU
+initialization MSR would #GP at boot. This did not happen on all
+systems -- my two test systems booted fine.
 
-Pulled into tip:x86/efi, thanks Matt!
+Writing the three initialization bits bit-by-bit seems to avoid the
+problem. So add a special callback to do just that.
 
-	Ingo
+This replaces an earlier patch that disabled the SBOX.
+
+Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Reported-and-Tested-by: Patrick Lu <patrick.lu@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Link: http://lkml.kernel.org/r/1415062828-19759-4-git-send-email-andi@firstfloor.org
+[ Fixed a whitespace error and added attribution tags that were left out inexplicably. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ .../x86/kernel/cpu/perf_event_intel_uncore_snbep.c | 33 ++++++++++++++++++++--
+ 1 file changed, 30 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
+index 0af1c93..f9ed429 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
+@@ -486,14 +486,17 @@ static struct attribute_group snbep_uncore_qpi_format_group = {
+ 	.attrs = snbep_uncore_qpi_formats_attr,
+ };
+ 
+-#define SNBEP_UNCORE_MSR_OPS_COMMON_INIT()			\
+-	.init_box	= snbep_uncore_msr_init_box,		\
++#define __SNBEP_UNCORE_MSR_OPS_COMMON_INIT()			\
+ 	.disable_box	= snbep_uncore_msr_disable_box,		\
+ 	.enable_box	= snbep_uncore_msr_enable_box,		\
+ 	.disable_event	= snbep_uncore_msr_disable_event,	\
+ 	.enable_event	= snbep_uncore_msr_enable_event,	\
+ 	.read_counter	= uncore_msr_read_counter
+ 
++#define SNBEP_UNCORE_MSR_OPS_COMMON_INIT()			\
++	__SNBEP_UNCORE_MSR_OPS_COMMON_INIT(),			\
++	.init_box	= snbep_uncore_msr_init_box		\
++
+ static struct intel_uncore_ops snbep_uncore_msr_ops = {
+ 	SNBEP_UNCORE_MSR_OPS_COMMON_INIT(),
+ };
+@@ -1919,6 +1922,30 @@ static struct intel_uncore_type hswep_uncore_cbox = {
+ 	.format_group		= &hswep_uncore_cbox_format_group,
+ };
+ 
++/*
++ * Write SBOX Initialization register bit by bit to avoid spurious #GPs
++ */
++static void hswep_uncore_sbox_msr_init_box(struct intel_uncore_box *box)
++{
++	unsigned msr = uncore_msr_box_ctl(box);
++
++	if (msr) {
++		u64 init = SNBEP_PMON_BOX_CTL_INT;
++		u64 flags = 0;
++		int i;
++
++		for_each_set_bit(i, (unsigned long *)&init, 64) {
++			flags |= (1ULL << i);
++			wrmsrl(msr, flags);
++		}
++	}
++}
++
++static struct intel_uncore_ops hswep_uncore_sbox_msr_ops = {
++	__SNBEP_UNCORE_MSR_OPS_COMMON_INIT(),
++	.init_box		= hswep_uncore_sbox_msr_init_box
++};
++
+ static struct attribute *hswep_uncore_sbox_formats_attr[] = {
+ 	&format_attr_event.attr,
+ 	&format_attr_umask.attr,
+@@ -1944,7 +1971,7 @@ static struct intel_uncore_type hswep_uncore_sbox = {
+ 	.event_mask		= HSWEP_S_MSR_PMON_RAW_EVENT_MASK,
+ 	.box_ctl		= HSWEP_S0_MSR_PMON_BOX_CTL,
+ 	.msr_offset		= HSWEP_SBOX_MSR_OFFSET,
+-	.ops			= &snbep_uncore_msr_ops,
++	.ops			= &hswep_uncore_sbox_msr_ops,
+ 	.format_group		= &hswep_uncore_sbox_format_group,
+ };
+ 
