@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868AbaKPIn5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 03:43:57 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49799 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007AbaKPInz (ORCPT
+	id S1755039AbaKPJC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 04:02:28 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:59383 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656AbaKPJCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 03:43:55 -0500
-Date: Sun, 16 Nov 2014 09:43:53 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg, bcousson@baylibre.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sakari.ailus@iki.fi, devicetree@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
-Message-ID: <20141116084353.GC30646@amd>
-References: <20141116075928.GA9763@amd>
- <54685C18.1020109@metafoo.de>
+	Sun, 16 Nov 2014 04:02:24 -0500
+Message-ID: <5468681C.5000307@electrozaur.com>
+Date: Sun, 16 Nov 2014 11:02:20 +0200
+From: Boaz Harrosh <ooo@electrozaur.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54685C18.1020109@metafoo.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Pieter Smith <pieter@boesman.nl>
+CC: Benny Halevy <bhalevy@primarydata.com>,
+        "open list:OSD LIBRARY and F..." <osd-dev@open-osd.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [osd-dev] [PATCH 17/56] fs/exofs: support compiling out splice
+References: <pieter@boesman.nl>	<1415913813-362-1-git-send-email-pieter@boesman.nl> <1415913813-362-18-git-send-email-pieter@boesman.nl>
+In-Reply-To: <1415913813-362-18-git-send-email-pieter@boesman.nl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2014-11-16 09:11:04, Lars-Peter Clausen wrote:
-> On 11/16/2014 08:59 AM, Pavel Machek wrote:
-> >[...]
-> >+	adp1653: adp1653@30 {
-> >+		compatible = "ad,adp1653";
+On 11/13/2014 11:22 PM, Pieter Smith wrote:
+> Compile out splice support from exofs when the splice-family of syscalls is not
+> supported by the system (i.e. CONFIG_SYSCALL_SPLICE is undefined).
 > 
-> The Analog Devices vendor prefix is adi.
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
 
-Thanks, will be fixed in next version.
+ACK-by: Boaz Harrosh <ooo@electrozaur.com>
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Or do you need that I push it through my tree ?
+> ---
+>  fs/exofs/file.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/exofs/file.c b/fs/exofs/file.c
+> index 71bf8e4..23dfb05 100644
+> --- a/fs/exofs/file.c
+> +++ b/fs/exofs/file.c
+> @@ -76,8 +76,8 @@ const struct file_operations exofs_file_operations = {
+>  	.release	= exofs_release_file,
+>  	.fsync		= exofs_file_fsync,
+>  	.flush		= exofs_flush,
+> -	.splice_read	= generic_file_splice_read,
+> -	.splice_write	= iter_file_splice_write,
+> +	SPLICE_READ_INIT(generic_file_splice_read)
+> +	SPLICE_WRITE_INIT(iter_file_splice_write)
+>  };
+>  
+>  const struct inode_operations exofs_file_inode_operations = {
+> 
+
