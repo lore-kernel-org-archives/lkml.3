@@ -1,86 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaKPWO3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:14:29 -0500
-Received: from 1wt.eu ([62.212.114.60]:47853 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180AbaKPWA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:00:28 -0500
-Message-Id: <20141116215328.693816276@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:29 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Roland McGrath <roland@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 01/48] x86_32, entry: Do syscall exit work on badsys
-In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
+	id S1752526AbaKPWd7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:33:59 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54569 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaKPWd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:33:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415998553-12636-1-git-send-email-fabf@skynet.be>
+References: <1415998553-12636-1-git-send-email-fabf@skynet.be>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Mon, 17 Nov 2014 09:33:35 +1100
+Message-ID: <CAGRGNgWqjsDu_mQK=_agBWjOequb4b7ffgCuxRH=9d72grDYtQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1 net-next] wireless: remove unnecessary sizeof(u8)
+To: Fabian Frederick <fabf@skynet.be>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+Hi Fabian,
 
-------------------
- (CVE-2014-4508)
+On Sat, Nov 15, 2014 at 7:55 AM, Fabian Frederick <fabf@skynet.be> wrote:
+> sizeof(u8) is always 1.
 
-From: Andy Lutomirski <luto@amacapital.net>
+I thought that sizeof(*variable) was preferred over sizeof(type), so
+shouldn't these be switched to that format instead?
 
-The bad syscall nr paths are their own incomprehensible route
-through the entry control flow.  Rearrange them to work just like
-syscalls that return -ENOSYS.
+(I know that this is all no-op, but it should reduce the potential for
+highly unlikely bugs in the future. Also, the extra processing is
+compile-time not run-time.)
 
-This fixes an OOPS in the audit code when fast-path auditing is
-enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
+Thanks,
 
-This has probably been broken since Linux 2.6.27:
-af0575bba0 i386 syscall audit fast-path
+Julian Calaby
 
-Cc: stable@vger.kernel.org
-Cc: Roland McGrath <roland@redhat.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-(cherry picked from commit 554086d85e71f30abe46fc014fea31929a7c6a8a)
-[WT: this fix is incorrect and requires the two following patches]
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- arch/x86/kernel/entry_32.S | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c097e7d..40a0d02 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -445,9 +445,10 @@ sysenter_past_esp:
- 	jnz sysenter_audit
- sysenter_do_call:
- 	cmpl $(nr_syscalls), %eax
--	jae syscall_badsys
-+	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
- 	movl %eax,PT_EAX(%esp)
-+sysenter_after_call:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -702,7 +703,12 @@ END(syscall_fault)
- 
- syscall_badsys:
- 	movl $-ENOSYS,PT_EAX(%esp)
--	jmp resume_userspace
-+	jmp syscall_exit
-+END(syscall_badsys)
-+
-+sysenter_badsys:
-+	movl $-ENOSYS,PT_EAX(%esp)
-+	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
- 
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  drivers/net/wireless/b43/ppr.c            |  2 +-
+>  drivers/net/wireless/iwlwifi/pcie/trans.c |  2 +-
+>  drivers/net/wireless/rtlwifi/efuse.c      | 16 ++++++++--------
+>  3 files changed, 10 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/net/wireless/b43/ppr.c b/drivers/net/wireless/b43/ppr.c
+> index 9a77027..6bc1c6f 100644
+> --- a/drivers/net/wireless/b43/ppr.c
+> +++ b/drivers/net/wireless/b43/ppr.c
+> @@ -28,7 +28,7 @@ void b43_ppr_clear(struct b43_wldev *dev, struct b43_ppr *ppr)
+>         memset(ppr, 0, sizeof(*ppr));
+>
+>         /* Compile-time PPR check */
+> -       BUILD_BUG_ON(sizeof(struct b43_ppr) != B43_PPR_RATES_NUM * sizeof(u8));
+> +       BUILD_BUG_ON(sizeof(struct b43_ppr) != B43_PPR_RATES_NUM);
+>  }
+>
+>  void b43_ppr_add(struct b43_wldev *dev, struct b43_ppr *ppr, int diff)
+> diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
+> index 836725e..f016824 100644
+> --- a/drivers/net/wireless/iwlwifi/pcie/trans.c
+> +++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+> @@ -1157,7 +1157,7 @@ static void iwl_trans_pcie_configure(struct iwl_trans *trans,
+>                 trans_pcie->n_no_reclaim_cmds = trans_cfg->n_no_reclaim_cmds;
+>         if (trans_pcie->n_no_reclaim_cmds)
+>                 memcpy(trans_pcie->no_reclaim_cmds, trans_cfg->no_reclaim_cmds,
+> -                      trans_pcie->n_no_reclaim_cmds * sizeof(u8));
+> +                      trans_pcie->n_no_reclaim_cmds);
+>
+>         trans_pcie->rx_buf_size_8k = trans_cfg->rx_buf_size_8k;
+>         if (trans_pcie->rx_buf_size_8k)
+> diff --git a/drivers/net/wireless/rtlwifi/efuse.c b/drivers/net/wireless/rtlwifi/efuse.c
+> index 0b4082c..a3135c5 100644
+> --- a/drivers/net/wireless/rtlwifi/efuse.c
+> +++ b/drivers/net/wireless/rtlwifi/efuse.c
+> @@ -251,8 +251,8 @@ void read_efuse(struct ieee80211_hw *hw, u16 _offset, u16 _size_byte, u8 *pbuf)
+>         }
+>
+>         /* allocate memory for efuse_tbl and efuse_word */
+> -       efuse_tbl = kzalloc(rtlpriv->cfg->maps[EFUSE_HWSET_MAX_SIZE] *
+> -                           sizeof(u8), GFP_ATOMIC);
+> +       efuse_tbl = kzalloc(rtlpriv->cfg->maps[EFUSE_HWSET_MAX_SIZE],
+> +                           GFP_ATOMIC);
+>         if (!efuse_tbl)
+>                 return;
+>         efuse_word = kzalloc(EFUSE_MAX_WORD_UNIT * sizeof(u16 *), GFP_ATOMIC);
+> @@ -733,8 +733,8 @@ static int efuse_pg_packet_read(struct ieee80211_hw *hw, u8 offset, u8 *data)
+>         if (offset > 15)
+>                 return false;
+>
+> -       memset(data, 0xff, PGPKT_DATA_SIZE * sizeof(u8));
+> -       memset(tmpdata, 0xff, PGPKT_DATA_SIZE * sizeof(u8));
+> +       memset(data, 0xff, PGPKT_DATA_SIZE);
+> +       memset(tmpdata, 0xff, PGPKT_DATA_SIZE);
+>
+>         while (continual && (efuse_addr < EFUSE_MAX_SIZE)) {
+>                 if (readstate & PG_STATE_HEADER) {
+> @@ -772,7 +772,7 @@ static void efuse_write_data_case1(struct ieee80211_hw *hw, u16 *efuse_addr,
+>         struct rtl_priv *rtlpriv = rtl_priv(hw);
+>         struct pgpkt_struct tmp_pkt;
+>         int dataempty = true;
+> -       u8 originaldata[8 * sizeof(u8)];
+> +       u8 originaldata[8];
+>         u8 badworden = 0x0F;
+>         u8 match_word_en, tmp_word_en;
+>         u8 tmpindex;
+> @@ -881,7 +881,7 @@ static void efuse_write_data_case2(struct ieee80211_hw *hw, u16 *efuse_addr,
+>         struct pgpkt_struct tmp_pkt;
+>         u8 pg_header;
+>         u8 tmp_header;
+> -       u8 originaldata[8 * sizeof(u8)];
+> +       u8 originaldata[8];
+>         u8 tmp_word_cnts;
+>         u8 badworden = 0x0F;
+>
+> @@ -904,7 +904,7 @@ static void efuse_write_data_case2(struct ieee80211_hw *hw, u16 *efuse_addr,
+>
+>                 tmp_word_cnts = efuse_calculate_word_cnts(tmp_pkt.word_en);
+>
+> -               memset(originaldata, 0xff,  8 * sizeof(u8));
+> +               memset(originaldata, 0xff,  8);
+>
+>                 if (efuse_pg_packet_read(hw, tmp_pkt.offset, originaldata)) {
+>                         badworden = enable_efuse_data_write(hw,
+> @@ -962,7 +962,7 @@ static int efuse_pg_packet_write(struct ieee80211_hw *hw,
+>         target_pkt.offset = offset;
+>         target_pkt.word_en = word_en;
+>
+> -       memset(target_pkt.data, 0xFF,  8 * sizeof(u8));
+> +       memset(target_pkt.data, 0xFF,  8);
+>
+>         efuse_word_enable_data_read(word_en, data, target_pkt.data);
+>         target_word_cnts = efuse_calculate_word_cnts(target_pkt.word_en);
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-1.7.12.2.21.g234cd45.dirty
+Julian Calaby
 
-
-
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
