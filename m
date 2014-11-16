@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaKPMhP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 07:37:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35682 "EHLO
+	id S1755894AbaKPMh0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 07:37:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35690 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427AbaKPMhM (ORCPT
+	with ESMTP id S1755883AbaKPMhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 07:37:12 -0500
-Date: Sun, 16 Nov 2014 04:36:29 -0800
+	Sun, 16 Nov 2014 07:37:19 -0500
+Date: Sun, 16 Nov 2014 04:36:46 -0800
 From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-26ff0f0af79d0a9fc1f783d45e470059b840c7c1@git.kernel.org>
-Cc: eranian@google.com, mingo@kernel.org, rusty@rustcorp.com.au,
-        acme@kernel.org, tglx@linutronix.de, torvalds@linux-foundation.org,
-        hpa@zytor.com, bp@suse.de, linux-kernel@vger.kernel.org,
-        jean.pihet@linaro.org, peterz@infradead.org, jolsa@kernel.org
-Reply-To: jean.pihet@linaro.org, peterz@infradead.org, jolsa@kernel.org,
-        bp@suse.de, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, hpa@zytor.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, eranian@google.com,
-        acme@kernel.org
-In-Reply-To: <1411559322-16548-5-git-send-email-eranian@google.com>
-References: <1411559322-16548-5-git-send-email-eranian@google.com>
+Message-ID: <tip-4b6c51773d86883a2e80cffadbe4f178ac1babd8@git.kernel.org>
+Cc: acme@kernel.org, hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org, khandual@linux.vnet.ibm.com,
+        adrian.hunter@intel.com, eranian@google.com, peterz@infradead.org,
+        standby24x7@gmail.com, linux-kernel@vger.kernel.org
+Reply-To: acme@kernel.org, mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        peterz@infradead.org, tglx@linutronix.de, khandual@linux.vnet.ibm.com,
+        adrian.hunter@intel.com, torvalds@linux-foundation.org,
+        standby24x7@gmail.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1411559322-16548-6-git-send-email-eranian@google.com>
+References: <1411559322-16548-6-git-send-email-eranian@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/tests:
-  Add interrupted state sample parsing test
-Git-Commit-ID: 26ff0f0af79d0a9fc1f783d45e470059b840c7c1
+Subject: [tip:perf/core] perf record:
+  Add new -I option to sample interrupted machine state
+Git-Commit-ID: 4b6c51773d86883a2e80cffadbe4f178ac1babd8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,165 +36,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26ff0f0af79d0a9fc1f783d45e470059b840c7c1
-Gitweb:     http://git.kernel.org/tip/26ff0f0af79d0a9fc1f783d45e470059b840c7c1
+Commit-ID:  4b6c51773d86883a2e80cffadbe4f178ac1babd8
+Gitweb:     http://git.kernel.org/tip/4b6c51773d86883a2e80cffadbe4f178ac1babd8
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Wed, 24 Sep 2014 13:48:40 +0200
+AuthorDate: Wed, 24 Sep 2014 13:48:41 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 16 Nov 2014 11:42:01 +0100
+CommitDate: Sun, 16 Nov 2014 11:42:02 +0100
 
-perf/tests: Add interrupted state sample parsing test
+perf record: Add new -I option to sample interrupted machine state
 
-This patch updates the sample parsing test with support
-for the sampling of machine interrupted state.
+Add -I/--intr-regs option to capture machine state registers at
+interrupt.
 
-The patch modifies the do_test() code to sahred the sample
-regts bitmask between user and intr regs.
+Add the corresponding man page description
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411559322-16548-6-git-send-email-eranian@google.com
 Cc: cebbert.lkml@gmail.com
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Link: http://lkml.kernel.org/r/1411559322-16548-5-git-send-email-eranian@google.com
+Cc: Masanari Iida <standby24x7@gmail.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/tests/sample-parsing.c | 55 ++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 15 deletions(-)
+ tools/perf/Documentation/perf-record.txt | 6 ++++++
+ tools/perf/builtin-record.c              | 2 ++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
-index ca292f9..4908c64 100644
---- a/tools/perf/tests/sample-parsing.c
-+++ b/tools/perf/tests/sample-parsing.c
-@@ -126,16 +126,28 @@ static bool samples_same(const struct perf_sample *s1,
- 	if (type & PERF_SAMPLE_TRANSACTION)
- 		COMP(transaction);
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 398f8d5..af9a54e 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -214,6 +214,12 @@ if combined with -a or -C options.
+ After starting the program, wait msecs before measuring. This is useful to
+ filter out the startup phase of the program, which is often very different.
  
-+	if (type & PERF_SAMPLE_REGS_INTR) {
-+		size_t sz = hweight_long(s1->intr_regs.mask) * sizeof(u64);
++-I::
++--intr-regs::
++Capture machine state (registers) at interrupt, i.e., on counter overflows for
++each sample. List of captured registers depends on the architecture. This option
++is off by default.
 +
-+		COMP(intr_regs.mask);
-+		COMP(intr_regs.abi);
-+		if (s1->intr_regs.abi &&
-+		    (!s1->intr_regs.regs || !s2->intr_regs.regs ||
-+		     memcmp(s1->intr_regs.regs, s2->intr_regs.regs, sz))) {
-+			pr_debug("Samples differ at 'intr_regs'\n");
-+			return false;
-+		}
-+	}
-+
- 	return true;
- }
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 582c4da..8648c6d 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -811,6 +811,8 @@ struct option __record_options[] = {
+ 		    "sample transaction flags (special events only)"),
+ 	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
+ 		    "use per-thread mmaps"),
++	OPT_BOOLEAN('I', "intr-regs", &record.opts.sample_intr_regs,
++		    "Sample machine registers on interrupt"),
+ 	OPT_END()
+ };
  
--static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
-+static int do_test(u64 sample_type, u64 sample_regs, u64 read_format)
- {
- 	struct perf_evsel evsel = {
- 		.needs_swap = false,
- 		.attr = {
- 			.sample_type = sample_type,
--			.sample_regs_user = sample_regs_user,
- 			.read_format = read_format,
- 		},
- 	};
-@@ -154,7 +166,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		/* 1 branch_entry */
- 		.data = {1, 211, 212, 213},
- 	};
--	u64 user_regs[64];
-+	u64 regs[64];
- 	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
- 	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
- 	struct perf_sample sample = {
-@@ -176,8 +188,8 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		.branch_stack	= &branch_stack.branch_stack,
- 		.user_regs	= {
- 			.abi	= PERF_SAMPLE_REGS_ABI_64,
--			.mask	= sample_regs_user,
--			.regs	= user_regs,
-+			.mask	= sample_regs,
-+			.regs	= regs,
- 		},
- 		.user_stack	= {
- 			.size	= sizeof(data),
-@@ -187,14 +199,25 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 			.time_enabled = 0x030a59d664fca7deULL,
- 			.time_running = 0x011b6ae553eb98edULL,
- 		},
-+		.intr_regs	= {
-+			.abi	= PERF_SAMPLE_REGS_ABI_64,
-+			.mask	= sample_regs,
-+			.regs	= regs,
-+		},
- 	};
- 	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
- 	struct perf_sample sample_out;
- 	size_t i, sz, bufsz;
- 	int err, ret = -1;
- 
--	for (i = 0; i < sizeof(user_regs); i++)
--		*(i + (u8 *)user_regs) = i & 0xfe;
-+	if (sample_type & PERF_SAMPLE_REGS_USER)
-+		evsel.attr.sample_regs_user = sample_regs;
-+
-+	if (sample_type & PERF_SAMPLE_REGS_INTR)
-+		evsel.attr.sample_regs_intr = sample_regs;
-+
-+	for (i = 0; i < sizeof(regs); i++)
-+		*(i + (u8 *)regs) = i & 0xfe;
- 
- 	if (read_format & PERF_FORMAT_GROUP) {
- 		sample.read.group.nr     = 4;
-@@ -271,7 +294,7 @@ int test__sample_parsing(void)
- {
- 	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
- 	u64 sample_type;
--	u64 sample_regs_user;
-+	u64 sample_regs;
- 	size_t i;
- 	int err;
- 
-@@ -280,7 +303,7 @@ int test__sample_parsing(void)
- 	 * were added.  Please actually update the test rather than just change
- 	 * the condition below.
- 	 */
--	if (PERF_SAMPLE_MAX > PERF_SAMPLE_TRANSACTION << 1) {
-+	if (PERF_SAMPLE_MAX > PERF_SAMPLE_REGS_INTR << 1) {
- 		pr_debug("sample format has changed, some new PERF_SAMPLE_ bit was introduced - test needs updating\n");
- 		return -1;
- 	}
-@@ -297,22 +320,24 @@ int test__sample_parsing(void)
- 			}
- 			continue;
- 		}
-+		sample_regs = 0;
- 
- 		if (sample_type == PERF_SAMPLE_REGS_USER)
--			sample_regs_user = 0x3fff;
--		else
--			sample_regs_user = 0;
-+			sample_regs = 0x3fff;
-+
-+		if (sample_type == PERF_SAMPLE_REGS_INTR)
-+			sample_regs = 0xff0fff;
- 
--		err = do_test(sample_type, sample_regs_user, 0);
-+		err = do_test(sample_type, sample_regs, 0);
- 		if (err)
- 			return err;
- 	}
- 
- 	/* Test all sample format bits together */
- 	sample_type = PERF_SAMPLE_MAX - 1;
--	sample_regs_user = 0x3fff;
-+	sample_regs = 0x3fff; /* shared yb intr and user regs */
- 	for (i = 0; i < ARRAY_SIZE(rf); i++) {
--		err = do_test(sample_type, sample_regs_user, rf[i]);
-+		err = do_test(sample_type, sample_regs, rf[i]);
- 		if (err)
- 			return err;
- 	}
