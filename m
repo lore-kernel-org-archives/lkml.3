@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaKPWk1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:40:27 -0500
-Received: from mout.web.de ([212.227.15.4]:53383 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800AbaKPWk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:40:26 -0500
-Message-ID: <546927D2.7050709@users.sourceforge.net>
-Date: Sun, 16 Nov 2014 23:40:18 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752848AbaKPXAH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 18:00:07 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:61391 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaKPXAE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 18:00:04 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] fs-jbd: Deletion of an unnecessary check before the function
- call "iput"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:jK8u2g5IjZmOiQ3017ZcNEcHncmRBO1RR0y1+/FabLKatHp8spL
- Gvg6pLJm+Ka4qY18RtF99G7cTebghs10uWgsoq9YsJbAHbedLewC6yNVqJoaWImIqfeQwXa
- J6bcMAcg2aMZsvYTRYSqnWrb9F3VPyAUfFRHotX8TY6iT0XOzJz7in9/wasEAky39KuncRC
- X0GrXg+fBMK8A++9rk7sA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <c52187589f5c4cc6b908d899c2b9f7a6@BN1BFFO11FD036.protection.gbl>
+References: <cover.1415962281.git.michal.simek@xilinx.com>
+	<0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
+	<546881CA.2020801@suse.de>
+	<c52187589f5c4cc6b908d899c2b9f7a6@BN1BFFO11FD036.protection.gbl>
+Date: Mon, 17 Nov 2014 09:00:02 +1000
+X-Google-Sender-Auth: 65Js_K20mqqka_MmhZZFSzS4Ug8
+Message-ID: <CAEgOgz7j3jFbf1HxtimzPDMQ3oRu8AAHhHAUtg1boYjOUV5ygA@mail.gmail.com>
+Subject: Re: [PATCH v4 6/6] ARM: zynq: DT: Add OCM controller node
+From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Cc: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <monstr@monstr.eu>, Russell King <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 16 Nov 2014 23:23:19 +0100
+On Mon, Nov 17, 2014 at 5:32 AM, Sören Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+> On Sun, 2014-11-16 at 11:51AM +0100, Andreas Färber wrote:
+>> Hi Michal,
+>>
+>> Am 14.11.2014 um 11:52 schrieb Michal Simek:
+>> > diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+>> > index ce2ef5bec4f2..e217fb1c1169 100644
+>> > --- a/arch/arm/boot/dts/zynq-7000.dtsi
+>> > +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+>> > @@ -150,6 +150,13 @@
+>> >                     reg = <0xf8006000 0x1000>;
+>> >             };
+>> >
+>> > +           ocmc: memory-controller@f800c000 {
+>> > +                   compatible = "xlnx,zynq-ocmc-1.0";
+>> > +                   interrupt-parent = <&intc>;
+>> > +                   interrupts = <0 3 4>;
+>> > +                   reg = <0xf800c000 0x1000>;
+>> > +           };
+>> > +
+>> >             uart0: serial@e0000000 {
+>> >                     compatible = "xlnx,xuartps", "cdns,uart-r1p8";
+>> >                     status = "disabled";
+>>
+>> Not directly related to this patch: As one can see here, the node order
+>> is quite a mess... According to Olof, nodes should be ordered by unit
+>> address, whereas here some but not all seem ordered by node name. Would
+>> you welcome a cleanup patch, or can you fix that yourself?
+>
+> I wouldn't say it's a mess, just a different property to sort the nodes
+> by. For humans reading the DT, searching for nodes, alphabetical order
+> helps finding the right node, IMHO.
 
-The iput() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+I do generally find myself asking "whats that thing at that address"
+more than I find myself asking the "wheres that piece of hardware" so
+Andreas' sorting scheme makes more sense to me. Vertically scanning a
+DT to give yourself an overview of the system level address map is
+good too. Wheras alphabetic sorting doesn't mean to much.
 
-This issue was detected by using the Coccinelle software.
+Regards,
+Peter
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- fs/jbd/journal.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 06fe11e..32fe03e 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -1373,8 +1373,7 @@ int journal_destroy(journal_t *journal)
- 	}
- 	mutex_unlock(&journal->j_checkpoint_mutex);
- 
--	if (journal->j_inode)
--		iput(journal->j_inode);
-+	iput(journal->j_inode);
- 	if (journal->j_revoke)
- 		journal_destroy_revoke(journal);
- 	kfree(journal->j_wbuf);
--- 
-2.1.3
-
-
+What advantage would sorting by
+> address have?
+>
+>         Thanks,
+>         Sören
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
