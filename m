@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610AbaKPK6g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 05:58:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34890 "EHLO
+	id S1755647AbaKPK6x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 05:58:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34896 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590AbaKPK6d (ORCPT
+	with ESMTP id S1755251AbaKPK6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 05:58:33 -0500
-Date: Sun, 16 Nov 2014 02:58:20 -0800
+	Sun, 16 Nov 2014 05:58:50 -0500
+Date: Sun, 16 Nov 2014 02:58:36 -0800
 From: tip-bot for Juergen Gross <tipbot@zytor.com>
-Message-ID: <tip-f439c429c320981943f8b64b2a4049d946cb492b@git.kernel.org>
-Cc: tglx@linutronix.de, hpa@zytor.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, stefan.bader@canonical.com,
-        jgross@suse.com
-Reply-To: jgross@suse.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        stefan.bader@canonical.com, tglx@linutronix.de, hpa@zytor.com
-In-Reply-To: <1415019724-4317-16-git-send-email-jgross@suse.com>
-References: <1415019724-4317-16-git-send-email-jgross@suse.com>
+Message-ID: <tip-f5b2831d654167d77da8afbef4d2584897b12d0c@git.kernel.org>
+Cc: mingo@kernel.org, tglx@linutronix.de, jgross@suse.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com,
+        stefan.bader@canonical.com
+Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com,
+        stefan.bader@canonical.com, tglx@linutronix.de, jgross@suse.com,
+        mingo@kernel.org
+In-Reply-To: <1415019724-4317-17-git-send-email-jgross@suse.com>
+References: <1415019724-4317-17-git-send-email-jgross@suse.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/mm] x86:
-  Support PAT bit in pagetable dump for lower levels
-Git-Commit-ID: f439c429c320981943f8b64b2a4049d946cb492b
+  Respect PAT bit when copying pte values between large and normal pages
+Git-Commit-ID: f5b2831d654167d77da8afbef4d2584897b12d0c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,18 +34,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f439c429c320981943f8b64b2a4049d946cb492b
-Gitweb:     http://git.kernel.org/tip/f439c429c320981943f8b64b2a4049d946cb492b
+Commit-ID:  f5b2831d654167d77da8afbef4d2584897b12d0c
+Gitweb:     http://git.kernel.org/tip/f5b2831d654167d77da8afbef4d2584897b12d0c
 Author:     Juergen Gross <jgross@suse.com>
-AuthorDate: Mon, 3 Nov 2014 14:02:01 +0100
+AuthorDate: Mon, 3 Nov 2014 14:02:02 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sun, 16 Nov 2014 11:04:26 +0100
 
-x86: Support PAT bit in pagetable dump for lower levels
+x86: Respect PAT bit when copying pte values between large and normal pages
 
-Dumping page table protection bits is not correct for entries on levels
-2 and 3 regarding the PAT bit, which is at a different position as on
-level 4.
+The PAT bit in the ptes is not moved to the correct position when
+copying page protection attributes between entries of different sized
+pages. Translate the ptes according to their page size.
 
 Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
@@ -59,51 +60,107 @@ Cc: toshi.kani@hp.com
 Cc: plagnioj@jcrosoft.com
 Cc: tomi.valkeinen@ti.com
 Cc: bhelgaas@google.com
-Link: http://lkml.kernel.org/r/1415019724-4317-16-git-send-email-jgross@suse.com
+Link: http://lkml.kernel.org/r/1415019724-4317-17-git-send-email-jgross@suse.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/dump_pagetables.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ arch/x86/mm/pageattr.c | 33 +++++++++++++++++++++++----------
+ 1 file changed, 23 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
-index 95a427e..6c2ca03 100644
---- a/arch/x86/mm/dump_pagetables.c
-+++ b/arch/x86/mm/dump_pagetables.c
-@@ -126,7 +126,7 @@ static void printk_prot(struct seq_file *m, pgprot_t prot, int level, bool dmsg)
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index de807c9..6c8e3fd 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -485,14 +485,23 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
  
- 	if (!pgprot_val(prot)) {
- 		/* Not present */
--		pt_dump_cont_printf(m, dmsg, "                          ");
-+		pt_dump_cont_printf(m, dmsg, "                              ");
- 	} else {
- 		if (pr & _PAGE_USER)
- 			pt_dump_cont_printf(m, dmsg, "USR ");
-@@ -145,18 +145,16 @@ static void printk_prot(struct seq_file *m, pgprot_t prot, int level, bool dmsg)
- 		else
- 			pt_dump_cont_printf(m, dmsg, "    ");
+ 	/*
+ 	 * We are safe now. Check whether the new pgprot is the same:
++	 * Convert protection attributes to 4k-format, as cpa->mask* are set
++	 * up accordingly.
+ 	 */
+ 	old_pte = *kpte;
+-	old_prot = req_prot = pte_pgprot(old_pte);
++	old_prot = req_prot = pgprot_large_2_4k(pte_pgprot(old_pte));
  
--		/* Bit 9 has a different meaning on level 3 vs 4 */
--		if (level <= 3) {
--			if (pr & _PAGE_PSE)
--				pt_dump_cont_printf(m, dmsg, "PSE ");
--			else
--				pt_dump_cont_printf(m, dmsg, "    ");
--		} else {
--			if (pr & _PAGE_PAT)
--				pt_dump_cont_printf(m, dmsg, "pat ");
--			else
--				pt_dump_cont_printf(m, dmsg, "    ");
--		}
-+		/* Bit 7 has a different meaning on level 3 vs 4 */
-+		if (level <= 3 && pr & _PAGE_PSE)
-+			pt_dump_cont_printf(m, dmsg, "PSE ");
-+		else
-+			pt_dump_cont_printf(m, dmsg, "    ");
-+		if ((level == 4 && pr & _PAGE_PAT) ||
-+		    ((level == 3 || level == 2) && pr & _PAGE_PAT_LARGE))
-+			pt_dump_cont_printf(m, dmsg, "pat ");
-+		else
-+			pt_dump_cont_printf(m, dmsg, "    ");
- 		if (pr & _PAGE_GLOBAL)
- 			pt_dump_cont_printf(m, dmsg, "GLB ");
- 		else
+ 	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
+ 	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
+ 
+ 	/*
++	 * req_prot is in format of 4k pages. It must be converted to large
++	 * page format: the caching mode includes the PAT bit located at
++	 * different bit positions in the two formats.
++	 */
++	req_prot = pgprot_4k_2_large(req_prot);
++
++	/*
+ 	 * Set the PSE and GLOBAL flags only if the PRESENT flag is
+ 	 * set otherwise pmd_present/pmd_huge will return true even on
+ 	 * a non present pmd. The canon_pgprot will clear _PAGE_GLOBAL
+@@ -585,13 +594,10 @@ __split_large_page(struct cpa_data *cpa, pte_t *kpte, unsigned long address,
+ 
+ 	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
+ 	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
+-	/*
+-	 * If we ever want to utilize the PAT bit, we need to
+-	 * update this function to make sure it's converted from
+-	 * bit 12 to bit 7 when we cross from the 2MB level to
+-	 * the 4K level:
+-	 */
+-	WARN_ON_ONCE(pgprot_val(ref_prot) & _PAGE_PAT_LARGE);
++
++	/* promote PAT bit to correct position */
++	if (level == PG_LEVEL_2M)
++		ref_prot = pgprot_large_2_4k(ref_prot);
+ 
+ #ifdef CONFIG_X86_64
+ 	if (level == PG_LEVEL_1G) {
+@@ -879,6 +885,7 @@ static int populate_pmd(struct cpa_data *cpa,
+ {
+ 	unsigned int cur_pages = 0;
+ 	pmd_t *pmd;
++	pgprot_t pmd_pgprot;
+ 
+ 	/*
+ 	 * Not on a 2M boundary?
+@@ -910,6 +917,8 @@ static int populate_pmd(struct cpa_data *cpa,
+ 	if (num_pages == cur_pages)
+ 		return cur_pages;
+ 
++	pmd_pgprot = pgprot_4k_2_large(pgprot);
++
+ 	while (end - start >= PMD_SIZE) {
+ 
+ 		/*
+@@ -921,7 +930,8 @@ static int populate_pmd(struct cpa_data *cpa,
+ 
+ 		pmd = pmd_offset(pud, start);
+ 
+-		set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
++		set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE |
++				   massage_pgprot(pmd_pgprot)));
+ 
+ 		start	  += PMD_SIZE;
+ 		cpa->pfn  += PMD_SIZE;
+@@ -949,6 +959,7 @@ static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
+ 	pud_t *pud;
+ 	unsigned long end;
+ 	int cur_pages = 0;
++	pgprot_t pud_pgprot;
+ 
+ 	end = start + (cpa->numpages << PAGE_SHIFT);
+ 
+@@ -986,12 +997,14 @@ static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
+ 		return cur_pages;
+ 
+ 	pud = pud_offset(pgd, start);
++	pud_pgprot = pgprot_4k_2_large(pgprot);
+ 
+ 	/*
+ 	 * Map everything starting from the Gb boundary, possibly with 1G pages
+ 	 */
+ 	while (end - start >= PUD_SIZE) {
+-		set_pud(pud, __pud(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
++		set_pud(pud, __pud(cpa->pfn | _PAGE_PSE |
++				   massage_pgprot(pud_pgprot)));
+ 
+ 		start	  += PUD_SIZE;
+ 		cpa->pfn  += PUD_SIZE;
