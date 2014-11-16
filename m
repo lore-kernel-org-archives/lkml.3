@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739AbaKPCuL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 21:50:11 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:61726 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232AbaKPCuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 21:50:09 -0500
-From: Zhihui Zhang <zzhsuny@gmail.com>
-To: akpm@linux-foundation.org, mgorman@suse.de, oleg@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] [mempolicy] remove unnecessary is_valid_nodemask()
-Date: Sat, 15 Nov 2014 21:49:57 -0500
-Message-Id: <1416106197-8784-1-git-send-email-zzhsuny@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1755228AbaKPCsN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 21:48:13 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54568 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755175AbaKPCsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Nov 2014 21:48:08 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: [PATCH v2 08/10] crypto: AF_ALG: enable RNG interface compilation
+Date: Sun, 16 Nov 2014 03:28:11 +0100
+Message-ID: <5304867.P6VcOPhNdn@tachyon.chronox.de>
+User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <5365136.g8vbXlhRyC@tachyon.chronox.de>
+References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When nodes is true, nsc->mask2 has already been filtered by nsc->mask1, which has
-already factored in node_states[N_MEMORY].
+Enable compilation of the RNG AF_ALG support and provide a Kconfig
+option to compile the RNG AF_ALG support.
 
-Signed-off-by: Zhihui Zhang <zzhsuny@gmail.com>
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- mm/mempolicy.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ crypto/Kconfig  | 9 +++++++++
+ crypto/Makefile | 1 +
+ 2 files changed, 10 insertions(+)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index e58725a..f22c559 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -162,12 +162,6 @@ static const struct mempolicy_operations {
- 			enum mpol_rebind_step step);
- } mpol_ops[MPOL_MAX];
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 87bbc9c..e127323 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -1505,6 +1505,15 @@ config CRYPTO_USER_API_SKCIPHER
+ 	  This option enables the user-spaces interface for symmetric
+ 	  key cipher algorithms.
  
--/* Check that the nodemask contains at least one populated zone */
--static int is_valid_nodemask(const nodemask_t *nodemask)
--{
--	return nodes_intersects(*nodemask, node_states[N_MEMORY]);
--}
--
- static inline int mpol_store_user_nodemask(const struct mempolicy *pol)
- {
- 	return pol->flags & MPOL_MODE_FLAGS;
-@@ -202,7 +196,7 @@ static int mpol_new_preferred(struct mempolicy *pol, const nodemask_t *nodes)
++config CRYPTO_USER_API_RNG
++	tristate "User-space interface for random number generator algorithms"
++	depends on NET
++	select CRYPTO_RNG
++	select CRYPTO_USER_API
++	help
++	  This option enables the user-spaces interface for random
++	  number generator algorithms.
++
+ config CRYPTO_HASH_INFO
+ 	bool
  
- static int mpol_new_bind(struct mempolicy *pol, const nodemask_t *nodes)
- {
--	if (!is_valid_nodemask(nodes))
-+	if (nodes_empty(*nodes))
- 		return -EINVAL;
- 	pol->v.nodes = *nodes;
- 	return 0;
-@@ -234,7 +228,7 @@ static int mpol_set_nodemask(struct mempolicy *pol,
- 		nodes = NULL;	/* explicit local allocation */
- 	else {
- 		if (pol->flags & MPOL_F_RELATIVE_NODES)
--			mpol_relative_nodemask(&nsc->mask2, nodes,&nsc->mask1);
-+			mpol_relative_nodemask(&nsc->mask2, nodes, &nsc->mask1);
- 		else
- 			nodes_and(nsc->mask2, *nodes, nsc->mask1);
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 1445b91..ba19465 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -99,6 +99,7 @@ obj-$(CONFIG_CRYPTO_GHASH) += ghash-generic.o
+ obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
+ obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
+ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
++obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
  
+ #
+ # generic algorithms and the async_tx api
 -- 
-1.9.1
+2.1.0
+
 
