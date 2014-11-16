@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366AbaKPWAa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:00:30 -0500
-Received: from 1wt.eu ([62.212.114.60]:47852 "EHLO 1wt.eu"
+	id S1751264AbaKPWA3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:00:29 -0500
+Received: from 1wt.eu ([62.212.114.60]:47850 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaKPWA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750764AbaKPWA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Nov 2014 17:00:27 -0500
-Message-Id: <20141116215328.938477028@1wt.eu>
+Message-Id: <20141116215328.734899238@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:35 +0100
+Date: Sun, 16 Nov 2014 22:53:30 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Willy Tarreau <w@1wt.eu>
-Subject: [ 07/48] ALSA: control: Make sure that id->index does not
+Cc: Sven Wegener <sven.wegener@stealer.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 02/48] x86_32, entry: Store badsys error code in %eax
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,42 +22,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- overflow
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Sven Wegener <sven.wegener@stealer.net>
 
-The ALSA control code expects that the range of assigned indices to a control is
-continuous and does not overflow. Currently there are no checks to enforce this.
-If a control with a overflowing index range is created that control becomes
-effectively inaccessible and unremovable since snd_ctl_find_id() will not be
-able to find it. This patch adds a check that makes sure that controls with a
-overflowing index range can not be created.
+Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
+(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
+code, resulting in syscall() not returning proper errors for undefined
+syscalls on CPUs supporting the sysenter feature.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
+The following code:
+
+> int result = syscall(666);
+> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
+
+results in:
+
+> result=666 errno=0 error=Success
+
+Obviously, the syscall return value is the called syscall number, but it
+should have been an ENOSYS error. When run under ptrace it behaves
+correctly, which makes it hard to debug in the wild:
+
+> result=-1 errno=38 error=Function not implemented
+
+The %eax register is the return value register. For debugging via ptrace
+the syscall entry code stores the complete register context on the
+stack. The badsys handlers only store the ENOSYS error code in the
+ptrace register set and do not set %eax like a regular syscall handler
+would. The old resume_userspace call chain contains code that clobbers
+%eax and it restores %eax from the ptrace registers afterwards. The same
+goes for the ptrace-enabled call chain. When ptrace is not used, the
+syscall return value is the passed-in syscall number from the untouched
+%eax register.
+
+Use %eax as the return value register in syscall_badsys and
+sysenter_badsys, like a real syscall handler does, and have the caller
+push the value onto the stack for ptrace access.
+
+Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
+Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
 Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-(cherry picked from commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e)
-[wt: part 1 of CVE-2014-4656 fix]
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+(cherry picked from commit 8142b215501f8b291a108a202b3a053a265b03dd)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- sound/core/control.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/entry_32.S | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index 7834a54..80bb3ed 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -328,6 +328,9 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
- 	if (snd_BUG_ON(!card || !kcontrol->info))
- 		goto error;
- 	id = kcontrol->id;
-+	if (id.index > UINT_MAX - kcontrol->count)
-+		goto error;
-+
- 	down_write(&card->controls_rwsem);
- 	if (snd_ctl_find_id(card, &id)) {
- 		up_write(&card->controls_rwsem);
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 40a0d02..3188ca4 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -447,8 +447,8 @@ sysenter_do_call:
+ 	cmpl $(nr_syscalls), %eax
+ 	jae sysenter_badsys
+ 	call *sys_call_table(,%eax,4)
+-	movl %eax,PT_EAX(%esp)
+ sysenter_after_call:
++	movl %eax,PT_EAX(%esp)
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+@@ -528,6 +528,7 @@ ENTRY(system_call)
+ 	jae syscall_badsys
+ syscall_call:
+ 	call *sys_call_table(,%eax,4)
++syscall_after_call:
+ 	movl %eax,PT_EAX(%esp)		# store the return value
+ syscall_exit:
+ 	LOCKDEP_SYS_EXIT
+@@ -702,12 +703,12 @@ syscall_fault:
+ END(syscall_fault)
+ 
+ syscall_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp syscall_exit
++	movl $-ENOSYS,%eax
++	jmp syscall_after_call
+ END(syscall_badsys)
+ 
+ sysenter_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
++	movl $-ENOSYS,%eax
+ 	jmp sysenter_after_call
+ END(syscall_badsys)
+ 	CFI_ENDPROC
 -- 
 1.7.12.2.21.g234cd45.dirty
 
