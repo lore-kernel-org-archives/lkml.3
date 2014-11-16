@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343AbaKPWCR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:02:17 -0500
-Received: from 1wt.eu ([62.212.114.60]:48011 "EHLO 1wt.eu"
+	id S1752217AbaKPWBq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:01:46 -0500
+Received: from 1wt.eu ([62.212.114.60]:47999 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322AbaKPWCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:02:13 -0500
-Message-Id: <20141116215330.019965111@1wt.eu>
+	id S1752089AbaKPWBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:01:43 -0500
+Message-Id: <20141116215329.480335466@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:54:01 +0100
+Date: Sun, 16 Nov 2014 22:53:48 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 33/48] fix misuses of f_count() in ppp and netlink
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 20/48] ipv4: fix buffer overflow in ip_options_compile()
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,48 +23,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Eric Dumazet <edumazet@google.com>
 
-we used to check for "nobody else could start doing anything with
-that opened file" by checking that refcount was 2 or less - one
-for descriptor table and one we'd acquired in fget() on the way to
-wherever we are.  That was race-prone (somebody else might have
-had a reference to descriptor table and do fget() just as we'd
-been checking) and it had become flat-out incorrect back when
-we switched to fget_light() on those codepaths - unlike fget(),
-it doesn't grab an extra reference unless the descriptor table
-is shared.  The same change allowed a race-free check, though -
-we are safe exactly when refcount is less than 2.
+[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
 
-It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
-to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
-netlink hadn't grown that check until 3.9 and ppp used to live
-in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
-well before that, though, and the same fix used to apply in old
-location of file.
+There is a benign buffer overflow in ip_options_compile spotted by
+AddressSanitizer[1] :
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-(cherry picked from commit 24dff96a37a2ca319e75a74d3929b2de22447ca6)
-[wt: apply to drivers/net/ppp_generic.c only]
+Its benign because we always can access one extra byte in skb->head
+(because header is followed by struct skb_shared_info), and in this case
+this byte is not even used.
+
+[28504.910798] ==================================================================
+[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
+[28504.913170] Read of size 1 by thread T15843:
+[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
+[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
+[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.924722]
+[28504.925106] Allocated by thread T15843:
+[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
+[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.934018]
+[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
+[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
+[28504.937144]
+[28504.937474] Memory state around the buggy address:
+[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.945573]                         ^
+[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.099804] Legend:
+[28505.100269]  f - 8 freed bytes
+[28505.100884]  r - 8 redzone bytes
+[28505.101649]  . - 8 allocated bytes
+[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
+[28505.103637] ==================================================================
+
+[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/ppp_generic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/ip_options.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/ppp_generic.c b/drivers/net/ppp_generic.c
-index 965adb6..5e9156a 100644
---- a/drivers/net/ppp_generic.c
-+++ b/drivers/net/ppp_generic.c
-@@ -590,7 +590,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 			if (file == ppp->owner)
- 				ppp_shutdown_interface(ppp);
+diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
+index 8a95972..9107486 100644
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -276,6 +276,10 @@ int ip_options_compile(struct net *net,
+ 			optptr++;
+ 			continue;
  		}
--		if (atomic_long_read(&file->f_count) <= 2) {
-+		if (atomic_long_read(&file->f_count) < 2) {
- 			ppp_release(NULL, file);
- 			err = 0;
- 		} else
++		if (unlikely(l < 2)) {
++			pp_ptr = optptr;
++			goto error;
++		}
+ 		optlen = optptr[1];
+ 		if (optlen<2 || optlen>l) {
+ 			pp_ptr = optptr;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
