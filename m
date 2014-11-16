@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaKPWGb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:06:31 -0500
-Received: from 1wt.eu ([62.212.114.60]:47962 "EHLO 1wt.eu"
+	id S1752558AbaKPWHF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:07:05 -0500
+Received: from 1wt.eu ([62.212.114.60]:47956 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933AbaKPWBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:01:09 -0500
-Message-Id: <20141116215330.349655004@1wt.eu>
+	id S1751758AbaKPWBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:01:08 -0500
+Message-Id: <20141116215329.308351319@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:54:09 +0100
+Date: Sun, 16 Nov 2014 22:53:44 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ivan Djelic <ivan.djelic@parrot.com>, Dirk Behme <dirk.behme@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 41/48] ARM: 7668/1: fix memset-related crashes caused by
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 16/48] igmp: fix the problem when mc leave group
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,258 +22,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- recent GCC (4.7.2) optimizations
 
-From: Ivan Djelic <ivan.djelic@parrot.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-Recent GCC versions (e.g. GCC-4.7.2) perform optimizations based on
-assumptions about the implementation of memset and similar functions.
-The current ARM optimized memset code does not return the value of
-its first argument, as is usually expected from standard implementations.
+[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
 
-For instance in the following function:
+The problem was triggered by these steps:
 
-void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
-{
-	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
-	waiter->magic = waiter;
-	INIT_LIST_HEAD(&waiter->list);
-}
+1) create socket, bind and then setsockopt for add mc group.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
+   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 
-compiled as:
+2) drop the mc group for this socket.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
+   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
 
-800554d0 <debug_mutex_lock_common>:
-800554d0:       e92d4008        push    {r3, lr}
-800554d4:       e1a00001        mov     r0, r1
-800554d8:       e3a02010        mov     r2, #16 ; 0x10
-800554dc:       e3a01011        mov     r1, #17 ; 0x11
-800554e0:       eb04426e        bl      80165ea0 <memset>
-800554e4:       e1a03000        mov     r3, r0
-800554e8:       e583000c        str     r0, [r3, #12]
-800554ec:       e5830000        str     r0, [r3]
-800554f0:       e5830004        str     r0, [r3, #4]
-800554f4:       e8bd8008        pop     {r3, pc}
+3) and then drop the socket, I found the mc group was still used by the dev:
 
-GCC assumes memset returns the value of pointer 'waiter' in register r0; causing
-register/memory corruptions.
+   netstat -g
 
-This patch fixes the return value of the assembly version of memset.
-It adds a 'mov' instruction and merges an additional load+store into
-existing load/store instructions.
-For ease of review, here is a breakdown of the patch into 4 simple steps:
+   Interface       RefCnt Group
+   --------------- ------ ---------------------
+   eth2		   1	  255.0.0.37
 
-Step 1
-======
-Perform the following substitutions:
-ip -> r8, then
-r0 -> ip,
-and insert 'mov ip, r0' as the first statement of the function.
-At this point, we have a memset() implementation returning the proper result,
-but corrupting r8 on some paths (the ones that were using ip).
+Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
+to be released for the netdev when drop the socket, but this process was broken when
+route default is NULL, the reason is that:
 
-Step 2
-======
-Make sure r8 is saved and restored when (! CALGN(1)+0) == 1:
+The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
+is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
+then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
+the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
+released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
+when dropping the socket, the mc_list is NULL and the dev still keep this group.
 
-save r8:
--       str     lr, [sp, #-4]!
-+       stmfd   sp!, {r8, lr}
+v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
+	so I add the checking for the in_dev before polling the mc_list, make sure when
+	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
+	The problem would never happened again.
 
-and restore r8 on both exit paths:
--       ldmeqfd sp!, {pc}               @ Now <64 bytes to go.
-+       ldmeqfd sp!, {r8, pc}           @ Now <64 bytes to go.
-(...)
-        tst     r2, #16
-        stmneia ip!, {r1, r3, r8, lr}
--       ldr     lr, [sp], #4
-+       ldmfd   sp!, {r8, lr}
-
-Step 3
-======
-Make sure r8 is saved and restored when (! CALGN(1)+0) == 0:
-
-save r8:
--       stmfd   sp!, {r4-r7, lr}
-+       stmfd   sp!, {r4-r8, lr}
-
-and restore r8 on both exit paths:
-        bgt     3b
--       ldmeqfd sp!, {r4-r7, pc}
-+       ldmeqfd sp!, {r4-r8, pc}
-(...)
-        tst     r2, #16
-        stmneia ip!, {r4-r7}
--       ldmfd   sp!, {r4-r7, lr}
-+       ldmfd   sp!, {r4-r8, lr}
-
-Step 4
-======
-Rewrite register list "r4-r7, r8" as "r4-r8".
-
-Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-(cherry picked from commit 455bd4c430b0c0a361f38e8658a0d6cb469942b5)
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/arm/lib/memset.S | 85 ++++++++++++++++++++++++++-------------------------
- 1 file changed, 44 insertions(+), 41 deletions(-)
+ net/ipv4/igmp.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
-index 650d5923..d912e73 100644
---- a/arch/arm/lib/memset.S
-+++ b/arch/arm/lib/memset.S
-@@ -19,9 +19,9 @@
- 1:	subs	r2, r2, #4		@ 1 do we have enough
- 	blt	5f			@ 1 bytes to align with?
- 	cmp	r3, #2			@ 1
--	strltb	r1, [r0], #1		@ 1
--	strleb	r1, [r0], #1		@ 1
--	strb	r1, [r0], #1		@ 1
-+	strltb	r1, [ip], #1		@ 1
-+	strleb	r1, [ip], #1		@ 1
-+	strb	r1, [ip], #1		@ 1
- 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
- /*
-  * The pointer is now aligned and the length is adjusted.  Try doing the
-@@ -29,10 +29,14 @@
-  */
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index c07be7c..04d40ab 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1841,6 +1841,10 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
  
- ENTRY(memset)
--	ands	r3, r0, #3		@ 1 unaligned?
-+/*
-+ * Preserve the contents of r0 for the return value.
-+ */
-+	mov	ip, r0
-+	ands	r3, ip, #3		@ 1 unaligned?
- 	bne	1b			@ 1
- /*
-- * we know that the pointer in r0 is aligned to a word boundary.
-+ * we know that the pointer in ip is aligned to a word boundary.
-  */
- 	orr	r1, r1, r1, lsl #8
- 	orr	r1, r1, r1, lsl #16
-@@ -43,29 +47,28 @@ ENTRY(memset)
- #if ! CALGN(1)+0
+ 	rtnl_lock();
+ 	in_dev = ip_mc_find_dev(net, imr);
++	if (!in_dev) {
++		ret = -ENODEV;
++		goto out;
++	}
+ 	ifindex = imr->imr_ifindex;
+ 	for (imlp = &inet->mc_list; (iml = *imlp) != NULL; imlp = &iml->next) {
+ 		if (iml->multi.imr_multiaddr.s_addr != group)
+@@ -1856,14 +1860,12 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
  
- /*
-- * We need an extra register for this loop - save the return address and
-- * use the LR
-+ * We need 2 extra registers for this loop - use r8 and the LR
-  */
--	str	lr, [sp, #-4]!
--	mov	ip, r1
-+	stmfd	sp!, {r8, lr}
-+	mov	r8, r1
- 	mov	lr, r1
+ 		*imlp = iml->next;
  
- 2:	subs	r2, r2, #64
--	stmgeia	r0!, {r1, r3, ip, lr}	@ 64 bytes at a time.
--	stmgeia	r0!, {r1, r3, ip, lr}
--	stmgeia	r0!, {r1, r3, ip, lr}
--	stmgeia	r0!, {r1, r3, ip, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}	@ 64 bytes at a time.
-+	stmgeia	ip!, {r1, r3, r8, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}
- 	bgt	2b
--	ldmeqfd	sp!, {pc}		@ Now <64 bytes to go.
-+	ldmeqfd	sp!, {r8, pc}		@ Now <64 bytes to go.
- /*
-  * No need to correct the count; we're only testing bits from now on
-  */
- 	tst	r2, #32
--	stmneia	r0!, {r1, r3, ip, lr}
--	stmneia	r0!, {r1, r3, ip, lr}
-+	stmneia	ip!, {r1, r3, r8, lr}
-+	stmneia	ip!, {r1, r3, r8, lr}
- 	tst	r2, #16
--	stmneia	r0!, {r1, r3, ip, lr}
--	ldr	lr, [sp], #4
-+	stmneia	ip!, {r1, r3, r8, lr}
-+	ldmfd	sp!, {r8, lr}
- 
- #else
- 
-@@ -74,54 +77,54 @@ ENTRY(memset)
-  * whole cache lines at once.
-  */
- 
--	stmfd	sp!, {r4-r7, lr}
-+	stmfd	sp!, {r4-r8, lr}
- 	mov	r4, r1
- 	mov	r5, r1
- 	mov	r6, r1
- 	mov	r7, r1
--	mov	ip, r1
-+	mov	r8, r1
- 	mov	lr, r1
- 
- 	cmp	r2, #96
--	tstgt	r0, #31
-+	tstgt	ip, #31
- 	ble	3f
- 
--	and	ip, r0, #31
--	rsb	ip, ip, #32
--	sub	r2, r2, ip
--	movs	ip, ip, lsl #(32 - 4)
--	stmcsia	r0!, {r4, r5, r6, r7}
--	stmmiia	r0!, {r4, r5}
--	tst	ip, #(1 << 30)
--	mov	ip, r1
--	strne	r1, [r0], #4
-+	and	r8, ip, #31
-+	rsb	r8, r8, #32
-+	sub	r2, r2, r8
-+	movs	r8, r8, lsl #(32 - 4)
-+	stmcsia	ip!, {r4, r5, r6, r7}
-+	stmmiia	ip!, {r4, r5}
-+	tst	r8, #(1 << 30)
-+	mov	r8, r1
-+	strne	r1, [ip], #4
- 
- 3:	subs	r2, r2, #64
--	stmgeia	r0!, {r1, r3-r7, ip, lr}
--	stmgeia	r0!, {r1, r3-r7, ip, lr}
-+	stmgeia	ip!, {r1, r3-r8, lr}
-+	stmgeia	ip!, {r1, r3-r8, lr}
- 	bgt	3b
--	ldmeqfd	sp!, {r4-r7, pc}
-+	ldmeqfd	sp!, {r4-r8, pc}
- 
- 	tst	r2, #32
--	stmneia	r0!, {r1, r3-r7, ip, lr}
-+	stmneia	ip!, {r1, r3-r8, lr}
- 	tst	r2, #16
--	stmneia	r0!, {r4-r7}
--	ldmfd	sp!, {r4-r7, lr}
-+	stmneia	ip!, {r4-r7}
-+	ldmfd	sp!, {r4-r8, lr}
- 
- #endif
- 
- 4:	tst	r2, #8
--	stmneia	r0!, {r1, r3}
-+	stmneia	ip!, {r1, r3}
- 	tst	r2, #4
--	strne	r1, [r0], #4
-+	strne	r1, [ip], #4
- /*
-  * When we get here, we've got less than 4 bytes to zero.  We
-  * may have an unaligned pointer as well.
-  */
- 5:	tst	r2, #2
--	strneb	r1, [r0], #1
--	strneb	r1, [r0], #1
-+	strneb	r1, [ip], #1
-+	strneb	r1, [ip], #1
- 	tst	r2, #1
--	strneb	r1, [r0], #1
-+	strneb	r1, [ip], #1
- 	mov	pc, lr
- ENDPROC(memset)
+-		if (in_dev)
+-			ip_mc_dec_group(in_dev, group);
++		ip_mc_dec_group(in_dev, group);
+ 		rtnl_unlock();
+ 		sock_kfree_s(sk, iml, sizeof(*iml));
+ 		return 0;
+ 	}
+-	if (!in_dev)
+-		ret = -ENODEV;
++ out:
+ 	rtnl_unlock();
+ 	return ret;
+ }
 -- 
 1.7.12.2.21.g234cd45.dirty
 
