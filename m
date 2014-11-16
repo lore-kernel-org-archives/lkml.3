@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaKPWDw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:03:52 -0500
-Received: from 1wt.eu ([62.212.114.60]:47981 "EHLO 1wt.eu"
+	id S1752471AbaKPWER (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:04:17 -0500
+Received: from 1wt.eu ([62.212.114.60]:47977 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069AbaKPWBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:01:24 -0500
-Message-Id: <20141116215330.652422050@1wt.eu>
+	id S1752071AbaKPWBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:01:21 -0500
+Message-Id: <20141116215330.225504689@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:54:16 +0100
+Date: Sun, 16 Nov 2014 22:54:06 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Willy Tarreau <w@1wt.eu>
-Subject: [ 48/48] isofs: Fix unbounded recursion when processing
+Cc: Steven Rostedt <rostedt@goodmis.org>, Willy Tarreau <w@1wt.eu>
+Subject: [ 38/48] ring-buffer: Always reset iterator to reader page
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,210 +21,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- relocated directories
 
-From: Jan Kara <jack@suse.cz>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-We did not check relocated directory in any way when processing Rock
-Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
-entry pointing to another CL entry leading to possibly unbounded
-recursion in kernel code and thus stack overflow or deadlocks (if there
-is a loop created from CL entries).
+When performing a consuming read, the ring buffer swaps out a
+page from the ring buffer with a empty page and this page that
+was swapped out becomes the new reader page. The reader page
+is owned by the reader and since it was swapped out of the ring
+buffer, writers do not have access to it (there's an exception
+to that rule, but it's out of scope for this commit).
 
-Fix the problem by not allowing CL entry to point to a directory entry
-with CL entry (such use makes no good sense anyway) and by checking
-whether CL entry doesn't point to itself.
+When reading the "trace" file, it is a non consuming read, which
+means that the data in the ring buffer will not be modified.
+When the trace file is opened, a ring buffer iterator is allocated
+and writes to the ring buffer are disabled, such that the iterator
+will not have issues iterating over the data.
 
-CC: stable@vger.kernel.org
-Reported-by: Chris Evans <cevans@google.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-(cherry picked from commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4)
+Although the ring buffer disabled writes, it does not disable other
+reads, or even consuming reads. If a consuming read happens, then
+the iterator is reset and starts reading from the beginning again.
+
+My tests would sometimes trigger this bug on my i386 box:
+
+WARNING: CPU: 0 PID: 5175 at kernel/trace/trace.c:1527 __trace_find_cmdline+0x66/0xaa()
+Modules linked in:
+CPU: 0 PID: 5175 Comm: grep Not tainted 3.16.0-rc3-test+ #8
+Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
+ 00000000 00000000 f09c9e1c c18796b3 c1b5d74c f09c9e4c c103a0e3 c1b5154b
+ f09c9e78 00001437 c1b5d74c 000005f7 c10bd85a c10bd85a c1cac57c f09c9eb0
+ ed0e0000 f09c9e64 c103a185 00000009 f09c9e5c c1b5154b f09c9e78 f09c9e80^M
+Call Trace:
+ [<c18796b3>] dump_stack+0x4b/0x75
+ [<c103a0e3>] warn_slowpath_common+0x7e/0x95
+ [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
+ [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
+ [<c103a185>] warn_slowpath_fmt+0x33/0x35
+ [<c10bd85a>] __trace_find_cmdline+0x66/0xaa^M
+ [<c10bed04>] trace_find_cmdline+0x40/0x64
+ [<c10c3c16>] trace_print_context+0x27/0xec
+ [<c10c4360>] ? trace_seq_printf+0x37/0x5b
+ [<c10c0b15>] print_trace_line+0x319/0x39b
+ [<c10ba3fb>] ? ring_buffer_read+0x47/0x50
+ [<c10c13b1>] s_show+0x192/0x1ab
+ [<c10bfd9a>] ? s_next+0x5a/0x7c
+ [<c112e76e>] seq_read+0x267/0x34c
+ [<c1115a25>] vfs_read+0x8c/0xef
+ [<c112e507>] ? seq_lseek+0x154/0x154
+ [<c1115ba2>] SyS_read+0x54/0x7f
+ [<c188488e>] syscall_call+0x7/0xb
+---[ end trace 3f507febd6b4cc83 ]---
+>>>> ##### CPU 1 buffer started ####
+
+Which was the __trace_find_cmdline() function complaining about the pid
+in the event record being negative.
+
+After adding more test cases, this would trigger more often. Strangely
+enough, it would never trigger on a single test, but instead would trigger
+only when running all the tests. I believe that was the case because it
+required one of the tests to be shutting down via delayed instances while
+a new test started up.
+
+After spending several days debugging this, I found that it was caused by
+the iterator becoming corrupted. Debugging further, I found out why
+the iterator became corrupted. It happened with the rb_iter_reset().
+
+As consuming reads may not read the full reader page, and only part
+of it, there's a "read" field to know where the last read took place.
+The iterator, must also start at the read position. In the rb_iter_reset()
+code, if the reader page was disconnected from the ring buffer, the iterator
+would start at the head page within the ring buffer (where writes still
+happen). But the mistake there was that it still used the "read" field
+to start the iterator on the head page, where it should always start
+at zero because readers never read from within the ring buffer where
+writes occur.
+
+I originally wrote a patch to have it set the iter->head to 0 instead
+of iter->head_page->read, but then I questioned why it wasn't always
+setting the iter to point to the reader page, as the reader page is
+still valid.  The list_empty(reader_page->list) just means that it was
+successful in swapping out. But the reader_page may still have data.
+
+There was a bug report a long time ago that was not reproducible that
+had something about trace_pipe (consuming read) not matching trace
+(iterator read). This may explain why that happened.
+
+Anyway, the correct answer to this bug is to always use the reader page
+an not reset the iterator to inside the writable ring buffer.
+
+Cc: stable@vger.kernel.org
+Fixes: d769041f8653 "ring_buffer: implement new locking"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+(cherry picked from commit 651e22f2701b4113989237c3048d17337dd2185c)
+[wt: 2.6.32 has no cache{,_read} member in struct ring_buffer_iter ]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/isofs/inode.c | 15 ++++++++-------
- fs/isofs/isofs.h | 23 +++++++++++++++++++----
- fs/isofs/rock.c  | 39 ++++++++++++++++++++++++++++-----------
- 3 files changed, 55 insertions(+), 22 deletions(-)
+ kernel/trace/ring_buffer.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index 6b4dcd4..f080dd7 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -56,7 +56,7 @@ static void isofs_put_super(struct super_block *sb)
- 	return;
- }
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 6024960..a10ee12 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2710,15 +2710,9 @@ static void rb_iter_reset(struct ring_buffer_iter *iter)
+ 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
  
--static int isofs_read_inode(struct inode *);
-+static int isofs_read_inode(struct inode *, int relocated);
- static int isofs_statfs (struct dentry *, struct kstatfs *);
- 
- static struct kmem_cache *isofs_inode_cachep;
-@@ -1210,7 +1210,7 @@ out_toomany:
- 	goto out;
- }
- 
--static int isofs_read_inode(struct inode *inode)
-+static int isofs_read_inode(struct inode *inode, int relocated)
- {
- 	struct super_block *sb = inode->i_sb;
- 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
-@@ -1355,7 +1355,7 @@ static int isofs_read_inode(struct inode *inode)
- 	 */
- 
- 	if (!high_sierra) {
--		parse_rock_ridge_inode(de, inode);
-+		parse_rock_ridge_inode(de, inode, relocated);
- 		/* if we want uid/gid set, override the rock ridge setting */
- 		if (sbi->s_uid_set)
- 			inode->i_uid = sbi->s_uid;
-@@ -1434,9 +1434,10 @@ static int isofs_iget5_set(struct inode *ino, void *data)
-  * offset that point to the underlying meta-data for the inode.  The
-  * code below is otherwise similar to the iget() code in
-  * include/linux/fs.h */
--struct inode *isofs_iget(struct super_block *sb,
--			 unsigned long block,
--			 unsigned long offset)
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated)
- {
- 	unsigned long hashval;
- 	struct inode *inode;
-@@ -1458,7 +1459,7 @@ struct inode *isofs_iget(struct super_block *sb,
- 		return ERR_PTR(-ENOMEM);
- 
- 	if (inode->i_state & I_NEW) {
--		ret = isofs_read_inode(inode);
-+		ret = isofs_read_inode(inode, relocated);
- 		if (ret < 0) {
- 			iget_failed(inode);
- 			inode = ERR_PTR(ret);
-diff --git a/fs/isofs/isofs.h b/fs/isofs/isofs.h
-index 7d33de8..f9c9793 100644
---- a/fs/isofs/isofs.h
-+++ b/fs/isofs/isofs.h
-@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
- 
- struct inode;		/* To make gcc happy */
- 
--extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
-+extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
- extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
- extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
- 
-@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struct inode *, struct dentry *, struct namei
- extern struct buffer_head *isofs_bread(struct inode *, sector_t);
- extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
- 
--extern struct inode *isofs_iget(struct super_block *sb,
--                                unsigned long block,
--                                unsigned long offset);
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated);
+ 	/* Iterator usage is expected to have record disabled */
+-	if (list_empty(&cpu_buffer->reader_page->list)) {
+-		iter->head_page = rb_set_head_page(cpu_buffer);
+-		if (unlikely(!iter->head_page))
+-			return;
+-		iter->head = iter->head_page->read;
+-	} else {
+-		iter->head_page = cpu_buffer->reader_page;
+-		iter->head = cpu_buffer->reader_page->read;
+-	}
++	iter->head_page = cpu_buffer->reader_page;
++	iter->head = cpu_buffer->reader_page->read;
 +
-+static inline struct inode *isofs_iget(struct super_block *sb,
-+				       unsigned long block,
-+				       unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 0);
-+}
-+
-+static inline struct inode *isofs_iget_reloc(struct super_block *sb,
-+					     unsigned long block,
-+					     unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 1);
-+}
- 
- /* Because the inode number is no longer relevant to finding the
-  * underlying meta-data for an inode, we are free to choose a more
-diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-index c2fb2dd..6fa4a86 100644
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -289,12 +289,16 @@ eio:
- 	goto out;
- }
- 
-+#define RR_REGARD_XA 1
-+#define RR_RELOC_DE 2
-+
- static int
- parse_rock_ridge_inode_internal(struct iso_directory_record *de,
--				struct inode *inode, int regard_xa)
-+				struct inode *inode, int flags)
- {
- 	int symlink_len = 0;
- 	int cnt, sig;
-+	unsigned int reloc_block;
- 	struct inode *reloc;
- 	struct rock_ridge *rr;
- 	int rootflag;
-@@ -306,7 +310,7 @@ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
- 
- 	init_rock_state(&rs, inode);
- 	setup_rock_ridge(de, inode, &rs);
--	if (regard_xa) {
-+	if (flags & RR_REGARD_XA) {
- 		rs.chr += 14;
- 		rs.len -= 14;
- 		if (rs.len < 0)
-@@ -486,12 +490,22 @@ repeat:
- 					"relocated directory\n");
- 			goto out;
- 		case SIG('C', 'L'):
--			ISOFS_I(inode)->i_first_extent =
--			    isonum_733(rr->u.CL.location);
--			reloc =
--			    isofs_iget(inode->i_sb,
--				       ISOFS_I(inode)->i_first_extent,
--				       0);
-+			if (flags & RR_RELOC_DE) {
-+				printk(KERN_ERR
-+				       "ISOFS: Recursive directory relocation "
-+				       "is not supported\n");
-+				goto eio;
-+			}
-+			reloc_block = isonum_733(rr->u.CL.location);
-+			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
-+			    ISOFS_I(inode)->i_iget5_offset == 0) {
-+				printk(KERN_ERR
-+				       "ISOFS: Directory relocation points to "
-+				       "itself\n");
-+				goto eio;
-+			}
-+			ISOFS_I(inode)->i_first_extent = reloc_block;
-+			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
- 			if (IS_ERR(reloc)) {
- 				ret = PTR_ERR(reloc);
- 				goto out;
-@@ -639,9 +653,11 @@ static char *get_symlink_chunk(char *rpnt, struct rock_ridge *rr, char *plimit)
- 	return rpnt;
- }
- 
--int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
-+int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
-+			   int relocated)
- {
--	int result = parse_rock_ridge_inode_internal(de, inode, 0);
-+	int flags = relocated ? RR_RELOC_DE : 0;
-+	int result = parse_rock_ridge_inode_internal(de, inode, flags);
- 
- 	/*
- 	 * if rockridge flag was reset and we didn't look for attributes
-@@ -649,7 +665,8 @@ int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
- 	 */
- 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
- 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
--		result = parse_rock_ridge_inode_internal(de, inode, 14);
-+		result = parse_rock_ridge_inode_internal(de, inode,
-+							 flags | RR_REGARD_XA);
- 	}
- 	return result;
- }
+ 	if (iter->head)
+ 		iter->read_stamp = cpu_buffer->read_stamp;
+ 	else
 -- 
 1.7.12.2.21.g234cd45.dirty
 
