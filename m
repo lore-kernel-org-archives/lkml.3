@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634AbaKPMee (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 07:34:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35585 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609AbaKPMea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 07:34:30 -0500
-Date: Sun, 16 Nov 2014 04:33:51 -0800
-From: tip-bot for Wanpeng Li <tipbot@zytor.com>
-Message-ID: <tip-36ce98818a4df66c8134c31fd6e768b4119c7a90@git.kernel.org>
-Cc: wanpeng.li@linux.intel.com, juri.lelli@arm.com, tglx@linutronix.de,
-        peterz@infradead.org, torvalds@linux-foundation.org,
-        ktkhai@parallels.com, hpa@zytor.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Reply-To: wanpeng.li@linux.intel.com, juri.lelli@arm.com, ktkhai@parallels.com,
-        torvalds@linux-foundation.org, hpa@zytor.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, peterz@infradead.org
-In-Reply-To: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/deadline: Introduce start_hrtick_dl()
-  for !CONFIG_SCHED_HRTICK
-Git-Commit-ID: 36ce98818a4df66c8134c31fd6e768b4119c7a90
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932105AbaKPMeo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 07:34:44 -0500
+Received: from mout.web.de ([212.227.17.11]:62656 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755644AbaKPMel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 07:34:41 -0500
+Message-ID: <546899CF.8020808@users.sourceforge.net>
+Date: Sun, 16 Nov 2014 13:34:23 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] kprobes: Deletion of an unnecessary check before the
+ function call "module_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:pZyvRpoZ8uGzQCbeHBdM3bgg7kVkbrkZoJ2VYfFw1Ug8yXHpMhH
+ AJlBkwUnIhiUm7e3ravNmkK9E83KpvRUmVW4XCLgYj9ipMfxW6NXBgTqNbWGuaaYfIniJk/
+ 7+6UXNvnyrf9ZRiL3wVqR5X1TMaI+vnatl2cj188exLlGLig2+hl4Fn/Cu0Co15lt+AR1X5
+ xNWdjcd6rB9cmbLM9y7Kw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36ce98818a4df66c8134c31fd6e768b4119c7a90
-Gitweb:     http://git.kernel.org/tip/36ce98818a4df66c8134c31fd6e768b4119c7a90
-Author:     Wanpeng Li <wanpeng.li@linux.intel.com>
-AuthorDate: Tue, 11 Nov 2014 09:52:26 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 16 Nov 2014 10:59:03 +0100
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 16 Nov 2014 12:20:31 +0100
 
-sched/deadline: Introduce start_hrtick_dl() for !CONFIG_SCHED_HRTICK
+The module_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Introduce start_hrtick_dl for !CONFIG_SCHED_HRTICK to align with
-the fair class.
+This issue was detected by using the Coccinelle software.
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@arm.com>
-Cc: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- kernel/sched/deadline.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/kprobes.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 9594c12..e5db8c6 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1013,6 +1013,10 @@ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
- {
- 	hrtick_start(rq, p->dl.runtime);
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3995f54..f1e7d45 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1527,8 +1527,7 @@ int register_kprobe(struct kprobe *p)
+ out:
+ 	mutex_unlock(&kprobe_mutex);
+ 
+-	if (probed_mod)
+-		module_put(probed_mod);
++	module_put(probed_mod);
+ 
+ 	return ret;
  }
-+#else /* !CONFIG_SCHED_HRTICK */
-+static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
-+{
-+}
- #endif
- 
- static struct sched_dl_entity *pick_next_dl_entity(struct rq *rq,
-@@ -1066,10 +1070,8 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
- 	/* Running task will never be pushed. */
-        dequeue_pushable_dl_task(rq, p);
- 
--#ifdef CONFIG_SCHED_HRTICK
- 	if (hrtick_enabled(rq))
- 		start_hrtick_dl(rq, p);
--#endif
- 
- 	set_post_schedule(rq);
- 
-@@ -1088,10 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
- {
- 	update_curr_dl(rq);
- 
--#ifdef CONFIG_SCHED_HRTICK
- 	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
- 		start_hrtick_dl(rq, p);
--#endif
- }
- 
- static void task_fork_dl(struct task_struct *p)
+-- 
+2.1.3
+
+
