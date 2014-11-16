@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457AbaKPK4p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 05:56:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34847 "EHLO
+	id S1755472AbaKPK5B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 05:57:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34853 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442AbaKPK4m (ORCPT
+	with ESMTP id S1755207AbaKPK46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 05:56:42 -0500
-Date: Sun, 16 Nov 2014 02:56:28 -0800
+	Sun, 16 Nov 2014 05:56:58 -0500
+Date: Sun, 16 Nov 2014 02:56:45 -0800
 From: tip-bot for Juergen Gross <tipbot@zytor.com>
-Message-ID: <tip-49a3b3cbdf1621678a39bd95a3e67c0f858539c7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, jgross@suse.com,
-        stefan.bader@canonical.com, tglx@linutronix.de, mingo@kernel.org
-Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, stefan.bader@canonical.com, jgross@suse.com
-In-Reply-To: <1415019724-4317-9-git-send-email-jgross@suse.com>
-References: <1415019724-4317-9-git-send-email-jgross@suse.com>
+Message-ID: <tip-2a3746984c98b17b565e6a2c2bbaaaef757db1b4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, jgross@suse.com, tglx@linutronix.de,
+        mingo@kernel.org, stefan.bader@canonical.com, hpa@zytor.com
+Reply-To: jgross@suse.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        tglx@linutronix.de, mingo@kernel.org, stefan.bader@canonical.com
+In-Reply-To: <1415019724-4317-10-git-send-email-jgross@suse.com>
+References: <1415019724-4317-10-git-send-email-jgross@suse.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86: Use new cache mode type in mm/iomap_32.c
-Git-Commit-ID: 49a3b3cbdf1621678a39bd95a3e67c0f858539c7
+Subject: [tip:x86/mm] x86: Use new cache mode type in track_pfn_remap()
+  and track_pfn_insert()
+Git-Commit-ID: 2a3746984c98b17b565e6a2c2bbaaaef757db1b4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,18 +32,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  49a3b3cbdf1621678a39bd95a3e67c0f858539c7
-Gitweb:     http://git.kernel.org/tip/49a3b3cbdf1621678a39bd95a3e67c0f858539c7
+Commit-ID:  2a3746984c98b17b565e6a2c2bbaaaef757db1b4
+Gitweb:     http://git.kernel.org/tip/2a3746984c98b17b565e6a2c2bbaaaef757db1b4
 Author:     Juergen Gross <jgross@suse.com>
-AuthorDate: Mon, 3 Nov 2014 14:01:54 +0100
+AuthorDate: Mon, 3 Nov 2014 14:01:55 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sun, 16 Nov 2014 11:04:25 +0100
 
-x86: Use new cache mode type in mm/iomap_32.c
+x86: Use new cache mode type in track_pfn_remap() and track_pfn_insert()
 
 Instead of directly using the cache mode bits in the pte switch to
-using the cache mode type. This requires to change
-io_reserve_memtype() as well.
+using the cache mode type. As those are the main callers of
+lookup_memtype(), change this as well.
 
 Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
@@ -57,102 +58,117 @@ Cc: toshi.kani@hp.com
 Cc: plagnioj@jcrosoft.com
 Cc: tomi.valkeinen@ti.com
 Cc: bhelgaas@google.com
-Link: http://lkml.kernel.org/r/1415019724-4317-9-git-send-email-jgross@suse.com
+Link: http://lkml.kernel.org/r/1415019724-4317-10-git-send-email-jgross@suse.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/pat.h |  2 +-
- arch/x86/mm/iomap_32.c     | 12 +++++++-----
- arch/x86/mm/pat.c          | 18 ++++++++++--------
- 3 files changed, 18 insertions(+), 14 deletions(-)
+ arch/x86/mm/pat.c | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/pat.h b/arch/x86/include/asm/pat.h
-index e2c1668..a8438bc 100644
---- a/arch/x86/include/asm/pat.h
-+++ b/arch/x86/include/asm/pat.h
-@@ -20,7 +20,7 @@ extern int kernel_map_sync_memtype(u64 base, unsigned long size,
- 		unsigned long flag);
- 
- int io_reserve_memtype(resource_size_t start, resource_size_t end,
--			unsigned long *type);
-+			enum page_cache_mode *pcm);
- 
- void io_free_memtype(resource_size_t start, resource_size_t end);
- 
-diff --git a/arch/x86/mm/iomap_32.c b/arch/x86/mm/iomap_32.c
-index 7b179b49..9ca35fc 100644
---- a/arch/x86/mm/iomap_32.c
-+++ b/arch/x86/mm/iomap_32.c
-@@ -33,17 +33,17 @@ static int is_io_mapping_possible(resource_size_t base, unsigned long size)
- 
- int iomap_create_wc(resource_size_t base, unsigned long size, pgprot_t *prot)
- {
--	unsigned long flag = _PAGE_CACHE_WC;
-+	enum page_cache_mode pcm = _PAGE_CACHE_MODE_WC;
- 	int ret;
- 
- 	if (!is_io_mapping_possible(base, size))
- 		return -EINVAL;
- 
--	ret = io_reserve_memtype(base, base + size, &flag);
-+	ret = io_reserve_memtype(base, base + size, &pcm);
- 	if (ret)
- 		return ret;
- 
--	*prot = __pgprot(__PAGE_KERNEL | flag);
-+	*prot = __pgprot(__PAGE_KERNEL | cachemode2protval(pcm));
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(iomap_create_wc);
-@@ -82,8 +82,10 @@ iomap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot)
- 	 * MTRR is UC or WC.  UC_MINUS gets the real intention, of the
- 	 * user, which is "WC if the MTRR is WC, UC if you can't do that."
- 	 */
--	if (!pat_enabled && pgprot_val(prot) == pgprot_val(PAGE_KERNEL_WC))
--		prot = PAGE_KERNEL_UC_MINUS;
-+	if (!pat_enabled && pgprot_val(prot) ==
-+	    (__PAGE_KERNEL | cachemode2protval(_PAGE_CACHE_MODE_WC)))
-+		prot = __pgprot(__PAGE_KERNEL |
-+				cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS));
- 
- 	return (void __force __iomem *) kmap_atomic_prot_pfn(pfn, prot);
- }
 diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 47282c2..6d5a8e3 100644
+index 6d5a8e3..2f3744f 100644
 --- a/arch/x86/mm/pat.c
 +++ b/arch/x86/mm/pat.c
-@@ -442,25 +442,27 @@ static unsigned long lookup_memtype(u64 paddr)
-  * On failure, returns non-zero
+@@ -394,12 +394,12 @@ int free_memtype(u64 start, u64 end)
+  *
+  * Only to be called when PAT is enabled
+  *
+- * Returns _PAGE_CACHE_WB, _PAGE_CACHE_WC, _PAGE_CACHE_UC_MINUS or
+- * _PAGE_CACHE_UC
++ * Returns _PAGE_CACHE_MODE_WB, _PAGE_CACHE_MODE_WC, _PAGE_CACHE_MODE_UC_MINUS
++ * or _PAGE_CACHE_MODE_UC
   */
- int io_reserve_memtype(resource_size_t start, resource_size_t end,
--			unsigned long *type)
-+			enum page_cache_mode *type)
+-static unsigned long lookup_memtype(u64 paddr)
++static enum page_cache_mode lookup_memtype(u64 paddr)
  {
- 	resource_size_t size = end - start;
--	unsigned long req_type = *type;
--	unsigned long new_type;
-+	enum page_cache_mode req_type = *type;
-+	enum page_cache_mode new_type;
-+	unsigned long new_prot;
- 	int ret;
+-	int rettype = _PAGE_CACHE_WB;
++	enum page_cache_mode rettype = _PAGE_CACHE_MODE_WB;
+ 	struct memtype *entry;
  
- 	WARN_ON_ONCE(iomem_map_sanity_check(start, size));
+ 	if (x86_platform.is_untracked_pat_range(paddr, paddr + PAGE_SIZE))
+@@ -408,13 +408,13 @@ static unsigned long lookup_memtype(u64 paddr)
+ 	if (pat_pagerange_is_ram(paddr, paddr + PAGE_SIZE)) {
+ 		struct page *page;
+ 		page = pfn_to_page(paddr >> PAGE_SHIFT);
+-		rettype = get_page_memtype(page);
++		rettype = pgprot2cachemode(__pgprot(get_page_memtype(page)));
+ 		/*
+ 		 * -1 from get_page_memtype() implies RAM page is in its
+ 		 * default state and not reserved, and hence of type WB
+ 		 */
+ 		if (rettype == -1)
+-			rettype = _PAGE_CACHE_WB;
++			rettype = _PAGE_CACHE_MODE_WB;
  
--	ret = reserve_memtype(start, end, req_type, &new_type);
-+	ret = reserve_memtype(start, end, cachemode2protval(req_type),
-+				&new_prot);
- 	if (ret)
- 		goto out_err;
+ 		return rettype;
+ 	}
+@@ -423,9 +423,9 @@ static unsigned long lookup_memtype(u64 paddr)
  
--	if (!is_new_memtype_allowed(start, size,
--				    pgprot2cachemode(__pgprot(req_type)),
--				    pgprot2cachemode(__pgprot(new_type))))
-+	new_type = pgprot2cachemode(__pgprot(new_prot));
-+
-+	if (!is_new_memtype_allowed(start, size, req_type, new_type))
- 		goto out_free;
+ 	entry = rbt_memtype_lookup(paddr);
+ 	if (entry != NULL)
+-		rettype = entry->type;
++		rettype = pgprot2cachemode(__pgprot(entry->type));
+ 	else
+-		rettype = _PAGE_CACHE_UC_MINUS;
++		rettype = _PAGE_CACHE_MODE_UC_MINUS;
  
--	if (kernel_map_sync_memtype(start, size, new_type) < 0)
-+	if (kernel_map_sync_memtype(start, size, new_prot) < 0)
- 		goto out_free;
+ 	spin_unlock(&memtype_lock);
+ 	return rettype;
+@@ -613,7 +613,7 @@ static int reserve_pfn_range(u64 paddr, unsigned long size, pgprot_t *vma_prot,
+ 		if (!pat_enabled)
+ 			return 0;
  
- 	*type = new_type;
+-		flags = lookup_memtype(paddr);
++		flags = cachemode2protval(lookup_memtype(paddr));
+ 		if (want_flags != flags) {
+ 			printk(KERN_WARNING "%s:%d map pfn RAM range req %s for [mem %#010Lx-%#010Lx], got %s\n",
+ 				current->comm, current->pid,
+@@ -715,7 +715,7 @@ int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
+ 		    unsigned long pfn, unsigned long addr, unsigned long size)
+ {
+ 	resource_size_t paddr = (resource_size_t)pfn << PAGE_SHIFT;
+-	unsigned long flags;
++	enum page_cache_mode pcm;
+ 
+ 	/* reserve the whole chunk starting from paddr */
+ 	if (addr == vma->vm_start && size == (vma->vm_end - vma->vm_start)) {
+@@ -734,18 +734,18 @@ int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
+ 	 * For anything smaller than the vma size we set prot based on the
+ 	 * lookup.
+ 	 */
+-	flags = lookup_memtype(paddr);
++	pcm = lookup_memtype(paddr);
+ 
+ 	/* Check memtype for the remaining pages */
+ 	while (size > PAGE_SIZE) {
+ 		size -= PAGE_SIZE;
+ 		paddr += PAGE_SIZE;
+-		if (flags != lookup_memtype(paddr))
++		if (pcm != lookup_memtype(paddr))
+ 			return -EINVAL;
+ 	}
+ 
+ 	*prot = __pgprot((pgprot_val(vma->vm_page_prot) & (~_PAGE_CACHE_MASK)) |
+-			 flags);
++			 cachemode2protval(pcm));
+ 
+ 	return 0;
+ }
+@@ -753,15 +753,15 @@ int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
+ int track_pfn_insert(struct vm_area_struct *vma, pgprot_t *prot,
+ 		     unsigned long pfn)
+ {
+-	unsigned long flags;
++	enum page_cache_mode pcm;
+ 
+ 	if (!pat_enabled)
+ 		return 0;
+ 
+ 	/* Set prot based on lookup */
+-	flags = lookup_memtype((resource_size_t)pfn << PAGE_SHIFT);
++	pcm = lookup_memtype((resource_size_t)pfn << PAGE_SHIFT);
+ 	*prot = __pgprot((pgprot_val(vma->vm_page_prot) & (~_PAGE_CACHE_MASK)) |
+-			 flags);
++			 cachemode2protval(pcm));
+ 
+ 	return 0;
+ }
