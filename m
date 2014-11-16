@@ -1,184 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaKOX6X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 18:58:23 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:53663 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672AbaKOX6V (ORCPT
+	id S1754871AbaKPAFa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 19:05:30 -0500
+Received: from mout.web.de ([212.227.17.12]:55600 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754753AbaKPAF2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 18:58:21 -0500
-Date: Sat, 15 Nov 2014 14:47:23 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/33] thermal: exynos: convert the driver to use
- per-SoC type operations
-Message-ID: <20141115184720.GA5722@developer>
-References: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
+	Sat, 15 Nov 2014 19:05:28 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
-Content-Disposition: inline
-In-Reply-To: <1415890888-8881-1-git-send-email-b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Message-ID: <trinity-1cec0308-6242-413f-a63f-b09cded30a4f-1416096326518@3capp-webde-bs03>
+From: devzero@web.de
+To: linux-kernel@vger.kernel.org
+Subject: re: bug? mac 00:00:00:00:00:00 with natsemi DP83815 after driver
+ load
+Content-Type: text/plain; charset=UTF-8
+Date: Sun, 16 Nov 2014 01:05:26 +0100
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:8cupOr3zwrhaigSO+dZIssPc/XL3ZGloqwYGgT0txRu
+ ZU98xDRLHi0oYr+DWw8k0fO1zGs3BKzZeGEDjrGQB+IErfiMpx
+ 9D4jCmwYM+S8MYGad9p05802y8e7gd6YeO9vx5rtQ+YevID/JO
+ z1ZVDT7LCHVH+O5N1RLZzYwLZroUo2hU8SIrH9bSG1t8LPDAi7
+ 4SpztPr75AVoBgneyU4Ltk72SC7jhwf2LejJkKzfjJbASATkx/
+ z23k9N6b6KCaY271o1RFnHpUDMJpG4YOM/WjaXGrEt96iERo2a
+ a02cYP3KIG8anK8hxjA+owXKtEp
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+forwarding to lkml, as no response on netdev list so far.
+ 
+maybe someone has a clue how to properly fix this timing issue.  the remaining question is about how to correctly replace readl() with inl() to make it compile cleanly or how eeprom_delay() is being done correctly.  inl() seems to be slower to complete which seems to make the driver work, but it seems it needs an I/O port as param but not an memory-adress. 
 
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+sorry, i`m not good at programming, but now as the problem is "basically" fixed there are just some tiny bits missing for a proper fix. i´m unsure if typecasting ee_addr is the right thing to do (i think it`s not) and if a patch with such typecast would have any chance for being accepted.
 
+----------------------------
+hi,
+as i`m doing a little project with this older devices, i have come across this issue again and had some fun to dig deeper into it.
 
-Hello Bartlomiej,
+it`s a little bit academic, as i can do ifconfig eth0 hw ether..... as a workaround, but it sucks to hack that into startup scripts and i also have seen udev not playing nicely with it.
 
+apparently the problem is being caused by a timing issue in the natsemi driver.
 
-On Thu, Nov 13, 2014 at 04:00:55PM +0100, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
->=20
-> This patch series replaces the hardware registers abstractions in
-> the Exynos thermal driver by the usage of per-SoC type operations.
+i added some debug printk`s in natsemi.c -> eeprom_read() after each occurrence of eeprom_delay(ee_addr); , and the problem went away. 
 
-Good! I think the driver is a bit confusing because it has two ways of
-checking features: soc based and feature flag based. Thus, removing one
-is a good step.
+there is a hint about timing sensitivity in the code:
 
-> Such solution provides simpler, easier to understand code and
+/* Delay between EEPROM clock transitions.
+   No extra delay is needed with 33Mhz PCI, but future 66Mhz access may need
+   a delay.  Note that pre-2.0.34 kernels had a cache-alignment bug that
+   made udelay() unreliable.
+   The old method of using an ISA access as a delay, __SLOW_DOWN_IO__, is
+   deprecated.
+*/
 
-Well, that is arguable. IMO, the feature based solution is naturally
-easier to understand as while reading the code, you think about the
-feature not about chip / IP/ SoC versions. Besides, having soc based
-approach spreads many if's in your code base.
+looking at the source of natsemi-diag.c made me wonder why that utility is using 
 
-Anyways, so far no one working in the Exynos code base has nacked your
-proposal. Apart from that, the issue I had with it, as I mentioned, was
-the fact that it currently has two ways of representing / checking
-features. That is for sure the major issue.
+#define eeprom_delay(ee_addr)   inl(ee_addr)
 
-> allows removal of ~250 LOCs (~11% of the whole source code) from
-> the driver.  Some other driver improvements are now also possible
-> thanks to these changes but are scheduled at later time (like
-> consolidating code for clearing IRQs using INTCLEAR register).
->=20
+instead of 
 
-I am not sure I get your point here. I understand you are basing new
-changes in the code on top of this series, but I don't see how this
-refactoring could enable other feature implementions.
+#define eeprom_delay(ee_addr)   readl(ee_addr)
 
+and apparently, that also fixes the problem (but gives a compile warning):
 
-> The patchset should not cause any functionality changes.  This
-> means that unless there are some bugs in the patches itself there
-> should be no behavior changes for the driver (this also includes
-> lack of changes in the way hardware is accessed by the driver).
->=20
-> All testing was done on (Exynos4412 SoC based) ODROID U3 board
-> (some additional patches are needed to make the Exynos thermal
-> driver work on this hardware).
-
-Is it possible to spread testing here? I would like to have coverage for
-all supported chip versions. The reasoning is because the driver
-supports more than Exynos4412, and the amount of changes are
-considerably big.
-
-One thing I can do is to start testing in linux-next on this code. Thus,
-I can merge it in my -next branch (which includes my -linus and -fixes
-branches). But so far, it would not be queued.
-
-My proposal is that these changes will be sent only for the 3.19 merge
-window though. For 3.18 -rc's I believe it is too late. However,
-to get it into 3.19, I request you to provide the testing in all
-supported chips, as I mentioned. Do you think it is doable before Linus
-opens 3.19 merge window?
+drivers/net/ethernet/natsemi/natsemi.c: In function âeeprom_readâ:
+drivers/net/ethernet/natsemi/natsemi.c:1019:3: warning: passing argument 1 of âinlâ makes integer from pointer without a cast [enabled by default]
+In file included from include/linux/io.h:22:0,
+                 from include/linux/pci.h:54,
+                 from drivers/net/ethernet/natsemi/natsemi.c:38:
 
 
->=20
-> Depends on:
-> - 'next' branch of linux-soc-thermal.git kernel tree from Eduardo
->=20
+looking at a more recent version of natsemi-diag.c ,  i even found this one:
 
-Thanks for attending my request.
+ftp://ftp.gwdg.de/pub/linux/misc/donald.becker/diag/natsemi-diag.c
 
-> Changes since v1 (https://lkml.org/lkml/2014/9/18/305):
-> - rebased on top of the current linux-soc-thermal kernel
->=20
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->=20
->=20
-> Bartlomiej Zolnierkiewicz (33):
->   thermal: exynos: remove needless triminfo_data abstraction
->   thermal: exynos: remove needless tmu_status abstraction
->   thermal: exynos: remove needless threshold_temp abstraction
->   thermal: exynos: remove needless triminfo_ctrl abstraction
->   thermal: exynos: remove needless test_mux_addr_shift abstraction
->   thermal: exynos: remove needless therm_trip_[mode,mask]_shift
->     abstractions
->   thermal: exynos: remove needless therm_trip_en_shift abstraction
->   thermal: exynos: remove needless emul_temp_shift abstraction
->   thermal: exynos: remove needless emul_time_shift abstraction
->   thermal: exynos: replace tmu_irqstatus check by Exynos5440 one
->   thermal: exynos: replace tmu_pmin check by Exynos5440 one
->   thermal: exynos: simplify HW_TRIP level setting
->   thermal: exynos: replace threshold_falling check by Exynos SoC type
->     one
->   thermal: exynos: remove TMU_SUPPORT_READY_STATUS flag
->   thermal: exynos: remove TMU_SUPPORT_TRIM_RELOAD flag
->   thermal: exynos: add sanitize_temp_error() helper
->   thermal: exynos: add get_th_reg() helper
->   thermal: exynos: add ->tmu_initialize method
->   thermal: exynos: add get_con_reg() helper
->   thermal: exynos: add ->tmu_control method
->   thermal: exynos: add ->tmu_read method
->   thermal: exynos: add get_emul_con_reg() helper
->   thermal: exynos: add ->tmu_set_emulation method
->   thermal: exynos: add ->tmu_clear_irqs method
->   thermal: exynos: remove TMU_SUPPORT_FALLING_TRIP flag
->   thermal: exynos: remove TMU_SUPPORT_EMUL_TIME flag
->   thermal: exynos: remove TMU_SUPPORT_EMULATION flag
->   thermal: exynos: remove TMU_SUPPORT_ADDRESS_MULTIPLE flag
->   thermal: exynos: remove TMU_SUPPORT_MULTI_INST flag
->   thermal: exynos: remove test_mux pdata field
->   thermal: exynos: remove SoC type ifdefs
->   thermal: exynos: remove __EXYNOS5420_TMU_DATA macro
->   thermal: exynos: remove exynos_tmu_data.h include
->=20
->  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
->  drivers/thermal/samsung/exynos_tmu.c            | 692 ++++++++++++++++--=
-------
->  drivers/thermal/samsung/exynos_tmu.h            | 123 +----
->  drivers/thermal/samsung/exynos_tmu_data.c       | 239 +-------
->  drivers/thermal/samsung/exynos_tmu_data.h       | 159 ------
->  5 files changed, 485 insertions(+), 729 deletions(-)
->  delete mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
->=20
-> --=20
-> 1.8.2.3
->=20
+/* Delay between EEPROM clock transitions.
+   This flushes the write buffer to prevent quick double-writes.
+*/
+#define eeprom_delay(ee_addr)	inl(ee_addr); inl(ee_addr)
 
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The question is how to make a proper fix, as i don`t know what to pass to inl() , as it seems it should not get an mmapped adress but an i/o port instead !?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+"The  in*() functions return data read from the specified I/O port"
 
-iQEcBAEBAgAGBQJUZ5+sAAoJEMLUO4d9pOJWMYAH/0l9vwYy997jjJh6gEZmy7dZ
-rQKJCWmsjdL13LRD/k0GiF/lep90UZg/9/SFaPMcN/0nZQgs75ZuFEFdL02Z77Yy
-J00F+rBzUMZBEe5ymsUOf07fObSydI2PZTlZT6xpcftchJespogZkSQVpzJoa0lM
-M2VvVQiIx3hNWMI4k/45opY1LnjnkGeQrXBZooxZ82l7NjjBZ3znbyPwvlmQZVSP
-8vLacm2fNZseGEp3YEpQREkNVckNBpiPXG8abrjE5BqKTaorPg2e94+pm4yzQbVa
-LwJJYFh8ZgBL/NEgmT0g0hgsXNJzPbGYm6aIpnkbTAimr13XGMvQHBG0am0HsyM=
-=0qD+
------END PGP SIGNATURE-----
+"The read*() functions read data from device memory previously mapped by map_memory()"
 
---SLDf9lqlvOQaIe6s--
+regards
+roland
+
+ps: CC driver maintainer from Kernel Maintainers file.
+
+
+
+Roland Kletzing | 17 Dec 13:38 2012
+bug? mac 00:00:00:00:00:00 with natsemi DP83815 after driver load
+
+Hello,
+i recently played with my older evo t20/wyse 3235le thin clients and flashed
+a linux kernel into those, apparently there seems an issue with the natsemi
+driver.
+
+after driver load (natsemi.ko) eth0 has no valid mac adress, dmesg and
+ifconfig shows just zero`s: 00:00:00:00:00:00.
+
+despite that , the nic is working fine for me (in this test setup i set the
+mac manually: ifconfig eth0 hw ether de:ad:be:ef:be:ef )
+
+apparently, the driver fails to read the proper mac from the eeprom, as
+"natsemi-diag -ee" (from nictools-pci in debian squeeze) shows, that there
+is a valid "Ethernet MAC Station Address" stored inside the eeprom. (see
+below)
+
+looks like a driver bug !?
+does anybody have a clue what`s going wrong here?
+
+regards
+roland
+
+#lspci
+
+00:00.0 Host bridge: Cyrix Corporation PCI Master
+00:0f.0 Ethernet controller: National Semiconductor Corporation DP83815
+(MacPhyter) Ethernet Controller
+00:12.0 ISA bridge: Cyrix Corporation 5530 Legacy [Kahlua] (rev 30)
+00:12.1 Bridge: Cyrix Corporation 5530 SMI [Kahlua]
+00:12.2 IDE interface: Cyrix Corporation 5530 IDE [Kahlua]
+00:12.3 Multimedia audio controller: Cyrix Corporation 5530 Audio [Kahlua]
+00:12.4 VGA compatible controller: Cyrix Corporation 5530 Video [Kahlua]
+00:13.0 USB Controller: Compaq Computer Corporation ZFMicro Chipset USB (rev
+06)
+
+#dmesg |egrep "natsemi|eth"
+natsemi dp8381x driver, version 2.1, Sept 11, 2006
+natsemi 0000:00:0f.0: setting latency timer to 64
+natsemi eth0: NatSemi DP8381[56] at 0x4010000 (0000:00:0f.0),
+00:00:00:00:00:00, IRQ 10, port TP.
+eth0: DSPCFG accepted after 0 usec.
+eth0: link up.
+eth0: Setting full-duplex based on negotiated link capability.
+
+#natsemi-diag -aa
+natsemi-diag.c:v2.08 2/28/2005 Donald Becker (becker <at> scyld.com)
+ http://www.scyld.com/diag/index.html
+Index #1: Found a NatSemi DP83815 adapter at 0xf800.
+ Natsemi 83815 series with station address de:ad:be:ef:be:ef
+ Transceiver setting Autonegotation advertise 10/100 Mbps half and full
+duplex.
+ This device appears to be active, so some registers will not be read.
+ To see all register values use the '-f' flag.
+NatSemi DP83815 chip registers at 0xf800
+ 0x000: 00000004 e805e000 00000002 00000000 ******** 00f1cd65 00000001
+00000000
+ 0x020: 03abd200 d0f01002 00000000 00000000 03abd000 18700010 00000000
+00000000
+ 0x040: ******** 00200000 00000004 0000efbe ffff000b 30303030 00000403
+00000000
+ 0x060: ******** ******** ******** ******** ******** ******** ********
+********
+ 0x080: 00003100 0000786d 00002000 00005c21 000005e1 000045e1 00000005
+00002801
+ 0x0A0: ******** ******** ******** ******** ******** ******** ********
+********
+ 0x0C0: 00000615 00000002 00000000 00000000 00000000 00000000 00000100
+00000030
+ 0x0E0: 00000000 000000bf 00000804 00008200 00000000 00000000 00000000
+00000000
+  Interrupt sources are pending (00000200).
+   Tx queue emptied indication.
+  Receive mode is 0xc8200000: Normal unicast and hashed multicast.
+  Rx filter contents:   adde efbe efbe 0000 0000 0000 0000 0000
+
+#natsemi-diag -ee
+natsemi-diag.c:v2.08 2/28/2005 Donald Becker (becker <at> scyld.com)
+ http://www.scyld.com/diag/index.html
+Index #1: Found a NatSemi DP83815 adapter at 0xf800.
+ Natsemi 83815 series with station address de:ad:be:ef:be:ef
+ Transceiver setting Autonegotation advertise 10/100 Mbps half and full
+duplex.
+ EEPROM address length 6, 64 words.
+EEPROM contents (64 words):
+0x00:  100b 0020 0b34 41fb 0000 0000 0000 4000
+0x08:  0d32 dff4 1905 aa48 0000 0000 129c 4c4c
+0x10:  ca52 2ccc 0cb2 9c6c 0c6c 8c0c 2020 6080
+0x18:  0800 0000 0000 0000 0000 0000 0000 0000
+0x20:  0000 0000 0000 0000 0000 0000 0000 0000
+0x28:  0000 0000 0000 0000 0000 0000 0000 0000
+0x30:  0000 0000 0000 0000 0000 0000 0000 0000
+0x38:  0000 0000 0000 0000 0000 0000 0000 e418
+Decoded EEPROM contents:
+  PCI Subsystem IDs -- Vendor 0x100b, Device 0x0020.
+  PCI timer settings -- minimum grant 11, maximum latency 52.
+  Ethernet MAC Station Address 00:80:64:1a:e8:bf.
+  Wake-On-LAN password 00:00:00:00:00:00.
+  Transceiver setting 0x--f-: advertise 10/100 Mbps half and full duplex.
+   Flow control enabled.
+  EEPROM active region checksum read as aa48, vs aa48 calculated value.
