@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119AbaKPWAW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:00:22 -0500
-Received: from 1wt.eu ([62.212.114.60]:47841 "EHLO 1wt.eu"
+	id S1751550AbaKPWAo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:00:44 -0500
+Received: from 1wt.eu ([62.212.114.60]:47895 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764AbaKPWAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:00:21 -0500
-Message-Id: <20141116215328.631129227@1wt.eu>
+	id S1751481AbaKPWAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:00:42 -0500
+Message-Id: <20141116215329.185574412@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:28 +0100
+Date: Sun, 16 Nov 2014 22:53:41 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [ 00/48] 2.6.32.64-longterm review
-Message-ID: <28c765bc23bd4bae1611534e510f49f8@local>
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 13/48] ptrace,x86: force IRET path after a ptrace_stop()
+In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.64 release.
-All patches will be posted as a response to this one. If anyone has any
-issue with these being applied, please let me know. If anyone is a
-maintainer of the proper subsystem, and wants to add a Signed-off-by: line
-to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Responses should be made within 72 hours. Anything received after that time
-might be too late. If someone wants a bit more time for a deeper review,
-please let me know.
+------------------
 
-The whole patch series can be found in one patch at :
-     kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.64-rc1.gz
+From: Tejun Heo <tj@kernel.org>
 
-The shortlog and diffstat are appended below.
+[ Upstream commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a ]
 
-Thanks,
-Willy
+The 'sysret' fastpath does not correctly restore even all regular
+registers, much less any segment registers or reflags values.  That is
+very much part of why it's faster than 'iret'.
 
- arch/arm/lib/memset.S               | 100 +++++-----
- arch/mips/include/asm/thread_info.h |   3 +
- arch/mips/kernel/scall32-o32.S      |   2 +-
- arch/mips/kernel/scall64-64.S       |   2 +-
- arch/mips/kernel/scall64-n32.S      |   2 +-
- arch/mips/kernel/scall64-o32.S      |   2 +-
- arch/x86/include/asm/ptrace.h       |  16 ++
- arch/x86/kernel/entry_32.S          |  13 +-
- drivers/char/tty_io.c               |   7 +-
- drivers/md/dm-crypt.c               |  20 +-
- drivers/md/raid5.c                  |   2 +
- drivers/net/gianfar.c               |   6 -
- drivers/net/macvlan.c               |   1 +
- drivers/net/ppp_generic.c           |   2 +-
- drivers/net/pppoe.c                 |   2 +-
- drivers/net/sunvnet.c               |  20 +-
- drivers/scsi/sym53c8xx_2/sym_hipd.c |   4 +
- drivers/usb/serial/kobil_sct.c      |   4 +-
- drivers/usb/serial/option.c         | 129 ++++++++++++-
- fs/isofs/inode.c                    |  15 +-
- fs/isofs/isofs.h                    |  23 ++-
- fs/isofs/rock.c                     |  39 ++--
- fs/namei.c                          |   1 +
- fs/nfsd/nfs4xdr.c                   |   8 +-
- fs/proc/base.c                      |   1 -
- include/linux/lzo.h                 |  15 +-
- include/linux/ptrace.h              |   3 +
- include/net/sctp/sm.h               |   6 +-
- include/sound/core.h                |   2 +
- kernel/futex.c                      |   1 +
- kernel/trace/ring_buffer.c          |  12 +-
- lib/lzo/lzo1x_compress.c            | 335 ++++++++++++++++++--------------
- lib/lzo/lzo1x_decompress.c          | 370 +++++++++++++++++++-----------------
- lib/lzo/lzodefs.h                   |  38 ++--
- mm/mlock.c                          |   2 +
- mm/rmap.c                           |  14 +-
- net/appletalk/ddp.c                 |   3 -
- net/compat.c                        |   9 +-
- net/core/filter.c                   |   8 +-
- net/core/iovec.c                    |  10 +-
- net/core/skbuff.c                   |   2 +-
- net/ipv4/igmp.c                     |  10 +-
- net/ipv4/ip_options.c               |   4 +
- net/ipv4/tcp_input.c                |   2 +-
- net/ipv4/tcp_vegas.c                |   3 +-
- net/ipv4/tcp_veno.c                 |   2 +-
- net/netfilter/nfnetlink_log.c       |  14 +-
- net/sctp/associola.c                |   3 +-
- net/sctp/output.c                   |   2 +-
- net/sctp/sm_make_chunk.c            | 100 +++++-----
- net/sctp/sm_statefuns.c             |  18 +-
- net/sctp/ulpevent.c                 | 122 ++----------
- sound/core/control.c                |  38 +++-
- sound/core/init.c                   |   1 +
- 54 files changed, 918 insertions(+), 655 deletions(-)
+Normally that isn't a problem, because the normal ptrace() interface
+catches the process using the signal handler infrastructure, which
+always returns with an iret.
+
+However, some paths can get caught using ptrace_event() instead of the
+signal path, and for those we need to make sure that we aren't going to
+return to user space using 'sysret'.  Otherwise the modifications that
+may have been done to the register set by the tracer wouldn't
+necessarily take effect.
+
+Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
+arch_ptrace_stop_needed() which is invoked from ptrace_stop().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[wt: fixes CVE-2014-4699]
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ arch/x86/include/asm/ptrace.h | 16 ++++++++++++++++
+ include/linux/ptrace.h        |  3 +++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index 1ec926d..a2f3597 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -227,6 +227,22 @@ extern void user_enable_block_step(struct task_struct *);
+ #define arch_has_block_step()	(boot_cpu_data.x86 >= 6)
+ #endif
+ 
++/*
++ * When hitting ptrace_stop(), we cannot return using SYSRET because
++ * that does not restore the full CPU state, only a minimal set.  The
++ * ptracer can change arbitrary register values, which is usually okay
++ * because the usual ptrace stops run off the signal delivery path which
++ * forces IRET; however, ptrace_event() stops happen in arbitrary places
++ * in the kernel and don't force IRET path.
++ *
++ * So force IRET path after a ptrace stop.
++ */
++#define arch_ptrace_stop_needed(code, info)                            \
++({                                                                     \
++       set_thread_flag(TIF_NOTIFY_RESUME);                             \
++       false;                                                          \
++})
++
+ struct user_desc;
+ extern int do_get_thread_area(struct task_struct *p, int idx,
+ 			      struct user_desc __user *info);
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 7456d7d..486d27f 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -292,6 +292,9 @@ static inline void user_enable_block_step(struct task_struct *task)
+  * calling arch_ptrace_stop() when it would be superfluous.  For example,
+  * if the thread has not been back to user mode since the last stop, the
+  * thread state might indicate that nothing needs to be done.
++ *
++ * This is guaranteed to be invoked once before a task stops for ptrace and
++ * may include arch-specific operations necessary prior to a ptrace stop.
+  */
+ #define arch_ptrace_stop_needed(code, info)	(0)
+ #endif
+-- 
+1.7.12.2.21.g234cd45.dirty
+
 
 
