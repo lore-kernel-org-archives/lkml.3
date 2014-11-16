@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaKPXAH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 18:00:07 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:61391 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbaKPXAE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 18:00:04 -0500
+	id S1751880AbaKPXCl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 18:02:41 -0500
+Received: from ozlabs.org ([103.22.144.67]:39697 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200AbaKPXCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 18:02:40 -0500
+Date: Mon, 17 Nov 2014 10:02:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Aaron Ma <mapengyu@gmail.com>
+Subject: linux-next: build warning after merge of the pci-current tree
+Message-ID: <20141117100220.0e503957@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <c52187589f5c4cc6b908d899c2b9f7a6@BN1BFFO11FD036.protection.gbl>
-References: <cover.1415962281.git.michal.simek@xilinx.com>
-	<0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
-	<546881CA.2020801@suse.de>
-	<c52187589f5c4cc6b908d899c2b9f7a6@BN1BFFO11FD036.protection.gbl>
-Date: Mon, 17 Nov 2014 09:00:02 +1000
-X-Google-Sender-Auth: 65Js_K20mqqka_MmhZZFSzS4Ug8
-Message-ID: <CAEgOgz7j3jFbf1HxtimzPDMQ3oRu8AAHhHAUtg1boYjOUV5ygA@mail.gmail.com>
-Subject: Re: [PATCH v4 6/6] ARM: zynq: DT: Add OCM controller node
-From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Cc: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <monstr@monstr.eu>, Russell King <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/kJ3L6kJGsdIxD4T=rAFwhiw"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 5:32 AM, Sören Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
-> On Sun, 2014-11-16 at 11:51AM +0100, Andreas Färber wrote:
->> Hi Michal,
->>
->> Am 14.11.2014 um 11:52 schrieb Michal Simek:
->> > diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
->> > index ce2ef5bec4f2..e217fb1c1169 100644
->> > --- a/arch/arm/boot/dts/zynq-7000.dtsi
->> > +++ b/arch/arm/boot/dts/zynq-7000.dtsi
->> > @@ -150,6 +150,13 @@
->> >                     reg = <0xf8006000 0x1000>;
->> >             };
->> >
->> > +           ocmc: memory-controller@f800c000 {
->> > +                   compatible = "xlnx,zynq-ocmc-1.0";
->> > +                   interrupt-parent = <&intc>;
->> > +                   interrupts = <0 3 4>;
->> > +                   reg = <0xf800c000 0x1000>;
->> > +           };
->> > +
->> >             uart0: serial@e0000000 {
->> >                     compatible = "xlnx,xuartps", "cdns,uart-r1p8";
->> >                     status = "disabled";
->>
->> Not directly related to this patch: As one can see here, the node order
->> is quite a mess... According to Olof, nodes should be ordered by unit
->> address, whereas here some but not all seem ordered by node name. Would
->> you welcome a cleanup patch, or can you fix that yourself?
->
-> I wouldn't say it's a mess, just a different property to sort the nodes
-> by. For humans reading the DT, searching for nodes, alphabetical order
-> helps finding the right node, IMHO.
+--Sig_/kJ3L6kJGsdIxD4T=rAFwhiw
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I do generally find myself asking "whats that thing at that address"
-more than I find myself asking the "wheres that piece of hardware" so
-Andreas' sorting scheme makes more sense to me. Vertically scanning a
-DT to give yourself an overview of the system level address map is
-good too. Wheras alphabetic sorting doesn't mean to much.
+Hi Bjorn,
 
-Regards,
-Peter
+After merging the pci-current tree, today's linux-next build
+(arm_multi_v7_defconfig) produced this warning:
 
-What advantage would sorting by
-> address have?
->
->         Thanks,
->         Sören
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+drivers/pci/probe.c: In function 'pci_read_bridge_mmio_pref':
+drivers/pci/probe.c:438:5: warning: left shift count >=3D width of type
+     base |=3D ((dma_addr_t) mem_base_hi) << 32;
+     ^
+drivers/pci/probe.c:439:5: warning: left shift count >=3D width of type
+     limit |=3D ((dma_addr_t) mem_limit_hi) << 32;
+     ^
+
+Introduced by commit 3a02517d5e2a ("PCI: Support 64-bit bridge windows
+if we have 64-bit dma_addr_t").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/kJ3L6kJGsdIxD4T=rAFwhiw
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUaS0NAAoJEMDTa8Ir7ZwVDQoP/0nl+uk9//h81t7qudmegjV+
+dqi8pNYmQXO5y6j+EyNs+paZK7vmmZWqeooOQ/Ll0VxvpFTh7vvrhJePOg5k3J1g
+hAtFoSdHqgDGMBkXYgdHKjb49K/fbcPtws+QDneokTzVyZeTI+F4d0kmVzYARf3b
+tXXhFzzdZzq29SVEmfbki3a/mu6cvQ1hdhG994sFnd3JgAzTfCVpuVi539fKGEwS
+6hZ5WQB5TYa6D1E/yerldKxlAAGQnMOQnNE6QkPlsmiuBISw1eNJjBXWZ9N0LKmC
+qGqs/Rda9FXM57SDpRGt1p2gfPsatM+mWqnRKZOCzFXo1U0dQ6hLl4S4CI3tGLRJ
+WliLj1yy1o3DRS1rAoWZZbCM8Z6BFDYsdD7FQFUnH7G4mMavlwAOfFZZ1Uc4gVDq
+gEceeZOwA4FV7102zOASY256ikXQ1bPiz6VIoP+ZPbpDw+cus04nZfd0zP9sS28A
+CyU3H8rvrdmtKtdBSEDKLoQcJ9TH5qmrYSxdtMhYWcFjQKREsLGNgRCQ0QrDfCyg
+9HQwv9Bq18VT8YWC130YFfMnt6zq3r4daHEo0YRGdTC9tg/uaCnzFdVuJFqX4wI6
+oAHZjsTHFYmwrlvvEDJ3FTfsswOrKl07ZQ4XWDW+4Vx/pHn4i04EYKvEjc2fuyWH
+avzAPxOF8AUt6MJ7UCu4
+=j5y9
+-----END PGP SIGNATURE-----
+
+--Sig_/kJ3L6kJGsdIxD4T=rAFwhiw--
