@@ -1,102 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaKPKwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 05:52:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35342 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755005AbaKPKwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 05:52:06 -0500
-Message-ID: <546881CA.2020801@suse.de>
-Date: Sun, 16 Nov 2014 11:51:54 +0100
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755274AbaKPKyv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 05:54:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34795 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909AbaKPKyt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 05:54:49 -0500
+Date: Sun, 16 Nov 2014 02:54:30 -0800
+From: tip-bot for Juergen Gross <tipbot@zytor.com>
+Message-ID: <tip-281d4078bec366d60990add9d91a952953bd0d72@git.kernel.org>
+Cc: mingo@kernel.org, stefan.bader@canonical.com, hpa@zytor.com,
+        jgross@suse.com, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org, jgross@suse.com,
+        hpa@zytor.com, stefan.bader@canonical.com, mingo@kernel.org
+In-Reply-To: <1415019724-4317-2-git-send-email-jgross@suse.com>
+References: <1415019724-4317-2-git-send-email-jgross@suse.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86: Make page cache mode a real type
+Git-Commit-ID: 281d4078bec366d60990add9d91a952953bd0d72
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Josh Cartwright <josh.cartwright@ni.com>, monstr@monstr.eu,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v4 6/6] ARM: zynq: DT: Add OCM controller node
-References: <cover.1415962281.git.michal.simek@xilinx.com> <0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
-In-Reply-To: <0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="QVnTDSNGMLh4LkFHhFJSbbIDXqvpHP3ln"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---QVnTDSNGMLh4LkFHhFJSbbIDXqvpHP3ln
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  281d4078bec366d60990add9d91a952953bd0d72
+Gitweb:     http://git.kernel.org/tip/281d4078bec366d60990add9d91a952953bd0d72
+Author:     Juergen Gross <jgross@suse.com>
+AuthorDate: Mon, 3 Nov 2014 14:01:47 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sun, 16 Nov 2014 11:04:24 +0100
 
-Hi Michal,
+x86: Make page cache mode a real type
 
-Am 14.11.2014 um 11:52 schrieb Michal Simek:
-> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-=
-7000.dtsi
-> index ce2ef5bec4f2..e217fb1c1169 100644
-> --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> @@ -150,6 +150,13 @@
->  			reg =3D <0xf8006000 0x1000>;
->  		};
->=20
-> +		ocmc: memory-controller@f800c000 {
-> +			compatible =3D "xlnx,zynq-ocmc-1.0";
-> +			interrupt-parent =3D <&intc>;
-> +			interrupts =3D <0 3 4>;
-> +			reg =3D <0xf800c000 0x1000>;
-> +		};
-> +
->  		uart0: serial@e0000000 {
->  			compatible =3D "xlnx,xuartps", "cdns,uart-r1p8";
->  			status =3D "disabled";
+At the moment there are a lot of places that handle setting or getting
+the page cache mode by treating the pgprot bits equal to the cache mode.
+This is only true because there are a lot of assumptions about the setup
+of the PAT MSR. Otherwise the cache type needs to get translated into
+pgprot bits and vice versa.
 
-Not directly related to this patch: As one can see here, the node order
-is quite a mess... According to Olof, nodes should be ordered by unit
-address, whereas here some but not all seem ordered by node name. Would
-you welcome a cleanup patch, or can you fix that yourself?
+This patch tries to prepare for that by introducing a separate type
+for the cache mode and adding functions to translate between those and
+pgprot values.
 
-Regards,
-Andreas
+To avoid too much performance penalty the translation between cache mode
+and pgprot values is done via tables which contain the relevant
+information.  Write-back cache mode is hard-wired to be 0, all other
+modes are configurable via those tables. For large pages there are
+translation functions as the PAT bit is located at different positions
+in the ptes of 4k and large pages.
 
---=20
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=FCrnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imend=F6rffer; HRB 21284 AG N=FCrnbe=
-rg
+Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Juergen Gross <jgross@suse.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stefan.bader@canonical.com
+Cc: xen-devel@lists.xensource.com
+Cc: konrad.wilk@oracle.com
+Cc: ville.syrjala@linux.intel.com
+Cc: david.vrabel@citrix.com
+Cc: jbeulich@suse.com
+Cc: toshi.kani@hp.com
+Cc: plagnioj@jcrosoft.com
+Cc: tomi.valkeinen@ti.com
+Cc: bhelgaas@google.com
+Link: http://lkml.kernel.org/r/1415019724-4317-2-git-send-email-jgross@suse.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/pgtable_types.h | 73 +++++++++++++++++++++++++++++++++++-
+ arch/x86/mm/init.c                   | 29 ++++++++++++++
+ 2 files changed, 101 insertions(+), 1 deletion(-)
 
-
---QVnTDSNGMLh4LkFHhFJSbbIDXqvpHP3ln
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUaIHQAAoJEPou0S0+fgE/+o4P/17swao7VtdOUDwnEB4XUHML
-fOwKfuz0vwOyt8caopXBu0vRm2PDuwGKHXpV43Gi98prRa4KquRps6AIGb7reCbC
-BEMMLzv4cR8CpMQegIYq5201WcYj8JJPJ4m0iopZC5LwjiEAVJZ3sUTIrodQh3Ft
-1HhWHJMgX5PwnshnsISOw70HEkaBrmfPnSZlj9Zw/Qfa4Nw+yGX5bhEJe+ILpcbH
-id01BN04NbFn4p1XEn5hYv5R8xkh9jh71H/qvBeqSoI+MRQt3MJLWF45xiAD6/JR
-zGcdHF4R8MnbMy0EOV8k1GCbnc7cgcRwVZeaX3EcMtu3pQFM3p45zJhQ5Q0c1NSf
-KmNXYIBQ3BXesU93yQoBVs6HqVlf1f1N/vSLJCk5aIkNziyCW2CysTa9k2WOvtb4
-XCHHw2MfbtKQ9lxHOelhRkLM6TzpLFkZ0LUzTW3x3rOsmVTFUJoRPHg0p+JjYOua
-FhkFGBRWb7Ru5thrmXAnW8XalMZk0ISOrCl714nQ0N2MMAjWVejcGgFZqWNHHib9
-TpWVdcxwp2L7WcGPxygeM9xV2SbZdHYddH1bcCXyhTWbqaMcrfl0kD95xuAgxNpg
-8j0yF2Xts/Nc2uEwwgVWiSRuXCiyHspHQnk4VHWWwM4teLRteK+rgowQsoKKsVyC
-WdXdlvG2HpBcce1GyES8
-=Lovr
------END PGP SIGNATURE-----
-
---QVnTDSNGMLh4LkFHhFJSbbIDXqvpHP3ln--
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 0778964..5124642 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -128,12 +128,34 @@
+ 			 _PAGE_SOFT_DIRTY | _PAGE_NUMA)
+ #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE | _PAGE_NUMA)
+ 
+-#define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
+ #define _PAGE_CACHE_WB		(0)
+ #define _PAGE_CACHE_WC		(_PAGE_PWT)
+ #define _PAGE_CACHE_UC_MINUS	(_PAGE_PCD)
+ #define _PAGE_CACHE_UC		(_PAGE_PCD | _PAGE_PWT)
+ 
++/*
++ * The cache modes defined here are used to translate between pure SW usage
++ * and the HW defined cache mode bits and/or PAT entries.
++ *
++ * The resulting bits for PWT, PCD and PAT should be chosen in a way
++ * to have the WB mode at index 0 (all bits clear). This is the default
++ * right now and likely would break too much if changed.
++ */
++#ifndef __ASSEMBLY__
++enum page_cache_mode {
++	_PAGE_CACHE_MODE_WB = 0,
++	_PAGE_CACHE_MODE_WC = 1,
++	_PAGE_CACHE_MODE_UC_MINUS = 2,
++	_PAGE_CACHE_MODE_UC = 3,
++	_PAGE_CACHE_MODE_WT = 4,
++	_PAGE_CACHE_MODE_WP = 5,
++	_PAGE_CACHE_MODE_NUM = 8
++};
++#endif
++
++#define _PAGE_CACHE_MASK	(_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)
++#define _PAGE_NOCACHE		(cachemode2protval(_PAGE_CACHE_MODE_UC))
++
+ #define PAGE_NONE	__pgprot(_PAGE_PROTNONE | _PAGE_ACCESSED)
+ #define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER | \
+ 				 _PAGE_ACCESSED | _PAGE_NX)
+@@ -341,6 +363,55 @@ static inline pmdval_t pmdnuma_flags(pmd_t pmd)
+ #define pgprot_val(x)	((x).pgprot)
+ #define __pgprot(x)	((pgprot_t) { (x) } )
+ 
++extern uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM];
++extern uint8_t __pte2cachemode_tbl[8];
++
++#define __pte2cm_idx(cb)				\
++	((((cb) >> (_PAGE_BIT_PAT - 2)) & 4) |		\
++	 (((cb) >> (_PAGE_BIT_PCD - 1)) & 2) |		\
++	 (((cb) >> _PAGE_BIT_PWT) & 1))
++
++static inline unsigned long cachemode2protval(enum page_cache_mode pcm)
++{
++	if (likely(pcm == 0))
++		return 0;
++	return __cachemode2pte_tbl[pcm];
++}
++static inline pgprot_t cachemode2pgprot(enum page_cache_mode pcm)
++{
++	return __pgprot(cachemode2protval(pcm));
++}
++static inline enum page_cache_mode pgprot2cachemode(pgprot_t pgprot)
++{
++	unsigned long masked;
++
++	masked = pgprot_val(pgprot) & _PAGE_CACHE_MASK;
++	if (likely(masked == 0))
++		return 0;
++	return __pte2cachemode_tbl[__pte2cm_idx(masked)];
++}
++static inline pgprot_t pgprot_4k_2_large(pgprot_t pgprot)
++{
++	pgprot_t new;
++	unsigned long val;
++
++	val = pgprot_val(pgprot);
++	pgprot_val(new) = (val & ~(_PAGE_PAT | _PAGE_PAT_LARGE)) |
++		((val & _PAGE_PAT) << (_PAGE_BIT_PAT_LARGE - _PAGE_BIT_PAT));
++	return new;
++}
++static inline pgprot_t pgprot_large_2_4k(pgprot_t pgprot)
++{
++	pgprot_t new;
++	unsigned long val;
++
++	val = pgprot_val(pgprot);
++	pgprot_val(new) = (val & ~(_PAGE_PAT | _PAGE_PAT_LARGE)) |
++			  ((val & _PAGE_PAT_LARGE) >>
++			   (_PAGE_BIT_PAT_LARGE - _PAGE_BIT_PAT));
++	return new;
++}
++
+ 
+ typedef struct page *pgtable_t;
+ 
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 66dba36..a9776ba 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -27,6 +27,35 @@
+ 
+ #include "mm_internal.h"
+ 
++/*
++ * Tables translating between page_cache_type_t and pte encoding.
++ * Minimal supported modes are defined statically, modified if more supported
++ * cache modes are available.
++ * Index into __cachemode2pte_tbl is the cachemode.
++ * Index into __pte2cachemode_tbl are the caching attribute bits of the pte
++ * (_PAGE_PWT, _PAGE_PCD, _PAGE_PAT) at index bit positions 0, 1, 2.
++ */
++uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
++	[_PAGE_CACHE_MODE_WB]		= 0,
++	[_PAGE_CACHE_MODE_WC]		= _PAGE_PWT,
++	[_PAGE_CACHE_MODE_UC_MINUS]	= _PAGE_PCD,
++	[_PAGE_CACHE_MODE_UC]		= _PAGE_PCD | _PAGE_PWT,
++	[_PAGE_CACHE_MODE_WT]		= _PAGE_PCD,
++	[_PAGE_CACHE_MODE_WP]		= _PAGE_PCD,
++};
++EXPORT_SYMBOL_GPL(__cachemode2pte_tbl);
++uint8_t __pte2cachemode_tbl[8] = {
++	[__pte2cm_idx(0)] = _PAGE_CACHE_MODE_WB,
++	[__pte2cm_idx(_PAGE_PWT)] = _PAGE_CACHE_MODE_WC,
++	[__pte2cm_idx(_PAGE_PCD)] = _PAGE_CACHE_MODE_UC_MINUS,
++	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD)] = _PAGE_CACHE_MODE_UC,
++	[__pte2cm_idx(_PAGE_PAT)] = _PAGE_CACHE_MODE_WB,
++	[__pte2cm_idx(_PAGE_PWT | _PAGE_PAT)] = _PAGE_CACHE_MODE_WC,
++	[__pte2cm_idx(_PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC_MINUS,
++	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC,
++};
++EXPORT_SYMBOL_GPL(__pte2cachemode_tbl);
++
+ static unsigned long __initdata pgt_buf_start;
+ static unsigned long __initdata pgt_buf_end;
+ static unsigned long __initdata pgt_buf_top;
