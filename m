@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaKPLZV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 06:25:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19080 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaKPLZT (ORCPT
+	id S1755274AbaKPLlk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 06:41:40 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:62636 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005AbaKPLli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 06:25:19 -0500
-Date: Sun, 16 Nov 2014 14:24:57 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] kernel-audit: Deletion of an unnecessary check
- before the function call "audit_log_end"
-Message-ID: <20141116112457.GB4905@mwanda>
-References: <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <54687F1A.1010809@users.sourceforge.net>
+	Sun, 16 Nov 2014 06:41:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54687F1A.1010809@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1415927461-14220-1-git-send-email-minchan@kernel.org>
+References: <1415927461-14220-1-git-send-email-minchan@kernel.org>
+Date: Sun, 16 Nov 2014 19:41:37 +0800
+Message-ID: <CADAEsF9UXD7qfKH6eSU30qODxGS4D6eHTaX-s1ezcw12hyNbrw@mail.gmail.com>
+Subject: Re: [PATCH] zsmalloc: correct fragile [kmap|kunmap]_atomic use
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Jerome Marchand <jmarchan@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 11:40:26AM +0100, SF Markus Elfring wrote:
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index 21eae3c..1fed61c 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -1470,8 +1470,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
->  
->  	/* Send end of event record to help user space know we are finished */
->  	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
-> -	if (ab)
-> -		audit_log_end(ab);
-> +	audit_log_end(ab);
->  	if (call_panic)
->  		audit_panic("error converting sid to string");
->  }
+Hello
 
-I should have tried to explain this in my earlier message...
+2014-11-14 9:11 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> The kunmap_atomic should use virtual address getting by kmap_atomic.
+> However, some pieces of code in zsmalloc uses modified address,
+> not the one got by kmap_atomic for kunmap_atomic.
+>
+> It's okay for working because zsmalloc modifies the address
+> inner PAGE_SIZE bounday so it works with current kmap_atomic's
+> implementation. But it's still fragile with potential changing
+> of kmap_atomic so let's correct it.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/zsmalloc.c | 21 ++++++++++++---------
+>  1 file changed, 12 insertions(+), 9 deletions(-)
+>
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index b3b57ef85830..85e14f584048 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -629,6 +629,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>                 struct page *next_page;
+>                 struct link_free *link;
+>                 unsigned int i = 1;
+> +               void *vaddr;
+>
+>                 /*
+>                  * page->index stores offset of first object starting
+> @@ -639,8 +640,8 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>                 if (page != first_page)
+>                         page->index = off;
+>
+> -               link = (struct link_free *)kmap_atomic(page) +
+> -                                               off / sizeof(*link);
+> +               vaddr = kmap_atomic(page);
+> +               link = (struct link_free *)vaddr + off / sizeof(*link);
+Just a nitpick:
+I think
+                    link = (struct link_free *)(vaddr + off);
+is better.
+To use the same method as in zs_free()
+                   link = (struct link_free *)(vaddr + f_offset);
 
-The original code is very clear, the new code works exactly the same but
-it's not clear if the author forgot about handling errors from
-audit_log_start().  So now someone will come along later and add:
+>
+>                 while ((off += class->size) < PAGE_SIZE) {
+>                         link->next = obj_location_to_handle(page, i++);
+> @@ -654,7 +655,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>                  */
+>                 next_page = get_next_page(page);
+>                 link->next = obj_location_to_handle(next_page, 0);
+> -               kunmap_atomic(link);
+> +               kunmap_atomic(vaddr);
+>                 page = next_page;
+>                 off %= PAGE_SIZE;
+>         }
+> @@ -1055,6 +1056,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>         unsigned long obj;
+>         struct link_free *link;
+>         struct size_class *class;
+> +       void *vaddr;
+>
+>         struct page *first_page, *m_page;
+>         unsigned long m_objidx, m_offset;
+> @@ -1083,11 +1085,11 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>         obj_handle_to_location(obj, &m_page, &m_objidx);
+>         m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
+>
+> -       link = (struct link_free *)kmap_atomic(m_page) +
+> -                                       m_offset / sizeof(*link);
+> +       vaddr = kmap_atomic(m_page);
+> +       link = (struct link_free *)vaddr + m_offset / sizeof(*link);
+            link = (struct link_free *)(vaddr + m_offset)
 
-	if (!ab)
-		return;
+>         first_page->freelist = link->next;
+>         memset(link, POISON_INUSE, sizeof(*link));
+> -       kunmap_atomic(link);
+> +       kunmap_atomic(vaddr);
+>
+>         first_page->inuse++;
+>         /* Now move the zspage to another fullness group, if required */
+> @@ -1103,6 +1105,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+>         struct link_free *link;
+>         struct page *first_page, *f_page;
+>         unsigned long f_objidx, f_offset;
+> +       void *vaddr;
+>
+>         int class_idx;
+>         struct size_class *class;
+> @@ -1121,10 +1124,10 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+>         spin_lock(&class->lock);
+>
+>         /* Insert this object in containing zspage's freelist */
+> -       link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
+> -                                                       + f_offset);
+> +       vaddr = kmap_atomic(f_page);
+> +       link = (struct link_free *)(vaddr + f_offset);
+Yes, I think this method to calc *link* is better. (:
 
-We get a lot of mindless "add error handling" patches like that.  Even
-if no one adds that patch who ever is reading the code will think that
-the error handling is missing by mistake and have to read the git log
-to determine the original intention.
+Thanks
 
-Instead of hiding the readable code in the git log, let's just leave it
-in the source file.
-
-regards,
-dan carpenter
-
+>         link->next = first_page->freelist;
+> -       kunmap_atomic(link);
+> +       kunmap_atomic(vaddr);
+>         first_page->freelist = (void *)obj;
+>
+>         first_page->inuse--;
+> --
+> 2.0.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
