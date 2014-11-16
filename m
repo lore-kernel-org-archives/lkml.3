@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaKPWBD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:01:03 -0500
-Received: from 1wt.eu ([62.212.114.60]:47936 "EHLO 1wt.eu"
+	id S1751847AbaKPWBA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:01:00 -0500
+Received: from 1wt.eu ([62.212.114.60]:47935 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734AbaKPWA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751720AbaKPWA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Nov 2014 17:00:56 -0500
-Message-Id: <20141116215328.816577534@1wt.eu>
+Message-Id: <20141116215330.143419127@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:32 +0100
+Date: Sun, 16 Nov 2014 22:54:04 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ralf Baechle <ralf@linux-mips.org>, Willy Tarreau <w@1wt.eu>
-Subject: [ 04/48] MIPS: Cleanup flags in syscall flags handlers.
+Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 36/48] netfilter: nf_log: account for size of NLMSG_DONE
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,88 +22,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ attribute
 
-From: Ralf Baechle <ralf@linux-mips.org>
+From: Florian Westphal <fw@strlen.de>
 
-This will simplify further modifications.
+We currently neither account for the nlattr size, nor do we consider
+the size of the trailing NLMSG_DONE when allocating nlmsg skb.
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-(cherry picked from commit e7f3b48af7be9f8007a224663a5b91340626fed5)
-[wt: this patch is only there to ease integration of next one]
+This can result in nflog to stop working, as __nfulnl_send() re-tries
+sending forever if it failed to append NLMSG_DONE (which will never
+work if buffer is not large enough).
+
+Reported-by: Houcheng Lin <houcheng@gmail.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+(cherry picked from commit 9dfa1dfe4d5e5e66a991321ab08afe69759d797a)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/mips/include/asm/thread_info.h | 2 ++
- arch/mips/kernel/scall32-o32.S      | 2 +-
- arch/mips/kernel/scall64-64.S       | 2 +-
- arch/mips/kernel/scall64-n32.S      | 2 +-
- arch/mips/kernel/scall64-o32.S      | 2 +-
- 5 files changed, 6 insertions(+), 4 deletions(-)
+ net/netfilter/nfnetlink_log.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/mips/include/asm/thread_info.h b/arch/mips/include/asm/thread_info.h
-index 0e50757..2ef1662 100644
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -145,6 +145,8 @@ register struct thread_info *__current_thread_info __asm__("$28");
- #define _TIF_FPUBOUND		(1<<TIF_FPUBOUND)
- #define _TIF_LOAD_WATCH		(1<<TIF_LOAD_WATCH)
+diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
+index f900dc3..a5f02eb 100644
+--- a/net/netfilter/nfnetlink_log.c
++++ b/net/netfilter/nfnetlink_log.c
+@@ -579,7 +579,8 @@ nfulnl_log_packet(u_int8_t pf,
+ 		+ nla_total_size(sizeof(u_int32_t))	/* gid */
+ 		+ nla_total_size(plen)			/* prefix */
+ 		+ nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
+-		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
++		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
++		+ nla_total_size(sizeof(struct nfgenmsg));	/* NLMSG_DONE */
  
-+#define _TIF_WORK_SYSCALL_ENTRY	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT)
-+
- /* work to do on interrupt/exception return */
- #define _TIF_WORK_MASK		(0x0000ffef & ~_TIF_SECCOMP)
- /* work to do on any return to u-space */
-diff --git a/arch/mips/kernel/scall32-o32.S b/arch/mips/kernel/scall32-o32.S
-index fd2a9bb..b72c554 100644
---- a/arch/mips/kernel/scall32-o32.S
-+++ b/arch/mips/kernel/scall32-o32.S
-@@ -52,7 +52,7 @@ NESTED(handle_sys, PT_SIZE, sp)
+ 	if (in && skb_mac_header_was_set(skb)) {
+ 		size +=   nla_total_size(skb->dev->hard_header_len)
+@@ -621,8 +622,7 @@ nfulnl_log_packet(u_int8_t pf,
+ 		goto unlock_and_release;
+ 	}
  
- stack_done:
- 	lw	t0, TI_FLAGS($28)	# syscall tracing enabled?
--	li	t1, _TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT
-+	li	t1, _TIF_WORK_SYSCALL_ENTRY
- 	and	t0, t1
- 	bnez	t0, syscall_trace_entry	# -> yes
- 
-diff --git a/arch/mips/kernel/scall64-64.S b/arch/mips/kernel/scall64-64.S
-index 18bf7f3..eaa345b 100644
---- a/arch/mips/kernel/scall64-64.S
-+++ b/arch/mips/kernel/scall64-64.S
-@@ -54,7 +54,7 @@ NESTED(handle_sys64, PT_SIZE, sp)
- 
- 	sd	a3, PT_R26(sp)		# save a3 for syscall restarting
- 
--	li	t1, _TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT
-+	li	t1, _TIF_WORK_SYSCALL_ENTRY
- 	LONG_L	t0, TI_FLAGS($28)	# syscall tracing enabled?
- 	and	t0, t1, t0
- 	bnez	t0, syscall_trace_entry
-diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
-index 6ebc079..0a51c3d 100644
---- a/arch/mips/kernel/scall64-n32.S
-+++ b/arch/mips/kernel/scall64-n32.S
-@@ -53,7 +53,7 @@ NESTED(handle_sysn32, PT_SIZE, sp)
- 
- 	sd	a3, PT_R26(sp)		# save a3 for syscall restarting
- 
--	li	t1, _TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT
-+	li	t1, _TIF_WORK_SYSCALL_ENTRY
- 	LONG_L	t0, TI_FLAGS($28)	# syscall tracing enabled?
- 	and	t0, t1, t0
- 	bnez	t0, n32_syscall_trace_entry
-diff --git a/arch/mips/kernel/scall64-o32.S b/arch/mips/kernel/scall64-o32.S
-index 14dde4c..33ed571 100644
---- a/arch/mips/kernel/scall64-o32.S
-+++ b/arch/mips/kernel/scall64-o32.S
-@@ -81,7 +81,7 @@ NESTED(handle_sys, PT_SIZE, sp)
- 	PTR	4b, bad_stack
- 	.previous
- 
--	li	t1, _TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT
-+	li	t1, _TIF_WORK_SYSCALL_ENTRY
- 	LONG_L	t0, TI_FLAGS($28)	# syscall tracing enabled?
- 	and	t0, t1, t0
- 	bnez	t0, trace_a_syscall
+-	if (inst->skb &&
+-	    size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
++	if (inst->skb && size > skb_tailroom(inst->skb)) {
+ 		/* either the queue len is too high or we don't have
+ 		 * enough room in the skb left. flush to userspace. */
+ 		__nfulnl_flush(inst);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
