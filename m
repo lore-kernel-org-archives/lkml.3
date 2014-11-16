@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933029AbaKPAZT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Nov 2014 19:25:19 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:40663 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851AbaKPATX (ORCPT
+	id S1754966AbaKPAaI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Nov 2014 19:30:08 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:41020 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842AbaKPAaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Nov 2014 19:19:23 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: ralf@linux-mips.org
-Cc: f.fainelli@gmail.com, jfraser@broadcom.com, dtor@chromium.org,
-        tglx@linutronix.de, jason@lakedaemon.net, linux-mips@linux-mips.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 02/22] irqchip: brcmstb-l2: fix error handling of irq_of_parse_and_map
-Date: Sat, 15 Nov 2014 16:17:26 -0800
-Message-Id: <1416097066-20452-3-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1416097066-20452-1-git-send-email-cernekee@gmail.com>
-References: <1416097066-20452-1-git-send-email-cernekee@gmail.com>
+	Sat, 15 Nov 2014 19:30:06 -0500
+Date: Sun, 16 Nov 2014 02:29:56 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Tony Lindgren <tony@atomide.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH v12 11/15] arm: omap1: Migrate debug_ll macros to use
+ 8250.S
+Message-ID: <20141116002956.GA13220@fuloong-minipc.musicnaut.iki.fi>
+References: <1414148076-12685-1-git-send-email-daniel.thompson@linaro.org>
+ <1414148076-12685-12-git-send-email-daniel.thompson@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414148076-12685-12-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Torokhov <dtor@chromium.org>
+Hi,
 
-Return value of irq_of_parse_and_map() is unsigned int, with 0
-indicating failure, so testing for negative result never works.
+On Fri, Oct 24, 2014 at 11:54:32AM +0100, Daniel Thompson wrote:
+> +	config DEBUG_OMAP1UART1
+> +		bool "Kernel low-level debugging via OMAP1 UART1"
+> +		depends on ARCH_OMAP1
+> +		select DEBUG_UART_8250
+> +		help
+> +		  Say Y here if you want kernel low-level debugging support
+> +		  on OMAP1 based platforms (expect OMAP730) on the UART1.
+[...]
+> +		  on OMAP1 based platforms (expect OMAP730) on the UART2.
+[...]
+> +		  on OMAP1 based platforms (expect OMAP730) on the UART3.
+                                            ^^^^^^
 
-Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
-Tested-by: Kevin Cernekee <cernekee@gmail.com>
----
- drivers/irqchip/irq-brcmstb-l2.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Spelling again wrong. I think it was already corrected in v11?
 
-diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
-index 4aa653a..313c2c6 100644
---- a/drivers/irqchip/irq-brcmstb-l2.c
-+++ b/drivers/irqchip/irq-brcmstb-l2.c
-@@ -139,9 +139,9 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
- 	writel(0xffffffff, data->base + CPU_CLEAR);
- 
- 	data->parent_irq = irq_of_parse_and_map(np, 0);
--	if (data->parent_irq < 0) {
-+	if (!data->parent_irq) {
- 		pr_err("failed to find parent interrupt\n");
--		ret = data->parent_irq;
-+		ret = -EINVAL;
- 		goto out_unmap;
- 	}
- 
--- 
-2.1.1
-
+A.
