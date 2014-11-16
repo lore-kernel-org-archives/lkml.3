@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528AbaKPSBF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 13:01:05 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50023 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302AbaKPSBC (ORCPT
+	id S1755549AbaKPSDr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 13:03:47 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42745 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302AbaKPSDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 13:01:02 -0500
-Date: Sun, 16 Nov 2014 18:01:00 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ionut Alexa <ionut.m.alexa@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel:signal.c Fix coding style errors and warnings.
-Message-ID: <20141116180059.GS7996@ZenIV.linux.org.uk>
-References: <1415980615-12345-1-git-send-email-ionut.m.alexa@gmail.com>
- <20141116024752.GP7996@ZenIV.linux.org.uk>
- <CAKF-a2AYAPy2ENaFVanFCWZ_sXHPy_K_uH6zo5apT-kLLaqONA@mail.gmail.com>
- <20141116170810.GQ7996@ZenIV.linux.org.uk>
- <CAKF-a2AhmE4iZHsRNgyp6Le6uaDNSUjbxQENm5sTYD3f24ORnA@mail.gmail.com>
+	Sun, 16 Nov 2014 13:03:46 -0500
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: Felipe Lavratti <fanl.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Touchpad/Clickpad Linux Project
+In-Reply-To: <CAF2ZALW53c+9hvbvQP9tD=g_BBm16cbZdoqojWtf56s46g_-6g@mail.gmail.com>
+References: <CAF2ZALW53c+9hvbvQP9tD=g_BBm16cbZdoqojWtf56s46g_-6g@mail.gmail.com>
+User-Agent: Notmuch/0.19~rc2+35~gb423929 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Sun, 16 Nov 2014 13:03:41 -0500
+Message-ID: <8761efaupu.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKF-a2AhmE4iZHsRNgyp6Le6uaDNSUjbxQENm5sTYD3f24ORnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 07:28:29PM +0200, Ionut Alexa wrote:
-> I worked a while in critical automotive software application. There is
-> nothing more important than to know your program is running start-to-end in
-> the correct order. For the automotive indurstri is safety critical. For PC
-> application is not madatory. But for Operating systems, it is a good
-> practice. If the function exits from a diferent point depending on some
-> conditions, it is hard to debug when the kernel behavior is not the
-> expected one.
+--=-=-=
+Content-Type: text/plain
 
-Excuse me, but this is pure cargo-cult argument.  There is a lot more to
-complexity of debugging than blind application of rules like that.  Sure,
-the control flow graph affects it.  However, proposed change ("replace
-all returns with goto to the end") is not an improvement at all.
+Felipe Lavratti <fanl.lkml@gmail.com> writes:
 
-There are reasons behind these practices; applying them without understanding
-those is not going to work.  And the reasons behind the "single exit point
-is better" apply to those goto just as well as they did to those return;
-control flow remains the same, after all.
+> Hello,
+>
+> I'd like to ask if there's any undergoing Linux project regarding the
+> Touchpad/Clickpad Linux sub system and where can I get in touch with
+> them.
+>
+Is there a particular driver you are interested in? If so you may want
+to see who is responsible for it in the [maintainers] list. Regardless,
+your question would be more appropriate for the
+linux-input@vger.kernel.org list.
+
+Cheers,
+
+- Ben
+
+
+[MAINTAINERS]: http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/MAINTAINERS
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUaOb9AAoJEErkyLZmeNiD294IALsY28zQVs8u3at0cDc9C1ds
+iElTH6ulEq2/IAfyzf0KsGD+JWFacX7WzwTRjHFokRH32+BQnrQgS+71o4i/CcEL
+OM9GKu5HHdIZmyZbJwxEPfHL2N4wu141bYBOXwbxqmoHPU7idgPyEC688BDvvAyD
+A9ZKmeo+i20ns7Va36NCPtzRxpnqDF1DSg9EW/eJPDz/qp34slxkXmSnhwYGjl7U
+FLmcOl+eZGtWH91BIltGpjL4Kk4P0d6gVX54IJ2Rbb+4MGD+iuuwIJIc2rFGrJNI
+ttHd9gzcs+HVe6UFCwkEOX5EXsdtiF1Z6oh8AeP0UjoVaOXGg8o8LyLiiQevd8U=
+=YTpN
+-----END PGP SIGNATURE-----
+--=-=-=--
