@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374AbaKPOB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 09:01:26 -0500
-Received: from mail-pa0-f65.google.com ([209.85.220.65]:34277 "EHLO
-	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251AbaKPOBZ (ORCPT
+	id S1755336AbaKPONf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 09:13:35 -0500
+Received: from mail2.congreso.gob.pe ([200.10.82.46]:57551 "EHLO
+	licpnodo1.congreso.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750928AbaKPONe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 09:01:25 -0500
+	Sun, 16 Nov 2014 09:13:34 -0500
+Message-ID: <398611.303041416147139443.JavaMail.defaultUser@defaultHost>
+Date: Sun, 16 Nov 2014 09:12:19 -0500 (PET)
+From: "Gloria C. Mackenzie" <Info@congreso.gob.pe>
+Reply-To: mgloriac679@gmail.com
+Subject: 
 MIME-Version: 1.0
-From: Felipe Lavratti <fanl.lkml@gmail.com>
-Date: Sun, 16 Nov 2014 12:01:04 -0200
-Message-ID: <CAF2ZALW53c+9hvbvQP9tD=g_BBm16cbZdoqojWtf56s46g_-6g@mail.gmail.com>
-Subject: Touchpad/Clickpad Linux Project
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-I'd like to ask if there's any undergoing Linux project regarding the
-Touchpad/Clickpad Linux sub system and where can I get in touch with
-them.
 
-Thanks.
-At.
+
+--
+Contact Mrs. Gloria C. Mackenzie for your 
+Donation US$ 2 Million Dollars Donation
+--
+
