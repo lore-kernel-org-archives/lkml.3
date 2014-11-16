@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbaKPK5P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 05:57:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34860 "EHLO
+	id S1755505AbaKPK5e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 05:57:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34866 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207AbaKPK5M (ORCPT
+	with ESMTP id S1755286AbaKPK5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 05:57:12 -0500
-Date: Sun, 16 Nov 2014 02:57:00 -0800
+	Sun, 16 Nov 2014 05:57:30 -0500
+Date: Sun, 16 Nov 2014 02:57:16 -0800
 From: tip-bot for Juergen Gross <tipbot@zytor.com>
-Message-ID: <tip-102e19e1955d85f31475416b1ee22980c6462cf8@git.kernel.org>
-Cc: hpa@zytor.com, tglx@linutronix.de, jgross@suse.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org
-Reply-To: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        jgross@suse.com, mingo@kernel.org
-In-Reply-To: <1415019724-4317-11-git-send-email-jgross@suse.com>
-References: <1415019724-4317-11-git-send-email-jgross@suse.com>
+Message-ID: <tip-c06814d8419a74528500f85faf5fc01f67f8e7e6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, stefan.bader@canonical.com, jgross@suse.com,
+        tglx@linutronix.de, hpa@zytor.com, mingo@kernel.org
+Reply-To: hpa@zytor.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        jgross@suse.com, stefan.bader@canonical.com, tglx@linutronix.de
+In-Reply-To: <1415019724-4317-12-git-send-email-jgross@suse.com>
+References: <1415019724-4317-12-git-send-email-jgross@suse.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/mm] x86:
-  Remove looking for setting of _PAGE_PAT_LARGE in pageattr.c
-Git-Commit-ID: 102e19e1955d85f31475416b1ee22980c6462cf8
+  Use new cache mode type in setting page attributes
+Git-Commit-ID: c06814d8419a74528500f85faf5fc01f67f8e7e6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,21 +32,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  102e19e1955d85f31475416b1ee22980c6462cf8
-Gitweb:     http://git.kernel.org/tip/102e19e1955d85f31475416b1ee22980c6462cf8
+Commit-ID:  c06814d8419a74528500f85faf5fc01f67f8e7e6
+Gitweb:     http://git.kernel.org/tip/c06814d8419a74528500f85faf5fc01f67f8e7e6
 Author:     Juergen Gross <jgross@suse.com>
-AuthorDate: Mon, 3 Nov 2014 14:01:56 +0100
+AuthorDate: Mon, 3 Nov 2014 14:01:57 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sun, 16 Nov 2014 11:04:25 +0100
 
-x86: Remove looking for setting of _PAGE_PAT_LARGE in pageattr.c
+x86: Use new cache mode type in setting page attributes
 
-When modifying page attributes via change_page_attr_set_clr() don't
-test for setting _PAGE_PAT_LARGE, as this is
-- never done
-- PAT support for large pages is not included in the kernel up to now
+Instead of directly using the cache mode bits in the pte switch to
+using the cache mode type in the functions for modifying page
+attributes.
 
+Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stefan.bader@canonical.com
 Cc: xen-devel@lists.xensource.com
 Cc: konrad.wilk@oracle.com
@@ -57,22 +58,180 @@ Cc: toshi.kani@hp.com
 Cc: plagnioj@jcrosoft.com
 Cc: tomi.valkeinen@ti.com
 Cc: bhelgaas@google.com
-Link: http://lkml.kernel.org/r/1415019724-4317-11-git-send-email-jgross@suse.com
+Link: http://lkml.kernel.org/r/1415019724-4317-12-git-send-email-jgross@suse.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/pageattr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/pageattr.c | 52 +++++++++++++++++++++++++++-----------------------
+ 1 file changed, 28 insertions(+), 24 deletions(-)
 
 diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index ae242a7..87c0d36 100644
+index 87c0d36..9f7e1b4 100644
 --- a/arch/x86/mm/pageattr.c
 +++ b/arch/x86/mm/pageattr.c
-@@ -1307,7 +1307,7 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
- static inline int cache_attr(pgprot_t attr)
- {
- 	return pgprot_val(attr) &
--		(_PAGE_PAT | _PAGE_PAT_LARGE | _PAGE_PWT | _PAGE_PCD);
-+		(_PAGE_PAT | _PAGE_PWT | _PAGE_PCD);
+@@ -1304,12 +1304,6 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
+ 	return 0;
  }
  
+-static inline int cache_attr(pgprot_t attr)
+-{
+-	return pgprot_val(attr) &
+-		(_PAGE_PAT | _PAGE_PWT | _PAGE_PCD);
+-}
+-
  static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+ 				    pgprot_t mask_set, pgprot_t mask_clr,
+ 				    int force_split, int in_flag,
+@@ -1390,7 +1384,7 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+ 	 * No need to flush, when we did not set any of the caching
+ 	 * attributes:
+ 	 */
+-	cache = cache_attr(mask_set);
++	cache = !!pgprot2cachemode(mask_set);
+ 
+ 	/*
+ 	 * On success we use CLFLUSH, when the CPU supports it to
+@@ -1445,7 +1439,8 @@ int _set_memory_uc(unsigned long addr, int numpages)
+ 	 * for now UC MINUS. see comments in ioremap_nocache()
+ 	 */
+ 	return change_page_attr_set(&addr, numpages,
+-				    __pgprot(_PAGE_CACHE_UC_MINUS), 0);
++				    cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS),
++				    0);
+ }
+ 
+ int set_memory_uc(unsigned long addr, int numpages)
+@@ -1474,7 +1469,7 @@ out_err:
+ EXPORT_SYMBOL(set_memory_uc);
+ 
+ static int _set_memory_array(unsigned long *addr, int addrinarray,
+-		unsigned long new_type)
++		enum page_cache_mode new_type)
+ {
+ 	int i, j;
+ 	int ret;
+@@ -1484,17 +1479,19 @@ static int _set_memory_array(unsigned long *addr, int addrinarray,
+ 	 */
+ 	for (i = 0; i < addrinarray; i++) {
+ 		ret = reserve_memtype(__pa(addr[i]), __pa(addr[i]) + PAGE_SIZE,
+-					new_type, NULL);
++					cachemode2protval(new_type), NULL);
+ 		if (ret)
+ 			goto out_free;
+ 	}
+ 
+ 	ret = change_page_attr_set(addr, addrinarray,
+-				    __pgprot(_PAGE_CACHE_UC_MINUS), 1);
++				   cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS),
++				   1);
+ 
+-	if (!ret && new_type == _PAGE_CACHE_WC)
++	if (!ret && new_type == _PAGE_CACHE_MODE_WC)
+ 		ret = change_page_attr_set_clr(addr, addrinarray,
+-					       __pgprot(_PAGE_CACHE_WC),
++					       cachemode2pgprot(
++						_PAGE_CACHE_MODE_WC),
+ 					       __pgprot(_PAGE_CACHE_MASK),
+ 					       0, CPA_ARRAY, NULL);
+ 	if (ret)
+@@ -1511,13 +1508,13 @@ out_free:
+ 
+ int set_memory_array_uc(unsigned long *addr, int addrinarray)
+ {
+-	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_UC_MINUS);
++	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_MODE_UC_MINUS);
+ }
+ EXPORT_SYMBOL(set_memory_array_uc);
+ 
+ int set_memory_array_wc(unsigned long *addr, int addrinarray)
+ {
+-	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_WC);
++	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_MODE_WC);
+ }
+ EXPORT_SYMBOL(set_memory_array_wc);
+ 
+@@ -1527,10 +1524,12 @@ int _set_memory_wc(unsigned long addr, int numpages)
+ 	unsigned long addr_copy = addr;
+ 
+ 	ret = change_page_attr_set(&addr, numpages,
+-				    __pgprot(_PAGE_CACHE_UC_MINUS), 0);
++				   cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS),
++				   0);
+ 	if (!ret) {
+ 		ret = change_page_attr_set_clr(&addr_copy, numpages,
+-					       __pgprot(_PAGE_CACHE_WC),
++					       cachemode2pgprot(
++						_PAGE_CACHE_MODE_WC),
+ 					       __pgprot(_PAGE_CACHE_MASK),
+ 					       0, 0, NULL);
+ 	}
+@@ -1564,6 +1563,7 @@ EXPORT_SYMBOL(set_memory_wc);
+ 
+ int _set_memory_wb(unsigned long addr, int numpages)
+ {
++	/* WB cache mode is hard wired to all cache attribute bits being 0 */
+ 	return change_page_attr_clear(&addr, numpages,
+ 				      __pgprot(_PAGE_CACHE_MASK), 0);
+ }
+@@ -1586,6 +1586,7 @@ int set_memory_array_wb(unsigned long *addr, int addrinarray)
+ 	int i;
+ 	int ret;
+ 
++	/* WB cache mode is hard wired to all cache attribute bits being 0 */
+ 	ret = change_page_attr_clear(addr, addrinarray,
+ 				      __pgprot(_PAGE_CACHE_MASK), 1);
+ 	if (ret)
+@@ -1648,7 +1649,7 @@ int set_pages_uc(struct page *page, int numpages)
+ EXPORT_SYMBOL(set_pages_uc);
+ 
+ static int _set_pages_array(struct page **pages, int addrinarray,
+-		unsigned long new_type)
++		enum page_cache_mode new_type)
+ {
+ 	unsigned long start;
+ 	unsigned long end;
+@@ -1661,15 +1662,17 @@ static int _set_pages_array(struct page **pages, int addrinarray,
+ 			continue;
+ 		start = page_to_pfn(pages[i]) << PAGE_SHIFT;
+ 		end = start + PAGE_SIZE;
+-		if (reserve_memtype(start, end, new_type, NULL))
++		if (reserve_memtype(start, end, cachemode2protval(new_type),
++				    NULL))
+ 			goto err_out;
+ 	}
+ 
+ 	ret = cpa_set_pages_array(pages, addrinarray,
+-			__pgprot(_PAGE_CACHE_UC_MINUS));
+-	if (!ret && new_type == _PAGE_CACHE_WC)
++			cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS));
++	if (!ret && new_type == _PAGE_CACHE_MODE_WC)
+ 		ret = change_page_attr_set_clr(NULL, addrinarray,
+-					       __pgprot(_PAGE_CACHE_WC),
++					       cachemode2pgprot(
++						_PAGE_CACHE_MODE_WC),
+ 					       __pgprot(_PAGE_CACHE_MASK),
+ 					       0, CPA_PAGES_ARRAY, pages);
+ 	if (ret)
+@@ -1689,13 +1692,13 @@ err_out:
+ 
+ int set_pages_array_uc(struct page **pages, int addrinarray)
+ {
+-	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_UC_MINUS);
++	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_MODE_UC_MINUS);
+ }
+ EXPORT_SYMBOL(set_pages_array_uc);
+ 
+ int set_pages_array_wc(struct page **pages, int addrinarray)
+ {
+-	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_WC);
++	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_MODE_WC);
+ }
+ EXPORT_SYMBOL(set_pages_array_wc);
+ 
+@@ -1714,6 +1717,7 @@ int set_pages_array_wb(struct page **pages, int addrinarray)
+ 	unsigned long end;
+ 	int i;
+ 
++	/* WB cache mode is hard wired to all cache attribute bits being 0 */
+ 	retval = cpa_clear_pages_array(pages, addrinarray,
+ 			__pgprot(_PAGE_CACHE_MASK));
+ 	if (retval)
