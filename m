@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039AbaKPKDc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 05:03:32 -0500
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:14235 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752771AbaKPKDb (ORCPT
+	id S1755153AbaKPKGl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 05:06:41 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:37954 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782AbaKPKGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 05:03:31 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtcNAHN1aFRbsk2U/2dsb2JhbABbgw6BLrhMBQF1mhWBChcBAQEBAX2EMC8jgRo3iEUBwGiPbYY+imQdhDUFnkyWeoFHAYI1PDCCSwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Peter Huewe <peterhuewe@gmx.de>,
-        Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net
-Subject: [PATCH 1/1 linux-next] tpm: remove unnecessary sizeof(u8)
-Date: Sun, 16 Nov 2014 11:03:24 +0100
-Message-Id: <1416132204-12714-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Sun, 16 Nov 2014 05:06:39 -0500
+Date: Sun, 16 Nov 2014 11:06:36 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141116100636.GA340@x4>
+References: <20141114213124.GB3344@redhat.com>
+ <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+ <20141115213405.GA31971@redhat.com>
+ <20141116014006.GA5016@redhat.com>
+ <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sizeof(u8) is always 1.
+On 2014.11.15 at 22:33 -0800, Linus Torvalds wrote:
+> On Sat, Nov 15, 2014 at 5:40 PM, Dave Jones <davej@redhat.com> wrote:
+> >  >
+> >  > I'll try that next, and check in on it tomorrow.
+> >
+> > No luck. Died even faster this time.
+> 
+> Yeah, and your other lockups haven't even been TLB related. Not that
+> they look like anything else *either*.
+> 
+> I have no ideas left. I'd go for a bisection
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/char/tpm/tpm_i2c_stm_st33.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Before starting a bisection you could try and disable transparent_hugepages.
+There are strange bugs, that were introduced during this merge-window, in this
+area. See: https://lkml.org/lkml/2014/11/4/144
+https://lkml.org/lkml/2014/11/4/904
+http://thread.gmane.org/gmane.linux.kernel.mm/124451
 
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 4669e37..5271b75 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -635,13 +635,13 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	}
- 
- 	platform_data->tpm_i2c_buffer[0] =
--	    kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-+	    kmalloc(TPM_BUFSIZE, GFP_KERNEL);
- 	if (platform_data->tpm_i2c_buffer[0] == NULL) {
- 		err = -ENOMEM;
- 		goto _tpm_clean_answer;
- 	}
- 	platform_data->tpm_i2c_buffer[1] =
--	    kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-+	    kmalloc(TPM_BUFSIZE, GFP_KERNEL);
- 	if (platform_data->tpm_i2c_buffer[1] == NULL) {
- 		err = -ENOMEM;
- 		goto _tpm_clean_response1;
 -- 
-1.9.3
-
+Markus
