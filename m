@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaKPXT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 18:19:58 -0500
-Received: from mga03.intel.com ([134.134.136.65]:64026 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaKPXT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 18:19:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="487896462"
-Date: Mon, 17 Nov 2014 06:59:14 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@arm.com>,
+	id S1751570AbaKPXVH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 18:21:07 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:44863 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701AbaKPXVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 18:21:06 -0500
+Date: Sun, 16 Nov 2014 15:21:06 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
- hotplug
-Message-ID: <20141116225914.GA6951@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
- <1415809626.15631.35.camel@tkhai>
- <20141112225636.GA23249@kernel>
- <1415873444.15631.42.camel@tkhai>
- <546485A2.7050501@gmail.com>
- <1415874091.15631.44.camel@tkhai>
+Subject: [GIT PULL] ARM: SoC fixes for 3.18-rc5 (or rc6)
+Message-ID: <20141116232106.GA16402@quad.lixom.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415874091.15631.44.camel@tkhai>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
-On Thu, Nov 13, 2014 at 01:21:31PM +0300, Kirill Tkhai wrote:
->> >>>> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
->> >>>>   	 * We have to consider system topology and task affinity
->> >>>>   	 * first, then we can look for a suitable cpu.
->> >>>>   	 */
->> >>>> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
->> >>>> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
->> >>>> +	cpumask_copy(later_mask, cpu_active_mask);
->> >>>> +	if (likely(task_rq(task)->online))
->> >>>> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
->> >>>>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->> >>>>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->> >>>>   			task, later_mask);
->> > Also, we should think about the following situation.
->> >
->> > DL task is left on dead rq. In your scheme it will be moved by the timer.
->> > But what will be if somebody changes the class of the task (before timer)?
->> 
->> I think timer will be cancelled in switched_from_dl().
->
->Yeah, but nobody will move this task to alive rq.
->
->> 
->> Regards,
->> Wanpeng Li
->> 
->> > In this case the task still remains on dead rq.
->> >
->> > We should handle this situation in some way.
+Hi Linus,
 
-Your proposal is a great appreciated. 
+I'm guessing you're about to cut -rc5 right as I type this. I'm sick
+this weekend and didn't get around to it yesterday.
 
-Regards,
-Wanpeng Li 
+Anyway, none of these are crucial enough that they can't wait another
+week for -rc6, if timing didn't work out.
 
->> >
->> > Kirill
->> >
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->> 
->
+
+Thanks,
+
+-Olof
+
+The following changes since commit 92c9e0c780e61f821ab8a08f0d4d4fd33ba1197c:
+
+  ARM: dts: zynq: Enable PL clocks for Parallella (2014-11-08 16:57:44 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/armsoc-for-rc5
+
+for you to fetch changes up to e899dbaf4898efdaf6d1a02ed4ac205d35f54df8:
+
+  ARM: at91/dt: Fix sama5d3x typos (2014-11-16 15:12:04 -0800)
+
+----------------------------------------------------------------
+ARM: SoC fixes for 3.18-rc5
+
+Another small set of fixes:
+
+- Some DT compatible typo fixes
+- irq setup fix dealing with irq storms on orion
+- i2c quirk generalization for mvebu
+- A handful of smaller fixes for OMAP
+- A couple of added file patterns for OMAP entries in MAINTAINERS
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+      ARM: mvebu: armada xp: Generalize use of i2c quirk
+
+Evgeniy Dushistov (1):
+      ARM: orion: Fix for certain sequence of request_irq can cause irq storm
+
+Felipe Balbi (1):
+      MAINTAINERS: add more files under OMAP SUPPORT
+
+Keerthy (3):
+      ARM: dts: AM43x-EPOS-EVM: Fix DCDC3 voltage
+      ARM: dts: AM437x-GP-EVM: Fix DCDC3 voltage
+      ARM: dts: AM437x-SK-EVM: Fix DCDC3 voltage
+
+Nishanth Menon (1):
+      MAINTAINERS: Update entry for omap related .dts files to cover new SoCs
+
+Olof Johansson (2):
+      Merge tag 'mvebu-fixes-3.18' of git://git.infradead.org/linux-mvebu into fixes
+      Merge tag 'omap-fixes-against-v3.18-rc4' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+
+Peter Rosin (1):
+      ARM: at91/dt: Fix sama5d3x typos
+
+Roger Quadros (2):
+      ARM: dts: am335x-evm: Fix 5th NAND partition's name
+      pinctrl: dra: dt-bindings: Fix output pull up/down
+
+ MAINTAINERS                          | 20 ++++++++++++++++++++
+ arch/arm/boot/dts/am335x-evm.dts     |  2 +-
+ arch/arm/boot/dts/am437x-gp-evm.dts  |  4 ++--
+ arch/arm/boot/dts/am437x-sk-evm.dts  |  4 ++--
+ arch/arm/boot/dts/am43x-epos-evm.dts |  4 ++--
+ arch/arm/boot/dts/sama5d31.dtsi      |  2 +-
+ arch/arm/boot/dts/sama5d33.dtsi      |  2 +-
+ arch/arm/boot/dts/sama5d34.dtsi      |  2 +-
+ arch/arm/boot/dts/sama5d35.dtsi      |  2 +-
+ arch/arm/boot/dts/sama5d36.dtsi      |  2 +-
+ arch/arm/boot/dts/sama5d3xcm.dtsi    |  2 +-
+ arch/arm/mach-mvebu/board-v7.c       |  2 +-
+ arch/arm/plat-orion/gpio.c           | 36 ++++++++++++++++++++++++++++++++----
+ include/dt-bindings/pinctrl/dra.h    |  4 ++--
+ 14 files changed, 68 insertions(+), 20 deletions(-)
