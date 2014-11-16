@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756AbaKPMfd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 07:35:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35622 "EHLO
+	id S1755778AbaKPMfn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 07:35:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35627 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755732AbaKPMfa (ORCPT
+	with ESMTP id S1755457AbaKPMfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 07:35:30 -0500
-Date: Sun, 16 Nov 2014 04:34:52 -0800
+	Sun, 16 Nov 2014 07:35:38 -0500
+Date: Sun, 16 Nov 2014 04:35:10 -0800
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-7550ddffe4c8040db31c66e5bd64531e2916bbf1@git.kernel.org>
-Cc: kan.liang@intel.com, maria.n.dimakopoulou@gmail.com,
-        linux-kernel@vger.kernel.org, eranian@google.com, mingo@kernel.org,
-        peterz@infradead.org, ak@linux.intel.com, junk@eslaf.co.uk,
-        tglx@linutronix.de, hpa@zytor.com
-Reply-To: ak@linux.intel.com, peterz@infradead.org, tglx@linutronix.de,
-        junk@eslaf.co.uk, hpa@zytor.com, kan.liang@intel.com,
-        linux-kernel@vger.kernel.org, maria.n.dimakopoulou@gmail.com,
-        eranian@google.com, mingo@kernel.org
-In-Reply-To: <1411569288-5627-1-git-send-email-andi@firstfloor.org>
-References: <1411569288-5627-1-git-send-email-andi@firstfloor.org>
+Message-ID: <tip-0dbc94796d8714f78446245ef0f080d2c0b7ff0e@git.kernel.org>
+Cc: hpa@zytor.com, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        acme@kernel.org
+Reply-To: hpa@zytor.com, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        acme@kernel.org
+In-Reply-To: <1411569288-5627-2-git-send-email-andi@firstfloor.org>
+References: <1411569288-5627-2-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Add INTEL_FLAGS_UEVENT_CONSTRAINT
-Git-Commit-ID: 7550ddffe4c8040db31c66e5bd64531e2916bbf1
+Subject: [tip:perf/core] perf/x86/intel:
+  Use INTEL_FLAGS_UEVENT_CONSTRAINT for PRECDIST
+Git-Commit-ID: 0dbc94796d8714f78446245ef0f080d2c0b7ff0e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,46 +34,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7550ddffe4c8040db31c66e5bd64531e2916bbf1
-Gitweb:     http://git.kernel.org/tip/7550ddffe4c8040db31c66e5bd64531e2916bbf1
+Commit-ID:  0dbc94796d8714f78446245ef0f080d2c0b7ff0e
+Gitweb:     http://git.kernel.org/tip/0dbc94796d8714f78446245ef0f080d2c0b7ff0e
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Wed, 24 Sep 2014 07:34:46 -0700
+AuthorDate: Wed, 24 Sep 2014 07:34:47 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 16 Nov 2014 11:41:54 +0100
+CommitDate: Sun, 16 Nov 2014 11:41:55 +0100
 
-perf/x86: Add INTEL_FLAGS_UEVENT_CONSTRAINT
+perf/x86/intel: Use INTEL_FLAGS_UEVENT_CONSTRAINT for PRECDIST
 
-Add a FLAGS_UEVENT_CONSTRAINT macro that allows us to
-match on event+umask, and in additional all flags.
+My earlier commit:
 
-This is needed to ensure the INV and CMASK fields
-are zero for specific events, as this can cause undefined
-behavior.
+  86a04461a99f ("perf/x86: Revamp PEBS event selection")
+
+made nearly all PEBS on Sandy/IvyBridge/Haswell to reject non zero flags.
+
+However this wasn't done for the INST_RETIRED.PREC_DIST event
+because no suitable macro existed. Now that we have
+INTEL_FLAGS_UEVENT_CONSTRAINT enforce zero flags for
+INST_RETIRED.PREC_DIST too.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Kan Liang <kan.liang@intel.com>
-Cc: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Cc: Mark Davies <junk@eslaf.co.uk>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1411569288-5627-1-git-send-email-andi@firstfloor.org
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Link: http://lkml.kernel.org/r/1411569288-5627-2-git-send-email-andi@firstfloor.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index fc5eb39..4e6cdb0 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -253,6 +253,10 @@ struct cpu_hw_events {
- #define INTEL_UEVENT_CONSTRAINT(c, n)	\
- 	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 46211bc..12fe1dc 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -606,7 +606,7 @@ struct event_constraint intel_westmere_pebs_event_constraints[] = {
+ };
  
-+/* Like UEVENT_CONSTRAINT, but match flags too */
-+#define INTEL_FLAGS_UEVENT_CONSTRAINT(c, n)	\
-+	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS)
-+
- #define INTEL_PLD_CONSTRAINT(c, n)	\
- 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
- 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
+ struct event_constraint intel_snb_pebs_event_constraints[] = {
+-	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+ 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+ 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+ 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+@@ -617,7 +617,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ };
+ 
+ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+-        INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
++        INTEL_FLAGS_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+ 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+ 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+@@ -628,7 +628,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+ };
+ 
+ struct event_constraint intel_hsw_pebs_event_constraints[] = {
+-	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+ 	INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.* */
+ 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+ 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
