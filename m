@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409AbaKPRIO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 12:08:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49965 "EHLO
+	id S1755484AbaKPRL6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 12:11:58 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49970 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149AbaKPRIN (ORCPT
+	with ESMTP id S1755217AbaKPRL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 12:08:13 -0500
-Date: Sun, 16 Nov 2014 17:08:10 +0000
+	Sun, 16 Nov 2014 12:11:56 -0500
+Date: Sun, 16 Nov 2014 17:11:48 +0000
 From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ionut Alexa <ionut.m.alexa@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel:signal.c Fix coding style errors and warnings.
-Message-ID: <20141116170810.GQ7996@ZenIV.linux.org.uk>
-References: <1415980615-12345-1-git-send-email-ionut.m.alexa@gmail.com>
- <20141116024752.GP7996@ZenIV.linux.org.uk>
- <CAKF-a2AYAPy2ENaFVanFCWZ_sXHPy_K_uH6zo5apT-kLLaqONA@mail.gmail.com>
+To: Igor Bogomazov <ygrex@ygrex.ru>
+Cc: linux-kernel@vger.kernel.org, HPDD-discuss@ml01.01.org,
+        devel@driverdev.osuosl.org, Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: lustre: socklnd: sparse warning fix
+Message-ID: <20141116171148.GR7996@ZenIV.linux.org.uk>
+References: <20141116173355.292a6d4a@ygrex-lenovo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKF-a2AYAPy2ENaFVanFCWZ_sXHPy_K_uH6zo5apT-kLLaqONA@mail.gmail.com>
+In-Reply-To: <20141116173355.292a6d4a@ygrex-lenovo>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 11:41:42AM +0200, Ionut Alexa wrote:
-> A good programming practice is to have a single exit point of the function.
+> the same value casted the same way few lines below:
+> 	csum = ksocknal_csum(~0, (void *)tx->tx_iov[0].iov_base,
+> 
+> then it seems like a typo in LASSERT() that is got fixed
+> 
+>  drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c
+> index 245c9d7..ebd400d 100644
+> --- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c
+> +++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c
+> @@ -390,7 +390,7 @@ ksocknal_lib_csum_tx(ksock_tx_t *tx)
+>  	__u32	csum;
+>  	void	*base;
+>  
+> -	LASSERT(tx->tx_iov[0].iov_base == (void *)&tx->tx_msg);
+> +	LASSERT((void *)tx->tx_iov[0].iov_base == &tx->tx_msg);
 
-It is a very simplified form of something that was a a good practice until
-some rather important parts had been dropped.
-
-> Respecting this rule will reduce strage behavior when the memory is altered
-> due to magnetic interference or other causes.
-
-Elaborate, please.
+Turn tx_iov into struct kvec * instead.
