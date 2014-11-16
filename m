@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521AbaKPWAm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:00:42 -0500
-Received: from 1wt.eu ([62.212.114.60]:47888 "EHLO 1wt.eu"
+	id S1752760AbaKPWMn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:12:43 -0500
+Received: from 1wt.eu ([62.212.114.60]:47875 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaKPWAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:00:40 -0500
-Message-Id: <20141116215329.569150542@1wt.eu>
+	id S1751432AbaKPWAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:00:35 -0500
+Message-Id: <20141116215328.775714187@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:50 +0100
+Date: Sun, 16 Nov 2014 22:53:31 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 22/48] net: sendmsg: fix NULL pointer dereference
+Cc: Stefan Bader <stefan.bader@canonical.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 03/48] x86_32, entry: Clean up sysenter_badsys declaration
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,131 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+From: Stefan Bader <stefan.bader@canonical.com>
 
-[ Upstream commit 40eea803c6b2cfaab092f053248cbeab3f368412 ]
+commit 554086d85e "x86_32, entry: Do syscall exit work on badsys
+(CVE-2014-4508)" introduced a new jump label (sysenter_badsys) but
+somehow the END statements seem to have gone wrong (at least it
+feels that way to me).
+This does not seem to be a fatal problem, but just for the sake
+of symmetry, change the second syscall_badsys to sysenter_badsys.
 
-Sasha's report:
-	> While fuzzing with trinity inside a KVM tools guest running the latest -next
-	> kernel with the KASAN patchset, I've stumbled on the following spew:
-	>
-	> [ 4448.949424] ==================================================================
-	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
-	> [ 4448.952988] Read of size 2 by thread T19638:
-	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
-	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
-	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
-	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
-	> [ 4448.961266] Call Trace:
-	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
-	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
-	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
-	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
-	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
-	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
-	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
-	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
-	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
-	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
-	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
-	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
-	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
-	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
-	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
-	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
-	> [ 4448.988929] ==================================================================
-
-This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
-
-After this report there was no usual "Unable to handle kernel NULL pointer dereference"
-and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
-
-This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic).
-Commit message states that:
-	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
-	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
-	 affect sendto as it would bail out earlier while trying to copy-in the
-	 address."
-But in fact this affects sendto when address 0 is mapped and contains
-socket address structure in it. In such case copy-in address will succeed,
-verify_iovec() function will successfully exit with msg->msg_namelen > 0
-and msg->msg_name == NULL.
-
-This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
-
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: <stable@vger.kernel.org>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Link: http://lkml.kernel.org/r/1408093066-31021-1-git-send-email-stefan.bader@canonical.com
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+(cherry picked from commit fb21b84e7f809ef04b1e5aed5d463cf0d4866638)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/compat.c     | 9 +++++----
- net/core/iovec.c | 6 +++---
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ arch/x86/kernel/entry_32.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/compat.c b/net/compat.c
-index e9672c8..71ed839 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -83,7 +83,7 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
- {
- 	int tot_len;
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 3188ca4..8b5370c 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -710,7 +710,7 @@ END(syscall_badsys)
+ sysenter_badsys:
+ 	movl $-ENOSYS,%eax
+ 	jmp sysenter_after_call
+-END(syscall_badsys)
++END(sysenter_badsys)
+ 	CFI_ENDPROC
  
--	if (kern_msg->msg_namelen) {
-+	if (kern_msg->msg_namelen && kern_msg->msg_namelen) {
- 		if (mode==VERIFY_READ) {
- 			int err = move_addr_to_kernel(kern_msg->msg_name,
- 						      kern_msg->msg_namelen,
-@@ -91,10 +91,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
- 			if (err < 0)
- 				return err;
- 		}
--		if (kern_msg->msg_name)
--			kern_msg->msg_name = kern_address;
--	} else
-+		kern_msg->msg_name = kern_address;
-+	} else {
- 		kern_msg->msg_name = NULL;
-+		kern_msg->msg_namelen = 0;
-+	}
- 
- 	tot_len = iov_from_user_compat_to_kern(kern_iov,
- 					  (struct compat_iovec __user *)kern_msg->msg_iov,
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index 39369e9..3face24 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -40,17 +40,17 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address,
- {
- 	int size, ct, err;
- 
--	if (m->msg_namelen) {
-+	if (m->msg_name && m->msg_namelen) {
- 		if (mode == VERIFY_READ) {
- 			err = move_addr_to_kernel(m->msg_name, m->msg_namelen,
- 						  address);
- 			if (err < 0)
- 				return err;
- 		}
--		if (m->msg_name)
--			m->msg_name = address;
-+		m->msg_name = address;
- 	} else {
- 		m->msg_name = NULL;
-+		m->msg_namelen = 0;
- 	}
- 
- 	size = m->msg_iovlen * sizeof(struct iovec);
+ /*
 -- 
 1.7.12.2.21.g234cd45.dirty
 
