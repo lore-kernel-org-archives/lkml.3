@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751138AbaKPVnx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 16:43:53 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38690 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaKPVnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 16:43:52 -0500
-Date: Sun, 16 Nov 2014 16:43:49 -0500 (EST)
-Message-Id: <20141116.164349.1450239074345762772.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 16 Nov 2014 13:43:52 -0800 (PST)
+	id S1751300AbaKPVoy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 16:44:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33048 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764AbaKPVow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 16:44:52 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com
+Cc: Richard Guy Briggs <rgb@redhat.com>, penguin-kernel@I-love.SAKURA.ne.jp,
+        sgrubb@redhat.com, eparis@parisplace.org, pmoore@redhat.com
+Subject: [PATCH] lsm: copy comm before calling audit_log to avoid race in string printing
+Date: Sun, 16 Nov 2014 16:44:10 -0500
+Message-Id: <efbec5e7d1923c4cc2bf9bf942889ded446900f1.1416029235.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When task->comm is passed directly to audit_log_untrustedstring() without
+getting a copy or using the task_lock, there is a race that could happen that
+would output a NULL (\0) in the middle of the output string that would
+effectively truncate the rest of the report text after the comm= field in the
+audit log message, losing fields.
 
-Here we have:
+Using get_task_comm() to get a copy while acquiring the task_lock to prevent
+this and to prevent the result from being a mixture of old and new values of
+comm would incur potentially unacceptable overhead, considering that the value
+can be influenced by userspace and therefore untrusted anyways.
 
-1) Fix NULL oops in Schizo PCI controller error handler.
+Copy the value before passing it to audit_log_untrustedstring() ensures that a
+local copy is used to calculate the length *and* subsequently printed.  Even if
+this value contains a mix of old and new values, it will only calculate and
+copy up to the first NULL, preventing the rest of the audit log message being
+truncated.
 
-2) Fix race between xchg and other operations on 32-bit sparc, from
-   Andreas Larsson.
+The LSM_AUDIT_DATA_TASK pid= and comm= labels are duplicates of those at the
+start of this function with different values.  Rename them to their object
+counterparts opid= and ocomm= to disambiguate.  Use a second local copy of comm
+to avoid a race between the first and second calls to
+audit_log_untrustedstring() with comm.
 
-3) swab*() helpers need a dummy memory input operand to show data flow
-   on 64-bit sparc.
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ security/lsm_audit.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
 
-4) Fix RCU warnings due to missing irq_{enter,exit}() around
-   generic_smp_call_function*() calls.
+diff --git a/security/lsm_audit.c b/security/lsm_audit.c
+index 69fdf3b..3323144 100644
+--- a/security/lsm_audit.c
++++ b/security/lsm_audit.c
+@@ -211,7 +211,7 @@ static inline void print_ipv4_addr(struct audit_buffer *ab, __be32 addr,
+ static void dump_common_audit_data(struct audit_buffer *ab,
+ 				   struct common_audit_data *a)
+ {
+-	struct task_struct *tsk = current;
++	char comm[sizeof(current->comm)];
+ 
+ 	/*
+ 	 * To keep stack sizes in check force programers to notice if they
+@@ -220,8 +220,8 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 	 */
+ 	BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
+ 
+-	audit_log_format(ab, " pid=%d comm=", task_pid_nr(tsk));
+-	audit_log_untrustedstring(ab, tsk->comm);
++	audit_log_format(ab, " pid=%d comm=", task_pid_nr(current));
++	audit_log_untrustedstring(ab, memcpy(comm, current->comm, sizeof(comm)));
+ 
+ 	switch (a->type) {
+ 	case LSM_AUDIT_DATA_NONE:
+@@ -276,16 +276,19 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 		audit_log_format(ab, " ino=%lu", inode->i_ino);
+ 		break;
+ 	}
+-	case LSM_AUDIT_DATA_TASK:
+-		tsk = a->u.tsk;
++	case LSM_AUDIT_DATA_TASK: {
++		struct task_struct *tsk = a->u.tsk;
+ 		if (tsk) {
+ 			pid_t pid = task_pid_nr(tsk);
+ 			if (pid) {
+-				audit_log_format(ab, " pid=%d comm=", pid);
+-				audit_log_untrustedstring(ab, tsk->comm);
++				char comm[sizeof(tsk->comm)];
++				audit_log_format(ab, " opid=%d ocomm=", pid);
++				audit_log_untrustedstring(ab,
++				    memcpy(comm, tsk->comm, sizeof(comm)));
+ 			}
+ 		}
+ 		break;
++	}
+ 	case LSM_AUDIT_DATA_NET:
+ 		if (a->u.net->sk) {
+ 			struct sock *sk = a->u.net->sk;
+-- 
+1.7.1
 
-Please pull, thanks a lot!
-
-The following changes since commit 9f935675d41aa51ebf929fc977cf530ff7d1a7fc:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input (2014-10-31 19:51:11 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-for you to fetch changes up to 5a2b59d3993e8ca4f7788a48a23e5cb303f26954:
-
-  sparc64: Fix constraints on swab helpers. (2014-11-16 13:19:32 -0800)
-
-----------------------------------------------------------------
-Andreas Larsson (1):
-      sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
-
-David S. Miller (3):
-      sparc64: Fix crashes in schizo_pcierr_intr_other().
-      sparc64: Do irq_{enter,exit}() around generic_smp_call_function*().
-      sparc64: Fix constraints on swab helpers.
-
- arch/sparc/include/asm/atomic_32.h  |  2 +-
- arch/sparc/include/asm/cmpxchg_32.h | 12 ++----------
- arch/sparc/include/uapi/asm/swab.h  | 12 ++++++------
- arch/sparc/kernel/pci_schizo.c      |  6 +++---
- arch/sparc/kernel/smp_64.c          |  4 ++++
- arch/sparc/lib/atomic32.c           | 27 +++++++++++++++++++++++++++
- 6 files changed, 43 insertions(+), 20 deletions(-)
