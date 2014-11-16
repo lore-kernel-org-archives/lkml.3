@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181AbaKPN3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 08:29:20 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:20992 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750857AbaKPN3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 08:29:19 -0500
-X-IronPort-AV: E=Sophos;i="5.07,397,1413237600"; 
-   d="scan'208";a="107348452"
-Date: Sun, 16 Nov 2014 14:29:02 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [Cocci] [PATCH 1/1] kprobes: Deletion of an unnecessary check
- before the function call "module_put"
-In-Reply-To: <546899CF.8020808@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1411161428190.2364@hadrien>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <546899CF.8020808@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1755425AbaKPNck (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 08:32:40 -0500
+Received: from imap.thunk.org ([74.207.234.97]:32962 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752398AbaKPNch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 08:32:37 -0500
+Date: Sun, 16 Nov 2014 08:32:30 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use
+ setgroups to drop groups
+Message-ID: <20141116133230.GA32030@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Josh Triplett <josh@joshtriplett.org>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Kees Cook <keescook@chromium.org>,
+	Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+	Linux API <linux-api@vger.kernel.org>,
+	linux-man <linux-man@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+ <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+ <87d28osceg.fsf@x220.int.ebiederm.org>
+ <20141115192924.GB19060@thin>
+ <CALCETrUM=GqsOumTmDMF4B5GS1w=x56t41eE-2xW1bBOfUz02w@mail.gmail.com>
+ <20141115202042.GA20900@thin>
+ <20141116020511.GB5507@thunk.org>
+ <6C690A2C-8EB1-421A-94C3-9803AFB95760@joshtriplett.org>
+ <87vbmfq1uw.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vbmfq1uw.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Nov 2014, SF Markus Elfring wrote:
+On Sat, Nov 15, 2014 at 09:08:07PM -0600, Eric W. Biederman wrote:
+> 
+> That may be a bug with the user namespace permission check.  Perhaps we
+> shouldn't allow dropping groups that aren't mapped in the user
+> namespace.
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sun, 16 Nov 2014 12:20:31 +0100
->
-> The module_put() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  kernel/kprobes.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3995f54..f1e7d45 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1527,8 +1527,7 @@ int register_kprobe(struct kprobe *p)
->  out:
->  	mutex_unlock(&kprobe_mutex);
->
-> -	if (probed_mod)
-> -		module_put(probed_mod);
-> +	module_put(probed_mod);
+I'm not saying that we can't change the behavior of whether or not a
+user can drop a group permission.  I'm just saying that we need to do
+so consciously.  The setgroups()/getgroups() ABI isn't part of
+POSIX/SuSv3 so we wouldn't be breaking POSIX compatibility, for those
+people who care about that.
 
-There is an out label, so please check whether the labels could not be
-better positioned to avoid calling module_put when it is not needed.
+The bigger deal is that it's very different from how BSD 4.x has
+handled things, which means there is two decades of history that we're
+looking at here.  And there are times when taking away permissions in
+an expected fashion can cause security problems.  (As a silly example;
+some architect at Digital wrote a spec that said that setuid must
+return EINVAL for values greater than 32k --- back in the days when
+uid's were a signed short.  The junior programmer who implemented this
+for Ultrix made the check for 32,000 decimal.  Guess what happened
+when /bin/login got a failure with setuid when it wasn't expecting one
+--- since root could never get an error with that system call, right?
+And MIT Project Athena started ran out of lower numbered uid's and
+froshlings started getting assigned uid's > 32,000....)
 
-julia
+In this particular case, the change is probably a little less likely
+to cause serious problems, although the fact that sudo does allow
+negative group assignments is an example of another potential
+breakage.
 
->
->  	return ret;
->  }
-> --
-> 2.1.3
->
->
-> _______________________________________________
-> Cocci mailing list
-> Cocci@systeme.lip6.fr
-> https://systeme.lip6.fr/mailman/listinfo/cocci
->
+OTOH, I'm aware of how this could cause major problems to the concept
+of allowing an untrusted user to set up their own containers to
+constrain what program with a possibly untrusted provinance might be
+able to do.  I can see times when I might want to run in a container
+where the user didn't have access to groups that I have access to by
+default --- including groups such as disk, sudo, lpadmin, etc.
+
+If we do want to make such a change, my suggestion is to keep things
+*very* simple.  Let it be a boot-time option whether or not users are
+allowed to drop group permissions, and let it affect all possible ways
+that users can drop groups.  And we can create a shell script that
+will search for the obvious ways that a user could get screwed by
+enabling this, which we can encourage distributions to package up for
+their end users.  And then we document the heck out of the fact that
+this option exists, and when/if we want to make it the default, so
+it's perfectly clear and transparent to all what is happening.
+
+One of the things that scare me about the addition of the forced
+capability "setuid" binary was that the feature was just silently slid
+in, and we didn't do a good job reaching out to the tripwire and
+rootkit and other such programs out there, such that several years
+after we enabled capability support, most sysadmins and security
+scanning programs are still apparently obivious to the this very
+convenient feature that we gave to rootkit and malware authors.  Now
+we can say that we're just adding new features, and we owe no debt
+other parts of the ecosystem --- this is the attitude used by upower
+and other freedesktop.org components when they made incompatible
+changes made available by new features provided by systemd[1].
+
+[1] http://m.memegen.com/u7o1tk.jpg
+
+But as kernel developers, who pride ourselves on not breaking
+userspace, I think we should try for a higher standard than this.  And
+perhaps this change with allowing groups to be dropped --- which is
+admittedly a useful thing to be able to allow --- is a good place to
+start trying to model a better way of doing things.  We should try to
+be responsible about how we add new features, and think of all of the
+potential downstream consequences to the _all_ of the ecosystem.
+
+	  	     		     	 - Ted
+
+P.S.  And we really should try reaching out to the security scanners
+about capabilities, too....
