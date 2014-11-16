@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091AbaKPTcg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 14:32:36 -0500
-Received: from mail-bl2on0095.outbound.protection.outlook.com ([65.55.169.95]:58069
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755457AbaKPTcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 14:32:35 -0500
-Date: Sun, 16 Nov 2014 11:32:23 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Josh Cartwright <josh.cartwright@ni.com>, <monstr@monstr.eu>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v4 6/6] ARM: zynq: DT: Add OCM controller node
-References: <cover.1415962281.git.michal.simek@xilinx.com>
- <0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
- <546881CA.2020801@suse.de>
+	id S932236AbaKPTfT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 14:35:19 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:62909 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932105AbaKPTfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 14:35:17 -0500
+X-IronPort-AV: E=Sophos;i="5.07,398,1413237600"; 
+   d="scan'208";a="107403827"
+Date: Sun, 16 Nov 2014 20:34:59 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH v2 2/2] kernel-trace: Less calls for iput() in
+ create_trace_uprobe() after error detection
+In-Reply-To: <20141116143120.44421df2@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1411162034190.2364@hadrien>
+References: <5307CAA2.8060406@users.sourceforge.net> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+ <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+ <5468ABBD.6000903@users.sourceforge.net> <alpine.DEB.2.10.1411161656340.2364@hadrien> <5468F756.8070807@users.sourceforge.net> <5468F96E.4090903@users.sourceforge.net> <20141116143120.44421df2@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <546881CA.2020801@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21108.002
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <c52187589f5c4cc6b908d899c2b9f7a6@BN1BFFO11FD036.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(164054003)(189002)(24454002)(377424004)(51704005)(108616004)(104016003)(92566001)(23676002)(19580405001)(87936001)(110136001)(85182001)(6806004)(102836001)(46102003)(54356999)(95666004)(76176999)(74316001)(64706001)(31966008)(77096003)(106466001)(62966003)(120916001)(99396003)(33646002)(77156002)(4396001)(47776003)(20776003)(21056001)(53416004)(83506001)(86362001)(19580395003)(50466002)(85202003)(107046002)(50986999)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB039;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB039;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB039;
-X-Forefront-PRVS: 039735BC4E
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB039;
-X-OriginatorOrg: xilinx.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-11-16 at 11:51AM +0100, Andreas Färber wrote:
-> Hi Michal,
-> 
-> Am 14.11.2014 um 11:52 schrieb Michal Simek:
-> > diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-> > index ce2ef5bec4f2..e217fb1c1169 100644
-> > --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> > +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> > @@ -150,6 +150,13 @@
-> >  			reg = <0xf8006000 0x1000>;
-> >  		};
-> > 
-> > +		ocmc: memory-controller@f800c000 {
-> > +			compatible = "xlnx,zynq-ocmc-1.0";
-> > +			interrupt-parent = <&intc>;
-> > +			interrupts = <0 3 4>;
-> > +			reg = <0xf800c000 0x1000>;
-> > +		};
-> > +
-> >  		uart0: serial@e0000000 {
-> >  			compatible = "xlnx,xuartps", "cdns,uart-r1p8";
-> >  			status = "disabled";
-> 
-> Not directly related to this patch: As one can see here, the node order
-> is quite a mess... According to Olof, nodes should be ordered by unit
-> address, whereas here some but not all seem ordered by node name. Would
-> you welcome a cleanup patch, or can you fix that yourself?
+On Sun, 16 Nov 2014, Steven Rostedt wrote:
 
-I wouldn't say it's a mess, just a different property to sort the nodes
-by. For humans reading the DT, searching for nodes, alphabetical order
-helps finding the right node, IMHO. What advantage would sorting by
-address have?
+> On Sun, 16 Nov 2014 20:22:22 +0100
+> SF Markus Elfring <elfring@users.sourceforge.net> wrote:
+>
+> > From: Markus Elfring <elfring@users.sourceforge.net>
+> > Date: Sun, 16 Nov 2014 19:49:39 +0100
+> >
+> > The iput() function was called in three cases by the create_trace_uprobe()
+> > function during error handling even if the passed variable contained still
+> > a null pointer. This implementation detail could be improved by the
+> > introduction of another jump label.
+>
+> The first patch is fine, and the only reason is to save the few bytes
+> that the branch check might take. It's in a path that is unlikely to be
+> hit so it is not a performance issue at all.
+>
+> This patch is useless. I rather not apply any patch than to create
+> another jump that skips over the freeing of iput() just because we know
+> inode is null. That's why we had the if (inode) in the first place.
+>
+> So Nack on this patch and I'll contemplate applying the first one. I
+> probably will as it seems rather harmless.
 
-	Thanks,
-	Sören
+I wuold have thought that one could have just returned, like in the cases
+above...  But maybe the printed message is useful.
+
+julia
