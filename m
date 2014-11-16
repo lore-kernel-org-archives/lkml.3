@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaKPWGc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:06:32 -0500
-Received: from 1wt.eu ([62.212.114.60]:47960 "EHLO 1wt.eu"
+	id S1752258AbaKPWGb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:06:31 -0500
+Received: from 1wt.eu ([62.212.114.60]:47962 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751927AbaKPWBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751933AbaKPWBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Nov 2014 17:01:09 -0500
-Message-Id: <20141116215329.269116721@1wt.eu>
+Message-Id: <20141116215330.349655004@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:43 +0100
+Date: Sun, 16 Nov 2014 22:54:09 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Ilpo Jarvinen <ilpo.jarvinen@helsinki.fi>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 15/48] tcp: fix tcp_match_skb_to_sack() for unaligned SACK at
+Cc: Ivan Djelic <ivan.djelic@parrot.com>, Dirk Behme <dirk.behme@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 41/48] ARM: 7668/1: fix memset-related crashes caused by
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,70 +22,258 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- end of an skb
+ recent GCC (4.7.2) optimizations
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Ivan Djelic <ivan.djelic@parrot.com>
 
-[ Upstream commit 2cd0d743b05e87445c54ca124a9916f22f16742e ]
+Recent GCC versions (e.g. GCC-4.7.2) perform optimizations based on
+assumptions about the implementation of memset and similar functions.
+The current ARM optimized memset code does not return the value of
+its first argument, as is usually expected from standard implementations.
 
-If there is an MSS change (or misbehaving receiver) that causes a SACK
-to arrive that covers the end of an skb but is less than one MSS, then
-tcp_match_skb_to_sack() was rounding up pkt_len to the full length of
-the skb ("Round if necessary..."), then chopping all bytes off the skb
-and creating a zero-byte skb in the write queue.
+For instance in the following function:
 
-This was visible now because the recently simplified TLP logic in
-bef1909ee3ed1c ("tcp: fixing TLP's FIN recovery") could find that 0-byte
-skb at the end of the write queue, and now that we do not check that
-skb's length we could send it as a TLP probe.
+void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
+{
+	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
+	waiter->magic = waiter;
+	INIT_LIST_HEAD(&waiter->list);
+}
 
-Consider the following example scenario:
+compiled as:
 
- mss: 1000
- skb: seq: 0 end_seq: 4000  len: 4000
- SACK: start_seq: 3999 end_seq: 4000
+800554d0 <debug_mutex_lock_common>:
+800554d0:       e92d4008        push    {r3, lr}
+800554d4:       e1a00001        mov     r0, r1
+800554d8:       e3a02010        mov     r2, #16 ; 0x10
+800554dc:       e3a01011        mov     r1, #17 ; 0x11
+800554e0:       eb04426e        bl      80165ea0 <memset>
+800554e4:       e1a03000        mov     r3, r0
+800554e8:       e583000c        str     r0, [r3, #12]
+800554ec:       e5830000        str     r0, [r3]
+800554f0:       e5830004        str     r0, [r3, #4]
+800554f4:       e8bd8008        pop     {r3, pc}
 
-The tcp_match_skb_to_sack() code will compute:
+GCC assumes memset returns the value of pointer 'waiter' in register r0; causing
+register/memory corruptions.
 
- in_sack = false
- pkt_len = start_seq - TCP_SKB_CB(skb)->seq = 3999 - 0 = 3999
- new_len = (pkt_len / mss) * mss = (3999/1000)*1000 = 3000
- new_len += mss = 4000
+This patch fixes the return value of the assembly version of memset.
+It adds a 'mov' instruction and merges an additional load+store into
+existing load/store instructions.
+For ease of review, here is a breakdown of the patch into 4 simple steps:
 
-Previously we would find the new_len > skb->len check failing, so we
-would fall through and set pkt_len = new_len = 4000 and chop off
-pkt_len of 4000 from the 4000-byte skb, leaving a 0-byte segment
-afterward in the write queue.
+Step 1
+======
+Perform the following substitutions:
+ip -> r8, then
+r0 -> ip,
+and insert 'mov ip, r0' as the first statement of the function.
+At this point, we have a memset() implementation returning the proper result,
+but corrupting r8 on some paths (the ones that were using ip).
 
-With this new commit, we notice that the new new_len >= skb->len check
-succeeds, so that we return without trying to fragment.
+Step 2
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 1:
 
-Fixes: adb92db857ee ("tcp: Make SACK code to split only at mss boundaries")
-Reported-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Ilpo Jarvinen <ilpo.jarvinen@helsinki.fi>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+save r8:
+-       str     lr, [sp, #-4]!
++       stmfd   sp!, {r8, lr}
+
+and restore r8 on both exit paths:
+-       ldmeqfd sp!, {pc}               @ Now <64 bytes to go.
++       ldmeqfd sp!, {r8, pc}           @ Now <64 bytes to go.
+(...)
+        tst     r2, #16
+        stmneia ip!, {r1, r3, r8, lr}
+-       ldr     lr, [sp], #4
++       ldmfd   sp!, {r8, lr}
+
+Step 3
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 0:
+
+save r8:
+-       stmfd   sp!, {r4-r7, lr}
++       stmfd   sp!, {r4-r8, lr}
+
+and restore r8 on both exit paths:
+        bgt     3b
+-       ldmeqfd sp!, {r4-r7, pc}
++       ldmeqfd sp!, {r4-r8, pc}
+(...)
+        tst     r2, #16
+        stmneia ip!, {r4-r7}
+-       ldmfd   sp!, {r4-r7, lr}
++       ldmfd   sp!, {r4-r8, lr}
+
+Step 4
+======
+Rewrite register list "r4-r7, r8" as "r4-r8".
+
+Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+(cherry picked from commit 455bd4c430b0c0a361f38e8658a0d6cb469942b5)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/ipv4/tcp_input.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/lib/memset.S | 85 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 44 insertions(+), 41 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index db755c4..c821218 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1280,7 +1280,7 @@ static int tcp_match_skb_to_sack(struct sock *sk, struct sk_buff *skb,
- 			unsigned int new_len = (pkt_len / mss) * mss;
- 			if (!in_sack && new_len < pkt_len) {
- 				new_len += mss;
--				if (new_len > skb->len)
-+				if (new_len >= skb->len)
- 					return 0;
- 			}
- 			pkt_len = new_len;
+diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+index 650d5923..d912e73 100644
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -19,9 +19,9 @@
+ 1:	subs	r2, r2, #4		@ 1 do we have enough
+ 	blt	5f			@ 1 bytes to align with?
+ 	cmp	r3, #2			@ 1
+-	strltb	r1, [r0], #1		@ 1
+-	strleb	r1, [r0], #1		@ 1
+-	strb	r1, [r0], #1		@ 1
++	strltb	r1, [ip], #1		@ 1
++	strleb	r1, [ip], #1		@ 1
++	strb	r1, [ip], #1		@ 1
+ 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
+ /*
+  * The pointer is now aligned and the length is adjusted.  Try doing the
+@@ -29,10 +29,14 @@
+  */
+ 
+ ENTRY(memset)
+-	ands	r3, r0, #3		@ 1 unaligned?
++/*
++ * Preserve the contents of r0 for the return value.
++ */
++	mov	ip, r0
++	ands	r3, ip, #3		@ 1 unaligned?
+ 	bne	1b			@ 1
+ /*
+- * we know that the pointer in r0 is aligned to a word boundary.
++ * we know that the pointer in ip is aligned to a word boundary.
+  */
+ 	orr	r1, r1, r1, lsl #8
+ 	orr	r1, r1, r1, lsl #16
+@@ -43,29 +47,28 @@ ENTRY(memset)
+ #if ! CALGN(1)+0
+ 
+ /*
+- * We need an extra register for this loop - save the return address and
+- * use the LR
++ * We need 2 extra registers for this loop - use r8 and the LR
+  */
+-	str	lr, [sp, #-4]!
+-	mov	ip, r1
++	stmfd	sp!, {r8, lr}
++	mov	r8, r1
+ 	mov	lr, r1
+ 
+ 2:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3, ip, lr}	@ 64 bytes at a time.
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}	@ 64 bytes at a time.
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
+ 	bgt	2b
+-	ldmeqfd	sp!, {pc}		@ Now <64 bytes to go.
++	ldmeqfd	sp!, {r8, pc}		@ Now <64 bytes to go.
+ /*
+  * No need to correct the count; we're only testing bits from now on
+  */
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	stmneia	r0!, {r1, r3, ip, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	ldr	lr, [sp], #4
++	stmneia	ip!, {r1, r3, r8, lr}
++	ldmfd	sp!, {r8, lr}
+ 
+ #else
+ 
+@@ -74,54 +77,54 @@ ENTRY(memset)
+  * whole cache lines at once.
+  */
+ 
+-	stmfd	sp!, {r4-r7, lr}
++	stmfd	sp!, {r4-r8, lr}
+ 	mov	r4, r1
+ 	mov	r5, r1
+ 	mov	r6, r1
+ 	mov	r7, r1
+-	mov	ip, r1
++	mov	r8, r1
+ 	mov	lr, r1
+ 
+ 	cmp	r2, #96
+-	tstgt	r0, #31
++	tstgt	ip, #31
+ 	ble	3f
+ 
+-	and	ip, r0, #31
+-	rsb	ip, ip, #32
+-	sub	r2, r2, ip
+-	movs	ip, ip, lsl #(32 - 4)
+-	stmcsia	r0!, {r4, r5, r6, r7}
+-	stmmiia	r0!, {r4, r5}
+-	tst	ip, #(1 << 30)
+-	mov	ip, r1
+-	strne	r1, [r0], #4
++	and	r8, ip, #31
++	rsb	r8, r8, #32
++	sub	r2, r2, r8
++	movs	r8, r8, lsl #(32 - 4)
++	stmcsia	ip!, {r4, r5, r6, r7}
++	stmmiia	ip!, {r4, r5}
++	tst	r8, #(1 << 30)
++	mov	r8, r1
++	strne	r1, [ip], #4
+ 
+ 3:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
+ 	bgt	3b
+-	ldmeqfd	sp!, {r4-r7, pc}
++	ldmeqfd	sp!, {r4-r8, pc}
+ 
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3-r7, ip, lr}
++	stmneia	ip!, {r1, r3-r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r4-r7}
+-	ldmfd	sp!, {r4-r7, lr}
++	stmneia	ip!, {r4-r7}
++	ldmfd	sp!, {r4-r8, lr}
+ 
+ #endif
+ 
+ 4:	tst	r2, #8
+-	stmneia	r0!, {r1, r3}
++	stmneia	ip!, {r1, r3}
+ 	tst	r2, #4
+-	strne	r1, [r0], #4
++	strne	r1, [ip], #4
+ /*
+  * When we get here, we've got less than 4 bytes to zero.  We
+  * may have an unaligned pointer as well.
+  */
+ 5:	tst	r2, #2
+-	strneb	r1, [r0], #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
++	strneb	r1, [ip], #1
+ 	tst	r2, #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
+ 	mov	pc, lr
+ ENDPROC(memset)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
