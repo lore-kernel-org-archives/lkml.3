@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604AbaKPMeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 07:34:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35574 "EHLO
+	id S1755634AbaKPMee (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 07:34:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35585 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580AbaKPMeS (ORCPT
+	with ESMTP id S1755609AbaKPMea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 07:34:18 -0500
-Date: Sun, 16 Nov 2014 04:34:06 -0800
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-b48cbd27b38ed3aef56a02dca2a4853fa5dabb1f@git.kernel.org>
-Cc: fenghua.yu@intel.com, mingo@kernel.org, tglx@linutronix.de,
-        dave.hansen@linux.intel.com, hpa@zytor.com,
+	Sun, 16 Nov 2014 07:34:30 -0500
+Date: Sun, 16 Nov 2014 04:33:51 -0800
+From: tip-bot for Wanpeng Li <tipbot@zytor.com>
+Message-ID: <tip-36ce98818a4df66c8134c31fd6e768b4119c7a90@git.kernel.org>
+Cc: wanpeng.li@linux.intel.com, juri.lelli@arm.com, tglx@linutronix.de,
+        peterz@infradead.org, torvalds@linux-foundation.org,
+        ktkhai@parallels.com, hpa@zytor.com, mingo@kernel.org,
         linux-kernel@vger.kernel.org
-Reply-To: dave.hansen@linux.intel.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, fenghua.yu@intel.com, mingo@kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <20141111220131.D86EE670@viggo.jf.intel.com>
-References: <20141111220131.D86EE670@viggo.jf.intel.com>
+Reply-To: wanpeng.li@linux.intel.com, juri.lelli@arm.com, ktkhai@parallels.com,
+        torvalds@linux-foundation.org, hpa@zytor.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, peterz@infradead.org
+In-Reply-To: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
+References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86: Add #include user.h to xsave.h
-Git-Commit-ID: b48cbd27b38ed3aef56a02dca2a4853fa5dabb1f
+Subject: [tip:sched/core] sched/deadline: Introduce start_hrtick_dl()
+  for !CONFIG_SCHED_HRTICK
+Git-Commit-ID: 36ce98818a4df66c8134c31fd6e768b4119c7a90
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,37 +35,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b48cbd27b38ed3aef56a02dca2a4853fa5dabb1f
-Gitweb:     http://git.kernel.org/tip/b48cbd27b38ed3aef56a02dca2a4853fa5dabb1f
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Tue, 11 Nov 2014 14:01:31 -0800
+Commit-ID:  36ce98818a4df66c8134c31fd6e768b4119c7a90
+Gitweb:     http://git.kernel.org/tip/36ce98818a4df66c8134c31fd6e768b4119c7a90
+Author:     Wanpeng Li <wanpeng.li@linux.intel.com>
+AuthorDate: Tue, 11 Nov 2014 09:52:26 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 16 Nov 2014 11:30:39 +0100
+CommitDate: Sun, 16 Nov 2014 10:59:03 +0100
 
-x86: Add #include user.h to xsave.h
+sched/deadline: Introduce start_hrtick_dl() for !CONFIG_SCHED_HRTICK
 
-xsave.h uses USER_XSTATE_FX_SW_WORDS, but does not include
-user.h.
+Introduce start_hrtick_dl for !CONFIG_SCHED_HRTICK to align with
+the fair class.
 
-Add the include.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/20141111220131.D86EE670@viggo.jf.intel.com
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>
+Cc: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/xsave.h | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/sched/deadline.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 7e7a79a..047797a 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -3,6 +3,7 @@
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 9594c12..e5db8c6 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1013,6 +1013,10 @@ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+ {
+ 	hrtick_start(rq, p->dl.runtime);
+ }
++#else /* !CONFIG_SCHED_HRTICK */
++static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
++{
++}
+ #endif
  
- #include <linux/types.h>
- #include <asm/processor.h>
-+#include <asm/user.h>
+ static struct sched_dl_entity *pick_next_dl_entity(struct rq *rq,
+@@ -1066,10 +1070,8 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
+ 	/* Running task will never be pushed. */
+        dequeue_pushable_dl_task(rq, p);
  
- #define XSTATE_CPUID		0x0000000d
+-#ifdef CONFIG_SCHED_HRTICK
+ 	if (hrtick_enabled(rq))
+ 		start_hrtick_dl(rq, p);
+-#endif
  
+ 	set_post_schedule(rq);
+ 
+@@ -1088,10 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
+ {
+ 	update_curr_dl(rq);
+ 
+-#ifdef CONFIG_SCHED_HRTICK
+ 	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
+ 		start_hrtick_dl(rq, p);
+-#endif
+ }
+ 
+ static void task_fork_dl(struct task_struct *p)
