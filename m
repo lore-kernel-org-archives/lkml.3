@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264AbaKPWA3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:00:29 -0500
-Received: from 1wt.eu ([62.212.114.60]:47850 "EHLO 1wt.eu"
+	id S1752835AbaKPWO3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:14:29 -0500
+Received: from 1wt.eu ([62.212.114.60]:47853 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764AbaKPWA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:00:27 -0500
-Message-Id: <20141116215328.734899238@1wt.eu>
+	id S1751180AbaKPWA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:00:28 -0500
+Message-Id: <20141116215328.693816276@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:30 +0100
+Date: Sun, 16 Nov 2014 22:53:29 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sven Wegener <sven.wegener@stealer.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 02/48] x86_32, entry: Store badsys error code in %eax
+Cc: Roland McGrath <roland@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 01/48] x86_32, entry: Do syscall exit work on badsys
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,92 +22,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ (CVE-2014-4508)
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Andy Lutomirski <luto@amacapital.net>
 
-Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
-(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
-code, resulting in syscall() not returning proper errors for undefined
-syscalls on CPUs supporting the sysenter feature.
+The bad syscall nr paths are their own incomprehensible route
+through the entry control flow.  Rearrange them to work just like
+syscalls that return -ENOSYS.
 
-The following code:
+This fixes an OOPS in the audit code when fast-path auditing is
+enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
 
-> int result = syscall(666);
-> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
+This has probably been broken since Linux 2.6.27:
+af0575bba0 i386 syscall audit fast-path
 
-results in:
-
-> result=666 errno=0 error=Success
-
-Obviously, the syscall return value is the called syscall number, but it
-should have been an ENOSYS error. When run under ptrace it behaves
-correctly, which makes it hard to debug in the wild:
-
-> result=-1 errno=38 error=Function not implemented
-
-The %eax register is the return value register. For debugging via ptrace
-the syscall entry code stores the complete register context on the
-stack. The badsys handlers only store the ENOSYS error code in the
-ptrace register set and do not set %eax like a regular syscall handler
-would. The old resume_userspace call chain contains code that clobbers
-%eax and it restores %eax from the ptrace registers afterwards. The same
-goes for the ptrace-enabled call chain. When ptrace is not used, the
-syscall return value is the passed-in syscall number from the untouched
-%eax register.
-
-Use %eax as the return value register in syscall_badsys and
-sysenter_badsys, like a real syscall handler does, and have the caller
-push the value onto the stack for ptrace access.
-
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
-Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-(cherry picked from commit 8142b215501f8b291a108a202b3a053a265b03dd)
+Cc: stable@vger.kernel.org
+Cc: Roland McGrath <roland@redhat.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+(cherry picked from commit 554086d85e71f30abe46fc014fea31929a7c6a8a)
+[WT: this fix is incorrect and requires the two following patches]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/kernel/entry_32.S | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/kernel/entry_32.S | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 40a0d02..3188ca4 100644
+index c097e7d..40a0d02 100644
 --- a/arch/x86/kernel/entry_32.S
 +++ b/arch/x86/kernel/entry_32.S
-@@ -447,8 +447,8 @@ sysenter_do_call:
+@@ -445,9 +445,10 @@ sysenter_past_esp:
+ 	jnz sysenter_audit
+ sysenter_do_call:
  	cmpl $(nr_syscalls), %eax
- 	jae sysenter_badsys
+-	jae syscall_badsys
++	jae sysenter_badsys
  	call *sys_call_table(,%eax,4)
--	movl %eax,PT_EAX(%esp)
- sysenter_after_call:
-+	movl %eax,PT_EAX(%esp)
+ 	movl %eax,PT_EAX(%esp)
++sysenter_after_call:
  	LOCKDEP_SYS_EXIT
  	DISABLE_INTERRUPTS(CLBR_ANY)
  	TRACE_IRQS_OFF
-@@ -528,6 +528,7 @@ ENTRY(system_call)
- 	jae syscall_badsys
- syscall_call:
- 	call *sys_call_table(,%eax,4)
-+syscall_after_call:
- 	movl %eax,PT_EAX(%esp)		# store the return value
- syscall_exit:
- 	LOCKDEP_SYS_EXIT
-@@ -702,12 +703,12 @@ syscall_fault:
- END(syscall_fault)
+@@ -702,7 +703,12 @@ END(syscall_fault)
  
  syscall_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
--	jmp syscall_exit
-+	movl $-ENOSYS,%eax
-+	jmp syscall_after_call
- END(syscall_badsys)
- 
- sysenter_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
-+	movl $-ENOSYS,%eax
- 	jmp sysenter_after_call
+ 	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp resume_userspace
++	jmp syscall_exit
++END(syscall_badsys)
++
++sysenter_badsys:
++	movl $-ENOSYS,PT_EAX(%esp)
++	jmp sysenter_after_call
  END(syscall_badsys)
  	CFI_ENDPROC
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
