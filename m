@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaKPWBA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:01:00 -0500
-Received: from 1wt.eu ([62.212.114.60]:47935 "EHLO 1wt.eu"
+	id S1752591AbaKPWJU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:09:20 -0500
+Received: from 1wt.eu ([62.212.114.60]:47939 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720AbaKPWA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 17:00:56 -0500
-Message-Id: <20141116215330.143419127@1wt.eu>
+	id S1751767AbaKPWA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:00:59 -0500
+Message-Id: <20141116215330.306925946@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:54:04 +0100
+Date: Sun, 16 Nov 2014 22:54:08 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 36/48] netfilter: nf_log: account for size of NLMSG_DONE
+Cc: Christoph Schulz <develop@kristov.de>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 40/48] net: pppoe: use correct channel MTU when using
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,50 +22,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- attribute
+ Multilink PPP
 
-From: Florian Westphal <fw@strlen.de>
+From: Christoph Schulz <develop@kristov.de>
 
-We currently neither account for the nlattr size, nor do we consider
-the size of the trailing NLMSG_DONE when allocating nlmsg skb.
+The PPP channel MTU is used with Multilink PPP when ppp_mp_explode() (see
+ppp_generic module) tries to determine how big a fragment might be. According
+to RFC 1661, the MTU excludes the 2-byte PPP protocol field, see the
+corresponding comment and code in ppp_mp_explode():
 
-This can result in nflog to stop working, as __nfulnl_send() re-tries
-sending forever if it failed to append NLMSG_DONE (which will never
-work if buffer is not large enough).
+		/*
+		 * hdrlen includes the 2-byte PPP protocol field, but the
+		 * MTU counts only the payload excluding the protocol field.
+		 * (RFC1661 Section 2)
+		 */
+		mtu = pch->chan->mtu - (hdrlen - 2);
 
-Reported-by: Houcheng Lin <houcheng@gmail.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-(cherry picked from commit 9dfa1dfe4d5e5e66a991321ab08afe69759d797a)
+However, the pppoe module *does* include the PPP protocol field in the channel
+MTU, which is wrong as it causes the PPP payload to be 1-2 bytes too big under
+certain circumstances (one byte if PPP protocol compression is used, two
+otherwise), causing the generated Ethernet packets to be dropped. So the pppoe
+module has to subtract two bytes from the channel MTU. This error only
+manifests itself when using Multilink PPP, as otherwise the channel MTU is not
+used anywhere.
+
+In the following, I will describe how to reproduce this bug. We configure two
+pppd instances for multilink PPP over two PPPoE links, say eth2 and eth3, with
+a MTU of 1492 bytes for each link and a MRRU of 2976 bytes. (This MRRU is
+computed by adding the two link MTUs and subtracting the MP header twice, which
+is 4 bytes long.) The necessary pppd statements on both sides are "multilink
+mtu 1492 mru 1492 mrru 2976". On the client side, we additionally need "plugin
+rp-pppoe.so eth2" and "plugin rp-pppoe.so eth3", respectively; on the server
+side, we additionally need to start two pppoe-server instances to be able to
+establish two PPPoE sessions, one over eth2 and one over eth3. We set the MTU
+of the PPP network interface to the MRRU (2976) on both sides of the connection
+in order to make use of the higher bandwidth. (If we didn't do that, IP
+fragmentation would kick in, which we want to avoid.)
+
+Now we send a ICMPv4 echo request with a payload of 2948 bytes from client to
+server over the PPP link. This results in the following network packet:
+
+   2948 (echo payload)
+ +    8 (ICMPv4 header)
+ +   20 (IPv4 header)
+---------------------
+   2976 (PPP payload)
+
+These 2976 bytes do not exceed the MTU of the PPP network interface, so the
+IP packet is not fragmented. Now the multilink PPP code in ppp_mp_explode()
+prepends one protocol byte (0x21 for IPv4), making the packet one byte bigger
+than the negotiated MRRU. So this packet would have to be divided in three
+fragments. But this does not happen as each link MTU is assumed to be two bytes
+larger. So this packet is diveded into two fragments only, one of size 1489 and
+one of size 1488. Now we have for that bigger fragment:
+
+   1489 (PPP payload)
+ +    4 (MP header)
+ +    2 (PPP protocol field for the MP payload (0x3d))
+ +    6 (PPPoE header)
+--------------------------
+   1501 (Ethernet payload)
+
+This packet exceeds the link MTU and is discarded.
+
+If one configures the link MTU on the client side to 1501, one can see the
+discarded Ethernet frames with tcpdump running on the client. A
+
+ping -s 2948 -c 1 192.168.15.254
+
+leads to the smaller fragment that is correctly received on the server side:
+
+(tcpdump -vvvne -i eth3 pppoes and ppp proto 0x3d)
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x3] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [end], length 1492
+
+and to the bigger fragment that is not received on the server side:
+
+(tcpdump -vvvne -i eth2 pppoes and ppp proto 0x3d)
+52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
+  length 1515: PPPoE  [ses 0x5] MLPPP (0x003d), length 1495: seq 0x000,
+  Flags [begin], length 1493
+
+With the patch below, we correctly obtain three fragments:
+
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [begin], length 1492
+52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [none], length 1492
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 27: PPPoE  [ses 0x1] MLPPP (0x003d), length 7: seq 0x000,
+  Flags [end], length 5
+
+And the ICMPv4 echo request is successfully received at the server side:
+
+IP (tos 0x0, ttl 64, id 21925, offset 0, flags [DF], proto ICMP (1),
+  length 2976)
+    192.168.222.2 > 192.168.15.254: ICMP echo request, id 30530, seq 0,
+      length 2956
+
+The bug was introduced in commit c9aa6895371b2a257401f59d3393c9f7ac5a8698
+("[PPPOE]: Advertise PPPoE MTU") from the very beginning. This patch applies
+to 3.10 upwards but the fix can be applied (with minor modifications) to
+kernels as old as 2.6.32.
+
+Signed-off-by: Christoph Schulz <develop@kristov.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+(cherry picked from commit a8a3e41c67d24eb12f9ab9680cbb85e24fcd9711)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/netfilter/nfnetlink_log.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/pppoe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
-index f900dc3..a5f02eb 100644
---- a/net/netfilter/nfnetlink_log.c
-+++ b/net/netfilter/nfnetlink_log.c
-@@ -579,7 +579,8 @@ nfulnl_log_packet(u_int8_t pf,
- 		+ nla_total_size(sizeof(u_int32_t))	/* gid */
- 		+ nla_total_size(plen)			/* prefix */
- 		+ nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
--		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
-+		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
-+		+ nla_total_size(sizeof(struct nfgenmsg));	/* NLMSG_DONE */
+diff --git a/drivers/net/pppoe.c b/drivers/net/pppoe.c
+index 343fd1e..bb693b4 100644
+--- a/drivers/net/pppoe.c
++++ b/drivers/net/pppoe.c
+@@ -688,7 +688,7 @@ static int pppoe_connect(struct socket *sock, struct sockaddr *uservaddr,
+ 		po->chan.hdrlen = (sizeof(struct pppoe_hdr) +
+ 				   dev->hard_header_len);
  
- 	if (in && skb_mac_header_was_set(skb)) {
- 		size +=   nla_total_size(skb->dev->hard_header_len)
-@@ -621,8 +622,7 @@ nfulnl_log_packet(u_int8_t pf,
- 		goto unlock_and_release;
- 	}
+-		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr);
++		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
+ 		po->chan.private = sk;
+ 		po->chan.ops = &pppoe_chan_ops;
  
--	if (inst->skb &&
--	    size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
-+	if (inst->skb && size > skb_tailroom(inst->skb)) {
- 		/* either the queue len is too high or we don't have
- 		 * enough room in the skb left. flush to userspace. */
- 		__nfulnl_flush(inst);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
