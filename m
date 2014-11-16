@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751300AbaKPVoy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 16:44:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33048 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764AbaKPVow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 16:44:52 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com
-Cc: Richard Guy Briggs <rgb@redhat.com>, penguin-kernel@I-love.SAKURA.ne.jp,
-        sgrubb@redhat.com, eparis@parisplace.org, pmoore@redhat.com
-Subject: [PATCH] lsm: copy comm before calling audit_log to avoid race in string printing
-Date: Sun, 16 Nov 2014 16:44:10 -0500
-Message-Id: <efbec5e7d1923c4cc2bf9bf942889ded446900f1.1416029235.git.rgb@redhat.com>
+	id S1751292AbaKPVuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 16:50:00 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:43267 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751019AbaKPVt7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 16:49:59 -0500
+Date: Sun, 16 Nov 2014 16:49:55 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH v2 2/2] kernel-trace: Less calls for iput() in
+ create_trace_uprobe() after error detection
+Message-ID: <20141116164955.4f6f0c84@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.10.1411162034190.2364@hadrien>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	<530A72AA.3000601@users.sourceforge.net>
+	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	<530B5FB6.6010207@users.sourceforge.net>
+	<alpine.DEB.2.10.1402241710370.2074@hadrien>
+	<530C5E18.1020800@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251014170.2080@hadrien>
+	<530CD2C4.4050903@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251840450.7035@hadrien>
+	<530CF8FF.8080600@users.sourceforge.net>
+	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	<530DD06F.4090703@users.sourceforge.net>
+	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<5468ABBD.6000903@users.sourceforge.net>
+	<alpine.DEB.2.10.1411161656340.2364@hadrien>
+	<5468F756.8070807@users.sourceforge.net>
+	<5468F96E.4090903@users.sourceforge.net>
+	<20141116143120.44421df2@gandalf.local.home>
+	<alpine.DEB.2.10.1411162034190.2364@hadrien>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When task->comm is passed directly to audit_log_untrustedstring() without
-getting a copy or using the task_lock, there is a race that could happen that
-would output a NULL (\0) in the middle of the output string that would
-effectively truncate the rest of the report text after the comm= field in the
-audit log message, losing fields.
+On Sun, 16 Nov 2014 20:34:59 +0100 (CET)
+Julia Lawall <julia.lawall@lip6.fr> wrote:
 
-Using get_task_comm() to get a copy while acquiring the task_lock to prevent
-this and to prevent the result from being a mixture of old and new values of
-comm would incur potentially unacceptable overhead, considering that the value
-can be influenced by userspace and therefore untrusted anyways.
+> I wuold have thought that one could have just returned, like in the cases
+> above...  But maybe the printed message is useful.
 
-Copy the value before passing it to audit_log_untrustedstring() ensures that a
-local copy is used to calculate the length *and* subsequently printed.  Even if
-this value contains a mix of old and new values, it will only calculate and
-copy up to the first NULL, preventing the rest of the audit log message being
-truncated.
+Yes, it lets us know that the format string failed to parse.
 
-The LSM_AUDIT_DATA_TASK pid= and comm= labels are duplicates of those at the
-start of this function with different values.  Rename them to their object
-counterparts opid= and ocomm= to disambiguate.  Use a second local copy of comm
-to avoid a race between the first and second calls to
-audit_log_untrustedstring() with comm.
-
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- security/lsm_audit.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
-
-diff --git a/security/lsm_audit.c b/security/lsm_audit.c
-index 69fdf3b..3323144 100644
---- a/security/lsm_audit.c
-+++ b/security/lsm_audit.c
-@@ -211,7 +211,7 @@ static inline void print_ipv4_addr(struct audit_buffer *ab, __be32 addr,
- static void dump_common_audit_data(struct audit_buffer *ab,
- 				   struct common_audit_data *a)
- {
--	struct task_struct *tsk = current;
-+	char comm[sizeof(current->comm)];
- 
- 	/*
- 	 * To keep stack sizes in check force programers to notice if they
-@@ -220,8 +220,8 @@ static void dump_common_audit_data(struct audit_buffer *ab,
- 	 */
- 	BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
- 
--	audit_log_format(ab, " pid=%d comm=", task_pid_nr(tsk));
--	audit_log_untrustedstring(ab, tsk->comm);
-+	audit_log_format(ab, " pid=%d comm=", task_pid_nr(current));
-+	audit_log_untrustedstring(ab, memcpy(comm, current->comm, sizeof(comm)));
- 
- 	switch (a->type) {
- 	case LSM_AUDIT_DATA_NONE:
-@@ -276,16 +276,19 @@ static void dump_common_audit_data(struct audit_buffer *ab,
- 		audit_log_format(ab, " ino=%lu", inode->i_ino);
- 		break;
- 	}
--	case LSM_AUDIT_DATA_TASK:
--		tsk = a->u.tsk;
-+	case LSM_AUDIT_DATA_TASK: {
-+		struct task_struct *tsk = a->u.tsk;
- 		if (tsk) {
- 			pid_t pid = task_pid_nr(tsk);
- 			if (pid) {
--				audit_log_format(ab, " pid=%d comm=", pid);
--				audit_log_untrustedstring(ab, tsk->comm);
-+				char comm[sizeof(tsk->comm)];
-+				audit_log_format(ab, " opid=%d ocomm=", pid);
-+				audit_log_untrustedstring(ab,
-+				    memcpy(comm, tsk->comm, sizeof(comm)));
- 			}
- 		}
- 		break;
-+	}
- 	case LSM_AUDIT_DATA_NET:
- 		if (a->u.net->sk) {
- 			struct sock *sk = a->u.net->sk;
--- 
-1.7.1
+-- Steve
 
