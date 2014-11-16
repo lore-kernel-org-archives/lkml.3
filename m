@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343AbaKPNIy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 08:08:54 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:54530 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaKPNIx (ORCPT
+	id S1755218AbaKPNZj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 08:25:39 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:51463 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938AbaKPNZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 08:08:53 -0500
-Date: Sun, 16 Nov 2014 14:08:47 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Juergen Gross <jgross@suse.com>
-Cc: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Subject: Re: [PATCH V6 00/18] x86: Full support of PAT
-Message-ID: <20141116130847.GA4736@gmail.com>
-References: <1415019724-4317-1-git-send-email-jgross@suse.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415019724-4317-1-git-send-email-jgross@suse.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 16 Nov 2014 08:25:37 -0500
+From: sunwxg <sun.wxg@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peng Tao <bergwolf@gmail.com>, devel@driverdev.osuosl.org
+Cc: Sun Wang <sun.wxg@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging:lustre:lnet:lnet Function must be static
+Date: Sun, 16 Nov 2014 21:24:44 +0800
+Message-Id: <1416144284-31138-2-git-send-email-sun.wxg@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sun Wang <sun.wxg@gmail.com>
 
-* Juergen Gross <jgross@suse.com> wrote:
+Function must be static if function will not be used in other files.
 
->  arch/x86/include/asm/cacheflush.h         |  38 ++++---
+Signed-off-by: Sun Wang <sun.wxg@gmail.com>
 
-FYI, this series breaks the UML build:
+---
+ drivers/staging/lustre/lnet/lnet/{module.c.org => module.c} | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In file included from /home/mingo/tip/include/linux/highmem.h:11:0,
-                 from /home/mingo/tip/include/linux/pagemap.h:10,
-                 from /home/mingo/tip/include/linux/mempolicy.h:14,
-                 from /home/mingo/tip/include/linux/shmem_fs.h:6,
-                 from /home/mingo/tip/init/do_mounts.c:30:
-/home/mingo/tip/arch/x86/include/asm/cacheflush.h:67:36: error: return type is an incomplete type
- static inline enum page_cache_mode get_page_memtype(struct page *pg)
-                                    ^
-/home/mingo/tip/arch/x86/include/asm/cacheflush.h: In function ‘get_page_memtype’:
-/home/mingo/tip/arch/x86/include/asm/cacheflush.h:69:2: warning: ‘return’ with a value, in function returning void [enabled by default]
-  return -1;
-  ^
-/home/mingo/tip/arch/x86/include/asm/cacheflush.h: At top level:
-/home/mingo/tip/arch/x86/include/asm/cacheflush.h:72:30: error: parameter 2 (‘memtype’) has incomplete type
-         enum page_cache_mode memtype)
-                              ^
-/home/mingo/tip/arch/x86/include/asm/cacheflush.h:71:20: error: function declaration isn’t a prototype [-Werror=strict-prototypes]
-
-Thanks,
-
-	Ingo
+diff --git a/drivers/staging/lustre/lnet/lnet/module.c.org b/drivers/staging/lustre/lnet/lnet/module.c
+index e84d59d..4ca7b1d 100644
+--- a/drivers/staging/lustre/lnet/lnet/module.c.org
++++ b/drivers/staging/lustre/lnet/lnet/module.c
+@@ -43,7 +43,7 @@ MODULE_PARM_DESC(config_on_load, "configure network at module load");
+ 
+ static struct mutex lnet_config_mutex;
+ 
+-int
++static int
+ lnet_configure(void *arg)
+ {
+ 	/* 'arg' only there so I can be passed to cfs_create_thread() */
