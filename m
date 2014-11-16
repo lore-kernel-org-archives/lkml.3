@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaKPTfT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 14:35:19 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:62909 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932105AbaKPTfR (ORCPT
+	id S1755531AbaKPTkt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 14:40:49 -0500
+Received: from message.langara.bc.ca ([209.87.29.115]:34110 "EHLO
+	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaKPTks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 14:35:17 -0500
-X-IronPort-AV: E=Sophos;i="5.07,398,1413237600"; 
-   d="scan'208";a="107403827"
-Date: Sun, 16 Nov 2014 20:34:59 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH v2 2/2] kernel-trace: Less calls for iput() in
- create_trace_uprobe() after error detection
-In-Reply-To: <20141116143120.44421df2@gandalf.local.home>
-Message-ID: <alpine.DEB.2.10.1411162034190.2364@hadrien>
-References: <5307CAA2.8060406@users.sourceforge.net> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
- <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
- <5468ABBD.6000903@users.sourceforge.net> <alpine.DEB.2.10.1411161656340.2364@hadrien> <5468F756.8070807@users.sourceforge.net> <5468F96E.4090903@users.sourceforge.net> <20141116143120.44421df2@gandalf.local.home>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 16 Nov 2014 14:40:48 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+Content-type: text/plain; charset=us-ascii
+From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Doug Ledford <dledford@redhat.com>, linux-newbie@vger.kernel.org
+Message-id: <fb59f9ad237f.5468fdbe@langara.bc.ca>
+Date: Sun, 16 Nov 2014 19:40:46 +0000 (GMT)
+X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
+ 32bit)
+Content-language: en
+Subject: Re: [PATCH 1/1] ipc/mqueue.c: Drag unneeded code out of locks
+X-Accept-Language: en
+In-reply-to: <1416086539.12597.15.camel@linux-t7sj.site>
+References: <fae396b9bc15.545c5b55@langara.bc.ca>
+ <1415780201.24725.2.camel@linux-t7sj.site>
+ <fbb3e8aa49d6.5466da38@langara.bc.ca>
+ <1416086539.12597.15.camel@linux-t7sj.site>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Nov 2014, Steven Rostedt wrote:
+Hello,
 
-> On Sun, 16 Nov 2014 20:22:22 +0100
-> SF Markus Elfring <elfring@users.sourceforge.net> wrote:
->
-> > From: Markus Elfring <elfring@users.sourceforge.net>
-> > Date: Sun, 16 Nov 2014 19:49:39 +0100
-> >
-> > The iput() function was called in three cases by the create_trace_uprobe()
-> > function during error handling even if the passed variable contained still
-> > a null pointer. This implementation detail could be improved by the
-> > introduction of another jump label.
->
-> The first patch is fine, and the only reason is to save the few bytes
-> that the branch check might take. It's in a path that is unlikely to be
-> hit so it is not a performance issue at all.
->
-> This patch is useless. I rather not apply any patch than to create
-> another jump that skips over the freeing of iput() just because we know
-> inode is null. That's why we had the if (inode) in the first place.
->
-> So Nack on this patch and I'll contemplate applying the first one. I
-> probably will as it seems rather harmless.
+My intent with my patch was to make things easier to understand
+because it reduces the size of critical sections to more
+understandable bite sized chunks. My patch would make the purposes of
+the critical sections more obvious and understandable. In making this
+patch I may have made a few mistakes which we can correct.
 
-I wuold have thought that one could have just returned, like in the cases
-above...  But maybe the printed message is useful.
+>  For instance, adding local variables from structures passed
+to a function does *not* make things more clearer:
 
-julia
+This is not generally indicative of most of the patch. Moreover, the
+local variable was introduced into a TIGHTLY restricted scope which
+brings me to the next point.
+
+> Plus you add context specific regions within the function (code
+> around { }), ugly and something we've been removing!
+
+Small context specific regions are GOOD. This is why we have functions
+instead of one big ball of mud. I wouldn't be opposed to moving the {
+} regions into smaller sub-functions themselves as the indentation can
+get slightly annoying though. Also, this would let me put sparse
+locking annotations on them.
+
+> > It is not fair to argue that these changes are risky. 
+
+I still hold this position.
+
+If these changes are risky for you then the code needs improvement or
+you are incompetent. I am trying to make the code easier to understand
+and REDUCE risks. Maybe my patch isn't as obvious and easily
+understandable as it should be. In that case, would you agree that
+even if my patch isn't the best way to improve the code that it still
+needs improvement?
+
+Finally, please don't ignore the rest of my message. Even if my patch
+isn't that good there are lots of ways to compromise and improve it
+such as adding tests, annotations and making it clearer.
+
+Thank you,
+Steven Stewart-Gallus
