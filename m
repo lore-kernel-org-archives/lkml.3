@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaKPWAu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 17:00:50 -0500
-Received: from 1wt.eu ([62.212.114.60]:47914 "EHLO 1wt.eu"
+	id S1752728AbaKPWLc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:11:32 -0500
+Received: from 1wt.eu ([62.212.114.60]:47918 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565AbaKPWAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751571AbaKPWAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Nov 2014 17:00:48 -0500
-Message-Id: <20141116215329.814144916@1wt.eu>
+Message-Id: <20141116215330.102407774@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sun, 16 Nov 2014 22:53:56 +0100
+Date: Sun, 16 Nov 2014 22:54:03 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 28/48] sctp: fix possible seqlock seadlock in
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 35/48] tty: Fix high cpu load if tty is unreleaseable
 In-Reply-To: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,76 +23,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- sctp_packet_transmit()
 
-From: Eric Dumazet <edumazet@google.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
+Kernel oops can cause the tty to be unreleaseable (for example, if
+n_tty_read() crashes while on the read_wait queue). This will cause
+tty_release() to endlessly loop without sleeping.
 
-Dave reported following splat, caused by improper use of
-IP_INC_STATS_BH() in process context.
+Use a killable sleep timeout which grows by 2n+1 jiffies over the interval
+[0, 120 secs.) and then jumps to forever (but still killable).
 
-BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
-caller is __this_cpu_preempt_check+0x13/0x20
-CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
- ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
- 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
- ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
-Call Trace:
- [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
- [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
- [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
- [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
- [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
- [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
- [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
- [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
- [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
- [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
- [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
- [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
- [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
- [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
- [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
- [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
- [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
- [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
- [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
- [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
- [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
- [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
- [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
- [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
+NB: killable just allows for the task to be rewoken manually, not
+to be terminated.
 
-This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
-seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
-deadlock in ip6_finish_output2")
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+(cherry picked from commit 37b164578826406a173ca7c20d9ba7430134d23e)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sctp/output.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/tty_io.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index 54bc011..432361b 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -580,7 +580,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(&init_net, IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS(&init_net, IPSTATS_MIB_OUTNOROUTES);
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 123cedf..cbdd169 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -1482,6 +1482,7 @@ void tty_release_dev(struct file *filp)
+ 	int	devpts;
+ 	int	idx;
+ 	char	buf[64];
++	long	timeout = 0;
+ 	struct 	inode *inode;
  
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
+ 	inode = filp->f_path.dentry->d_inode;
+@@ -1602,7 +1603,11 @@ void tty_release_dev(struct file *filp)
+ 		printk(KERN_WARNING "tty_release_dev: %s: read/write wait queue "
+ 				    "active!\n", tty_name(tty, buf));
+ 		mutex_unlock(&tty_mutex);
+-		schedule();
++		schedule_timeout_killable(timeout);
++		if (timeout < 120 * HZ)
++			timeout = 2 * timeout + 1;
++		else
++			timeout = MAX_SCHEDULE_TIMEOUT;
+ 	}
+ 
+ 	/*
 -- 
 1.7.12.2.21.g234cd45.dirty
 
