@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751068AbaKPVY5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 16:24:57 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:52642 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaKPVYz (ORCPT
+	id S1751270AbaKPVZX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 16:25:23 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:56452 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbaKPVZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 16:24:55 -0500
+	Sun, 16 Nov 2014 16:25:19 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: ralf@linux-mips.org, f.fainelli@gmail.com, jfraser@broadcom.com,
+        dtor@chromium.org, tglx@linutronix.de, jason@lakedaemon.net,
+        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
+Date: Sun, 16 Nov 2014 22:24:55 +0100
+Message-ID: <50587083.ieLlCR4VrM@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416097066-20452-23-git-send-email-cernekee@gmail.com>
+References: <1416097066-20452-1-git-send-email-cernekee@gmail.com> <1416097066-20452-23-git-send-email-cernekee@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20141116.140422.570375628237589645.davem@davemloft.net>
-References: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
-	<1415929010-9361-7-git-send-email-ast@plumgrid.com>
-	<20141116.140422.570375628237589645.davem@davemloft.net>
-Date: Sun, 16 Nov 2014 13:24:53 -0800
-Message-ID: <CAMEtUuwrST6wGnBU6UU2NYEubskHYf1XZmZQpkgM+cUc8YD9OA@mail.gmail.com>
-Subject: Re: [PATCH v2 net-next 6/7] bpf: allow eBPF programs to use maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: David Miller <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:EfnFpqSsvM7/FIqtJxyeZ/sMme5kVi9MoDjgTiESY7X
+ E2gH6ZJEL8jpn4VfSA26y1z0YAYahENpWFmTBMV5BTDR2BYcxv
+ 5pHhi7Tzs9r46cRWw8WYj3aZ2DxhjlF+KBtJF8WxRueOjrTjNQ
+ gZtMl8Q+P3V6Exujn1k6n5kb7BYPOKctsNJD78pKvIPQh4VkSt
+ Icbhi3wW4B4OL3igDNnx4+vJ8m3DpSLZ49bYoWodD+vGPORdWn
+ /60g8Ywm4Fyc8GIbRxeGlT6/3KavwcM1/Zzv1iP7d7H/EOBv05
+ +Zr2ZG7kpcS/eFLVpuh+BT6uxKx7h6JPXBKVgP8Bm/uZ3CuuPQ
+ XQ94ZdgulitnRGhHF5QE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 11:04 AM, David Miller <davem@davemloft.net> wrote:
-> From: Alexei Starovoitov <ast@plumgrid.com>
-> Date: Thu, 13 Nov 2014 17:36:49 -0800
->
->> +static u64 bpf_map_lookup_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
->> +{
->> +     /* verifier checked that R1 contains a valid pointer to bpf_map
->> +      * and R2 points to a program stack and map->key_size bytes were
->> +      * initialized
->> +      */
->> +     struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
->> +     void *key = (void *) (unsigned long) r2;
->> +     void *value;
->> +
->> +     WARN_ON_ONCE(!rcu_read_lock_held());
->> +
->> +     value = map->ops->map_lookup_elem(map, key);
->> +
->> +     /* lookup() returns either pointer to element value or NULL
->> +      * which is the meaning of PTR_TO_MAP_VALUE_OR_NULL type
->> +      */
->> +     return (unsigned long) value;
->> +}
->
-> You should translate this into a true boolean '1' or '0' value so that
-> kernel pointers don't propagate to the user or his eBPF programs.
+On Saturday 15 November 2014 16:17:46 Kevin Cernekee wrote:
+> +config BMIPS_MULTIPLATFORM
+> +       bool "Broadcom BCM33xx/BCM63xx/BCM7xxx multiplatform kernel"
+> +       select BOOT_RAW
+> +       select NO_EXCEPT_FILL
+> +       select USE_OF
+> +       select BUILTIN_DTB
+> +       select FW_CFE
+> +       select CEVT_R4K
+> +       select CSRC_R4K
+> +       select SYNC_R4K
+> +       select COMMON_CLK
+> +       select BCM7038_L1_IRQ
+> +       select BCM7120_L2_IRQ
+> +       select BRCMSTB_L2_IRQ
+> +       select IRQ_CPU
+> +       select RAW_IRQ_ACCESSORS
+> +       select DMA_NONCOHERENT
+> +       select SYS_SUPPORTS_32BIT_KERNEL
+> +       select SYS_SUPPORTS_LITTLE_ENDIAN
+> +       select SYS_SUPPORTS_BIG_ENDIAN
+> +       select SYS_SUPPORTS_HIGHMEM
+> +       select SYS_HAS_CPU_BMIPS3300
+> +       select SYS_HAS_CPU_BMIPS4350
+> +       select SYS_HAS_CPU_BMIPS4380
+> +       select SYS_HAS_CPU_BMIPS5000
+> +       select SWAP_IO_SPACE
+> +       select USB_EHCI_BIG_ENDIAN_DESC
+> +       select USB_EHCI_BIG_ENDIAN_MMIO
+> +       select USB_OHCI_BIG_ENDIAN_DESC
+> +       select USB_OHCI_BIG_ENDIAN_MMIO
 
-that won't work. eBPF programs have to see all sorts of kernel
-pointers. In this case it's a pointer to map element value
-or NULL. There are pointers to stack, pointers to map root,
-pointers to context, etc. Programs can read pointers from
-other data structures. And in the case of tracing they can
-pretty much access any kernel memory in read only way.
-Just like 'perf probe' filters.
-The requirement that _unprivileged_ programs should
-not be able to pass all these pointers back to user is
-well understood and was discussed in detail several
-month back. It's verifier that will prevent leaking of
-kernel addresses. Today, the whole thing is for root
-only. When the infra is ready for non-root I will add
-a pass to verifier, that will kick in only for unprivileged
-programs. Verifier already tracks all pointers and
-can prevent passing them to user. In this case
-verifier knows that register R0 after a call to
-bpf_map_lookup_elem() is
-"either pointer to element value or NULL",
-so it will prevent storing it into any memory or
-doing arithmetic on it, so that user space cannot
-see the pointer, whereas eBPF program can use
-it to access map element value.
+You mentioned in another thread that all MMIO is byteswapped based on the
+jumper setting. Should the USB options have an 'if CPU_BIG_ENDIAN'
+behind them? I think it will still work in the current way, but when you
+know that you have little-endian registers, it is more efficient
+not to set these.
+
+> +       help
+> +         Build a multiplatform DT-based kernel image that boots on select
+> +         BCM33xx cable modem chips, BCM63xx DSL chips, and BCM7xxx set-top
+> +         box chips.  Note that CONFIG_CPU_BIG_ENDIAN/CONFIG_CPU_LITTLE_ENDIAN
+> +         must be set appropriately for your board, and the dts/dtsi files may
+> +         require changes based on the system endianness.
+> 
+
+Can you clarify the meaning of "multiplatform" here? I suspect you
+mean that this is one platform that includes multiple SoCs that
+are all made by the same manufacturer and based on the same CPU
+core family, but it is still incompatible with other Vendor's SoCs
+and with Broadcom MIPS SoCs that are based on 74K or other cores, right?
+
+It's probably not a wrong description here, but for anybody reading this
+who also works on ARM, it seems rather confusing because there,
+"multiplatform" implies that the particular SoC can be built into a
+generic kernel image that supports SoCs from any vendor whose platform
+is also marked as "multiplatform", as long as the CPU architecture level
+(v4/v5, or v6/v7, or v8) is the same.
+
+	Arnd
