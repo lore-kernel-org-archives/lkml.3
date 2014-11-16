@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348AbaKPMKN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 07:10:13 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:44464 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114AbaKPMKK (ORCPT
+	id S1755239AbaKPMQo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 07:16:44 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57962 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754966AbaKPMQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 07:10:10 -0500
-From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
-Subject: [PATCH] ACPI / WAKEUP : enable wakeup power for physical child devices
-Date: Sun, 16 Nov 2014 15:10:01 +0300
-Message-Id: <1416139801-6537-1-git-send-email-Andrej.Skvortzov@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Sun, 16 Nov 2014 07:16:43 -0500
+Date: Sun, 16 Nov 2014 13:16:39 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+In-Reply-To: <20141115024042.GA18015@redhat.com>
+Message-ID: <alpine.DEB.2.11.1411161314060.3909@nanos>
+References: <20141114213124.GB3344@redhat.com> <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com> <alpine.DEB.2.11.1411142326510.3909@nanos> <20141114233213.GA14135@redhat.com> <alpine.DEB.2.11.1411150119070.3909@nanos>
+ <20141115024042.GA18015@redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit f2b56bc808addb908a5bf435d9b942c02af9a7c4
-("ACPI / PM: Use device wakeup flags for handling ACPI wakeup devices")
-broke wake-on-lan for Broadcom BCM4401 Ethernet card (b44) on Dell Vostro 1500 laptop.
-device_may_wakeup for main ACPI device (PCIE) returns false, because it has
-can_wakeup = 0. Therefore any physical devices connected to this parent
-were not prepared for wakeup/suspend. But physical device is capable to
-wakeup the system.
+On Fri, 14 Nov 2014, Dave Jones wrote:
+> On Sat, Nov 15, 2014 at 01:36:41AM +0100, Thomas Gleixner wrote:
+>  > On Fri, 14 Nov 2014, Dave Jones wrote:
+>  > 
+>  > > On Fri, Nov 14, 2014 at 11:55:30PM +0100, Thomas Gleixner wrote:
+>  > >  
+>  > >  > So this looks more like a smp function call fuckup.
+>  > >  > 
+>  > >  > I assume Dave is running that stuff on KVM. So it might be worth while
+>  > >  > to look at the IPI magic there.
+>  > > 
+>  > > no, bare metal.
+>  > 
+>  > Ok, but that does not change the fact that we are stuck in
+>  > smp_function_call land.
+>  > 
+>  > Enabling softlockup_all_cpu_backtrace will probably not help much as
+>  > we will end up waiting for csd_lock again :(
+>  > 
+>  > Is the machine still accesible when this happens? If yes, we might
+>  > enable a few trace points and functions and read out the trace
+>  > buffer. If not, we could just panic the machine and dump the trace
+>  > buffer over serial.
+> 
+> No, it wedges solid. Even though it says something like "CPU3 locked up",
+> aparently all cores also get stuck.
 
-To fix this issue device_may_wakeup was replaced with acpi_device_may_wakeup.
-acpi_device_may_wakeup was written based on function
-acpi_system_wakeup_device_seq_show
+Does not surprise me. Once the smp function call machinery is wedged...
 
-Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
----
- drivers/acpi/wakeup.c |   45 +++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 37 insertions(+), 8 deletions(-)
+> 9 times out of 10 it doesn't stay alive long enough to even get the full
+> trace out over usb-serial.
 
-diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-index 1638401..0da7e70 100644
---- a/drivers/acpi/wakeup.c
-+++ b/drivers/acpi/wakeup.c
-@@ -19,6 +19,34 @@
- #define _COMPONENT		ACPI_SYSTEM_COMPONENT
- ACPI_MODULE_NAME("wakeup_devices")
- 
-+
-+bool acpi_device_may_wakeup(struct acpi_device *dev)
-+{
-+	struct acpi_device_physical_node *entry;
-+	bool may_wakeup = false;
-+
-+	mutex_lock(&dev->physical_node_lock);
-+	if (!dev->physical_node_count)
-+		may_wakeup = device_may_wakeup(&dev->dev);
-+	else {
-+		struct device *ldev;
-+
-+		list_for_each_entry(entry, &dev->physical_node_list, node) {
-+			ldev = get_device(entry->dev);
-+			if (!ldev)
-+				continue;
-+
-+			may_wakeup = device_may_wakeup(&dev->dev) ||
-+				device_may_wakeup(ldev);
-+
-+			put_device(ldev);
-+		}
-+	}
-+
-+	mutex_unlock(&dev->physical_node_lock);
-+	return may_wakeup;
-+}
-+
- /**
-  * acpi_enable_wakeup_devices - Enable wake-up device GPEs.
-  * @sleep_state: ACPI system sleep state.
-@@ -35,13 +63,14 @@ void acpi_enable_wakeup_devices(u8 sleep_state)
- 		struct acpi_device *dev =
- 			container_of(node, struct acpi_device, wakeup_list);
- 
-+
- 		if (!dev->wakeup.flags.valid
--		    || sleep_state > (u32) dev->wakeup.sleep_state
--		    || !(device_may_wakeup(&dev->dev)
--		        || dev->wakeup.prepare_count))
-+			|| sleep_state > (u32) dev->wakeup.sleep_state
-+			|| !(acpi_device_may_wakeup(dev)
-+			    || dev->wakeup.prepare_count))
- 			continue;
- 
--		if (device_may_wakeup(&dev->dev))
-+		if (acpi_device_may_wakeup(dev))
- 			acpi_enable_wakeup_device_power(dev, sleep_state);
- 
- 		/* The wake-up power should have been enabled already. */
-@@ -63,15 +92,15 @@ void acpi_disable_wakeup_devices(u8 sleep_state)
- 			container_of(node, struct acpi_device, wakeup_list);
- 
- 		if (!dev->wakeup.flags.valid
--		    || sleep_state > (u32) dev->wakeup.sleep_state
--		    || !(device_may_wakeup(&dev->dev)
--		        || dev->wakeup.prepare_count))
-+			|| sleep_state > (u32) dev->wakeup.sleep_state
-+			|| !(acpi_device_may_wakeup(dev)
-+				|| dev->wakeup.prepare_count))
- 			continue;
- 
- 		acpi_set_gpe_wake_mask(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
- 				ACPI_GPE_DISABLE);
- 
--		if (device_may_wakeup(&dev->dev))
-+		if (acpi_device_may_wakeup(dev))
- 			acpi_disable_wakeup_device_power(dev);
- 	}
- }
--- 
-1.7.2.5
+usb-serial is definitely not the best tool for stuff like this. I
+wonder whether netconsole might give us some more info.
 
+Last time I looked into something like that on my laptop I had to
+resort to a crash kernel to get anything useful out of the box.
+
+Thanks,
+
+	tglx
