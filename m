@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472AbaKPK5B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 05:57:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34853 "EHLO
+	id S1755492AbaKPK5P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 05:57:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34860 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207AbaKPK46 (ORCPT
+	with ESMTP id S1755207AbaKPK5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 05:56:58 -0500
-Date: Sun, 16 Nov 2014 02:56:45 -0800
+	Sun, 16 Nov 2014 05:57:12 -0500
+Date: Sun, 16 Nov 2014 02:57:00 -0800
 From: tip-bot for Juergen Gross <tipbot@zytor.com>
-Message-ID: <tip-2a3746984c98b17b565e6a2c2bbaaaef757db1b4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, jgross@suse.com, tglx@linutronix.de,
-        mingo@kernel.org, stefan.bader@canonical.com, hpa@zytor.com
-Reply-To: jgross@suse.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        tglx@linutronix.de, mingo@kernel.org, stefan.bader@canonical.com
-In-Reply-To: <1415019724-4317-10-git-send-email-jgross@suse.com>
-References: <1415019724-4317-10-git-send-email-jgross@suse.com>
+Message-ID: <tip-102e19e1955d85f31475416b1ee22980c6462cf8@git.kernel.org>
+Cc: hpa@zytor.com, tglx@linutronix.de, jgross@suse.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org
+Reply-To: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        jgross@suse.com, mingo@kernel.org
+In-Reply-To: <1415019724-4317-11-git-send-email-jgross@suse.com>
+References: <1415019724-4317-11-git-send-email-jgross@suse.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86: Use new cache mode type in track_pfn_remap()
-  and track_pfn_insert()
-Git-Commit-ID: 2a3746984c98b17b565e6a2c2bbaaaef757db1b4
+Subject: [tip:x86/mm] x86:
+  Remove looking for setting of _PAGE_PAT_LARGE in pageattr.c
+Git-Commit-ID: 102e19e1955d85f31475416b1ee22980c6462cf8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,22 +32,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2a3746984c98b17b565e6a2c2bbaaaef757db1b4
-Gitweb:     http://git.kernel.org/tip/2a3746984c98b17b565e6a2c2bbaaaef757db1b4
+Commit-ID:  102e19e1955d85f31475416b1ee22980c6462cf8
+Gitweb:     http://git.kernel.org/tip/102e19e1955d85f31475416b1ee22980c6462cf8
 Author:     Juergen Gross <jgross@suse.com>
-AuthorDate: Mon, 3 Nov 2014 14:01:55 +0100
+AuthorDate: Mon, 3 Nov 2014 14:01:56 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sun, 16 Nov 2014 11:04:25 +0100
 
-x86: Use new cache mode type in track_pfn_remap() and track_pfn_insert()
+x86: Remove looking for setting of _PAGE_PAT_LARGE in pageattr.c
 
-Instead of directly using the cache mode bits in the pte switch to
-using the cache mode type. As those are the main callers of
-lookup_memtype(), change this as well.
+When modifying page attributes via change_page_attr_set_clr() don't
+test for setting _PAGE_PAT_LARGE, as this is
+- never done
+- PAT support for large pages is not included in the kernel up to now
 
-Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stefan.bader@canonical.com
 Cc: xen-devel@lists.xensource.com
 Cc: konrad.wilk@oracle.com
@@ -58,117 +57,22 @@ Cc: toshi.kani@hp.com
 Cc: plagnioj@jcrosoft.com
 Cc: tomi.valkeinen@ti.com
 Cc: bhelgaas@google.com
-Link: http://lkml.kernel.org/r/1415019724-4317-10-git-send-email-jgross@suse.com
+Link: http://lkml.kernel.org/r/1415019724-4317-11-git-send-email-jgross@suse.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/pat.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ arch/x86/mm/pageattr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 6d5a8e3..2f3744f 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -394,12 +394,12 @@ int free_memtype(u64 start, u64 end)
-  *
-  * Only to be called when PAT is enabled
-  *
-- * Returns _PAGE_CACHE_WB, _PAGE_CACHE_WC, _PAGE_CACHE_UC_MINUS or
-- * _PAGE_CACHE_UC
-+ * Returns _PAGE_CACHE_MODE_WB, _PAGE_CACHE_MODE_WC, _PAGE_CACHE_MODE_UC_MINUS
-+ * or _PAGE_CACHE_MODE_UC
-  */
--static unsigned long lookup_memtype(u64 paddr)
-+static enum page_cache_mode lookup_memtype(u64 paddr)
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index ae242a7..87c0d36 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1307,7 +1307,7 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
+ static inline int cache_attr(pgprot_t attr)
  {
--	int rettype = _PAGE_CACHE_WB;
-+	enum page_cache_mode rettype = _PAGE_CACHE_MODE_WB;
- 	struct memtype *entry;
- 
- 	if (x86_platform.is_untracked_pat_range(paddr, paddr + PAGE_SIZE))
-@@ -408,13 +408,13 @@ static unsigned long lookup_memtype(u64 paddr)
- 	if (pat_pagerange_is_ram(paddr, paddr + PAGE_SIZE)) {
- 		struct page *page;
- 		page = pfn_to_page(paddr >> PAGE_SHIFT);
--		rettype = get_page_memtype(page);
-+		rettype = pgprot2cachemode(__pgprot(get_page_memtype(page)));
- 		/*
- 		 * -1 from get_page_memtype() implies RAM page is in its
- 		 * default state and not reserved, and hence of type WB
- 		 */
- 		if (rettype == -1)
--			rettype = _PAGE_CACHE_WB;
-+			rettype = _PAGE_CACHE_MODE_WB;
- 
- 		return rettype;
- 	}
-@@ -423,9 +423,9 @@ static unsigned long lookup_memtype(u64 paddr)
- 
- 	entry = rbt_memtype_lookup(paddr);
- 	if (entry != NULL)
--		rettype = entry->type;
-+		rettype = pgprot2cachemode(__pgprot(entry->type));
- 	else
--		rettype = _PAGE_CACHE_UC_MINUS;
-+		rettype = _PAGE_CACHE_MODE_UC_MINUS;
- 
- 	spin_unlock(&memtype_lock);
- 	return rettype;
-@@ -613,7 +613,7 @@ static int reserve_pfn_range(u64 paddr, unsigned long size, pgprot_t *vma_prot,
- 		if (!pat_enabled)
- 			return 0;
- 
--		flags = lookup_memtype(paddr);
-+		flags = cachemode2protval(lookup_memtype(paddr));
- 		if (want_flags != flags) {
- 			printk(KERN_WARNING "%s:%d map pfn RAM range req %s for [mem %#010Lx-%#010Lx], got %s\n",
- 				current->comm, current->pid,
-@@ -715,7 +715,7 @@ int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
- 		    unsigned long pfn, unsigned long addr, unsigned long size)
- {
- 	resource_size_t paddr = (resource_size_t)pfn << PAGE_SHIFT;
--	unsigned long flags;
-+	enum page_cache_mode pcm;
- 
- 	/* reserve the whole chunk starting from paddr */
- 	if (addr == vma->vm_start && size == (vma->vm_end - vma->vm_start)) {
-@@ -734,18 +734,18 @@ int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
- 	 * For anything smaller than the vma size we set prot based on the
- 	 * lookup.
- 	 */
--	flags = lookup_memtype(paddr);
-+	pcm = lookup_memtype(paddr);
- 
- 	/* Check memtype for the remaining pages */
- 	while (size > PAGE_SIZE) {
- 		size -= PAGE_SIZE;
- 		paddr += PAGE_SIZE;
--		if (flags != lookup_memtype(paddr))
-+		if (pcm != lookup_memtype(paddr))
- 			return -EINVAL;
- 	}
- 
- 	*prot = __pgprot((pgprot_val(vma->vm_page_prot) & (~_PAGE_CACHE_MASK)) |
--			 flags);
-+			 cachemode2protval(pcm));
- 
- 	return 0;
+ 	return pgprot_val(attr) &
+-		(_PAGE_PAT | _PAGE_PAT_LARGE | _PAGE_PWT | _PAGE_PCD);
++		(_PAGE_PAT | _PAGE_PWT | _PAGE_PCD);
  }
-@@ -753,15 +753,15 @@ int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
- int track_pfn_insert(struct vm_area_struct *vma, pgprot_t *prot,
- 		     unsigned long pfn)
- {
--	unsigned long flags;
-+	enum page_cache_mode pcm;
  
- 	if (!pat_enabled)
- 		return 0;
- 
- 	/* Set prot based on lookup */
--	flags = lookup_memtype((resource_size_t)pfn << PAGE_SHIFT);
-+	pcm = lookup_memtype((resource_size_t)pfn << PAGE_SHIFT);
- 	*prot = __pgprot((pgprot_val(vma->vm_page_prot) & (~_PAGE_CACHE_MASK)) |
--			 flags);
-+			 cachemode2protval(pcm));
- 
- 	return 0;
- }
+ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
