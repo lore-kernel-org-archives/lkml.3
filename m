@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaKPXCl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 18:02:41 -0500
-Received: from ozlabs.org ([103.22.144.67]:39697 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200AbaKPXCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 18:02:40 -0500
-Date: Mon, 17 Nov 2014 10:02:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Aaron Ma <mapengyu@gmail.com>
-Subject: linux-next: build warning after merge of the pci-current tree
-Message-ID: <20141117100220.0e503957@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752788AbaKPXMo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 18:12:44 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:62876 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaKPXMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 18:12:43 -0500
+Date: Sun, 16 Nov 2014 15:12:44 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.18 #2
+Message-ID: <20141116231244.GD14929@quad.lixom.net>
+References: <1415963482-16582-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/kJ3L6kJGsdIxD4T=rAFwhiw"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415963482-16582-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/kJ3L6kJGsdIxD4T=rAFwhiw
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 14, 2014 at 12:11:22PM +0100, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
+> 
+> I don't have more for the moment, so here is trivial at91 material for 3.18.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit 106c67af2fb938880edbf43b49dabbd8d2534839:
+> 
+>   ARM: at91/dt: sam9263: fix PLLB frequencies (2014-10-22 10:08:22 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes2
+> 
+> for you to fetch changes up to c4e4bbcee9fa37024a2d4cdcaa5fe89a2c5c7a05:
+> 
+>   ARM: at91/dt: Fix sama5d3x typos (2014-11-13 12:37:44 +0100)
+> 
+> ----------------------------------------------------------------
+> Tiny typo fixes for this second batch for 3.18
+> 
+> ----------------------------------------------------------------
+> Ludovic Desroches (1):
+>       ARM: at91/dt: sama5d4: use macro instead of numeric value
 
-Hi Bjorn,
+I don't consider this to be a fix at this time in the release, please
+include in your 3.19 material.
 
-After merging the pci-current tree, today's linux-next build
-(arm_multi_v7_defconfig) produced this warning:
+> Peter Rosin (1):
+>       ARM: at91/dt: Fix sama5d3x typos
+> 
 
-drivers/pci/probe.c: In function 'pci_read_bridge_mmio_pref':
-drivers/pci/probe.c:438:5: warning: left shift count >=3D width of type
-     base |=3D ((dma_addr_t) mem_base_hi) << 32;
-     ^
-drivers/pci/probe.c:439:5: warning: left shift count >=3D width of type
-     limit |=3D ((dma_addr_t) mem_limit_hi) << 32;
-     ^
+I did cherry-pick this one in though.
 
-Introduced by commit 3a02517d5e2a ("PCI: Support 64-bit bridge windows
-if we have 64-bit dma_addr_t").
+Not sure if I'll make today's -rc with my fixes pull request. :)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/kJ3L6kJGsdIxD4T=rAFwhiw
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUaS0NAAoJEMDTa8Ir7ZwVDQoP/0nl+uk9//h81t7qudmegjV+
-dqi8pNYmQXO5y6j+EyNs+paZK7vmmZWqeooOQ/Ll0VxvpFTh7vvrhJePOg5k3J1g
-hAtFoSdHqgDGMBkXYgdHKjb49K/fbcPtws+QDneokTzVyZeTI+F4d0kmVzYARf3b
-tXXhFzzdZzq29SVEmfbki3a/mu6cvQ1hdhG994sFnd3JgAzTfCVpuVi539fKGEwS
-6hZ5WQB5TYa6D1E/yerldKxlAAGQnMOQnNE6QkPlsmiuBISw1eNJjBXWZ9N0LKmC
-qGqs/Rda9FXM57SDpRGt1p2gfPsatM+mWqnRKZOCzFXo1U0dQ6hLl4S4CI3tGLRJ
-WliLj1yy1o3DRS1rAoWZZbCM8Z6BFDYsdD7FQFUnH7G4mMavlwAOfFZZ1Uc4gVDq
-gEceeZOwA4FV7102zOASY256ikXQ1bPiz6VIoP+ZPbpDw+cus04nZfd0zP9sS28A
-CyU3H8rvrdmtKtdBSEDKLoQcJ9TH5qmrYSxdtMhYWcFjQKREsLGNgRCQ0QrDfCyg
-9HQwv9Bq18VT8YWC130YFfMnt6zq3r4daHEo0YRGdTC9tg/uaCnzFdVuJFqX4wI6
-oAHZjsTHFYmwrlvvEDJ3FTfsswOrKl07ZQ4XWDW+4Vx/pHn4i04EYKvEjc2fuyWH
-avzAPxOF8AUt6MJ7UCu4
-=j5y9
------END PGP SIGNATURE-----
-
---Sig_/kJ3L6kJGsdIxD4T=rAFwhiw--
+-Olof
