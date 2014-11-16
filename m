@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292AbaKPVuA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 16:50:00 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:43267 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751019AbaKPVt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 16:49:59 -0500
-Date: Sun, 16 Nov 2014 16:49:55 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH v2 2/2] kernel-trace: Less calls for iput() in
- create_trace_uprobe() after error detection
-Message-ID: <20141116164955.4f6f0c84@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.10.1411162034190.2364@hadrien>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	<530A72AA.3000601@users.sourceforge.net>
-	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	<530B5FB6.6010207@users.sourceforge.net>
-	<alpine.DEB.2.10.1402241710370.2074@hadrien>
-	<530C5E18.1020800@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251014170.2080@hadrien>
-	<530CD2C4.4050903@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251840450.7035@hadrien>
-	<530CF8FF.8080600@users.sourceforge.net>
-	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	<530DD06F.4090703@users.sourceforge.net>
-	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<5468ABBD.6000903@users.sourceforge.net>
-	<alpine.DEB.2.10.1411161656340.2364@hadrien>
-	<5468F756.8070807@users.sourceforge.net>
-	<5468F96E.4090903@users.sourceforge.net>
-	<20141116143120.44421df2@gandalf.local.home>
-	<alpine.DEB.2.10.1411162034190.2364@hadrien>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1751119AbaKPWAW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 17:00:22 -0500
+Received: from 1wt.eu ([62.212.114.60]:47841 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764AbaKPWAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 17:00:21 -0500
+Message-Id: <20141116215328.631129227@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Sun, 16 Nov 2014 22:53:28 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [ 00/48] 2.6.32.64-longterm review
+Message-ID: <28c765bc23bd4bae1611534e510f49f8@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Nov 2014 20:34:59 +0100 (CET)
-Julia Lawall <julia.lawall@lip6.fr> wrote:
+This is the start of the longterm review cycle for the 2.6.32.64 release.
+All patches will be posted as a response to this one. If anyone has any
+issue with these being applied, please let me know. If anyone is a
+maintainer of the proper subsystem, and wants to add a Signed-off-by: line
+to the patch, please respond with it.
 
-> I wuold have thought that one could have just returned, like in the cases
-> above...  But maybe the printed message is useful.
+Responses should be made within 72 hours. Anything received after that time
+might be too late. If someone wants a bit more time for a deeper review,
+please let me know.
 
-Yes, it lets us know that the format string failed to parse.
+The whole patch series can be found in one patch at :
+     kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.64-rc1.gz
 
--- Steve
+The shortlog and diffstat are appended below.
+
+Thanks,
+Willy
+
+ arch/arm/lib/memset.S               | 100 +++++-----
+ arch/mips/include/asm/thread_info.h |   3 +
+ arch/mips/kernel/scall32-o32.S      |   2 +-
+ arch/mips/kernel/scall64-64.S       |   2 +-
+ arch/mips/kernel/scall64-n32.S      |   2 +-
+ arch/mips/kernel/scall64-o32.S      |   2 +-
+ arch/x86/include/asm/ptrace.h       |  16 ++
+ arch/x86/kernel/entry_32.S          |  13 +-
+ drivers/char/tty_io.c               |   7 +-
+ drivers/md/dm-crypt.c               |  20 +-
+ drivers/md/raid5.c                  |   2 +
+ drivers/net/gianfar.c               |   6 -
+ drivers/net/macvlan.c               |   1 +
+ drivers/net/ppp_generic.c           |   2 +-
+ drivers/net/pppoe.c                 |   2 +-
+ drivers/net/sunvnet.c               |  20 +-
+ drivers/scsi/sym53c8xx_2/sym_hipd.c |   4 +
+ drivers/usb/serial/kobil_sct.c      |   4 +-
+ drivers/usb/serial/option.c         | 129 ++++++++++++-
+ fs/isofs/inode.c                    |  15 +-
+ fs/isofs/isofs.h                    |  23 ++-
+ fs/isofs/rock.c                     |  39 ++--
+ fs/namei.c                          |   1 +
+ fs/nfsd/nfs4xdr.c                   |   8 +-
+ fs/proc/base.c                      |   1 -
+ include/linux/lzo.h                 |  15 +-
+ include/linux/ptrace.h              |   3 +
+ include/net/sctp/sm.h               |   6 +-
+ include/sound/core.h                |   2 +
+ kernel/futex.c                      |   1 +
+ kernel/trace/ring_buffer.c          |  12 +-
+ lib/lzo/lzo1x_compress.c            | 335 ++++++++++++++++++--------------
+ lib/lzo/lzo1x_decompress.c          | 370 +++++++++++++++++++-----------------
+ lib/lzo/lzodefs.h                   |  38 ++--
+ mm/mlock.c                          |   2 +
+ mm/rmap.c                           |  14 +-
+ net/appletalk/ddp.c                 |   3 -
+ net/compat.c                        |   9 +-
+ net/core/filter.c                   |   8 +-
+ net/core/iovec.c                    |  10 +-
+ net/core/skbuff.c                   |   2 +-
+ net/ipv4/igmp.c                     |  10 +-
+ net/ipv4/ip_options.c               |   4 +
+ net/ipv4/tcp_input.c                |   2 +-
+ net/ipv4/tcp_vegas.c                |   3 +-
+ net/ipv4/tcp_veno.c                 |   2 +-
+ net/netfilter/nfnetlink_log.c       |  14 +-
+ net/sctp/associola.c                |   3 +-
+ net/sctp/output.c                   |   2 +-
+ net/sctp/sm_make_chunk.c            | 100 +++++-----
+ net/sctp/sm_statefuns.c             |  18 +-
+ net/sctp/ulpevent.c                 | 122 ++----------
+ sound/core/control.c                |  38 +++-
+ sound/core/init.c                   |   1 +
+ 54 files changed, 918 insertions(+), 655 deletions(-)
+
 
