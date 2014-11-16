@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549AbaKPSDr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 13:03:47 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42745 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302AbaKPSDq (ORCPT
+	id S1755495AbaKPSS5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 13:18:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37958 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635AbaKPSSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 13:03:46 -0500
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: Felipe Lavratti <fanl.lkml@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Touchpad/Clickpad Linux Project
-In-Reply-To: <CAF2ZALW53c+9hvbvQP9tD=g_BBm16cbZdoqojWtf56s46g_-6g@mail.gmail.com>
-References: <CAF2ZALW53c+9hvbvQP9tD=g_BBm16cbZdoqojWtf56s46g_-6g@mail.gmail.com>
-User-Agent: Notmuch/0.19~rc2+35~gb423929 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sun, 16 Nov 2014 13:03:41 -0500
-Message-ID: <8761efaupu.fsf@gmail.com>
+	Sun, 16 Nov 2014 13:18:55 -0500
+Date: Sun, 16 Nov 2014 10:18:31 -0800
+From: tip-bot for Dan Carpenter <tipbot@zytor.com>
+Message-ID: <tip-acfcdccea94ed09cc2c20afbc5dca5bc6a6d69c7@git.kernel.org>
+Cc: ak@linux.intel.com, hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        rusty@rustcorp.com.au, jbeulich@suse.com
+Reply-To: jbeulich@suse.com, rusty@rustcorp.com.au, dan.carpenter@oracle.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, ak@linux.intel.com
+In-Reply-To: <20141115185718.GB6530@mwanda>
+References: <20141115185718.GB6530@mwanda>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86: lguest: interrupt[] array size has changed
+Git-Commit-ID: acfcdccea94ed09cc2c20afbc5dca5bc6a6d69c7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain
+Commit-ID:  acfcdccea94ed09cc2c20afbc5dca5bc6a6d69c7
+Gitweb:     http://git.kernel.org/tip/acfcdccea94ed09cc2c20afbc5dca5bc6a6d69c7
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Sat, 15 Nov 2014 21:57:18 +0300
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sun, 16 Nov 2014 19:14:51 +0100
 
-Felipe Lavratti <fanl.lkml@gmail.com> writes:
+x86: lguest: interrupt[] array size has changed
 
-> Hello,
->
-> I'd like to ask if there's any undergoing Linux project regarding the
-> Touchpad/Clickpad Linux sub system and where can I get in touch with
-> them.
->
-Is there a particular driver you are interested in? If so you may want
-to see who is responsible for it in the [maintainers] list. Regardless,
-your question would be more appropriate for the
-linux-input@vger.kernel.org list.
+Smatch complains that there is a buffer overflow here because we
+recently changed interrupt[] from having "NR_VECTORS -
+FIRST_EXTERNAL_VECTOR" elements to now have "FIRST_SYSTEM_VECTOR -
+FIRST_EXTERNAL_VECTOR" elements.
 
-Cheers,
+Fixes: 8c66877ee65e ('x86: Avoid building unused IRQ entry stubs')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: lguest@lists.ozlabs.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/20141115185718.GB6530@mwanda
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/lguest/boot.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-- Ben
-
-
-[MAINTAINERS]: http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/MAINTAINERS
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUaOb9AAoJEErkyLZmeNiD294IALsY28zQVs8u3at0cDc9C1ds
-iElTH6ulEq2/IAfyzf0KsGD+JWFacX7WzwTRjHFokRH32+BQnrQgS+71o4i/CcEL
-OM9GKu5HHdIZmyZbJwxEPfHL2N4wu141bYBOXwbxqmoHPU7idgPyEC688BDvvAyD
-A9ZKmeo+i20ns7Va36NCPtzRxpnqDF1DSg9EW/eJPDz/qp34slxkXmSnhwYGjl7U
-FLmcOl+eZGtWH91BIltGpjL4Kk4P0d6gVX54IJ2Rbb+4MGD+iuuwIJIc2rFGrJNI
-ttHd9gzcs+HVe6UFCwkEOX5EXsdtiF1Z6oh8AeP0UjoVaOXGg8o8LyLiiQevd8U=
-=YTpN
------END PGP SIGNATURE-----
---=-=-=--
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index aae9413..c1c1544 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -841,7 +841,7 @@ static void __init lguest_init_IRQ(void)
+ {
+ 	unsigned int i;
+ 
+-	for (i = FIRST_EXTERNAL_VECTOR; i < NR_VECTORS; i++) {
++	for (i = FIRST_EXTERNAL_VECTOR; i < FIRST_SYSTEM_VECTOR; i++) {
+ 		/* Some systems map "vectors" to interrupts weirdly.  Not us! */
+ 		__this_cpu_write(vector_irq[i], i - FIRST_EXTERNAL_VECTOR);
+ 		if (i != SYSCALL_VECTOR)
