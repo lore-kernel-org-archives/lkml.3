@@ -1,142 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaKQLlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:41:15 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36142 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104AbaKQLlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:41:12 -0500
-Message-ID: <5469DE81.9030009@ti.com>
-Date: Mon, 17 Nov 2014 17:09:45 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Johannes Pointner <johannes.pointner@gmail.com>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <devicetree@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
-        <linux-omap@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, Brad Griffis <bgriffis@ti.com>
-Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>	<20141103180920.GA20779@localhost.localdomain>	<545B2651.4090905@ti.com> <CAJKbBDDyShaJkzzfdFs07EK5gDUfwqWiv39Qi4FVSvRrfc6_fA@mail.gmail.com> <5464A2B5.3020207@ti.com>
-In-Reply-To: <5464A2B5.3020207@ti.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752423AbaKQLnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:43:21 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:44395 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbaKQLnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 06:43:19 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] i2c: core: Fix probing of i2c slaves without interrupts
+Date: Mon, 17 Nov 2014 12:43:00 +0100
+Message-Id: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Since commit 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time"),
+i2c slaves without interrupts (e.g. da9210 and at24 on r8a7791/koelsch)
+fail to probe:
 
-On Thursday 13 November 2014 05:53 PM, Vignesh R wrote:
-> Hi,
-> 
-> On Wednesday 12 November 2014 06:30 PM, Johannes Pointner wrote:
->> Hello Vignesh,
->>
->> I tried your patch version 3 on a customized board and had some
->> behavior I couldn't explain.
->> If I only use the touchscreen it works fine but if I also read values
->> from the ADCs then I get a lot of pen_up events even if I am still
->> touching the screen.
->> For the test I read via
->> # cat /sys/bus/iio/devices/iio\:device0/in_voltage5_raw
->> values from the ADC in an busy loop as you explained in an email
->> before. Did you also experience such behavior or do you know what
->> causes it?
-> 
-> Thanks for testing. I was able to fix this issue. Will post version 4
-> shortly.
-> 
+    at24: probe of 2-0050 failed with error -22
 
-Were you able to test the v4 patch series on your board? Is the issue fixed?
+    da9210: probe of 6-0068 failed with error -22
 
-> Regards
-> Vignesh
-> 
->>
->> Without the patches the touchscreen works fine during the iio test.
->>
->> Thanks,
->> Hannes
->>
->> 2014-11-06 8:42 GMT+01:00 Vignesh R <vigneshr@ti.com>:
->>>
->>>
->>> On Monday 03 November 2014 11:39 PM, Richard Cochran wrote:
->>>> On Mon, Oct 27, 2014 at 04:38:27PM +0530, Vignesh R wrote:
->>>>> This series of patches fix TSC defects related to lag in touchscreen
->>>>> performance and cursor jump at touch release. The lag was result of
->>>>> udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
->>>>> The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
->>>>> to avoid false pen-up events and remove udelay.
->>>>
->>>> That advisory has two workarounds. You have chosen the second one?
->>>
->>> Work around one. Hence 5 wire design is not broken.
->>>
->>>>
->>>> The text of the second workaround says it only works on 4 wire setups,
->>>> so I wonder how 5 wire designs will be affected.
->>>>
->>>>> The advisory says to use
->>>>> steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
->>>>> ADC).
->>>>
->>>> No, it doesn't say that. (sprz360f.pdf)
->>>
->>> The pen up event detection happens immediately after charge step. Hence,
->>> interchanging ADC and TSC steps makes sure that sampling of touch
->>> co-ordinates and pen events are done one after the other. This
->>> workaround was suggested by internal hardware folks. Earlier ADC steps
->>> intervened between sampling of co-ordinates and pen event detection
->>> which is not desirable.
->>>
->>>>
->>>>> Further the X co-ordinate must be the last one to be sampled just
->>>>> before charge step. The first two patches implement the required changes.
->>>>
->>>> FWIW, I implemented the first workaround and removed the udelay not
->>>> too long ago. Like Sebastian, I saw the TSC unit hang after about
->>>> 50000 interrupts when running with the workaround.
->>>>
->>>> Did you test you patch for very long?
->>>
->>> Yes, I tested for about 200000 interrupts and I didn't see any hang.
->>> This patch series does not just implement workaround but also does some
->>> minor changes, such as interchanging ADC and TSC steps etc, which makes
->>> TSC driver more robust. Let me know if you encounter any issues with my
->>> patch series.
->>>
->>> Regards
->>> Vignesh
->>>
->>>>
->>>> Thanks,
->>>> Richard
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+This happens because the call to of_irq_get() in i2c_device_probe()
+returns -EINVAL.
+
+If a device node does not have an "interrupts" property,
+of_irq_parse_one() fails. Unlike irq_of_parse_and_map(), of_irq_get()
+does not ignore errors from of_irq_parse_one(), but forwards them.
+
+Make i2c_device_probe() ignore all errors but -EPROBE_DEFER to fix this,
+just like platform_get_irq() and platform_get_irq_byname() already do.
+
+Fixes: 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time")
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ drivers/i2c/i2c-core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index a0768d6dffc28aae..cf830915713b387a 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -629,8 +629,10 @@ static int i2c_device_probe(struct device *dev)
+ 	if (!client->irq && dev->of_node) {
+ 		int irq = of_irq_get(dev->of_node, 0);
+ 
+-		if (irq < 0)
++		if (irq == -EPROBE_DEFER)
+ 			return irq;
++		if (irq < 0)
++			irq = 0;
+ 
+ 		client->irq = irq;
+ 	}
+-- 
+1.9.1
+
