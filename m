@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaKQJmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:42:12 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28886 "EHLO
+	id S1752259AbaKQJmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:42:10 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28889 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaKQJk5 (ORCPT
+	with ESMTP id S1752090AbaKQJk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 04:40:57 -0500
 From: Yijing Wang <wangyijing@huawei.com>
@@ -20,9 +20,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         Liviu Dudau <liviu@dudau.co.uk>, <Suravee.Suthikulpanit@amd.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 14/16] arm/PCI: Introduce pci_get_domain_nr()
-Date: Mon, 17 Nov 2014 18:21:48 +0800
-Message-ID: <1416219710-26088-15-git-send-email-wangyijing@huawei.com>
+Subject: [RFC PATCH 13/16] ia64/PCI: Use pci_scan_host_bridge() to refactor pci_acpi_scan_root()
+Date: Mon, 17 Nov 2014 18:21:47 +0800
+Message-ID: <1416219710-26088-14-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
 References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
@@ -36,57 +36,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/arm/include/asm/mach/pci.h |    9 +++++++++
- arch/arm/kernel/bios32.c        |    8 ++++++--
- 2 files changed, 15 insertions(+), 2 deletions(-)
+ arch/ia64/pci/pci.c |   84 +++++++++++++++++++++++---------------------------
+ 1 files changed, 39 insertions(+), 45 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
-index f19f627..370b3bd 100644
---- a/arch/arm/include/asm/mach/pci.h
-+++ b/arch/arm/include/asm/mach/pci.h
-@@ -90,6 +90,15 @@ extern void pci_map_io_early(unsigned long pfn);
- static inline void pci_map_io_early(unsigned long pfn) {}
- #endif
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index aac3220..c7d97ae 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -115,23 +115,10 @@ struct pci_ops pci_root_ops = {
+ 	.write = pci_write,
+ };
  
-+#ifdef CONFIG_PCI_DOMAINS_GENERIC
-+int pci_get_domain_nr(struct device *parent)
-+#else
-+static inline int pci_get_domain_nr(struct device *parent)
+-/* Called by ACPI when it finds a new root bus.  */
+-
+-static struct pci_controller *alloc_pci_controller(int seg)
+-{
+-	struct pci_controller *controller;
+-
+-	controller = kzalloc(sizeof(*controller), GFP_KERNEL);
+-	if (!controller)
+-		return NULL;
+-
+-	controller->segment = seg;
+-	return controller;
+-}
+-
+ struct pci_root_info {
+ 	struct acpi_device *bridge;
+-	struct pci_controller *controller;
++	struct pci_controller controller;
++	struct acpi_pci_root *root;
+ 	struct list_head resources;
+ 	struct resource *res;
+ 	resource_size_t *res_offset;
+@@ -340,8 +327,6 @@ static void free_pci_root_info_res(struct pci_root_info *info)
+ 	kfree(info->res_offset);
+ 	info->res_offset = NULL;
+ 	info->res_num = 0;
+-	kfree(info->controller);
+-	info->controller = NULL;
+ }
+ 
+ static void __release_pci_root_info(struct pci_root_info *info)
+@@ -395,7 +380,7 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+ 	if (info->res_num) {
+ 		info->res =
+ 			kzalloc_node(sizeof(*info->res) * info->res_num,
+-				     GFP_KERNEL, info->controller->node);
++				     GFP_KERNEL, info->controller.node);
+ 		if (!info->res) {
+ 			kfree(name);
+ 			return -ENOMEM;
+@@ -403,7 +388,7 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+ 
+ 		info->res_offset =
+ 			kzalloc_node(sizeof(*info->res_offset) * info->res_num,
+-					GFP_KERNEL, info->controller->node);
++					GFP_KERNEL, info->controller.node);
+ 		if (!info->res_offset) {
+ 			kfree(name);
+ 			kfree(info->res);
+@@ -420,6 +405,27 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+ 	return 0;
+ }
+ 
++static int pci_acpi_init_res(struct pci_host_bridge *host,
++		struct pci_host_info *info)
 +{
++	int ret;
++	struct pci_host_bridge_window *window, *n;
++	struct pci_controller *ctrl = info->arg;
++	struct pci_root_info *arg = container_of(ctrl,
++			struct pci_root_info, controller);
++
++	ret = probe_pci_root_info(arg, arg->root->device, 
++			host->busnum, host->domain);
++	if (ret) 
++		return -1;
++	list_for_each_entry_safe(window, n, &arg->resources,
++			list)
++		list_move_tail(&window->list, &host->windows);
++	/* insert busn resource at first */
++	pci_add_resource(&host->windows, &arg->root->secondary);
 +	return 0;
 +}
-+#endif
 +
- /*
-  * PCI controllers
-  */
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index d8c2b4e..3fe56f1 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -513,7 +513,7 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
- #ifdef CONFIG_PCI_DOMAINS_GENERIC
- static bool dt_domain_found;
- 
--void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
-+int pci_get_domain_nr(struct device *parent)
+ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
  {
- 	int domain = of_get_pci_domain_nr(parent->of_node);
+ 	struct acpi_device *device = root->device;
+@@ -427,55 +433,43 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	struct pci_controller *controller;
+ 	struct pci_root_info *info = NULL;
+ 	int busnum = root->secondary.start;
+-	struct pci_bus *pbus;
+-	int ret;
+-
+-	controller = alloc_pci_controller(domain);
+-	if (!controller)
+-		return NULL;
+-
+-	controller->companion = device;
+-	controller->node = acpi_get_node(device->handle);
++	struct pci_host_bridge *host;
++	struct pci_host_info arg;
  
-@@ -526,8 +526,12 @@ void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
- 	} else {
- 		domain = pci_get_new_domain_nr();
+ 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+ 	if (!info) {
+ 		dev_err(&device->dev,
+ 				"pci_bus %04x:%02x: ignored (out of memory)\n",
+ 				domain, busnum);
+-		kfree(controller);
+ 		return NULL;
  	}
-+	return domain;
-+}
  
--	bus->domain_nr = domain;
-+void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
-+{
-+	bus->domain_nr = pci_get_domain_nr(parent);
+-	info->controller = controller;
++	controller = &info->controller;
++	controller->segment = domain;
++	controller->companion = device;
++	controller->node = acpi_get_node(device->handle);
+ 	INIT_LIST_HEAD(&info->io_resources);
+ 	INIT_LIST_HEAD(&info->resources);
++	init_pci_host_info(&arg);
++	arg.arg = controller;
++	arg.init_res = pci_acpi_init_res;
+ 
+-	ret = probe_pci_root_info(info, device, busnum, domain);
+-	if (ret) {
+-		kfree(info->controller);
+-		kfree(info);
+-		return NULL;
+-	}
+-	/* insert busn resource at first */
+-	pci_add_resource(&info->resources, &root->secondary);
+ 	/*
+ 	 * See arch/x86/pci/acpi.c.
+ 	 * The desired pci bus might already be scanned in a quirk. We
+ 	 * should handle the case here, but it appears that IA64 hasn't
+ 	 * such quirk. So we just ignore the case now.
+ 	 */
+-	pbus = pci_create_root_bus(NULL, busnum, &pci_root_ops, controller,
+-				   &info->resources);
+-	if (!pbus) {
+-		pci_free_resource_list(&info->resources);
++	host = pci_scan_host_bridge(NULL, PCI_DOMBUS(domain, busnum), 
++			&pci_root_ops, &arg);
++	if (!host) {
+ 		__release_pci_root_info(info);
+ 		return NULL;
+ 	}
+ 
+-	pci_set_host_bridge_release(to_pci_host_bridge(pbus->bridge),
++	pci_set_host_bridge_release(host,
+ 			release_pci_root_info, info);
+-	pci_scan_child_bus(pbus);
+-	return pbus;
++	return host->bus;
  }
- #endif
  
+ int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
 -- 
 1.7.1
 
