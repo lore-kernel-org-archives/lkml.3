@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaKQRMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 12:12:14 -0500
-Received: from mout.web.de ([212.227.17.12]:52098 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920AbaKQRMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 12:12:12 -0500
-Message-ID: <546A2C5C.8080800@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 18:11:56 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751653AbaKQRTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 12:19:40 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64114 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaKQRTi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 12:19:38 -0500
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] perf tools: Deletion of unnecessary checks before two
- function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:2MwEubM/gfjlZY0lMiHpoyfFW6K84l2YQQFIqGlewcvBCm6+LBg
- G3w/YuEpbpfM1NfqqZRu5fWkkEgqILmIvr7DN6yyRXlBvv49s4ezXBpJ06ANtVYYeotz6d1
- CutI5aNbjVMQI4nejev1xk4VyECQN8LI/VKyYl/Rp9PhqdIcTk4be+PVye1BE72hgesmZhk
- COP1ajxTWZdtJSXRELqQw==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <2018325.yOrLZndTTm@wuerfel>
+References: <1416097066-20452-1-git-send-email-cernekee@gmail.com>
+ <3480616.V2TMJFc7uE@wuerfel> <CAOiHx=ky5T7z3T3gX382d=3sw+gGUEfnwXwpcLGa_Oi5YyBwgw@mail.gmail.com>
+ <2018325.yOrLZndTTm@wuerfel>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Mon, 17 Nov 2014 09:19:17 -0800
+Message-ID: <CAJiQ=7An5eZ3j2+Zkx1crV9pBSVodkEQ+6ESGcFk5z0tDV7cHA@mail.gmail.com>
+Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonas Gorski <jogo@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 18:05:57 +0100
+On Mon, Nov 17, 2014 at 8:13 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> This is not just DT, it's actually an implementation of a boot
+> interface. The situation here seems much more to what we had on
+> PowerPC a long time ago than what we had on ARM before the DT
+> conversion. I think the best approach here would be to move the
+> platform specific bits into the decompressor code, and allow
+> multiple implementations of that. This way you can have the
+> generic vmlinux file that has a common DT parser, and you wrap
+> that into one decompressor per platform, some of which can have
+> their own board detection logic or pre-boot setup where necessary.
+>
+> To be honest, I think having multiple DT files linked into the
+> kernel is a really bad idea, because it doesn't solve the
+> scalability problem at all. What we did on ARM was to force those
+> hacks out into external projects such as the PXA impedence
+> matcher [https://github.com/zonque/pxa-impedance-matcher]. This
+> can handle all weird boot protocol and adapt them to the normal
+> well-defined interfaces we have in the kernel.
 
-The functions free_event_desc() and strfilter__delete() test whether their
-argument is NULL and then return immediately. Thus the test around the call
-is not needed.
+To some extent this is how BCM3384 was done[1].
 
-This issue was detected by using the Coccinelle software.
+There is a tradeoff here: to add support for the older platforms it is
+easy to build a new DTB file into the kernel image, but it is a lot of
+trouble to write a new 3rd stage bootloader.  Do we want to maximize
+our list of supported boards, or are we shooting for a super clean
+kernel implementation right off the bat?
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- tools/perf/builtin-probe.c | 6 ++----
- tools/perf/util/header.c   | 3 +--
- 2 files changed, 3 insertions(+), 6 deletions(-)
+>> And unless there is one, having a
+>> multiplatform kernel does not make much sense, as there is no sane way
+>> to tell apart different platforms on boot.
+>
+> How do you normally tell boards apart on MIPS when you don't use DT?
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index c63fa29..1b72bf2 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -254,8 +254,7 @@ static int opt_set_filter(const struct option *opt __maybe_unused,
- 
- 	if (str) {
- 		pr_debug2("Set filter: %s\n", str);
--		if (params.filter)
--			strfilter__delete(params.filter);
-+		strfilter__delete(params.filter);
- 		params.filter = strfilter__new(str, &err);
- 		if (!params.filter) {
- 			pr_err("Filter parse error at %td.\n", err - str + 1);
-@@ -283,8 +282,7 @@ static void cleanup_params(void)
- 		strlist__delete(params.dellist);
- 	line_range__clear(&params.line_range);
- 	free(params.target);
--	if (params.filter)
--		strfilter__delete(params.filter);
-+	strfilter__delete(params.filter);
- 	memset(&params, 0, sizeof(params));
- }
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 158c787..a62fbc6 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1367,8 +1367,7 @@ out:
- 	free(buf);
- 	return events;
- error:
--	if (events)
--		free_event_desc(events);
-+	free_event_desc(events);
- 	events = NULL;
- 	goto out;
- }
--- 
-2.1.3
+On BCM7xxx (STB) kernels, we could assume the chip ID was in a known
+register, and also we could call back into the bootloader to get a
+somewhat-accurate board name.
 
+On BCM63xx there is logic in arch/mips/bcm63xx/cpu.c to try to guess
+the chip identity from the CPU type/revision (because the latter can
+be read directly from CP0).
+
+These systems were never really designed to support multiplatform
+kernels.  The ARM BCM7xxx variants, by contrast, were.
+
+
+[1] https://github.com/Broadcom/aeolus
