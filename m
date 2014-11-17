@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaKQWQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:16:15 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58643 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446AbaKQWQO (ORCPT
+	id S1752783AbaKQWXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:23:23 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:36516 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791AbaKQWXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:16:14 -0500
-Message-ID: <546A73A7.90202@hitachi.com>
-Date: Tue, 18 Nov 2014 07:16:07 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 17 Nov 2014 17:23:21 -0500
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com, x86@kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        jkenisto@us.ibm.com, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
-        ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net
-Subject: Re: [PATCH] x86: remove arbitrary instruction size limit in instruction
- decoder
-References: <20141112225352.D49917A8@viggo.jf.intel.com> <5464C4FD.60705@hitachi.com> <546A5F6A.7070704@sr71.net>
-In-Reply-To: <546A5F6A.7070704@sr71.net>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <0b65fd07-48ea-483b-8fd5-fd84d0bff881@email.android.com>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+ <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+ <87d28osceg.fsf@x220.int.ebiederm.org> <20141115192924.GB19060@thin>
+ <CALCETrUM=GqsOumTmDMF4B5GS1w=x56t41eE-2xW1bBOfUz02w@mail.gmail.com>
+ <20141115202042.GA20900@thin> <20141116020511.GB5507@thunk.org>
+ <6C690A2C-8EB1-421A-94C3-9803AFB95760@joshtriplett.org> <20141116034005.GC5507@thunk.org>
+ <20141116045232.GB18880@thin> <20141117113734.396798e6@lxorguk.ukuu.org.uk>
+ <CALCETrXi1qHyu4_U7cbROB74n461nBZ9R7=0kfhR8-VFAwOF1w@mail.gmail.com> <0b65fd07-48ea-483b-8fd5-fd84d0bff881@email.android.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 17 Nov 2014 14:22:59 -0800
+Message-ID: <CALCETrWXC5dMOXTTBOiq4Cv+yjqbA_UdmAN-TDmNAJUo+ABxtg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
+ to drop groups
+To: "Eric W.Biederman" <ebiederm@xmission.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-man <linux-man@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/18 5:49), Dave Hansen wrote:
-> On 11/13/2014 06:49 AM, Masami Hiramatsu wrote:
->> (2014/11/13 7:53), Dave Hansen wrote:
->>> The kprobes code probably needs to be looked at here a bit more
->>> carefully.  This patch still respects the MAX_INSN_SIZE limit
->>> there but the kprobes code does look like it might be able to
->>> be a bit more strict than it currently is.
+On Mon, Nov 17, 2014 at 2:11 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
+>
+>
+> On November 17, 2014 1:07:30 PM EST, Andy Lutomirski <luto@amacapital.net> wrote:
+>>On Nov 17, 2014 3:37 AM, "One Thousand Gnomes"
+>><gnomes@lxorguk.ukuu.org.uk> wrote:
+>>>
+>>> > optional), I can do that too.  The security model of "having a
+>>group
+>>> > gives you less privilege than not having it" seems crazy, but
+>>> > nonetheless I can see a couple of easy ways that we can avoid
+>>breaking
+>>>
+>>> It's an old pattern of use that makes complete sense in a traditional
+>>> Unix permission world because it's the only way to do "exclude
+>>{list}"
+>>> nicely. Our default IMHO shouldn't break this.
+>>>
+>>> > that pattern, no_new_privs being one of them.  I'd like to make
+>>sure
+>>> > that nobody sees any other real-world corner case that unprivileged
+>>> > setgroups would break.
+>>>
+>>> Barring the usual risk of people doing improper error checking I
+>>don't
+>>> see one immediately.
+>>>
+>>> For containers I think it actually makes sense that the sysctl can be
+>>> applied per container anyway.
 >>
->> Would you mean kprobes can copy shorter? Maybe, but I think current
->> one is enough because it is on a cold path.
->> OK, at least this looks good to me.
-> 
-> As it stands now, if you happened to be decoding an instruction which is
-> short and it was *JUST* before a memory hole, I think it could oops the
-> kernel.
-> 
-> This doesn't look like it is very common (or maybe even possible) in
-> practice.
+>>We'll probably need per container sysctls some day.
+>
+> We already have a mess of per network namespace sysctls,
+> as well as few for other namespaces.
+>
+> We have the infrastructure it is just a matter of using it for whatever purpose we need.
+>
 
-OK, then I'll add a check whether the end address is also in kernel_text.
-(we've done it for the start address)
+A list of group id ranges that it's permissible to drop would do the
+trick, both for setgroups and for unshare.  The downside would be that
+users in those groups (i.e. everyone by default) would not be able to
+unshare their user ns.
 
-> 
->>> Note: the v10 version of the MPX patches I just posted depends
->>> on this patch.
->>
->> BTW, current insn decoder doesn't support MPX... That should be
->> updated (add bnd* to x86-insn-map.txt)
-> 
-> I think they're in there already:
-> 
->> grep -i bnd arch/x86/lib/x86-opcode-map.txt
-> 1a: BNDCL Ev,Gv | BNDCU Ev,Gv | BNDMOV Gv,Ev | BNDLDX Gv,Ev,Gv
-> 1b: BNDCN Ev,Gv | BNDMOV Ev,Gv | BNDMK Gv,Ev | BNDSTX Ev,GV,Gv
-> 
-> Or were there others you were thinking of?
+Better ideas welcome.
 
-Ah, I misunderstood that AVX512 etc...
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--Andy
