@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaKQTIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:08:06 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:45150 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836AbaKQTIE (ORCPT
+	id S1752792AbaKQTIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:08:18 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:52279 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaKQTIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:08:04 -0500
+	Mon, 17 Nov 2014 14:08:13 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
         kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v3 01/13] perf,x86: rename er_flags to flags
-Date: Mon, 17 Nov 2014 20:06:53 +0100
-Message-Id: <1416251225-17721-2-git-send-email-eranian@google.com>
+Subject: [PATCH v3 04/13] perf/x86: add index param to get_event_constraint() callback
+Date: Mon, 17 Nov 2014 20:06:56 +0100
+Message-Id: <1416251225-17721-5-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416251225-17721-1-git-send-email-eranian@google.com>
 References: <1416251225-17721-1-git-send-email-eranian@google.com>
@@ -21,115 +21,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because it will be used for more than just
-tracking the presence of extra registers.
+This patch adds an index parameter to the get_event_constraint()
+x86_pmu callback. It is expected to represent the index of the
+event in the cpuc->event_list[] array. When the callback is used
+for fake_cpuc (evnet validation), then the index must be -1. The
+motivation for passing the index is to use it to index into another
+cpuc array.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.h       |  9 ++++++---
- arch/x86/kernel/cpu/perf_event_intel.c | 20 ++++++++++----------
- 2 files changed, 16 insertions(+), 13 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |  4 ++--
+ arch/x86/kernel/cpu/perf_event.h       |  4 +++-
+ arch/x86/kernel/cpu/perf_event_amd.c   |  6 ++++--
+ arch/x86/kernel/cpu/perf_event_intel.c | 15 ++++++++++-----
+ 4 files changed, 19 insertions(+), 10 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 570e99b..422a423 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -734,7 +734,7 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ 
+ 	for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
+ 		hwc = &cpuc->event_list[i]->hw;
+-		c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
++		c = x86_pmu.get_event_constraints(cpuc, i, cpuc->event_list[i]);
+ 		hwc->constraint = c;
+ 
+ 		wmin = min(wmin, c->weight);
+@@ -1723,7 +1723,7 @@ static int validate_event(struct perf_event *event)
+ 	if (IS_ERR(fake_cpuc))
+ 		return PTR_ERR(fake_cpuc);
+ 
+-	c = x86_pmu.get_event_constraints(fake_cpuc, event);
++	c = x86_pmu.get_event_constraints(fake_cpuc, -1, event);
+ 
+ 	if (!c || !c->weight)
+ 		ret = -EINVAL;
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 4e6cdb0..6a6b4e4 100644
+index 641b2df..141c17c 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -505,7 +505,7 @@ struct x86_pmu {
- 	 * Extra registers for events
- 	 */
- 	struct extra_reg *extra_regs;
--	unsigned int er_flags;
-+	unsigned int flags;
+@@ -447,6 +447,7 @@ struct x86_pmu {
+ 	u64		max_period;
+ 	struct event_constraint *
+ 			(*get_event_constraints)(struct cpu_hw_events *cpuc,
++						 int idx,
+ 						 struct perf_event *event);
  
+ 	void		(*put_event_constraints)(struct cpu_hw_events *cpuc,
+@@ -693,7 +694,8 @@ static inline int amd_pmu_init(void)
+ int intel_pmu_save_and_restart(struct perf_event *event);
+ 
+ struct event_constraint *
+-x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event);
++x86_get_event_constraints(struct cpu_hw_events *cpuc, int idx,
++			  struct perf_event *event);
+ 
+ struct intel_shared_regs *allocate_shared_regs(int cpu);
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index e4302b8..1cee5d2 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -430,7 +430,8 @@ static void amd_pmu_cpu_dead(int cpu)
+ }
+ 
+ static struct event_constraint *
+-amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
++amd_get_event_constraints(struct cpu_hw_events *cpuc, int idx,
++			  struct perf_event *event)
+ {
  	/*
- 	 * Intel host/guest support (KVM)
-@@ -522,8 +522,11 @@ do {									\
- 	x86_pmu.quirks = &__quirk;					\
- } while (0)
+ 	 * if not NB event or no NB, then no constraints
+@@ -538,7 +539,8 @@ static struct event_constraint amd_f15_PMC50 = EVENT_CONSTRAINT(0, 0x3F, 0);
+ static struct event_constraint amd_f15_PMC53 = EVENT_CONSTRAINT(0, 0x38, 0);
  
--#define ERF_NO_HT_SHARING	1
--#define ERF_HAS_RSP_1		2
-+/*
-+ * x86_pmu flags
-+ */
-+#define PMU_FL_NO_HT_SHARING	0x1 /* no hyper-threading resource sharing */
-+#define PMU_FL_HAS_RSP_1	0x2 /* has 2 equivalent offcore_rsp regs   */
- 
- #define EVENT_VAR(_id)  event_attr_##_id
- #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
+ static struct event_constraint *
+-amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *event)
++amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, int idx,
++			       struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	unsigned int event_code = amd_get_event_code(hwc);
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 944bf01..47d7357 100644
+index 9345194..9b60b17 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1464,7 +1464,7 @@ intel_bts_constraints(struct perf_event *event)
+@@ -1624,7 +1624,8 @@ intel_shared_regs_constraints(struct cpu_hw_events *cpuc,
+ }
  
- static int intel_alt_er(int idx)
+ struct event_constraint *
+-x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
++x86_get_event_constraints(struct cpu_hw_events *cpuc, int idx,
++			  struct perf_event *event)
  {
--	if (!(x86_pmu.er_flags & ERF_HAS_RSP_1))
-+	if (!(x86_pmu.flags & PMU_FL_HAS_RSP_1))
- 		return idx;
+ 	struct event_constraint *c;
  
- 	if (idx == EXTRA_REG_RSP_0)
-@@ -2010,7 +2010,7 @@ static void intel_pmu_cpu_starting(int cpu)
- 	if (!cpuc->shared_regs)
- 		return;
+@@ -1641,7 +1642,8 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ }
  
--	if (!(x86_pmu.er_flags & ERF_NO_HT_SHARING)) {
-+	if (!(x86_pmu.flags & PMU_FL_NO_HT_SHARING)) {
- 		for_each_cpu(i, topology_thread_cpumask(cpu)) {
- 			struct intel_shared_regs *pc;
+ static struct event_constraint *
+-intel_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
++intel_get_event_constraints(struct cpu_hw_events *cpuc, int idx,
++			    struct perf_event *event)
+ {
+ 	struct event_constraint *c;
  
-@@ -2442,7 +2442,7 @@ __init int intel_pmu_init(void)
- 		x86_pmu.event_constraints = intel_slm_event_constraints;
- 		x86_pmu.pebs_constraints = intel_slm_pebs_event_constraints;
- 		x86_pmu.extra_regs = intel_slm_extra_regs;
--		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		x86_pmu.flags |= PMU_FL_HAS_RSP_1;
- 		pr_cont("Silvermont events, ");
- 		break;
+@@ -1657,7 +1659,7 @@ intel_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event
+ 	if (c)
+ 		return c;
  
-@@ -2460,7 +2460,7 @@ __init int intel_pmu_init(void)
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
- 		x86_pmu.pebs_constraints = intel_westmere_pebs_event_constraints;
- 		x86_pmu.extra_regs = intel_westmere_extra_regs;
--		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		x86_pmu.flags |= PMU_FL_HAS_RSP_1;
+-	return x86_get_event_constraints(cpuc, event);
++	return x86_get_event_constraints(cpuc, idx, event);
+ }
  
- 		x86_pmu.cpu_events = nhm_events_attrs;
+ static void
+@@ -1891,9 +1893,12 @@ static struct event_constraint counter2_constraint =
+ 			EVENT_CONSTRAINT(0, 0x4, 0);
  
-@@ -2492,8 +2492,8 @@ __init int intel_pmu_init(void)
- 		else
- 			x86_pmu.extra_regs = intel_snb_extra_regs;
- 		/* all extra regs are per-cpu when HT is on */
--		x86_pmu.er_flags |= ERF_HAS_RSP_1;
--		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+		x86_pmu.flags |= PMU_FL_HAS_RSP_1;
-+		x86_pmu.flags |= PMU_FL_NO_HT_SHARING;
+ static struct event_constraint *
+-hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
++hsw_get_event_constraints(struct cpu_hw_events *cpuc, int idx,
++			  struct perf_event *event)
+ {
+-	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
++	struct event_constraint *c;
++
++	c = intel_get_event_constraints(cpuc, idx, event);
  
- 		x86_pmu.cpu_events = snb_events_attrs;
- 
-@@ -2527,8 +2527,8 @@ __init int intel_pmu_init(void)
- 		else
- 			x86_pmu.extra_regs = intel_snb_extra_regs;
- 		/* all extra regs are per-cpu when HT is on */
--		x86_pmu.er_flags |= ERF_HAS_RSP_1;
--		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+		x86_pmu.flags |= PMU_FL_HAS_RSP_1;
-+		x86_pmu.flags |= PMU_FL_NO_HT_SHARING;
- 
- 		x86_pmu.cpu_events = snb_events_attrs;
- 
-@@ -2555,8 +2555,8 @@ __init int intel_pmu_init(void)
- 		x86_pmu.extra_regs = intel_snbep_extra_regs;
- 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
- 		/* all extra regs are per-cpu when HT is on */
--		x86_pmu.er_flags |= ERF_HAS_RSP_1;
--		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+		x86_pmu.flags |= PMU_FL_HAS_RSP_1;
-+		x86_pmu.flags |= PMU_FL_NO_HT_SHARING;
- 
- 		x86_pmu.hw_config = hsw_hw_config;
- 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
+ 	/* Handle special quirk on in_tx_checkpointed only in counter 2 */
+ 	if (event->hw.config & HSW_IN_TX_CHECKPOINTED) {
 -- 
 1.9.1
 
