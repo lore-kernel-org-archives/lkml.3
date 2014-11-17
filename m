@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaKQTM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:12:59 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:40358 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaKQTIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:08:10 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v3 03/13] perf/x86: add 3 new scheduling callbacks
-Date: Mon, 17 Nov 2014 20:06:55 +0100
-Message-Id: <1416251225-17721-4-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416251225-17721-1-git-send-email-eranian@google.com>
-References: <1416251225-17721-1-git-send-email-eranian@google.com>
+	id S1752984AbaKQTNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:13:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33725 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907AbaKQTNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 14:13:43 -0500
+Date: Mon, 17 Nov 2014 13:13:07 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 2/3] kernel: add support for live patching
+Message-ID: <20141117191307.GA21392@cerebellum.variantweb.net>
+References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
+ <1416187764-3341-3-git-send-email-sjenning@redhat.com>
+ <20141117184558.GA13995@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117184558.GA13995@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+On Mon, Nov 17, 2014 at 10:45:58AM -0800, Greg KH wrote:
+> On Sun, Nov 16, 2014 at 07:29:23PM -0600, Seth Jennings wrote:
+> > +#ifdef CONFIG_X86_32
+> > +int lpc_write_module_reloc(struct module *mod, unsigned long type,
+> > +			   unsigned long loc, unsigned long value)
+> > +{
+> > +	pr_err("Live patching not supported on 32-bit x86\n");
+> > +	return -ENOSYS;
+> > +}
+> 
+> Why not just prevent the code from being built on x86_32 instead of
+> putting this in the file?
 
-This patch adds 3 new PMU model specific callbacks
-during the event scheduling done by x86_schedule_events().
+Yep. Masami saw this too and recommended a ARCH_HAVE_LIVE_PATCHING flag
+set by the archs that support it.  I'll make the change.
 
-- start_scheduling: invoked when entering the schedule routine.
-- stop_scheduling: invoked at the end of the schedule routine
-- commit_scheduling: invoked for each committed event
+Thanks for the review!
 
-To be used optionally by model-specific code.
+Seth
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.c | 9 +++++++++
- arch/x86/kernel/cpu/perf_event.h | 9 +++++++++
- 2 files changed, 18 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 633a4b7..570e99b 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -729,6 +729,9 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- 
- 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
- 
-+	if (x86_pmu.start_scheduling)
-+		x86_pmu.start_scheduling(cpuc);
-+
- 	for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
- 		hwc = &cpuc->event_list[i]->hw;
- 		c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
-@@ -775,6 +778,8 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- 		for (i = 0; i < n; i++) {
- 			e = cpuc->event_list[i];
- 			e->hw.flags |= PERF_X86_EVENT_COMMITTED;
-+			if (x86_pmu.commit_scheduling)
-+				x86_pmu.commit_scheduling(cpuc, e, assign[i]);
- 		}
- 	}
- 	/*
-@@ -795,6 +800,10 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- 				x86_pmu.put_event_constraints(cpuc, e);
- 		}
- 	}
-+
-+	if (x86_pmu.stop_scheduling)
-+		x86_pmu.stop_scheduling(cpuc);
-+
- 	return num ? -EINVAL : 0;
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 418e30d..641b2df 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -451,6 +451,15 @@ struct x86_pmu {
- 
- 	void		(*put_event_constraints)(struct cpu_hw_events *cpuc,
- 						 struct perf_event *event);
-+
-+	void		(*commit_scheduling)(struct cpu_hw_events *cpuc,
-+					     struct perf_event *event,
-+					     int cntr);
-+
-+	void		(*start_scheduling)(struct cpu_hw_events *cpuc);
-+
-+	void		(*stop_scheduling)(struct cpu_hw_events *cpuc);
-+
- 	struct event_constraint *event_constraints;
- 	struct x86_pmu_quirk *quirks;
- 	int		perfctr_second_write;
--- 
-1.9.1
-
+> 
+> thanks,
+> 
+> greg k-h
