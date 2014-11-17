@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068AbaKQOtf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:49:35 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:39349 "EHLO
+	id S1753022AbaKQOtd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 09:49:33 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:39336 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814AbaKQOt3 (ORCPT
+	with ESMTP id S1752804AbaKQOt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 09:49:29 -0500
+	Mon, 17 Nov 2014 09:49:27 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -15,11 +15,10 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
         John Stultz <john.stultz@linaro.org>,
         Sumit Semwal <sumit.semwal@linaro.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, Greg Ungerer <gerg@uclinux.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [PATCH v13 4/9] arm: ks8695: Migrate debug_ll macros to shared directory
-Date: Mon, 17 Nov 2014 14:49:05 +0000
-Message-Id: <1416235750-4766-5-git-send-email-daniel.thompson@linaro.org>
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH v13 3/9] arm: Remove DEBUG_LL_UART_NONE
+Date: Mon, 17 Nov 2014 14:49:04 +0000
+Message-Id: <1416235750-4766-4-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416235750-4766-1-git-send-email-daniel.thompson@linaro.org>
 References: <1416235750-4766-1-git-send-email-daniel.thompson@linaro.org>
@@ -27,74 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the migration a couple of uart definitions have been copied
-from of the platform specific header files.
+Only a very small handful of platforms support DEBUG_LL_UART_NONE but it
+lurks in the menus of every single platform config ready to break the
+build. This is an especial problem for defconfig/oldconfig since it is
+often selected by default.
+
+This patch solves the problem by removing this option. Any platforms
+still depending upon this option must be migrated.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
 ---
- arch/arm/Kconfig.debug                                         |  8 ++++++++
- .../include/mach/debug-macro.S => include/debug/ks8695.S}      | 10 +++++++---
- 2 files changed, 15 insertions(+), 3 deletions(-)
- rename arch/arm/{mach-ks8695/include/mach/debug-macro.S => include/debug/ks8695.S} (80%)
+ arch/arm/Kconfig.debug | 9 ---------
+ 1 file changed, 9 deletions(-)
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 1316c2b9a222..6dc39e69fe12 100644
+index c1a5fa3ec0a7..1316c2b9a222 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -365,6 +365,13 @@ choice
- 		  Say Y here if you want the debug print routines to direct
- 		  their output to UART1 serial port on KEYSTONE2 devices.
+@@ -909,15 +909,6 @@ choice
+ 		  This option selects UART0 on VIA/Wondermedia System-on-a-chip
+ 		  devices, including VT8500, WM8505, WM8650 and WM8850.
  
-+	config DEBUG_KS8695_UART
-+		bool "KS8695 Debug UART"
-+		depends on ARCH_KS8695
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on KS8695.
-+
- 	config DEBUG_MESON_UARTAO
- 		bool "Kernel low-level debugging via Meson6 UARTAO"
- 		depends on ARCH_MESON
-@@ -1050,6 +1057,7 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX6Q_UART || \
- 				 DEBUG_IMX6SL_UART || \
- 				 DEBUG_IMX6SX_UART
-+	default "debug/ks8695.S" if DEBUG_KS8695_UART
- 	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
- 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
- 	default "debug/s3c24xx.S" if DEBUG_S3C24XX_UART
-diff --git a/arch/arm/mach-ks8695/include/mach/debug-macro.S b/arch/arm/include/debug/ks8695.S
-similarity index 80%
-rename from arch/arm/mach-ks8695/include/mach/debug-macro.S
-rename to arch/arm/include/debug/ks8695.S
-index a79e48981202..961da1f32ab3 100644
---- a/arch/arm/mach-ks8695/include/mach/debug-macro.S
-+++ b/arch/arm/include/debug/ks8695.S
-@@ -1,5 +1,5 @@
- /*
-- * arch/arm/mach-ks8695/include/mach/debug-macro.S
-+ * arch/arm/include/debug/ks8695.S
-  *
-  * Copyright (C) 2006 Ben Dooks <ben@simtec.co.uk>
-  * Copyright (C) 2006 Simtec Electronics
-@@ -11,8 +11,12 @@
-  * published by the Free Software Foundation.
-  */
- 
--#include <mach/hardware.h>
--#include <mach/regs-uart.h>
-+#define KS8695_UART_PA	0x03ffe000
-+#define KS8695_UART_VA	0xf00fe000
-+#define KS8695_URTH	(0x04)
-+#define KS8695_URLS	(0x14)
-+#define URLS_URTE	(1 << 6)
-+#define URLS_URTHRE	(1 << 5)
- 
- 	.macro	addruart, rp, rv, tmp
- 		ldr	\rp, =KS8695_UART_PA		@ physical base address
+-	config DEBUG_LL_UART_NONE
+-		bool "No low-level debugging UART"
+-		depends on !ARCH_MULTIPLATFORM
+-		help
+-		  Say Y here if your platform doesn't provide a UART option
+-		  above. This relies on your platform choosing the right UART
+-		  definition internally in order for low-level debugging to
+-		  work.
+-
+ 	config DEBUG_ICEDCC
+ 		bool "Kernel low-level debugging via EmbeddedICE DCC channel"
+ 		help
 -- 
 1.9.3
 
