@@ -1,371 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaKQXT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 18:19:28 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:62586 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873AbaKQXT0 (ORCPT
+	id S1753292AbaKQXT6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 18:19:58 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:62491 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199AbaKQXT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 18:19:26 -0500
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Linux PM <linux-pm@vger.kernel.org>
-Cc: Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCHv2 1/1] thermal: of: improve of-thermal sensor registration API
-Date: Mon, 17 Nov 2014 18:44:15 -0400
-Message-Id: <1416264255-10083-1-git-send-email-edubezval@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416263769-6578-2-git-send-email-edubezval@gmail.com>
-References: <1416263769-6578-2-git-send-email-edubezval@gmail.com>
+	Mon, 17 Nov 2014 18:19:57 -0500
+Message-ID: <546A829A.8030106@linaro.org>
+Date: Mon, 17 Nov 2014 18:19:54 -0500
+From: Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH]  usb: gadget: USB3 support to the legacy printer driver
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Different drivers request API extensions in of-thermal. For this reason,
-additional callbacks are required to fit the new drivers needs.
+Hi,
 
-The current API implementation expects the registering sensor driver
-to provide a get_temp and get_trend callbacks as function parameters.
-As the amount of callbacks is growing, this patch changes the existing
-implementation to use a .ops field to hold all the of thermal callbacks
-to sensor drivers.
+This patch adds USB3 support to the legacy gadget printer driver.
+Applies cleanly on fc14f9c Linux 3.18-rc5.
 
-This patch also changes the existing of-thermal users to fit the new
-API design. No functional change is introduced in this patch.
+Please could it be considered for inclusion?
 
-Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <jdelvare@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org
-Cc: linux-tegra@vger.kernel.org
-Cc: lm-sensors@lm-sensors.org
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
+regards,
+Jorge
+
+
+
+>From f46d9b0d2160b30f14dee104657de865e9e2bc38 Mon Sep 17 00:00:00 2001
+From: Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
+Date: Thu, 25 Sep 2014 16:17:20 -0400
+Subject: [PATCH] usb: gadget: add USB3 support to the printer driver
+
+Add SS descriptors to support the capabilities provided by USB3 controller
+drivers; unit tests run using PLX 3380 [max transfer speed measured of 1Gbps]
+
+This driver will fallback to lower operating modes when the higher ones are
+not available.
+
+Signed-off-by: Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
 ---
+ drivers/usb/gadget/legacy/printer.c | 66 +++++++++++++++++++++++++++++++++----
+ 1 file changed, 60 insertions(+), 6 deletions(-)
 
-Difference from V1:
- - Fix error handling when .get_trend is not provided.
-
----
- drivers/hwmon/lm75.c                               |  9 +++--
- drivers/hwmon/ntc_thermistor.c                     |  6 +++-
- drivers/hwmon/tmp102.c                             |  6 +++-
- drivers/thermal/of-thermal.c                       | 41 +++++++++-------------
- drivers/thermal/tegra_soctherm.c                   |  7 ++--
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  8 +++--
- include/linux/thermal.h                            | 24 +++++++++----
- 7 files changed, 62 insertions(+), 39 deletions(-)
-
-diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
-index d16dbb3..e7c8bf9 100644
---- a/drivers/hwmon/lm75.c
-+++ b/drivers/hwmon/lm75.c
-@@ -176,6 +176,10 @@ static struct attribute *lm75_attrs[] = {
- };
- ATTRIBUTE_GROUPS(lm75);
- 
-+static const struct thermal_zone_of_device_ops lm75_of_thermal_ops = {
-+	.get_temp = lm75_read_temp,
-+};
-+
- /*-----------------------------------------------------------------------*/
- 
- /* device probe and removal */
-@@ -291,10 +295,9 @@ lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	if (IS_ERR(data->hwmon_dev))
- 		return PTR_ERR(data->hwmon_dev);
- 
--	data->tz = thermal_zone_of_sensor_register(data->hwmon_dev,
--						   0,
-+	data->tz = thermal_zone_of_sensor_register(data->hwmon_dev, 0,
- 						   data->hwmon_dev,
--						   lm75_read_temp, NULL);
-+						   &lm75_of_thermal_ops);
- 	if (IS_ERR(data->tz))
- 		data->tz = NULL;
- 
-diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
-index 4ff89b2..bca8521c8 100644
---- a/drivers/hwmon/ntc_thermistor.c
-+++ b/drivers/hwmon/ntc_thermistor.c
-@@ -486,6 +486,10 @@ static const struct attribute_group ntc_attr_group = {
- 	.attrs = ntc_attributes,
- };
- 
-+static const struct thermal_zone_of_device_ops ntc_of_thermal_ops = {
-+	.get_temp = ntc_read_temp,
-+};
-+
- static int ntc_thermistor_probe(struct platform_device *pdev)
- {
- 	const struct of_device_id *of_id =
-@@ -579,7 +583,7 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
- 								pdev_id->name);
- 
- 	data->tz = thermal_zone_of_sensor_register(data->dev, 0, data->dev,
--						ntc_read_temp, NULL);
-+						   &ntc_of_thermal_ops);
- 	if (IS_ERR(data->tz)) {
- 		dev_dbg(&pdev->dev, "Failed to register to thermal fw.\n");
- 		data->tz = NULL;
-diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
-index 5171995..ba9f478 100644
---- a/drivers/hwmon/tmp102.c
-+++ b/drivers/hwmon/tmp102.c
-@@ -158,6 +158,10 @@ ATTRIBUTE_GROUPS(tmp102);
- #define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM | TMP102_CONF_CR1)
- #define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 | TMP102_CONF_R1 | TMP102_CONF_AL)
- 
-+static const struct thermal_zone_of_device_ops tmp102_of_thermal_ops = {
-+	.get_temp = tmp102_read_temp,
-+};
-+
- static int tmp102_probe(struct i2c_client *client,
- 				  const struct i2c_device_id *id)
- {
-@@ -215,7 +219,7 @@ static int tmp102_probe(struct i2c_client *client,
- 	}
- 	tmp102->hwmon_dev = hwmon_dev;
- 	tmp102->tz = thermal_zone_of_sensor_register(hwmon_dev, 0, hwmon_dev,
--						     tmp102_read_temp, NULL);
-+						     &tmp102_of_thermal_ops);
- 	if (IS_ERR(tmp102->tz))
- 		tmp102->tz = NULL;
- 
-diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-index f8eb625..3e025f0 100644
---- a/drivers/thermal/of-thermal.c
-+++ b/drivers/thermal/of-thermal.c
-@@ -30,6 +30,7 @@
- #include <linux/err.h>
- #include <linux/export.h>
- #include <linux/string.h>
-+#include <linux/thermal.h>
- 
- #include "thermal_core.h"
- 
-@@ -77,8 +78,7 @@ struct __thermal_bind_params {
-  * @num_tbps: number of thermal bind params
-  * @tbps: an array of thermal bind params (0..num_tbps - 1)
-  * @sensor_data: sensor private data used while reading temperature and trend
-- * @get_temp: sensor callback to read temperature
-- * @get_trend: sensor callback to read temperature trend
-+ * @ops: set of callbacks to handle the thermal zone based on DT
-  */
- 
- struct __thermal_zone {
-@@ -96,8 +96,7 @@ struct __thermal_zone {
- 
- 	/* sensor interface */
- 	void *sensor_data;
--	int (*get_temp)(void *, long *);
--	int (*get_trend)(void *, long *);
-+	const struct thermal_zone_of_device_ops *ops;
- };
- 
- /***   DT thermal zone device callbacks   ***/
-@@ -107,10 +106,7 @@ static int of_thermal_get_temp(struct thermal_zone_device *tz,
- {
- 	struct __thermal_zone *data = tz->devdata;
- 
--	if (!data->get_temp)
--		return -EINVAL;
--
--	return data->get_temp(data->sensor_data, temp);
-+	return data->ops->get_temp(data->sensor_data, temp);
- }
- 
- static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
-@@ -120,10 +116,10 @@ static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
- 	long dev_trend;
- 	int r;
- 
--	if (!data->get_trend)
-+	if (!data->ops->get_trend)
- 		return -EINVAL;
- 
--	r = data->get_trend(data->sensor_data, &dev_trend);
-+	r = data->ops->get_trend(data->sensor_data, &dev_trend);
- 	if (r)
- 		return r;
- 
-@@ -324,8 +320,7 @@ static struct thermal_zone_device_ops of_thermal_ops = {
- static struct thermal_zone_device *
- thermal_zone_of_add_sensor(struct device_node *zone,
- 			   struct device_node *sensor, void *data,
--			   int (*get_temp)(void *, long *),
--			   int (*get_trend)(void *, long *))
-+			   const struct thermal_zone_of_device_ops *ops)
- {
- 	struct thermal_zone_device *tzd;
- 	struct __thermal_zone *tz;
-@@ -336,9 +331,11 @@ thermal_zone_of_add_sensor(struct device_node *zone,
- 
- 	tz = tzd->devdata;
- 
-+	if (!(ops && ops->get_temp))
-+		return ERR_PTR(-EINVAL);
-+
- 	mutex_lock(&tzd->lock);
--	tz->get_temp = get_temp;
--	tz->get_trend = get_trend;
-+	tz->ops = ops;
- 	tz->sensor_data = data;
- 
- 	tzd->ops->get_temp = of_thermal_get_temp;
-@@ -356,8 +353,8 @@ thermal_zone_of_add_sensor(struct device_node *zone,
-  *             than one sensors
-  * @data: a private pointer (owned by the caller) that will be passed
-  *        back, when a temperature reading is needed.
-- * @get_temp: a pointer to a function that reads the sensor temperature.
-- * @get_trend: a pointer to a function that reads the sensor temperature trend.
-+ * @ops: struct thermal_zone_of_device *. Must contain at least .get_trend and
-+ *       .get_temp.
+diff --git a/drivers/usb/gadget/legacy/printer.c b/drivers/usb/gadget/legacy/printer.c
+index 6474081..625d905 100644
+--- a/drivers/usb/gadget/legacy/printer.c
++++ b/drivers/usb/gadget/legacy/printer.c
+@@ -3,6 +3,7 @@
   *
-  * This function will search the list of thermal zones described in device
-  * tree and look for the zone that refer to the sensor device pointed by
-@@ -382,9 +379,8 @@ thermal_zone_of_add_sensor(struct device_node *zone,
-  * check the return value with help of IS_ERR() helper.
-  */
- struct thermal_zone_device *
--thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
--				void *data, int (*get_temp)(void *, long *),
--				int (*get_trend)(void *, long *))
-+thermal_zone_of_sensor_register(struct device *dev, int sensor_id, void *data,
-+				const struct thermal_zone_of_device_ops *ops)
- {
- 	struct device_node *np, *child, *sensor_np;
- 
-@@ -424,9 +420,7 @@ thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
- 		if (sensor_specs.np == sensor_np && id == sensor_id) {
- 			of_node_put(np);
- 			return thermal_zone_of_add_sensor(child, sensor_np,
--							  data,
--							  get_temp,
--							  get_trend);
-+							  data, ops);
- 		}
- 	}
- 	of_node_put(np);
-@@ -468,8 +462,7 @@ void thermal_zone_of_sensor_unregister(struct device *dev,
- 	tzd->ops->get_temp = NULL;
- 	tzd->ops->get_trend = NULL;
- 
--	tz->get_temp = NULL;
--	tz->get_trend = NULL;
-+	tz->ops = NULL;
- 	tz->sensor_data = NULL;
- 	mutex_unlock(&tzd->lock);
- }
-diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
-index 70f7e9e..893c39c 100644
---- a/drivers/thermal/tegra_soctherm.c
-+++ b/drivers/thermal/tegra_soctherm.c
-@@ -317,6 +317,10 @@ static int tegra_thermctl_get_temp(void *data, long *out_temp)
- 	return 0;
- }
- 
-+static const struct thermal_zone_of_device_ops tegra_of_thermal_ops = {
-+	.get_trend = tegra_thermctl_get_temp,
-+};
-+
- static const struct of_device_id tegra_soctherm_of_match[] = {
- 	{ .compatible = "nvidia,tegra124-soctherm" },
- 	{ },
-@@ -416,8 +420,7 @@ static int tegra_soctherm_probe(struct platform_device *pdev)
- 		zone->shift = t124_thermctl_temp_zones[i].shift;
- 
- 		tz = thermal_zone_of_sensor_register(&pdev->dev, i, zone,
--						     tegra_thermctl_get_temp,
--						     NULL);
-+						     &tegra_of_thermal_ops);
- 		if (IS_ERR(tz)) {
- 			err = PTR_ERR(tz);
- 			dev_err(&pdev->dev, "failed to register sensor: %d\n",
-diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-index 9eec26d..5fd0386 100644
---- a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-+++ b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-@@ -286,6 +286,11 @@ static int ti_thermal_get_crit_temp(struct thermal_zone_device *thermal,
- 	return ti_thermal_get_trip_temp(thermal, OMAP_TRIP_NUMBER - 1, temp);
- }
- 
-+static const struct thermal_zone_of_device_ops ti_of_thermal_ops = {
-+	.get_temp = __ti_thermal_get_temp,
-+	.get_trend = __ti_thermal_get_trend,
-+};
-+
- static struct thermal_zone_device_ops ti_thermal_ops = {
- 	.get_temp = ti_thermal_get_temp,
- 	.get_trend = ti_thermal_get_trend,
-@@ -333,8 +338,7 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
- 
- 	/* in case this is specified by DT */
- 	data->ti_thermal = thermal_zone_of_sensor_register(bgp->dev, id,
--					data, __ti_thermal_get_temp,
--					__ti_thermal_get_trend);
-+					data, &ti_of_thermal_ops);
- 	if (IS_ERR(data->ti_thermal)) {
- 		/* Create thermal zone */
- 		data->ti_thermal = thermal_zone_device_register(domain,
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index ef90838..b565964 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -289,19 +289,31 @@ struct thermal_genl_event {
- 	enum events event;
+  * Copyright (C) 2003-2005 David Brownell
+  * Copyright (C) 2006 Craig W. Nadler
++ * Copyright (C) 2014 Linaro.org
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -208,6 +209,43 @@ static struct usb_descriptor_header *hs_printer_function[] = {
+        NULL
  };
  
-+/**
-+ * struct thermal_zone_of_device_ops - scallbacks for handling DT based zones
-+ *
-+ * Mandatory:
-+ * @get_temp: a pointer to a function that reads the sensor temperature.
-+ *
-+ * Optional:
-+ * @get_trend: a pointer to a function that reads the sensor temperature trend.
++/*
++ * Added endpoint descriptors for 3.0 devices
 + */
-+struct thermal_zone_of_device_ops {
-+	int (*get_temp)(void *, long *);
-+	int (*get_trend)(void *, long *);
++
++static struct usb_endpoint_descriptor ss_ep_in_desc = {
++       .bLength =              USB_DT_ENDPOINT_SIZE,
++       .bDescriptorType =      USB_DT_ENDPOINT,
++       .bmAttributes =         USB_ENDPOINT_XFER_BULK,
++       .wMaxPacketSize =       cpu_to_le16(1024),
 +};
 +
- /* Function declarations */
- #ifdef CONFIG_THERMAL_OF
- struct thermal_zone_device *
--thermal_zone_of_sensor_register(struct device *dev, int id,
--				void *data, int (*get_temp)(void *, long *),
--				int (*get_trend)(void *, long *));
-+thermal_zone_of_sensor_register(struct device *dev, int id, void *data,
-+				const struct thermal_zone_of_device_ops *);
- void thermal_zone_of_sensor_unregister(struct device *dev,
- 				       struct thermal_zone_device *tz);
- #else
- static inline struct thermal_zone_device *
--thermal_zone_of_sensor_register(struct device *dev, int id,
--				void *data, int (*get_temp)(void *, long *),
--				int (*get_trend)(void *, long *))
-+thermal_zone_of_sensor_register(struct device *dev, int id, void *data,
-+				const struct thermal_zone_of_device_ops *)
++struct usb_ss_ep_comp_descriptor ss_ep_in_comp_desc = {
++       .bLength =              sizeof(ss_ep_in_comp_desc),
++       .bDescriptorType =      USB_DT_SS_ENDPOINT_COMP,
++};
++
++static struct usb_endpoint_descriptor ss_ep_out_desc = {
++       .bLength =              USB_DT_ENDPOINT_SIZE,
++       .bDescriptorType =      USB_DT_ENDPOINT,
++       .bmAttributes =         USB_ENDPOINT_XFER_BULK,
++       .wMaxPacketSize =       cpu_to_le16(1024),
++};
++
++struct usb_ss_ep_comp_descriptor ss_ep_out_comp_desc = {
++       .bLength =              sizeof(ss_ep_out_comp_desc),
++       .bDescriptorType =      USB_DT_SS_ENDPOINT_COMP,
++};
++
++static struct usb_descriptor_header *ss_printer_function[] = {
++       (struct usb_descriptor_header *) &intf_desc,
++       (struct usb_descriptor_header *) &ss_ep_in_desc,
++       (struct usb_descriptor_header *) &ss_ep_in_comp_desc,
++       (struct usb_descriptor_header *) &ss_ep_out_desc,
++       (struct usb_descriptor_header *) &ss_ep_out_comp_desc,
++       NULL
++};
++
+ static struct usb_otg_descriptor otg_descriptor = {
+        .bLength =              sizeof otg_descriptor,
+        .bDescriptorType =      USB_DT_OTG,
+@@ -220,7 +258,20 @@ static const struct usb_descriptor_header *otg_desc[] = {
+ };
+ 
+ /* maxpacket and other transfer characteristics vary by speed. */
+-#define ep_desc(g, hs, fs) (((g)->speed == USB_SPEED_HIGH)?(hs):(fs))
++static inline struct usb_endpoint_descriptor *ep_desc(struct usb_gadget *gadget,
++                                       struct usb_endpoint_descriptor *fs,
++                                       struct usb_endpoint_descriptor *hs,
++                                       struct usb_endpoint_descriptor *ss)
++{
++       struct usb_endpoint_descriptor *d = fs;
++
++       if (gadget->speed == USB_SPEED_SUPER)
++               d = ss;
++       else if (gadget->speed == USB_SPEED_HIGH)
++               d = hs;
++
++       return d;
++}
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -793,11 +844,12 @@ set_printer_interface(struct printer_dev *dev)
  {
- 	return NULL;
- }
+        int                     result = 0;
+ 
+-       dev->in_ep->desc = ep_desc(dev->gadget, &hs_ep_in_desc, &fs_ep_in_desc);
++       dev->in_ep->desc = ep_desc(dev->gadget, &fs_ep_in_desc, &hs_ep_in_desc,
++                                                               &ss_ep_in_desc);
+        dev->in_ep->driver_data = dev;
+ 
+-       dev->out_ep->desc = ep_desc(dev->gadget, &hs_ep_out_desc,
+-                                   &fs_ep_out_desc);
++       dev->out_ep->desc = ep_desc(dev->gadget, &fs_ep_out_desc,
++                                       &hs_ep_out_desc, &ss_ep_out_desc);
+        dev->out_ep->driver_data = dev;
+ 
+        result = usb_ep_enable(dev->in_ep);
+@@ -1016,9 +1068,11 @@ autoconf_fail:
+        /* assumes that all endpoints are dual-speed */
+        hs_ep_in_desc.bEndpointAddress = fs_ep_in_desc.bEndpointAddress;
+        hs_ep_out_desc.bEndpointAddress = fs_ep_out_desc.bEndpointAddress;
++       ss_ep_in_desc.bEndpointAddress = fs_ep_in_desc.bEndpointAddress;
++       ss_ep_out_desc.bEndpointAddress = fs_ep_out_desc.bEndpointAddress;
+ 
+        ret = usb_assign_descriptors(f, fs_printer_function,
+-                       hs_printer_function, NULL);
++                                    hs_printer_function, ss_printer_function);
+        if (ret)
+                return ret;
+ 
+@@ -1253,7 +1307,7 @@ static __refdata struct usb_composite_driver printer_driver = {
+        .name           = shortname,
+        .dev            = &device_desc,
+        .strings        = dev_strings,
+-       .max_speed      = USB_SPEED_HIGH,
++       .max_speed      = USB_SPEED_SUPER,
+        .bind           = printer_bind,
+        .unbind         = printer_unbind,
+ };
 -- 
-2.1.3
+1.9.1
 
