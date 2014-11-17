@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086AbaKQN7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:59:38 -0500
+	id S1754111AbaKQN74 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:59:56 -0500
 Received: from down.free-electrons.com ([37.187.137.238]:48985 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752978AbaKQNpU (ORCPT
+	with ESMTP id S1753106AbaKQNpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:20 -0500
+	Mon, 17 Nov 2014 08:45:19 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 26/61] dmaengine: k3: Split device_control
-Date: Mon, 17 Nov 2014 14:42:20 +0100
-Message-Id: <1416231775-31252-27-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 25/61] dmaengine: ipu-idmac: Split device_control
+Date: Mon, 17 Nov 2014 14:42:19 +0100
+Message-Id: <1416231775-31252-26-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,255 +24,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Hisilicon K3 DMA driver to make use
+Split the device_control callback of the IPU IDMAC driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/k3dma.c | 197 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 107 insertions(+), 90 deletions(-)
+ drivers/dma/ipu/ipu_idmac.c | 96 ++++++++++++++++++++++++---------------------
+ 1 file changed, 51 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/dma/k3dma.c b/drivers/dma/k3dma.c
-index a1de14ab2c51..49be7f687c4c 100644
---- a/drivers/dma/k3dma.c
-+++ b/drivers/dma/k3dma.c
-@@ -441,7 +441,7 @@ static struct dma_async_tx_descriptor *k3_dma_prep_memcpy(
- 	num = 0;
- 
- 	if (!c->ccfg) {
--		/* default is memtomem, without calling device_control */
-+		/* default is memtomem, without calling device_config */
- 		c->ccfg = CX_CFG_SRCINCR | CX_CFG_DSTINCR | CX_CFG_EN;
- 		c->ccfg |= (0xf << 20) | (0xf << 24);	/* burst = 16 */
- 		c->ccfg |= (0x3 << 12) | (0x3 << 16);	/* width = 64 bit */
-@@ -523,112 +523,126 @@ static struct dma_async_tx_descriptor *k3_dma_prep_slave_sg(
- 	return vchan_tx_prep(&c->vc, &ds->vd, flags);
+diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
+index bbf62927bd72..b36f5a47578a 100644
+--- a/drivers/dma/ipu/ipu_idmac.c
++++ b/drivers/dma/ipu/ipu_idmac.c
+@@ -1398,76 +1398,81 @@ static void idmac_issue_pending(struct dma_chan *chan)
+ 	 */
  }
  
--static int k3_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
-+static int k3_dma_config(struct dma_chan *chan,
-+			 struct dma_slave_config *cfg)
-+{
-+	struct k3_dma_chan *c = to_k3_chan(chan);
-+	u32 maxburst = 0, val = 0;
-+	enum dma_slave_buswidth width = DMA_SLAVE_BUSWIDTH_UNDEFINED;
-+
-+	if (cfg == NULL)
-+		return -EINVAL;
-+	c->dir = cfg->direction;
-+	if (c->dir == DMA_DEV_TO_MEM) {
-+		c->ccfg = CX_CFG_DSTINCR;
-+		c->dev_addr = cfg->src_addr;
-+		maxburst = cfg->src_maxburst;
-+		width = cfg->src_addr_width;
-+	} else if (c->dir == DMA_MEM_TO_DEV) {
-+		c->ccfg = CX_CFG_SRCINCR;
-+		c->dev_addr = cfg->dst_addr;
-+		maxburst = cfg->dst_maxburst;
-+		width = cfg->dst_addr_width;
-+	}
-+	switch (width) {
-+	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-+	case DMA_SLAVE_BUSWIDTH_8_BYTES:
-+		val =  __ffs(width);
-+		break;
-+	default:
-+		val = 3;
-+		break;
-+	}
-+	c->ccfg |= (val << 12) | (val << 16);
-+
-+	if ((maxburst == 0) || (maxburst > 16))
-+		val = 16;
-+	else
-+		val = maxburst - 1;
-+	c->ccfg |= (val << 20) | (val << 24);
-+	c->ccfg |= CX_CFG_MEM2PER | CX_CFG_EN;
-+
-+	/* specific request line */
-+	c->ccfg |= c->vc.chan.chan_id << 4;
-+
-+	return 0;
-+}
-+
-+static int k3_dma_terminate_all(struct dma_chan *chan)
+-static int __idmac_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-			   unsigned long arg)
++static int idmac_pause(struct dma_chan *chan)
  {
- 	struct k3_dma_chan *c = to_k3_chan(chan);
- 	struct k3_dma_dev *d = to_k3_dma(chan->device);
--	struct dma_slave_config *cfg = (void *)arg;
- 	struct k3_dma_phy *p = c->phy;
+ 	struct idmac_channel *ichan = to_idmac_chan(chan);
+ 	struct idmac *idmac = to_idmac(chan->device);
+ 	struct ipu *ipu = to_ipu(idmac);
+ 	struct list_head *list, *tmp;
  	unsigned long flags;
--	u32 maxburst = 0, val = 0;
--	enum dma_slave_buswidth width = DMA_SLAVE_BUSWIDTH_UNDEFINED;
- 	LIST_HEAD(head);
+-	int i;
  
 -	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		if (cfg == NULL)
--			return -EINVAL;
--		c->dir = cfg->direction;
--		if (c->dir == DMA_DEV_TO_MEM) {
--			c->ccfg = CX_CFG_DSTINCR;
--			c->dev_addr = cfg->src_addr;
--			maxburst = cfg->src_maxburst;
--			width = cfg->src_addr_width;
--		} else if (c->dir == DMA_MEM_TO_DEV) {
--			c->ccfg = CX_CFG_SRCINCR;
--			c->dev_addr = cfg->dst_addr;
--			maxburst = cfg->dst_maxburst;
--			width = cfg->dst_addr_width;
--		}
--		switch (width) {
--		case DMA_SLAVE_BUSWIDTH_1_BYTE:
--		case DMA_SLAVE_BUSWIDTH_2_BYTES:
--		case DMA_SLAVE_BUSWIDTH_4_BYTES:
--		case DMA_SLAVE_BUSWIDTH_8_BYTES:
--			val =  __ffs(width);
--			break;
--		default:
--			val = 3;
--			break;
--		}
--		c->ccfg |= (val << 12) | (val << 16);
-+	dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
- 
--		if ((maxburst == 0) || (maxburst > 16))
--			val = 16;
--		else
--			val = maxburst - 1;
--		c->ccfg |= (val << 20) | (val << 24);
--		c->ccfg |= CX_CFG_MEM2PER | CX_CFG_EN;
-+	/* Prevent this channel being scheduled */
-+	spin_lock(&d->lock);
-+	list_del_init(&c->node);
-+	spin_unlock(&d->lock);
- 
--		/* specific request line */
--		c->ccfg |= c->vc.chan.chan_id << 4;
--		break;
-+	/* Clear the tx descriptor lists */
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	vchan_get_all_descriptors(&c->vc, &head);
-+	if (p) {
-+		/* vchan is assigned to a pchan - stop the channel */
-+		k3_dma_terminate_chan(p, d);
-+		c->phy = NULL;
-+		p->vchan = NULL;
-+		p->ds_run = p->ds_done = NULL;
-+	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
-+	vchan_dma_desc_free_list(&c->vc, &head);
- 
--	case DMA_TERMINATE_ALL:
--		dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
-+	return 0;
-+}
- 
--		/* Prevent this channel being scheduled */
--		spin_lock(&d->lock);
--		list_del_init(&c->node);
--		spin_unlock(&d->lock);
-+static int k3_dma_pause(struct dma_chan *chan)
-+{
-+	struct k3_dma_chan *c = to_k3_chan(chan);
-+	struct k3_dma_dev *d = to_k3_dma(chan->device);
-+	struct k3_dma_phy *p = c->phy;
- 
--		/* Clear the tx descriptor lists */
--		spin_lock_irqsave(&c->vc.lock, flags);
--		vchan_get_all_descriptors(&c->vc, &head);
-+	dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
-+	if (c->status == DMA_IN_PROGRESS) {
-+		c->status = DMA_PAUSED;
- 		if (p) {
--			/* vchan is assigned to a pchan - stop the channel */
--			k3_dma_terminate_chan(p, d);
--			c->phy = NULL;
--			p->vchan = NULL;
--			p->ds_run = p->ds_done = NULL;
-+			k3_dma_pause_dma(p, false);
-+		} else {
-+			spin_lock(&d->lock);
-+			list_del_init(&c->node);
-+			spin_unlock(&d->lock);
- 		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
--		vchan_dma_desc_free_list(&c->vc, &head);
--		break;
-+	}
- 
 -	case DMA_PAUSE:
--		dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
--		if (c->status == DMA_IN_PROGRESS) {
--			c->status = DMA_PAUSED;
--			if (p) {
--				k3_dma_pause_dma(p, false);
--			} else {
--				spin_lock(&d->lock);
--				list_del_init(&c->node);
--				spin_unlock(&d->lock);
--			}
--		}
+-		spin_lock_irqsave(&ipu->lock, flags);
+-		ipu_ic_disable_task(ipu, chan->chan_id);
++	mutex_lock(&ichan->chan_mutex);
+ 
+-		/* Return all descriptors into "prepared" state */
+-		list_for_each_safe(list, tmp, &ichan->queue)
+-			list_del_init(list);
++	spin_lock_irqsave(&ipu->lock, flags);
++	ipu_ic_disable_task(ipu, chan->chan_id);
+ 
+-		ichan->sg[0] = NULL;
+-		ichan->sg[1] = NULL;
++	/* Return all descriptors into "prepared" state */
++	list_for_each_safe(list, tmp, &ichan->queue)
++		list_del_init(list);
+ 
+-		spin_unlock_irqrestore(&ipu->lock, flags);
++	ichan->sg[0] = NULL;
++	ichan->sg[1] = NULL;
+ 
+-		ichan->status = IPU_CHANNEL_INITIALIZED;
 -		break;
+-	case DMA_TERMINATE_ALL:
+-		ipu_disable_channel(idmac, ichan,
+-				    ichan->status >= IPU_CHANNEL_ENABLED);
++	spin_unlock_irqrestore(&ipu->lock, flags);
+ 
+-		tasklet_disable(&ipu->tasklet);
++	ichan->status = IPU_CHANNEL_INITIALIZED;
+ 
+-		/* ichan->queue is modified in ISR, have to spinlock */
+-		spin_lock_irqsave(&ichan->lock, flags);
+-		list_splice_init(&ichan->queue, &ichan->free_list);
++	mutex_unlock(&ichan->chan_mutex);
+ 
+-		if (ichan->desc)
+-			for (i = 0; i < ichan->n_tx_desc; i++) {
+-				struct idmac_tx_desc *desc = ichan->desc + i;
+-				if (list_empty(&desc->list))
+-					/* Descriptor was prepared, but not submitted */
+-					list_add(&desc->list, &ichan->free_list);
 +	return 0;
 +}
  
--	case DMA_RESUME:
--		dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
--		spin_lock_irqsave(&c->vc.lock, flags);
--		if (c->status == DMA_PAUSED) {
--			c->status = DMA_IN_PROGRESS;
--			if (p) {
--				k3_dma_pause_dma(p, true);
--			} else if (!list_empty(&c->vc.desc_issued)) {
--				spin_lock(&d->lock);
--				list_add_tail(&c->node, &d->chan_pending);
--				spin_unlock(&d->lock);
+-				async_tx_clear_ack(&desc->txd);
 -			}
-+static int k3_dma_resume(struct dma_chan *chan)
++static int __idmac_terminate_all(struct dma_chan *chan)
 +{
-+	struct k3_dma_chan *c = to_k3_chan(chan);
-+	struct k3_dma_dev *d = to_k3_dma(chan->device);
-+	struct k3_dma_phy *p = c->phy;
++	struct idmac_channel *ichan = to_idmac_chan(chan);
++	struct idmac *idmac = to_idmac(chan->device);
++	struct ipu *ipu = to_ipu(idmac);
 +	unsigned long flags;
-+
-+	dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	if (c->status == DMA_PAUSED) {
-+		c->status = DMA_IN_PROGRESS;
-+		if (p) {
-+			k3_dma_pause_dma(p, true);
-+		} else if (!list_empty(&c->vc.desc_issued)) {
-+			spin_lock(&d->lock);
-+			list_add_tail(&c->node, &d->chan_pending);
-+			spin_unlock(&d->lock);
- 		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
++	int i;
+ 
+-		ichan->sg[0] = NULL;
+-		ichan->sg[1] = NULL;
+-		spin_unlock_irqrestore(&ichan->lock, flags);
++	ipu_disable_channel(idmac, ichan,
++			    ichan->status >= IPU_CHANNEL_ENABLED);
+ 
+-		tasklet_enable(&ipu->tasklet);
++	tasklet_disable(&ipu->tasklet);
+ 
+-		ichan->status = IPU_CHANNEL_INITIALIZED;
 -		break;
 -	default:
--		return -ENXIO;
- 	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
+-		return -ENOSYS;
+-	}
++	/* ichan->queue is modified in ISR, have to spinlock */
++	spin_lock_irqsave(&ichan->lock, flags);
++	list_splice_init(&ichan->queue, &ichan->free_list);
 +
++	if (ichan->desc)
++		for (i = 0; i < ichan->n_tx_desc; i++) {
++			struct idmac_tx_desc *desc = ichan->desc + i;
++			if (list_empty(&desc->list))
++				/* Descriptor was prepared, but not submitted */
++				list_add(&desc->list, &ichan->free_list);
++
++			async_tx_clear_ack(&desc->txd);
++		}
++
++	ichan->sg[0] = NULL;
++	ichan->sg[1] = NULL;
++	spin_unlock_irqrestore(&ichan->lock, flags);
++
++	tasklet_enable(&ipu->tasklet);
++
++	ichan->status = IPU_CHANNEL_INITIALIZED;
+ 
  	return 0;
  }
  
-@@ -720,7 +734,10 @@ static int k3_dma_probe(struct platform_device *op)
- 	d->slave.device_prep_dma_memcpy = k3_dma_prep_memcpy;
- 	d->slave.device_prep_slave_sg = k3_dma_prep_slave_sg;
- 	d->slave.device_issue_pending = k3_dma_issue_pending;
--	d->slave.device_control = k3_dma_control;
-+	d->slave.device_config = k3_dma_config;
-+	d->slave.device_pause = k3_dma_pause;
-+	d->slave.device_resume = k3_dma_resume;
-+	d->slave.device_terminate_all = k3_dma_terminate_all;
- 	d->slave.copy_align = DMA_ALIGN;
+-static int idmac_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-			 unsigned long arg)
++static int idmac_terminate_all(struct dma_chan *chan)
+ {
+ 	struct idmac_channel *ichan = to_idmac_chan(chan);
+ 	int ret;
  
- 	/* init virtual channel */
+ 	mutex_lock(&ichan->chan_mutex);
+ 
+-	ret = __idmac_control(chan, cmd, arg);
++	ret = __idmac_terminate_all(chan);
+ 
+ 	mutex_unlock(&ichan->chan_mutex);
+ 
+@@ -1568,7 +1573,7 @@ static void idmac_free_chan_resources(struct dma_chan *chan)
+ 
+ 	mutex_lock(&ichan->chan_mutex);
+ 
+-	__idmac_control(chan, DMA_TERMINATE_ALL, 0);
++	__idmac_terminate_all(chan);
+ 
+ 	if (ichan->status > IPU_CHANNEL_FREE) {
+ #ifdef DEBUG
+@@ -1622,7 +1627,8 @@ static int __init ipu_idmac_init(struct ipu *ipu)
+ 
+ 	/* Compulsory for DMA_SLAVE fields */
+ 	dma->device_prep_slave_sg		= idmac_prep_slave_sg;
+-	dma->device_control			= idmac_control;
++	dma->device_pause			= idmac_pause;
++	dma->device_terminate_all		= idmac_terminate_all;
+ 
+ 	INIT_LIST_HEAD(&dma->channels);
+ 	for (i = 0; i < IPU_CHANNELS_NUM; i++) {
+@@ -1655,7 +1661,7 @@ static void ipu_idmac_exit(struct ipu *ipu)
+ 	for (i = 0; i < IPU_CHANNELS_NUM; i++) {
+ 		struct idmac_channel *ichan = ipu->channel + i;
+ 
+-		idmac_control(&ichan->dma_chan, DMA_TERMINATE_ALL, 0);
++		idmac_terminate_all(&ichan->dma_chan);
+ 	}
+ 
+ 	dma_async_device_unregister(&idmac->dma);
 -- 
 2.1.1
 
