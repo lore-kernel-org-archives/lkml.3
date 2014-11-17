@@ -1,100 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaKQKjF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:39:05 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:33334 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660AbaKQKic (ORCPT
+	id S1752792AbaKQKjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:39:55 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:65020 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498AbaKQKh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:38:32 -0500
-From: Ankit Jindal <ankit.jindal@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, patches@apm.com,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Varka Bhadram <varkabhadram@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>, Anup Patel <anup@brainfault.org>,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Ankit Jindal <ankit.jindal@linaro.org>
-Subject: [PATCH v5 5/6] Documentation: dt-bindings: Add binding info for X-Gene QMTM UIO driver
-Date: Mon, 17 Nov 2014 16:06:11 +0530
-Message-Id: <1416220572-13381-6-git-send-email-ankit.jindal@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1416220572-13381-1-git-send-email-ankit.jindal@linaro.org>
-References: <1416220572-13381-1-git-send-email-ankit.jindal@linaro.org>
+	Mon, 17 Nov 2014 05:37:27 -0500
+From: Omar Sandoval <osandov@osandov.com>
+To: linux-btrfs@vger.kernel.org
+Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        <linux-fsdevel@vger.kernel.org>, Omar Sandoval <osandov@osandov.com>
+Subject: [RFC PATCH 5/6] btrfs: don't mark extents used for swap as up to date
+Date: Mon, 17 Nov 2014 02:36:58 -0800
+Message-Id: <3d52b4347781b2e0e766989bab1df21aa736c753.1416219974.git.osandov@osandov.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <cover.1416219974.git.osandov@osandov.com>
+References: <cover.1416219974.git.osandov@osandov.com>
+In-Reply-To: <cover.1416219974.git.osandov@osandov.com>
+References: <cover.1416219974.git.osandov@osandov.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding documentation for
-X-Gene QMTM UIO driver.
+As pages in the swapcache get shuffled around and repurposed for different
+pages in the swap file, the EXTENT_UPTODATE flag doesn't apply. This leads to
+some really weird symptoms in userspace where pages in a process's address
+space appear to get mixed up.
 
-Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
-Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- .../devicetree/bindings/uio/uio_xgene_qmtm.txt     |   50 ++++++++++++++++++++
- 1 file changed, 50 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
+ fs/btrfs/extent_io.c | 29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt b/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
-new file mode 100644
-index 0000000..7afe78c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
-@@ -0,0 +1,50 @@
-+APM X-Gene QMTM nodes
-+
-+The Applied Micro X-Gene SOC has on-chip QMTM (Queue manager
-+and Traffic manager). It is a device for managing hardware queues.
-+It also implements QoS among hardware queues hence term "traffic"
-+manager is present in its name.
-+
-+Required properties:
-+- compatible: Should be "apm,xgene-qmtm"
-+- reg: Address and length of the register set for the device. It contains the
-+  information of registers in the same order as described by reg-names.
-+- reg-names: Should contain the register set names
-+  - "csr": QMTM control and status register address space.
-+  - "fabric": QMTM memory mapped access to queue states.
-+- qpool-memory: Points to the phandle of the node defining memory location for
-+	 creating QMTM queues. This must point to the reserved-memory node
-+	 (as-per reserved memory bindings). It is expected that size and
-+	 location of qpool memory will be configurable via bootloader.
-+- clocks: Reference to the clock entry.
-+- num-queues: Number of queues under this QMTM device.
-+- devid: QMTM identification number for the system having multiple QMTM devices.
-+	 This is used to form a unique id (a tuple of queue number and
-+	 device id) for the queues belonging to this device.
-+
-+Example:
-+	qmtm1_uio_qpool: qmtm1_uio_qpool {
-+		reg = <0x0 0x0 0x0 0x0>;
-+	};
-+
-+	qmtm1clk: qmtmclk@1f20c000 {
-+		compatible = "apm,xgene-device-clock";
-+		clock-output-names = "qmtm1clk";
-+	};
-+
-+	qmtm1_uio: qmtm_uio@1f200000 {
-+		compatible = "apm,xgene-qmtm";
-+		status = "disabled";
-+		reg = <0x0 0x1f200000 0x0 0x10000>,
-+		      <0x0 0x1b000000 0x0 0x400000>;
-+		reg-names = "csr", "fabric";
-+		qpool-memory = <&qmtm1_uio_qpool>;
-+		clocks = <&qmtm1clk 0>;
-+		num-queues = <0x400>;
-+		devid = <1>;
-+	};
-+
-+	/* Board-specific peripheral configurations */
-+	&qmtm1_uio {
-+		status = "okay";
-+	};
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index b8dc256..ca696d5 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2496,12 +2496,12 @@ static void end_bio_extent_writepage(struct bio *bio, int err)
+ 
+ static void
+ endio_readpage_release_extent(struct extent_io_tree *tree, u64 start, u64 len,
+-			      int uptodate)
++			      int uptodate, int swapcache)
+ {
+ 	struct extent_state *cached = NULL;
+ 	u64 end = start + len - 1;
+ 
+-	if (uptodate && tree->track_uptodate)
++	if (likely(!swapcache) && uptodate && tree->track_uptodate)
+ 		set_extent_uptodate(tree, start, end, &cached, GFP_ATOMIC);
+ 	unlock_extent_cached(tree, start, end, &cached, GFP_ATOMIC);
+ }
+@@ -2532,6 +2532,7 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
+ 	int mirror;
+ 	int ret;
+ 	int i;
++	int swapcache = 0;
+ 
+ 	if (err)
+ 		uptodate = 0;
+@@ -2539,6 +2540,7 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
+ 	bio_for_each_segment_all(bvec, bio, i) {
+ 		struct page *page = bvec->bv_page;
+ 		struct inode *inode = page_file_mapping(page)->host;
++		swapcache |= PageSwapCache(page);
+ 
+ 		pr_debug("end_bio_extent_readpage: bi_sector=%llu, err=%d, "
+ 			 "mirror=%u\n", (u64)bio->bi_iter.bi_sector, err,
+@@ -2631,12 +2633,14 @@ readpage_ok:
+ 			if (extent_len) {
+ 				endio_readpage_release_extent(tree,
+ 							      extent_start,
+-							      extent_len, 1);
++							      extent_len, 1,
++							      swapcache);
+ 				extent_start = 0;
+ 				extent_len = 0;
+ 			}
+ 			endio_readpage_release_extent(tree, start,
+-						      end - start + 1, 0);
++						      end - start + 1, 0,
++						      swapcache);
+ 		} else if (!extent_len) {
+ 			extent_start = start;
+ 			extent_len = end + 1 - start;
+@@ -2644,7 +2648,8 @@ readpage_ok:
+ 			extent_len += end + 1 - start;
+ 		} else {
+ 			endio_readpage_release_extent(tree, extent_start,
+-						      extent_len, uptodate);
++						      extent_len, uptodate,
++						      swapcache);
+ 			extent_start = start;
+ 			extent_len = end + 1 - start;
+ 		}
+@@ -2652,7 +2657,7 @@ readpage_ok:
+ 
+ 	if (extent_len)
+ 		endio_readpage_release_extent(tree, extent_start, extent_len,
+-					      uptodate);
++					      uptodate, swapcache);
+ 	if (io_bio->end_io)
+ 		io_bio->end_io(io_bio, err);
+ 	bio_put(bio);
+@@ -2942,8 +2947,10 @@ static int __do_readpage(struct extent_io_tree *tree,
+ 			memset(userpage + pg_offset, 0, iosize);
+ 			flush_dcache_page(page);
+ 			kunmap_atomic(userpage);
+-			set_extent_uptodate(tree, cur, cur + iosize - 1,
+-					    &cached, GFP_NOFS);
++			if (likely(!swapcache))
++				set_extent_uptodate(tree, cur,
++						    cur + iosize - 1,
++						    &cached, GFP_NOFS);
+ 			if (!parent_locked)
+ 				unlock_extent_cached(tree, cur,
+ 						     cur + iosize - 1,
+@@ -2995,8 +3002,9 @@ static int __do_readpage(struct extent_io_tree *tree,
+ 			flush_dcache_page(page);
+ 			kunmap_atomic(userpage);
+ 
+-			set_extent_uptodate(tree, cur, cur + iosize - 1,
+-					    &cached, GFP_NOFS);
++			if (likely(!swapcache))
++				set_extent_uptodate(tree, cur, cur + iosize - 1,
++						    &cached, GFP_NOFS);
+ 			unlock_extent_cached(tree, cur, cur + iosize - 1,
+ 			                     &cached, GFP_NOFS);
+ 			cur = cur + iosize;
+@@ -3006,6 +3014,7 @@ static int __do_readpage(struct extent_io_tree *tree,
+ 		/* the get_extent function already copied into the page */
+ 		if (test_range_bit(tree, cur, cur_end,
+ 				   EXTENT_UPTODATE, 1, NULL)) {
++			WARN_ON(swapcache);
+ 			check_page_uptodate(tree, page);
+ 			if (!parent_locked)
+ 				unlock_extent(tree, cur, cur + iosize - 1);
 -- 
-1.7.9.5
+2.1.3
 
