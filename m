@@ -1,106 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaKQLkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:40:43 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46009 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaKQLkl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:40:41 -0500
-Date: Mon, 17 Nov 2014 12:40:35 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
- for tegra driver
-Message-ID: <20141117114034.GE25699@ulmo>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
+	id S1752705AbaKQLlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:41:15 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36142 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104AbaKQLlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 06:41:12 -0500
+Message-ID: <5469DE81.9030009@ti.com>
+Date: Mon, 17 Nov 2014 17:09:45 +0530
+From: Vignesh R <vigneshr@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SWTRyWv/ijrBap1m"
-Content-Disposition: inline
-In-Reply-To: <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Johannes Pointner <johannes.pointner@gmail.com>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <devicetree@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jan Kardell <jan.kardell@telliq.com>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
+        <linux-omap@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, Brad Griffis <bgriffis@ti.com>
+Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
+References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>	<20141103180920.GA20779@localhost.localdomain>	<545B2651.4090905@ti.com> <CAJKbBDDyShaJkzzfdFs07EK5gDUfwqWiv39Qi4FVSvRrfc6_fA@mail.gmail.com> <5464A2B5.3020207@ti.com>
+In-Reply-To: <5464A2B5.3020207@ti.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---SWTRyWv/ijrBap1m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thursday 13 November 2014 05:53 PM, Vignesh R wrote:
+> Hi,
+> 
+> On Wednesday 12 November 2014 06:30 PM, Johannes Pointner wrote:
+>> Hello Vignesh,
+>>
+>> I tried your patch version 3 on a customized board and had some
+>> behavior I couldn't explain.
+>> If I only use the touchscreen it works fine but if I also read values
+>> from the ADCs then I get a lot of pen_up events even if I am still
+>> touching the screen.
+>> For the test I read via
+>> # cat /sys/bus/iio/devices/iio\:device0/in_voltage5_raw
+>> values from the ADC in an busy loop as you explained in an email
+>> before. Did you also experience such behavior or do you know what
+>> causes it?
+> 
+> Thanks for testing. I was able to fix this issue. Will post version 4
+> shortly.
+> 
 
-On Thu, Nov 13, 2014 at 06:02:42PM +0100, Lukasz Majewski wrote:
-> When CPU freq is used as a thermal zone cooling device, one needs to wait
-> until cpufreq subsystem is properly initialized.
->=20
-> This code is similar to the one already available in imx_thermal.c file.
->=20
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> ---
->  drivers/thermal/tegra_soctherm.c | 7 +++++++
->  1 file changed, 7 insertions(+)
->=20
-> diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soc=
-therm.c
-> index 70f7e9e..9c5aaa4 100644
-> --- a/drivers/thermal/tegra_soctherm.c
-> +++ b/drivers/thermal/tegra_soctherm.c
-> @@ -26,6 +26,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/reset.h>
->  #include <linux/thermal.h>
-> +#include <linux/cpufreq.h>
-> =20
->  #include <soc/tegra/fuse.h>
-> =20
-> @@ -346,6 +347,12 @@ static int tegra_soctherm_probe(struct platform_devi=
-ce *pdev)
-> =20
->  	const struct tegra_tsensor *tsensors =3D t124_tsensors;
-> =20
-> +#ifdef CONFIG_CPU_THERMAL
-> +	if (!cpufreq_get_current_driver()) {
-> +		dev_dbg(&pdev->dev, "no cpufreq driver!");
+Were you able to test the v4 patch series on your board? Is the issue fixed?
 
-Shouldn't this rather be dev_err() or dev_warn() to give at least some
-clue as to the cause?
-
-Thierry
-
---SWTRyWv/ijrBap1m
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUad6yAAoJEN0jrNd/PrOhJA8P/0ENnloNjC6BTahtRDY/neyO
-Pp8jazZYQ6i1FeBqGXD6sa8ccsRzzLI0K5MuI+oaKnYyw8w3qJtUtIRs4p3lyvV0
-dyCuyx5Twn8UrJHZj76q6Zv1NHUiulCyqZOxqjljNjuGtptfWBUDxjhtWNINIqFq
-G4Uyr0dBIF485xi03UApagiQ5dQFeIFNjqkB6e56s29ztzf3NmHcjkjMs8pjLtef
-cgOoQSDGqdE1ZqFezo0JFu6KRMUkVBUbwZyuWNM4n/2hlpRNNonsmPg8nnjYv6LC
-MjP3H7cFZUC1sQDymj5as5zdBmqRpgxLlQS9Vsw+PDHCKgowKzQRTVFHPLEsZJpY
-4IFKI+QvErAMJqNPC8O680WFBttzfZY5EekxsVIyE/Wse330/Lf+833wNflsLE9W
-t1bSeLKxnKgYpVoDXq0/viEuChdah6eZNa+zw5q/KpvitV3rYSyFjgkwfFWm29Fi
-CeYHJ7glR4TymHDFfOM7E8FuleHOzMwYN9iSO0lBzurqprSHlA+VMOlvrx6lMeDe
-EVXcq/SqMPnLo47Zjk3CLvg5+Sowd47Gk075yLgyYzocWiJ1yPP8Zq24IjsI7rUT
-Yv+UHj4q7+AlCefYkEmb7ftoSzgvXY8VsRomrBxlciErwme5/6OPP77wm/CODu18
-P3OvVXHJVVe5aZl2OTCG
-=XUiC
------END PGP SIGNATURE-----
-
---SWTRyWv/ijrBap1m--
+> Regards
+> Vignesh
+> 
+>>
+>> Without the patches the touchscreen works fine during the iio test.
+>>
+>> Thanks,
+>> Hannes
+>>
+>> 2014-11-06 8:42 GMT+01:00 Vignesh R <vigneshr@ti.com>:
+>>>
+>>>
+>>> On Monday 03 November 2014 11:39 PM, Richard Cochran wrote:
+>>>> On Mon, Oct 27, 2014 at 04:38:27PM +0530, Vignesh R wrote:
+>>>>> This series of patches fix TSC defects related to lag in touchscreen
+>>>>> performance and cursor jump at touch release. The lag was result of
+>>>>> udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
+>>>>> The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
+>>>>> to avoid false pen-up events and remove udelay.
+>>>>
+>>>> That advisory has two workarounds. You have chosen the second one?
+>>>
+>>> Work around one. Hence 5 wire design is not broken.
+>>>
+>>>>
+>>>> The text of the second workaround says it only works on 4 wire setups,
+>>>> so I wonder how 5 wire designs will be affected.
+>>>>
+>>>>> The advisory says to use
+>>>>> steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
+>>>>> ADC).
+>>>>
+>>>> No, it doesn't say that. (sprz360f.pdf)
+>>>
+>>> The pen up event detection happens immediately after charge step. Hence,
+>>> interchanging ADC and TSC steps makes sure that sampling of touch
+>>> co-ordinates and pen events are done one after the other. This
+>>> workaround was suggested by internal hardware folks. Earlier ADC steps
+>>> intervened between sampling of co-ordinates and pen event detection
+>>> which is not desirable.
+>>>
+>>>>
+>>>>> Further the X co-ordinate must be the last one to be sampled just
+>>>>> before charge step. The first two patches implement the required changes.
+>>>>
+>>>> FWIW, I implemented the first workaround and removed the udelay not
+>>>> too long ago. Like Sebastian, I saw the TSC unit hang after about
+>>>> 50000 interrupts when running with the workaround.
+>>>>
+>>>> Did you test you patch for very long?
+>>>
+>>> Yes, I tested for about 200000 interrupts and I didn't see any hang.
+>>> This patch series does not just implement workaround but also does some
+>>> minor changes, such as interchanging ADC and TSC steps etc, which makes
+>>> TSC driver more robust. Let me know if you encounter any issues with my
+>>> patch series.
+>>>
+>>> Regards
+>>> Vignesh
+>>>
+>>>>
+>>>> Thanks,
+>>>> Richard
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
