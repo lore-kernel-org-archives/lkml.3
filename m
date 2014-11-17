@@ -1,135 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029AbaKQWjC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:39:02 -0500
-Received: from mail.matrixorbital.ca ([207.251.47.146]:43204 "EHLO
-	mail2.matrixorbital.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751791AbaKQWjA (ORCPT
+	id S1753225AbaKQWlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:41:50 -0500
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:57371 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaKQWlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:39:00 -0500
-X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Nov 2014 17:39:00 EST
-From: Troy Clark <tclark@matrixorbital.ca>
-To: johan@kernel.org, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Troy Clark <tclark@matrixorbital.ca>
-Subject: [PATCH] usb: serial: add PIDs for Matrix Orbital products
-Date: Mon, 17 Nov 2014 14:33:17 -0800
-Message-Id: <1416263597-16458-1-git-send-email-tclark@matrixorbital.ca>
-X-Mailer: git-send-email 1.9.1
+	Mon, 17 Nov 2014 17:41:46 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH V5 01/12] xhci: Set shared HCD's hcd_priv in xhci_gen_setup
+Date: Mon, 17 Nov 2014 14:41:31 -0800
+Message-Id: <1416264102-1323-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
+References: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ftdi_sio_ids.h and ftdi_sio.c files that adds PIDs for
-new Matrix Orbital GTT series products
+xhci_gen_setup() sets the hcd_priv field for the primary HCD, but not
+for the shared HCD, requiring xHCI host-controller drivers to set it
+between usb_create_shared_hcd() and usb_add_hcd().  There's no reason
+xhci_gen_setup() can't set the shared HCD's hcd_priv as well, so move
+that bit out of the host-controller drivers and into xhci_gen_setup().
 
-Signed-off-by: Troy Clark <tclark@matrixorbital.ca>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
- drivers/usb/serial/ftdi_sio.c     | 33 +++++++++++++++++++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h | 39 +++++++++++++++++++++++++++++++++++----
- 2 files changed, 68 insertions(+), 4 deletions(-)
+New for v5.
+Peviously posted here: https://lkml.org/lkml/2014/10/30/726
+---
+ drivers/usb/host/xhci-pci.c  | 5 -----
+ drivers/usb/host/xhci-plat.c | 5 -----
+ drivers/usb/host/xhci.c      | 6 +++---
+ 3 files changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 0dad8ce..1ebb351 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -470,6 +470,39 @@ static const struct usb_device_id id_table_combined[] = {
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FD_PID) },
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FE_PID) },
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FF_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_4701_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9300_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9301_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9302_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9303_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9304_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9305_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9306_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9307_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9308_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9309_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930A_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930B_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930C_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930D_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930E_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930F_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9310_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9311_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9312_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9313_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9314_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9315_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9316_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9317_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9318_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9319_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931A_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931B_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931C_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931D_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931E_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931F_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PERLE_ULTRAPORT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PIEGROUP_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TNC_X_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 6786b70..e52409c 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -926,8 +926,8 @@
- #define BAYER_CONTOUR_CABLE_PID        0x6001
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 9a69b1f..31025e4 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -221,11 +221,6 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 		goto dealloc_usb2_hcd;
+ 	}
  
- /*
-- * The following are the values for the Matrix Orbital FTDI Range
-- * Anything in this range will use an FT232RL.
-+ * Matrix Orbital Intelligent USB displays.
-+ * http://www.matrixorbital.com
-  */
- #define MTXORB_VID			0x1B3D
- #define MTXORB_FTDI_RANGE_0100_PID	0x0100
-@@ -1186,8 +1186,39 @@
- #define MTXORB_FTDI_RANGE_01FD_PID	0x01FD
- #define MTXORB_FTDI_RANGE_01FE_PID	0x01FE
- #define MTXORB_FTDI_RANGE_01FF_PID	0x01FF
+-	/* Set the xHCI pointer before xhci_pci_setup() (aka hcd_driver.reset)
+-	 * is called by usb_add_hcd().
+-	 */
+-	*((struct xhci_hcd **) xhci->shared_hcd->hcd_priv) = xhci;
 -
--
-+#define MTXORB_FTDI_RANGE_4701_PID	0x4701
-+#define MTXORB_FTDI_RANGE_9300_PID	0x9300
-+#define MTXORB_FTDI_RANGE_9301_PID	0x9301
-+#define MTXORB_FTDI_RANGE_9302_PID	0x9302
-+#define MTXORB_FTDI_RANGE_9303_PID	0x9303
-+#define MTXORB_FTDI_RANGE_9304_PID	0x9304
-+#define MTXORB_FTDI_RANGE_9305_PID	0x9305
-+#define MTXORB_FTDI_RANGE_9306_PID	0x9306
-+#define MTXORB_FTDI_RANGE_9307_PID	0x9307
-+#define MTXORB_FTDI_RANGE_9308_PID	0x9308
-+#define MTXORB_FTDI_RANGE_9309_PID	0x9309
-+#define MTXORB_FTDI_RANGE_930A_PID	0x930A
-+#define MTXORB_FTDI_RANGE_930B_PID	0x930B
-+#define MTXORB_FTDI_RANGE_930C_PID	0x930C
-+#define MTXORB_FTDI_RANGE_930D_PID	0x930D
-+#define MTXORB_FTDI_RANGE_930E_PID	0x930E
-+#define MTXORB_FTDI_RANGE_930F_PID	0x930F
-+#define MTXORB_FTDI_RANGE_9310_PID	0x9310
-+#define MTXORB_FTDI_RANGE_9311_PID	0x9311
-+#define MTXORB_FTDI_RANGE_9312_PID	0x9312
-+#define MTXORB_FTDI_RANGE_9313_PID	0x9313
-+#define MTXORB_FTDI_RANGE_9314_PID	0x9314
-+#define MTXORB_FTDI_RANGE_9315_PID	0x9315
-+#define MTXORB_FTDI_RANGE_9316_PID	0x9316
-+#define MTXORB_FTDI_RANGE_9317_PID	0x9317
-+#define MTXORB_FTDI_RANGE_9318_PID	0x9318
-+#define MTXORB_FTDI_RANGE_9319_PID	0x9319
-+#define MTXORB_FTDI_RANGE_931A_PID	0x931A
-+#define MTXORB_FTDI_RANGE_931B_PID	0x931B
-+#define MTXORB_FTDI_RANGE_931C_PID	0x931C
-+#define MTXORB_FTDI_RANGE_931D_PID	0x931D
-+#define MTXORB_FTDI_RANGE_931E_PID	0x931E
-+#define MTXORB_FTDI_RANGE_931F_PID	0x931F
+ 	retval = usb_add_hcd(xhci->shared_hcd, dev->irq,
+ 			IRQF_SHARED);
+ 	if (retval)
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 3d78b0c..5bc33bc 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -149,11 +149,6 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	if ((node && of_property_read_bool(node, "usb3-lpm-capable")) ||
+ 			(pdata && pdata->usb3_lpm_capable))
+ 		xhci->quirks |= XHCI_LPM_SUPPORT;
+-	/*
+-	 * Set the xHCI pointer before xhci_plat_setup() (aka hcd_driver.reset)
+-	 * is called by usb_add_hcd().
+-	 */
+-	*((struct xhci_hcd **) xhci->shared_hcd->hcd_priv) = xhci;
  
- /*
-  * The Mobility Lab (TML)
+ 	if (HCC_MAX_PSA(xhci->hcc_params) >= 4)
+ 		xhci->shared_hcd->can_do_streams = 1;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 2a5d45b..ae05471 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4843,9 +4843,9 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+ 		 */
+ 		hcd->has_tt = 1;
+ 	} else {
+-		/* xHCI private pointer was set in xhci_pci_probe for the second
+-		 * registered roothub.
+-		 */
++		xhci = hcd_to_xhci(hcd->primary_hcd);
++		*((struct xhci_hcd **) hcd->hcd_priv) = xhci;
++
+ 		return 0;
+ 	}
+ 
 -- 
-1.9.1
+2.1.0.rc2.206.gedb03e5
 
