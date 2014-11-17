@@ -1,123 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaKQSrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:47:08 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:57780 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaKQSrG (ORCPT
+	id S1752680AbaKQSrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:47:23 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:36861 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaKQSrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:47:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Jon Fraser <jfraser@broadcom.com>, dtor@chromium.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonas Gorski <jonas.gorski@gmail.com>
-Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
-Date: Mon, 17 Nov 2014 19:46:41 +0100
-Message-ID: <2911624.UJRs5QOPN5@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJiQ=7A29-v5mo1ybvE2UodOZx-FoGeBTHYcTZuX-LaqRaF1Lw@mail.gmail.com>
-References: <1416097066-20452-1-git-send-email-cernekee@gmail.com> <3480616.V2TMJFc7uE@wuerfel> <CAJiQ=7A29-v5mo1ybvE2UodOZx-FoGeBTHYcTZuX-LaqRaF1Lw@mail.gmail.com>
+	Mon, 17 Nov 2014 13:47:21 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:vDFKZ7uD70dL/fqJqzejKQ28ogi4rUhy7k9jmrsfM6t
- TIvXKNFXRt+UZPTloSsaf0je7MsU9Vm2ZvCRLSxLSy/JVKX5er
- n8nMJQRYAQQ/aLOny2lzBN3YXWjaqRQ+d8KySY/OZQHvuLK3iQ
- WDsIsA+oDAw7dT4dYlOQRk0gidvdPsbZjRUzMSQC2LKjoNr/pM
- aACmkVC0GWUy4WEYlfQ6wzx1FBE9zkqSFme6nIclxEWQdMQAJ+
- qpJIooIAJZppNJlt/XXJ5/CAzbd0kTct8QnhSrABqCLLf36w0f
- Y8DWo/ZV/K90gUuX7pTUyScuG8FSdkTp6RutJyKKag8dxymqpi
- XC7hTaHHb/RblhYcrwLY=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+ <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+ <546A3942.5040906@schaufler-ca.com> <CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 17 Nov 2014 10:46:59 -0800
+Message-ID: <CALCETrVn4gVXp7F=5h-bkN5VWuRMG9BoxgeQfKhX4+ZXxGE=wQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
+ to drop groups
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 November 2014 09:01:02 Kevin Cernekee wrote:
-> On Mon, Nov 17, 2014 at 4:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> Under arch/mips/bcm47xx I see a single mach type, but different builds
-> for BMIPS3300 (R1/SSB) versus MIPS 74K (R2/BCMA).
+On Mon, Nov 17, 2014 at 10:31 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Nov 17, 2014 at 10:06 AM, Casey Schaufler
+> <casey@schaufler-ca.com> wrote:
+>> On 11/15/2014 1:01 AM, Josh Triplett wrote:
+>>> Currently, unprivileged processes (without CAP_SETGID) cannot call
+>>> setgroups at all.  In particular, processes with a set of supplementary
+>>> groups cannot further drop permissions without obtaining elevated
+>>> permissions first.
+>>
+>> Has anyone put any thought into how this will interact with
+>> POSIX ACLs? I don't see that anywhere in the discussion.
+>
+> That means that user namespaces are a problem, too, and we need to fix
+> it.  Or we should add some control to turn unprivileged user namespace
+> creation on and off and document that turning it on defeats POSIX ACLs
+> with a group entry that is more restrictive than the other entry.
+>
 
-At least in Kconfig, the two are not mutually exclusive, so I assumed
-you could enable them both at the same time.
- 
-> >> Outside of the CPU, the BCM63xx/BCM33xx/BCM7xxx register maps and
-> >> peripherals look pretty different, and the arch/mips/bmips code makes
-> >> almost zero assumptions about the rest of the chip if a DTB is passed
-> >> in from the bootloader.  In this sense you can see the parallels to
-> >> CONFIG_ARCH_MULTI_Vx.
-> >>
-> >> Prior to this work, these product lines have never been able to share
-> >> a common kernel image.
-> >
-> > I still think this is different in the sense that ARM multiplatform
-> > support is about combining platforms from separate mach-* directories,
-> > while your approach was to rewrite multiple mach-* directories into
-> > a single new one that remains separate from the others.
-> 
-> There is at least one out-of-tree kernel for each of:
-> 
-> arch/mips/bcm9338x
-> arch/mips/bcm963xx (which predates arch/mips/bcm63xx)
-> arch/mips/brcmstb
-> 
-> each of which was implementing and maintaining the same
-> CPU/SMP/cache/IRQ support a little bit differently.
-> 
-> The femtocell chips (BCM61xxx) may or may not have their own tree as
-> well - need to check.  Plus, here in mainline, we currently have an
-> arch/mips/bcm63xx tree supporting a different (usually older) subset
-> of BCM63xx chipsets.
-> 
-> It would be nice if we could identify the BMIPS chips that are still
-> actively used, and support them all with one mach type instead of 4+.
-> There might still be a few special cases but I suspect that several of
-> the extra mach directories can be eliminated.
+This is a significant enough issue that I posted it to oss-security:
 
-Absolutely agreed.
+http://www.openwall.com/lists/oss-security/2014/11/17/19
 
-> > While this is
-> > a great improvement, it doesn't get you any closer to having a
-> > combined BMIPS+RALINK+JZ4740+ATH79 kernel for instance. I don't know
-> > if such a kernel is something that anybody wants, or if it's even
-> > technically possible.
-> 
-> Correct, that isn't the goal for now.
-> 
-> Given the differences between BMIPS and imgtec MIPS, it is possible
-> that making such a multiplatform kernel would be the equivalent of
-> making a single image that runs on ARMv5 + ARMv7.  We may want to
-> assess the tradeoffs at some point.
-> 
-> It is possible that a multiplatform BMIPS kernel may run fine on
-> reasonably simple non-BMIPS hardware, but that other hardware (e.g.
-> supporting SMP, system PM states, or more complicated caches) would
-> require a dedicated build.
+It's not at all obvious to me how to fix it.  We could disallow userns
+creation of any supplementary groups don't match fsuid, or we could
+keep negative-only groups around in the userns.
 
-I see.
+It may be worth adding a sysctl to change the behavior, too.  IMO it's
+absurd to use groups to deny permissions that are otherwise available.
 
-> > If you wanted to do that however, starting with BMIPS you'd have
-> > to make it possible to define a new platform without the
-> > arch/mips/include/asm/mach-bmips/ directory (this should be possible
-> > already, so the hardest part is done), replace all global function
-> > calls (arch_init_irq, prom_init, get_system_type,  ...) with generic
-> > platform-independent implementations or wrappers around per-platform
-> > callbacks, and move the Kconfig section for CONFIG_BMIPS_MULTIPLATFORM
-> > outside of the "System type" choice statement.
-> 
-> Right.  The other question is how much support for legacy non-DT
-> bootloaders really belongs in a true multiplatform kernel, as this
-> stuff gets hairy fast.
+--Andy
 
-Yes, that's why I suggested following PowerPC rather than ARM in this
-regard.  If you move the boot loader abstraction into the decompressor
-instead of the platform code, you can avoid a lot of the problems.
+> --Andy
+>
+>>
+>> Tizen takes advantage of the fact you can't drop groups. If
+>> a process can drop itself out of groups without privilege
+>> it can circumvent the system security policy.
+>>
+>> Back when the LSM was introduced a choice was made between
+>> authoritative hooks (which would have allowed this sort of thing)
+>> and restrictive hooks (which would not). Authoritative hooks were
+>> rejected because they would have "broken Linux". I hope that the
+>> people who spoke up then will speak up now.
+>>
+>> This is going to introduce a whole class of vulnerabilities.
+>> Don't even think of arguing that the reduction in use of privilege
+>> will make up for that. Developers have enough trouble with the
+>> difference between setuid() and seteuid() to expect them to use
+>> group dropping properly.
+>>
+>>>
+>>> Allow unprivileged processes to call setgroups with a subset of their
+>>> current groups; only require CAP_SETGID to add a group the process does
+>>> not currently have.
+>>>
+>>> The kernel already maintains the list of supplementary group IDs in
+>>> sorted order, and setgroups already needs to sort the new list, so this
+>>> just requires a linear comparison of the two sorted lists.
+>>>
+>>> This moves the CAP_SETGID test from setgroups into set_current_groups.
+>>>
+>>> Tested via the following test program:
+>>>
+>>> #include <err.h>
+>>> #include <grp.h>
+>>> #include <stdio.h>
+>>> #include <sys/types.h>
+>>> #include <unistd.h>
+>>>
+>>> void run_id(void)
+>>> {
+>>>     pid_t p = fork();
+>>>     switch (p) {
+>>>         case -1:
+>>>             err(1, "fork");
+>>>         case 0:
+>>>             execl("/usr/bin/id", "id", NULL);
+>>>             err(1, "exec");
+>>>         default:
+>>>             if (waitpid(p, NULL, 0) < 0)
+>>>                 err(1, "waitpid");
+>>>     }
+>>> }
+>>>
+>>> int main(void)
+>>> {
+>>>     gid_t list1[] = { 1, 2, 3, 4, 5 };
+>>>     gid_t list2[] = { 2, 3, 4 };
+>>>     run_id();
+>>>     if (setgroups(5, list1) < 0)
+>>>         err(1, "setgroups 1");
+>>>     run_id();
+>>>     if (setresgid(1, 1, 1) < 0)
+>>>         err(1, "setresgid");
+>>>     if (setresuid(1, 1, 1) < 0)
+>>>         err(1, "setresuid");
+>>>     run_id();
+>>>     if (setgroups(3, list2) < 0)
+>>>         err(1, "setgroups 2");
+>>>     run_id();
+>>>     if (setgroups(5, list1) < 0)
+>>>         err(1, "setgroups 3");
+>>>     run_id();
+>>>
+>>>     return 0;
+>>> }
+>>>
+>>> Without this patch, the test program gets EPERM from the second
+>>> setgroups call, after dropping root privileges.  With this patch, the
+>>> test program successfully drops groups 1 and 5, but then gets EPERM from
+>>> the third setgroups call, since that call attempts to add groups the
+>>> process does not currently have.
+>>>
+>>> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+>>> ---
+>>>  kernel/groups.c | 33 ++++++++++++++++++++++++++++++---
+>>>  kernel/uid16.c  |  2 --
+>>>  2 files changed, 30 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/kernel/groups.c b/kernel/groups.c
+>>> index f0667e7..fe7367d 100644
+>>> --- a/kernel/groups.c
+>>> +++ b/kernel/groups.c
+>>> @@ -153,6 +153,29 @@ int groups_search(const struct group_info *group_info, kgid_t grp)
+>>>       return 0;
+>>>  }
+>>>
+>>> +/* Compare two sorted group lists; return true if the first is a subset of the
+>>> + * second.
+>>> + */
+>>> +static bool is_subset(const struct group_info *g1, const struct group_info *g2)
+>>> +{
+>>> +     unsigned int i, j;
+>>> +
+>>> +     for (i = 0, j = 0; i < g1->ngroups; i++) {
+>>> +             kgid_t gid1 = GROUP_AT(g1, i);
+>>> +             kgid_t gid2;
+>>> +             for (; j < g2->ngroups; j++) {
+>>> +                     gid2 = GROUP_AT(g2, j);
+>>> +                     if (gid_lte(gid1, gid2))
+>>> +                             break;
+>>> +             }
+>>> +             if (j >= g2->ngroups || !gid_eq(gid1, gid2))
+>>> +                     return false;
+>>> +             j++;
+>>> +     }
+>>> +
+>>> +     return true;
+>>> +}
+>>> +
+>>>  /**
+>>>   * set_groups_sorted - Change a group subscription in a set of credentials
+>>>   * @new: The newly prepared set of credentials to alter
+>>> @@ -189,11 +212,17 @@ int set_current_groups(struct group_info *group_info)
+>>>  {
+>>>       struct cred *new;
+>>>
+>>> +     groups_sort(group_info);
+>>>       new = prepare_creds();
+>>>       if (!new)
+>>>               return -ENOMEM;
+>>> +     if (!ns_capable(current_user_ns(), CAP_SETGID)
+>>> +         && !is_subset(group_info, new->group_info)) {
+>>> +             abort_creds(new);
+>>> +             return -EPERM;
+>>> +     }
+>>>
+>>> -     set_groups(new, group_info);
+>>> +     set_groups_sorted(new, group_info);
+>>>       return commit_creds(new);
+>>>  }
+>>>
+>>> @@ -233,8 +262,6 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+>>>       struct group_info *group_info;
+>>>       int retval;
+>>>
+>>> -     if (!ns_capable(current_user_ns(), CAP_SETGID))
+>>> -             return -EPERM;
+>>>       if ((unsigned)gidsetsize > NGROUPS_MAX)
+>>>               return -EINVAL;
+>>>
+>>> diff --git a/kernel/uid16.c b/kernel/uid16.c
+>>> index 602e5bb..b27e167 100644
+>>> --- a/kernel/uid16.c
+>>> +++ b/kernel/uid16.c
+>>> @@ -176,8 +176,6 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+>>>       struct group_info *group_info;
+>>>       int retval;
+>>>
+>>> -     if (!ns_capable(current_user_ns(), CAP_SETGID))
+>>> -             return -EPERM;
+>>>       if ((unsigned)gidsetsize > NGROUPS_MAX)
+>>>               return -EINVAL;
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-api" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> Andy Lutomirski
+> AMA Capital Management, LLC
 
-	Arnd
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
