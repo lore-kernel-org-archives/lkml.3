@@ -1,103 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaKQF20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 00:28:26 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59603 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaKQF2Z (ORCPT
+	id S1751283AbaKQFdM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 00:33:12 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:46911 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaKQFdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 00:28:25 -0500
-Message-ID: <54698771.4060705@hitachi.com>
-Date: Mon, 17 Nov 2014 14:28:17 +0900
+	Mon, 17 Nov 2014 00:33:10 -0500
+Message-ID: <5469888E.3090501@hitachi.com>
+Date: Mon, 17 Nov 2014 14:33:02 +0900
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Organization: Hitachi, Ltd., Japan
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 10/26 v5] tracing/uprobes: Do not use return values
- of trace_seq_printf()
-References: <20141115045847.712848224@goodmis.org> <20141115050602.333705855@goodmis.org>
-In-Reply-To: <20141115050602.333705855@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Seth Jennings <sjenning@redhat.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/3] Kernel Live Patching
+References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/15 13:58), Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> The functions trace_seq_printf() and friends will soon no longer have
-> return values. Using trace_seq_has_overflowed() and trace_handle_return()
-> should be used instead.
-> 
-> Link: http://lkml.kernel.org/r/20141114011411.693008134@goodmis.org
-> 
+Hi Seth,
 
-This looks good to me :)
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatu.pt@hitachi.com>
-
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/trace_uprobe.c | 23 ++++++++++-------------
->  1 file changed, 10 insertions(+), 13 deletions(-)
+(2014/11/17 10:29), Seth Jennings wrote:
+> Changelog:
 > 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index e35327c787f7..fd76f8e108ef 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -852,16 +852,14 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
->  	tu = container_of(event, struct trace_uprobe, tp.call.event);
->  
->  	if (is_ret_probe(tu)) {
-> -		if (!trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)",
-> -					ftrace_event_name(&tu->tp.call),
-> -					entry->vaddr[1], entry->vaddr[0]))
-> -			goto partial;
-> +		trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)",
-> +				 ftrace_event_name(&tu->tp.call),
-> +				 entry->vaddr[1], entry->vaddr[0]);
->  		data = DATAOF_TRACE_ENTRY(entry, true);
->  	} else {
-> -		if (!trace_seq_printf(s, "%s: (0x%lx)",
-> -					ftrace_event_name(&tu->tp.call),
-> -					entry->vaddr[0]))
-> -			goto partial;
-> +		trace_seq_printf(s, "%s: (0x%lx)",
-> +				 ftrace_event_name(&tu->tp.call),
-> +				 entry->vaddr[0]);
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> @@ -869,14 +867,13 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
->  		struct probe_arg *parg = &tu->tp.args[i];
->  
->  		if (!parg->type->print(s, parg->name, data + parg->offset, entry))
-> -			goto partial;
-> +			goto out;
->  	}
->  
-> -	if (trace_seq_putc(s, '\n'))
-> -		return TRACE_TYPE_HANDLED;
-> +	trace_seq_putc(s, '\n');
->  
-> -partial:
-> -	return TRACE_TYPE_PARTIAL_LINE;
-> + out:
-> +	return trace_handle_return(s);
->  }
->  
->  typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+> Thanks for all the feedback!
+> 
+> changes in v2:
+> - rebase to next-20141113
+> - add copyright/license block to livepatch.h
+> - add _LINUX prefix to header defines
+> - replace semaphore with mutex
+> - add LPC_ prefix to state enum
+> - convert BUGs to WARNs and handle properly
+> - change Kconfig default to n
+> - remove [old|new] attrs from function sysfs dir (KASLR leak, no use)
+> - disregard user provided old_addr if kernel uses KASLR
+> - s/out/err for error path labels
+> - s/unregister/disable for uniform terminology
+> - s/lp/lpc for module notifier elements
 
+Hmm, btw, "LP" and "LPC" remind me line-printer and LPC bus :(
+Can we use LKP (Live Kernel Patching) or KLP (Kernel Live Patching) instead ?
+
+> - replace module ref'ing with unload notifier + mutex protection
+> - adjust notifier priority to run before ftrace
+> - make LIVE_PATCHING boolean (about to depend on arch stuff)
+
+For better handling x86-32, we'd better introduce ARCH_HAVE_LIVE_PATCHING and
+avoid enabling LIVE_PATCHING on x86_32, then we can simplify arch/x86/kernel/livepatch.c.
+
+Thank you,
+
+> - move x86-specific reloc code to arch/x86
+> - s/dynrela/reloc/
+> - add live patching sysfs documentation
+> - add API function kernel-doc
+> - TODO: kernel-doc for API structs once agreed upon
+> 
+> Summary:
+> 
+> This patchset implements an ftrace-based mechanism and kernel interface for
+> doing live patching of kernel and kernel module functions.  It represents the
+> greatest common functionality set between kpatch [1] and kGraft [2] and can
+> accept patches built using either method.  This solution was discussed in the
+> Live Patching Mini-conference at LPC 2014 [3].
+> 
+> The model consists of a live patching "core" that provides an interface for
+> other "patch" kernel modules to register patches with the core.
+> 
+> Patch modules contain the new function code and create an lp_patch structure
+> containing the required data about what functions to patch, where the new code
+> for each patched function resides, and in which kernel object (vmlinux or
+> module) the function to be patch resides.  The patch module then invokes the
+> lp_register_patch() function to register with the core, then lp_enable_patch()
+> to have the core redirect the execution paths using ftrace.
+> 
+> An example patch module can be found here:
+> https://github.com/spartacus06/livepatch/blob/master/patch/patch.c
+> 
+> The live patching core creates a sysfs hierarchy for user-level access to live
+> patching information.  The hierarchy is structured like this:
+> 
+> /sys/kernel/livepatch
+> /sys/kernel/livepatch/<patch>
+> /sys/kernel/livepatch/<patch>/enabled
+> /sys/kernel/livepatch/<patch>/<object>
+> /sys/kernel/livepatch/<patch>/<object>/<func>
+> 
+> The old function is located using one of two methods: it is either provided by
+> the patch module (only possible for a function in vmlinux) or kallsyms lookup.
+> Symbol ambiguity results in a failure.
+> 
+> The core takes a reference on the patch module itself to keep it from
+> unloading.  This is because, without a mechanism to ensure that no thread is
+> currently executing in the patched function, we can not determine whether it is
+> safe to unload the patch module.  For this reason, unloading patch modules is
+> currently not allowed.
+> 
+> Disabling patches can be done using the "enabled" attribute of the patch:
+> 
+> echo 0 > /sys/kernel/livepatch/<patch>/enabled
+> 
+> If a patch module contains a patch for a module that is not currently loaded,
+> there is nothing to patch so the core does nothing for that patch object.
+> However, the core registers a module notifier that looks for COMING events so
+> that if the module is ever loaded, it is immediately patched.  If a module with
+> patch code is removed, the notifier looks for GOING events and disables any
+> patched functions for that object before it unloads.  The notifier has a higher
+> priority than that of the ftrace notifier so that it runs before the ftrace
+> notifier for GOING events and we can cleanly unregister from ftrace.
+> 
+> kpatch and kGraft each have their own mechanisms for ensuring system
+> consistency during the patching process. This first version does not implement
+> any consistency mechanism that ensures that old and new code do not run
+> together.  In practice, ~90% of CVEs are safe to apply in this way, since they
+> simply add a conditional check.  However, any function change that can not
+> execute safely with the old version of the function can _not_ be safely applied
+> for now.
+> 
+> [1] https://github.com/dynup/kpatch
+> [2] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/
+> [3] https://etherpad.fr/p/LPC2014_LivePatching
+> 
+> Seth Jennings (3):
+>   kernel: add TAINT_LIVEPATCH
+>   kernel: add support for live patching
+>   kernel: add sysfs documentation for live patching
+> 
+>  Documentation/ABI/testing/sysfs-kernel-livepatch |  44 +
+>  Documentation/oops-tracing.txt                   |   2 +
+>  Documentation/sysctl/kernel.txt                  |   1 +
+>  MAINTAINERS                                      |  13 +
+>  arch/x86/Kconfig                                 |   2 +
+>  arch/x86/include/asm/livepatch.h                 |  38 +
+>  arch/x86/kernel/Makefile                         |   1 +
+>  arch/x86/kernel/livepatch.c                      |  83 ++
+>  include/linux/kernel.h                           |   1 +
+>  include/linux/livepatch.h                        |  68 ++
+>  kernel/Makefile                                  |   1 +
+>  kernel/livepatch/Kconfig                         |   9 +
+>  kernel/livepatch/Makefile                        |   3 +
+>  kernel/livepatch/core.c                          | 999 +++++++++++++++++++++++
+>  kernel/panic.c                                   |   2 +
+>  15 files changed, 1267 insertions(+)
+>  create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
+>  create mode 100644 arch/x86/include/asm/livepatch.h
+>  create mode 100644 arch/x86/kernel/livepatch.c
+>  create mode 100644 include/linux/livepatch.h
+>  create mode 100644 kernel/livepatch/Kconfig
+>  create mode 100644 kernel/livepatch/Makefile
+>  create mode 100644 kernel/livepatch/core.c
+> 
 
 
 -- 
