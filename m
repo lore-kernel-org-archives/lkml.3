@@ -1,131 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaKQCeQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 21:34:16 -0500
-Received: from ozlabs.org ([103.22.144.67]:33538 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377AbaKQCeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 21:34:12 -0500
-Date: Mon, 17 Nov 2014 13:34:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jarno Rajahalme <jrajahalme@nicira.com>,
-        Pravin B Shelar <pshelar@nicira.com>
-Subject: linux-next: build failure after merge of the net-next tree
-Message-ID: <20141117133404.525229b4@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753413AbaKQCjI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 21:39:08 -0500
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:7593 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752141AbaKQCjG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 21:39:06 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+CC: "'Will Deacon'" <will.deacon@arm.com>,
+        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'Joe Perches'" <joe@perches.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 17 Nov 2014 10:38:58 +0800
+Subject: RE: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+Thread-Topic: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+Thread-Index: Ac//8Y3gfHXz4vZxRTGitDF3ewZNIwCHdBrw
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313C6@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
+ <20141030120127.GC32589@arm.com>
+ <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
+ <20141030135749.GE32589@arm.com>
+ <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+ <20141113235322.GC4042@n2100.arm.linux.org.uk>
+ <35FD53F367049845BC99AC72306C23D103E010D1829B@CNBJMBX05.corpusers.net>
+ <20141114095812.GG4042@n2100.arm.linux.org.uk>
+In-Reply-To: <20141114095812.GG4042@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Cv9hVhKNDupdKAOq1R5oc+R"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Cv9hVhKNDupdKAOq1R5oc+R
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
+> Sent: Friday, November 14, 2014 5:58 PM
+> To: Wang, Yalin
+> Cc: 'Will Deacon'; 'Ard Biesheuvel'; 'linux-kernel@vger.kernel.org';
+> 'akinobu.mita@gmail.com'; 'linux-mm@kvack.org'; 'Joe Perches'; 'linux-arm-
+> kernel@lists.infradead.org'
+> Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+>
+> > Is it possible to build a kernel that support both CPU_V6 and CPU_V7?
+> 
+> Absolutely it is.
+> 
+> > I mean in Kconfig, CPU_V6 = y and CPU_V7 = y ?
+> 
+> Yes.
+> 
+> > If there is problem like you said,
+> > How about this solution:
+> > select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6)
+> 
+> That would work.
+> 
+OK, I will submit a patch for this change.
 
-Hi all,
+> > For this patch,
+> > I just cherry-pick from Joe,
+> > If you are not responsible for this part, I will submit to the
+> > maintainers for these patches .
+> > Sorry for that .
+> 
+> I think you need to discuss with Joe how Joe would like his patches handled.
+> However, it seems that Joe already sent his patches to the appropriate
+> maintainers, and they have been applying those patches themselves.
+> 
+> Since your generic ARM changes depend on these patches being accepted first,
+> this means is that I can't apply the generic ARM changes until those other
+> patches have hit mainline, otherwise things are going to break.  So, when
+> you come to submit the latest set of patches to the patch system, please do
+> so only after these dependent patches have been merged into mainline so
+> that they don't get accidentally applied before hand and break the two
+> drivers that Joe mentioned.
 
-After merging the net-next tree, today's linux-next build (x86_64 allmodcon=
-fig)
-failed like this:
+Joe has submitted patches to maintainers,
+So we need wait for them to be accepted .
 
-In file included from include/linux/printk.h:6:0,
-                 from include/linux/kernel.h:13,
-                 from net/openvswitch/flow.h:23,
-                 from net/openvswitch/flow_netlink.c:21:
-net/openvswitch/flow_netlink.c: In function 'ovs_key_from_nlattrs':
-include/linux/kern_levels.h:4:18: error: called object is not a function or=
- function pointer
- #define KERN_SOH "\001"  /* ASCII Start Of Header */
-                  ^
-include/linux/kern_levels.h:13:19: note: in expansion of macro 'KERN_SOH'
- #define KERN_INFO KERN_SOH "6" /* informational */
-                   ^
-include/linux/printk.h:247:9: note: in expansion of macro 'KERN_INFO'
-  printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-         ^
-net/openvswitch/datapath.h:205:3: note: in expansion of macro 'pr_info'
-   pr_info("netlink: " fmt "\n", ##__VA_ARGS__); \
-   ^
-net/openvswitch/flow_netlink.c:777:4: note: in expansion of macro 'OVS_NLER=
-R'
-    OVS_NLERR("IPv6 flow label %x is out of range (max=3D%x).\n",
-    ^
-net/openvswitch/datapath.h:205:27: error: expected ')' before string consta=
-nt
-   pr_info("netlink: " fmt "\n", ##__VA_ARGS__); \
-                           ^
-net/openvswitch/flow_netlink.c:19:41: note: in definition of macro 'pr_fmt'
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-                                         ^
-net/openvswitch/datapath.h:205:3: note: in expansion of macro 'pr_info'
-   pr_info("netlink: " fmt "\n", ##__VA_ARGS__); \
-   ^
-net/openvswitch/flow_netlink.c:777:4: note: in expansion of macro 'OVS_NLER=
-R'
-    OVS_NLERR("IPv6 flow label %x is out of range (max=3D%x).\n",
-    ^
+Thanks
 
-Caused by commit 05da5898a96c ("openvswitch: Add support for
-OVS_FLOW_ATTR_PROBE") interacting with commit fecaef85f718
-("openvswitch: Validate IPv6 flow key and mask values") from the net
-tree.
-
-I applied the following merge fix patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 17 Nov 2014 13:31:33 +1100
-Subject: [PATCH] openvswitch: fix up for OVS_NLERR API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/openvswitch/flow_netlink.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
-index 259b2f1ebd0d..45bdcf596414 100644
---- a/net/openvswitch/flow_netlink.c
-+++ b/net/openvswitch/flow_netlink.c
-@@ -774,7 +774,7 @@ static int ovs_key_from_nlattrs(struct sw_flow_match *m=
-atch, u64 attrs,
- 		}
-=20
- 		if (ipv6_key->ipv6_label & htonl(0xFFF00000)) {
--			OVS_NLERR("IPv6 flow label %x is out of range (max=3D%x).\n",
-+			OVS_NLERR(log, "IPv6 flow label %x is out of range (max=3D%x).\n",
- 				  ntohl(ipv6_key->ipv6_label), (1 << 20) - 1);
- 			return -EINVAL;
- 		}
---=20
-2.1.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/Cv9hVhKNDupdKAOq1R5oc+R
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUaV6hAAoJEMDTa8Ir7ZwVedYP/jqX0WKGoLujm6BbB07nV9+r
-fjiB29xTdPWdCNsFok2XAd6Iv/ut8mkhYZlk0NwXmRgyudZ8lxX2vi87unNB6PSE
-3NSi79kEQ5o/P67XB9zip7GYE4kEzIr044OdMdazUHe19A3KoH14keSG4l4tJoK3
-IpkUoT7F8OU6Dg7rOJIE9i6h4fs7nvMNBwa8Wd1WDLfccxQiYUJ82r+1RmdQKXGN
-banXQzKuCijfbFhH+4jDOW4PIdiVWPFB9+d9aHOEOBxVK85uu+wnV74RUfONFlhD
-chiFrxPSf9vsp12cRVKl8QnMifuiUt+biwLGHo4VaAHy1N7It8bofoAczd0x99cQ
-51dsaMzj5F+zIWqtnCY0wjPUGy0qYVmwKshs4+ny/pHw0Vrz40+MGsg11B81HdJy
-1MESNphzQZUENYPwZT6nIHj2/Yb1A4CsRtlMdXsfW8Fvpl7SM5qpVtpCUu3nAbvL
-hBl1y7mQo0TOguFI1sDV5uexHpOlA75pYUoi8ZaP/Wf9tbGKGyct1iTxh+JmLa/d
-M+SUYVsmRX5ckbg7VriakLAtss/ml59L/l56KV+nrr0I8scd3FivHCA3I17Iz26T
-Lnjcqjoooc6IHjySdxO3v1NUKDCrIzoePw9aunKIxi+j/S6sG6KLA1vdJtCWh1BO
-xk1sQtX0zIHvvBIADYb3
-=8pf0
------END PGP SIGNATURE-----
-
---Sig_/Cv9hVhKNDupdKAOq1R5oc+R--
