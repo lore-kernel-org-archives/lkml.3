@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaKQIe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 03:34:59 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51148 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631AbaKQIe5 (ORCPT
+	id S1752086AbaKQIfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 03:35:07 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:62384 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbaKQIfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 03:34:57 -0500
+	Mon, 17 Nov 2014 03:35:04 -0500
 From: gyungoh@gmail.com
 X-Google-Original-From: jack.yoo@skyworksinc.com
 To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
@@ -19,9 +19,9 @@ Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
         shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
         trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
         jic23@kernel.org
-Subject: [RESUBMIT PATCH v7 8/9] devicetree: regulator: sky81452: Modify Device Tree structure
-Date: Mon, 17 Nov 2014 17:33:09 +0900
-Message-Id: <1416213190-20935-9-git-send-email-jack.yoo@skyworksinc.com>
+Subject: [RESUBMIT PATCH v7 9/9] regulator: sky81452: Modify dependent Kconfig symbol
+Date: Mon, 17 Nov 2014 17:33:10 +0900
+Message-Id: <1416213190-20935-10-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416213190-20935-1-git-send-email-jack.yoo@skyworksinc.com>
 References: <1416213190-20935-1-git-send-email-jack.yoo@skyworksinc.com>
@@ -34,53 +34,24 @@ From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 ---
 Changes v7:
-Nothing
+Splitted Kconfig renaming from DT patch
 
-Changes v6:
-Nothing
+ drivers/regulator/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Changes v5:
-Changed DT for regulator : 'lout' node should be defined under 'regulator'
-Removed compatible string from sky81452-regulator driver
-
-Changes v4:
-Nothing
-
-Changes v3:
-Nothing
-
-Changes v2:
-Added 'compatible' attribute in the driver
-
- .../devicetree/bindings/regulator/sky81452-regulator.txt       | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt b/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
-index 882455e..f9acbc1 100644
---- a/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
-@@ -1,6 +1,7 @@
- SKY81452 voltage regulator
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 55d7b7b..fe84bd4 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -547,7 +547,7 @@ config REGULATOR_S5M8767
  
- Required properties:
-+- regulator node named lout.
- - any required generic properties defined in regulator.txt
- 
- Optional properties:
-@@ -9,8 +10,9 @@ Optional properties:
- Example:
- 
- 	regulator {
--		/* generic regulator properties */
--		regulator-name = "touch_en";
--		regulator-min-microvolt = <4500000>;
--		regulator-max-microvolt = <8000000>;
-+		lout {
-+			regulator-name = "sky81452-lout";
-+			regulator-min-microvolt = <4500000>;
-+			regulator-max-microvolt = <8000000>;
-+		};
- 	};
+ config REGULATOR_SKY81452
+ 	tristate "Skyworks Solutions SKY81452 voltage regulator"
+-	depends on SKY81452
++	depends on MFD_SKY81452
+ 	help
+ 	  This driver supports Skyworks SKY81452 voltage output regulator
+ 	  via I2C bus. SKY81452 has one voltage linear regulator can be
 -- 
 1.9.1
 
