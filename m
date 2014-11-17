@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018AbaKQUwU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 15:52:20 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:33880 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbaKQUwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 15:52:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141117171812.22333.90395.stgit@ahduyck-server>
-References: <20141117171005.22333.96544.stgit@ahduyck-server>
-	<20141117171812.22333.90395.stgit@ahduyck-server>
-Date: Mon, 17 Nov 2014 12:52:17 -0800
-X-Google-Sender-Auth: 9Ta-KcKkfYJHVgKCCev2MlLE3Qw
-Message-ID: <CA+55aFxZ9dhB074p3OAQLyQ53TuRjVOo33h6OOda1soh-9xxnQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb() and fast_wmb()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Alexander Duyck <alexander.h.duyck@redhat.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        donald.c.skidmore@intel.com, matthew.vick@intel.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, nic_swsd@realtek.com,
-        Will Deacon <will.deacon@arm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Tony Luck <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1753058AbaKQUwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 15:52:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38790 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752622AbaKQUw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 15:52:28 -0500
+Message-ID: <1416257530.4494.0.camel@localhost>
+Subject: Re: [PATCH 1/1] ipc/mqueue.c: Drag unneeded code out of locks
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Doug Ledford <dledford@redhat.com>, linux-newbie@vger.kernel.org
+Date: Mon, 17 Nov 2014 12:52:10 -0800
+In-Reply-To: <546A47C6.4030309@colorfullife.com>
+References: <fae396b9bc15.545c5b55@langara.bc.ca>
+	 <1415780201.24725.2.camel@linux-t7sj.site>
+	 <fbb3e8aa49d6.5466da38@langara.bc.ca>
+	 <1416086539.12597.15.camel@linux-t7sj.site>
+	 <fb59f9ad237f.5468fdbe@langara.bc.ca> <546A47C6.4030309@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 9:18 AM, Alexander Duyck
-<alexander.h.duyck@redhat.com> wrote:
-> There are a number of situations where the mandatory barriers rmb() and
-> wmb() are used to order memory/memory operations in the device drivers
-> and those barriers are much heavier than they actually need to be.
+On Mon, 2014-11-17 at 20:08 +0100, Manfred Spraul wrote:
+> Hi Steven,
+> 
+> On 11/16/2014 08:40 PM, Steven Stewart-Gallus wrote:
+> > Finally, please don't ignore the rest of my message. Even if my patch
+> > isn't that good there are lots of ways to compromise and improve it
+> > such as adding tests, annotations and making it clearer.
+> 
+> I think you were already given ideas how to improve the patch:
+> 
+> a) split the patch.
+> 
+> b) create test cases so that you are able to check that the code still 
+> behaves as it did before
 
-Ugh. I absolutely despise the name.
+Adding/improving ipc kselftests would also be very welcome.
 
-It's not "fast". It's just limited. It's the same as "smp_*mb()", in
-that it works on cacheable memory, but it actually stays around even
-for non-SMP builds.
+Thanks,
+Davidlohr
 
-So I think the name is actively misleading.
-
-Naming should be about what it does, not about some kind of PR thing
-that confuses people into thinking it's "better".
-
-Maybe "dma_*mb()" would be acceptable, and ends up having the same
-naming convention as "smb_*mb()", and explains what it's about.
-
-And yes, in the same spirit, it would probably be good to try to
-eventually get rid of the plain "*mb()" functions, and perhaps call
-them "mmio_*mb()" to clarify that they are about ordering memory wrt
-mmio.
-
-Hmm?
-
-                        Linus
