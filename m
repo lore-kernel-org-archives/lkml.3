@@ -1,120 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaKQPDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:03:45 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43520 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752166AbaKQPDo (ORCPT
+	id S1753291AbaKQPDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:03:48 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:56103 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaKQPDq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:03:44 -0500
-Date: Mon, 17 Nov 2014 15:02:53 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Mon, 17 Nov 2014 10:03:46 -0500
+Date: Mon, 17 Nov 2014 15:03:38 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Liviu Dudau <liviu@dudau.co.uk>,
+        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@kernel.org>
-Subject: Re: [PATCH 08/11] arm: perf: add functions to parse affinity from dt
-Message-ID: <20141117150253.GB25416@leverpostej>
-References: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
- <1415377536-12841-9-git-send-email-mark.rutland@arm.com>
- <20141117111625.GE18061@arm.com>
+        "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Yijing Wang <wangyijing0307@gmail.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 09/16] PCI: Associate .get_msi_ctrl() with
+ pci_host_bridge
+Message-ID: <20141117150338.GA22515@e102568-lin.cambridge.arm.com>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
+ <1416219710-26088-10-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141117111625.GE18061@arm.com>
+In-Reply-To: <1416219710-26088-10-git-send-email-wangyijing@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 17 Nov 2014 15:03:42.0510 (UTC) FILETIME=[AD452CE0:01D00277]
+X-MC-Unique: 114111715034315201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 11:16:25AM +0000, Will Deacon wrote:
-> On Fri, Nov 07, 2014 at 04:25:33PM +0000, Mark Rutland wrote:
-> > Depending on hardware configuration, some devices may only be accessible
-> > from certain CPUs, may have interrupts wired up to a subset of CPUs, or
-> > may have operations which affect subsets of CPUs. To handle these
-> > devices it is necessary to describe this affinity information in
-> > devicetree.
-> > 
-> > This patch adds functions to handle parsing the CPU affinity of
-> > properties from devicetree, based on Lorenzo's topology binding,
-> > allowing subsets of CPUs to be associated with interrupts, hardware
-> > ports, etc. The functions can be used to build cpumasks and also to test
-> > whether an affinity property only targets one CPU independent of the
-> > current configuration (e.g. when the kernel supports fewer CPUs than are
-> > physically present). This is useful for dealing with mixed SPI/PPI
-> > devices.
-> > 
-> > A device may have an arbitrary number of affinity properties, the
-> > meaning of which is device-specific and should be specified in a given
-> > device's binding document.
-> > 
-> > For example, an affinity property describing interrupt routing may
-> > consist of a phandle pointing to a subtree of the topology nodes,
-> > indicating the set of CPUs an interrupt originates from or may be taken
-> > on. Bindings may have restrictions on the topology nodes referenced -
-> > for describing coherency controls an affinity property may indicate a
-> > whole cluster (including any non-CPU logic it contains) is affected by
-> > some configuration.
-> > 
-> > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <rob.herring@kernel.org>
-> > ---
-> >  arch/arm/kernel/perf_event_cpu.c | 127 +++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 127 insertions(+)
-> > 
-> > diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
-> > index ce35149..dfcaba5 100644
-> > --- a/arch/arm/kernel/perf_event_cpu.c
-> > +++ b/arch/arm/kernel/perf_event_cpu.c
-> > @@ -22,6 +22,7 @@
-> >  #include <linux/export.h>
-> >  #include <linux/kernel.h>
-> >  #include <linux/of.h>
-> > +#include <linux/of_device.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/spinlock.h>
-> > @@ -294,6 +295,132 @@ static int probe_current_pmu(struct arm_pmu *pmu)
-> >  	return ret;
-> >  }
-> >  
-> > +/*
-> > + * Test if the node is within the topology tree.
-> > + * Walk up to the root, keeping refcounts balanced.
-> > + */
-> > +static bool is_topology_node(struct device_node *node)
-> > +{
-> > +	struct device_node *np, *cpu_map;
-> > +	bool ret = false;
-> > +
-> > +	cpu_map = of_find_node_by_path("/cpus/cpu-map");
-> > +	if (!cpu_map)
-> > +		return false;
-> > +
-> > +	/*
-> > +	 * of_get_next_parent decrements the refcount of the provided node.
-> > +	 * Increment it first to keep things balanced.
-> > +	 */
-> > +	for (np = of_node_get(node); np; np = of_get_next_parent(np)) {
-> > +		if (np != cpu_map)
-> > +			continue;
-> > +
-> > +		ret = true;
-> > +		break;
-> > +	}
-> > +
-> > +	of_node_put(np);
-> > +	of_node_put(cpu_map);
-> > +	return ret;
-> > +}
+On Mon, Nov 17, 2014 at 10:21:43AM +0000, Yijing Wang wrote:
+> From: Yijing Wang <wangyijing0307@gmail.com>
 > 
-> Wouldn't this be more at home in topology.c, or somewhere where others can
-> make use of it?
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  drivers/pci/host-bridge.c |    1 +
+>  include/linux/pci.h       |    2 ++
+>  2 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+> index 49b6c21..872cae1 100644
+> --- a/drivers/pci/host-bridge.c
+> +++ b/drivers/pci/host-bridge.c
+> @@ -58,6 +58,7 @@ struct pci_host_bridge *pci_create_host_bridge(
+>  	host->dev.parent = parent;
+>  	INIT_LIST_HEAD(&host->windows);
+>  	host->dev.release = pci_release_host_bridge_dev;
+> +	host->get_msi_ctrl = info->get_msi_ctrl;
+>  
+>  	/* this is hack, just for build, will be removed later*/
+>  	b = kzalloc(sizeof(*b), GFP_KERNEL);
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index a51f5f5..af1ee86 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -408,6 +408,7 @@ struct pci_host_bridge {
+>  	int domain;
+>  	void *sysdata;
+>  	struct pci_ops *ops;
+> +	struct msi_controller *(*get_msi_ctrl)(struct pci_dev *pdev);
+>  	void (*release_fn)(struct pci_host_bridge *);
+>  	void *release_data;
+>  };
+> @@ -416,6 +417,7 @@ struct pci_host_info {
+>  	u8 res_type;
+>  	void *arg;
+>  	struct list_head *resources; /*just for build, will clean up later */
+> +	struct msi_controller *(*get_msi_ctrl)(struct pci_dev *pdev);
+>  	int (*init_res)(struct pci_host_bridge *host, 
+>  			struct pci_host_info *info);
+>  };
 
-Perhaps. I'll need this for arm64 too and I don't know where that should
-live.
+Where would you use the get_msi_ctrl pointer then ? Wasn't it better
+to wait for this patchset to take shape before adding more churn to
+the ARM (and other archs) pci_sys_data structure and consequently add
+another pcibios call to achieve what the get_msi_ctrl pointer is there to
+achieve (ie making msi_controller retrieval arch independent ?)
 
-Mark.
+I just do not see what the pci_sys_data intermediate step buys you if
+we consider the approach taken in this patch as the proper solution.
+
+Thanks,
+Lorenzo
+
