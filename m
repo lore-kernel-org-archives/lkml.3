@@ -1,281 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaKQSAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:00:14 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46009 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920AbaKQSAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:00:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="417687750"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>, Borislav Petkov <bp@alien8.de>,
-        Aristeu Rozanski <aris@redhat.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sb_edac: Add support for Broadwell-DE processor
-Date: Mon, 17 Nov 2014 10:00:11 -0800
-Message-Id: <546a37ab3156619eb3@agluck-desk.sc.intel.com>
+	id S1752043AbaKQSHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:07:04 -0500
+Received: from smtp102.biz.mail.bf1.yahoo.com ([98.139.221.61]:28352 "EHLO
+	smtp102.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751847AbaKQSHC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 13:07:02 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: iREmFpkVM1n5lO3y3seSGLS0yaiyJpKrENljxLyhsCNRDEW
+ efQdiQ5lKGzA6fRsrS1G.WEQ1AZqhYCwMO57aBkm_nSGp_Ju1YdynyojNJy6
+ BlIySTJDk6j8dwOuCXpcK.21R0eA19GAjFnowMJ7wQg5JjmyYzVEI4cStj0w
+ QbPZNsxJPbu0.oTiPE8O5z.rk3DO16eh2ohmxN3fySN9QQLfVTfwr9mSadrW
+ OWEZUKTbugGREEEowTgxgpOAeRAAoNi4lntIAok4YPdLVK4S16.0bUYRzQp2
+ M72ui.uMMzIsLF0tQepnExZtAAu9dFrmCHtNE04SdUJlNY7hH3iOuZsyzlHI
+ DyOl6fSKGMUNqZBqY4aw1Bqv1EOtmRb2s5Orluwcsy6uUXnyMznqWCYaKSzH
+ eERSuWfv254mIiwx0bvTnOAzSOYpK2ytvtsblh4JMQcOv5DdDPq6xDAoiAfY
+ bLftR3pvdeyWbExcnwhUW3U7DF1fMoiydNiBzb2sq4ekaDjyDJ4f6QgBUIRd
+ R.G1fJ7ECx3TIwnwz00nv1HV8
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <546A3942.5040906@schaufler-ca.com>
+Date: Mon, 17 Nov 2014 10:06:58 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, mtk.manpages@gmail.com,
+        linux-api@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
+ to drop groups
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org> <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+In-Reply-To: <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Broadwell-DE is the microserver version of next generation Xeon
-processors.  A whole bunch of new PCIe device ids, but otherwise
-pretty much the same as Haswell.
+On 11/15/2014 1:01 AM, Josh Triplett wrote:
+> Currently, unprivileged processes (without CAP_SETGID) cannot call
+> setgroups at all.  In particular, processes with a set of supplementary
+> groups cannot further drop permissions without obtaining elevated
+> permissions first.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Has anyone put any thought into how this will interact with
+POSIX ACLs? I don't see that anywhere in the discussion.
 
----
+Tizen takes advantage of the fact you can't drop groups. If
+a process can drop itself out of groups without privilege
+it can circumvent the system security policy.
 
-Mauro: Naming of routines and #defines follows the existing
-convention of only making new functions where changes are
-needed, and using older functions with names from previous
-generations where no changes are needed.  Can you take this
-as-is for the next merge window and we can have a discussion
-about whether to have a massive re-naming to some "better"
-nomenclature in the coming months.  More changes will be
-needed for Broadwell-EP and Broadwell-EX
+Back when the LSM was introduced a choice was made between
+authoritative hooks (which would have allowed this sort of thing)
+and restrictive hooks (which would not). Authoritative hooks were
+rejected because they would have "broken Linux". I hope that the
+people who spoke up then will speak up now.
 
-Also needs that Haswell TOLM fix I posted in October:
-  http://www.spinics.net/lists/linux-edac/msg04109.html#.VGo3FHW9_CI
+This is going to introduce a whole class of vulnerabilities.
+Don't even think of arguing that the reduction in use of privilege
+will make up for that. Developers have enough trouble with the
+difference between setuid() and seteuid() to expect them to use
+group dropping properly.
 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index e9bb1af67c8d..5a140adb5191 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -261,6 +261,7 @@ enum type {
- 	SANDY_BRIDGE,
- 	IVY_BRIDGE,
- 	HASWELL,
-+	BROADWELL,
- };
- 
- struct sbridge_pvt;
-@@ -445,7 +446,7 @@ static const struct pci_id_table pci_dev_descr_ibridge_table[] = {
-  *	- each SMI channel interfaces with a scalable memory buffer
-  *	- each scalable memory buffer supports 4 DDR3/DDR4 channels, 3 DPC
-  */
--#define HASWELL_DDRCRCLKCONTROLS 0xa10
-+#define HASWELL_DDRCRCLKCONTROLS 0xa10 /* Ditto on Broadwell */
- #define HASWELL_HASYSDEFEATURE2 0x84
- #define PCI_DEVICE_ID_INTEL_HASWELL_IMC_VTD_MISC 0x2f28
- #define PCI_DEVICE_ID_INTEL_HASWELL_IMC_HA0	0x2fa0
-@@ -496,6 +497,44 @@ static const struct pci_id_table pci_dev_descr_haswell_table[] = {
- 	{0,}			/* 0 terminated list. */
- };
- 
-+/* Broadwell support */
-+/* DE processor:
-+ *	- 1 IMC
-+ *	- 2 DDR3 channels, 2 DPC per channel
-+ */
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_VTD_MISC 0x6f28
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0	0x6fa0
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA	0x6fa8
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_THERMAL 0x6f71
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD0 0x6ffc
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD1 0x6ffd
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD0 0x6faa
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD1 0x6fab
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD2 0x6fac
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD3 0x6fad
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_DDRIO0 0x6faf
-+
-+static const struct pci_id_descr pci_dev_descr_broadwell[] = {
-+	/* first item must be the HA */
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0, 0)		},
-+
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD0, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD1, 0)	},
-+
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_THERMAL, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD0, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD1, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD2, 1)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD3, 1)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_DDRIO0, 1)	},
-+};
-+
-+static const struct pci_id_table pci_dev_descr_broadwell_table[] = {
-+	PCI_ID_TABLE_ENTRY(pci_dev_descr_broadwell),
-+	{0,}			/* 0 terminated list. */
-+};
-+
- /*
-  *	pci_device_id	table for which devices we are looking for
-  */
-@@ -503,6 +542,7 @@ static const struct pci_device_id sbridge_pci_tbl[] = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HASWELL_IMC_HA0)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0)},
- 	{0,}			/* 0 terminated list. */
- };
- 
-@@ -767,12 +807,22 @@ static int check_if_ecc_is_active(const u8 bus, enum type type)
- 	struct pci_dev *pdev = NULL;
- 	u32 mcmtr, id;
- 
--	if (type == IVY_BRIDGE)
-+	switch (type) {
-+	case IVY_BRIDGE:
- 		id = PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA;
--	else if (type == HASWELL)
-+		break;
-+	case HASWELL:
- 		id = PCI_DEVICE_ID_INTEL_HASWELL_IMC_HA0_TA;
--	else
-+		break;
-+	case SANDY_BRIDGE:
- 		id = PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA;
-+		break;
-+	case BROADWELL:
-+		id = PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA;
-+		break;
-+	default:
-+		return -ENODEV;
-+	}
- 
- 	pdev = get_pdev_same_bus(bus, id);
- 	if (!pdev) {
-@@ -800,7 +850,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 	enum edac_type mode;
- 	enum mem_type mtype;
- 
--	if (pvt->info.type == HASWELL)
-+	if (pvt->info.type == HASWELL || pvt->info.type == BROADWELL)
- 		pci_read_config_dword(pvt->pci_sad1, SAD_TARGET, &reg);
- 	else
- 		pci_read_config_dword(pvt->pci_br0, SAD_TARGET, &reg);
-@@ -1179,7 +1229,7 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
- 		*socket = sad_interleave[idx];
- 		edac_dbg(0, "SAD interleave index: %d (wayness %d) = CPU socket %d\n",
- 			 idx, sad_way, *socket);
--	} else if (pvt->info.type == HASWELL) {
-+	} else if (pvt->info.type == HASWELL || pvt->info.type == BROADWELL) {
- 		int bits, a7mode = A7MODE(dram_rule);
- 
- 		if (a7mode) {
-@@ -1828,6 +1878,82 @@ enodev:
- 	return -ENODEV;
- }
- 
-+static int broadwell_mci_bind_devs(struct mem_ctl_info *mci,
-+				 struct sbridge_dev *sbridge_dev)
-+{
-+	struct sbridge_pvt *pvt = mci->pvt_info;
-+	struct pci_dev *pdev;
-+	int i;
-+
-+	/* there's only one device per system; not tied to any bus */
-+	if (pvt->info.pci_vtd == NULL)
-+		/* result will be checked later */
-+		pvt->info.pci_vtd = pci_get_device(PCI_VENDOR_ID_INTEL,
-+						   PCI_DEVICE_ID_INTEL_BROADWELL_IMC_VTD_MISC,
-+						   NULL);
-+
-+	for (i = 0; i < sbridge_dev->n_devs; i++) {
-+		pdev = sbridge_dev->pdev[i];
-+		if (!pdev)
-+			continue;
-+
-+		switch (pdev->device) {
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD0:
-+			pvt->pci_sad0 = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD1:
-+			pvt->pci_sad1 = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0:
-+			pvt->pci_ha0 = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA:
-+			pvt->pci_ta = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_THERMAL:
-+			pvt->pci_ras = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD0:
-+			pvt->pci_tad[0] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD1:
-+			pvt->pci_tad[1] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD2:
-+			pvt->pci_tad[2] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD3:
-+			pvt->pci_tad[3] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_DDRIO0:
-+			pvt->pci_ddrio = pdev;
-+			break;
-+		default:
-+			break;
-+		}
-+
-+		edac_dbg(0, "Associated PCI %02x.%02d.%d with dev = %p\n",
-+			 sbridge_dev->bus,
-+			 PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn),
-+			 pdev);
-+	}
-+
-+	/* Check if everything were registered */
-+	if (!pvt->pci_sad0 || !pvt->pci_ha0 || !pvt->pci_sad1 ||
-+	    !pvt->pci_ras  || !pvt->pci_ta || !pvt->info.pci_vtd)
-+		goto enodev;
-+
-+	for (i = 0; i < NUM_CHANNELS; i++) {
-+		if (!pvt->pci_tad[i])
-+			goto enodev;
-+	}
-+	return 0;
-+
-+enodev:
-+	sbridge_printk(KERN_ERR, "Some needed devices are missing\n");
-+	return -ENODEV;
-+}
-+
- /****************************************************************************
- 			Error check routines
-  ****************************************************************************/
-@@ -2240,6 +2366,25 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev, enum type type)
- 		if (unlikely(rc < 0))
- 			goto fail0;
- 		break;
-+	case BROADWELL:
-+		/* rankcfgr isn't used */
-+		pvt->info.get_tolm = haswell_get_tolm;
-+		pvt->info.get_tohm = haswell_get_tohm;
-+		pvt->info.dram_rule = ibridge_dram_rule;
-+		pvt->info.get_memory_type = haswell_get_memory_type;
-+		pvt->info.get_node_id = haswell_get_node_id;
-+		pvt->info.rir_limit = haswell_rir_limit;
-+		pvt->info.max_sad = ARRAY_SIZE(ibridge_dram_rule);
-+		pvt->info.interleave_list = ibridge_interleave_list;
-+		pvt->info.max_interleave = ARRAY_SIZE(ibridge_interleave_list);
-+		pvt->info.interleave_pkg = ibridge_interleave_pkg;
-+		mci->ctl_name = kasprintf(GFP_KERNEL, "Broadwell Socket#%d", mci->mc_idx);
-+
-+		/* Store pci devices at mci for faster access */
-+		rc = broadwell_mci_bind_devs(mci, sbridge_dev);
-+		if (unlikely(rc < 0))
-+			goto fail0;
-+		break;
- 	}
- 
- 	/* Get dimm basic config and the memory layout */
-@@ -2305,6 +2450,10 @@ static int sbridge_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		rc = sbridge_get_all_devices(&num_mc, pci_dev_descr_haswell_table);
- 		type = HASWELL;
- 		break;
-+	case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0:
-+		rc = sbridge_get_all_devices(&num_mc, pci_dev_descr_broadwell_table);
-+		type = BROADWELL;
-+		break;
- 	}
- 	if (unlikely(rc < 0))
- 		goto fail0;
+>
+> Allow unprivileged processes to call setgroups with a subset of their
+> current groups; only require CAP_SETGID to add a group the process does
+> not currently have.
+>
+> The kernel already maintains the list of supplementary group IDs in
+> sorted order, and setgroups already needs to sort the new list, so this
+> just requires a linear comparison of the two sorted lists.
+>
+> This moves the CAP_SETGID test from setgroups into set_current_groups.
+>
+> Tested via the following test program:
+>
+> #include <err.h>
+> #include <grp.h>
+> #include <stdio.h>
+> #include <sys/types.h>
+> #include <unistd.h>
+>
+> void run_id(void)
+> {
+>     pid_t p = fork();
+>     switch (p) {
+>         case -1:
+>             err(1, "fork");
+>         case 0:
+>             execl("/usr/bin/id", "id", NULL);
+>             err(1, "exec");
+>         default:
+>             if (waitpid(p, NULL, 0) < 0)
+>                 err(1, "waitpid");
+>     }
+> }
+>
+> int main(void)
+> {
+>     gid_t list1[] = { 1, 2, 3, 4, 5 };
+>     gid_t list2[] = { 2, 3, 4 };
+>     run_id();
+>     if (setgroups(5, list1) < 0)
+>         err(1, "setgroups 1");
+>     run_id();
+>     if (setresgid(1, 1, 1) < 0)
+>         err(1, "setresgid");
+>     if (setresuid(1, 1, 1) < 0)
+>         err(1, "setresuid");
+>     run_id();
+>     if (setgroups(3, list2) < 0)
+>         err(1, "setgroups 2");
+>     run_id();
+>     if (setgroups(5, list1) < 0)
+>         err(1, "setgroups 3");
+>     run_id();
+>
+>     return 0;
+> }
+>
+> Without this patch, the test program gets EPERM from the second
+> setgroups call, after dropping root privileges.  With this patch, the
+> test program successfully drops groups 1 and 5, but then gets EPERM from
+> the third setgroups call, since that call attempts to add groups the
+> process does not currently have.
+>
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  kernel/groups.c | 33 ++++++++++++++++++++++++++++++---
+>  kernel/uid16.c  |  2 --
+>  2 files changed, 30 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/groups.c b/kernel/groups.c
+> index f0667e7..fe7367d 100644
+> --- a/kernel/groups.c
+> +++ b/kernel/groups.c
+> @@ -153,6 +153,29 @@ int groups_search(const struct group_info *group_info, kgid_t grp)
+>  	return 0;
+>  }
+>  
+> +/* Compare two sorted group lists; return true if the first is a subset of the
+> + * second.
+> + */
+> +static bool is_subset(const struct group_info *g1, const struct group_info *g2)
+> +{
+> +	unsigned int i, j;
+> +
+> +	for (i = 0, j = 0; i < g1->ngroups; i++) {
+> +		kgid_t gid1 = GROUP_AT(g1, i);
+> +		kgid_t gid2;
+> +		for (; j < g2->ngroups; j++) {
+> +			gid2 = GROUP_AT(g2, j);
+> +			if (gid_lte(gid1, gid2))
+> +				break;
+> +		}
+> +		if (j >= g2->ngroups || !gid_eq(gid1, gid2))
+> +			return false;
+> +		j++;
+> +	}
+> +
+> +	return true;
+> +}
+> +
+>  /**
+>   * set_groups_sorted - Change a group subscription in a set of credentials
+>   * @new: The newly prepared set of credentials to alter
+> @@ -189,11 +212,17 @@ int set_current_groups(struct group_info *group_info)
+>  {
+>  	struct cred *new;
+>  
+> +	groups_sort(group_info);
+>  	new = prepare_creds();
+>  	if (!new)
+>  		return -ENOMEM;
+> +	if (!ns_capable(current_user_ns(), CAP_SETGID)
+> +	    && !is_subset(group_info, new->group_info)) {
+> +		abort_creds(new);
+> +		return -EPERM;
+> +	}
+>  
+> -	set_groups(new, group_info);
+> +	set_groups_sorted(new, group_info);
+>  	return commit_creds(new);
+>  }
+>  
+> @@ -233,8 +262,6 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+>  	struct group_info *group_info;
+>  	int retval;
+>  
+> -	if (!ns_capable(current_user_ns(), CAP_SETGID))
+> -		return -EPERM;
+>  	if ((unsigned)gidsetsize > NGROUPS_MAX)
+>  		return -EINVAL;
+>  
+> diff --git a/kernel/uid16.c b/kernel/uid16.c
+> index 602e5bb..b27e167 100644
+> --- a/kernel/uid16.c
+> +++ b/kernel/uid16.c
+> @@ -176,8 +176,6 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+>  	struct group_info *group_info;
+>  	int retval;
+>  
+> -	if (!ns_capable(current_user_ns(), CAP_SETGID))
+> -		return -EPERM;
+>  	if ((unsigned)gidsetsize > NGROUPS_MAX)
+>  		return -EINVAL;
+>  
+
