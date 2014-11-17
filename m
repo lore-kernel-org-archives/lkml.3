@@ -1,122 +1,750 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141AbaKQPWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:22:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52900 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994AbaKQPWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:22:14 -0500
-Date: Mon, 17 Nov 2014 23:20:53 +0800
-From: Amos Kong <akong@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        herbert@gondor.apana.org.au, m@bues.ch, mb@bu3sch.de, mpm@selenic.com,
-        amit.shah@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/6] hw_random: use reference counts on each struct
- hwrng.
-Message-ID: <20141117152053.GB12501@air.redhat.com>
-References: <1415030186-18303-1-git-send-email-akong@redhat.com>
- <1415030186-18303-4-git-send-email-akong@redhat.com>
- <87zjbxm6fw.fsf@rustcorp.com.au>
+	id S1752507AbaKQPYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:24:36 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:39395 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaKQPYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 10:24:34 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E39vaYmALEf/7YXx"
-Content-Disposition: inline
-In-Reply-To: <87zjbxm6fw.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.02.1411171422580.3424@pmeerw.net>
+References: <1415640251-2047-1-git-send-email-daniel.baluta@intel.com>
+	<alpine.DEB.2.02.1411171422580.3424@pmeerw.net>
+Date: Mon, 17 Nov 2014 17:24:32 +0200
+X-Google-Sender-Auth: j3SfSh3OD4gezEdNZBhZBboH1SI
+Message-ID: <CAEnQRZBvppdK2FV_f1WsPpRSnBpt0vgS9+fO4eGze3KiGunC3g@mail.gmail.com>
+Subject: Re: [PATCH v2] iio: imu: Add support for Kionix KMX61 sensor
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: Daniel Baluta <daniel.baluta@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 17, 2014 at 3:46 PM, Peter Meerwald <pmeerw@pmeerw.net> wrote:
+>
+>> Minimal implementation for KMX61 6-axis accelerometer/magnetometer. It exports
+>> raw accel/magn readings together with scale and sampling frequency.
+>>
+>> Datasheet will be available at:
+>> http://www.kionix.com/6-axis-accelerometer-magnetometer/kmx61
+>
+> some trivial comments below
+>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+>> ---
+>> Changes since v1:
+>>       * serialize non-atomic operations with a mutex (set_odr/get_odr, set_scale).
+>>       * no need to protect reading info scale because it reduces to reading an u8
+>>       which should be atomic on all arches
+>>       * *note* - read_measurment is an atomic operation
+>>
+>>  drivers/iio/imu/Kconfig  |   9 +
+>>  drivers/iio/imu/Makefile |   2 +
+>>  drivers/iio/imu/kmx61.c  | 590 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 601 insertions(+)
+>>  create mode 100644 drivers/iio/imu/kmx61.c
+>>
+>> diff --git a/drivers/iio/imu/Kconfig b/drivers/iio/imu/Kconfig
+>> index 2b0e451..d675f43 100644
+>> --- a/drivers/iio/imu/Kconfig
+>> +++ b/drivers/iio/imu/Kconfig
+>> @@ -25,6 +25,15 @@ config ADIS16480
+>>         Say yes here to build support for Analog Devices ADIS16375, ADIS16480,
+>>         ADIS16485, ADIS16488 inertial sensors.
+>>
+>> +config KMX61
+>> +     tristate "Kionix KMX61 6-axis accelerometer and magnetometer"
+>> +     depends on I2C
+>> +     help
+>> +       Say Y here if you want to build a driver for Kionix KMX61 6-axis accelerometer
+>> +       and magnetometer.
+>> +       To compile this driver as module, choose M here: the module will be called
+>> +       kmx61.
+>> +
+>>  source "drivers/iio/imu/inv_mpu6050/Kconfig"
+>>
+>>  endmenu
+>> diff --git a/drivers/iio/imu/Makefile b/drivers/iio/imu/Makefile
+>> index 114d2c1..e1e6e3d 100644
+>> --- a/drivers/iio/imu/Makefile
+>> +++ b/drivers/iio/imu/Makefile
+>> @@ -14,3 +14,5 @@ adis_lib-$(CONFIG_IIO_ADIS_LIB_BUFFER) += adis_buffer.o
+>>  obj-$(CONFIG_IIO_ADIS_LIB) += adis_lib.o
+>>
+>>  obj-y += inv_mpu6050/
+>> +
+>> +obj-$(CONFIG_KMX61) += kmx61.o
+>> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
+>> new file mode 100644
+>> index 0000000..6135a16
+>> --- /dev/null
+>> +++ b/drivers/iio/imu/kmx61.c
+>> @@ -0,0 +1,590 @@
+>> +/*
+>> + * KMX61 - Kionix 6-axis Accelerometer/Magnetometer
+>> + *
+>> + * Copyright (c) 2014, Intel Corporation.
+>> + *
+>> + * This file is subject to the terms and conditions of version 2 of
+>> + * the GNU General Public License.  See the file COPYING in the main
+>> + * directory of this archive for more details.
+>> + *
+>> + * IIO driver for KMX61 (7-bit I2C slave address 0x0E or 0x0F).
+>> + *
+>> + * TODO: buffer, interrupt, thresholds, acpi, temperature sensor
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +
+>> +#define KMX61_DRV_NAME "kmx61"
+>> +
+>> +#define KMX61_REG_WHO_AM_I           0x00
+>> +
+>> +#define KMX61_ACC_XOUT_L             0x0A
+>> +
+>> +#define KMX61_ACC_XOUT_H             0x0B
+>> +#define KMX61_ACC_YOUT_L             0x0C
+>> +#define KMX61_ACC_YOUT_H             0x0D
+>> +#define KMX61_ACC_ZOUT_L             0x0E
+>> +#define KMX61_ACC_ZOUT_H             0x0F
+>> +
+>> +#define KMX61_MAG_XOUT_L             0x12
+>> +
+>> +#define KMX61_MAG_XOUT_H             0x13
+>> +#define KMX61_MAG_YOUT_L             0x14
+>> +#define KMX61_MAG_YOUT_H             0x15
+>> +#define KMX61_MAG_ZOUT_L             0x16
+>> +#define KMX61_MAG_ZOUT_H             0x17
+>
+> only the XOUT_L #defines are actually used, there is extra whitespace
+>
+> I'd suggest to drop the other defines and maybe add a comment
+> saying that we have 3 16-bit LSB values for X/Y/Z
 
---E39vaYmALEf/7YXx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I added all these defines for documentation, in the same way
+accel/kxcjk-1013.c did.
 
-On Wed, Nov 12, 2014 at 02:11:23PM +1030, Rusty Russell wrote:
-> Amos Kong <akong@redhat.com> writes:
-> > From: Rusty Russell <rusty@rustcorp.com.au>
-> >
-> > current_rng holds one reference, and we bump it every time we want
-> > to do a read from it.
-> >
-> > This means we only hold the rng_mutex to grab or drop a reference,
-> > so accessing /sys/devices/virtual/misc/hw_random/rng_current doesn't
-> > block on read of /dev/hwrng.
-> >
-> > Using a kref is overkill (we're always under the rng_mutex), but
-> > a standard pattern.
-> >
-> > This also solves the problem that the hwrng_fillfn thread was
-> > accessing current_rng without a lock, which could change (eg. to NULL)
-> > underneath it.
-> >
-> > v4: decrease last reference for triggering the cleanup
->=20
-> This doesn't make any sense:
->=20
-> > +static void drop_current_rng(void)
-> > +{
-> > +	struct hwrng *rng =3D current_rng;
-> > +
-> > +	BUG_ON(!mutex_is_locked(&rng_mutex));
-> > +	if (!current_rng)
-> > +		return;
-> > +
-> > +	/* release current_rng reference */
-> > +	kref_put(&current_rng->ref, cleanup_rng);
-> > +	current_rng =3D NULL;
-> > +
-> > +	/* decrease last reference for triggering the cleanup */
-> > +	kref_put(&rng->ref, cleanup_rng);
-> > +}
->=20
-> Why would it drop the refcount twice?  This doesn't make sense.
->=20
-> Hmm, because you added kref_init, which initializes the reference count
-> to 1, you created this bug.
+I think its better to add a comment making this clear.
 
-I saw some kernel code uses kref_* helper functions, the reference
-conter is initialized to 1. Some code didn't use the helper functions
-to increase/decrease the reference counter. So I will drop kref_init()
-and the second kref_put().
-=20
-> Leave out the kref_init, and let it naturally be 0 (until, and if, it
-> becomes current_rng).  Add a comment if you want.
+>
+>> +
+>> +#define KMX61_REG_ODCNTL             0x2C
+>> +
+>> +#define KMX61_REG_STBY                       0x29
+>> +#define KMX61_REG_CTRL1                      0x2A
+>> +
+>> +#define KMX61_REG_COTR                       0x3C
+>> +
+>> +#define KMX61_ACC_STBY_BIT   BIT(0)
+>> +#define KMX61_MAG_STBY_BIT   BIT(1)
+>> +#define KMX61_ACT_STBY_BIT   BIT(7)
+>> +
+>> +#define KMX61_ALL_STBY               (KMX61_ACC_STBY_BIT | KMX61_MAG_STBY_BIT)
+>> +
+>> +#define KMX61_REG_CTRL1_GSEL0_SHIFT  0
+>> +#define KMX61_REG_CTRL1_GSEL1_SHIFT  1
+>> +#define KMX61_REG_CTRL1_GSEL0_MASK   0x01
+>> +#define KMX61_REG_CTRL1_GSEL1_MASK   0x02
+>> +
+>> +#define KMX61_REG_CTRL1_BIT_RES              BIT(4)
+>> +
+>> +#define KMX61_ACC_ODR_SHIFT  0
+>> +#define KMX61_MAG_ODR_SHIFT  4
+>> +#define KMX61_ACC_ODR_MASK   0x0F
+>> +#define KMX61_MAG_ODR_MASK   0xF0
+>> +
+>> +#define KMX61_CHIP_ID                0x12
+>> +
+>> +struct kmx61_data {
+>> +     struct i2c_client *client;
+>> +     /* serialize access to non-atomic ops, e.g set_mode */
+>> +     struct mutex lock;
+>> +     u8 range;
+>> +     u8 odr_bits;
+>> +};
+>> +
+>> +enum kmx61_range {
+>> +     KMX61_RANGE_2G,
+>> +     KMX61_RANGE_4G,
+>> +     KMX61_RANGE_8G,
+>> +};
+>> +
+>> +enum kmx61_scan {
+>> +     KMX61_SCAN_ACC_X,
+>> +     KMX61_SCAN_ACC_Y,
+>> +     KMX61_SCAN_ACC_Z,
+>> +     KMX61_SCAN_TEMP,
+>> +     KMX61_SCAN_MAG_X,
+>> +     KMX61_SCAN_MAG_Y,
+>> +     KMX61_SCAN_MAG_Z,
+>> +};
+>> +
+>> +static const struct {
+>> +     u16 scale;
+>> +     u8 gsel0;
+>> +     u8 gsel1;
+>> +} kmx61_scale_table[] = {
+>> +     {9582, 0, 0},
+>> +     {19163, 1, 0},
+>> +     {38326, 0, 1},
+>> +};
+>> +
+>> +/* KMX61 devices */
+>> +#define KMX61_ACC    0x01
+>> +#define KMX61_MAG    0x02
+>> +
+>> +static const struct {
+>> +     int val;
+>> +     int val2;
+>> +     int odr_bits;
+>
+> odr_bits should probably be u8
+>
+>> +} samp_freq_table[] = { {12, 500000, 0x00},
+>
+> no kmx16_ prefix
 
-OK, thanks.
-=20
-> Thanks,
-> Rusty.
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Correct. Will fix.
 
---=20
-			Amos.
+>
+>> +                     {25, 0, 0x01},
+>> +                     {50, 0, 0x02},
+>> +                     {100, 0, 0x03},
+>> +                     {200, 0, 0x04},
+>> +                     {400, 0, 0x05},
+>> +                     {800, 0, 0x06},
+>> +                     {1600, 0, 0x07},
+>> +                     {0, 781000, 0x08},
+>> +                     {1, 563000, 0x09},
+>> +                     {3, 125000, 0x0A},
+>> +                     {6, 250000, 0x0B} };
+>> +
+>> +static IIO_CONST_ATTR(accel_scale_available, "0.009582 0.019163 0.038326");
+>> +static IIO_CONST_ATTR(magn_scale_available, "0.001465");
+>> +static IIO_CONST_ATTR_SAMP_FREQ_AVAIL(
+>> +     "0.781000 1.563000 3.125000 6.250000 12.500000 25 50 100 200 400 800");
+>> +
+>> +static struct attribute *kmx61_attributes[] = {
+>> +     &iio_const_attr_accel_scale_available.dev_attr.attr,
+>> +     &iio_const_attr_magn_scale_available.dev_attr.attr,
+>> +     &iio_const_attr_sampling_frequency_available.dev_attr.attr,
+>> +     NULL,
+>> +};
+>> +
+>> +static const struct attribute_group kmx61_attribute_group = {
+>> +     .attrs = kmx61_attributes,
+>> +};
+>> +
+>> +#define KMX61_ACC_CHAN(_axis, _index) { \
+>> +     .type = IIO_ACCEL, \
+>> +     .modified = 1, \
+>> +     .channel2 = IIO_MOD_ ## _axis, \
+>> +     .info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
+>> +     .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) | \
+>> +                             BIT(IIO_CHAN_INFO_SAMP_FREQ), \
+>> +     .scan_index = _index, \
+>> +     .scan_type = { \
+>> +             .sign = 's', \
+>> +             .realbits = 12, \
+>> +             .storagebits = 16, \
+>> +             .shift = 4, \
+>> +             .endianness = IIO_BE, \
+>
+> the data registers are LSB, so it should be IIO_LE
+> buffering is not implemented, so it doesn't matter; but IIO_BE is
+> definitely wrong
+>
+Ok. Will fix.
 
---E39vaYmALEf/7YXx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>> +     }, \
+>> +}
+>> +
+>> +#define KMX61_MAG_CHAN(_axis, _index) { \
+>> +     .type = IIO_MAGN, \
+>> +     .modified = 1, \
+>> +     .channel2 = IIO_MOD_ ## _axis, \
+>> +     .info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
+>> +     .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) | \
+>> +                             BIT(IIO_CHAN_INFO_SAMP_FREQ), \
+>> +     .scan_index = _index, \
+>> +     .scan_type = { \
+>> +             .sign = 's', \
+>> +             .realbits = 14, \
+>> +             .storagebits = 16, \
+>> +             .shift = 2, \
+>> +             .endianness = IIO_BE, \
+>> +     }, \
+>> +}
+>> +
+>> +static const struct iio_chan_spec kmx61_channels[] = {
+>> +     KMX61_ACC_CHAN(X, KMX61_SCAN_ACC_X),
+>> +     KMX61_ACC_CHAN(Y, KMX61_SCAN_ACC_Y),
+>> +     KMX61_ACC_CHAN(Z, KMX61_SCAN_ACC_Z),
+>> +     KMX61_MAG_CHAN(X, KMX61_SCAN_MAG_X),
+>> +     KMX61_MAG_CHAN(Y, KMX61_SCAN_MAG_Y),
+>> +     KMX61_MAG_CHAN(Z, KMX61_SCAN_MAG_Z),
+>> +};
+>> +
+>> +static int kmx61_convert_freq_to_bit(int val, int val2)
+>> +{
+>> +     int i;
+>> +
+>> +     for (i = 0; i < ARRAY_SIZE(samp_freq_table); i++)
+>> +             if (val == samp_freq_table[i].val &&
+>> +                 val2 == samp_freq_table[i].val2)
+>> +                     return samp_freq_table[i].odr_bits;
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static int kmx61_set_mode(struct kmx61_data *data, u8 mode, u8 device)
+>> +{
+>> +     int ret;
+>> +
+>> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_STBY);
+>> +     if (ret < 0) {
+>> +             dev_err(&data->client->dev, "Error reading reg_stby\n");
+>> +             return ret;
+>> +     }
+>> +     if (device & KMX61_ACC) {
+>> +             if (mode & KMX61_ACC_STBY_BIT)
+>> +                     ret |= KMX61_ACC_STBY_BIT;
+>> +             else
+>> +                     ret &= ~KMX61_ACC_STBY_BIT;
+>> +     }
+>> +
+>> +     if (device & KMX61_MAG) {
+>> +             if (mode & KMX61_MAG_STBY_BIT)
+>> +                     ret |= KMX61_MAG_STBY_BIT;
+>> +             else
+>> +                     ret &= ~KMX61_MAG_STBY_BIT;
+>> +     }
+>> +
+>> +     ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_STBY, ret);
+>> +     if (ret < 0) {
+>> +             dev_err(&data->client->dev, "Error writing reg_stby\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +static int kmx61_get_mode(struct kmx61_data *data, u8 *mode, u8 device)
+>> +{
+>> +     int ret;
+>> +
+>> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_STBY);
+>> +     if (ret < 0) {
+>> +             dev_err(&data->client->dev, "Error reading reg_stby\n");
+>> +             return ret;
+>> +     }
+>> +     *mode = 0;
+>> +
+>> +     if (device & KMX61_ACC) {
+>> +             if (ret & KMX61_ACC_STBY_BIT)
+>> +                     *mode |= KMX61_ACC_STBY_BIT;
+>> +             else
+>> +                     *mode &= ~KMX61_ACC_STBY_BIT;
+>> +     }
+>> +
+>> +     if (device & KMX61_MAG) {
+>> +             if (ret & KMX61_MAG_STBY_BIT)
+>> +                     *mode |= KMX61_MAG_STBY_BIT;
+>> +             else
+>> +                     *mode &= ~KMX61_MAG_STBY_BIT;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
+>> +{
+>> +     int ret;
+>> +     u8 mode;
+>> +     int lodr_bits, odr_bits;
+>> +
+>> +     ret = kmx61_get_mode(data, &mode, KMX61_ACC | KMX61_MAG);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     lodr_bits = kmx61_convert_freq_to_bit(val, val2);
+>> +     if (lodr_bits < 0)
+>> +             return lodr_bits;
+>> +
+>> +     /* To change ODR, accel and magn must be in STDBY */
+>> +     ret = kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     odr_bits = 0;
+>> +     if (device & KMX61_ACC)
+>> +             odr_bits |= lodr_bits;
+>> +     if (device & KMX61_MAG)
+>> +             odr_bits |= (lodr_bits << KMX61_MAG_ODR_SHIFT);
+>> +
+>> +     ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_ODCNTL,
+>> +                                     odr_bits);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     ret = kmx61_set_mode(data, mode, KMX61_ACC | KMX61_MAG);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     data->odr_bits = lodr_bits;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static
+>> +int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2, u8 device)
+>> +{    int i;
+>> +     u8 lodr_bits;
+>> +
+>> +     if (device & KMX61_ACC)
+>> +             lodr_bits = (data->odr_bits >> KMX61_ACC_ODR_SHIFT) &
+>> +                          KMX61_ACC_ODR_MASK;
+>> +     else if (device & KMX61_MAG)
+>> +             lodr_bits = (data->odr_bits >> KMX61_MAG_ODR_SHIFT) &
+>> +                          KMX61_MAG_ODR_MASK;
+>> +     else
+>> +             return -EINVAL;
+>> +
+>> +     for (i = 0; i < ARRAY_SIZE(samp_freq_table); i++)
+>> +             if (lodr_bits == samp_freq_table[i].odr_bits) {
+>> +                     *val = samp_freq_table[i].val;
+>> +                     *val2 = samp_freq_table[i].val2;
+>> +                     return 0;
+>> +             }
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static int kmx61_set_range(struct kmx61_data *data, int range)
+>> +{
+>> +     int ret;
+>> +
+>> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_CTRL1);
+>> +     if (ret < 0) {
+>> +             dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     ret &= ~(KMX61_REG_CTRL1_GSEL0_MASK | KMX61_REG_CTRL1_GSEL1_MASK);
+>> +     ret |= kmx61_scale_table[range].gsel0 << KMX61_REG_CTRL1_GSEL0_SHIFT;
+>> +     ret |= kmx61_scale_table[range].gsel1 << KMX61_REG_CTRL1_GSEL1_SHIFT;
+>> +
+>> +     ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL1, ret);
+>> +     if (ret < 0) {
+>> +             dev_err(&data->client->dev, "Error writing reg_ctrl1\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     data->range = range;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int kmx61_set_scale(struct kmx61_data *data, int val)
+>> +{
+>> +     int ret, i;
+>> +     u8  mode;
+>> +
+>> +     for (i = 0; i < ARRAY_SIZE(kmx61_scale_table); i++) {
+>> +             if (kmx61_scale_table[i].scale == val) {
+>> +                     ret = kmx61_get_mode(data, &mode,
+>> +                                          KMX61_ACC | KMX61_MAG);
+>> +                     if (ret < 0)
+>> +                             return ret;
+>> +
+>> +                     ret = kmx61_set_mode(data, KMX61_ALL_STBY,
+>> +                                          KMX61_ACC | KMX61_MAG);
+>> +                     if (ret < 0)
+>> +                             return ret;
+>> +
+>> +                     ret = kmx61_set_range(data, i);
+>> +                     if (ret < 0)
+>> +                             return ret;
+>> +
+>> +                     ret = kmx61_set_mode(data, mode,
+>> +                                          KMX61_ACC | KMX61_MAG);
+>
+> simply return here
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Agree. Will fix.
 
-iQIcBAEBAgAGBQJUahJVAAoJELxSv6I5vP9jsyoP/2IxbrCRKcyQEFRKl/mfM7uu
-0o/M5XSPKp6yaDhS8pA0e+uEAg/sLHe5dW8OB87iZjW8lbGSde7DW5bM6dbh6FOx
-DV1qinwVIT5au8cRIzt4uV2U4yQalg6U0aNI/mhF058jcAGquhN0ItbpRRDn6SGP
-SDCX4NtKG4NFtD1QaRfvNksYdjn+a/0zVAj7twTJtC9T0VgBYYDdTlsM207omtpo
-b45If34dBmweU5CxK9YF4v3VP0AFdpT+pdk9/vKOp3+V7SZ1ZnOVekAhZtfPz2om
-wr5V/fAzMJVQSq2jVq0+GA1P+yUj3+uhnSLTXlnZ00g6EB02pfrsOJJzoHIyTzUW
-hJt1ed72nwmFtYLbxS7K5nhp71oIfZUqOjDivvxjML0/9jiO1ozwQ8stAsO9fS/6
-gXVE2v5z4nxv4+WnhFew9tdwjQMTZ0U1I8z+CxmMhWTNB4DunPXlsfdjaa51W82R
-ezW76FA1dqiDsERH9Mkc6g6UN9q4iNLd7afhNP5BTVX8GBsQ5xmLSMR9nHxfDxFF
-PTMnzqeWjONPGQHT7txpMW7V30MdieeKk+hh3NlSbyXKi/8PV4w8r8gCECiZz0sV
-cdzhzAfcJ2L7pil7vvDcHs6aHvfqc04cGY719EIF2eiPrT+1kHHZGfMH+jwXIYiC
-iiPoiLJcq2Iwgb22fCFa
-=DMq1
------END PGP SIGNATURE-----
+>
+>> +                     if (ret < 0)
+>> +                             return ret;
+>> +
+>> +                     return 0;
+>> +             }
+>> +     }
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static int kmx61_chip_init(struct kmx61_data *data)
+>> +{
+>> +     int ret;
+>> +
+>> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_WHO_AM_I);
+>> +     if (ret < 0) {
+>> +             dev_err(&data->client->dev, "Error reading who_am_i\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     if (ret != KMX61_CHIP_ID) {
+>> +             dev_err(&data->client->dev,
+>> +                     "Wrong chip id, got %x expected %x\n",
+>> +                      ret, KMX61_CHIP_ID);
+>> +             return -EINVAL;
+>> +     }
+>> +
+>> +     /* set accel 12bit, 4g range */
+>> +     ret = kmx61_set_range(data, KMX61_RANGE_4G);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     /* put accel and magnetometer in operating mode */
+>> +     ret = kmx61_set_mode(data, 0, KMX61_ACC | KMX61_MAG);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int kmx61_read_measurement(struct kmx61_data *data, int base, int offset)
+>> +{
+>> +     int ret;
+>> +     u8 reg = base + offset * 2;
+>> +
+>> +     ret = i2c_smbus_read_word_data(data->client, reg);
+>> +     if (ret < 0) {
+>> +             dev_err(&data->client->dev, "failed to read reg at %x\n", reg);
+>> +             return ret;
+>> +     }
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +static int kmx61_read_raw(struct iio_dev *indio_dev,
+>> +                           struct iio_chan_spec const *chan, int *val,
+>> +                           int *val2, long mask)
+>> +{
+>> +     struct kmx61_data *data = iio_priv(indio_dev);
+>> +     int ret;
+>> +     u8 base_reg;
+>> +     u8 device;
+>> +
+>> +     switch (mask) {
+>> +     case IIO_CHAN_INFO_RAW:
+>> +             switch (chan->type) {
+>> +             case IIO_ACCEL: case IIO_MAGN:
+>
+> cases on separate lines would be more readable
+Ok.
+>
+>> +                     base_reg = KMX61_ACC_XOUT_L;
+>> +                     break;
+>> +             default:
+>> +                     return -EINVAL;
+>> +             }
+>> +             ret = kmx61_read_measurement(data, base_reg, chan->scan_index);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +             *val = sign_extend32(ret >> chan->scan_type.shift,
+>> +                                  chan->scan_type.realbits - 1);
+>> +             return IIO_VAL_INT;
+>> +     case IIO_CHAN_INFO_SCALE:
+>> +             switch (chan->type) {
+>> +             case IIO_ACCEL:
+>> +                     *val = 0;
+>> +                     *val2 = kmx61_scale_table[data->range].scale;
+>> +                     return IIO_VAL_INT_PLUS_MICRO;
+>> +             case IIO_MAGN:
+>> +                     /* 14 bits res, 1465 microGauss per magn count */
+>> +                     *val = 0;
+>> +                     *val2 = 1465;
+>> +                     return IIO_VAL_INT_PLUS_MICRO;
+>> +             default:
+>
+> could just return -EINVAL here
+>
+>> +                     break;
+>> +             }
+>> +     case IIO_CHAN_INFO_SAMP_FREQ:
+>> +             switch (chan->type) {
+>> +             case IIO_ACCEL:
+>> +                     device = KMX61_ACC;
+>> +                     break;
+>> +             case IIO_MAGN:
+>> +                     device = KMX61_MAG;
+>> +                     break;
+>> +             default:
+>> +                     return -EINVAL;
+>> +             }
+>> +
+>> +             mutex_lock(&data->lock);
+>> +             ret = kmx61_get_odr(data, val, val2, device);
+>> +             mutex_unlock(&data->lock);
+>> +             if (ret)
+>> +                     return -EINVAL;
+>> +             return IIO_VAL_INT_PLUS_MICRO;
+>> +     }
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static int kmx61_write_raw(struct iio_dev *indio_dev,
+>> +                            struct iio_chan_spec const *chan, int val,
+>> +                            int val2, long mask)
+>> +{
+>> +     struct kmx61_data *data = iio_priv(indio_dev);
+>> +     int ret;
+>> +     u8 device;
+>> +
+>> +     switch (mask) {
+>> +     case IIO_CHAN_INFO_SAMP_FREQ:
+>
+> you could use chan->address to store the device type (ACC or MAG) and save
+> the switch block (here and in other places)
+>
+>> +             switch (chan->type) {
+>> +             case IIO_ACCEL:
+>> +                     device = KMX61_ACC;
+>> +                     break;
+>> +             case IIO_MAGN:
+>> +                     device = KMX61_MAG;
+>> +                     break;
+>> +             default:
+>> +                     return -EINVAL;
+>> +             }
+>> +             mutex_lock(&data->lock);
+>> +             ret = kmx61_set_odr(data, val, val2, device);
+>> +             mutex_unlock(&data->lock);
+>
+> follow edits are a matter of taste :)
+>
+> return ret;
+>
+>> +             break;
+>> +     case IIO_CHAN_INFO_SCALE:
+>> +             switch (chan->type) {
+>> +             case IIO_ACCEL:
+>> +                     mutex_lock(&data->lock);
+>> +                     ret = kmx61_set_scale(data, val2);
+>> +                     mutex_unlock(&data->lock);
+>> +                     break;
+>> +             default:
+>> +                     ret  = -EINVAL;
+>
+> return -EINVAL
+>
+>> +             }
+>
+> return ret;
+>
+>> +             break;
+>> +     default:
+>
+> return -EINVAL;
+>
+>
+>> +             ret = -EINVAL;
+>> +     }
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +static const struct iio_info kmx61_info = {
+>> +     .driver_module          = THIS_MODULE,
+>> +     .read_raw               = kmx61_read_raw,
+>> +     .write_raw              = kmx61_write_raw,
+>> +     .attrs                  = &kmx61_attribute_group,
+>> +};
+>> +
+>> +static int kmx61_probe(struct i2c_client *client,
+>> +                    const struct i2c_device_id *id)
+>> +{
+>> +     struct kmx61_data *data;
+>> +     struct iio_dev *indio_dev;
+>> +     int ret;
+>> +
+>> +     indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+>> +     if (!indio_dev)
+>> +             return -ENOMEM;
+>> +
+>> +     data = iio_priv(indio_dev);
+>> +     i2c_set_clientdata(client, indio_dev);
+>> +     data->client = client;
+>> +
+>> +     indio_dev->dev.parent = &client->dev;
+>> +     indio_dev->info = &kmx61_info;
+>
+> set indio_dev->name?
 
---E39vaYmALEf/7YXx--
+Will fix. What is this used for anyway?  :)
+
+>
+>> +     indio_dev->channels = kmx61_channels;
+>> +     indio_dev->num_channels = ARRAY_SIZE(kmx61_channels);
+>> +     indio_dev->modes = INDIO_DIRECT_MODE;
+>> +
+>> +     mutex_init(&data->lock);
+>> +
+>> +     ret = kmx61_chip_init(data);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     return iio_device_register(indio_dev);
+>> +}
+>> +
+>> +static int kmx61_remove(struct i2c_client *client)
+>> +{
+>> +     struct iio_dev *indio_dev = i2c_get_clientdata(client);
+>> +     struct kmx61_data *data = iio_priv(indio_dev);
+>> +     int ret;
+>> +
+>> +     iio_device_unregister(indio_dev);
+>> +
+>> +     mutex_lock(&data->lock);
+>> +     ret = kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG);
+>> +     mutex_unlock(&data->lock);
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +static const struct i2c_device_id kmx61_id[] = {
+>> +     {"kmx61", 0},
+>> +     {}
+>> +};
+>> +
+>> +MODULE_DEVICE_TABLE(i2c, kmx61_id);
+>> +
+>> +static struct i2c_driver kmx61_driver = {
+>> +     .driver = {
+>> +             .name = "kmx61",
+>> +     },
+>> +     .probe          = kmx61_probe,
+>> +     .remove         = kmx61_remove,
+>> +     .id_table       = kmx61_id,
+>> +};
+>> +
+>> +module_i2c_driver(kmx61_driver);
+>> +
+>> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
+>> +MODULE_DESCRIPTION("KMX61 accelerometer/magnetometer driver");
+>> +MODULE_LICENSE("GPL v2");
+>>
+
+Thanks a lot Peter!
+
+Daniel.
