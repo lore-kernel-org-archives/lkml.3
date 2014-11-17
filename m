@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359AbaKQHeb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 02:34:31 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:49706 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaKQHea (ORCPT
+	id S1751092AbaKQHjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 02:39:22 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:36272 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaKQHjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 02:34:30 -0500
-Date: Mon, 17 Nov 2014 10:34:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] kernel-audit: Deletion of an unnecessary check
- before the function call "audit_log_end"
-Message-ID: <20141117073408.GC4905@mwanda>
-References: <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <54687F1A.1010809@users.sourceforge.net>
- <20141116111023.GA4905@mwanda>
- <20141116111446.GA4956@mwanda>
- <54688F15.9070703@users.sourceforge.net>
+	Mon, 17 Nov 2014 02:39:20 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 0/7] Fixes for ALPS trackstick
+Date: Mon, 17 Nov 2014 08:39:14 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Vadim Klishko <vadim@cirque.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com> <1541270.g199T8YFIC@dtor-glaptop>
+In-Reply-To: <1541270.g199T8YFIC@dtor-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54688F15.9070703@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: multipart/signed;
+  boundary="nextPart1505690.ZvFtjOko4a";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411170839.17504@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 12:48:37PM +0100, SF Markus Elfring wrote:
-> > An example of a bug introduced is here:
-> > 
-> > https://lkml.org/lkml/2014/11/3/505
-> 
-> It seems that we try to clarify a different interpretation of "bugs", don't we?
-> 
+--nextPart1505690.ZvFtjOko4a
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-You removed the statement from "if (foo) kfree_fsm(foo);" so now it
-prints a warning.
+On Friday 14 November 2014 21:59:31 Dmitry Torokhov wrote:
+> Hi Pali,
+>=20
+> On Friday, November 14, 2014 08:38:19 PM Pali Roh=C3=A1r wrote:
+> > This patch series fix detection and identifying trackstick
+> > on machines with ALPS devices. Last patch split trackstick
+> > and bare PS/2 mouse packets between dev2 and dev3 input
+> > devices which make sure that driver will send only
+> > trackstick data to trackstick input device.
+>=20
+> Thank you for splitting the change, unfortunately it is now
+> quite big to apply to 3.18. Any chance you could try
+> implementing what I suggested in
+> http://www.spinics.net/lists/linux-input/msg34029.html and
+> then we can do the more comprehensive solution in 3.19.
+>=20
+> Thanks.
 
-drivers/s390/net/fsm.c
-    71  void
-    72  kfree_fsm(fsm_instance *this)
-    73  {
-    74          if (this) {
-    75                  if (this->f) {
-    76                          kfree(this->f->jumpmatrix);
-    77                          kfree(this->f);
-    78                  }
-    79                  kfree(this);
-    80          } else
-    81                  printk(KERN_WARNING
-    82                          "fsm: kfree_fsm called with NULL argument\n");
-    83  }
+Hello, I think that patches 1/7 and 5/7 could do that job. I did=20
+not tested them alone (without other patches), but if you think=20
+that two patches are ok for 3.18 & stable I can test them...
 
-> It is an usual software development challenge to decide on the best source code places
-> where to put input parameter validation (and when it can be omitted), isn't it?
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-No, it's not.  You should just try to write the most readable software
-you can instead of removing if statements because you can.
+--nextPart1505690.ZvFtjOko4a
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-But that's not my point.  My point is that these patches are not always
-welcome so we should not merge them through the trivial tree.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-regards,
-dan carpenter
+iEYEABECAAYFAlRppiUACgkQi/DJPQPkQ1LrcACgzG3l/IjhtScIuy42TJT/EOZp
+ztMAoK75GuPVibPe4pR1ZucuzwNQs6pb
+=7A4N
+-----END PGP SIGNATURE-----
+
+--nextPart1505690.ZvFtjOko4a--
