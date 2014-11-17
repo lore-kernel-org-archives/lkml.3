@@ -1,88 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaKQLns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:43:48 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:50763 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaKQLnq (ORCPT
+	id S1751630AbaKQLqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:46:42 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:52432 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaKQLqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:43:46 -0500
-Date: Mon, 17 Nov 2014 12:43:42 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+	Mon, 17 Nov 2014 06:46:40 -0500
+Date: Mon, 17 Nov 2014 19:46:34 +0800
+Subject: RE: [PATCH] drivers: scsi: megaraid: Add "megaraid_sas_internal.h"
+ for internal shared functions using
+Message-ID: <lfdrro7paac7tbj4ofn0f3dk.1416224479458@email.android.com>
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+To: Sumit Saxena <sumit.saxena@avagotech.com>
+Cc: megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
- for tegra driver
-Message-ID: <20141117114341.GF25699@ulmo>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
- <5465DDC5.6090301@kapsi.fi>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VuQYccsttdhdIfIP"
-Content-Disposition: inline
-In-Reply-To: <5465DDC5.6090301@kapsi.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAHBkmNF012443
 
 
---VuQYccsttdhdIfIP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, I will send patch v2 for it.
 
-On Fri, Nov 14, 2014 at 12:47:33PM +0200, Mikko Perttunen wrote:
-> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
->=20
-> One potential issue I can see is that if the cpufreq driver fails to probe
-> then you'll never get the thermal driver either. For example, Tegra124
-> currently has no cpufreq driver, so if CONFIG_CPU_THERMAL was enabled, th=
-en
-> the soctherm driver would never be able to probe. But I don't really have=
- a
-> solution for this either.
+I sent this patch based on Linux next tree, please tell me the tree
+location (git address) which I shall base on for sending patch v2.
 
-It doesn't seem like there's any code whatsoever to deal with cpufreq
-within the soctherm driver, so deferring probe based on something we're
-not using anyway seems rather useless.
+Thanks.
 
-Thierry
+Send from Lenovo A788t.
 
---VuQYccsttdhdIfIP
-Content-Type: application/pgp-signature
+Sumit Saxena <sumit.saxena@avagotech.com> wrote:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUad9tAAoJEN0jrNd/PrOhLIsP/1G321EqqSncBH2hzi6gCgxG
-3soPbr2DILZiCD2PlNuzWohtQe8Z8vuYKc/MmtHxJbx2X1gHMuwq/TFk1LeszZR7
-NWYwjkfKzzDEOVoVVLdbi+8Mu36pJws0Q8YU8WGatoJWfnUWblsWB1UyGThLWm3p
-Pw8dxgFuTzQELXbdn5aaHLz0YjZvu7NdoxNAwK2wiq5O1/94oDclqIYkcXWf5ddv
-hU7FUx5/yvJA3xwtnT5PgchX10ZL6ey6sB3ScTnUz9scZM+4e0BzEN2E8C5L983Y
-OjmpMFtQpyGdEhoo/9vc3QpGPOx5oc91IjseaDQZLL9ZCZF18p4WcdrldxxAVEbI
-QCFKXlG3tOOIf53wlM6HvlhBBHLMF8AK54oDqVBhDOketFBnSdt6Wlv5GDQDHozg
-PgJnjjqx4wjmtJ9fjImlNr2kM/eJxec43T6jgjPXVcYXx0M3yzZmwPtMxvfe/B1f
-tWUy9WbPtBHX0nXCfOeZvlPx9IL3NdDhGhZe6+9h1gln0EU7lnmSiZKTe+zKJoEv
-57ip63aEwUqxZFxnKsXIn70RyhJX1y8h5yK1XAmYzBMWls66PWQwE4TlQQRMafgy
-f9sc5MNXV55NXRd/9gB9PU+Ql1w2eHdt1PoKYwBcw6s6BuLf1q+2rEWQLFaUhTHm
-Elt+qT+JqM+KJElClzwQ
-=u8ec
------END PGP SIGNATURE-----
-
---VuQYccsttdhdIfIP--
+>>-----Original Message-----
+>>From: Chen Gang [mailto:gang.chen.5i5j@gmail.com]
+>>Sent: Sunday, November 09, 2014 3:47 PM
+>>To: megaraidlinux@lsi.com; JBottomley@parallels.com
+>>Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+>>Subject: [PATCH] drivers: scsi: megaraid: Add "megaraid_sas_internal.h"
+>for
+>>internal shared functions using
+>>
+>>For shared inline functions crossed source files, better to let it as
+>"static inline"
+>>in a header file. For extern functions, better to declare them in header
+>file.
+>>
+>>For the latest upstream gcc/binutiles (gcc 5 with ld 2.25.51), it will
+>cause
+>>building break (although it might be the gcc's or ld's issue), the
+>related error
+>>(with allmodconfig under tile):
+>>
+>>    MODPOST 4002 modules
+>>  ERROR: "megasas_return_cmd" [drivers/scsi/megaraid/megaraid_sas.ko]
+>>undefined!
+>>  ERROR: "megasas_is_ldio" [drivers/scsi/megaraid/megaraid_sas.ko]
+>>undefined!
+>>
+>>
+>>Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>---
+>> drivers/scsi/megaraid/megaraid_sas_base.c     |  65 +----------------
+>> drivers/scsi/megaraid/megaraid_sas_fusion.c   |  38 +---------
+>> drivers/scsi/megaraid/megaraid_sas_internal.h | 100
+>>++++++++++++++++++++++++++
+>> 3 files changed, 102 insertions(+), 101 deletions(-)  create mode 100644
+>>drivers/scsi/megaraid/megaraid_sas_internal.h
+>>
+>>diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c
+>>b/drivers/scsi/megaraid/megaraid_sas_base.c
+>>index f6a69a3..4a71c04 100644
+>>--- a/drivers/scsi/megaraid/megaraid_sas_base.c
+>>+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+>>@@ -57,6 +57,7 @@
+>> #include <scsi/scsi_tcq.h>
+>> #include "megaraid_sas_fusion.h"
+>> #include "megaraid_sas.h"
+>>+#include "megaraid_sas_internal.h"
+>>
+>> /*
+>>  * Number of sectors per IO command
+>>@@ -98,7 +99,6 @@ MODULE_VERSION(MEGASAS_VERSION);
+>>MODULE_AUTHOR("megaraidlinux@lsi.com");
+>> MODULE_DESCRIPTION("LSI MegaRAID SAS Driver");
+>>
+>>-int megasas_transition_to_ready(struct megasas_instance *instance, int
+>>ocr);  static int megasas_get_pd_list(struct megasas_instance *instance);
+>>static int megasas_ld_list_query(struct megasas_instance *instance,
+>> 				 u8 query_type);
+>>@@ -155,9 +155,6 @@ static u32 support_device_change;
+>> /* define lock for aen poll */
+>> spinlock_t poll_aen_lock;
+>>
+>>-void
+>>-megasas_complete_cmd(struct megasas_instance *instance, struct
+>>megasas_cmd *cmd,
+>>-		     u8 alt_status);
+>> static u32
+>> megasas_read_fw_status_reg_gen2(struct megasas_register_set __iomem
+>>*regs);  static int @@ -170,26 +167,8 @@ u32
+>>megasas_build_and_issue_cmd(struct megasas_instance *instance,
+>> 			    struct scsi_cmnd *scmd);
+>> static void megasas_complete_cmd_dpc(unsigned long instance_addr); -void
+>>-megasas_release_fusion(struct megasas_instance *instance); -int -
+>>megasas_ioc_init_fusion(struct megasas_instance *instance); -void -
+>>megasas_free_cmds_fusion(struct megasas_instance *instance);
+>>-u8
+>>-megasas_get_map_info(struct megasas_instance *instance); -int -
+>>megasas_sync_map_info(struct megasas_instance *instance); -int -
+>>wait_and_poll(struct megasas_instance *instance, struct megasas_cmd
+>>*cmd,
+>>-	int seconds);
+>>-void megasas_reset_reply_desc(struct megasas_instance *instance); -int
+>>megasas_reset_fusion(struct Scsi_Host *shost, int iotimeout); -void
+>>megasas_fusion_ocr_wq(struct work_struct *work);  static int
+>>megasas_get_ld_vf_affiliation(struct megasas_instance *instance,
+>> 					 int initial);
+>>-int megasas_check_mpio_paths(struct megasas_instance *instance,
+>>-			     struct scsi_cmnd *scmd);
+>>
+>> void
+>> megasas_issue_dcmd(struct megasas_instance *instance, struct
+>>megasas_cmd *cmd) @@ -258,22 +237,6 @@ __megasas_return_cmd(struct
+>>megasas_instance *instance, struct megasas_cmd *cmd)  }
+>>
+>> /**
+>>- * megasas_return_cmd -	Return a cmd to free command pool
+>>- * @instance:		Adapter soft state
+>>- * @cmd:		Command packet to be returned to free command
+>>pool
+>>- */
+>>-inline void
+>>-megasas_return_cmd(struct megasas_instance *instance, struct
+>>megasas_cmd *cmd) -{
+>>-	unsigned long flags;
+>>-
+>>-	spin_lock_irqsave(&instance->mfi_pool_lock, flags);
+>>-	__megasas_return_cmd(instance, cmd);
+>>-	spin_unlock_irqrestore(&instance->mfi_pool_lock, flags);
+>>-}
+>>-
+>>-
+>>-/**
+>> *	The following functions are defined for xscale
+>> *	(deviceid : 1064R, PERC5) controllers
+>> */
+>>@@ -1417,32 +1380,6 @@ megasas_build_ldio(struct megasas_instance
+>>*instance, struct scsi_cmnd *scp,
+>> 	return cmd->frame_count;
+>> }
+>>
+>>-/**
+>>- * megasas_is_ldio -		Checks if the cmd is for logical drive
+>>- * @scmd:			SCSI command
+>>- *
+>>- * Called by megasas_queue_command to find out if the command to be
+>>queued
+>>- * is a logical drive command
+>>- */
+>>-inline int megasas_is_ldio(struct scsi_cmnd *cmd) -{
+>>-	if (!MEGASAS_IS_LOGICAL(cmd))
+>>-		return 0;
+>>-	switch (cmd->cmnd[0]) {
+>>-	case READ_10:
+>>-	case WRITE_10:
+>>-	case READ_12:
+>>-	case WRITE_12:
+>>-	case READ_6:
+>>-	case WRITE_6:
+>>-	case READ_16:
+>>-	case WRITE_16:
+>>-		return 1;
+>>-	default:
+>>-		return 0;
+>>-	}
+>>-}
+>>-
+>>  /**
+>>  * megasas_dump_pending_frames -	Dumps the frame address of all
+>>pending cmds
+>>  *                              	in FW
+>>diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c
+>>b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+>>index f37eed6..c2b8782 100644
+>>--- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
+>>+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+>>@@ -54,43 +54,7 @@
+>>
+>> #include "megaraid_sas_fusion.h"
+>> #include "megaraid_sas.h"
+>>-
+>>-extern void megasas_free_cmds(struct megasas_instance *instance); -
+>>extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
+>>-					   *instance);
+>>-extern void
+>>-megasas_complete_cmd(struct megasas_instance *instance,
+>>-		     struct megasas_cmd *cmd, u8 alt_status);
+>>-int megasas_is_ldio(struct scsi_cmnd *cmd); -int -wait_and_poll(struct
+>>megasas_instance *instance, struct megasas_cmd *cmd,
+>>-	      int seconds);
+>>-
+>>-void
+>>-megasas_return_cmd(struct megasas_instance *instance, struct
+>>megasas_cmd *cmd); -int megasas_alloc_cmds(struct megasas_instance
+>>*instance); -int -megasas_clear_intr_fusion(struct megasas_register_set
+>>__iomem *regs); -int -megasas_issue_polled(struct megasas_instance
+>>*instance,
+>>-		     struct megasas_cmd *cmd);
+>>-void
+>>-megasas_check_and_restore_queue_depth(struct megasas_instance
+>>*instance);
+>>-
+>>-int megasas_transition_to_ready(struct megasas_instance *instance, int
+>>ocr); -void megaraid_sas_kill_hba(struct megasas_instance *instance);
+>>-
+>>-extern u32 megasas_dbg_lvl;
+>>-void megasas_sriov_heartbeat_handler(unsigned long instance_addr); -int
+>>megasas_sriov_start_heartbeat(struct megasas_instance *instance,
+>>-				  int initial);
+>>-void megasas_start_timer(struct megasas_instance *instance,
+>>-			struct timer_list *timer,
+>>-			 void *fn, unsigned long interval);
+>>-extern struct megasas_mgmt_info megasas_mgmt_info; -extern int
+>>resetwaittime;
+>>-
+>>-
+>>+#include "megaraid_sas_internal.h"
+>>
+>> /**
+>>  * megasas_enable_intr_fusion -	Enables interrupts
+>>diff --git a/drivers/scsi/megaraid/megaraid_sas_internal.h
+>>b/drivers/scsi/megaraid/megaraid_sas_internal.h
+>>new file mode 100644
+>>index 0000000..b2b0a55
+>>--- /dev/null
+>>+++ b/drivers/scsi/megaraid/megaraid_sas_internal.h
+>>@@ -0,0 +1,100 @@
+>>+#ifndef LSI_MEGARAID_SAS_INTERNAL_H
+>>+#define LSI_MEGARAID_SAS_INTERNAL_H
+>>+
+>>+/*
+>>+ * From base.
+>>+ */
+>>+
+>>+extern void megasas_free_cmds(struct megasas_instance *instance);
+>>+extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
+>>+					   *instance);
+>>+
+>>+extern void
+>>+megasas_complete_cmd(struct megasas_instance *instance,
+>>+		     struct megasas_cmd *cmd, u8 alt_status);
+>>+/**
+>>+ * megasas_is_ldio -		Checks if the cmd is for logical drive
+>>+ * @scmd:			SCSI command
+>>+ *
+>>+ * Called by megasas_queue_command to find out if the command to be
+>>+queued
+>>+ * is a logical drive command
+>>+ */
+>>+static inline int megasas_is_ldio(struct scsi_cmnd *cmd) {
+>>+	if (!MEGASAS_IS_LOGICAL(cmd))
+>>+		return 0;
+>>+	switch (cmd->cmnd[0]) {
+>>+	case READ_10:
+>>+	case WRITE_10:
+>>+	case READ_12:
+>>+	case WRITE_12:
+>>+	case READ_6:
+>>+	case WRITE_6:
+>>+	case READ_16:
+>>+	case WRITE_16:
+>>+		return 1;
+>>+	default:
+>>+		return 0;
+>>+	}
+>>+}
+>>+
+>>+/**
+>>+ * megasas_return_cmd -	Return a cmd to free command pool
+>>+ * @instance:		Adapter soft state
+>>+ * @cmd:		Command packet to be returned to free command
+>>pool
+>>+ */
+>>+static inline void
+>>+megasas_return_cmd(struct megasas_instance *instance, struct
+>>+megasas_cmd *cmd) {
+>>+	unsigned long flags;
+>>+
+>>+	spin_lock_irqsave(&instance->mfi_pool_lock, flags);
+>>+	__megasas_return_cmd(instance, cmd);
+>>+	spin_unlock_irqrestore(&instance->mfi_pool_lock, flags); }
+>>+
+>>+int megasas_alloc_cmds(struct megasas_instance *instance);
+>>+
+>>+int
+>>+megasas_issue_polled(struct megasas_instance *instance,
+>>+		     struct megasas_cmd *cmd);
+>>+void
+>>+megasas_check_and_restore_queue_depth(struct megasas_instance
+>>+*instance);
+>>+
+>>+int megasas_transition_to_ready(struct megasas_instance *instance, int
+>>+ocr); void megaraid_sas_kill_hba(struct megasas_instance *instance);
+>>+
+>>+extern u32 megasas_dbg_lvl;
+>>+void megasas_sriov_heartbeat_handler(unsigned long instance_addr); int
+>>+megasas_sriov_start_heartbeat(struct megasas_instance *instance,
+>>+				  int initial);
+>>+void megasas_start_timer(struct megasas_instance *instance,
+>>+			struct timer_list *timer,
+>>+			 void *fn, unsigned long interval);
+>>+extern struct megasas_mgmt_info megasas_mgmt_info; extern int
+>>+resetwaittime;
+>>+
+>>+/*
+>>+ * From fusion.
+>>+ */
+>>+
+>>+int megasas_check_mpio_paths(struct megasas_instance *instance,
+>>+			     struct scsi_cmnd *scmd);
+>>+int
+>>+wait_and_poll(struct megasas_instance *instance, struct megasas_cmd
+>>*cmd,
+>>+	      int seconds);
+>>+void
+>>+megasas_release_fusion(struct megasas_instance *instance); int
+>>+megasas_ioc_init_fusion(struct megasas_instance *instance); void
+>>+megasas_free_cmds_fusion(struct megasas_instance *instance);
+>>+u8
+>>+megasas_get_map_info(struct megasas_instance *instance); int
+>>+megasas_sync_map_info(struct megasas_instance *instance); void
+>>+megasas_reset_reply_desc(struct megasas_instance *instance); int
+>>+megasas_reset_fusion(struct Scsi_Host *shost, int iotimeout); void
+>>+megasas_fusion_ocr_wq(struct work_struct *work);
+>>+
+>>+#endif /* LSI_MEGARAID_SAS_INTERNAL_H */
+>
+>Patch looks good to me. Can you please rebase this patch on top of latest
+>patch series sent by me?
+>>--
+>>1.9.3
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
