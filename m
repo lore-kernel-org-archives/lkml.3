@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaKQUva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 15:51:30 -0500
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:45955 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752549AbaKQUv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 15:51:28 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtYNAFpealRXQyyZ/2dsb2JhbABbgw6BLrhwBQF1mhWBGxcBAQEBAX2EXyOBGjeIRQHCT5AeLIY+imQdhDUFnkyBNI4KhzyBRwE4IIFdPDCCSwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-        "David S. Miller" <davem@davemloft.net>, dccp@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] dccp: kerneldoc warning fixes
-Date: Mon, 17 Nov 2014 21:51:21 +0100
-Message-Id: <1416257481-5690-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	id S1752959AbaKQUvk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 15:51:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752921AbaKQUvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 15:51:38 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, sgrubb@redhat.com,
+        eparis@parisplace.org, pmoore@redhat.com
+Subject: [PATCH] audit: convert status version to a feature bitmap
+Date: Mon, 17 Nov 2014 15:51:01 -0500
+Message-Id: <31e5843487fb1596bbae61e5b8be9efb540c471f.1416257393.git.rgb@redhat.com>
+In-Reply-To: <12539378.gxbYIULgU3@sifl>
+References: <12539378.gxbYIULgU3@sifl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/dccp/feat.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The version field defined in the audit status structure was found to have
+limitations in terms of its expressibility of features supported.  This is
+distict from the get/set features call to be able to command those features
+that are present.
 
-diff --git a/net/dccp/feat.c b/net/dccp/feat.c
-index 9733ddb..1704948 100644
---- a/net/dccp/feat.c
-+++ b/net/dccp/feat.c
-@@ -478,7 +478,7 @@ static struct dccp_feat_entry *
-  * @fn_list: feature-negotiation list to update
-  * @feat: one of %dccp_feature_numbers
-  * @local: whether local (1) or remote (0) @feat_num is meant
-- * @needs_mandatory: whether to use Mandatory feature negotiation options
-+ * @mandatory: whether to use Mandatory feature negotiation options
-  * @fval: pointer to NN/SP value to be inserted (will be copied)
-  */
- static int dccp_feat_push_change(struct list_head *fn_list, u8 feat, u8 local,
-@@ -1050,7 +1050,7 @@ static u8 dccp_feat_prefer(u8 preferred_value, u8 *array, u8 array_len)
+Converting this field from a version number to a feature bitmap will allow
+distributions to selectively backport and support certain features and will
+allow upstream to be able to deprecate features in the future.  It will allow
+userspace clients to first query the kernel for which features are actually
+present and supported.  Currently, EINVAL is returned rather than EOPNOTSUP,
+which isn't helpful in determining if there was an error in the command, or if
+it simply isn't supported yet.  Past features are not represented by this
+bitmap, but their use may be converted to EOPNOTSUP if needed in the future.
+
+Since "version" is too generic to convert with a #define, use a union in the
+struct status, introducing the member "feature_bitmap" unionized with
+"version".
+
+Convert existing AUDIT_VERSION_* macros over to AUDIT_FEATURE_BITMAP*
+counterparts, leaving the former for backwards compatibility.
+
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ include/uapi/linux/audit.h |   17 +++++++++++++----
+ kernel/audit.c             |    2 +-
+ 2 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 4d100c8..c9ac690 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -322,9 +322,15 @@ enum {
+ #define AUDIT_STATUS_BACKLOG_LIMIT	0x0010
+ #define AUDIT_STATUS_BACKLOG_WAIT_TIME	0x0020
  
- /**
-  * dccp_feat_reconcile  -  Reconcile SP preference lists
-- *  @fval: SP list to reconcile into
-+ *  @fv: SP list to reconcile into
-  *  @arr: received SP preference list
-  *  @len: length of @arr in bytes
-  *  @is_server: whether this side is the server (and @fv is the server's list)
+-#define AUDIT_VERSION_BACKLOG_LIMIT	1
+-#define AUDIT_VERSION_BACKLOG_WAIT_TIME	2
+-#define AUDIT_VERSION_LATEST AUDIT_VERSION_BACKLOG_WAIT_TIME
++#define AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT	0x00000001
++#define AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME	0x00000002
++#define AUDIT_FEATURE_BITMAP_ALL (AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT     | \
++				  AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME   )
++
++/* deprecated: AUDIT_VERSION_* */
++#define AUDIT_VERSION_LATEST 		AUDIT_FEATURE_BITMAP_ALL
++#define AUDIT_VERSION_BACKLOG_LIMIT	AUDIT_FEATURE_BITMAP_BACKLOG_LIMIT
++#define AUDIT_VERSION_BACKLOG_WAIT_TIME	AUDIT_FEATURE_BITMAP_BACKLOG_WAIT_TIME
+ 
+ 				/* Failure-to-log actions */
+ #define AUDIT_FAIL_SILENT	0
+@@ -403,7 +409,10 @@ struct audit_status {
+ 	__u32		backlog_limit;	/* waiting messages limit */
+ 	__u32		lost;		/* messages lost */
+ 	__u32		backlog;	/* messages waiting in queue */
+-	__u32		version;	/* audit api version number */
++	union {
++		__u32	version;	/* deprecated: audit api version num */
++		__u32	feature_bitmap;	/* bitmap of kernel audit features */
++	};
+ 	__u32		backlog_wait_time;/* message queue wait timeout */
+ };
+ 
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 8ee4508..f3a981d 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -842,7 +842,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		s.backlog_limit		= audit_backlog_limit;
+ 		s.lost			= atomic_read(&audit_lost);
+ 		s.backlog		= skb_queue_len(&audit_skb_queue);
+-		s.version		= AUDIT_VERSION_LATEST;
++		s.feature_bitmap	= AUDIT_FEATURE_BITMAP_ALL;
+ 		s.backlog_wait_time	= audit_backlog_wait_time;
+ 		audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &s, sizeof(s));
+ 		break;
 -- 
-1.9.3
+1.7.1
 
