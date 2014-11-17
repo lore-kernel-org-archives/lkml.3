@@ -1,47 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaKQBwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 20:52:25 -0500
-Received: from mout.gmx.com ([74.208.4.201]:52272 "EHLO mout.gmx.com"
+	id S1753372AbaKQByx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 20:54:53 -0500
+Received: from ozlabs.org ([103.22.144.67]:46934 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751625AbaKQBwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 20:52:24 -0500
+	id S1752018AbaKQByw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 20:54:52 -0500
+Date: Mon, 17 Nov 2014 12:54:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: linux-next: manual merge of the idle tree with the pm tree
+Message-ID: <20141117125445.110f0321@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Message-ID: <trinity-d428478f-2a43-4d4d-b7f2-5064057b0395-1416189142841@3capp-mailcom-lxa15>
-From: "SystemD Abomination" <sdabomination@mail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Winter has come to the land of linus. In the form SystemD
-Content-Type: text/plain; charset=UTF-8
-Date: Mon, 17 Nov 2014 02:52:23 +0100
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:MVn8fqb0gS7celWDNaigCFFCW06qjzEDARkWP+22fQv
- s1/QD0K2fNU4VT7P5FbVnJeaIo0drNmLDzQYJ25Qz0ajXOVf5G
- 0Pr2RTjiJfSV8JihOGCh48mSwzijaj2j6549eOer97I1B02RaY
- tLnO4yyaM/4xStdjP4mphXwhnfm/WbL+opd4CSIC75GxReGfud
- /vucVG+6TBPeAgpqA3tJttCkGYXtw9RipDpOJGB3Rwmcbyahq6
- BeQgKp3Fx2EioPLIGyxBUDL1qSpYbcmUvPA3YNf08MfghLUTgP
- y8jBMOcRvPYZPbCq/cw0YLRSgRF
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/NYqV+6DOkIGiGNDMxWMXGmI"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Winter has come to the land of linus.
-In the form of systemD.
+--Sig_/NYqV+6DOkIGiGNDMxWMXGmI
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-As the prison we'll never escape from crystalizes around us
-let us think about its cold embrace.
+Hi Len,
 
-Does it bring us happiness? Does it bring us warmth?
-Only the warmth of conflict (and of CPU running at 100pct).
+Today's linux-next merge of the idle tree got a conflict in
+arch/x86/include/uapi/asm/msr-index.h between commit 2f86dc4cddcb
+("intel_pstate: Add support for HWP") from the pm tree and commit
+a8b65b07d753 ("tools/power turbostat: decode MSR_*_PERF_LIMIT_REASONS")
+from the idle tree.
 
-One fairly insecure kernel wasn't enough.
-We need two always running!
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-PS: Fuck You Erich Schubert, you lying male feminist son of a bitch.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-http://youtu.be/hB8Bf5Bx26I
+diff --cc arch/x86/include/uapi/asm/msr-index.h
+index 62838e54947d,c1cb18be540e..000000000000
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@@ -149,48 -149,10 +149,52 @@@
+ =20
+  #define MSR_CORE_C1_RES			0x00000660
+ =20
+ +#define MSR_CC6_DEMOTION_POLICY_CONFIG	0x00000668
+ +#define MSR_MC6_DEMOTION_POLICY_CONFIG	0x00000669
+ +
+ +/* Hardware P state interface */
+ +#define MSR_PPERF			0x0000064e
+ +#define MSR_PERF_LIMIT_REASONS		0x0000064f
+ +#define MSR_PM_ENABLE			0x00000770
+ +#define MSR_HWP_CAPABILITIES		0x00000771
+ +#define MSR_HWP_REQUEST_PKG		0x00000772
+ +#define MSR_HWP_INTERRUPT		0x00000773
+ +#define MSR_HWP_REQUEST 		0x00000774
+ +#define MSR_HWP_STATUS			0x00000777
+ +
+ +/* CPUID.6.EAX */
+ +#define HWP_BASE_BIT			(1<<7)
+ +#define HWP_NOTIFICATIONS_BIT		(1<<8)
+ +#define HWP_ACTIVITY_WINDOW_BIT		(1<<9)
+ +#define HWP_ENERGY_PERF_PREFERENCE_BIT	(1<<10)
+ +#define HWP_PACKAGE_LEVEL_REQUEST_BIT	(1<<11)
+ +
+ +/* IA32_HWP_CAPABILITIES */
+ +#define HWP_HIGHEST_PERF(x)		(x & 0xff)
+ +#define HWP_GUARANTEED_PERF(x)		((x & (0xff << 8)) >>8)
+ +#define HWP_MOSTEFFICIENT_PERF(x)	((x & (0xff << 16)) >>16)
+ +#define HWP_LOWEST_PERF(x)		((x & (0xff << 24)) >>24)
+ +
+ +/* IA32_HWP_REQUEST */
+ +#define HWP_MIN_PERF(x) 		(x & 0xff)
+ +#define HWP_MAX_PERF(x) 		((x & 0xff) << 8)
+ +#define HWP_DESIRED_PERF(x)		((x & 0xff) << 16)
+ +#define HWP_ENERGY_PERF_PREFERENCE(x)	((x & 0xff) << 24)
+ +#define HWP_ACTIVITY_WINDOW(x)		((x & 0xff3) << 32)
+ +#define HWP_PACKAGE_CONTROL(x)		((x & 0x1) << 42)
+ +
+ +/* IA32_HWP_STATUS */
+ +#define HWP_GUARANTEED_CHANGE(x)	(x & 0x1)
+ +#define HWP_EXCURSION_TO_MINIMUM(x)	(x & 0x4)
+ +
+ +/* IA32_HWP_INTERRUPT */
+ +#define HWP_CHANGE_TO_GUARANTEED_INT(x)	(x & 0x1)
+ +#define HWP_EXCURSION_TO_MINIMUM_INT(x)	(x & 0x2)
+ +
++ #define MSR_CORE_PERF_LIMIT_REASONS	0x00000690
++ #define MSR_GFX_PERF_LIMIT_REASONS	0x000006B0
++ #define MSR_RING_PERF_LIMIT_REASONS	0x000006B1
++=20
+  #define MSR_AMD64_MC0_MASK		0xc0010044
+ =20
+  #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
 
-(C) Gnu GPL v2 (MikeeUSA)
+--Sig_/NYqV+6DOkIGiGNDMxWMXGmI
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUaVVpAAoJEMDTa8Ir7ZwVD0cQAIK7+yjhPNBZjiQ9bd9OCrN/
+qRlCSNEJNUhyoZb7WVfy+2yML/fVhJG2CFARZ1c8zNX+X0kLjf+XwQe8i7i9lTCC
+uJKhGa0MDw1vOJqdBM0eYu8b2k4WN53aivUFfs1cp8p7zFeC17wcew50vRe2f2Yr
+6bwvWNva2qJkImwk92AVcUIiUbdjUDDeXTUUP2m2WGJSiVZ8JZbdjQWex5V4p6LQ
+cjBc93Ypqt5BtVNjpQ02Cis2ujWjkmDc3aVUgAlazur5/gXSpzpUlmwTwWXV3Vvv
+PCY0qF91rExNUqjAus45IuLp9fQxmOMDePY89cwVQ6DoW7ITYeHBUv/IKycTqYcr
+xnkWT3NlZBiK/coFzQaqhwlF0uOe06WZ5uBX9qySknvcwVtoOuAOA/kitVT/Y3h2
+5yS0RTU0lPq0ZL5r/sf4lEePFE82wQHaPeRfOgYWWKf2hlshsbto8uUA+nkREE/M
+OEBwJ8Gohh1XHuQ0p6vJP1mYfi2Us5OkmAcIZzdsY1lGw+84oBvWXrL4e8L3UoD8
+2YITjOpxaT4i8l3BavV+EAeAvdByqtK+7Aq7zN4jei9xFLexQOLKgW4ESvMDPqI8
+xzSy5epap47ujVc5s8w1WezJdrz8YMsuDAMRDFdttZ3IMXKEp+JY0HdptMnmJyOQ
+b040PWH1VARDIFC+ZDpz
+=ICtC
+-----END PGP SIGNATURE-----
+
+--Sig_/NYqV+6DOkIGiGNDMxWMXGmI--
