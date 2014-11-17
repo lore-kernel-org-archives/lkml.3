@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820AbaKQRiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 12:38:21 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49709 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaKQRiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 12:38:20 -0500
-Message-ID: <1416245856.2734.4.camel@pengutronix.de>
-Subject: Re: [PATCH v2] ARM: Add imprecise abort enable/disable macro
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Fabrice GASNIER <fabrice.gasnier@st.com>, u.kleine-koenig@pengutronix.de,
-        jonathan.austin@arm.com, catalin.marinas@arm.com, will.deacon@arm.com,
-        nico@linaro.org, sboyd@codeaurora.org, marc.zyngier@arm.com,
-        ben.dooks@codethink.co.uk, vgupta@synopsys.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com
-Date: Mon, 17 Nov 2014 18:37:36 +0100
-In-Reply-To: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
-References: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
+	id S1752132AbaKQRk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 12:40:29 -0500
+Received: from mout.web.de ([212.227.15.14]:60064 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaKQRk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 12:40:28 -0500
+Message-ID: <546A3302.9040804@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 18:40:18 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] mm/zswap: Deletion of an unnecessary check before the
+ function call "free_percpu"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Provags-ID: V03:K0:aYeb6tPFilBGPqw0/CxY3TPGS+4Z3XFsxpqs2vwh1xFaQwoAXZD
+ EjT1eQlcPqEXHsxlH9tNLsettq1ugI2PtHMxUoSGzJVKo9Iu8DIUSA6pnopFipBHos1cLvi
+ +qPr0smi7+lDcV4sSc5XkB7Imk0Q+a7ocF/rAI9IAzUrKdOZcNhpFDnzSMEL9AjNm4mLywv
+ /bfhTXQzy6j43gFWh/Cfg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 18:33:33 +0100
 
-can you please revisit this patch? It got stuck in February after you
-questioned if it works on anything but ARMv7M. Fabrice responded with an
-E-Mail that showed that the logic in this patch is supposedly right and
-it should work.
+The free_percpu() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Do you still see anything wrong with this patch? It is a prerequisite
-for proper PCI abort handling on a number of SoCs and I would like to
-see this moving forward.
+This issue was detected by using the Coccinelle software.
 
-Thanks,
-Lucas
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ mm/zswap.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Am Montag, den 10.02.2014, 17:45 +0100 schrieb Fabrice GASNIER:
-> This patch adds imprecise abort enable/disable macros.
-> It also enables imprecise aborts when starting kernel.
-> 
-> Changes in v2:
-> Only ARMv6 and later have CPSR.A bit. On earlier CPUs,
-> and ARMv7M this should be a no-op.
-> 
-> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
-> ---
->  arch/arm/include/asm/irqflags.h |   10 ++++++++++
->  arch/arm/kernel/smp.c           |    1 +
->  arch/arm/kernel/traps.c         |    4 ++++
->  3 files changed, 15 insertions(+)
-> 
-> diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
-> index 3b763d6..8301f87 100644
-> --- a/arch/arm/include/asm/irqflags.h
-> +++ b/arch/arm/include/asm/irqflags.h
-> @@ -51,6 +51,14 @@ static inline void arch_local_irq_disable(void)
->  
->  #define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
->  #define local_fiq_disable() __asm__("cpsid f	@ __clf" : : : "memory", "cc")
-> +
-> +#ifndef CONFIG_CPU_V7M
-> +#define local_abt_enable()  __asm__("cpsie a	@ __sta" : : : "memory", "cc")
-> +#define local_abt_disable() __asm__("cpsid a	@ __cla" : : : "memory", "cc")
-> +#else
-> +#define local_abt_enable()	do { } while (0)
-> +#define local_abt_disable()	do { } while (0)
-> +#endif
->  #else
->  
->  /*
-> @@ -130,6 +138,8 @@ static inline void arch_local_irq_disable(void)
->  	: "memory", "cc");					\
->  	})
->  
-> +#define local_abt_enable()	do { } while (0)
-> +#define local_abt_disable()	do { } while (0)
->  #endif
->  
->  /*
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index dc894ab..c2093cb 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -377,6 +377,7 @@ asmlinkage void secondary_start_kernel(void)
->  
->  	local_irq_enable();
->  	local_fiq_enable();
-> +	local_abt_enable();
->  
->  	/*
->  	 * OK, it's off to the idle thread for us
-> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-> index 4636d56..ef15709 100644
-> --- a/arch/arm/kernel/traps.c
-> +++ b/arch/arm/kernel/traps.c
-> @@ -900,6 +900,10 @@ void __init early_trap_init(void *vectors_base)
->  
->  	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
->  	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
-> +
-> +	/* Enable imprecise aborts */
-> +	local_abt_enable();
-> +
->  #else /* ifndef CONFIG_CPU_V7M */
->  	/*
->  	 * on V7-M there is no need to copy the vector table to a dedicated
-
+diff --git a/mm/zswap.c b/mm/zswap.c
+index ea064c1..35629f0 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -152,8 +152,7 @@ static int __init zswap_comp_init(void)
+ static void zswap_comp_exit(void)
+ {
+ 	/* free percpu transforms */
+-	if (zswap_comp_pcpu_tfms)
+-		free_percpu(zswap_comp_pcpu_tfms);
++	free_percpu(zswap_comp_pcpu_tfms);
+ }
+ 
+ /*********************************
 -- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+2.1.3
 
