@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaKQLua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:50:30 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:52505 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaKQLu0 (ORCPT
+	id S1752664AbaKQLuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:50:11 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:45475 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027AbaKQLsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:50:26 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-c5-5469e0ff7f00
-Date: Mon, 17 Nov 2014 12:50:13 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
- for tegra driver
-Message-id: <20141117125013.3493a3a1@amdc2363>
-In-reply-to: <20141117114341.GF25699@ulmo>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
- <5465DDC5.6090301@kapsi.fi> <20141117114341.GF25699@ulmo>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jQd3/DzJDDFY2KVpsnLGe1WL+lWus
-	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbXF51xw2i8+9RxgtOr/MYrO4/eEAs8WDq9PYLJ48
-	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5HHp3B9mj3XT3jJ7HJh8jtWj
-	t/kdm8e3MxNZPPq2rGL0ePpjL7PH501yHhvnhgbwRHHZpKTmZJalFunbJXBltJx9yF5wkaPi
-	1/aXTA2Mr9m6GDk4JARMJC5NU+xi5AQyxSQu3FvPBmILCUxnlDj6zAjC/sUo8fBNKojNIqAq
-	sebrFUYQm01AT+Lz3adMILaIgK7E/9NvWLoYuTiYBbpZJRZeuMUCkhAWiJe48/0SO4jNC9TQ
-	Pe01M4jNKaAlceLiamaQBiGBP4wSW+9MAZvELyAp0f7vBzPERXYS5z5tgGoWlPgx+R7YUGag
-	5s3bmlghbHmJzWveMk9gFJyFpGwWkrJZSMoWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
-	xAiOy2dSOxhXNlgcYhTgYFTi4d2RnRkixJpYVlyZe4hRgoNZSYQ35iJQiDclsbIqtSg/vqg0
-	J7X4EKM0B4uSOO+BVutAIYH0xJLU7NTUgtQimCwTB6dUA2PoL4aEOPaA4uVfE94oneH8vf3T
-	5/4nvR//PVsol/Na7eLs36zT1HimJr4R5n+UucrHcfet7tfJ6zna/987Zz6dZeWP27f7jfN7
-	z0y2vrN5+sWw643f1zh6fVY+nhutr/xHMtRiz6nn18RU34f41nnPfHnw0rRXe4NvVswWyH/U
-	J+L8OMns/G8dJZbijERDLeai4kQA1s0KnccCAAA=
+	Mon, 17 Nov 2014 06:48:42 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-2a-5469e095d128
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org, tony@atomide.com,
+        drake@endlessm.com, loeliger@gmail.com,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v9 3/7] ARM: l2c: Get outer cache .write_sec callback from
+ mach_desc only if not NULL
+Date: Mon, 17 Nov 2014 12:48:25 +0100
+Message-id: <1416224909-4290-4-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+In-reply-to: <1416224909-4290-1-git-send-email-m.szyprowski@samsung.com>
+References: <1416224909-4290-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/xK7pTH2SGGCyYKmrxd9IxdotH8x8z
+	W/QuuMpmcbbpDbvF9s4Z7BZT/ixnstj0+BqrxeVdc9gsZi/pZ7GYcX4fk8Xty7wW57ZvYbFY
+	e+Quu8XS6xeZLE5d/8xmsWrXH0aL/Ve8HAQ91sxbw+jR0tzD5vH71yRGj29fJ7F4XO7rZfJY
+	9D3LY+esu+wed67tYfPYvKTe48qJJlaPvi2rGD0+b5IL4InisklJzcksSy3St0vgyrj/5RZb
+	wW/OigVf/zE1MG7l6GLk5JAQMJF4OvkOE4QtJnHh3nq2LkYuDiGBpYwSj9eeZYJw+pgkNh/c
+	wgJSxSZgKNH1tosNxBYRcJP4t+4QWAezwGdmiUuP1rCCJIQF0iUmfHgMZrMIqEpc2LQcrIFX
+	wF1i4pJuFoh1chL/X64AW80p4CHx7fsBoBoOoG3uEq2POCcw8i5gZFjFKJpamlxQnJSea6RX
+	nJhbXJqXrpecn7uJERL4X3cwLj1mdYhRgINRiYf3QFFmiBBrYllxZe4hRgkOZiUR3piLQCHe
+	lMTKqtSi/Pii0pzU4kOMTBycUg2MM8Ji81Sn1H+XmH+lu1qy+4j6ywfFjPMPNYjO5WVmXVq/
+	NmalbEc1i1+5zYQTNuvvnDPzZXk0o/ZS+AoexX2Gn3wasxo3lphfZZTbbLDHoVbEifku7/WW
+	J1cajobOldWoufhzFv9b7/rT5/IvibLw7b4o/vjavttmrPFeC+9pK7+23hfsxB2pxFKckWio
+	xVxUnAgA/gWnJVoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+From: Tomasz Figa <t.figa@samsung.com>
 
-> On Fri, Nov 14, 2014 at 12:47:33PM +0200, Mikko Perttunen wrote:
-> > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-> > 
-> > One potential issue I can see is that if the cpufreq driver fails
-> > to probe then you'll never get the thermal driver either. For
-> > example, Tegra124 currently has no cpufreq driver, so if
-> > CONFIG_CPU_THERMAL was enabled, then the soctherm driver would
-> > never be able to probe. But I don't really have a solution for this
-> > either.
-> 
-> It doesn't seem like there's any code whatsoever to deal with cpufreq
-> within the soctherm driver, so deferring probe based on something
-> we're not using anyway seems rather useless.
+Certain platforms (i.e. Exynos) might need to set .write_sec callback
+from firmware initialization which is happenning in .init_early callback
+of machine descriptor. However current code will overwrite the pointer
+with whatever is present in machine descriptor, even though it can be
+already set earlier. This patch fixes this by making the assignment
+conditional, depending on whether current .write_sec callback is NULL.
 
-So, If I understood you correctly - this patch is not needed in the 
-/tegra_soctherm.c:[tegra_defconfig] driver and can be safely omitted in
-v2 of this driver.
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ arch/arm/kernel/irq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Please note that I'm not aware of Tegra specific use cases and hence
-I've prepared fixes for all potential candidates.
-
-> 
-> Thierry
-
+diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+index 7c81ec428b9b..5acb8aef6f2d 100644
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -108,7 +108,8 @@ void __init init_IRQ(void)
+ 
+ 	if (IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_CACHE_L2X0) &&
+ 	    (machine_desc->l2c_aux_mask || machine_desc->l2c_aux_val)) {
+-		outer_cache.write_sec = machine_desc->l2c_write_sec;
++		if (!outer_cache.write_sec)
++			outer_cache.write_sec = machine_desc->l2c_write_sec;
+ 		ret = l2x0_of_init(machine_desc->l2c_aux_val,
+ 				   machine_desc->l2c_aux_mask);
+ 		if (ret)
 -- 
-Best regards,
+1.9.2
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
