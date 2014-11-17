@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaKQKmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:42:24 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:34452 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaKQKmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:42:22 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: linux-media@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API for v4l2_subdev_get_try_*()
-Date: Mon, 17 Nov 2014 10:41:53 +0000
-Message-Id: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752735AbaKQKnT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:43:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52192 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059AbaKQKnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 05:43:17 -0500
+Message-ID: <5469D142.9090500@suse.de>
+Date: Mon, 17 Nov 2014 11:43:14 +0100
+From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Ankit Jindal <ankit.jindal@linaro.org>, linux-kernel@vger.kernel.org
+CC: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, patches@apm.com,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Varka Bhadram <varkabhadram@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Anup Patel <anup@brainfault.org>
+Subject: Re: [PATCH v5 5/6] Documentation: dt-bindings: Add binding info for
+ X-Gene QMTM UIO driver
+References: <1416220572-13381-1-git-send-email-ankit.jindal@linaro.org> <1416220572-13381-6-git-send-email-ankit.jindal@linaro.org>
+In-Reply-To: <1416220572-13381-6-git-send-email-ankit.jindal@linaro.org>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch removes the guard CONFIG_VIDEO_V4L2_SUBDEV_API
-for v4l2_subdev_get_try_*() functions.
-In cases where a subdev using v4l2_subdev_get_try_*() calls
-internally and the bridge using subdev pad ops which is
-not MC aware forces to select MEDIA_CONTROLLER, as
-VIDEO_V4L2_SUBDEV_API is dependent on it.
+Am 17.11.2014 um 11:36 schrieb Ankit Jindal:
+> This patch adds device tree binding documentation for
+> X-Gene QMTM UIO driver.
+> 
+> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
+> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
+> ---
+>  .../devicetree/bindings/uio/uio_xgene_qmtm.txt     |   50 ++++++++++++++++++++
+>  1 file changed, 50 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- include/media/v4l2-subdev.h | 2 --
- 1 file changed, 2 deletions(-)
+FWIW,
 
-diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
-index 5860292..076ca11 100644
---- a/include/media/v4l2-subdev.h
-+++ b/include/media/v4l2-subdev.h
-@@ -642,7 +642,6 @@ struct v4l2_subdev_fh {
- #define to_v4l2_subdev_fh(fh)	\
- 	container_of(fh, struct v4l2_subdev_fh, vfh)
- 
--#if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
- #define __V4L2_SUBDEV_MK_GET_TRY(rtype, fun_name, field_name)		\
- 	static inline struct rtype *					\
- 	v4l2_subdev_get_try_##fun_name(struct v4l2_subdev_fh *fh,	\
-@@ -656,7 +655,6 @@ struct v4l2_subdev_fh {
- __V4L2_SUBDEV_MK_GET_TRY(v4l2_mbus_framefmt, format, try_fmt)
- __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, crop, try_crop)
- __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, compose, try_compose)
--#endif
- 
- extern const struct v4l2_file_operations v4l2_subdev_fops;
- 
+Reviewed-by: Andreas Färber <afaerber@suse.de>
+
+Thanks,
+Andreas
+
 -- 
-1.9.1
-
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
