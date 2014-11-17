@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaKQNbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:31:07 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:52210 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaKQNa5 (ORCPT
+	id S1752511AbaKQNbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:31:06 -0500
+Received: from michel.telenet-ops.be ([195.130.137.88]:53490 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996AbaKQNa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 08:30:57 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -17,9 +17,9 @@ Cc: Ulf Hansson <ulf.hansson@linaro.org>, Kevin Hilman <khilman@linaro.org>,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v5 8/8] drivers: sh: Disable PM runtime for multi-platform r8a7740 with genpd
-Date: Mon, 17 Nov 2014 14:30:44 +0100
-Message-Id: <1416231044-1903-9-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH v5 4/8] ARM: shmobile: R-Mobile: Enable module clocks if !CONFIG_PM_RUNTIME
+Date: Mon, 17 Nov 2014 14:30:40 +0100
+Message-Id: <1416231044-1903-5-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416231044-1903-1-git-send-email-geert+renesas@glider.be>
 References: <1416231044-1903-1-git-send-email-geert+renesas@glider.be>
@@ -27,46 +27,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the default PM domain using PM_CLK is used for PM runtime, the real PM
-domain(s) cannot be registered from DT later.
+If CONFIG_PM_RUNTIME is not set, the clocks must be enabled before the
+devices can be used.
 
-Hence do not enable it when running a multi-platform kernel with genpd
-support on an r8a7740. The R-Mobile PM domain driver will take care of
-PM runtime management of the module clocks.
+Currently these clocks are enabled by the !CONFIG_PM_RUNTIME version of
+pm_clk_notify, activated by the hack in drivers/sh/pm_runtime.c, but
+this will go away soon (at least for DT).
 
-The default PM domain is still needed for:
-  - platforms without genpd support,
-  - the legacy (non-DT) case, where genpd may take over later, except
-    for the C5 "always on" PM domain.
+On detach, disabling the clocks is already handled by pm_clk_destroy().
+On system suspend/resume, disabling/enabling clocks is already handled
+from the genpd->dev_ops.{start,stop}() callbacks.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
 v5:
   - No changes,
 v4:
-  - No changes,
-v3:
-  - Reword,
-v2:
   - New.
 ---
- drivers/sh/pm_runtime.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/mach-shmobile/pm-rmobile.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/sh/pm_runtime.c b/drivers/sh/pm_runtime.c
-index fe2c2d595f599b2f..85cc89fd3e7d7cb7 100644
---- a/drivers/sh/pm_runtime.c
-+++ b/drivers/sh/pm_runtime.c
-@@ -81,7 +81,9 @@ static int __init sh_pm_runtime_init(void)
- 		if (!of_machine_is_compatible("renesas,emev2") &&
- 		    !of_machine_is_compatible("renesas,r7s72100") &&
- 		    !of_machine_is_compatible("renesas,r8a73a4") &&
-+#ifndef CONFIG_PM_GENERIC_DOMAINS_OF
- 		    !of_machine_is_compatible("renesas,r8a7740") &&
-+#endif
- 		    !of_machine_is_compatible("renesas,r8a7778") &&
- 		    !of_machine_is_compatible("renesas,r8a7779") &&
- 		    !of_machine_is_compatible("renesas,r8a7790") &&
+diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
+index 168046c355fc8368..6d912ce801aa88bd 100644
+--- a/arch/arm/mach-shmobile/pm-rmobile.c
++++ b/arch/arm/mach-shmobile/pm-rmobile.c
+@@ -118,6 +118,14 @@ static int rmobile_pd_attach_dev(struct generic_pm_domain *domain,
+ 		goto fail;
+ 	}
+ 
++	if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
++		error = pm_clk_resume(dev);
++		if (error) {
++			dev_err(dev, "pm_clk_resume failed %d\n", error);
++			goto fail;
++		}
++	}
++
+ 	return 0;
+ 
+ fail:
 -- 
 1.9.1
 
