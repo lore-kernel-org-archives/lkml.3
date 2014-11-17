@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaKQOmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:42:12 -0500
-Received: from bsmtp4.bon.at ([195.3.86.186]:29061 "EHLO bsmtp4.bon.at"
+	id S1752892AbaKQOnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 09:43:55 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:2158 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752419AbaKQOmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 09:42:10 -0500
-From: Radek Dostal <radek.dostal@streamunlimited.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, f.fainelli@gmail.com, arnd@arndb.de,
-        trivial@kernel.org, Radek Dostal <radek.dostal@streamunlimited.com>
-Subject: [PATCH RESEND] ARM: dts: bcm63138: change "interupts" to "interrupts"
-Date: Mon, 17 Nov 2014 15:41:18 +0100
-Message-Id: <1416235278-15759-1-git-send-email-radek.dostal@streamunlimited.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <5460F9EF.5010605@gmail.com>
-References: <5460F9EF.5010605@gmail.com>
+	id S1752174AbaKQOnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 09:43:53 -0500
+X-IronPort-AV: E=Sophos;i="5.07,403,1413244800"; 
+   d="scan'208";a="192058712"
+Message-ID: <546A09A2.9090704@citrix.com>
+Date: Mon, 17 Nov 2014 14:43:46 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <gregkh@linuxfoundation.org>
+CC: <linux-mips@linux-mips.org>, <airlied@linux.ie>,
+        <dri-devel@lists.freedesktop.org>, <xen-devel@lists.xensource.com>,
+        <linux@arm.linux.org.uk>, <vinod.koul@intel.com>, <deller@gmx.de>,
+        <jejb@parisc-linux.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        <alexander.deucher@amd.com>, <bhelgaas@google.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-parisc@vger.kernel.org>,
+        <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
+        <ralf@linux-mips.org>, <iommu@lists.linux-foundation.org>,
+        David Vrabel <david.vrabel@citrix.com>, <dmaengine@vger.kernel.org>,
+        <torvalds@linux-foundation.org>, <christian.koenig@amd.com>
+Subject: Re: [Xen-devel] [RFC] add a struct page* parameter to dma_map_ops.unmap_page
+References: <alpine.DEB.2.02.1411111644490.26318@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1411111644490.26318@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-all other nodes in bcm63138.dtsi use "interrupts", this had to be just a typo
-which never got noticed, even it may have quite some consequences.
+On 17/11/14 14:11, Stefano Stabellini wrote:
+> Hi all,
+> I am writing this email to ask for your advice.
+> 
+> On architectures where dma addresses are different from physical
+> addresses, it can be difficult to retrieve the physical address of a
+> page from its dma address.
+> 
+> Specifically this is the case for Xen on arm and arm64 but I think that
+> other architectures might have the same issue.
+> 
+> Knowing the physical address is necessary to be able to issue any
+> required cache maintenance operations when unmap_page,
+> sync_single_for_cpu and sync_single_for_device are called.
+> 
+> Adding a struct page* parameter to unmap_page, sync_single_for_cpu and
+> sync_single_for_device would make Linux dma handling on Xen on arm and
+> arm64 much easier and quicker.
 
-Signed-off-by: Radek Dostal <radek.dostal@streamunlimited.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
----
- Dear all,
+Using an opaque handle instead of struct page * would be more beneficial
+for the Intel IOMMU driver.  e.g.,
 
- resending the previous patch with added Acked-by from Florian Fainelli. I
- did not hear anything back for almost a week. Additionally CC to
- trivial@kernel.org as it may qualify for it.
+typedef dma_addr_t dma_handle_t;
 
- Thanks,
- Radek
+dma_handle_t dma_map_single(struct device *dev,
+                            void *va, size_t size,
+                            enum dma_data_direction dir);
+void dma_unmap_single(struct device *dev,
+                      dma_handle_t handle, size_t size,
+                      enum dma_data_direction dir);
 
- arch/arm/boot/dts/bcm63138.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+etc.
 
-diff --git a/arch/arm/boot/dts/bcm63138.dtsi b/arch/arm/boot/dts/bcm63138.dtsi
-index f3bb2dd..d2d8e94 100644
---- a/arch/arm/boot/dts/bcm63138.dtsi
-+++ b/arch/arm/boot/dts/bcm63138.dtsi
-@@ -102,7 +102,7 @@
- 		twd_watchdog: watchdog@1e620 {
- 			compatible = "arm,cortex-a9-twd-wdt";
- 			reg = <0x1e620 0x20>;
--			interupts = <GIC_PPI 14 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts = <GIC_PPI 14 IRQ_TYPE_LEVEL_HIGH>;
- 		};
- 	};
- 
--- 
-1.7.9.5
+Drivers would then use:
 
+dma_addr_t dma_addr(dma_handle_t handle);
+
+To obtain the bus address from the handle.
+
+> I think that other drivers have similar problems, such as the Intel
+> IOMMU driver having to call find_iova and walking down an rbtree to get
+> the physical address in its implementation of unmap_page.
+> 
+> Callers have the struct page* in their hands already from the previous
+> map_page call so it shouldn't be an issue for them.  A problem does
+> exist however: there are about 280 callers of dma_unmap_page and
+> pci_unmap_page. We have even more callers of the dma_sync_single_for_*
+> functions.
+
+You will also need to fix dma_unmap_single() and pci_unmap_single()
+(another 1000+ callers).
+
+You may need to consider a parallel set of map/unmap API calls that
+return/accept a handle, and then converting drivers one-by-one as
+required, instead of trying to convert every single driver at once.
+
+David
