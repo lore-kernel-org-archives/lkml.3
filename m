@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaKQJk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:40:59 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:43139 "EHLO
+	id S1752127AbaKQJk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:40:58 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:43184 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbaKQJkw (ORCPT
+	with ESMTP id S1751674AbaKQJkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 04:40:52 -0500
 From: Yijing Wang <wangyijing@huawei.com>
@@ -19,10 +19,11 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-ia64@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         Liviu Dudau <liviu@dudau.co.uk>, <Suravee.Suthikulpanit@amd.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 03/16] PCI: Clean up pci_scan_bus()
-Date: Mon, 17 Nov 2014 18:21:37 +0800
-Message-ID: <1416219710-26088-4-git-send-email-wangyijing@huawei.com>
+        Yijing Wang <wangyijing@huawei.com>,
+        Yijing Wang <wangyijing0307@gmail.com>
+Subject: [RFC PATCH 09/16] PCI: Associate .get_msi_ctrl() with pci_host_bridge
+Date: Mon, 17 Nov 2014 18:21:43 +0800
+Message-ID: <1416219710-26088-10-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
 References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
@@ -34,57 +35,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No one uses it, clean up.
+From: Yijing Wang <wangyijing0307@gmail.com>
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/probe.c |   20 --------------------
- include/linux/pci.h |    1 -
- 2 files changed, 0 insertions(+), 21 deletions(-)
+ drivers/pci/host-bridge.c |    1 +
+ include/linux/pci.h       |    2 ++
+ 2 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index fc99e88..0a02fc2 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -2125,26 +2125,6 @@ struct pci_bus *pci_scan_bus_parented(struct device *parent,
- }
- EXPORT_SYMBOL(pci_scan_bus_parented);
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index 49b6c21..872cae1 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -58,6 +58,7 @@ struct pci_host_bridge *pci_create_host_bridge(
+ 	host->dev.parent = parent;
+ 	INIT_LIST_HEAD(&host->windows);
+ 	host->dev.release = pci_release_host_bridge_dev;
++	host->get_msi_ctrl = info->get_msi_ctrl;
  
--struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops,
--					void *sysdata)
--{
--	LIST_HEAD(resources);
--	struct pci_bus *b;
--
--	pci_add_resource(&resources, &ioport_resource);
--	pci_add_resource(&resources, &iomem_resource);
--	pci_add_resource(&resources, &busn_resource);
--	b = pci_create_root_bus(NULL, bus, ops, sysdata, &resources);
--	if (b) {
--		pci_scan_child_bus(b);
--		pci_bus_add_devices(b);
--	} else {
--		pci_free_resource_list(&resources);
--	}
--	return b;
--}
--EXPORT_SYMBOL(pci_scan_bus);
--
- /**
-  * pci_rescan_bus_bridge_resize - scan a PCI bus for devices.
-  * @bridge: PCI bridge for the bus to scan
+ 	/* this is hack, just for build, will be removed later*/
+ 	b = kzalloc(sizeof(*b), GFP_KERNEL);
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5be8db4..f8045d6 100644
+index a51f5f5..af1ee86 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -769,7 +769,6 @@ struct pci_bus *pci_find_bus(int domain, int busnr);
- void pci_bus_add_devices(const struct pci_bus *bus);
- struct pci_bus *pci_scan_bus_parented(struct device *parent, int bus,
- 				      struct pci_ops *ops, void *sysdata);
--struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
- struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 				    struct pci_ops *ops, void *sysdata,
- 				    struct list_head *resources);
+@@ -408,6 +408,7 @@ struct pci_host_bridge {
+ 	int domain;
+ 	void *sysdata;
+ 	struct pci_ops *ops;
++	struct msi_controller *(*get_msi_ctrl)(struct pci_dev *pdev);
+ 	void (*release_fn)(struct pci_host_bridge *);
+ 	void *release_data;
+ };
+@@ -416,6 +417,7 @@ struct pci_host_info {
+ 	u8 res_type;
+ 	void *arg;
+ 	struct list_head *resources; /*just for build, will clean up later */
++	struct msi_controller *(*get_msi_ctrl)(struct pci_dev *pdev);
+ 	int (*init_res)(struct pci_host_bridge *host, 
+ 			struct pci_host_info *info);
+ };
 -- 
 1.7.1
 
