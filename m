@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaKQKQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:16:31 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:40797 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899AbaKQKQa (ORCPT
+	id S1752224AbaKQKTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:19:35 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:39935 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863AbaKQKTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:16:30 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-41-5469cafb50d6
-Message-id: <5469CAF9.6020700@samsung.com>
-Date: Mon, 17 Nov 2014 11:16:25 +0100
+	Mon, 17 Nov 2014 05:19:33 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-e7-5469cbb2cb94
+Message-id: <5469CBB0.5070704@samsung.com>
+Date: Mon, 17 Nov 2014 11:19:28 +0100
 From: =?UTF-8?B?S3J6eXN6dG9mIEtvesWCb3dza2k=?= <k.kozlowski@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
  Thunderbird/31.2.0
@@ -20,103 +20,149 @@ Cc: lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
         geunsik.lim@samsung.com, inki.dae@samsung.com,
         kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: Re: [PATCH 3/5] clk: s2mps11: Add the support for S2MPS13 PMIC clock
+Subject: Re: [PATCH 4/5] rtc: s5m: Add the support for S2MPS13 RTC
 References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
- <1416184980-532-4-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1416184980-532-4-git-send-email-cw00.choi@samsung.com>
+ <1416184980-532-5-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1416184980-532-5-git-send-email-cw00.choi@samsung.com>
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7q/T2WGGOy+rmyx5OJVdoupD5+w
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/xK7qbTmeGGNw6zmmx5OJVdoupD5+w
 	WVz/8pzVYv6Rc6wWfya0sllMuj+BxeL1C0OLs01v2C3ufz3KaPHtSgeTxeVdc9gsnk64yGZx
 	upvV4uKKL0wOfB47Z91l99i0qpPN4861PWwe804GevRtWcXoMX3eTyaPz5vkAtijuGxSUnMy
-	y1KL9O0SuDLu3ZzMUvBRqOLHqkbWBsal/F2MnBwSAiYS9zqWskLYYhIX7q1n62Lk4hASWMoo
-	8b1/ITuE85lRYuaCPpYuRg4OXgEtic37S0EaWARUJRbt2s4MYrMJeEhM+94DZosKREhcWTOH
-	EcTmFRCU+DH5HgvIHBGBRkaJp0t+gTnMAqcZJdYuWMYEUiUs4Cvx8MwJMFtIoFZi1k6IOKeA
-	i8SSw3cZQRYzC6hLTJmSCxJmFpCX2LzmLfMERoFZSHbMQqiahaRqASPzKkbR1NLkguKk9FxD
-	veLE3OLSvHS95PzcTYyQyPmyg3HxMatDjAIcjEo8vBIHMkOEWBPLiitzDzFKcDArifB+Pg4U
-	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwFj142Hm3u/qjBbLSlOUnxs/XM/W3ulekMgj35iv619v
-	cu30LpvattQ6o2eR+//9Nt5yZ67dWaHX71aZZlp8muo+P++rksWcuVxtllMb52zbfj9ccNcT
-	j+lR9SvlZ5pelxD5FlzIEXLlfeyhzdJ/fyUEJ209mnrwVNViHYF29VuXW+Sawo1lvJVYijMS
-	DbWYi4oTAagDyAt6AgAA
+	y1KL9O0SuDJuL4opWKJQ0bXzAXMD41HJLkZODgkBE4lpm3sYIWwxiQv31rN1MXJxCAksZZT4
+	0bAJLCEk8JlRYuFDZxCbV0BLYuq+VcwgNouAqsSxhnWsIDabgIfEtO89YHFRgQiJK2vmMELU
+	C0r8mHyPBWSoiEAjo8TTJb/AHGaB04wSaxcsYwKpEhZwkpg0/xMbxLZaiYbVH4C6OTg4BVwk
+	pkzXBzGZBdQlpkzJBalgFpCX2LzmLfMERoFZSFbMQqiahaRqASPzKkbR1NLkguKk9FwjveLE
+	3OLSvHS95PzcTYyQqPm6g3HpMatDjAIcjEo8vAeKMkOEWBPLiitzDzFKcDArifB+Pg4U4k1J
+	rKxKLcqPLyrNSS0+xMjEwSnVwDjxQgNj1L2MT52u/g8sFFxNj+eGtC6//ZfN4e/7jTOMNbk/
+	777v7VpVvcdXZMoKrphzf60rDy+deU/BfN+e+sabCtucOypk95VME8jV/Bb6cPuuZIOFRytD
+	S7Mrj0yrVDg0h6v/w59C2YkG89g+vjO/saz4TcSNL3mTd+37d8myaEsLP1sbY7gSS3FGoqEW
+	c1FxIgCLTj6zeAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 17.11.2014 01:42, Chanwoo Choi wrote:
-> This patch adds the support for S2MPS13 PMIC clock which is same with existing
-> S2MPS14 RTC IP. But, S2MPS13 uses all of clocks (32khz_{ap|bt|cp}).
+> This patch adds only the compatible string for S2MPS13 clock which is identical
+> with S2MPS14 clock driver.
 > 
-> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
 > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 > ---
->  drivers/clk/clk-s2mps11.c | 24 ++++++++++++++++++++++++
->  1 file changed, 24 insertions(+)
-> 
-> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-> index b7797fb..7bb13af 100644
-> --- a/drivers/clk/clk-s2mps11.c
-> +++ b/drivers/clk/clk-s2mps11.c
-> @@ -23,6 +23,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/platform_device.h>
->  #include <linux/mfd/samsung/s2mps11.h>
-> +#include <linux/mfd/samsung/s2mps13.h>
->  #include <linux/mfd/samsung/s2mps14.h>
->  #include <linux/mfd/samsung/s5m8767.h>
->  #include <linux/mfd/samsung/core.h>
-> @@ -120,6 +121,24 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
->  	},
->  };
->  
-> +static struct clk_init_data s2mps13_clks_init[S2MPS11_CLKS_NUM] = {
-> +	[S2MPS11_CLK_AP] = {
-> +		.name = "s2mps13_ap",
-> +		.ops = &s2mps11_clk_ops,
-> +		.flags = CLK_IS_ROOT,
-> +	},
-> +	[S2MPS11_CLK_CP] = {
-> +		.name = "s2mps13_cp",
-> +		.ops = &s2mps11_clk_ops,
-> 		.flags = CLK_IS_ROOT,
+>  drivers/rtc/rtc-s5m.c | 15 ++++++++++++++-
+>  1 file changed, 14 insertions(+), 1 deletion(-)
 
-The patch looks corrupted here. Missing '+'?
-
-Rest looks fine.
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+The RTC block looks exactly the same as S2MPS14. I wonder can S2MPS13 be
+supported without adding all "+ case S2MPS13X:" here? Maybe pass the
+same ID in s5m_rtc_id? This would reduce number of changes to only one line.
 
 Best regards,
 Krzysztof
 
 
-> +	},
-> +	[S2MPS11_CLK_BT] = {
-> +		.name = "s2mps13_bt",
-> +		.ops = &s2mps11_clk_ops,
-> +		.flags = CLK_IS_ROOT,
-> +	},
-> +};
-> +
->  static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
->  	[S2MPS11_CLK_AP] = {
->  		.name = "s2mps14_ap",
-> @@ -184,6 +203,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->  		s2mps11_reg = S2MPS11_REG_RTC_CTRL;
->  		clks_init = s2mps11_clks_init;
+> 
+> diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+> index 8754c33..e5fdfd3 100644
+> --- a/drivers/rtc/rtc-s5m.c
+> +++ b/drivers/rtc/rtc-s5m.c
+> @@ -191,6 +191,7 @@ static inline int s5m_check_peding_alarm_interrupt(struct s5m_rtc_info *info,
+>  		ret = regmap_read(info->regmap, S5M_RTC_STATUS, &val);
+>  		val &= S5M_ALARM0_STATUS;
 >  		break;
 > +	case S2MPS13X:
-> +		s2mps11_reg = S2MPS13_REG_RTCCTRL;
-> +		clks_init = s2mps13_clks_init;
-> +		break;
 >  	case S2MPS14X:
->  		s2mps11_reg = S2MPS14_REG_RTCCTRL;
->  		clks_init = s2mps14_clks_init;
-> @@ -279,6 +302,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+>  		ret = regmap_read(info->s5m87xx->regmap_pmic, S2MPS14_REG_ST2,
+>  				&val);
+> @@ -254,6 +255,7 @@ static inline int s5m8767_rtc_set_alarm_reg(struct s5m_rtc_info *info)
+>  	case S5M8767X:
+>  		data &= ~S5M_RTC_TIME_EN_MASK;
+>  		break;
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		data |= S2MPS_RTC_RUDR_MASK;
+>  		break;
+> @@ -311,7 +313,9 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+>  	u8 data[info->regs->regs_count];
+>  	int ret;
 >  
->  static const struct platform_device_id s2mps11_clk_id[] = {
->  	{ "s2mps11-clk", S2MPS11X},
-> +	{ "s2mps13-clk", S2MPS13X},
->  	{ "s2mps14-clk", S2MPS14X},
->  	{ "s5m8767-clk", S5M8767X},
->  	{ },
+> -	if (info->device_type == S2MPS14X) {
+> +	switch (info->device_type) {
+> +	case S2MPS13X:
+> +	case S2MPS14X:
+>  		ret = regmap_update_bits(info->regmap,
+>  				info->regs->rtc_udr_update,
+>  				S2MPS_RTC_RUDR_MASK, S2MPS_RTC_RUDR_MASK);
+> @@ -333,6 +337,7 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+>  		break;
+>  
+>  	case S5M8767X:
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		s5m8767_data_to_tm(data, tm, info->rtc_24hr_mode);
+>  		break;
+> @@ -359,6 +364,7 @@ static int s5m_rtc_set_time(struct device *dev, struct rtc_time *tm)
+>  		s5m8763_tm_to_data(tm, data);
+>  		break;
+>  	case S5M8767X:
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		ret = s5m8767_tm_to_data(tm, data);
+>  		break;
+> @@ -406,6 +412,7 @@ static int s5m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+>  		break;
+>  
+>  	case S5M8767X:
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		s5m8767_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
+>  		alrm->enabled = 0;
+> @@ -454,6 +461,7 @@ static int s5m_rtc_stop_alarm(struct s5m_rtc_info *info)
+>  		break;
+>  
+>  	case S5M8767X:
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		for (i = 0; i < info->regs->regs_count; i++)
+>  			data[i] &= ~ALARM_ENABLE_MASK;
+> @@ -498,6 +506,7 @@ static int s5m_rtc_start_alarm(struct s5m_rtc_info *info)
+>  		break;
+>  
+>  	case S5M8767X:
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		data[RTC_SEC] |= ALARM_ENABLE_MASK;
+>  		data[RTC_MIN] |= ALARM_ENABLE_MASK;
+> @@ -537,6 +546,7 @@ static int s5m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+>  		break;
+>  
+>  	case S5M8767X:
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		s5m8767_tm_to_data(&alrm->time, data);
+>  		break;
+> @@ -641,6 +651,7 @@ static int s5m8767_rtc_init_reg(struct s5m_rtc_info *info)
+>  		ret = regmap_raw_write(info->regmap, S5M_ALARM0_CONF, data, 2);
+>  		break;
+>  
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		data[0] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
+>  		ret = regmap_write(info->regmap, info->regs->ctrl, data[0]);
+> @@ -678,6 +689,7 @@ static int s5m_rtc_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  
+>  	switch (pdata->device_type) {
+> +	case S2MPS13X:
+>  	case S2MPS14X:
+>  		regmap_cfg = &s2mps14_rtc_regmap_config;
+>  		info->regs = &s2mps_rtc_regs;
+> @@ -831,6 +843,7 @@ static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
+>  
+>  static const struct platform_device_id s5m_rtc_id[] = {
+>  	{ "s5m-rtc",		S5M8767X },
+> +	{ "s2mps13-rtc",	S2MPS13X },
+>  	{ "s2mps14-rtc",	S2MPS14X },
+>  };
+>  
 > 
 
