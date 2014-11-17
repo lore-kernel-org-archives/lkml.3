@@ -1,71 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaKQRgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 12:36:46 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:38455 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751138AbaKQRgp (ORCPT
+	id S1751820AbaKQRiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 12:38:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49709 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920AbaKQRiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 12:36:45 -0500
-Date: Mon, 17 Nov 2014 12:36:42 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [PATCH 20/26 v5] seq_buf: Add seq_buf_can_fit() helper function
-Message-ID: <20141117123642.1de9252e@gandalf.local.home>
-In-Reply-To: <20141115050604.073390701@goodmis.org>
-References: <20141115045847.712848224@goodmis.org>
-	<20141115050604.073390701@goodmis.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 17 Nov 2014 12:38:20 -0500
+Message-ID: <1416245856.2734.4.camel@pengutronix.de>
+Subject: Re: [PATCH v2] ARM: Add imprecise abort enable/disable macro
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Fabrice GASNIER <fabrice.gasnier@st.com>, u.kleine-koenig@pengutronix.de,
+        jonathan.austin@arm.com, catalin.marinas@arm.com, will.deacon@arm.com,
+        nico@linaro.org, sboyd@codeaurora.org, marc.zyngier@arm.com,
+        ben.dooks@codethink.co.uk, vgupta@synopsys.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com
+Date: Mon, 17 Nov 2014 18:37:36 +0100
+In-Reply-To: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
+References: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014 23:59:07 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Russell,
 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+can you please revisit this patch? It got stuck in February after you
+questioned if it works on anything but ARMv7M. Fabrice responded with an
+E-Mail that showed that the logic in this patch is supposedly right and
+it should work.
+
+Do you still see anything wrong with this patch? It is a prerequisite
+for proper PCI abort handling on a number of SoCs and I would like to
+see this moving forward.
+
+Thanks,
+Lucas
+
+Am Montag, den 10.02.2014, 17:45 +0100 schrieb Fabrice GASNIER:
+> This patch adds imprecise abort enable/disable macros.
+> It also enables imprecise aborts when starting kernel.
 > 
-> Add a seq_buf_can_fit() helper function that removes the possible mistakes
-> of comparing the seq_buf length plus added data compared to the size of
-> the buffer.
+> Changes in v2:
+> Only ARMv6 and later have CPSR.A bit. On earlier CPUs,
+> and ARMv7M this should be a no-op.
 > 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
 > ---
->  kernel/trace/seq_buf.c | 15 ++++++++++-----
->  1 file changed, 10 insertions(+), 5 deletions(-)
+>  arch/arm/include/asm/irqflags.h |   10 ++++++++++
+>  arch/arm/kernel/smp.c           |    1 +
+>  arch/arm/kernel/traps.c         |    4 ++++
+>  3 files changed, 15 insertions(+)
 > 
-> diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
-> index ce17f65268ed..89d1bd5c27fe 100644
-> --- a/kernel/trace/seq_buf.c
-> +++ b/kernel/trace/seq_buf.c
-> @@ -16,6 +16,11 @@
->  #include <linux/seq_file.h>
->  #include <linux/seq_buf.h>
+> diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
+> index 3b763d6..8301f87 100644
+> --- a/arch/arm/include/asm/irqflags.h
+> +++ b/arch/arm/include/asm/irqflags.h
+> @@ -51,6 +51,14 @@ static inline void arch_local_irq_disable(void)
 >  
-
-I'm adding a comment here:
-
-/**
- * seq_buf_can_fit - can the new data fit in the current buffer?
- * @s: the seq_buf descriptor
- * @len: The length to see if it can fit in the current buffer
- *
- * Returns true if there's enough unused space in the seq_buf buffer
- * to fit the amount of new data according to @len.
- */
-
-
--- Steve
-
-> +static bool seq_buf_can_fit(struct seq_buf *s, size_t len)
-> +{
-> +	return s->len + len < s->size;
-> +}
+>  #define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
+>  #define local_fiq_disable() __asm__("cpsid f	@ __clf" : : : "memory", "cc")
 > +
+> +#ifndef CONFIG_CPU_V7M
+> +#define local_abt_enable()  __asm__("cpsie a	@ __sta" : : : "memory", "cc")
+> +#define local_abt_disable() __asm__("cpsid a	@ __cla" : : : "memory", "cc")
+> +#else
+> +#define local_abt_enable()	do { } while (0)
+> +#define local_abt_disable()	do { } while (0)
+> +#endif
+>  #else
+>  
+>  /*
+> @@ -130,6 +138,8 @@ static inline void arch_local_irq_disable(void)
+>  	: "memory", "cc");					\
+>  	})
+>  
+> +#define local_abt_enable()	do { } while (0)
+> +#define local_abt_disable()	do { } while (0)
+>  #endif
+>  
+>  /*
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index dc894ab..c2093cb 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -377,6 +377,7 @@ asmlinkage void secondary_start_kernel(void)
+>  
+>  	local_irq_enable();
+>  	local_fiq_enable();
+> +	local_abt_enable();
+>  
+>  	/*
+>  	 * OK, it's off to the idle thread for us
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index 4636d56..ef15709 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -900,6 +900,10 @@ void __init early_trap_init(void *vectors_base)
+>  
+>  	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
+>  	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
+> +
+> +	/* Enable imprecise aborts */
+> +	local_abt_enable();
+> +
+>  #else /* ifndef CONFIG_CPU_V7M */
+>  	/*
+>  	 * on V7-M there is no need to copy the vector table to a dedicated
+
+-- 
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
+
