@@ -1,56 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaKQBNJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 20:13:09 -0500
-Received: from smtprelay0219.hostedemail.com ([216.40.44.219]:51441 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751840AbaKQBNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 20:13:07 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:305:355:379:541:599:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3873:3874:4321:5007:6119:6261:7903:7974:8957:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: club40_71e769639f32a
-X-Filterd-Recvd-Size: 2115
-Message-ID: <1416186781.24600.5.camel@perches.com>
-Subject: Re: [PATCH v3 3.18-rc3] kdb: Avoid printing KERN_ levels to consoles
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net, Ingo Molnar <mingo@redhat.com>,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, stable@vger.kernel.org
-Date: Sun, 16 Nov 2014 17:13:01 -0800
-In-Reply-To: <1415386070-18850-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
-	 <1415386070-18850-1-git-send-email-daniel.thompson@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753210AbaKQBac (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 20:30:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60630 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897AbaKQBa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 20:30:29 -0500
+From: Seth Jennings <sjenning@redhat.com>
+To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2 0/3] Kernel Live Patching
+Date: Sun, 16 Nov 2014 19:29:21 -0600
+Message-Id: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 18:47 +0000, Daniel Thompson wrote:
-> Currently when kdb traps printk messages then the raw log level prefix
-> (consisting of '\001' followed by a numeral) does not get stripped off
-> before the message is issued to the various I/O handlers supported by
-> kdb. This causes annoying visual noise as well as causing problems
-> grepping for ^. It is also a change of behaviour compared to normal usage
-> of printk() usage. For example <SysRq>-h ends up with different output to
-> that of kdb's "sr h".
-> 
-> This patch addresses the problem by stripping log levels from messages
-> before they are issued to the I/O handlers. printk() which can also
-> act as an i/o handler in some cases is special cased; if the caller
-> provided a log level then the prefix will be preserved when sent to
-> printk().
+Changelog:
 
-Andrew?
+Thanks for all the feedback!
 
-Any thoughts on whether or not you are going to
-pick this up?
+changes in v2:
+- rebase to next-20141113
+- add copyright/license block to livepatch.h
+- add _LINUX prefix to header defines
+- replace semaphore with mutex
+- add LPC_ prefix to state enum
+- convert BUGs to WARNs and handle properly
+- change Kconfig default to n
+- remove [old|new] attrs from function sysfs dir (KASLR leak, no use)
+- disregard user provided old_addr if kernel uses KASLR
+- s/out/err for error path labels
+- s/unregister/disable for uniform terminology
+- s/lp/lpc for module notifier elements
+- replace module ref'ing with unload notifier + mutex protection
+- adjust notifier priority to run before ftrace
+- make LIVE_PATCHING boolean (about to depend on arch stuff)
+- move x86-specific reloc code to arch/x86
+- s/dynrela/reloc/
+- add live patching sysfs documentation
+- add API function kernel-doc
+- TODO: kernel-doc for API structs once agreed upon
 
+Summary:
+
+This patchset implements an ftrace-based mechanism and kernel interface for
+doing live patching of kernel and kernel module functions.  It represents the
+greatest common functionality set between kpatch [1] and kGraft [2] and can
+accept patches built using either method.  This solution was discussed in the
+Live Patching Mini-conference at LPC 2014 [3].
+
+The model consists of a live patching "core" that provides an interface for
+other "patch" kernel modules to register patches with the core.
+
+Patch modules contain the new function code and create an lp_patch structure
+containing the required data about what functions to patch, where the new code
+for each patched function resides, and in which kernel object (vmlinux or
+module) the function to be patch resides.  The patch module then invokes the
+lp_register_patch() function to register with the core, then lp_enable_patch()
+to have the core redirect the execution paths using ftrace.
+
+An example patch module can be found here:
+https://github.com/spartacus06/livepatch/blob/master/patch/patch.c
+
+The live patching core creates a sysfs hierarchy for user-level access to live
+patching information.  The hierarchy is structured like this:
+
+/sys/kernel/livepatch
+/sys/kernel/livepatch/<patch>
+/sys/kernel/livepatch/<patch>/enabled
+/sys/kernel/livepatch/<patch>/<object>
+/sys/kernel/livepatch/<patch>/<object>/<func>
+
+The old function is located using one of two methods: it is either provided by
+the patch module (only possible for a function in vmlinux) or kallsyms lookup.
+Symbol ambiguity results in a failure.
+
+The core takes a reference on the patch module itself to keep it from
+unloading.  This is because, without a mechanism to ensure that no thread is
+currently executing in the patched function, we can not determine whether it is
+safe to unload the patch module.  For this reason, unloading patch modules is
+currently not allowed.
+
+Disabling patches can be done using the "enabled" attribute of the patch:
+
+echo 0 > /sys/kernel/livepatch/<patch>/enabled
+
+If a patch module contains a patch for a module that is not currently loaded,
+there is nothing to patch so the core does nothing for that patch object.
+However, the core registers a module notifier that looks for COMING events so
+that if the module is ever loaded, it is immediately patched.  If a module with
+patch code is removed, the notifier looks for GOING events and disables any
+patched functions for that object before it unloads.  The notifier has a higher
+priority than that of the ftrace notifier so that it runs before the ftrace
+notifier for GOING events and we can cleanly unregister from ftrace.
+
+kpatch and kGraft each have their own mechanisms for ensuring system
+consistency during the patching process. This first version does not implement
+any consistency mechanism that ensures that old and new code do not run
+together.  In practice, ~90% of CVEs are safe to apply in this way, since they
+simply add a conditional check.  However, any function change that can not
+execute safely with the old version of the function can _not_ be safely applied
+for now.
+
+[1] https://github.com/dynup/kpatch
+[2] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/
+[3] https://etherpad.fr/p/LPC2014_LivePatching
+
+Seth Jennings (3):
+  kernel: add TAINT_LIVEPATCH
+  kernel: add support for live patching
+  kernel: add sysfs documentation for live patching
+
+ Documentation/ABI/testing/sysfs-kernel-livepatch |  44 +
+ Documentation/oops-tracing.txt                   |   2 +
+ Documentation/sysctl/kernel.txt                  |   1 +
+ MAINTAINERS                                      |  13 +
+ arch/x86/Kconfig                                 |   2 +
+ arch/x86/include/asm/livepatch.h                 |  38 +
+ arch/x86/kernel/Makefile                         |   1 +
+ arch/x86/kernel/livepatch.c                      |  83 ++
+ include/linux/kernel.h                           |   1 +
+ include/linux/livepatch.h                        |  68 ++
+ kernel/Makefile                                  |   1 +
+ kernel/livepatch/Kconfig                         |   9 +
+ kernel/livepatch/Makefile                        |   3 +
+ kernel/livepatch/core.c                          | 999 +++++++++++++++++++++++
+ kernel/panic.c                                   |   2 +
+ 15 files changed, 1267 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
+ create mode 100644 arch/x86/include/asm/livepatch.h
+ create mode 100644 arch/x86/kernel/livepatch.c
+ create mode 100644 include/linux/livepatch.h
+ create mode 100644 kernel/livepatch/Kconfig
+ create mode 100644 kernel/livepatch/Makefile
+ create mode 100644 kernel/livepatch/core.c
+
+-- 
+1.9.3
 
