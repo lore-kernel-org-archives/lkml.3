@@ -1,136 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaKQKIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:08:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51246 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751636AbaKQKIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:08:53 -0500
-Date: Mon, 17 Nov 2014 12:08:38 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH V3 2/2] virtio-net: sanitize buggy features advertised by
- host
-Message-ID: <20141117100838.GD20133@redhat.com>
-References: <1416215838-21700-1-git-send-email-jasowang@redhat.com>
- <1416215838-21700-2-git-send-email-jasowang@redhat.com>
+	id S1752254AbaKQKJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:09:10 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:53682 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826AbaKQKJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 05:09:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Suravee.Suthikulpanit@amd.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Wuyun <wuyun.wu@huawei.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 01/16] PCI: Enhance pci_scan_root_bus() to support default IO/MEM resources
+Date: Mon, 17 Nov 2014 11:08:34 +0100
+Message-ID: <2732970.7HG94QvVBv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416219710-26088-2-git-send-email-wangyijing@huawei.com>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1416219710-26088-2-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416215838-21700-2-git-send-email-jasowang@redhat.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:MBa1DRmSOBDs6R26wfJJ1i8gvO0vJQdTc2tGi696nyZ
+ CkSVXeWK4ySnY94TSlBEPYfWBQSFYYQYPcPKYCl1qQLH89trd5
+ QjQNPaQIgXDYbS4CbrWaqAZ7Y8+dSkzVr78tA7WFlMKioGfbih
+ QTiUiMUtQ5Ivwd5KmkknVxcQomzuZ1Q6Wqpbk23ZPIBOmAV5Z7
+ VTHF5DjpIhjHTCuu63jQTIvSkq4DAU1at77GCZUAcEM3KYV6wN
+ A6wmv2T8RP28vrR4arpJqRxQVGi+FITKZyeThWZMlGXabDSgDe
+ pjsz5InT+9EQPyLP9mIiU2DHNUdPtFgXwW79AWljE1Y79IDbbD
+ pGPO7Wq9xcD+xBZiEizY=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 05:17:18PM +0800, Jason Wang wrote:
-> This patch tries to detect the possible buggy features advertised by host
-> and sanitize them. One example is booting virtio-net with only ctrl_vq
-> disabled, qemu may still advertise many features which depends on it. This
-> will trigger several BUG()s in virtnet_send_command().
+On Monday 17 November 2014 18:21:35 Yijing Wang wrote:
+> -       list_for_each_entry(window, resources, list)
+> -               if (window->res->flags & IORESOURCE_BUS) {
+> -                       found = true;
+> -                       break;
+> -               }
+> +       if (!resources) {
+> +               pci_add_resource(&default_res, &ioport_resource);
+> +               pci_add_resource(&default_res, &iomem_resource);
+> +               pci_add_resource(&default_res, &busn_resource);
+> +       } else {
 > 
-> This patch utilizes the sanitize_features() method, and disables all
-> features that depends on ctrl_vq if it was not advertised.
-> 
-> This fixes the crash when booting with ctrl_vq=off using qemu.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
+Isn't it almost always wrong to do this? You are adding all of the
+I/O ports and memory to the host bridge, which will prevent you from
+adding another host bridge, and the iomem_resource normally
+includes a lot of addresses that are not accessible by the PCI host.
 
-So I'm not sure this is useful.
-The spec says:
-	The device MUST NOT offer a feature which requires another feature which
-	was not offered.
-So this is a buggy hypervisor, and I believe we should just fail probe.
-This can be done without crashing, and is generally a better
-idea that second-guessing what hypervisor wants us to do.
-
-
-
-
-
-However, assuming that we do want this change:
-This can be replaced with a table driven design in virtio core, but
-since you chose to open code it, I would drop table below altogether.
-
-
-Just make it
-	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
-		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
-		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_VLAN);
-		virtio_disable_feature(dev, VIRTIO_NET_F_GUEST_ANNOUNCE);
-		virtio_disable_feature(dev, VIRTIO_NET_F_MQ);
-		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR);
-	}
-
-
-
-
-> ---
-> Changes from V1:
-> - fix the cut-and-paste error
-> Changes from V2:
-> - loop through an array of feature bits
-> - switch to use dev_warn()
-> ---
->  drivers/net/virtio_net.c | 26 ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index ec2a8b4..6fadd8c 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1948,6 +1948,31 @@ static int virtnet_restore(struct virtio_device *vdev)
->  }
->  #endif
->  
-> +static void virtnet_sanitize_features(struct virtio_device *dev)
-> +{
-> +	unsigned int features_for_ctrl_vq[] = {
-> +		VIRTIO_NET_F_CTRL_RX,
-> +		VIRTIO_NET_F_CTRL_VLAN,
-> +		VIRTIO_NET_F_GUEST_ANNOUNCE,
-> +		VIRTIO_NET_F_MQ,
-> +		VIRTIO_NET_F_CTRL_MAC_ADDR
-> +	};
-
-This is not the only dependency: checksums
-have dependencies too. See virtio 1.0 spec.
-
-
-
-> +	int i;
-> +
-> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
-> +		for (i = 0; i < ARRAY_SIZE(features_for_ctrl_vq); i++) {
-> +			unsigned int f = features_for_ctrl_vq[i];
-> +			if (virtio_has_feature(dev, f)) {
-> +				virtio_disable_feature(dev, f);
-> +				dev_warn(&dev->dev,
-> +					 "buggy hyperviser: disable feature "
-> +					 "0x%x since VIRTIO_NET_F_CTRL_VQ was "
-> +					 "not advertised.\n", f);
-> +			}
-> +		}
-> +	}
-> +}
-> +
->  static struct virtio_device_id id_table[] = {
->  	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
->  	{ 0 },
-> @@ -1975,6 +2000,7 @@ static struct virtio_driver virtio_net_driver = {
->  	.probe =	virtnet_probe,
->  	.remove =	virtnet_remove,
->  	.config_changed = virtnet_config_changed,
-> +	.sanitize_features = virtnet_sanitize_features,
->  #ifdef CONFIG_PM_SLEEP
->  	.freeze =	virtnet_freeze,
->  	.restore =	virtnet_restore,
-> -- 
-> 1.9.1
+	Arnd
