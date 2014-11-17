@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537AbaKQSkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:40:06 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46946 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaKQSkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:40:04 -0500
-From: Stephane Viau <sviau@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH] drm/msm/mdp5: get the core clock rate from MDP5 config
-Date: Mon, 17 Nov 2014 13:39:34 -0500
-Message-Id: <1416249574-22940-1-git-send-email-sviau@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	id S1752596AbaKQSnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:43:17 -0500
+Received: from mout.web.de ([212.227.17.12]:51851 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751923AbaKQSnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 13:43:16 -0500
+Message-ID: <546A419B.7060409@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 19:42:35 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joel Becker <jlbec@evilplan.org>
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] configfs: Deletion of unnecessary checks before the function
+ call "config_item_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ZgtTzwtD8g3VghMv7Iwl4uYdoypesjkSEWyRbi0xkmolilIriSE
+ KwqGs1+jkaiCpPWy9PnMMbcOxBn+R4t8KFYmXQ4qQ888bhayltb/usKsO4ih92Ib/rkyQbl
+ TzzKs3s3ozvGgja9Ma33+ZYKSgfpqtLDaudsdqNGh+dIlFVlze6TmKy+Wghd2lOBg0vf1fW
+ RhEudbQLPYoemv9dHMPTw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core clock rate depends on the hw configuration. Once we have
-read the hardware revision, we can set the core clock to its
-maximum value.
-Before then, the clock is set at a rate supported by all MDP5
-revisions.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 19:37:03 +0100
 
-Signed-off-by: Stephane Viau <sviau@codeaurora.org>
+The config_item_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c | 9 +++++----
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h | 3 ++-
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ fs/configfs/file.c | 3 +--
+ fs/configfs/item.c | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-index 1bb3a28..f2c15bd 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-@@ -62,6 +62,7 @@ static const struct mdp5_config msm8x74_config = {
- 		.count = 4,
- 		.base = { 0x12500, 0x12700, 0x12900, 0x12b00 },
- 	},
-+	.max_clk = 200000000,
- };
+diff --git a/fs/configfs/file.c b/fs/configfs/file.c
+index 1d1c41f..48f36e7 100644
+--- a/fs/configfs/file.c
++++ b/fs/configfs/file.c
+@@ -291,8 +291,7 @@ static int configfs_release(struct inode * inode, struct file * filp)
+ 	struct module * owner = attr->ca_owner;
+ 	struct configfs_buffer * buffer = filp->private_data;
  
- static const struct mdp5_config apq8084_config = {
-@@ -99,6 +100,7 @@ static const struct mdp5_config apq8084_config = {
- 		.count = 5,
- 		.base = { 0x12500, 0x12700, 0x12900, 0x12b00, 0x12d00 },
- 	},
-+	.max_clk = 320000000,
- };
+-	if (item)
+-		config_item_put(item);
++	config_item_put(item);
+ 	/* After this point, attr should not be accessed. */
+ 	module_put(owner);
  
- struct mdp5_config_entry {
-@@ -420,12 +422,13 @@ struct msm_kms *mdp5_kms_init(struct drm_device *dev)
- 	if (ret)
- 		goto fail;
+diff --git a/fs/configfs/item.c b/fs/configfs/item.c
+index e65f9ff..891b20e 100644
+--- a/fs/configfs/item.c
++++ b/fs/configfs/item.c
+@@ -153,8 +153,7 @@ static void config_item_cleanup(struct config_item *item)
+ 		t->ct_item_ops->release(item);
+ 	if (s)
+ 		config_group_put(s);
+-	if (parent)
+-		config_item_put(parent);
++	config_item_put(parent);
+ }
  
--	ret = clk_set_rate(mdp5_kms->src_clk, config->max_clk);
--
- 	ret = mdp5_select_hw_cfg(kms);
- 	if (ret)
- 		goto fail;
- 
-+	/* TODO: compute core clock rate at runtime */
-+	clk_set_rate(mdp5_kms->src_clk, mdp5_kms->hw_cfg->max_clk);
-+
- 	/* make sure things are off before attaching iommu (bootloader could
- 	 * have left things on, in which case we'll start getting faults if
- 	 * we don't disable):
-@@ -486,8 +489,6 @@ static struct mdp5_platform_config *mdp5_get_config(struct platform_device *dev)
- 	/* TODO */
- #endif
- 	config.iommu = iommu_domain_alloc(&platform_bus_type);
--	/* TODO hard-coded in downstream mdss, but should it be? */
--	config.max_clk = 200000000;
- 	/* TODO get from DT: */
- 	config.smp_blk_cnt = 22;
- 
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-index c91101d..bdbdcda 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-@@ -37,6 +37,8 @@ struct mdp5_config {
- 	struct mdp5_sub_block dspp;
- 	struct mdp5_sub_block ad;
- 	struct mdp5_sub_block intf;
-+
-+	uint32_t max_clk;
- };
- extern const struct mdp5_config *mdp5_cfg;
- #include "mdp5.xml.h"
-@@ -78,7 +80,6 @@ struct mdp5_kms {
- /* platform config data (ie. from DT, or pdata) */
- struct mdp5_platform_config {
- 	struct iommu_domain *iommu;
--	uint32_t max_clk;
- 	int smp_blk_cnt;
- };
- 
+ static void config_item_release(struct kref *kref)
 -- 
-Qualcomm Innovation Center, Inc.
-
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, a Linux Foundation Collaborative Project
+2.1.3
 
