@@ -1,76 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaKQXE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 18:04:58 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:40201 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaKQXE5 (ORCPT
+	id S1753402AbaKQXFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 18:05:11 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60878 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367AbaKQXFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 18:04:57 -0500
-Message-ID: <546A7F18.8090309@kernel.dk>
-Date: Mon, 17 Nov 2014 16:04:56 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 17 Nov 2014 18:05:07 -0500
+Date: Mon, 17 Nov 2014 17:04:30 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "Kishon Vijay Abraham I" <kishon@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH V5 01/12] xhci: Set shared HCD's hcd_priv in
+ xhci_gen_setup
+Message-ID: <20141117230430.GA9716@saruman>
+Reply-To: <balbi@ti.com>
+References: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
+ <1416264102-1323-2-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-References: <20141114213124.GB3344@redhat.com>	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>	<alpine.DEB.2.11.1411142326510.3909@nanos>	<CA+55aFxExBiRpPemPECKP9wMnR4F4J=ne8UoHKcXjntGB_OEgA@mail.gmail.com> <CA+55aFyBnd_Hbe46UpeRktS+ePkAdL5k7vEChUMEx3-e8O1Usg@mail.gmail.com>
-In-Reply-To: <CA+55aFyBnd_Hbe46UpeRktS+ePkAdL5k7vEChUMEx3-e8O1Usg@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IJpNTDwzlM2Ie8A6"
+Content-Disposition: inline
+In-Reply-To: <1416264102-1323-2-git-send-email-abrestic@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2014 02:22 PM, Linus Torvalds wrote:
-> On Fri, Nov 14, 2014 at 5:59 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> Judging by the code disassembly, it's the "csd_lock_wait(csd)" at the
->> end.
-> 
-> Btw, looking at this, I grew really suspicious of this code in csd_unlock():
-> 
->         WARN_ON((csd->flags & CSD_FLAG_WAIT) && !(csd->flags & CSD_FLAG_LOCK));
-> 
-> because that makes no sense at all. It basically removes a sanity
-> check, yet that sanity check makes a hell of a lot of sense. Unlocking
-> a CSD that is not locked is *wrong*.
-> 
-> The crazy code code comes from commit c84a83e2aaab ("smp: don't warn
-> about csd->flags having CSD_FLAG_LOCK cleared for !wait") by Jens, but
-> the explanation and the code is pure crap.
-> 
-> There is no way in hell that it is ever correct to unlock an entry
-> that isn't locked, so that whole CSD_FLAG_WAIT thing is buggy as hell.
-> 
-> The explanation in commit c84a83e2aaab says that  "blk-mq reuses the
-> request potentially immediately" and claims that that is somehow ok,
-> but that's utter BS. Even if you don't ever wait for it, the CSD lock
-> bit fundamentally also protects the "csd->llist" pointer. So what that
-> commit actually does is to just remove a safety check, and do so in a
-> very unsafe manner. And apparently block-mq re-uses something THAT IS
-> STILL ACTIVELY IN USE. That's just horrible.
+--IJpNTDwzlM2Ie8A6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I agree that this description is probably utter crap. And now I do
-actually remember the issue at hand. The resource here is the tag, that
-decides what request we'll use, and subsequently what call_single_data
-storage is used. When this was originally done, blk-mq cleared the
-request from the function callback, instead of doing it at allocation
-time. The assumption here was cache hotness. That in turn also cleared
-->csd, which meant that the flags got zeroed and csd_unlock() was
-naturally unhappy. THAT was the reuse case, not that the request would
-get reused before we had finished the IPI fn callback since that would
-obviously create other badness. Now I'm not sure what made me create
-that patch, which in retrospect is a bad hammer for this problem.
+On Mon, Nov 17, 2014 at 02:41:31PM -0800, Andrew Bresticker wrote:
+> xhci_gen_setup() sets the hcd_priv field for the primary HCD, but not
+> for the shared HCD, requiring xHCI host-controller drivers to set it
+> between usb_create_shared_hcd() and usb_add_hcd().  There's no reason
+> xhci_gen_setup() can't set the shared HCD's hcd_priv as well, so move
+> that bit out of the host-controller drivers and into xhci_gen_setup().
+>=20
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 
-blk-mq doesn't do the init-at-finish time anymore, so it should not be
-hit by the issue. But if we do bring that back, then it would still work
-fine with Thomas' patch, since we unlock prior to running the callback.
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
--- 
-Jens Axboe
+> ---
+> New for v5.
+> Peviously posted here: https://lkml.org/lkml/2014/10/30/726
+> ---
+>  drivers/usb/host/xhci-pci.c  | 5 -----
+>  drivers/usb/host/xhci-plat.c | 5 -----
+>  drivers/usb/host/xhci.c      | 6 +++---
+>  3 files changed, 3 insertions(+), 13 deletions(-)
+>=20
+> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> index 9a69b1f..31025e4 100644
+> --- a/drivers/usb/host/xhci-pci.c
+> +++ b/drivers/usb/host/xhci-pci.c
+> @@ -221,11 +221,6 @@ static int xhci_pci_probe(struct pci_dev *dev, const=
+ struct pci_device_id *id)
+>  		goto dealloc_usb2_hcd;
+>  	}
+> =20
+> -	/* Set the xHCI pointer before xhci_pci_setup() (aka hcd_driver.reset)
+> -	 * is called by usb_add_hcd().
+> -	 */
+> -	*((struct xhci_hcd **) xhci->shared_hcd->hcd_priv) =3D xhci;
+> -
+>  	retval =3D usb_add_hcd(xhci->shared_hcd, dev->irq,
+>  			IRQF_SHARED);
+>  	if (retval)
+> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> index 3d78b0c..5bc33bc 100644
+> --- a/drivers/usb/host/xhci-plat.c
+> +++ b/drivers/usb/host/xhci-plat.c
+> @@ -149,11 +149,6 @@ static int xhci_plat_probe(struct platform_device *p=
+dev)
+>  	if ((node && of_property_read_bool(node, "usb3-lpm-capable")) ||
+>  			(pdata && pdata->usb3_lpm_capable))
+>  		xhci->quirks |=3D XHCI_LPM_SUPPORT;
+> -	/*
+> -	 * Set the xHCI pointer before xhci_plat_setup() (aka hcd_driver.reset)
+> -	 * is called by usb_add_hcd().
+> -	 */
+> -	*((struct xhci_hcd **) xhci->shared_hcd->hcd_priv) =3D xhci;
+> =20
+>  	if (HCC_MAX_PSA(xhci->hcc_params) >=3D 4)
+>  		xhci->shared_hcd->can_do_streams =3D 1;
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 2a5d45b..ae05471 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -4843,9 +4843,9 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_qu=
+irks_t get_quirks)
+>  		 */
+>  		hcd->has_tt =3D 1;
+>  	} else {
+> -		/* xHCI private pointer was set in xhci_pci_probe for the second
+> -		 * registered roothub.
+> -		 */
+> +		xhci =3D hcd_to_xhci(hcd->primary_hcd);
+> +		*((struct xhci_hcd **) hcd->hcd_priv) =3D xhci;
+> +
+>  		return 0;
+>  	}
+> =20
+> --=20
+> 2.1.0.rc2.206.gedb03e5
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+--=20
+balbi
+
+--IJpNTDwzlM2Ie8A6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUan7+AAoJEIaOsuA1yqREciQP/ixPr72oNv2rCgUKGo6cMCIm
+Qed6uRREzuOpRBY4CKqquLC9lgBAIGdzkh5nIckwaQmTcU4FqRbTaBrMqdg0rWbZ
+A7r1zWLkNG5L4oSdlgW8+LPueJt6LyQyxThm+AjB2blBUQG6cbKkq1P1MUUEB32G
+JrGu5O3IN139meNjTLJU8UxsVqpJ1gibwI5/g11jtpTOGPg9jYRxiFr3v5YmEuZn
+ZFlAFbNh+2Vsft4a1NGVcbN5wORGWzkexe3xMJM9wfFViXeDgx7f0CXupOftSggD
+gFwwKBQ9mH9pbqNKY4ppoQ6zm1/JuLsGYGw5ljaEV7YBBWGPjtAr0MTFUNgTxmPD
+tfpEi62fvTZiJ3H6j3bXD1FRvxIsMj4bySlZMsH5T8CmhShFZsX/E9GxBJq7WSAx
+n8C6OwhP3P8DeBBw/JmOvk9HJPSWp3GBdcA4GBAs2wKarsRyOeTVESG/F6kJ3Ot/
+2LEsWm4qDmoH6zEGaxlsXo94qLddU/Kz/regVnRqsGRs5wgJ6Y48bFu7NiYpkdLD
+ymcp1YV03FInCoyevFdqdwPC9Uck13cwPTiOoTSyEL6ZFmF1eOMQYTBaFEIuLxn4
+4czLcWTv87KYroyr/acIOrk6vBOMcvDHhnU2FbmBw/8CZvPWxwMP6dElyR0wO4yG
+eunPuSIjVPVfaAXRAxK+
+=VJo1
+-----END PGP SIGNATURE-----
+
+--IJpNTDwzlM2Ie8A6--
