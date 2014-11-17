@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698AbaKQWwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:52:09 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:59330 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317AbaKQWuc convert rfc822-to-8bit (ORCPT
+	id S1753710AbaKQWxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:53:19 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60301 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752657AbaKQWxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:50:32 -0500
+	Mon, 17 Nov 2014 17:53:18 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@linaro.org>
+Subject: Re: linux-next: build warning after merge of the pm tree
+Date: Tue, 18 Nov 2014 00:14:19 +0100
+Message-ID: <1721522.tICxlGjU6i@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416223903.22252.11.camel@x220>
+References: <20141117134414.7f4d8d21@canb.auug.org.au> <1416223903.22252.11.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <9f43a787-165e-4256-a097-f7691204d9d6@email.android.com>
-References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
- <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
- <546A3942.5040906@schaufler-ca.com> <CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
- <CALCETrVn4gVXp7F=5h-bkN5VWuRMG9BoxgeQfKhX4+ZXxGE=wQ@mail.gmail.com> <9f43a787-165e-4256-a097-f7691204d9d6@email.android.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 17 Nov 2014 14:50:10 -0800
-Message-ID: <CALCETrU2tXM5sKx=L-K6=ARkvqefkcZHW3_RGhsgfc31FuWxJg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
- to drop groups
-To: "Eric W.Biederman" <ebiederm@xmission.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 2:41 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
->
->
-> On November 17, 2014 1:46:59 PM EST, Andy Lutomirski <luto@amacapital.net> wrote:
->>On Mon, Nov 17, 2014 at 10:31 AM, Andy Lutomirski <luto@amacapital.net>
->>wrote:
->>> On Mon, Nov 17, 2014 at 10:06 AM, Casey Schaufler
->>> <casey@schaufler-ca.com> wrote:
->>>> On 11/15/2014 1:01 AM, Josh Triplett wrote:
->>>>> Currently, unprivileged processes (without CAP_SETGID) cannot call
->>>>> setgroups at all.  In particular, processes with a set of
->>supplementary
->>>>> groups cannot further drop permissions without obtaining elevated
->>>>> permissions first.
->>>>
->>>> Has anyone put any thought into how this will interact with
->>>> POSIX ACLs? I don't see that anywhere in the discussion.
->>>
->>> That means that user namespaces are a problem, too, and we need to
->>fix
->>> it.  Or we should add some control to turn unprivileged user
->>namespace
->>> creation on and off and document that turning it on defeats POSIX
->>ACLs
->>> with a group entry that is more restrictive than the other entry.
->>>
->>
->>This is a significant enough issue that I posted it to oss-security:
->>
->>http://www.openwall.com/lists/oss-security/2014/11/17/19
->>
->>It's not at all obvious to me how to fix it.  We could disallow userns
->>creation of any supplementary groups don't match fsuid, or we could
->>keep negative-only groups around in the userns.
->>
->>It may be worth adding a sysctl to change the behavior, too.  IMO it's
->>absurd to use groups to deny permissions that are otherwise available.
->
-> There is an obvious user namespace fix.  Don't allow dropping supplemental groups that are not mapped.
+On Monday, November 17, 2014 12:31:43 PM Paul Bolle wrote:
+> On Mon, 2014-11-17 at 13:44 +1100, Stephen Rothwell wrote:
+> > Hi Rafael,
+> > 
+> > After merging the pm tree, today's linux-next build (arm multi_v7_defconfig)
+> > produced this warning:
+> > 
+> > kernel/power/Kconfig:132:error: recursive dependency detected!
+> > kernel/power/Kconfig:132:	symbol PM_RUNTIME is selected by PM_GENERIC_DOMAINS
+> > kernel/power/Kconfig:272:	symbol PM_GENERIC_DOMAINS is selected by PM_RUNTIME
+> > 
+> > Caused by commit 9cdd5fd742e6 ("PM / domains: Kconfig: always enable
+> > PM_RUNTIME when genpd enabled").
+> 
+> This error also popped up when I fiddled with omap2plus_defconfig on top
+> of next-20141117. Note that I ended up with a .config which has
+> CONFIG_ARCH_MULTI_V7 set. The error appears to be triggered by the
+> Kconfig entry for ARCH_EXYNOS (in arch/arm/mach-exynos/Kconfig). It
+> contains
+>         select PM_GENERIC_DOMAINS if PM_RUNTIME
+> 
+> (Perhaps the :272: line needs rephrasing in the error Stephen quoted. It
+> confused me quite a bit.)
+> 
+> Naively dropping that select statement from ARCH_EXYNOS triggered yet
+> another error:
+>     kernel/power/Kconfig:145:error: recursive dependency detected!
+>     kernel/power/Kconfig:145:	symbol PM depends on PM_RUNTIME
+>     kernel/power/Kconfig:132:	symbol PM_RUNTIME is selected by PM_GENERIC_DOMAINS
+>     kernel/power/Kconfig:272:	symbol PM_GENERIC_DOMAINS is selected by PM
+> 
+> After that I admitted defeat.
 
-Why exactly does this fix it?  I guess that, if a supplementary group
-is in your subgid list, then we can assume that dropping it is safe?
+I'll drop the commit for now, but this looks strange.
 
->
-> That will require a little bit of fancy footwork if you want to play with supplemental groups in your unprivileged user namespace.   I would like to get a grip on what hoops would be required before we add the additional restriction.  Possibly something as simple as calling sg.
+Had you cleaned up the kernel configuration after dropping the PM_RUNTIME select
+from ARCH_EXYNOS?
 
-The main hoop I can think of is that setgroups would be impossible to
-call if you have an unmapped supplementary group.  This could break
-all kinds of things.
+Rafael
 
->
-> I also want to look at what Tizen and any other concrete pieces of code I can find using this negative permission pattern are actually doing.   Bugs definitely exist, but I have this erie feeling that the bugs may be in instances of userspace using this negative group permission pattern.  I think we may have a hideous case of one setuid binary defeating a privilege check of another piece of code.
->
-> This issue looks like it is worth a full scale investigation.  Sigh.
-
-Agreed.
-
->
-> Eric
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
