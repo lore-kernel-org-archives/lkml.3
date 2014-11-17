@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaKQSV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:21:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33665 "EHLO mx1.redhat.com"
+	id S1752545AbaKQSXC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:23:02 -0500
+Received: from sauhun.de ([89.238.76.85]:37607 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaKQSV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:21:57 -0500
-Subject: [PATCH 4/4] fm10k/igb/ixgbe: Use fast_rmb on Rx descriptor reads
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
-        michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Mon, 17 Nov 2014 09:18:40 -0800
-Message-ID: <20141117171839.22333.25487.stgit@ahduyck-server>
-In-Reply-To: <20141117171005.22333.96544.stgit@ahduyck-server>
-References: <20141117171005.22333.96544.stgit@ahduyck-server>
-User-Agent: StGit/0.17-dirty
+	id S1751180AbaKQSXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 13:23:00 -0500
+Date: Mon, 17 Nov 2014 19:24:13 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Yuan Yao <yao.yuan@freescale.com>
+Cc: marex@denx.de, LW@KARO-electronics.de, mark.rutland@arm.com,
+        fugang.duan@freescale.com, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v10 3/3] i2c: imx: add DMA support for freescale i2c
+ driver
+Message-ID: <20141117182413.GC12644@katana>
+References: <1416220836-7666-1-git-send-email-yao.yuan@freescale.com>
+ <1416220836-7666-4-git-send-email-yao.yuan@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rQ2U398070+RC21q"
+Content-Disposition: inline
+In-Reply-To: <1416220836-7666-4-git-send-email-yao.yuan@freescale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes it so that fast_rmb is used when reading the Rx
-descriptor.  The advantage of fast_rmb is that it allows for a much
-lower cost barrier on x86, powerpc, arm, and arm64 architectures than a
-traditional memory barrier when dealing with reads that only have to
-synchronize to system memory.
 
-In addition I have updated the code so that it just checks to see if any
-bits have been set instead of just the DD bit since the DD bit will always
-be set as a part of a descriptor write-back so we just need to check for a
-non-zero value being present at that memory location rather than just
-checking for any specific bit.  This allows the code itself to appear much
-cleaner and allows the compiler more room to optimize.
+--rQ2U398070+RC21q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Matthew Vick <matthew.vick@intel.com>
-Cc: Don Skidmore <donald.c.skidmore@intel.com>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
----
- drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +++---
- drivers/net/ethernet/intel/igb/igb_main.c     |    6 +++---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 ++++-----
- 3 files changed, 10 insertions(+), 11 deletions(-)
+On Mon, Nov 17, 2014 at 06:40:36PM +0800, Yuan Yao wrote:
+> Add dma support for i2c. This function depend on DMA driver.
+> You can turn on it by write both the dmas and dma-name properties in dts =
+node.
+> DMA is optional, even DMA request unsuccessfully, i2c can also work well.
+>=20
+> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
 
-diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_main.c b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-index e645af4..ba959b9 100644
---- a/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-+++ b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-@@ -620,14 +620,14 @@ static bool fm10k_clean_rx_irq(struct fm10k_q_vector *q_vector,
- 
- 		rx_desc = FM10K_RX_DESC(rx_ring, rx_ring->next_to_clean);
- 
--		if (!fm10k_test_staterr(rx_desc, FM10K_RXD_STATUS_DD))
-+		if (!rx_desc->d.staterr)
- 			break;
- 
- 		/* This memory barrier is needed to keep us from reading
- 		 * any other fields out of the rx_desc until we know the
--		 * RXD_STATUS_DD bit is set
-+		 * descriptor has been written back
- 		 */
--		rmb();
-+		fast_rmb();
- 
- 		/* retrieve a buffer from the ring */
- 		skb = fm10k_fetch_rx_buffer(rx_ring, rx_desc, skb);
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index a2d72a8..3dbbaa8 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -6918,14 +6918,14 @@ static bool igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
- 
- 		rx_desc = IGB_RX_DESC(rx_ring, rx_ring->next_to_clean);
- 
--		if (!igb_test_staterr(rx_desc, E1000_RXD_STAT_DD))
-+		if (!rx_desc->wb.upper.status_error)
- 			break;
- 
- 		/* This memory barrier is needed to keep us from reading
- 		 * any other fields out of the rx_desc until we know the
--		 * RXD_STAT_DD bit is set
-+		 * descriptor has been written back
- 		 */
--		rmb();
-+		fast_rmb();
- 
- 		/* retrieve a buffer from the ring */
- 		skb = igb_fetch_rx_buffer(rx_ring, rx_desc, skb);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index d2df4e3..890d740 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2003,15 +2003,14 @@ static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 
- 		rx_desc = IXGBE_RX_DESC(rx_ring, rx_ring->next_to_clean);
- 
--		if (!ixgbe_test_staterr(rx_desc, IXGBE_RXD_STAT_DD))
-+		if (!rx_desc->wb.upper.status_error)
- 			break;
- 
--		/*
--		 * This memory barrier is needed to keep us from reading
-+		/* This memory barrier is needed to keep us from reading
- 		 * any other fields out of the rx_desc until we know the
--		 * RXD_STAT_DD bit is set
-+		 * descriptor has been written back
- 		 */
--		rmb();
-+		fast_rmb();
- 
- 		/* retrieve a buffer from the ring */
- 		skb = ixgbe_fetch_rx_buffer(rx_ring, rx_desc);
+gcc found a bug:
 
+drivers/i2c/busses/i2c-imx.c:703:7: warning: 'orig_jiffies' may be used uni=
+nitialized in this function [-Wuninitialized]
+drivers/i2c/busses/i2c-imx.c:672:16: note: 'orig_jiffies' was declared here
+
+> +	result =3D wait_for_completion_interruptible_timeout(
+> +				&i2c_imx->dma->cmd_complete,
+> +				msecs_to_jiffies(DMA_TIMEOUT));
+
+And are you sure you want to use
+wait_for_completion_interruptible_timeout() instead of
+wait_for_completion_timeout() here? Unless you confirm you tested it a
+lot with signals, I really cannot recommend the *_interruptible_*
+version.
+
+Other than that, good. I liked the logfile of what you tested very much!
+
+Thanks,
+
+   Wolfram
+
+
+--rQ2U398070+RC21q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUaj1MAAoJEBQN5MwUoCm2iAQP+gLvU7RvnQ8HxMQwrz7EKPab
+gLmHNnokSivV0hk/pKscDE+OIW7ep8JkVqGBn9EnyTbx3IMXpZlr+b+sYMmp7gi9
+fw57Oat4JTP5sQWk46f6K26ptUQDQMAXhSFg33JByQ1P10UJkKpDpjtohB6jh4iS
+e7Q6q0pI0p3AyWcoCNqSfzGa3cXKT1cpQhAk+Az/HrmhA/1A004XuPJP/L6cYnik
+cdMKYKOLTShl/QYqMHn6BzsZejAqFU3k2BHE8s8wpnjCQ5gA+VKwJMAdLufrdsEM
+//yQsnzuZIX+uKXJW3xTbLCG4A4Y+I9EUKfTwLSrT22rTnPe1WY0fYS3yLMRU4hw
+Qs9BxKux7Pa49Kml7s/XAqxID3r+G9yWuea0V8wK5Um6jfNyD1jUQP8bzFU2+szW
+LAA5XiscFrxn+jztD9Nc9PIf+okCHwClM+wG6YYOjX+BUfzwNGtvWMn8j9lcStkT
+RWh3HVbs5+APXw/hRzGIHLWDG1g4yDCnLQn7TaxFqa2dEY0uJ2QMU2QLsGEmGMKm
+NiaWcQXs5WNYl8FGX6WUEQ1CwQBMUf/mDhw2l+pknpCV2kzRiF0yuT4bqCbMJQ6W
+7mhUiJgdH8Ko6T0OMfeGTwV+8A243bYC41G7s2BauJXOstYP0tHzAFDXMcXVt5IP
+eKgD7RMzCIyTvTuswvzu
+=q3Tk
+-----END PGP SIGNATURE-----
+
+--rQ2U398070+RC21q--
