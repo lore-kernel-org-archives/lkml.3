@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaKQCjI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 21:39:08 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:7593 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752141AbaKQCjG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 21:39:06 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-CC: "'Will Deacon'" <will.deacon@arm.com>,
-        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 17 Nov 2014 10:38:58 +0800
-Subject: RE: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Thread-Topic: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Thread-Index: Ac//8Y3gfHXz4vZxRTGitDF3ewZNIwCHdBrw
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313C6@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
- <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
- <20141030135749.GE32589@arm.com>
- <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
- <20141113235322.GC4042@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103E010D1829B@CNBJMBX05.corpusers.net>
- <20141114095812.GG4042@n2100.arm.linux.org.uk>
-In-Reply-To: <20141114095812.GG4042@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752382AbaKQCo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 21:44:26 -0500
+Received: from ozlabs.org ([103.22.144.67]:39246 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752141AbaKQCoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 21:44:25 -0500
+Date: Mon, 17 Nov 2014 13:44:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@linaro.org>
+Subject: linux-next: build warning after merge of the pm tree
+Message-ID: <20141117134414.7f4d8d21@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/xwzt9o0X2U1LUHI05AYpR0O"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Friday, November 14, 2014 5:58 PM
-> To: Wang, Yalin
-> Cc: 'Will Deacon'; 'Ard Biesheuvel'; 'linux-kernel@vger.kernel.org';
-> 'akinobu.mita@gmail.com'; 'linux-mm@kvack.org'; 'Joe Perches'; 'linux-arm-
-> kernel@lists.infradead.org'
-> Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
->
-> > Is it possible to build a kernel that support both CPU_V6 and CPU_V7?
-> 
-> Absolutely it is.
-> 
-> > I mean in Kconfig, CPU_V6 = y and CPU_V7 = y ?
-> 
-> Yes.
-> 
-> > If there is problem like you said,
-> > How about this solution:
-> > select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6)
-> 
-> That would work.
-> 
-OK, I will submit a patch for this change.
+--Sig_/xwzt9o0X2U1LUHI05AYpR0O
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> > For this patch,
-> > I just cherry-pick from Joe,
-> > If you are not responsible for this part, I will submit to the
-> > maintainers for these patches .
-> > Sorry for that .
-> 
-> I think you need to discuss with Joe how Joe would like his patches handled.
-> However, it seems that Joe already sent his patches to the appropriate
-> maintainers, and they have been applying those patches themselves.
-> 
-> Since your generic ARM changes depend on these patches being accepted first,
-> this means is that I can't apply the generic ARM changes until those other
-> patches have hit mainline, otherwise things are going to break.  So, when
-> you come to submit the latest set of patches to the patch system, please do
-> so only after these dependent patches have been merged into mainline so
-> that they don't get accidentally applied before hand and break the two
-> drivers that Joe mentioned.
+Hi Rafael,
 
-Joe has submitted patches to maintainers,
-So we need wait for them to be accepted .
+After merging the pm tree, today's linux-next build (arm multi_v7_defconfig)
+produced this warning:
 
-Thanks
+kernel/power/Kconfig:132:error: recursive dependency detected!
+kernel/power/Kconfig:132:	symbol PM_RUNTIME is selected by PM_GENERIC_DOMAI=
+NS
+kernel/power/Kconfig:272:	symbol PM_GENERIC_DOMAINS is selected by PM_RUNTI=
+ME
 
+Caused by commit 9cdd5fd742e6 ("PM / domains: Kconfig: always enable
+PM_RUNTIME when genpd enabled").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/xwzt9o0X2U1LUHI05AYpR0O
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUaWEEAAoJEMDTa8Ir7ZwVYZEP/2zhAzwtPR0D6EI+Ro/j3xnS
+s9og01xxCsZ86HV1b6ganf79C0EkpVvdRmW1UemVJqmpw7RwP+4UapJzusRCl/zS
+l7tYehxuFGEXX29ANTUzhuMsKNJgiVUvIkyD97Q4xOjYZ10xdaVsc6DVFVym5gzO
+TSZzwCxckj8Shv+HeJhsSjGH+lfq/nZKr5O4lcdFvpUcNdCIg8UfWHjNITzbkZQR
+nZMY9z1dOEJJpKjoUYIg0lIghXNe8MBSsqjKOBMZzZsoLDZmBVlCQMsgbgdNNArm
+i7dZ38P9h/88Rj6RW4BGt2v9AMq9jGfIkf8Aqi2Nf5OpiSlsgpnwVI3DKEyG3R3v
+TnsS6kvO79oZtyMNHNFpHEd5BUh4sND2NanlsqzaqS/li+tJgJc1h4gH0Z7fK5TW
+fERdI6mRSQfvDhPhuYdIQhD3nUXwVji5c++FGCuvKERYBKjeD34+XdxBojO1+NWx
+QbD7eB1Y8KkG9dhNYf+pIim7ZnqpWweWsb+H2SEAs5SeOlxwd1ZxI8Wj4Qznw7cD
+CXcCqCfE0BmaCG1Aw+ldi7Box3mt63kGXdkRvNH4V+Ei4ghc+5JSf+lgciQ7QSRq
+JOySigUi5MbRrOC3Ur8KbsBLB/WjstVzgsG5rjtuK39VQKEc3w2rDvRFDHPb7G2a
+tHPDUWmD+EN7dr9xW8TJ
+=OYsg
+-----END PGP SIGNATURE-----
+
+--Sig_/xwzt9o0X2U1LUHI05AYpR0O--
