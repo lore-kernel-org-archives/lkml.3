@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaKQOCj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:02:39 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48970 "EHLO
+	id S1752921AbaKQNpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:45:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48941 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752928AbaKQNpI (ORCPT
+	with ESMTP id S1752252AbaKQNpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:08 -0500
+	Mon, 17 Nov 2014 08:45:04 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 16/61] dmaengine: cppi41: Split device_control
-Date: Mon, 17 Nov 2014 14:42:10 +0100
-Message-Id: <1416231775-31252-17-git-send-email-maxime.ripard@free-electrons.com>
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v5 01/61] serial: at91: Use dmaengine_slave_config API
+Date: Mon, 17 Nov 2014 14:41:55 +0100
+Message-Id: <1416231775-31252-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,70 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the TI CPPI41 DMA driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+We are removing the dmaengine_device_control API, that shouldn't even have been
+exposed in the first place. Change the callers to use the proper API.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/dma/cppi41.c | 30 +-----------------------------
- 1 file changed, 1 insertion(+), 29 deletions(-)
+ drivers/tty/serial/atmel_serial.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-index cf7633f6d474..98b7dc8948a9 100644
---- a/drivers/dma/cppi41.c
-+++ b/drivers/dma/cppi41.c
-@@ -524,12 +524,6 @@ static struct dma_async_tx_descriptor *cppi41_dma_prep_slave_sg(
- 	return &c->txd;
- }
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index edde3eca055d..10e6b382d68f 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -862,9 +862,8 @@ static int atmel_prepare_tx_dma(struct uart_port *port)
+ 	config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+ 	config.dst_addr = port->mapbase + ATMEL_US_THR;
  
--static int cpp41_cfg_chan(struct cppi41_channel *c,
--		struct dma_slave_config *cfg)
--{
--	return 0;
--}
--
- static void cppi41_compute_td_desc(struct cppi41_desc *d)
- {
- 	d->pd0 = DESC_TYPE_TEARD << DESC_TYPE;
-@@ -642,28 +636,6 @@ static int cppi41_stop_chan(struct dma_chan *chan)
- 	return 0;
- }
+-	ret = dmaengine_device_control(atmel_port->chan_tx,
+-					DMA_SLAVE_CONFIG,
+-					(unsigned long)&config);
++	ret = dmaengine_slave_config(atmel_port->chan_tx,
++				     &config);
+ 	if (ret) {
+ 		dev_err(port->dev, "DMA tx slave configuration failed\n");
+ 		goto chan_err;
+@@ -1026,9 +1025,8 @@ static int atmel_prepare_rx_dma(struct uart_port *port)
+ 	config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+ 	config.src_addr = port->mapbase + ATMEL_US_RHR;
  
--static int cppi41_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
--{
--	struct cppi41_channel *c = to_cpp41_chan(chan);
--	int ret;
--
--	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		ret = cpp41_cfg_chan(c, (struct dma_slave_config *) arg);
--		break;
--
--	case DMA_TERMINATE_ALL:
--		ret = cppi41_stop_chan(chan);
--		break;
--
--	default:
--		ret = -ENXIO;
--		break;
--	}
--	return ret;
--}
--
- static void cleanup_chans(struct cppi41_dd *cdd)
- {
- 	while (!list_empty(&cdd->ddev.channels)) {
-@@ -948,7 +920,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
- 	cdd->ddev.device_tx_status = cppi41_dma_tx_status;
- 	cdd->ddev.device_issue_pending = cppi41_dma_issue_pending;
- 	cdd->ddev.device_prep_slave_sg = cppi41_dma_prep_slave_sg;
--	cdd->ddev.device_control = cppi41_dma_control;
-+	cdd->ddev.device_terminate_all = cppi41_stop_chan;
- 	cdd->ddev.dev = dev;
- 	INIT_LIST_HEAD(&cdd->ddev.channels);
- 	cpp41_dma_info.dma_cap = cdd->ddev.cap_mask;
+-	ret = dmaengine_device_control(atmel_port->chan_rx,
+-					DMA_SLAVE_CONFIG,
+-					(unsigned long)&config);
++	ret = dmaengine_slave_config(atmel_port->chan_rx,
++				     &config);
+ 	if (ret) {
+ 		dev_err(port->dev, "DMA rx slave configuration failed\n");
+ 		goto chan_err;
 -- 
 2.1.1
 
