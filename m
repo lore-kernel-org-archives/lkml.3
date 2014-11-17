@@ -1,99 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbaKQNxb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:53:31 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49106 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753378AbaKQNpj (ORCPT
+	id S1753960AbaKQNx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:53:29 -0500
+Received: from mga03.intel.com ([134.134.136.65]:49849 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372AbaKQNpj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 08:45:39 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 44/61] dmaengine: xilinx: Split device_control
-Date: Mon, 17 Nov 2014 14:42:38 +0100
-Message-Id: <1416231775-31252-45-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,403,1413270000"; 
+   d="scan'208";a="638251740"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Eric Auger <eric.auger@linaro.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+CC: "eric.auger@st.com" <eric.auger@st.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "joel.schopp@amd.com" <joel.schopp@amd.com>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        "john.liuli@huawei.com" <john.liuli@huawei.com>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [RFC v2 0/9] KVM-VFIO IRQ forward control
+Thread-Topic: [RFC v2 0/9] KVM-VFIO IRQ forward control
+Thread-Index: AQHPzX7FGqjeXc5tW0qdMyvZxluW9ZxlFqBQ//+guICAAIcM4A==
+Date: Mon, 17 Nov 2014 13:45:28 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F0022925F5@SHSMSX104.ccr.corp.intel.com>
+References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
+	 <1409691941.3804.133.camel@ul30vt.home> <20140911031044.GK2784@lvm>
+ <1410412173.2982.288.camel@ul30vt.home>
+ <E959C4978C3B6342920538CF579893F002291EBC@SHSMSX104.ccr.corp.intel.com>
+ <5469FB17.4030603@linaro.org>
+In-Reply-To: <5469FB17.4030603@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Xilinx VDMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
- drivers/dma/xilinx/xilinx_vdma.c | 29 ++++++-----------------------
- 1 file changed, 6 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/dma/xilinx/xilinx_vdma.c b/drivers/dma/xilinx/xilinx_vdma.c
-index 4a3a8f3137b3..bdd2a5dd7220 100644
---- a/drivers/dma/xilinx/xilinx_vdma.c
-+++ b/drivers/dma/xilinx/xilinx_vdma.c
-@@ -1001,13 +1001,17 @@ error:
-  * xilinx_vdma_terminate_all - Halt the channel and free descriptors
-  * @chan: Driver specific VDMA Channel pointer
-  */
--static void xilinx_vdma_terminate_all(struct xilinx_vdma_chan *chan)
-+static int xilinx_vdma_terminate_all(struct dma_chan *dchan)
- {
-+	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
-+
- 	/* Halt the DMA engine */
- 	xilinx_vdma_halt(chan);
- 
- 	/* Remove and free all of the descriptors in the lists */
- 	xilinx_vdma_free_descriptors(chan);
-+
-+	return 0;
- }
- 
- /**
-@@ -1075,27 +1079,6 @@ int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
- }
- EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
- 
--/**
-- * xilinx_vdma_device_control - Configure DMA channel of the device
-- * @dchan: DMA Channel pointer
-- * @cmd: DMA control command
-- * @arg: Channel configuration
-- *
-- * Return: '0' on success and failure value on error
-- */
--static int xilinx_vdma_device_control(struct dma_chan *dchan,
--				      enum dma_ctrl_cmd cmd, unsigned long arg)
--{
--	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
--
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
--
--	xilinx_vdma_terminate_all(chan);
--
--	return 0;
--}
--
- /* -----------------------------------------------------------------------------
-  * Probe and remove
-  */
-@@ -1300,7 +1283,7 @@ static int xilinx_vdma_probe(struct platform_device *pdev)
- 				xilinx_vdma_free_chan_resources;
- 	xdev->common.device_prep_interleaved_dma =
- 				xilinx_vdma_dma_prep_interleaved;
--	xdev->common.device_control = xilinx_vdma_device_control;
-+	xdev->common.device_terminate_all = xilinx_vdma_terminate_all;
- 	xdev->common.device_tx_status = xilinx_vdma_tx_status;
- 	xdev->common.device_issue_pending = xilinx_vdma_issue_pending;
- 
--- 
-2.1.1
+> -----Original Message-----
+> From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On
+> Behalf Of Eric Auger
+> Sent: Monday, November 17, 2014 9:42 PM
+> To: Wu, Feng; Alex Williamson; Christoffer Dall
+> Cc: eric.auger@st.com; marc.zyngier@arm.com;
+> linux-arm-kernel@lists.infradead.org; kvmarm@lists.cs.columbia.edu;
+> kvm@vger.kernel.org; joel.schopp@amd.com; kim.phillips@freescale.com;
+> paulus@samba.org; gleb@kernel.org; pbonzini@redhat.com;
+> linux-kernel@vger.kernel.org; patches@linaro.org; will.deacon@arm.com;
+> a.motakis@virtualopensystems.com; a.rigo@virtualopensystems.com;
+> john.liuli@huawei.com
+> Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
+> 
+> Hi Feng,
+> 
+> I will submit a PATCH v3 release end of this week.
+> 
+> Best Regards
+> 
+> Eric
 
+Thanks for the update, Eric!
+
+Thanks,
+Feng
+
+> 
+> On 11/17/2014 12:25 PM, Wu, Feng wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: linux-kernel-owner@vger.kernel.org
+> >> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Alex Williamson
+> >> Sent: Thursday, September 11, 2014 1:10 PM
+> >> To: Christoffer Dall
+> >> Cc: Eric Auger; eric.auger@st.com; marc.zyngier@arm.com;
+> >> linux-arm-kernel@lists.infradead.org; kvmarm@lists.cs.columbia.edu;
+> >> kvm@vger.kernel.org; joel.schopp@amd.com; kim.phillips@freescale.com;
+> >> paulus@samba.org; gleb@kernel.org; pbonzini@redhat.com;
+> >> linux-kernel@vger.kernel.org; patches@linaro.org; will.deacon@arm.com;
+> >> a.motakis@virtualopensystems.com; a.rigo@virtualopensystems.com;
+> >> john.liuli@huawei.com
+> >> Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
+> >>
+> >> On Thu, 2014-09-11 at 05:10 +0200, Christoffer Dall wrote:
+> >>> On Tue, Sep 02, 2014 at 03:05:41PM -0600, Alex Williamson wrote:
+> >>>> On Mon, 2014-09-01 at 14:52 +0200, Eric Auger wrote:
+> >>>>> This RFC proposes an integration of "ARM: Forwarding physical
+> >>>>> interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
+> >>>>> KVM.
+> >>>>>
+> >>>>> It enables to transform a VFIO platform driver IRQ into a forwarded
+> >>>>> IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
+> >>>>> switch can be avoided on guest virtual IRQ completion. Before this
+> >>>>> patch, a maintenance IRQ was triggered on the virtual IRQ completion.
+> >>>>>
+> >>>>> When the IRQ is forwarded, the VFIO platform driver does not need to
+> >>>>> disable the IRQ anymore. Indeed when returning from the IRQ handler
+> >>>>> the IRQ is not deactivated. Only its priority is lowered. This means
+> >>>>> the same IRQ cannot hit before the guest completes the virtual IRQ
+> >>>>> and the GIC automatically deactivates the corresponding physical IRQ.
+> >>>>>
+> >>>>> Besides, the injection still is based on irqfd triggering. The only
+> >>>>> impact on irqfd process is resamplefd is not called anymore on
+> >>>>> virtual IRQ completion since this latter becomes "transparent".
+> >>>>>
+> >>>>> The current integration is based on an extension of the KVM-VFIO
+> >>>>> device, previously used by KVM to interact with VFIO groups. The
+> >>>>> patch serie now enables KVM to directly interact with a VFIO
+> >>>>> platform device. The VFIO external API was extended for that purpose.
+> >>>>>
+> >>>>> Th KVM-VFIO device can get/put the vfio platform device, check its
+> >>>>> integrity and type, get the IRQ number associated to an IRQ index.
+> >>>>>
+> >>>>> The IRQ forward programming is architecture specific (virtual interrupt
+> >>>>> controller programming basically). However the whole infrastructure is
+> >>>>> kept generic.
+> >>>>>
+> >>>>> from a user point of view, the functionality is provided through new
+> >>>>> KVM-VFIO device commands,
+> >> KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
+> >>>>> and the capability can be checked with KVM_HAS_DEVICE_ATTR.
+> >>>>> Assignment can only be changed when the physical IRQ is not active.
+> >>>>> It is the responsability of the user to do this check.
+> >>>>>
+> >>>>> This patch serie has the following dependencies:
+> >>>>> - "ARM: Forwarding physical interrupts to a guest VM"
+> >>>>>   (http://lwn.net/Articles/603514/) in
+> >>>>> - [PATCH v3] irqfd for ARM
+> >>>>> - and obviously the VFIO platform driver serie:
+> >>>>>   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
+> >>>>>
+> https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
+> >>>>>
+> >>>>> Integrated pieces can be found at
+> >>>>> ssh://git.linaro.org/people/eric.auger/linux.git
+> >>>>> on branch 3.17rc3_irqfd_forward_integ_v2
+> >>>>>
+> >>>>> This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
+> >>>>>
+> >>>>> v1 -> v2:
+> >>>>> - forward control is moved from architecture specific file into generic
+> >>>>>   vfio.c module.
+> >>>>>   only kvm_arch_set_fwd_state remains architecture specific
+> >>>>> - integrate Kim's patch which enables KVM-VFIO for ARM
+> >>>>> - fix vgic state bypass in vgic_queue_hwirq
+> >>>>> - struct kvm_arch_forwarded_irq moved from
+> >> arch/arm/include/uapi/asm/kvm.h
+> >>>>>   to include/uapi/linux/kvm.h
+> >>>>>   also irq_index renamed into index and guest_irq renamed into gsi
+> >>>>> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
+> >>>>> - vfio_external_get_base_device renamed into
+> vfio_external_base_device
+> >>>>> - vfio_external_get_type removed
+> >>>>> - kvm_vfio_external_get_base_device renamed into
+> >> kvm_vfio_external_base_device
+> >>>>> - __KVM_HAVE_ARCH_KVM_VFIO renamed into
+> >> __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
+> >>>>>
+> >>>>> Eric Auger (8):
+> >>>>>   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
+> >>>>>     IRQ
+> >>>>>   KVM: ARM: VGIC: add forwarded irq rbtree lock
+> >>>>>   VFIO: platform: handler tests whether the IRQ is forwarded
+> >>>>>   KVM: KVM-VFIO: update user API to program forwarded IRQ
+> >>>>>   VFIO: Extend external user API
+> >>>>>   KVM: KVM-VFIO: add new VFIO external API hooks
+> >>>>>   KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ
+> >> forwarding
+> >>>>>     control
+> >>>>>   KVM: KVM-VFIO: ARM forwarding control
+> >>>>>
+> >>>>> Kim Phillips (1):
+> >>>>>   ARM: KVM: Enable the KVM-VFIO device
+> >>>>>
+> >>>>>  Documentation/virtual/kvm/devices/vfio.txt |  26 ++
+> >>>>>  arch/arm/include/asm/kvm_host.h            |   7 +
+> >>>>>  arch/arm/kvm/Kconfig                       |   1 +
+> >>>>>  arch/arm/kvm/Makefile                      |   4 +-
+> >>>>>  arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
+> >>>>>  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
+> >>>>>  drivers/vfio/vfio.c                        |  24 ++
+> >>>>>  include/kvm/arm_vgic.h                     |   1 +
+> >>>>>  include/linux/kvm_host.h                   |  27 ++
+> >>>>>  include/linux/vfio.h                       |   3 +
+> >>>>>  include/uapi/linux/kvm.h                   |   9 +
+> >>>>>  virt/kvm/arm/vgic.c                        |  59 +++-
+> >>>>>  virt/kvm/vfio.c                            | 497
+> >> ++++++++++++++++++++++++++++-
+> >>>>>  13 files changed, 733 insertions(+), 17 deletions(-)
+> >>>>>  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
+> >>>>>
+> >>>>
+> >>>> Have we ventured too far in the other direction?  I suppose what I was
+> >>>> hoping to see was something more like:
+> >>>>
+> >>>> 	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:{
+> >>>>
+> >>>> 		/* get vfio_device */
+> >>>>
+> >>>> 		/* get mutex */
+> >>>>
+> >>>> 		/* verify device+irq isn't already forwarded */
+> >>>>
+> >>>> 		/* allocate device/forwarded irq */
+> >>>>
+> >>>> 		/* get struct device */
+> >>>>
+> >>>> 		/* callout to arch code passing struct device, gsi, ... */
+> >>>>
+> >>>> 		/* if success, add to kv, else free and error */
+> >>>>
+> >>>> 		/* mutex unlock */
+> >>>> 	}
+> >>>
+> >>> I think that's essentially what this patch set is trying to do, but
+> >>> there are just too many complicated intertwining cases right now that
+> >>> makes the code hard to read.
+> >>>
+> >>>>
+> >>>> Exposing the internal mutex out to arch code, as in v1, was an
+> >>>> indication that we were pushing too much out to arch code, but including
+> >>>> platform_device.h into virt/kvm/vfio.c tells me we're still not
+> >>>> abstracting at the right point.  Thanks,
+> >>>>
+> >>> I raised my eyebrows over the platform device bus thingy here as well,
+> >>> but on the other hand, there's nothing ARM-specific about referring to
+> >>> the platform device bus.
+> >>>
+> >>> I think perhaps it just has to be made more clear that the generic code
+> >>> deals with translating the device resources in the necessary way, and
+> >>> currently it only supports vfio-platform devices?
+> >>
+> >> Ok, you're probably right, looking at it again it is closer than I
+> >> thought.  At the same time, the use of platform device in
+> >> virt/kvm/vfio.c is pointless and can easily be pushed out to the arch
+> >> code as just another error return case.  vfio.c doesn't need to be aware
+> >> of hwirq.  The rest of the code is just overly complicated, with three
+> >> different cleanup functions and validation function bloat.  Thanks,
+> >>
+> >> Alex
+> >
+> >
+> > Hi Alex, Could you please tell what is the current status of this patch set.
+> > As you mentioned in another thread, something(such as,
+> kvm_vfio_device_get_external_user(), etc.)
+> > in this patch set can be leveraged for VT-d Posted-interrtups.
+> >
+> > Thanks,
+> > Feng
+> >
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
