@@ -1,160 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaKQVnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:43:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38668 "EHLO mx1.redhat.com"
+	id S1752565AbaKQVpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 16:45:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:47172 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaKQVnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:43:16 -0500
-Date: Mon, 17 Nov 2014 16:43:05 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Antonio Borneo <borneo.antonio@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] HID: i2c-hid: fix race condition reading reports
-Message-ID: <20141117214305.GC30324@mail.corp.redhat.com>
-References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
+	id S1752132AbaKQVpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 16:45:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,405,1413270000"; 
+   d="scan'208";a="633445357"
+Date: Mon, 17 Nov 2014 13:45:18 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, kan.liang@intel.com,
+        adrian.hunter@intel.com, markus.t.metzger@intel.com,
+        mathieu.poirier@linaro.org, acme@infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michael Ellerman <michaele@au1.ibm.com>
+Subject: Re: [PATCH v8 02/14] perf: Add AUX area to ring buffer for raw data
+ streams
+Message-ID: <20141117214518.GD10824@tassilo.jf.intel.com>
+References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1415972627-37514-3-git-send-email-alexander.shishkin@linux.intel.com>
+ <20141117212400.GB13111@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
+In-Reply-To: <20141117212400.GB13111@us.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Antonio,
-
-On Nov 16 2014 or thereabouts, Antonio Borneo wrote:
-> From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+On Mon, Nov 17, 2014 at 01:24:00PM -0800, Sukadev Bhattiprolu wrote:
+> Alexander Shishkin [alexander.shishkin@linux.intel.com] wrote:
+> | From: Peter Zijlstra <peterz@infradead.org>
+> | 
+> | This patch introduces "AUX space" in the perf mmap buffer, intended for
+> | exporting high bandwidth data streams to userspace, such as instruction
+> | flow traces.
+> | 
+> | AUX space is a ring buffer, defined by aux_{offset,size} fields in the
+> | user_page structure, and read/write pointers aux_{head,tail}, which abide
+> | by the same rules as data_* counterparts of the main perf buffer.
 > 
-> From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> 
-> Current driver uses a common buffer for reading reports either
-> synchronously in i2c_hid_get_raw_report() and asynchronously in
-> the interrupt handler.
-> There is race condition if an interrupt arrives immediately after
-> the report is received in i2c_hid_get_raw_report(); the common
-> buffer is modified by the interrupt handler with the new report
-> and then i2c_hid_get_raw_report() proceed using wrong data.
-> 
-> Fix it by using a separate buffers for asynchronous reports.
-> 
-> Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> [Antonio Borneo: cleanup and rebase to v3.17]
-> Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-> Cc: stable@vger.kernel.org
+> The "format" of this raw stream of data can differ across processors
+> (and architecutres) correct ? i.e the perf tool processing of this
+> aux data will also differ across processors ?
 
-For your next submission, when you want a patch to go in stable, put CC
-here, but please do not CC the actual mail to stable@. Stable should receive
-either mails which are already in Linus' tree, or which refer a commit
-in Linus' tree in case it does not applies smoothly.
+Yes.
 
-[keeping stable@ here to show them that this one should not get picked
-right now]
-
-> ---
-> 
-> Hi Jiri, Benjamin,
-> 
-> I think this patch should also go through linux-stable.
-> Confirmation from our side is welcome.
-
-I think the patch is definitively valuable. However, my personal taste
-would go for having a new .rawbuf buffer and use it in
-i2c_hid_get_raw_report(). The rationale would be that it's actually
-i2c_hid_get_raw_report() which is problematic, not the generic irq
-handling. Also I prefer rawbuf to irqinbuf.
-
-I am perfectly aware that this is just bikeshedding, so if changing the
-patch is too cumbersome (looks like Jean-Baptiste is involved), and if
-Jiri agree, this can go into the hid tree with my reviewed-by.
-
-I am fine having this version or the rawbuf one in stable BTW.
-
-Cheers,
-Benjamin
+The main caveat is that you need special handling code in perf.
 
 > 
-> Regards,
-> Antonio
+> Power8 processors support what we call 24x7 counters that collect info
+> on a large number of events. The current 24x7 support in
+> (arch/powerpc/perf/hv-24x7.c) currently uses reading one counter at a
+> time using the pmu->read() interface.
 > 
->  drivers/hid/i2c-hid/i2c-hid.c | 17 +++++++++++------
->  1 file changed, 11 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 933bf10..7c80e96 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -136,6 +136,7 @@ struct i2c_hid {
->  						   * register of the HID
->  						   * descriptor. */
->  	unsigned int		bufsize;	/* i2c buffer size */
-> +	char			*irqinbuf;	/* Asynchronous Input buffer */
->  	char			*inbuf;		/* Input buffer */
->  	char			*cmdbuf;	/* Command buffer */
->  	char			*argsbuf;	/* Command arguments buffer */
-> @@ -371,7 +372,7 @@ static void i2c_hid_get_input(struct i2c_hid *ihid)
->  	int ret, ret_size;
->  	int size = le16_to_cpu(ihid->hdesc.wMaxInputLength);
->  
-> -	ret = i2c_master_recv(ihid->client, ihid->inbuf, size);
-> +	ret = i2c_master_recv(ihid->client, ihid->irqinbuf, size);
->  	if (ret != size) {
->  		if (ret < 0)
->  			return;
-> @@ -381,7 +382,7 @@ static void i2c_hid_get_input(struct i2c_hid *ihid)
->  		return;
->  	}
->  
-> -	ret_size = ihid->inbuf[0] | ihid->inbuf[1] << 8;
-> +	ret_size = ihid->irqinbuf[0] | ihid->irqinbuf[1] << 8;
->  
->  	if (!ret_size) {
->  		/* host or device initiated RESET completed */
-> @@ -396,11 +397,11 @@ static void i2c_hid_get_input(struct i2c_hid *ihid)
->  		return;
->  	}
->  
-> -	i2c_hid_dbg(ihid, "input: %*ph\n", ret_size, ihid->inbuf);
-> +	i2c_hid_dbg(ihid, "input: %*ph\n", ret_size, ihid->irqinbuf);
->  
->  	if (test_bit(I2C_HID_STARTED, &ihid->flags))
-> -		hid_input_report(ihid->hid, HID_INPUT_REPORT, ihid->inbuf + 2,
-> -				ret_size - 2, 1);
-> +		hid_input_report(ihid->hid, HID_INPUT_REPORT,
-> +				 ihid->irqinbuf + 2, ret_size - 2, 1);
->  
->  	return;
->  }
-> @@ -503,9 +504,11 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
->  
->  static void i2c_hid_free_buffers(struct i2c_hid *ihid)
->  {
-> +	kfree(ihid->irqinbuf);
->  	kfree(ihid->inbuf);
->  	kfree(ihid->argsbuf);
->  	kfree(ihid->cmdbuf);
-> +	ihid->irqinbuf = NULL;
->  	ihid->inbuf = NULL;
->  	ihid->cmdbuf = NULL;
->  	ihid->argsbuf = NULL;
-> @@ -521,11 +524,13 @@ static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
->  		       sizeof(__u16) + /* size of the report */
->  		       report_size; /* report */
->  
-> +	ihid->irqinbuf = kzalloc(report_size, GFP_KERNEL);
->  	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
->  	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
->  	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
->  
-> -	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-> +	if (!ihid->irqinbuf || !ihid->inbuf ||
-> +	    !ihid->argsbuf || !ihid->cmdbuf) {
->  		i2c_hid_free_buffers(ihid);
->  		return -ENOMEM;
->  	}
-> -- 
-> 2.1.3
-> 
+> We are looking for ways to export much larger number of counters through
+> one pmu->read() or another call. I am trying to see if the hv-24x7 pmu
+> could use this aux interface and then have/implement a helper in perf
+> tool to extract the counter values.
+
+It's probably only worth it if your amount of data is extremely
+high and has to be to compressed (like in PT -- no choice, cannot do it
+otherwise)
+
+If your data amounts are more reasonable it will be a lot
+simpler to stay with the current perf interfaces, even
+though they have a bit higher overhead.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
