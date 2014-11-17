@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaKQMBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:01:21 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:53094 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaKQMBT (ORCPT
+	id S1752016AbaKQMIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 07:08:13 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:44544 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806AbaKQMIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:01:19 -0500
-Date: Mon, 17 Nov 2014 13:01:07 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
- for tegra driver
-Message-ID: <20141117120105.GH25699@ulmo>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
- <5465DDC5.6090301@kapsi.fi>
- <20141117114341.GF25699@ulmo>
- <20141117125013.3493a3a1@amdc2363>
+	Mon, 17 Nov 2014 07:08:11 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X1xGqyAVbSpAWs5A"
-Content-Disposition: inline
-In-Reply-To: <20141117125013.3493a3a1@amdc2363>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141114141535.GB7512@kuha.fi.intel.com>
+References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com>
+	<1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com>
+	<CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com>
+	<5461AFD3.5020302@ti.com>
+	<CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com>
+	<5461CDDF.4090209@ti.com>
+	<CAFp+6iGAQMgX8S6dfPO44U=r6QJ4fT+1FX2uHNF9KK4sYs+=XA@mail.gmail.com>
+	<CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com>
+	<20141114141535.GB7512@kuha.fi.intel.com>
+Date: Mon, 17 Nov 2014 17:38:10 +0530
+Message-ID: <CAFp+6iEAtq2PEF3mGVJN6xaR=G0EWDZbCzBwv-J8J2HXV8e9aw@mail.gmail.com>
+Subject: Re: [PATCHv4 2/6] phy: improved lookup method
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        andrew.kim@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 14, 2014 at 7:45 PM, Heikki Krogerus
+<heikki.krogerus@linux.intel.com> wrote:
+> Hi Vivek,
+>
+> On Thu, Nov 13, 2014 at 07:03:01PM +0530, Vivek Gautam wrote:
+>> Hi Heikki, Kishon,
+>>
+>> How about adding the change in attached patch [1] on top of this patch.
+>> Just introduced the phy pointer in "phy_lookup" structure, and
+>> modified phy_find() accordingly.
+>>
+>> [1] Attachment:
+>>     0001-phy-core-Use-phy-pointer-with-phy_lookup_table.patch
+>
+> Just to let you know, I'm finally able to work on this again.
 
---X1xGqyAVbSpAWs5A
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Great !!
 
-On Mon, Nov 17, 2014 at 12:50:13PM +0100, Lukasz Majewski wrote:
-> Hi Thierry,
->=20
-> > On Fri, Nov 14, 2014 at 12:47:33PM +0200, Mikko Perttunen wrote:
-> > > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-> > >=20
-> > > One potential issue I can see is that if the cpufreq driver fails
-> > > to probe then you'll never get the thermal driver either. For
-> > > example, Tegra124 currently has no cpufreq driver, so if
-> > > CONFIG_CPU_THERMAL was enabled, then the soctherm driver would
-> > > never be able to probe. But I don't really have a solution for this
-> > > either.
-> >=20
-> > It doesn't seem like there's any code whatsoever to deal with cpufreq
-> > within the soctherm driver, so deferring probe based on something
-> > we're not using anyway seems rather useless.
->=20
-> So, If I understood you correctly - this patch is not needed in the=20
-> /tegra_soctherm.c:[tegra_defconfig] driver and can be safely omitted in
-> v2 of this driver.
+>
+> I was actually thinking that we should just roll back to the previous
+> version where I didn't yet use the parent name, and rethink how to
+> solve the problem Kishon pointed out.
+>
+> But, I'll take a look at this properly on Monday.
 
-What I'm saying is that I don't think doing this mass conversion
-wholesale is useful since none of the drivers register a cooling device
-based on cpufreq. In other words: if you're not going to use a feature
-there's no use testing for it.
+Cool, was just throwing some ideas, similar to clk driver, like Kishon
+suggested.
 
-Thierry
 
---X1xGqyAVbSpAWs5A
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUaeOBAAoJEN0jrNd/PrOhMScQALxuo3xQqZHolHCaayZspSGX
-VWHuHVZsB3W/Sd7hT4xQvR+55t2kIviEH8eKRSdcouKlfclFkmrpOvcPA5Pzko+7
-0vBwFgD83qlSp+e8oMfOPkT8OKHzY+yciY5Qi5xsDfCSI2dPtgJcEPoujpTdhGRL
-+qdPwBSQ5FTwz75FZRCtP1XWhcVdZWKjIQ72FX/6SlOfHVlikgqzr9JdMPe4cnGN
-G6Qfl6ssbebW/DJ2xx6Afrk7rHk52wDfWk1SzXjreEU4fgHDQ/CQt8yvfci3C/1f
-c0SeU+GWoziA/hbSzMTzvtAFBkH4SnLFsIn6Il9Xaw3HWTOHUGR3D2R+PKMqyYhD
-rIh9Aeg+5PaxepHbYOKS3QFeJP5NSSSwCmXfZTI3La1cDK9GxeQRnNshdnFwgxjV
-QG1TdlVPw7yoSA4+rG3mOA8oZDLfTg24+bmfgPQOa6l/g5s+6BVZr31wQKK/t6W2
-qF1pi00yHt/2uyqVlQ36+V+mLZvrH0EeMWG4os8/qxErN7e/WLgAsdnnCEc6OWCR
-TYZBHCQzVx0EAkTrpOh4+ql11/Sw85XQ0lANxwffG3M7lqLQp+VrS7vVMTLKl9/P
-kPDC42OqLKgsym+9xs1uyO42y9W1HlOZ/BRhtvIcnKX5vPK4p4WWvwpkgkIpEKXA
-VVTRSzBEbNy/nDufAmOc
-=osN7
------END PGP SIGNATURE-----
-
---X1xGqyAVbSpAWs5A--
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
