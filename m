@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaKQODT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:03:19 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48970 "EHLO
+	id S1754226AbaKQODj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 09:03:39 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48964 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752840AbaKQNpH (ORCPT
+	with ESMTP id S1752781AbaKQNpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:07 -0500
+	Mon, 17 Nov 2014 08:45:06 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 05/61] dmaengine: Make channel allocation callbacks optional
-Date: Mon, 17 Nov 2014 14:41:59 +0100
-Message-Id: <1416231775-31252-6-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 04/61] dmaengine: Rework dma_chan_get
+Date: Mon, 17 Nov 2014 14:41:58 +0100
+Message-Id: <1416231775-31252-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,64 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nowadays, some drivers don't have anything in there channel allocation
-callbacks anymore.
+dma_chan_get uses a rather interesting error handling and code path.
 
-Remove the BUG_ON if those callbacks aren't implemented, in order to allow
-drivers to not implement them.
+Change it to something more usual in the kernel.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/dma/dmaengine.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/dma/dmaengine.c | 36 +++++++++++++++++++-----------------
+ 1 file changed, 19 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 72f10e2f5c32..9b2cd74b8f2e 100644
+index 24bfaf0b92ba..72f10e2f5c32 100644
 --- a/drivers/dma/dmaengine.c
 +++ b/drivers/dma/dmaengine.c
-@@ -235,9 +235,11 @@ static int dma_chan_get(struct dma_chan *chan)
- 		return -ENODEV;
+@@ -222,31 +222,33 @@ static void balance_ref_count(struct dma_chan *chan)
+  */
+ static int dma_chan_get(struct dma_chan *chan)
+ {
+-	int err = -ENODEV;
+ 	struct module *owner = dma_chan_to_owner(chan);
++	int ret;
  
- 	/* allocate upon first client reference */
--	ret = chan->device->device_alloc_chan_resources(chan);
--	if (ret < 0)
--		goto err_out;
-+	if (chan->device->device_alloc_chan_resources) {
-+		ret = chan->device->device_alloc_chan_resources(chan);
-+		if (ret < 0)
-+			goto err_out;
++	/* The channel is already in use, update client count */
+ 	if (chan->client_count) {
+ 		__module_get(owner);
+-		err = 0;
+-	} else if (try_module_get(owner))
+-		err = 0;
++		goto out;
 +	}
  
- 	if (!dma_has_cap(DMA_PRIVATE, chan->device->cap_mask))
- 		balance_ref_count(chan);
-@@ -259,11 +261,15 @@ err_out:
-  */
- static void dma_chan_put(struct dma_chan *chan)
- {
-+	/* This channel is not in use, bail out */
- 	if (!chan->client_count)
--		return; /* this channel failed alloc_chan_resources */
-+		return;
+-	if (err == 0)
+-		chan->client_count++;
++	if (!try_module_get(owner))
++		return -ENODEV;
+ 
+ 	/* allocate upon first client reference */
+-	if (chan->client_count == 1 && err == 0) {
+-		int desc_cnt = chan->device->device_alloc_chan_resources(chan);
+-
+-		if (desc_cnt < 0) {
+-			err = desc_cnt;
+-			chan->client_count = 0;
+-			module_put(owner);
+-		} else if (!dma_has_cap(DMA_PRIVATE, chan->device->cap_mask))
+-			balance_ref_count(chan);
+-	}
++	ret = chan->device->device_alloc_chan_resources(chan);
++	if (ret < 0)
++		goto err_out;
+ 
+-	return err;
++	if (!dma_has_cap(DMA_PRIVATE, chan->device->cap_mask))
++		balance_ref_count(chan);
 +
- 	chan->client_count--;
- 	module_put(dma_chan_to_owner(chan));
--	if (chan->client_count == 0)
++out:
++	chan->client_count++;
++	return 0;
 +
-+	/* This channel is not in use anymore, free it */
-+	if (!chan->client_count && chan->device->device_free_chan_resources)
- 		chan->device->device_free_chan_resources(chan);
++err_out:
++	module_put(owner);
++	return ret;
  }
  
-@@ -819,8 +825,6 @@ int dma_async_device_register(struct dma_device *device)
- 	BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
- 		!device->device_prep_interleaved_dma);
- 
--	BUG_ON(!device->device_alloc_chan_resources);
--	BUG_ON(!device->device_free_chan_resources);
- 	BUG_ON(!device->device_tx_status);
- 	BUG_ON(!device->device_issue_pending);
- 	BUG_ON(!device->dev);
+ /**
 -- 
 2.1.1
 
