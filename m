@@ -1,117 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaKQJuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:50:40 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:60624 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653AbaKQJuj convert rfc822-to-8bit (ORCPT
+	id S1752078AbaKQJvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:51:04 -0500
+Received: from regular1.263xmail.com ([211.150.99.139]:55225 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaKQJvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:50:39 -0500
-Message-ID: <5469C503.9010007@arm.com>
-Date: Mon, 17 Nov 2014 09:50:59 +0000
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: [PATCH 2/2] sched/deadline: fix start high-res preemption tick
- for a non-running task
-References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com> <1415670747-58726-2-git-send-email-wanpeng.li@linux.intel.com> <54647BDC.6050804@arm.com> <5464882D.40504@gmail.com>
-In-Reply-To: <5464882D.40504@gmail.com>
-X-OriginalArrivalTime: 17 Nov 2014 09:50:36.0684 (UTC) FILETIME=[F00B9CC0:01D0024B]
-X-MC-Unique: 114111709503606901
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Nov 2014 04:51:00 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: linus.walleij@linaro.org
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <10c7fdba81c1bc65032be228da96b1c0>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, fzf@rock-chips.com,
+        cf@rock-chips.com, caesar.wang@rock-chips.com,
+        chris.zhong@rock-chips.com, xxm@rock-chips.com, chm@rock-chips.com,
+        djkurtz@chromium.org, "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: [PATCH v12 0/3] ARM: rk3288: Add PM Domain support
+Date: Mon, 17 Nov 2014 17:50:38 +0800
+Message-Id: <1416217842-4716-1-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+    Add power domain drivers based on generic power domain for
+    Rockchip platform, and support RK3288.
 
-On 13/11/14 10:30, Wanpeng Li wrote:
-> Hi Juri,
-> On 11/13/14, 5:37 PM, Juri Lelli wrote:
->> Hi,
->>
->> not sure I understand what the problem is here.
->>
->> On 11/11/14 01:52, Wanpeng Li wrote:
->>> Queued ticks are scheduled to match the budget, which means the budget
->>> is overall consumed and the dl task should be throttled.
->> ... enforce the budget? It means that when the budget is consumed the
->> task has to be throttled...
-> 
-> Agreed.
-> 
->>
->>> Dl task will
->>> be replenished immediately if fail to start a dl timer.
->>>
->>> However, the curr maybe not the left most dl task in the rb tree any
->>> more after this immediately replenished and reschedule is needed.
->>> Start high-res preemption tick for this upcoming rescheduled dl task
->>> is not correct.
->>>
->> So, the task that is going to preempt curr is picked by
->> pick_next_task_dl(), that correctly starts the hrtick for this new task.
->>
->> Maybe you can add more information about what you are seeing? A callpath
->> maybe?
-> 
-> The parameter of task_tick_dl() queued == 1 means that hrtick is fired. 
-> hrtick() => task_tick_dl( , ,1), so p->dl.runtime should be <= 0 if 
-> queued == 1. What I see is queued == 1 && p->dl.runtime > 0 && p is not 
-> the left most task and hrtick is start for this task.
-> 
+    https://chromium-review.googlesource.com/#/c/220253/9
+    This is the GPU driver, add the following information in DT,
+    and it can support the PMDOMAIN
 
-Oh, right, now it makes sense. Good catch! :)
+gpu: gpu@ffa30000 {
+    compatible = "arm,malit764",
+                 "arm,malit76x",
+                 "arm,malit7xx",
+                 "arm,mali-midgard";
+    reg = <0xffa30000 0x10000>;
+    interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+                 <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
+                 <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+    interrupt-names = "JOB", "MMU", "GPU";
+    clocks = <&cru ACLK_GPU>;
+    clock-names = "aclk_gpu";
+    operating-points = <
+                /* KHz uV */
+                100000 800000
+                200000 850000
+                300000 950000
+                400000 1000000
+                600000 1150000
+    >;
+    power-domains = <&power RK3288_PD_GPU>;
+    status = "disabled";
+};
 
-Could you please post a second version with a more explanatory changelog
-and maybe a comment just above the check?
+Based on:
+    - [PATCH v4 1/3] PM / clock_ops: Add pm_clk_add_clk()
+    http://patchwork.kernel.org/patch/5242121/
 
-Thanks,
+Changes in v12:
+    - fix the title doamin->domain.
+    - updated device_attach and device_detach API,otherwise it will compile
+      fail on next kernel.
+    - Remove essential clocks from rk3288 PD_VIO domain,
+      Some clocks are essential for the system health and should not be
+      turned down. However there is no owner for them so if they listed as
+      belonging to power domain we'll try toggling them up and down during
+      power domain transition. As a result we either fail to suspend or resume
+      the system.
 
-- Juri
+Changes in v11:
+    - fix pm_genpd_init(&pd->genpd, NULL, false);
 
-> Regards,
-> Wanpeng Li
-> 
->>
->> Thanks,
->>
->> - Juri
->>
->>> This patch fix it by not starting high-res preemption tick for a
->>> non-running dl task.
->>>
->>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>> ---
->>>   kernel/sched/deadline.c | 3 ++-
->>>   1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->>> index 56674f6..2a6a5bb 100644
->>> --- a/kernel/sched/deadline.c
->>> +++ b/kernel/sched/deadline.c
->>> @@ -1090,7 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
->>>   {
->>>   	update_curr_dl(rq);
->>>   
->>> -	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
->>> +	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0 &&
->>> +	    is_leftmost(p, &rq->dl))
->>>   		start_hrtick_dl(rq, p);
->>>   }
->>>   
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Changes in v10:
+    - this switches over domain infos to use masks instead of recomputing
+      them each time and also gets rid of custom domain translator and
+      uses standard onecell on.
+    - fix missing the #include <dt-bindings/power-domain/rk3288.h>
+    - remove the notes
+
+Changes in v9:
+    - add document decription
+    - fix v8 changes as follows:
+    - This reconciles the v2 and v7 code so that we power domain have
+      lists of clocks they toggle on and off during power transitions and
+      independently from power domains clocks we attach clocks to devices
+      comprising power domain and prepare them so they are turn on and off
+      by runtime PM.
+    - add rockchip_pm_add_one_domain() to control domains.
+    - add pd_start/pd_stop interface to control clocks
+    - add decription for power-doamin node
+
+Changes in v8:
+    - document go back to v2
+    - This reconciles the v2 and v7 code so that we power domain have
+      lists of clocks they toggle on and off during power transitions and
+      independently from power domains clocks we attach clocks to devices
+      comprising power domain and prepare them so they are turn on and off
+      by runtime PM.
+    - DTS go back to v2
+
+Changes in v7:
+    - Delete unused variables
+
+Changes in v6:
+    - delete pmu_lock
+    - modify dev_lock using mutex
+    - pm_clk_resume(pd->dev) change to pm_clk_resume(ed->dev)
+    - pm_clk_suspend(pd->dev) change to pm_clk_suspend(ed->dev)
+    - add devm_kfree(pd->dev, de) in rockchip_pm_domain_detach_dev
+
+Changes in v5:
+    - delete idle_lock
+    - add timeout in rockchip_pmu_set_idle_request()
+
+Changes in v4:
+    - use list storage dev
+
+Changes in v3:
+    - DT structure has changed
+    - change use pm_clk_resume() and pm_clk_suspend()
+    - Decomposition power-controller, changed to multiple controller
+    (gpu-power-controller, hevc-power-controller)
+
+Changes in v2:
+    - move clocks to "optional"
+    - remove the "pd->pd.of_node = np"
+    - make pd_vio clocks all one entry per line and alphabetize.
+    - power: power-controller move back to pinctrl: pinctrl.
+
+Caesar Wang (3):
+  dt-bindings: add document of Rockchip power domain
+  power-domain: rockchip: add power domain driver
+  ARM: dts: add rk3288 power-domain node
+
+ .../bindings/arm/rockchip/power_domain.txt         |  48 +++
+ arch/arm/boot/dts/rk3288.dtsi                      |  59 +++
+ arch/arm/mach-rockchip/Kconfig                     |   1 +
+ arch/arm/mach-rockchip/Makefile                    |   1 +
+ arch/arm/mach-rockchip/pm_domains.c                | 472 +++++++++++++++++++++
+ include/dt-bindings/power-domain/rk3288.h          |  11 +
+ 6 files changed, 592 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+ create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+ create mode 100644 include/dt-bindings/power-domain/rk3288.h
+
+-- 
+1.9.1
+
 
