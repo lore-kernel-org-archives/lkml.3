@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421AbaKQG30 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 01:29:26 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:38130 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaKQG3Y (ORCPT
+	id S1751300AbaKQGcL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 01:32:11 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59217 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaKQGcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 01:29:24 -0500
-Date: Mon, 17 Nov 2014 01:29:20 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-cc: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, rjw@rjwysocki.net, pavel@ucw.cz,
-        len.brown@intel.com, linux@arm.linux.org.uk, ccross@android.com
-Subject: Re: [PATCH v2] cpu_pm: fix unmet dependency for CPU_PM
-In-Reply-To: <1416204764-8912-1-git-send-email-pankaj.dubey@samsung.com>
-Message-ID: <alpine.LFD.2.11.1411170128560.11690@knanqh.ubzr>
-References: <1416204764-8912-1-git-send-email-pankaj.dubey@samsung.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Mon, 17 Nov 2014 01:32:10 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, acme@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/8] perf, tools: Add --branch-history option to report
+References: <1411774636-6870-1-git-send-email-andi@firstfloor.org>
+	<1411774636-6870-3-git-send-email-andi@firstfloor.org>
+	<87mw8ogaj8.fsf@sejong.aot.lge.com>
+	<20141112000505.GM12538@two.firstfloor.org>
+Date: Mon, 17 Nov 2014 15:31:57 +0900
+In-Reply-To: <20141112000505.GM12538@two.firstfloor.org> (Andi Kleen's message
+	of "Wed, 12 Nov 2014 01:05:05 +0100")
+Message-ID: <87389itk0y.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Nov 2014, Pankaj Dubey wrote:
+On Wed, 12 Nov 2014 01:05:05 +0100, Andi Kleen wrote:
+>> And please also add a new CCKEY_SRCLINE if you print srcline with the
+>> callchains so that users can give "-g srcline" if they want (regardless
+>> of the branch history feature).
+>
+> That would be largely identical to CCKEY_ADDRESS 
+> except for the case of two calls to the same function from
+> the same line. Probably not worth adding?
 
-> If BL_SWITCHER is enabled but SUSPEND and CPU_IDLE is not enabled
-> we are getting following config warning.
-> 
-> warning: (BL_SWITCHER) selects CPU_PM which has unmet direct
-> dependencies (SUSPEND || CPU_IDLE)
-> 
-> It has been noticed that CPU_PM dependencies in this file are not really
-> required so let's remove these dependencies from CPU_PM.
-> 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+For sorting, yes, it'd be almost identical.  But what I'm saying is for
+printing - IOW print callchain entries with symbol and srcline (for
+normal perf report too).
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Anyway, I think it'd be a separate patch(set).
 
-
-> ---
-> This patch is second attempt to fix this config issue. Patch v1 and related
-> discussion can be found here [1]
-> 1: https://lkml.org/lkml/2014/11/14/673
-> 
->  kernel/power/Kconfig |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-> index bbef57f..1eb7da7 100644
-> --- a/kernel/power/Kconfig
-> +++ b/kernel/power/Kconfig
-> @@ -308,4 +308,3 @@ config PM_GENERIC_DOMAINS_OF
->  
->  config CPU_PM
->  	bool
-> -	depends on SUSPEND || CPU_IDLE
-> -- 
-> 1.7.9.5
-> 
-> 
+Thanks,
+Namhyung
