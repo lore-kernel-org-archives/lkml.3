@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaKQWXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:23:23 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:36516 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791AbaKQWXV (ORCPT
+	id S1752931AbaKQW0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:26:32 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48926 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446AbaKQW0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:23:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <0b65fd07-48ea-483b-8fd5-fd84d0bff881@email.android.com>
-References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
- <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
- <87d28osceg.fsf@x220.int.ebiederm.org> <20141115192924.GB19060@thin>
- <CALCETrUM=GqsOumTmDMF4B5GS1w=x56t41eE-2xW1bBOfUz02w@mail.gmail.com>
- <20141115202042.GA20900@thin> <20141116020511.GB5507@thunk.org>
- <6C690A2C-8EB1-421A-94C3-9803AFB95760@joshtriplett.org> <20141116034005.GC5507@thunk.org>
- <20141116045232.GB18880@thin> <20141117113734.396798e6@lxorguk.ukuu.org.uk>
- <CALCETrXi1qHyu4_U7cbROB74n461nBZ9R7=0kfhR8-VFAwOF1w@mail.gmail.com> <0b65fd07-48ea-483b-8fd5-fd84d0bff881@email.android.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 17 Nov 2014 14:22:59 -0800
-Message-ID: <CALCETrWXC5dMOXTTBOiq4Cv+yjqbA_UdmAN-TDmNAJUo+ABxtg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
- to drop groups
-To: "Eric W.Biederman" <ebiederm@xmission.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-man <linux-man@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 17 Nov 2014 17:26:31 -0500
+From: Juston Li <juston.h.li@gmail.com>
+To: oleg.drokin@intel.com
+Cc: andreas.dilger@intel.com, gregkh@linuxfoundation.org,
+        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Juston Li <juston.h.li@gmail.com>
+Subject: [PATCH] staging: lustre: mdc: use __FMODE_EXEC macro
+Date: Mon, 17 Nov 2014 14:23:48 -0800
+Message-Id: <1416263028-16026-1-git-send-email-juston.h.li@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 2:11 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
->
->
-> On November 17, 2014 1:07:30 PM EST, Andy Lutomirski <luto@amacapital.net> wrote:
->>On Nov 17, 2014 3:37 AM, "One Thousand Gnomes"
->><gnomes@lxorguk.ukuu.org.uk> wrote:
->>>
->>> > optional), I can do that too.  The security model of "having a
->>group
->>> > gives you less privilege than not having it" seems crazy, but
->>> > nonetheless I can see a couple of easy ways that we can avoid
->>breaking
->>>
->>> It's an old pattern of use that makes complete sense in a traditional
->>> Unix permission world because it's the only way to do "exclude
->>{list}"
->>> nicely. Our default IMHO shouldn't break this.
->>>
->>> > that pattern, no_new_privs being one of them.  I'd like to make
->>sure
->>> > that nobody sees any other real-world corner case that unprivileged
->>> > setgroups would break.
->>>
->>> Barring the usual risk of people doing improper error checking I
->>don't
->>> see one immediately.
->>>
->>> For containers I think it actually makes sense that the sysctl can be
->>> applied per container anyway.
->>
->>We'll probably need per container sysctls some day.
->
-> We already have a mess of per network namespace sysctls,
-> as well as few for other namespaces.
->
-> We have the infrastructure it is just a matter of using it for whatever purpose we need.
->
+FMODE_EXEC is type fmode_t but is used in operations
+with integers which leads to sparse warnings:
+drivers/staging/lustre/lustre/mdc/mdc_lib.c:198:21: warning: restricted fmode_t degrades to integer
+drivers/staging/lustre/lustre/mdc/mdc_locks.c:300:49: warning: restricted fmode_t degrades to integer
 
-A list of group id ranges that it's permissible to drop would do the
-trick, both for setgroups and for unshare.  The downside would be that
-users in those groups (i.e. everyone by default) would not be able to
-unshare their user ns.
+Fix by using __FMODE_EXEC macro defined in fs.h.
 
-Better ideas welcome.
+Note the same warnings occurs with other fmode flags
+here but they don't have a corresponding int macro.
 
---Andy
+Signed-off-by: Juston Li <juston.h.li@gmail.com>
+---
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c   | 4 ++--
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_lib.c b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+index e8732cc..34c9a86 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_lib.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+@@ -194,8 +194,8 @@ static __u64 mds_pack_open_flags(__u64 flags, __u32 mode)
+ 		cr_flags |= MDS_OPEN_SYNC;
+ 	if (flags & O_DIRECTORY)
+ 		cr_flags |= MDS_OPEN_DIRECTORY;
+-#ifdef FMODE_EXEC
+-	if (flags & FMODE_EXEC)
++#ifdef __FMODE_EXEC
++	if (flags & __FMODE_EXEC)
+ 		cr_flags |= MDS_FMODE_EXEC;
+ #endif
+ 	if (cl_is_lov_delay_create(flags))
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+index b58147e..c05afa8 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+@@ -296,8 +296,8 @@ static struct ptlrpc_request *mdc_intent_open_pack(struct obd_export *exp,
+ 		} else {
+ 			if (it->it_flags & (FMODE_WRITE|MDS_OPEN_TRUNC))
+ 				mode = LCK_CW;
+-#ifdef FMODE_EXEC
+-			else if (it->it_flags & FMODE_EXEC)
++#ifdef __FMODE_EXEC
++			else if (it->it_flags & __FMODE_EXEC)
+ 				mode = LCK_PR;
+ #endif
+ 			else
+-- 
+2.1.3
+
