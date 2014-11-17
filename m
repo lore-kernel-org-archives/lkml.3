@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaKQK5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:57:20 -0500
-Received: from regular1.263xmail.com ([211.150.99.132]:47232 "EHLO
+	id S1752718AbaKQK5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:57:50 -0500
+Received: from regular1.263xmail.com ([211.150.99.135]:59395 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651AbaKQK5Q (ORCPT
+	with ESMTP id S1751057AbaKQK5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:57:16 -0500
+	Mon, 17 Nov 2014 05:57:48 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: andy.yan@rock-chips.com
 X-FST-TO: airlied@linux.ie
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <fafd40ae54f3ab6282571121ed662682>
+X-UNIQUE-TAG: <78f079e3d606ede9624fb6c8bb30fcbe>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Andy Yan <andy.yan@rock-chips.com>
@@ -38,9 +38,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v12 06/11] drm: bridge/dw_hdmi: add support for multi-byte register width access
-Date: Mon, 17 Nov 2014 18:56:59 +0800
-Message-Id: <1416221819-13080-1-git-send-email-andy.yan@rock-chips.com>
+Subject: [PATCH v12 07/11] drm: bridge/dw_hdmi: add mode_valid support
+Date: Mon, 17 Nov 2014 18:57:22 +0800
+Message-Id: <1416221842-13127-1-git-send-email-andy.yan@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
 References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
@@ -48,12 +48,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On rockchip rk3288, only word(32-bit) accesses are
-permitted for hdmi registers.  Byte width accesses (writeb,
-readb) generate an imprecise external abort.
+some platform may not support all the display mode,
+add mode_valid interface check it
+
+also add drm_connector_register which add a debugfs
+interface for dump display modes and edid information
 
 Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-
 ---
 
 Changes in v12: None
@@ -62,129 +63,71 @@ Changes in v10: None
 Changes in v9: None
 Changes in v8: None
 Changes in v7: None
-Changes in v6:
-- move some modification to  patch#6
-- refactor register access without reg_shift
-
-Changes in v5:
-- refactor reg-io-width
-
+Changes in v6: None
+Changes in v5: None
 Changes in v4: None
-Changes in v3:
-- split multi-register access to one indepent patch
-
+Changes in v3: None
 Changes in v2: None
 
- drivers/gpu/drm/bridge/dw_hdmi.c | 57 +++++++++++++++++++++++++++++++++++-----
- 1 file changed, 51 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/bridge/dw_hdmi.c | 17 +++++++++++++++++
+ include/drm/bridge/dw_hdmi.h     |  2 ++
+ 2 files changed, 19 insertions(+)
 
 diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index f904bb4..229aa7a 100644
+index 229aa7a..7b32bb8 100644
 --- a/drivers/gpu/drm/bridge/dw_hdmi.c
 +++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -100,6 +100,11 @@ struct hdmi_data_info {
- 	struct hdmi_vmode video_mode;
- };
- 
-+union dw_reg_ptr {
-+	u32 __iomem *p32;
-+	u8 __iomem *p8;
-+};
-+
- struct dw_hdmi {
- 	struct drm_connector connector;
- 	struct drm_encoder *encoder;
-@@ -121,20 +126,43 @@ struct dw_hdmi {
- 
- 	struct regmap *regmap;
- 	struct i2c_adapter *ddc;
--	void __iomem *regs;
-+	union dw_reg_ptr regs;
- 
- 	unsigned int sample_rate;
- 	int ratio;
-+
-+	void (*write)(struct dw_hdmi *hdmi, u8 val, int offset);
-+	u8 (*read)(struct dw_hdmi *hdmi, int offset);
- };
- 
-+static void dw_hdmi_writel(struct dw_hdmi *hdmi, u8 val, int offset)
-+{
-+	writel(val, hdmi->regs.p32 + offset);
-+}
-+
-+static u8 dw_hdmi_readl(struct dw_hdmi *hdmi, int offset)
-+{
-+	return readl(hdmi->regs.p32 + offset);
-+}
-+
-+static void dw_hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
-+{
-+	writeb(val, hdmi->regs.p8 + offset);
-+}
-+
-+static u8 dw_hdmi_readb(struct dw_hdmi *hdmi, int offset)
-+{
-+	return readb(hdmi->regs.p8 + offset);
-+}
-+
- static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
- {
--	writeb(val, hdmi->regs + offset);
-+	hdmi->write(hdmi, val, offset);
+@@ -1406,6 +1406,20 @@ static int dw_hdmi_connector_get_modes(struct drm_connector *connector)
+ 	return 0;
  }
  
- static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
++static enum drm_mode_status
++dw_hdmi_connector_mode_valid(struct drm_connector *connector,
++			     struct drm_display_mode *mode)
++{
++	struct dw_hdmi *hdmi = container_of(connector,
++					   struct dw_hdmi, connector);
++	enum drm_mode_status mode_status = MODE_OK;
++
++	if (hdmi->plat_data->mode_valid)
++		mode_status = hdmi->plat_data->mode_valid(connector, mode);
++
++	return mode_status;
++}
++
+ static struct drm_encoder *dw_hdmi_connector_best_encoder(struct drm_connector
+ 							   *connector)
  {
--	return readb(hdmi->regs + offset);
-+	return hdmi->read(hdmi, offset);
+@@ -1430,6 +1444,7 @@ static struct drm_connector_funcs dw_hdmi_connector_funcs = {
+ 
+ static struct drm_connector_helper_funcs dw_hdmi_connector_helper_funcs = {
+ 	.get_modes = dw_hdmi_connector_get_modes,
++	.mode_valid = dw_hdmi_connector_mode_valid,
+ 	.best_encoder = dw_hdmi_connector_best_encoder,
+ };
+ 
+@@ -1631,6 +1646,8 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 
+ 	dev_set_drvdata(dev, hdmi);
+ 
++	drm_connector_register(&hdmi->connector);
++
+ 	return 0;
  }
+ EXPORT_SYMBOL_GPL(dw_hdmi_bind);
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 1001470..ed358f0 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -44,6 +44,8 @@ struct sym_term {
+ };
  
- static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
-@@ -1508,6 +1536,7 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 	struct resource *iores;
- 	struct dw_hdmi *hdmi;
- 	int ret, irq;
-+	u32 val = 1;
- 
- 	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
- 	if (!hdmi)
-@@ -1520,6 +1549,22 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 	hdmi->ratio = 100;
- 	hdmi->encoder = encoder;
- 
-+	of_property_read_u32(np, "reg-io-width", &val);
-+
-+	switch (val) {
-+	case 4:
-+		hdmi->write = dw_hdmi_writel;
-+		hdmi->read = dw_hdmi_readl;
-+		break;
-+	case 1:
-+		hdmi->write = dw_hdmi_writeb;
-+		hdmi->read = dw_hdmi_readb;
-+		break;
-+	default:
-+		dev_err(dev, "reg-io-width must be 1 or 4\n");
-+		return -EINVAL;
-+	}
-+
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
-@@ -1544,9 +1589,9 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 		return ret;
- 
- 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	hdmi->regs = devm_ioremap_resource(dev, iores);
--	if (IS_ERR(hdmi->regs))
--		return PTR_ERR(hdmi->regs);
-+	hdmi->regs.p32 = devm_ioremap_resource(dev, iores);
-+	if (IS_ERR(hdmi->regs.p32))
-+		return PTR_ERR(hdmi->regs.p32);
- 
- 	/* Product and revision IDs */
- 	dev_info(dev,
+ struct dw_hdmi_plat_data {
++	enum drm_mode_status (*mode_valid)(struct drm_connector *connector,
++			      struct drm_display_mode *mode);
+ 	const struct mpll_config *mpll_cfg;
+ 	const struct curr_ctrl *cur_ctr;
+ 	const struct sym_term *sym_term;
 -- 
 1.9.1
 
