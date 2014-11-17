@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaKQKh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:37:26 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55580 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498AbaKQKhW (ORCPT
+	id S1752807AbaKQKk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:40:28 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49315 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529AbaKQKh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:37:22 -0500
+	Mon, 17 Nov 2014 05:37:26 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: linux-btrfs@vger.kernel.org
 Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
         <linux-fsdevel@vger.kernel.org>, Omar Sandoval <osandov@osandov.com>
-Subject: [RFC PATCH 2/6] btrfs: don't allow -C or +c chattrs on a swap file
-Date: Mon, 17 Nov 2014 02:36:55 -0800
-Message-Id: <2142904afc8c21bd78d0d2e0450224109669a224.1416219974.git.osandov@osandov.com>
+Subject: [RFC PATCH 4/6] btrfs: don't check the cleancache for swapcache pages
+Date: Mon, 17 Nov 2014 02:36:57 -0800
+Message-Id: <b9e866a91033cfd0a04b9688e9de352220b680ca.1416219974.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <cover.1416219974.git.osandov@osandov.com>
 References: <cover.1416219974.git.osandov@osandov.com>
@@ -23,85 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swap_activate will check for a compressed or copy-on-write file; we shouldn't
-allow it to become either once it has already been activated.
-
 Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- fs/btrfs/ioctl.c | 50 +++++++++++++++++++++++++++++++-------------------
- 1 file changed, 31 insertions(+), 19 deletions(-)
+ fs/btrfs/extent_io.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index e3b458a..7aee8cf 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -293,14 +293,21 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
- 		}
- 	} else {
- 		/*
--		 * Revert back under same assuptions as above
-+		 * swap_activate checks that we don't swapon a copy-on-write
-+		 * file, but we must also make sure that it doesn't become
-+		 * copy-on-write.
- 		 */
--		if (S_ISREG(mode)) {
--			if (inode->i_size == 0)
--				ip->flags &= ~(BTRFS_INODE_NODATACOW
--				             | BTRFS_INODE_NODATASUM);
--		} else {
--			ip->flags &= ~BTRFS_INODE_NODATACOW;
-+		if (!IS_SWAPFILE(inode)) {
-+			/*
-+			 * Revert back under same assumptions as above
-+			 */
-+			if (S_ISREG(mode)) {
-+				if (inode->i_size == 0)
-+					ip->flags &= ~(BTRFS_INODE_NODATACOW |
-+						       BTRFS_INODE_NODATASUM);
-+			} else {
-+				ip->flags &= ~BTRFS_INODE_NODATACOW;
-+			}
- 		}
- 	}
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index 54b2d00..b8dc256 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2904,13 +2904,14 @@ static int __do_readpage(struct extent_io_tree *tree,
+ 	size_t disk_io_size;
+ 	size_t blocksize = inode->i_sb->s_blocksize;
+ 	unsigned long this_bio_flag = *bio_flags & EXTENT_BIO_PARENT_LOCKED;
++	int swapcache = PageSwapCache(page);
  
-@@ -317,20 +324,25 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
- 		if (ret && ret != -ENODATA)
- 			goto out_drop;
- 	} else if (flags & FS_COMPR_FL) {
--		const char *comp;
--
--		ip->flags |= BTRFS_INODE_COMPRESS;
--		ip->flags &= ~BTRFS_INODE_NOCOMPRESS;
-+		/*
-+		 * Like nodatacow, swap_activate checks that we don't swapon a
-+		 * compressed file, so we shouldn't let it become compressed.
-+		 */
-+		if (!IS_SWAPFILE(inode)) {
-+			const char *comp;
+-	if (likely(!PageSwapCache(page)))
++	if (likely(!swapcache))
+ 		set_page_extent_mapped(page);
  
--		if (root->fs_info->compress_type == BTRFS_COMPRESS_LZO)
--			comp = "lzo";
--		else
--			comp = "zlib";
--		ret = btrfs_set_prop(inode, "btrfs.compression",
--				     comp, strlen(comp), 0);
--		if (ret)
--			goto out_drop;
-+			ip->flags |= BTRFS_INODE_COMPRESS;
-+			ip->flags &= ~BTRFS_INODE_NOCOMPRESS;
- 
-+			if (root->fs_info->compress_type == BTRFS_COMPRESS_LZO)
-+				comp = "lzo";
-+			else
-+				comp = "zlib";
-+			ret = btrfs_set_prop(inode, "btrfs.compression",
-+					     comp, strlen(comp), 0);
-+			if (ret)
-+				goto out_drop;
-+		}
- 	} else {
- 		ret = btrfs_set_prop(inode, "btrfs.compression", NULL, 0, 0);
- 		if (ret && ret != -ENODATA)
+ 	end = page_end;
+ 	if (!PageUptodate(page)) {
+-		if (cleancache_get_page(page) == 0) {
++		if (likely(!swapcache) && cleancache_get_page(page) == 0) {
+ 			BUG_ON(blocksize != PAGE_SIZE);
+ 			unlock_extent(tree, start, end);
+ 			goto out;
 -- 
 2.1.3
 
