@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaKQUzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 15:55:06 -0500
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:44166 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752409AbaKQUzD (ORCPT
+	id S1751836AbaKQU45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 15:56:57 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:63226 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaKQU4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 15:55:03 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtcNAP1falRXQyyZ/2dsb2JhbABbgw6BLrhwBQF1mhWBGxcBAQEBAX2EMC8jgRo3iEUBwluQSYY+imQdhDUFnkyNEologUcBgjU8MIJLAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-        "David S. Miller" <davem@davemloft.net>, dccp@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] dccp: remove blank lines between function/EXPORT_SYMBOL
-Date: Mon, 17 Nov 2014 21:54:58 +0100
-Message-Id: <1416257698-5889-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Mon, 17 Nov 2014 15:56:55 -0500
+Date: Mon, 17 Nov 2014 15:56:52 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3 cgroup/for-3.19] cgroup: add cgroup_subsys->css_released()
+Message-ID: <20141117205652.GA23126@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-See Documentation/CodingStyle chapter 6.
+Add a new cgroup subsys callback css_released().  This is called when
+the reference count of the css (cgroup_subsys_state) reaches zero
+before RCU scheduling free.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 ---
- net/dccp/ipv4.c | 6 ------
- 1 file changed, 6 deletions(-)
+ include/linux/cgroup.h |    1 +
+ kernel/cgroup.c        |    2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/net/dccp/ipv4.c b/net/dccp/ipv4.c
-index 6ca645c..e45b968 100644
---- a/net/dccp/ipv4.c
-+++ b/net/dccp/ipv4.c
-@@ -140,7 +140,6 @@ failure:
- 	inet->inet_dport = 0;
- 	goto out;
- }
--
- EXPORT_SYMBOL_GPL(dccp_v4_connect);
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -612,6 +612,7 @@ struct cgroup_subsys {
+ 	struct cgroup_subsys_state *(*css_alloc)(struct cgroup_subsys_state *parent_css);
+ 	int (*css_online)(struct cgroup_subsys_state *css);
+ 	void (*css_offline)(struct cgroup_subsys_state *css);
++	void (*css_released)(struct cgroup_subsys_state *css);
+ 	void (*css_free)(struct cgroup_subsys_state *css);
+ 	void (*css_reset)(struct cgroup_subsys_state *css);
  
- /*
-@@ -376,7 +375,6 @@ void dccp_v4_send_check(struct sock *sk, struct sk_buff *skb)
- 						 inet->inet_saddr,
- 						 inet->inet_daddr);
- }
--
- EXPORT_SYMBOL_GPL(dccp_v4_send_check);
- 
- static inline u64 dccp_v4_init_sequence(const struct sk_buff *skb)
-@@ -444,7 +442,6 @@ put_and_exit:
- 	dccp_done(newsk);
- 	goto exit;
- }
--
- EXPORT_SYMBOL_GPL(dccp_v4_request_recv_sock);
- 
- static struct sock *dccp_v4_hnd_req(struct sock *sk, struct sk_buff *skb)
-@@ -670,7 +667,6 @@ drop:
- 	DCCP_INC_STATS_BH(DCCP_MIB_ATTEMPTFAILS);
- 	return -1;
- }
--
- EXPORT_SYMBOL_GPL(dccp_v4_conn_request);
- 
- int dccp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
-@@ -729,7 +725,6 @@ discard:
- 	kfree_skb(skb);
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(dccp_v4_do_rcv);
- 
- /**
-@@ -802,7 +797,6 @@ int dccp_invalid_packet(struct sk_buff *skb)
- 
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(dccp_invalid_packet);
- 
- /* this is called when real data arrives */
--- 
-1.9.3
-
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4380,6 +4380,8 @@ static void css_release_work_fn(struct w
+ 	if (ss) {
+ 		/* css release path */
+ 		cgroup_idr_remove(&ss->css_idr, css->id);
++		if (ss->css_released)
++			ss->css_released(css);
+ 	} else {
+ 		/* cgroup release path */
+ 		cgroup_idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
