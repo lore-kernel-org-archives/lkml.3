@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaKQGxk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 01:53:40 -0500
-Received: from ozlabs.org ([103.22.144.67]:44066 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750964AbaKQGxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 01:53:39 -0500
-Message-ID: <1416207214.2826.3.camel@concordia>
-Subject: Re: [PATCH] [powerpc] Fix Text randomization
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Vineeth Vijayan <vvijayan@mvista.com>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
-Date: Mon, 17 Nov 2014 17:53:34 +1100
-In-Reply-To: <1415956325-10124-1-git-send-email-vvijayan@mvista.com>
-References: <1415956325-10124-1-git-send-email-vvijayan@mvista.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751473AbaKQHAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 02:00:34 -0500
+Received: from mail-by2on0147.outbound.protection.outlook.com ([207.46.100.147]:25645
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750997AbaKQHAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 02:00:33 -0500
+Date: Mon, 17 Nov 2014 13:53:39 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>,
+        <p.zabel@pengutronix.de>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 07/13] usb: chipidea: fix phy handling
+Message-ID: <20141117055338.GC30017@shlinux2>
+References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1415978763-27345-8-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1415978763-27345-8-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(199003)(51704005)(107046002)(104016003)(87936001)(77156002)(76176999)(64706001)(54356999)(97736003)(92566001)(21056001)(62966003)(110136001)(50986999)(47776003)(20776003)(33656002)(84676001)(68736004)(99396003)(83506001)(44976005)(19580395003)(19580405001)(6806004)(120916001)(105606002)(50466002)(102836001)(33716001)(4396001)(92726001)(23726002)(31966008)(86362001)(575784001)(95666004)(46102003)(106466001)(97756001)(46406003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0640;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-Forefront-PRVS: 03982FDC1D
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0879;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-14 at 14:42 +0530, Vineeth Vijayan wrote:
-> Now there is no way to disable TEXT randomization on a PPC32/PPC64
-> machine. Text randomization happens even in the case of "echo 0 >
-> /proc/sys/kernel/randomize_va_space"
+On Fri, Nov 14, 2014 at 04:25:57PM +0100, Antoine Tenart wrote:
+> The generic platform device for CI drivers is probed by calling
+> ci_hdrc_probe. This is not the same device as the one for the specific
+> driver, so the of_node isn't the one we're looking into.
 > 
-> This happens due to the incorrect definition of ELF_ET_DYN_BASE
-> at arch/powerpc/include/asm/elf.h
+> This result in not being able to probe the phys. Since all CI driver are
+> retrieving their phys in the specific code, this didn't impact any of
+> them yet.
 > 
-> The function randomize_et_dyn is redundant and is removed.
+> Fixes it using the right of node pointer, by using dev->parent instead
+> of dev in phy get functions.
 
-The patch looks OK, but for the change log I was thinking something more like
-this:
+It is a correct fix, but the description need to be refined, it is
+not related to "of_node" or "node", it is related child/parent device.
 
+> 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/usb/chipidea/core.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index ba0ac2723098..36318c85ad65 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -654,8 +654,8 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+>  	} else if (ci->platdata->usb_phy) {
+>  		ci->usb_phy = ci->platdata->usb_phy;
+>  	} else {
+> -		ci->phy = devm_phy_get(dev, "usb-phy");
+> -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> +		ci->phy = devm_phy_get(dev->parent, "usb-phy");
+> +		ci->usb_phy = devm_usb_get_phy(dev->parent, USB_PHY_TYPE_USB2);
+>  
+>  		/* if both generic PHY and USB PHY layers aren't enabled */
+>  		if (PTR_ERR(ci->phy) == -ENOSYS &&
+> -- 
+> 2.1.0
+> 
 
-powerpc: Use generic PIE randomization
+-- 
 
-Back in 2009 we merged 501cb16d3cfd "Randomise PIEs", which added support for
-randomizing PIE (Position Independent Executable) binaries.
-
-That commit added randomize_et_dyn(), which correctly randomized the addresses,
-but failed to honor PF_RANDOMIZE. That means it was not possible to disable PIE
-randomization via the personality flag, or /proc/sys/kernel/randomize_va_space.
-
-Since then there has been generic support for PIE randomization added to
-binfmt_elf.c, selectable via ARCH_BINFMT_ELF_RANDOMIZE_PIE.
-
-Enabling that allows us to drop randomize_et_dyn(), which means we start
-honoring PF_RANDOMIZE correctly.
-
-It also causes a fairly major change to how we layout PIE binaries.
-
-Currently we will place the binary at 512MB-520MB for 32 bit binaries, or
-512MB-1.5GB for 64 bit binaries, eg:
-
-    $ cat /proc/$$/maps
-    4e550000-4e580000 r-xp 00000000 08:02 129813       /bin/dash
-    4e580000-4e590000 rw-p 00020000 08:02 129813       /bin/dash
-    10014110000-10014140000 rw-p 00000000 00:00 0      [heap]
-    3fffaa3f0000-3fffaa5a0000 r-xp 00000000 08:02 921  /lib/powerpc64le-linux-gnu/libc-2.19.so
-    3fffaa5a0000-3fffaa5b0000 rw-p 001a0000 08:02 921  /lib/powerpc64le-linux-gnu/libc-2.19.so
-    3fffaa5c0000-3fffaa5d0000 rw-p 00000000 00:00 0 
-    3fffaa5d0000-3fffaa5f0000 r-xp 00000000 00:00 0    [vdso]
-    3fffaa5f0000-3fffaa620000 r-xp 00000000 08:02 1246 /lib/powerpc64le-linux-gnu/ld-2.19.so
-    3fffaa620000-3fffaa630000 rw-p 00020000 08:02 1246 /lib/powerpc64le-linux-gnu/ld-2.19.so
-    3ffffc340000-3ffffc370000 rw-p 00000000 00:00 0    [stack]
-
-With this commit applied we don't do any special randomisation for the binary,
-and instead rely on mmap randomisation. This means the binary ends up at high
-addresses, eg:
-
-    $ cat /proc/$$/maps
-    3fff99820000-3fff999d0000 r-xp 00000000 08:02 921    /lib/powerpc64le-linux-gnu/libc-2.19.so
-    3fff999d0000-3fff999e0000 rw-p 001a0000 08:02 921    /lib/powerpc64le-linux-gnu/libc-2.19.so
-    3fff999f0000-3fff99a00000 rw-p 00000000 00:00 0 
-    3fff99a00000-3fff99a20000 r-xp 00000000 00:00 0      [vdso]
-    3fff99a20000-3fff99a50000 r-xp 00000000 08:02 1246   /lib/powerpc64le-linux-gnu/ld-2.19.so
-    3fff99a50000-3fff99a60000 rw-p 00020000 08:02 1246   /lib/powerpc64le-linux-gnu/ld-2.19.so
-    3fff99a60000-3fff99a90000 r-xp 00000000 08:02 129813 /bin/dash
-    3fff99a90000-3fff99aa0000 rw-p 00020000 08:02 129813 /bin/dash
-    3fffc3de0000-3fffc3e10000 rw-p 00000000 00:00 0      [stack]
-    3fffc55e0000-3fffc5610000 rw-p 00000000 00:00 0      [heap]
-
-Although this should be OK, it's possible it might break badly written
-binaries that make assumptions about the address space layout.
-
-
-cheers
-
-
+Best Regards,
+Peter Chen
