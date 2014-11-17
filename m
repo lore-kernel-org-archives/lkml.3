@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843AbaKQPZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:25:18 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:41161 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751150AbaKQPZQ (ORCPT
+	id S1751861AbaKQPam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:30:42 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:57044 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbaKQPal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:25:16 -0500
-Date: Mon, 17 Nov 2014 17:24:42 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2] [media] Add RGB444_1X12 and RGB565_1X16 media bus
- formats
-Message-ID: <20141117152442.GR8907@valkosipuli.retiisi.org.uk>
-References: <1416126278-17708-1-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416126278-17708-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Nov 2014 10:30:41 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 0/3] mfd: cros_ec: Add user-space dev inferface support
+Date: Mon, 17 Nov 2014 16:30:10 +0100
+Message-Id: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Hello,
 
-On Sun, Nov 16, 2014 at 09:24:38AM +0100, Boris Brezillon wrote:
-> Add RGB444_1X12 and RGB565_1X16 format definitions and update the
-> documentation.
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-> ---
-> Changes since v1:
-> - keep BPP and bits per sample ordering
-> 
->  Documentation/DocBook/media/v4l/subdev-formats.xml | 40 ++++++++++++++++++++++
->  include/uapi/linux/media-bus-format.h              |  4 ++-
->  2 files changed, 43 insertions(+), 1 deletion(-)
+The mainline ChromeOS Embedded Controller (EC) driver is still missing some
+features that are present in the downstream ChromiumOS tree. These are:
 
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+  - User-space device interface
+  - Low Pin Count (LPC) interface
+  - Access to vboot context stored on a block device
+  - Access to vboot context stored on EC's nvram
+  - Power Delivery Device
+  - Support for multiple EC in a system
 
--- 
-Kind regards,
+This series adds support for the first of these missing features: the cros
+ec dev driver that provides the interface used by user-space to access the
+EC. The support patches were taken from the downstream ChromiumOS 3.14
+kernel tree with fixes and cleanups squashed to have a minimal patch-set.
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+The series is composed of the following patches:
+
+Bill Richardson (3):
+  mfd: cros_ec: Add Chrome OS EC userspace device interface
+  mfd: cros_ec: Create sysfs attributes for the ChromeOS EC.
+  mfd: cros_ec: Expose Chrome OS Lightbar to users
+
+ drivers/mfd/Kconfig             |  12 ++
+ drivers/mfd/Makefile            |   2 +
+ drivers/mfd/cros_ec.c           |   4 +
+ drivers/mfd/cros_ec_dev.c       | 363 ++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/cros_ec_dev.h       |  29 ++++
+ drivers/mfd/cros_ec_lightbar.c  | 347 ++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/cros_ec_sysfs.c     | 271 ++++++++++++++++++++++++++++++
+ include/linux/mfd/cros_ec.h     |  12 +-
+ include/linux/mfd/cros_ec_dev.h |  47 ++++++
+ 9 files changed, 1086 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/mfd/cros_ec_dev.c
+ create mode 100644 drivers/mfd/cros_ec_dev.h
+ create mode 100644 drivers/mfd/cros_ec_lightbar.c
+ create mode 100644 drivers/mfd/cros_ec_sysfs.c
+ create mode 100644 include/linux/mfd/cros_ec_dev.h
+
+Patch #1 adds the cros_ec_dev driver that provides the dev interface to
+user-space. Patch #2 adds sysfs entries that can be used to get information
+and to control the EC and Patch #3 adds sysfs entries to control Chromebook
+Pixel's four-element LED lightbar.
+
+The patches were tested on a Exynos5420 Peach Pit Chromebook by using the
+sysfs entries and the ectool.
+
+Best regards,
+Javier
