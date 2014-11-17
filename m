@@ -1,34 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaKQCDm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 21:03:42 -0500
-Received: from mout.gmx.com ([74.208.4.200]:64083 "EHLO mout.gmx.com"
+	id S1753453AbaKQCEn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 21:04:43 -0500
+Received: from mout.gmx.com ([74.208.4.200]:64783 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150AbaKQCDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 21:03:41 -0500
+	id S1751723AbaKQCEl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 21:04:41 -0500
 MIME-Version: 1.0
-Message-ID: <trinity-a6a830f0-6511-4259-b6e0-6f3f9f2fbaf3-1416189820086@3capp-mailcom-lxa15>
+Message-ID: <trinity-bdc9684c-cd81-4988-bd46-b943940e9c75-1416189880524@3capp-mailcom-lxa15>
 From: "SystemD Abomination" <sdabomination@mail.com>
 To: linux-kernel@vger.kernel.org
-Subject: Feminists need to be thrown out of kernel development, like how
- they threw anti-feminist men out of debian and other linux distro
- development.
+Subject: SystemD fanboi claims others have done no contributions to
+ opensource software. (information within)
 Content-Type: text/plain; charset=UTF-8
-Date: Mon, 17 Nov 2014 03:03:40 +0100
+Date: Mon, 17 Nov 2014 03:04:40 +0100
 Importance: normal
 Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
 X-Priority: 3
-X-Provags-ID: V03:K0:F2iOLR50KIhtcrXFuahTPpUrzv1wX9EsK29WpBRJMGc
- Ji3UmybDOiqYa3rxnG3CRWCalNX+kTNKAIG+2zVJtm+QzybRSQ
- VXLccw/m8UPEFY+ssItbEIhGkcsDO0SG60eGvj4psFnKQduNi4
- LbCQfTchurJK2SckkItDpXxNj5vebmC2gNZFY7r/nGChQpxhAT
- UQ8Ej6O09yoQ01lM3H20DMaGVHqGQCJ7/Lv8dGJP7M8WBiENWW
- otDTvBnNZfbw6YE4Vxjx+/PZX/60yjfSig0WdA2uYrv7WUVgLB
- YcBgpf1XlhEqH9ooJtZ+4rejmyq
+X-Provags-ID: V03:K0:WqDUvM1aP/fzMxChhoNNy6cTzAyRC98QTjjSXl/ErOe
+ 4/rtZmB5Zn/F6gQO2I+aQaV1172l2D2hqyfHlngyAQ26K85eLS
+ iOknPgtAZ1By3X3Ppxw9/M90AnuVK47Kd6sZBTu5v70eaOp67U
+ /fqYUC2/Yelyy8h0qZAXZPVKzWUJMELrP09xeEIKfogz77HZxY
+ XNeWSgOhvtWMc0Cb5D/LNmBe0SLCq6dBXFHVI8SIU8T1JpYxt0
+ fr/2FteJ4AIfiES1tGetNlc+w+08Fk0xnLWTRMCAlQ2qZShPJp
+ WJtuAmgH5tDJM1vNyyWRTvBTOhS
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Feminists need to be thrown out of kernel development, like how they threw anti-feminist men out of debian and other linux distro development.
+Dear Mr Schubert;
 
+"He has not contributed anything to the open source community."
+This is a complete lie. I've contributed gigabytes of media alone.
+I've done years and years of programming work.
+I have done far more than you ever will.
+
+"His songs and "games" are not worth looking at,"
+Your subjective view. Coloured by your social views and your
+disdain for those who oppose you in that.
+
+"and I'm not aware of any project that has accepted any of his "contributions"."
+The only objectively true thing you've said: you're not aware.
+I'm glad you're unaware, I hope that trend continues.
+
+I expect this post to be censored, it is par for the course for people like you.
+
+Sincerely;
+--MikeeUSA--
+
+---------------------
+(Erich Schubert put forth false claims about lack of involvement of mine in free/opensource software)
+(When corrected he first engaged, then deleted all the posts, keeping only his false statements visible)
+http://www.vitavonni.de/blog/201411/2014110901-gr-vote-on-init-coupling.html
+About Erich_Schubert:
+
+http://www.dbs.ifi.lmu.de/cms/Erich_Schubert
+
+Ludwig-Maximilians-Universität München
+Lehr- und Forschungseinheit für Datenbanksysteme
+Oettingenstraße 67
+80538 München
+Germany
+Room: 	F 109
+Phone:	+49-89-2180-9325
+Fax: 	+49-89-2180-9192
+Email:	schube@dbs.ifi.lmu.de
+
+Sprechstunde: jeden Donnerstag 15-16 Uhr, Zimmer F 109 
+
+What is he all about? Data-Mining an der Hochschule Rosenheim
+(also seen on his most recent projects)
