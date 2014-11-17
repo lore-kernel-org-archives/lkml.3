@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702AbaKQDRj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 22:17:39 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34635 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaKQDRi (ORCPT
+	id S1753736AbaKQDUa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 22:20:30 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:61605 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717AbaKQDU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 22:17:38 -0500
-Message-ID: <546968CB.1070802@hitachi.com>
-Date: Mon, 17 Nov 2014 12:17:31 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        brendan.d.gregg@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [RFC] perf-cache command interface design
-References: <87lhnr5sbl.fsf@sejong.aot.lge.com> <54588905.7040002@linux.vnet.ibm.com> <5458CD15.4010101@hitachi.com> <874muew2hk.fsf@sejong.aot.lge.com> <5459E865.6050207@hitachi.com> <545B1DDE.9000202@linux.vnet.ibm.com> <545C80F4.4020905@hitachi.com> <54609A8C.4050308@hitachi.com> <20141110122321.GC4468@redhat.com> <5461B276.50004@hitachi.com> <20141111131030.GG4468@redhat.com> <54637C05.5090807@hitachi.com> <87oas6ttf8.fsf@sejong.aot.lge.com>
-In-Reply-To: <87oas6ttf8.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Nov 2014 22:20:29 -0500
+From: Thomas Wood <tommyandrena@gmail.com>
+To: oleg.drokin@intel.com
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        HPDD-discuss@ml01.01.org, Thomas Wood <tommyandrena@gmail.com>
+Subject: [PATCH] drivers: staging: lustre: lnet: api-nc.c: Fix Style Warnings Remove an unecessary return statement in a void function. Remove an unecessary space between a function name and the parentheses.
+Date: Sun, 16 Nov 2014 19:21:35 -0800
+Message-Id: <1416194495-18512-1-git-send-email-tommyandrena@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/17 12:08), Namhyung Kim wrote:
-> Hi Masami,
-> 
-> On Thu, 13 Nov 2014 00:25:57 +0900, Masami Hiramatsu wrote:
->> (2014/11/11 22:10), Arnaldo Carvalho de Melo wrote:
->>> What I meant was, what is wrong with replacing:
->>>
->>>  perf cache --probe <SPEC>  # for the current kernel
->>>
->>> With:
->>>
->>>  perf cache --add <PROBE-SPEC> # for the current kernel
->>>
->>> And have it figure out that what is being added is a probe and do the
->>> right thing?
->>
->> As I've said previously, PROBE-SPEC can be same as FILES (imagine that a binary
->> file which has same name function in the kernel.)
->> Moreover, PROBE-SPEC requires the target binary(or kernel module) except for
->> kernel probes. In that case, anyway we need -x or -m options with file-path
->> for --add, that is very strange.
->>
->> e.g.
->>
->> For me,
->>
->>  perf cache --add ./binary --probe '*'
->>
->> looks more natural than
->>
->>  perf cache --add '*' -exec ./binary
->>
->> since in other cases(sdt/elf), we'll just do
->>
->>  perf cache --add ./binary
-> 
-> I prefer this too.  But I'd like make the 'add' part a subcommand rather
-> than option like we do in perf kmem/kvm/list/lock/mem/sched ...  And it
-> can handle multiple files at once.  What about this?
-> 
->   perf cache add [--elf|--sdt|--probe <spec>] <binary> [<binary>...]
 
-OK, that's good to me. And I think --elf/--sdt is meaningless.
-Only --probe option is required, since we can scan the elf file to
-add sdt cache when adding elf binary :)
+Signed-off-by: Thomas Wood <tommyandrena@gmail.com>
+---
+I hope this hasn't been duplicated...
+ drivers/staging/lustre/lnet/lnet/api-ni.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Thank you,
-
+diff --git a/drivers/staging/lustre/lnet/lnet/api-ni.c b/drivers/staging/lustre/lnet/lnet/api-ni.c
+index 5e6e4e2..faceb95 100644
+--- a/drivers/staging/lustre/lnet/lnet/api-ni.c
++++ b/drivers/staging/lustre/lnet/lnet/api-ni.c
+@@ -277,7 +277,7 @@ lnet_find_lnd_by_type(int type)
+ 	struct list_head	 *tmp;
+ 
+ 	/* holding lnd mutex */
+-	list_for_each (tmp, &the_lnet.ln_lnds) {
++	list_for_each(tmp, &the_lnet.ln_lnds) {
+ 		lnd = list_entry(tmp, lnd_t, lnd_list);
+ 
+ 		if ((int)lnd->lnd_type == type)
+@@ -1645,7 +1645,6 @@ lnet_destroy_ping_info(void)
+ 		    offsetof(lnet_ping_info_t,
+ 			     pi_ni[the_lnet.ln_ping_info->pi_nnis]));
+ 	the_lnet.ln_ping_info = NULL;
+-	return;
+ }
+ 
+ int
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.10.4
 
