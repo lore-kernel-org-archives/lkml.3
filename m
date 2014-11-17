@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaKQS0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:26:05 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:49042 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaKQS0C (ORCPT
+	id S1752602AbaKQS0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:26:45 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:54834 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaKQS0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:26:02 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd enabled
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-	<7ha93t8z1q.fsf@deeprootsystems.com>
-	<CAMuHMdVrpwg2pYxUhA5oRgd1g2DmLuSb2jR3ywz8hkjms7UBcw@mail.gmail.com>
-	<6465990.KKns6W8hQE@vostro.rjw.lan>
-Date: Mon, 17 Nov 2014 10:25:58 -0800
-In-Reply-To: <6465990.KKns6W8hQE@vostro.rjw.lan> (Rafael J. Wysocki's message
-	of "Mon, 17 Nov 2014 02:22:52 +0100")
-Message-ID: <7hioid3cqx.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 17 Nov 2014 13:26:43 -0500
+Message-ID: <546A3DD1.8020209@cogentembedded.com>
+Date: Mon, 17 Nov 2014 21:26:25 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
+        balbi@ti.com, p.zabel@pengutronix.de
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com, michal.simek@xilinx.com,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 10/13] ARM: dts: berlin: add BG2Q nodes for USB support
+References: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com> <1416231347-27193-11-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1416231347-27193-11-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+Hello.
 
-> On Saturday, November 15, 2014 01:32:01 PM Geert Uytterhoeven wrote:
->> Hi Kevin,
->> 
->> On Fri, Nov 14, 2014 at 6:36 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> >> On Thu, Nov 13, 2014 at 11:28 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> >>> It makes little sense to use generic power domains without runtime PM.
->> >>
->> >> Does it?
->> >> It still powers down the PM domains on system suspend (at least on my
->> >> boards ;-)
->> >
->> > Sure, but your devices are also using runtime PM, so I'm not sure how
->> > does that change my statement above?
->> 
->> I do mean with CONFIG_PM_RUNTIME turned off.
->> 
->> If PM domain support is disabled, s2ram will not power down the PM domains.
+On 11/17/2014 04:35 PM, Antoine Tenart wrote:
+
+> Adds nodes describing the Marvell Berlin BG2Q USB PHY and USB. The BG2Q
+> SoC has 3 USB host controller, compatible with ChipIdea.
+
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/berlin2q.dtsi | 55 +++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 55 insertions(+)
+
+> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> index 2de8d6f8973c..834142bdfbb1 100644
+> --- a/arch/arm/boot/dts/berlin2q.dtsi
+> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+[...]
+> @@ -457,5 +511,6 @@
+>   				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
+>   			};
+>   		};
+> +
+
+    Random whitespace change?
+
+>   	};
+>   };
 >
-> But if PM_RUNTIME is enabled along with it, I don't think it will make much
-> of a different, will it?
->
-> Building the kernel with genpd and without PM_RUNTIME is possible today,
-> but is it really useful?  To me, it only seems to make people try to
-> reinvent the wheel "because PM_RUNTIME may be unset".
->
-> I have to say I'm seriously considering to make PM_SLEEP select
-> PM_RUNTIME too as that would make quite a few things a *lot* simpler.
 
-Yes.  
+WBR, Sergei
 
-If that were the case, we woudn't need the pm_runtime_force_* calls
-either.
-
-Kevin
