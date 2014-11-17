@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaKQJ7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:59:55 -0500
-Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:38265 "EHLO
-	smtp113.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751814AbaKQJ7y (ORCPT
+	id S1752057AbaKQKEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:04:13 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:43819 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaKQKEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:59:54 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <5469C717.5030709@mev.co.uk>
-Date: Mon, 17 Nov 2014 09:59:51 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 17 Nov 2014 05:04:12 -0500
 MIME-Version: 1.0
-To: Marcus Hufvudsson <marcushuf@gmail.com>
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: me4000: Fixed code style issue
-References: <1416066920-10012-1-git-send-email-marcushuf@gmail.com>
-In-Reply-To: <1416066920-10012-1-git-send-email-marcushuf@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141117092456.GA3247@distanz.ch>
+References: <20141114220419.GA32497@dtor-ws>
+	<20141117092456.GA3247@distanz.ch>
+Date: Mon, 17 Nov 2014 18:04:10 +0800
+X-Google-Sender-Auth: 6YJgUejRdKCt_6rbqQ2frDFBsF8
+Message-ID: <CAFiDJ5-3j62Ert5+7jrNh4CUg91SBn1Rdq9uq9Jr_5a+KL-4JQ@mail.gmail.com>
+Subject: Re: [PATCH] nios2: fix error handling of irq_of_parse_and_map
+From: Ley Foon Tan <lftan@altera.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Dmitry Torokhov <dtor@chromium.org>,
+        "nios2-dev@lists.rocketboards.org" <nios2-dev@lists.rocketboards.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/11/14 15:55, Marcus Hufvudsson wrote:
-> Fixed checkpatch.pl error message. Space prohibited before that ','
+On Mon, Nov 17, 2014 at 5:24 PM, Tobias Klauser <tklauser@distanz.ch> wrote:
+> On 2014-11-14 at 23:04:19 +0100, Dmitry Torokhov <dtor@chromium.org> wrote:
+>> Return value of irq_of_parse_and_map() is unsigned int, with 0
+>> indicating failure, so testing for negative result never works.
+>>
+>> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
 >
-> Signed-off-by: Marcus Hufvudsson <marcushuf@gmail.com>
-> ---
->   drivers/staging/comedi/drivers/me4000.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+> Reviewed-by: Tobias Klauser <tklauser@distanz.ch>
 >
-> diff --git a/drivers/staging/comedi/drivers/me4000.c b/drivers/staging/comedi/drivers/me4000.c
-> index ae6ac49..fc67419 100644
-> --- a/drivers/staging/comedi/drivers/me4000.c
-> +++ b/drivers/staging/comedi/drivers/me4000.c
-> @@ -416,7 +416,7 @@ static void me4000_reset(struct comedi_device *dev)
->   	val |= PLX9052_CNTRL_PCI_RESET;
->   	outl(val, info->plx_regbase + PLX9052_CNTRL);
->   	val &= ~PLX9052_CNTRL_PCI_RESET;
-> -	outl(val , info->plx_regbase + PLX9052_CNTRL);
-> +	outl(val, info->plx_regbase + PLX9052_CNTRL);
->
->   	/* 0x8000 to the DACs means an output voltage of 0V */
->   	for (chan = 0; chan < 4; chan++)
+> Thanks for catching this.
+Thanks for your patch.
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+Regards
+Ley Foon
