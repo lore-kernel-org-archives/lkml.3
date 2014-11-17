@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594AbaKQNyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:54:32 -0500
+	id S1754008AbaKQNyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:54:49 -0500
 Received: from down.free-electrons.com ([37.187.137.238]:49102 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753366AbaKQNph (ORCPT
+	with ESMTP id S1753349AbaKQNpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:37 -0500
+	Mon, 17 Nov 2014 08:45:33 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 43/61] dmaengine: tegra20: Split device_control
-Date: Mon, 17 Nov 2014 14:42:37 +0100
-Message-Id: <1416231775-31252-44-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 39/61] dmaengine: sh: Split device_control
+Date: Mon, 17 Nov 2014 14:42:33 +0100
+Message-Id: <1416231775-31252-40-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,54 +24,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the NVidia Tegra20 APB DMA driver to make
-use of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+Split the device_control callback of the Super-H DMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/dma/tegra20-apb-dma.c | 22 ++--------------------
- 1 file changed, 2 insertions(+), 20 deletions(-)
+ drivers/dma/sh/shdma-base.c | 72 +++++++++++++++++++++------------------------
+ 1 file changed, 33 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index a6c0b3f68393..053b44f3aef9 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -827,25 +827,6 @@ static enum dma_status tegra_dma_tx_status(struct dma_chan *dc,
- 	return ret;
+diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
+index 3a2adb131d46..8ee383d339a5 100644
+--- a/drivers/dma/sh/shdma-base.c
++++ b/drivers/dma/sh/shdma-base.c
+@@ -729,57 +729,50 @@ static struct dma_async_tx_descriptor *shdma_prep_dma_cyclic(
+ 	return desc;
  }
  
--static int tegra_dma_device_control(struct dma_chan *dc, enum dma_ctrl_cmd cmd,
--			unsigned long arg)
--{
--	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		return tegra_dma_slave_config(dc,
--				(struct dma_slave_config *)arg);
--
--	case DMA_TERMINATE_ALL:
--		tegra_dma_terminate_all(dc);
--		return 0;
--
--	default:
--		break;
--	}
--
--	return -ENXIO;
--}
--
- static inline int get_bus_width(struct tegra_dma_channel *tdc,
- 		enum dma_slave_buswidth slave_bw)
+-static int shdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-			  unsigned long arg)
++static int shdma_terminate_all(struct dma_chan *chan)
  {
-@@ -1443,7 +1424,8 @@ static int tegra_dma_probe(struct platform_device *pdev)
- 					tegra_dma_free_chan_resources;
- 	tdma->dma_dev.device_prep_slave_sg = tegra_dma_prep_slave_sg;
- 	tdma->dma_dev.device_prep_dma_cyclic = tegra_dma_prep_dma_cyclic;
--	tdma->dma_dev.device_control = tegra_dma_device_control;
-+	tdma->dma_dev.device_config = tegra_dma_slave_config;
-+	tdma->dma_dev.device_terminate_all = tegra_dma_terminate_all;
- 	tdma->dma_dev.device_tx_status = tegra_dma_tx_status;
- 	tdma->dma_dev.device_issue_pending = tegra_dma_issue_pending;
+ 	struct shdma_chan *schan = to_shdma_chan(chan);
+ 	struct shdma_dev *sdev = to_shdma_dev(chan->device);
+ 	const struct shdma_ops *ops = sdev->ops;
+-	struct dma_slave_config *config;
+ 	unsigned long flags;
+-	int ret;
+ 
+-	switch (cmd) {
+-	case DMA_TERMINATE_ALL:
+-		spin_lock_irqsave(&schan->chan_lock, flags);
+-		ops->halt_channel(schan);
++	spin_lock_irqsave(&schan->chan_lock, flags);
++	ops->halt_channel(schan);
+ 
+-		if (ops->get_partial && !list_empty(&schan->ld_queue)) {
+-			/* Record partial transfer */
+-			struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
+-						struct shdma_desc, node);
+-			desc->partial = ops->get_partial(schan, desc);
+-		}
++	if (ops->get_partial && !list_empty(&schan->ld_queue)) {
++		/* Record partial transfer */
++		struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
++							   struct shdma_desc, node);
++		desc->partial = ops->get_partial(schan, desc);
++	}
+ 
+-		spin_unlock_irqrestore(&schan->chan_lock, flags);
++	spin_unlock_irqrestore(&schan->chan_lock, flags);
+ 
+-		shdma_chan_ld_cleanup(schan, true);
+-		break;
+-	case DMA_SLAVE_CONFIG:
+-		/*
+-		 * So far only .slave_id is used, but the slave drivers are
+-		 * encouraged to also set a transfer direction and an address.
+-		 */
+-		if (!arg)
+-			return -EINVAL;
+-		/*
+-		 * We could lock this, but you shouldn't be configuring the
+-		 * channel, while using it...
+-		 */
+-		config = (struct dma_slave_config *)arg;
+-		ret = shdma_setup_slave(schan, config->slave_id,
+-					config->direction == DMA_DEV_TO_MEM ?
+-					config->src_addr : config->dst_addr);
+-		if (ret < 0)
+-			return ret;
+-		break;
+-	default:
+-		return -ENXIO;
+-	}
++	shdma_chan_ld_cleanup(schan, true);
+ 
+ 	return 0;
+ }
+ 
++static int shdma_config(struct dma_chan *chan,
++			struct dma_slave_config *config)
++{
++	struct shdma_chan *schan = to_shdma_chan(chan);
++
++	/*
++	 * So far only .slave_id is used, but the slave drivers are
++	 * encouraged to also set a transfer direction and an address.
++	 */
++	if (!config)
++		return -EINVAL;
++	/*
++	 * We could lock this, but you shouldn't be configuring the
++	 * channel, while using it...
++	 */
++	return shdma_setup_slave(schan, config->slave_id,
++				 config->direction == DMA_DEV_TO_MEM ?
++				 config->src_addr : config->dst_addr);
++}
++
+ static void shdma_issue_pending(struct dma_chan *chan)
+ {
+ 	struct shdma_chan *schan = to_shdma_chan(chan);
+@@ -1002,7 +995,8 @@ int shdma_init(struct device *dev, struct shdma_dev *sdev,
+ 	/* Compulsory for DMA_SLAVE fields */
+ 	dma_dev->device_prep_slave_sg = shdma_prep_slave_sg;
+ 	dma_dev->device_prep_dma_cyclic = shdma_prep_dma_cyclic;
+-	dma_dev->device_control = shdma_control;
++	dma_dev->device_config = shdma_config;
++	dma_dev->device_terminate_all = shdma_terminate_all;
+ 
+ 	dma_dev->dev = dev;
  
 -- 
 2.1.1
