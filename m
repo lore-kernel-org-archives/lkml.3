@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaKQUjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 15:39:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37156 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516AbaKQUjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 15:39:05 -0500
-Date: Mon, 17 Nov 2014 15:38:30 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ptesarik@suse.cz, kumagai-atsushi@mxc.nes.nec.co.jp, anderson@redhat.com,
-        kexec@lists.infradead.org, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in
- VMCOREINFO
-Message-ID: <20141117203830.GD17152@redhat.com>
-References: <20141113090657.2578f087@hananiah.suse.cz>
- <54646C1D.1050102@jp.fujitsu.com>
- <20141113142548.GA1978@redhat.com>
- <20141114.103133.364422370204110382.d.hatayama@jp.fujitsu.com>
+	id S1752848AbaKQUl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 15:41:29 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:52259 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaKQUl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 15:41:28 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jonas Gorski <jonas.gorski@gmail.com>
+Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
+Date: Mon, 17 Nov 2014 21:40:50 +0100
+Message-ID: <3357597.nYlNZ6O0nJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAJiQ=7BH8K=Q+JcWTKSfn6xAteOF4B6jahMu_qVd-FyZWD3pjA@mail.gmail.com>
+References: <1416097066-20452-1-git-send-email-cernekee@gmail.com> <2911624.UJRs5QOPN5@wuerfel> <CAJiQ=7BH8K=Q+JcWTKSfn6xAteOF4B6jahMu_qVd-FyZWD3pjA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141114.103133.364422370204110382.d.hatayama@jp.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:SmsAtINU2qaB3wgfto3BZGVZ0mWGoaHI3kXMX3aO7xT
+ cFTdHLZcxcgTOC7uMimIWkY5CQPOjPWYs7wLDJWmc/07jX+OzL
+ AuTfUTwci+vfIAmyP4rexTejvePxGjkNx/UJx5KmYJ2Lk0ioBu
+ WaFI/Q8pwcBF5IrUN0V0/JxafXIAMpUJxYlSj2Y+hNF24NrRK3
+ i2ykAA6TE+rgAs1S38AcOIaxC2IvLjm06h1OudNf2WoU9V+vg7
+ AWTYujCNVm/TkbS1CVn6jsUeCcN6AjZjfG8JdlkXgbL0QKYD2Y
+ 3bhugQpyvCJhFTqzjfEIZSNjYRstQr1fldzi32kTCHO1t1UV+4
+ HOLkUBO6pakJcKhvAraM=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 10:31:33AM +0900, HATAYAMA Daisuke wrote:
-> From: Vivek Goyal <vgoyal@redhat.com>
-> Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-> Date: Thu, 13 Nov 2014 09:25:48 -0500
+On Monday 17 November 2014 11:39:02 Kevin Cernekee wrote:
+> On Mon, Nov 17, 2014 at 10:46 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Monday 17 November 2014 09:01:02 Kevin Cernekee wrote:
+> >> > If you wanted to do that however, starting with BMIPS you'd have
+> >> > to make it possible to define a new platform without the
+> >> > arch/mips/include/asm/mach-bmips/ directory (this should be possible
+> >> > already, so the hardest part is done), replace all global function
+> >> > calls (arch_init_irq, prom_init, get_system_type,  ...) with generic
+> >> > platform-independent implementations or wrappers around per-platform
+> >> > callbacks, and move the Kconfig section for CONFIG_BMIPS_MULTIPLATFORM
+> >> > outside of the "System type" choice statement.
+> >>
+> >> Right.  The other question is how much support for legacy non-DT
+> >> bootloaders really belongs in a true multiplatform kernel, as this
+> >> stuff gets hairy fast.
+> >
+> > Yes, that's why I suggested following PowerPC rather than ARM in this
+> > regard.  If you move the boot loader abstraction into the decompressor
+> > instead of the platform code, you can avoid a lot of the problems.
 > 
-> > On Thu, Nov 13, 2014 at 05:30:21PM +0900, HATAYAMA, Daisuke wrote:
-> >> 
-> >> 
-> >> (2014/11/13 17:06), Petr Tesarik wrote:
-> >> >On Thu, 13 Nov 2014 09:17:09 +0900 (JST)
-> >> >HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
-> >> >
-> >> >>From: Vivek Goyal <vgoyal@redhat.com>
-> >> >>Subject: Re: [PATCH] kdump, x86: report actual value of phys_base in VMCOREINFO
-> >> >>Date: Wed, 12 Nov 2014 17:12:05 -0500
-> >> >>
-> >> >>>On Wed, Nov 12, 2014 at 03:40:42PM +0900, HATAYAMA Daisuke wrote:
-> >> >>>>Currently, VMCOREINFO note information reports the virtual address of
-> >> >>>>phys_base that is assigned to symbol phys_base. But this doesn't make
-> >> >>>>sense because to refer to value of the phys_base, it's necessary to
-> >> >>>>get the value of phys_base itself we are now about to refer to.
-> >> >>>>
-> >> >>>
-> >> >>>Hi Hatayama,
-> >> >>>
-> >> >>>/proc/vmcore ELF headers have virtual address information and using
-> >> >>>that you should be able to read actual value of phys_base. gdb deals
-> >> >>>with virtual addresses all the time and can read value of any symbol
-> >> >>>using those headers.
-> >> >>>
-> >> >>>So I am not sure what's the need for exporting actual value of
-> >> >>>phys_base.
-> >> >>>
-> >> >>
-> >> >>Sorry, my logic in the patch description was wrong. For /proc/vmcore,
-> >> >>there's enough information for makedumpdile to get phys_base. It's
-> >> >>correct. The problem here is that other crash dump mechanisms that run
-> >> >>outside Linux kernel independently don't have information to get
-> >> >>phys_base.
-> >> >
-> >> >Yes, but these mechanisms won't be able to read VMCOREINFO either, will
-> >> >they?
-> >> >
-> >> 
-> >> I don't intend such sophisticated function only by VMCOREINFO.
-> >> Search vmcore for VMCOREINFO using strings + grep before opening it by crash.
-> >> I intend that only here.
-> > 
-> > I think this is very crude and not proper way to get to vmcoreinfo. Can
+> One possible complication: for BCM63xx/BCM7xxx (MIPS) there is no
+> decompressor in the kernel.  The firmware loads an ELF image into
+> memory and jumps directly to kernel_entry.
 > 
-> I agree it's crude, but it's useful enough for my usecase.
-> 
-> > you give more context. What are those mechanisms and what are you trying
-> > to do.
-> > 
-> 
-> I after all write the same thing in the patch description... I mean
-> qemu dump, xendump (and other hypervisor dumps), firmware dumps
-> implemented on each vendor system for the crash dump mechanism.
 
-vmcoreinfo is exported by kdump mechanism (/proc/vmcore). These other
-dump mechanism needs to figure a way out how to export relevant
-information and it is not right to try to put more info in vmcoreinfo.
+Right, that complicates it a bit, but is there a reason why a decompressor
+would be hard to do, or would be considered a bad thing?
+There is already generic decompressor code in arch/mips/boot/compressed/
+that I would assume you could use without firmware changes. Are you
+worried about boot time overhead?
 
-Don't try to write kernel data structures in such a way so that
-somebody can scan these later. In an external dump mechanism there
-is no notion of vmcoreinfo elf header. So these mechanisms need to
-come up with their own way to query some basic information about
-kernel and export appropriately.
-
-Also this notion of relying on two mechanism is unnecessary 
-introducing extra complexity. I think you should provide user
-a choice so that they can configure one or other. If you think
-that firmware dump mechanisms are more reliable, just use these.
-In fact when crash happens then OS should call into some
-firmware hook to trigger dump. And along that hook one should
-be able to pass relevant info.
-
-Thanks
-Vivek
+	Arnd
