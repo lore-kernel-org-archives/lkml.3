@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaKQVvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:51:15 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:37993 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752164AbaKQVvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:51:13 -0500
-X-Sasl-enc: +/eGzgXV9RXpJRYVs8cuVs6ZPN29JJjIh2IaswxgGBc4 1416261072
-Date: Mon, 17 Nov 2014 13:51:11 -0800
-From: Greg KH <greg@kroah.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Antonio Borneo <borneo.antonio@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] HID: i2c-hid: fix race condition reading reports
-Message-ID: <20141117215111.GA19828@kroah.com>
-References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
- <20141117214305.GC30324@mail.corp.redhat.com>
+	id S1752591AbaKQVzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 16:55:46 -0500
+Received: from mga14.intel.com ([192.55.52.115]:28442 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547AbaKQVzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 16:55:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="417811886"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>
+CC: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphCABQ+BAIAAEq4AgAAB1ACAAACVgP//kExA
+Date: Mon, 17 Nov 2014 21:55:42 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
+References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic>
+ <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+ <20141117185030.GA25157@pd.tnic>
+ <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
+ <20141117200354.GB25157@pd.tnic>
+ <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
+In-Reply-To: <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141117214305.GC30324@mail.corp.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAHLtraZ016182
 
-On Mon, Nov 17, 2014 at 04:43:05PM -0500, Benjamin Tissoires wrote:
-> Hey Antonio,
-> 
-> On Nov 16 2014 or thereabouts, Antonio Borneo wrote:
-> > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> > 
-> > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> > 
-> > Current driver uses a common buffer for reading reports either
-> > synchronously in i2c_hid_get_raw_report() and asynchronously in
-> > the interrupt handler.
-> > There is race condition if an interrupt arrives immediately after
-> > the report is received in i2c_hid_get_raw_report(); the common
-> > buffer is modified by the interrupt handler with the new report
-> > and then i2c_hid_get_raw_report() proceed using wrong data.
-> > 
-> > Fix it by using a separate buffers for asynchronous reports.
-> > 
-> > Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> > [Antonio Borneo: cleanup and rebase to v3.17]
-> > Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-> > Cc: stable@vger.kernel.org
-> 
-> For your next submission, when you want a patch to go in stable, put CC
-> here, but please do not CC the actual mail to stable@. Stable should receive
-> either mails which are already in Linus' tree, or which refer a commit
-> in Linus' tree in case it does not applies smoothly.
-> 
-> [keeping stable@ here to show them that this one should not get picked
-> right now]
+>> However, I'd like to be very sure this thing doesn't introduce any
+>> regressions to the MCA code. So even if Tony's testing passes, I'd like
+>> to be very conservative here and stress it more than usual. Because once
+>> this thing hits upstream and stuff starts breaking, it'll be a serious
+>> PITA reverting it.
 
-stable@ is smarter than that, I don't mind seeing patches that are
-coming in the future like this at all, it's not a problem.
+The test I left running on Friday was just running the stack-switch asm
+patch, without any mce.c changes.  It died at 16000 iterations with the
+mce synchronization issue.
 
-thanks,
+This morning I started a new test with all the mce changes (no TIF_MCE_NOTIFY,
+just process the recovery in the tail of do_machine_check().
 
-greg k-h
+It just passed the 18000 point, and it still going.  In addition I've been throwing
+the odd "make -j144" kernel build at the machine so we check out the non-idle
+paths too.
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
