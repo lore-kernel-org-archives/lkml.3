@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001AbaKQTIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:08:45 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:65357 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969AbaKQTIl (ORCPT
+	id S1753066AbaKQTJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:09:00 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:41190 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025AbaKQTI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:08:41 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v3 13/13] perf/x86: add syfs entry to disable HT bug workaround
-Date: Mon, 17 Nov 2014 20:07:05 +0100
-Message-Id: <1416251225-17721-14-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416251225-17721-1-git-send-email-eranian@google.com>
-References: <1416251225-17721-1-git-send-email-eranian@google.com>
+	Mon, 17 Nov 2014 14:08:57 -0500
+Message-ID: <546A47C6.4030309@colorfullife.com>
+Date: Mon, 17 Nov 2014 20:08:54 +0100
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>,
+        Davidlohr Bueso <dave@stgolabs.net>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Doug Ledford <dledford@redhat.com>, linux-newbie@vger.kernel.org
+Subject: Re: [PATCH 1/1] ipc/mqueue.c: Drag unneeded code out of locks
+References: <fae396b9bc15.545c5b55@langara.bc.ca> <1415780201.24725.2.camel@linux-t7sj.site> <fbb3e8aa49d6.5466da38@langara.bc.ca> <1416086539.12597.15.camel@linux-t7sj.site> <fb59f9ad237f.5468fdbe@langara.bc.ca>
+In-Reply-To: <fb59f9ad237f.5468fdbe@langara.bc.ca>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Hi Steven,
 
-This patch adds a sysfs entry:
+On 11/16/2014 08:40 PM, Steven Stewart-Gallus wrote:
+> Finally, please don't ignore the rest of my message. Even if my patch
+> isn't that good there are lots of ways to compromise and improve it
+> such as adding tests, annotations and making it clearer.
 
-	/sys/devices/cpu/ht_bug_workaround
+I think you were already given ideas how to improve the patch:
 
-to activate/deactivate the PMU HT bug workaround.
+a) split the patch.
 
-To activate (activated by default):
- # echo 1 > /sys/devices/cpu/ht_bug_workaround
+b) create test cases so that you are able to check that the code still 
+behaves as it did before
+Did you test the change to mqueue_create()?
 
-To deactivate:
- # echo 0 > /sys/devices/cpu/ht_bug_workaround
+c) Give each a good summary of what you want to achieve:
+- readability
+- coding style
+- performance
+- avoid a lock entirely, switch to RCU instead of spin_lock(), ...
+- reduce the time a lock is held (usually only useful if the reduction 
+is significant - both relative and absolute).
+- ...
 
-Results effective only once there is no more active
-events.
+Writing that down also helps you:
+There were multiple patches that I've dropped myself - simply because I 
+have noticed that the patch doesn't achieve anything useful.
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.c | 44 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+ From your changes: The one to mqueue_read_file might make sense, it 
+avoids to hold the spinlock over the snprintf.
+For the other changes, I don't see that they improve something, but 
+perhaps I have overlooked something.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2d5e7a9..5a5515e 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1881,10 +1881,54 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- 	return count;
- }
- 
-+static ssize_t get_attr_xsu(struct device *cdev,
-+			      struct device_attribute *attr,
-+			      char *buf)
-+{
-+	int ff = is_ht_workaround_enabled();
-+
-+	return snprintf(buf, 40, "%d\n", ff);
-+}
-+
-+static ssize_t set_attr_xsu(struct device *cdev,
-+			      struct device_attribute *attr,
-+			      const char *buf, size_t count)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct intel_excl_cntrs *excl_cntrs = cpuc->excl_cntrs;
-+	unsigned long val;
-+	unsigned long flags;
-+	int ff = is_ht_workaround_enabled();
-+	ssize_t ret;
-+
-+	/*
-+	 * if workaround, disabled, no effect
-+	 */
-+	if (!excl_cntrs)
-+		return count;
-+
-+	ret = kstrtoul(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	spin_lock_irqsave(&excl_cntrs->lock, flags);
-+	if (!!val != ff) {
-+		if (!val)
-+			x86_pmu.flags &= ~PMU_FL_EXCL_ENABLED;
-+		else
-+			x86_pmu.flags |= PMU_FL_EXCL_ENABLED;
-+	}
-+	spin_unlock_irqrestore(&excl_cntrs->lock, flags);
-+	return count;
-+}
-+
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(ht_bug_workaround, S_IRUSR | S_IWUSR, get_attr_xsu,
-+		   set_attr_xsu);
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_ht_bug_workaround.attr,
- 	NULL,
- };
- 
--- 
-1.9.1
+Best regards,
+     Manfred
+
 
