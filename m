@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaKQNpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:45:15 -0500
+	id S1753130AbaKQNpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:45:19 -0500
 Received: from down.free-electrons.com ([37.187.137.238]:48985 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752956AbaKQNpK (ORCPT
+	with ESMTP id S1752978AbaKQNpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:10 -0500
+	Mon, 17 Nov 2014 08:45:16 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 17/61] dmaengine: jz4740: Split device_control
-Date: Mon, 17 Nov 2014 14:42:11 +0100
-Message-Id: <1416231775-31252-18-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 23/61] dmaengine: imx-sdma: Split device_control
+Date: Mon, 17 Nov 2014 14:42:17 +0100
+Message-Id: <1416231775-31252-24-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,60 +24,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the JZ4740 DMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+Split the device_control callback of the Freescale IMX SDMA driver to make use
+of the newly introduced callbacks, that will eventually be used to retrieve
+slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/dma-jz4740.c | 20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
+ drivers/dma/imx-sdma.c | 66 +++++++++++++++++++++++---------------------------
+ 1 file changed, 30 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/dma/dma-jz4740.c b/drivers/dma/dma-jz4740.c
-index bdeafeefa5f6..4527a3ebeac4 100644
---- a/drivers/dma/dma-jz4740.c
-+++ b/drivers/dma/dma-jz4740.c
-@@ -210,7 +210,7 @@ static enum jz4740_dma_transfer_size jz4740_dma_maxburst(u32 maxburst)
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 5b38f2bbd42a..d0f9364ab06c 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -830,20 +830,29 @@ static int sdma_load_context(struct sdma_channel *sdmac)
+ 	return ret;
  }
  
- static int jz4740_dma_slave_config(struct dma_chan *c,
--	const struct dma_slave_config *config)
-+				   struct dma_slave_config *config)
+-static void sdma_disable_channel(struct sdma_channel *sdmac)
++static struct sdma_channel *to_sdma_chan(struct dma_chan *chan)
++{
++	return container_of(chan, struct sdma_channel, chan);
++}
++
++static int sdma_disable_channel(struct dma_chan *chan)
  {
- 	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
- 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
-@@ -290,21 +290,6 @@ static int jz4740_dma_terminate_all(struct dma_chan *c)
- 	return 0;
++	struct sdma_channel *sdmac = to_sdma_chan(chan);
+ 	struct sdma_engine *sdma = sdmac->sdma;
+ 	int channel = sdmac->channel;
+ 
+ 	writel_relaxed(BIT(channel), sdma->regs + SDMA_H_STATSTOP);
+ 	sdmac->status = DMA_ERROR;
++
++	return 0;
  }
  
--static int jz4740_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
+-static int sdma_config_channel(struct sdma_channel *sdmac)
++static int sdma_config_channel(struct dma_chan *chan)
+ {
++	struct sdma_channel *sdmac = to_sdma_chan(chan);
+ 	int ret;
+ 
+-	sdma_disable_channel(sdmac);
++	sdma_disable_channel(chan);
+ 
+ 	sdmac->event_mask[0] = 0;
+ 	sdmac->event_mask[1] = 0;
+@@ -935,11 +944,6 @@ out:
+ 	return ret;
+ }
+ 
+-static struct sdma_channel *to_sdma_chan(struct dma_chan *chan)
 -{
--	struct dma_slave_config *config = (struct dma_slave_config *)arg;
+-	return container_of(chan, struct sdma_channel, chan);
+-}
+-
+ static dma_cookie_t sdma_tx_submit(struct dma_async_tx_descriptor *tx)
+ {
+ 	unsigned long flags;
+@@ -1004,7 +1008,7 @@ static void sdma_free_chan_resources(struct dma_chan *chan)
+ 	struct sdma_channel *sdmac = to_sdma_chan(chan);
+ 	struct sdma_engine *sdma = sdmac->sdma;
+ 
+-	sdma_disable_channel(sdmac);
++	sdma_disable_channel(chan);
+ 
+ 	if (sdmac->event_id0)
+ 		sdma_event_disable(sdmac, sdmac->event_id0);
+@@ -1203,35 +1207,24 @@ err_out:
+ 	return NULL;
+ }
+ 
+-static int sdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		unsigned long arg)
++static int sdma_config(struct dma_chan *chan,
++		       struct dma_slave_config *dmaengine_cfg)
+ {
+ 	struct sdma_channel *sdmac = to_sdma_chan(chan);
+-	struct dma_slave_config *dmaengine_cfg = (void *)arg;
 -
 -	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		return jz4740_dma_slave_config(chan, config);
 -	case DMA_TERMINATE_ALL:
--		return jz4740_dma_terminate_all(chan);
+-		sdma_disable_channel(sdmac);
+-		return 0;
+-	case DMA_SLAVE_CONFIG:
+-		if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
+-			sdmac->per_address = dmaengine_cfg->src_addr;
+-			sdmac->watermark_level = dmaengine_cfg->src_maxburst *
+-						dmaengine_cfg->src_addr_width;
+-			sdmac->word_size = dmaengine_cfg->src_addr_width;
+-		} else {
+-			sdmac->per_address = dmaengine_cfg->dst_addr;
+-			sdmac->watermark_level = dmaengine_cfg->dst_maxburst *
+-						dmaengine_cfg->dst_addr_width;
+-			sdmac->word_size = dmaengine_cfg->dst_addr_width;
+-		}
+-		sdmac->direction = dmaengine_cfg->direction;
+-		return sdma_config_channel(sdmac);
 -	default:
 -		return -ENOSYS;
 -	}
--}
--
- static int jz4740_dma_start_transfer(struct jz4740_dmaengine_chan *chan)
- {
- 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
-@@ -561,7 +546,8 @@ static int jz4740_dma_probe(struct platform_device *pdev)
- 	dd->device_issue_pending = jz4740_dma_issue_pending;
- 	dd->device_prep_slave_sg = jz4740_dma_prep_slave_sg;
- 	dd->device_prep_dma_cyclic = jz4740_dma_prep_dma_cyclic;
--	dd->device_control = jz4740_dma_control;
-+	dd->device_config = jz4740_dma_slave_config;
-+	dd->device_terminate_all = jz4740_dma_terminate_all;
- 	dd->dev = &pdev->dev;
- 	INIT_LIST_HEAD(&dd->channels);
  
+-	return -EINVAL;
++	if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
++		sdmac->per_address = dmaengine_cfg->src_addr;
++		sdmac->watermark_level = dmaengine_cfg->src_maxburst *
++			dmaengine_cfg->src_addr_width;
++		sdmac->word_size = dmaengine_cfg->src_addr_width;
++	} else {
++		sdmac->per_address = dmaengine_cfg->dst_addr;
++		sdmac->watermark_level = dmaengine_cfg->dst_maxburst *
++			dmaengine_cfg->dst_addr_width;
++		sdmac->word_size = dmaengine_cfg->dst_addr_width;
++	}
++	sdmac->direction = dmaengine_cfg->direction;
++	return sdma_config_channel(chan);
+ }
+ 
+ static enum dma_status sdma_tx_status(struct dma_chan *chan,
+@@ -1599,7 +1592,8 @@ static int sdma_probe(struct platform_device *pdev)
+ 	sdma->dma_device.device_tx_status = sdma_tx_status;
+ 	sdma->dma_device.device_prep_slave_sg = sdma_prep_slave_sg;
+ 	sdma->dma_device.device_prep_dma_cyclic = sdma_prep_dma_cyclic;
+-	sdma->dma_device.device_control = sdma_control;
++	sdma->dma_device.device_config = sdma_config;
++	sdma->dma_device.device_terminate_all = sdma_disable_channel;
+ 	sdma->dma_device.device_issue_pending = sdma_issue_pending;
+ 	sdma->dma_device.dev->dma_parms = &sdma->dma_parms;
+ 	dma_set_max_seg_size(sdma->dma_device.dev, 65535);
 -- 
 2.1.1
 
