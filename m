@@ -1,123 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaKQByx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 20:54:53 -0500
-Received: from ozlabs.org ([103.22.144.67]:46934 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018AbaKQByw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 20:54:52 -0500
-Date: Mon, 17 Nov 2014 12:54:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: linux-next: manual merge of the idle tree with the pm tree
-Message-ID: <20141117125445.110f0321@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753391AbaKQBz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 20:55:26 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46172 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377AbaKQBzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 20:55:24 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms on NO_LIBELF=1
+References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
+	<20141107082723.GB23531@worktop.programming.kicks-ass.net>
+	<1415372259.1648.51.camel@leonhard>
+	<20141107173718.GD29390@twins.programming.kicks-ass.net>
+	<87mw7zva3c.fsf@sejong.aot.lge.com>
+	<20141110121105.GL3337@twins.programming.kicks-ass.net>
+	<CAM9d7cgCzkh3_26=g0+6yUr-xBbk7_F8QP2e1sEkYw9o5OTmjw@mail.gmail.com>
+	<20141111130229.GS18464@kernel.org>
+Date: Mon, 17 Nov 2014 10:55:22 +0900
+In-Reply-To: <20141111130229.GS18464@kernel.org> (Arnaldo Carvalho de Melo's
+	message of "Tue, 11 Nov 2014 10:02:29 -0300")
+Message-ID: <871tp2vbed.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/NYqV+6DOkIGiGNDMxWMXGmI"; protocol="application/pgp-signature"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/NYqV+6DOkIGiGNDMxWMXGmI
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Arnaldo,
 
-Hi Len,
+Sorry for late reply.  I was offline last week.
 
-Today's linux-next merge of the idle tree got a conflict in
-arch/x86/include/uapi/asm/msr-index.h between commit 2f86dc4cddcb
-("intel_pstate: Add support for HWP") from the pm tree and commit
-a8b65b07d753 ("tools/power turbostat: decode MSR_*_PERF_LIMIT_REASONS")
-from the idle tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+On Tue, 11 Nov 2014 10:02:29 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Nov 11, 2014 at 01:24:38PM +0900, Namhyung Kim escreveu:
+>> Hi Peter,
+>> 
+>> On Mon, Nov 10, 2014 at 9:11 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Mon, Nov 10, 2014 at 03:33:11PM +0900, Namhyung Kim wrote:
+>> >> Hmm.. I don't think it's specific to the minimal elf parser.  The return
+>> >> value of dso__load_sym() is a number of symbols found so when it sees a
+>> >> dso with 0 symbols it'll fall back to the next option IMHO (not
+>> >> tested).  Did you see a problem with the current code?
+>> >
+>> > So your patch:
+>> >
+>> > +++ b/tools/perf/util/symbol-minimal.c
+>> > @@ -335,6 +335,9 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
+>> >         unsigned char *build_id[BUILD_ID_SIZE];
+>> >         int ret;
+>> >
+>> > +       if (dso->kernel)
+>> > +               return 0;  /* always use kallsyms */
+>> > +
+>> >
+>> > changes the symbol-minimal.c file to add this exception. That is very
+>> > much specific to the minimal elf parser, or am I just seeing things?
+>> 
+>> What minimal parser does here is just skip kernel dsos (vmlinux) since
+>> it didn't deal with all the details of parsing vmlinux currently.
+>> 
+>> 
+>> >
+>> > What I was saying, why not have a util/symbol.c change that disregards
+>> > all DSOs with 0 symbols in.
+>> 
+>> The util/symbol.c doesn't need this because it can handle vmlinux
+>> reliably.  So after reading symbol table, it'll use the dso if it
+>
+> symbol.c should not be able to handle anything, since the actual ELF
+> loader is in symbol-elf.c or simbol-minimal.c, no?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ah right, I was confused with symbol.c and symbol-elf.c - so I believe
+the generic logic in symbol.c already handles DSOs with 0 symbol.  The
+problem was symbol-minimal.c didn't return 0 for the DSOs.
 
-diff --cc arch/x86/include/uapi/asm/msr-index.h
-index 62838e54947d,c1cb18be540e..000000000000
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@@ -149,48 -149,10 +149,52 @@@
- =20
-  #define MSR_CORE_C1_RES			0x00000660
- =20
- +#define MSR_CC6_DEMOTION_POLICY_CONFIG	0x00000668
- +#define MSR_MC6_DEMOTION_POLICY_CONFIG	0x00000669
- +
- +/* Hardware P state interface */
- +#define MSR_PPERF			0x0000064e
- +#define MSR_PERF_LIMIT_REASONS		0x0000064f
- +#define MSR_PM_ENABLE			0x00000770
- +#define MSR_HWP_CAPABILITIES		0x00000771
- +#define MSR_HWP_REQUEST_PKG		0x00000772
- +#define MSR_HWP_INTERRUPT		0x00000773
- +#define MSR_HWP_REQUEST 		0x00000774
- +#define MSR_HWP_STATUS			0x00000777
- +
- +/* CPUID.6.EAX */
- +#define HWP_BASE_BIT			(1<<7)
- +#define HWP_NOTIFICATIONS_BIT		(1<<8)
- +#define HWP_ACTIVITY_WINDOW_BIT		(1<<9)
- +#define HWP_ENERGY_PERF_PREFERENCE_BIT	(1<<10)
- +#define HWP_PACKAGE_LEVEL_REQUEST_BIT	(1<<11)
- +
- +/* IA32_HWP_CAPABILITIES */
- +#define HWP_HIGHEST_PERF(x)		(x & 0xff)
- +#define HWP_GUARANTEED_PERF(x)		((x & (0xff << 8)) >>8)
- +#define HWP_MOSTEFFICIENT_PERF(x)	((x & (0xff << 16)) >>16)
- +#define HWP_LOWEST_PERF(x)		((x & (0xff << 24)) >>24)
- +
- +/* IA32_HWP_REQUEST */
- +#define HWP_MIN_PERF(x) 		(x & 0xff)
- +#define HWP_MAX_PERF(x) 		((x & 0xff) << 8)
- +#define HWP_DESIRED_PERF(x)		((x & 0xff) << 16)
- +#define HWP_ENERGY_PERF_PREFERENCE(x)	((x & 0xff) << 24)
- +#define HWP_ACTIVITY_WINDOW(x)		((x & 0xff3) << 32)
- +#define HWP_PACKAGE_CONTROL(x)		((x & 0x1) << 42)
- +
- +/* IA32_HWP_STATUS */
- +#define HWP_GUARANTEED_CHANGE(x)	(x & 0x1)
- +#define HWP_EXCURSION_TO_MINIMUM(x)	(x & 0x4)
- +
- +/* IA32_HWP_INTERRUPT */
- +#define HWP_CHANGE_TO_GUARANTEED_INT(x)	(x & 0x1)
- +#define HWP_EXCURSION_TO_MINIMUM_INT(x)	(x & 0x2)
- +
-+ #define MSR_CORE_PERF_LIMIT_REASONS	0x00000690
-+ #define MSR_GFX_PERF_LIMIT_REASONS	0x000006B0
-+ #define MSR_RING_PERF_LIMIT_REASONS	0x000006B1
-+=20
-  #define MSR_AMD64_MC0_MASK		0xc0010044
- =20
-  #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
 
---Sig_/NYqV+6DOkIGiGNDMxWMXGmI
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+>
+> I.e.:
+>
+> 	symbol.c::dso__load()
+> 		symbol.c::dso__load_kernel_sym()
+> 			symbol.c::dso__load_vmlinux()
+>
+> And then it heads into one of the ELF loaders, right now, without your
+> patch, I see, when the minimal loader is used:
+>
+> 		symbol-minimal.c::dso__load_sym()
+>
+> reads the build-id and if it works, returns 1, which is a bug, it should
+> return 0 in this case, possibly -1 if it doesn't read the build-id :-\
+>
+> I.e. it should return 0, because that way it signals: "I can't read it,
+> thus no symbols were loaded, symbol.c: please go on looking for them
+> somewhere else, kallsyms perhaps?".
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Right.  It's a bug for vmlinux.  But by returning 0, it'll iterate over
+the candidate binaries in dso__load().  I'm afraid that this *might*
+overwrite the build-id of the DSO with different one.  So I think it
+also needs to add a check for valid build-id.
 
-iQIcBAEBCAAGBQJUaVVpAAoJEMDTa8Ir7ZwVD0cQAIK7+yjhPNBZjiQ9bd9OCrN/
-qRlCSNEJNUhyoZb7WVfy+2yML/fVhJG2CFARZ1c8zNX+X0kLjf+XwQe8i7i9lTCC
-uJKhGa0MDw1vOJqdBM0eYu8b2k4WN53aivUFfs1cp8p7zFeC17wcew50vRe2f2Yr
-6bwvWNva2qJkImwk92AVcUIiUbdjUDDeXTUUP2m2WGJSiVZ8JZbdjQWex5V4p6LQ
-cjBc93Ypqt5BtVNjpQ02Cis2ujWjkmDc3aVUgAlazur5/gXSpzpUlmwTwWXV3Vvv
-PCY0qF91rExNUqjAus45IuLp9fQxmOMDePY89cwVQ6DoW7ITYeHBUv/IKycTqYcr
-xnkWT3NlZBiK/coFzQaqhwlF0uOe06WZ5uBX9qySknvcwVtoOuAOA/kitVT/Y3h2
-5yS0RTU0lPq0ZL5r/sf4lEePFE82wQHaPeRfOgYWWKf2hlshsbto8uUA+nkREE/M
-OEBwJ8Gohh1XHuQ0p6vJP1mYfi2Us5OkmAcIZzdsY1lGw+84oBvWXrL4e8L3UoD8
-2YITjOpxaT4i8l3BavV+EAeAvdByqtK+7Aq7zN4jei9xFLexQOLKgW4ESvMDPqI8
-xzSy5epap47ujVc5s8w1WezJdrz8YMsuDAMRDFdttZ3IMXKEp+JY0HdptMnmJyOQ
-b040PWH1VARDIFC+ZDpz
-=ICtC
------END PGP SIGNATURE-----
+I'll update this patch with above.
 
---Sig_/NYqV+6DOkIGiGNDMxWMXGmI--
+Thanks,
+Namhyung
+
+
+>
+> And this is the bug, probably. Now to look at your patches to see if
+> this is touched somehow...
+>
+>> actually contains symbols or fallback to next dso if it has 0 symbols.
+>> IOW it already disregards all dsos with 0 symbols in.
+>
+> See above.
+>  
+>> -- 
+>> Thanks,
+>> Namhyung
