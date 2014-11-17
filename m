@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaKQJE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:04:29 -0500
+	id S1751905AbaKQJEz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:04:55 -0500
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:34733 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaKQJE1 (ORCPT
+	with ESMTP id S1751689AbaKQJE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:04:27 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-16-5469ba19598d
+	Mon, 17 Nov 2014 04:04:29 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-36-5469ba1b3fb4
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -17,71 +17,172 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RESEND PATCH v2 0/3] regulator: max77686/802: Cleanup
-Date: Mon, 17 Nov 2014 10:04:12 +0100
-Message-id: <1416215055-20223-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [RESEND PATCH v2 3/3] mfd: max77686/802: Remove support for board files
+Date: Mon, 17 Nov 2014 10:04:15 +0100
+Message-id: <1416215055-20223-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMJMWRmVeSWpSXmKPExsVy+t/xq7qSuzJDDM7Pk7bYOGM9q8XUh0/Y
-	LI7+LrB4/cLQ4mzTG3aL+1+PMlp8u9LBZHF51xw2i7VH7rJbnO5mdeDy+Pv8OovHzll32T02
-	repk87hzbQ+bx7yTgR59W1YxenzeJBfAHsVlk5Kak1mWWqRvl8CVsXnTd/aCaTwVDV9lGxjP
-	cHYxcnJICJhI3JpzjgXCFpO4cG89WxcjF4eQwFJGiVVLT7NCOH1MEt1zrrGCVLEJGEtsXr4E
-	rEpEYBOjxKT+K2AJZoFmJonT73NAbGEBe4ne0x+YQWwWAVWJ2wumsYHYvALuEmuOrmGDWCcn
-	cfLYZNYJjNwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE1NcdjEuPWR1iFOBgVOLh
-	PVCUGSLEmlhWXJl7iFGCg1lJhFd5G1CINyWxsiq1KD++qDQntfgQIxMHp1QD40z/RibttG9M
-	We8e2sc9PuRR86xu2qnSsjcbtgtWvOIMSJ3l+voPg1DX/k/8rw+62Z4zfcBmJXP14o5tnBzb
-	VPanyKQ8ypqcyDytK2SV6kHTbXWJyknva5al5azIzvOw6Ah5euOd0cvjGr+c2wJcJ77cbJ/0
-	9OXJSOHDSvkXDdzXbF+lIz1lqhJLcUaioRZzUXEiAPSABmoGAgAA
+In-reply-to: <1416215055-20223-1-git-send-email-k.kozlowski@samsung.com>
+References: <1416215055-20223-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e/4VV3pXZkhBo87WSw2zljPajH14RM2
+	i6O/CyxevzC0ONv0ht3i/tejjBbfrnQwWVzeNYfNYu2Ru+wWp7tZHbg8/j6/zuKxc9Zddo9N
+	qzrZPO5c28PmMe9koEffllWMHp83yQWwR3HZpKTmZJalFunbJXBlXNj2jLXgpmrF5bXuDYzt
+	8l2MHBwSAiYS17cZdjFyApliEhfurWfrYuTiEBJYyijR/uwEM4TTxySxe8YDZpAqNgFjic3L
+	l4BViQhsYpSY1H+FFSTBLNDMJHH6fQ7IVGGBAIm9/RYgYRYBVYkb7Q9YQGxeAXeJL7feM0Js
+	k5M4eWwyWCungIfEvjOdYHEhoJof9z+yT2DkXcDIsIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/
+	dxMjJPi+7GBcfMzqEKMAB6MSD++DvswQIdbEsuLK3EOMEhzMSiK8ytuAQrwpiZVVqUX58UWl
+	OanFhxiZODilGhhXRnqKVy9wtpHlC19mvyh4/YzCdSfrGDxe+O4IOS3yYCb/dtO338JchFpK
+	Jd2mrja4dOW8RHWidV10k0H/EeVV/omC/89tusGZsnHJh20r7R6uX5N24OfShh/Zx9/+3bAy
+	d1Lgt2ufTGNvO0X4H/y827tu/0znuJCG+Zr7th7i6+LmsxY+mGytxFKckWioxVxUnAgAbNJ6
+	HxwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The driver is used only on Exynos based boards with DTS support.
+After removal of board file support from max77686 and max77802 regulator
+drivers, the MFD driver can be converted to DTS-only version. This
+simplifies a little the code:
+1. No dead (unused) entries in platform_data structure.
+2. More code removed.
+3. Regulator driver does not depend on allocated memory
+   from MFD driver.
+4. It makes also easier extending the regulator driver.
 
-No changes, resending with new acks/tests from Javier
-and after rebasing on current next.
+Add to the max77686 MFD driver dependency on CONFIG_OF because without
+DTS the regulator drivers (max77686 and max77802) won't bind.
 
-Changes since v1
-================
-1. Rebase on next-20141105, now it should apply cleanly to regulator
-   tree.
-2. Remove first 3 patches, applied by Mark.
-
-
-Description
-===========
-Previously this patchset was part of adding GPIO to max77686
-regulator driver [1]. I split it but the goal is the same:
-cleanup and simplify the regulator drivers by removing obsolete
-board file support so adding new features would be easier.
-
-The patchset removes board file support from regulator drivers
-incrementally and in a bisect-friendly way. Thus MFD driver is
-updated at the end.
-
-Everything should be pulled at once (preferrably regulator tree).
-Rebased on next-20141114.
-
-
-[1] [PATCH v3 00/14] regulator: max77686: Add GPIO control
-    https://lkml.org/lkml/2014/10/30/270
-
-
-Best regards,
-Krzysztof Kozlowski
-
-Krzysztof Kozlowski (3):
-  regulator: max77802: Remove support for board files
-  regulator: max77686: Remove support for board files
-  mfd: max77686/802: Remove support for board files
-
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
  drivers/mfd/Kconfig                  |  1 +
- drivers/mfd/max77686.c               | 23 ---------
- drivers/regulator/max77686.c         | 91 ++++++++---------------------------
- drivers/regulator/max77802.c         | 92 ++++++++----------------------------
+ drivers/mfd/max77686.c               | 23 -----------------------
  include/linux/mfd/max77686-private.h |  1 -
- include/linux/mfd/max77686.h         | 28 -----------
- 6 files changed, 39 insertions(+), 197 deletions(-)
+ include/linux/mfd/max77686.h         | 28 ----------------------------
+ 4 files changed, 1 insertion(+), 52 deletions(-)
 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 72d38081f779..2bb0789a828b 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -412,6 +412,7 @@ config MFD_MAX14577
+ config MFD_MAX77686
+ 	bool "Maxim Semiconductor MAX77686/802 PMIC Support"
+ 	depends on I2C=y
++	depends on OF
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	select REGMAP_IRQ
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 929795eae9fc..3da237afacde 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -205,24 +205,10 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
+ 	{ },
+ };
+ 
+-static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
+-								  *dev)
+-{
+-	struct max77686_platform_data *pd;
+-
+-	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
+-	if (!pd)
+-		return NULL;
+-
+-	dev->platform_data = pd;
+-	return pd;
+-}
+-
+ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+ {
+ 	struct max77686_dev *max77686 = NULL;
+-	struct max77686_platform_data *pdata = dev_get_platdata(&i2c->dev);
+ 	const struct of_device_id *match;
+ 	unsigned int data;
+ 	int ret = 0;
+@@ -233,14 +219,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	const struct mfd_cell *cells;
+ 	int n_devs;
+ 
+-	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node && !pdata)
+-		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
+-
+-	if (!pdata) {
+-		dev_err(&i2c->dev, "No platform data found.\n");
+-		return -EINVAL;
+-	}
+-
+ 	max77686 = devm_kzalloc(&i2c->dev,
+ 				sizeof(struct max77686_dev), GFP_KERNEL);
+ 	if (!max77686)
+@@ -259,7 +237,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	max77686->dev = &i2c->dev;
+ 	max77686->i2c = i2c;
+ 
+-	max77686->wakeup = pdata->wakeup;
+ 	max77686->irq = i2c->irq;
+ 
+ 	if (max77686->type == TYPE_MAX77686) {
+diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
+index 960b92ad450d..f5043490d67c 100644
+--- a/include/linux/mfd/max77686-private.h
++++ b/include/linux/mfd/max77686-private.h
+@@ -447,7 +447,6 @@ struct max77686_dev {
+ 	struct regmap_irq_chip_data *rtc_irq_data;
+ 
+ 	int irq;
+-	bool wakeup;
+ 	struct mutex irqlock;
+ 	int irq_masks_cur[MAX77686_IRQ_GROUP_NR];
+ 	int irq_masks_cache[MAX77686_IRQ_GROUP_NR];
+diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
+index 553f7d09258a..bb995ab9a575 100644
+--- a/include/linux/mfd/max77686.h
++++ b/include/linux/mfd/max77686.h
+@@ -119,12 +119,6 @@ enum max77802_regulators {
+ 	MAX77802_REG_MAX,
+ };
+ 
+-struct max77686_regulator_data {
+-	int id;
+-	struct regulator_init_data *initdata;
+-	struct device_node *of_node;
+-};
+-
+ enum max77686_opmode {
+ 	MAX77686_OPMODE_NORMAL,
+ 	MAX77686_OPMODE_LP,
+@@ -136,26 +130,4 @@ struct max77686_opmode_data {
+ 	int mode;
+ };
+ 
+-struct max77686_platform_data {
+-	int ono;
+-	int wakeup;
+-
+-	/* ---- PMIC ---- */
+-	struct max77686_regulator_data *regulators;
+-	int num_regulators;
+-
+-	struct max77686_opmode_data *opmode_data;
+-
+-	/*
+-	 * GPIO-DVS feature is not enabled with the current version of
+-	 * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
+-	 * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
+-	 */
+-	int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
+-	int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
+-	unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
+-	unsigned int buck3_voltage[8];
+-	unsigned int buck4_voltage[8];
+-};
+-
+ #endif /* __LINUX_MFD_MAX77686_H */
 -- 
 1.9.1
 
