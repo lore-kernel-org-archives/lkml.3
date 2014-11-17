@@ -1,130 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737AbaKQIS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 03:18:56 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:34744 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaKQISz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 03:18:55 -0500
+	id S1751806AbaKQIUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 03:20:19 -0500
+Received: from ozlabs.org ([103.22.144.67]:35072 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090AbaKQIUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 03:20:17 -0500
+Date: Mon, 17 Nov 2014 19:20:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the ipmi tree
+Message-ID: <20141117192009.735e8b6b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1415774319-21682-1-git-send-email-kiran.kumar@linaro.org>
-References: <1415774319-21682-1-git-send-email-kiran.kumar@linaro.org>
-Date: Mon, 17 Nov 2014 13:48:54 +0530
-Message-ID: <CA+RfmHapPLLMEmVM9P=JxaN5ZNQJ8TkzRu=dTmQic2O_D6xBLw@mail.gmail.com>
-Subject: Re: [RFC v6 0/3] usb: phy: hold wakeupsource on usb phy events.
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>
-Cc: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/2Z9n+JDLqFo4BaivWt4h042"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-Just a gentle reminder. Could you please review/share your comments
-for the below v6 patches which i sent earlier.
+--Sig_/2Z9n+JDLqFo4BaivWt4h042
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-[RFC v6 1/3] usb: phy: introduce usb_phy_set_event interface
-[RFC v6 2/3] usb: phy: handle per-PHY connect and disconnect events
-[RFC v6 3/3] usb: phy: hold wakeupsource when USB is enumerated in
-peripheral mode
+Hi Corey,
 
-Thanks in advance for your time.
+After merging the ipmi tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Regards,
-Kiran
 
-On 12 November 2014 12:08, Kiran Kumar Raparthy <kiran.kumar@linaro.org> wrote:
-> This patch set aims to hold wakeupsource per-PHY on usb connect/disconnect
-> events.
->
-> First patch introduces usb_phy_set_event  which just sets
-> event to phy event.
-> In second patch, phy drivers call usb_phy_set_event for each phy event.
-> In third patch, wakeupsource is held when usb is enumerated in
-> peripheral mode and wakeupsource held temporarily on disconnect
-> event(to allow other parts of the system react to disconnect event).
->
-> v6:
-> * Break the patch into three sub patches
->   patch 1: Introduce usb_phy_set_event
->   patch 2: Call usb_phy_set_event from phy drivers
->   patch 3: Hold wakeupsource for connect events and
->             temporarily hold wakeupsource for disconnect events.
-> * Include usb_phy_wsource_init and usb_phy_wource_trash functionality
->   in usb_add_phy and usb_remove_phy respectively.
->
-> v5:
-> * with the new approach,i was able to chnage only 5 phy drivers
->   as mentioned below to use the wakeupsource funtionality.
->
-> drivers/phy/phy-omap-control.c
-> drivers/usb/phy/phy-ab8500-usb.c
-> drivers/usb/phy/phy-tahvo.c
-> drivers/usb/phy/phy-mv-usb.c
-> drivers/usb/phy/phy-gpio-vbus-usb.c
->
-> * Notification method not used any more.
-> * introduced usb_phy_set_event in phy.c to hold wakeupsource
-> * introduced usb_phy_wsource_init/usb_phy_wsource_trash in phy.c to
->   initialize/relese per-PHY wakeupsource.These interfaces called from
->   probe/remove functions of phy drivers.
-> * usb_phy_set_event called from phy drivers where usb enumeration
->   event is handled.
-> * usb_phy_set_event expects usb_phy handle where as phy-omap-control.c
->   provides its own type(omap_control_phy), so directly called __pm_stay_awake
->   and  __pm_awake_event from phy-omap-control.c instead of calling
->   usb_phy_set_event.
->
-> v4:
-> * Temporarily hold wakeupsource patch integrated into main patch.
-> * As per feedback,dropped "enabled" module parameter.
-> * Introduced otgws_otg_usb3_notifications function to handle event
->   notifications from usb3 phy.
-> * Handled wakeupsource initialization,spinlock,registration of notifier block
->   per-PHY.
-> * Updated usb_phy structure.
->
-> v3:
-> * As per the feedback,no global phy pointer used.
-> * called the one-liner wakeupsource handling calls
->   directly instead of indirect functions implemented in v2.
-> * Removed indirect function get_phy_hook and used usb_get_phy
->   to get the phy handle..
->
-> v2:
-> * wakeupsource handling implemeted per-PHY
-> * Implemented wakeupsource handling calls in phy
-> * included Todd's refactoring logic.
->
-> v1:
-> * changed to "disabled by default" from "enable by default".
-> * Kconfig help text modified
-> * Included better commit text
-> * otgws_nb moved to otg_wakeupsource_init function
-> * Introduced get_phy_hook to handle otgws_xceiv per-PHY
->
-> Initial RFC:
-> * Included build fix from Benoit Goby and Arve Hjønnevåg
-> * Removed lock->held field in driver as this mechanism is
->   provided in wakeupsource driver.
-> * wakelock(wl) terminology replaced with wakeup_source(ws).
->
-> Todd Poynor (3):
->   usb: phy: introduce usb_phy_set_event interface
->   usb: phy: Handle per-PHY event for connect and disconnect events
->   usb: phy: Hold wakeupsource when USB is enumerated in peripheral mode
->
->  drivers/usb/phy/phy-ab8500-usb.c    | 15 +++++++++++++++
->  drivers/usb/phy/phy-gpio-vbus-usb.c |  2 ++
->  drivers/usb/phy/phy-mv-usb.c        |  2 ++
->  drivers/usb/phy/phy-tahvo.c         |  2 ++
->  drivers/usb/phy/phy.c               | 37 +++++++++++++++++++++++++++++++++++++
->  include/linux/usb/phy.h             | 10 ++++++++++
->  6 files changed, 68 insertions(+)
->
-> --
-> 1.8.2.1
->
+drivers/char/ipmi/ipmi_ssif.c: In function 'ssif_probe':
+drivers/char/ipmi/ipmi_ssif.c:1377:23: error: 'union ipmi_smi_info_union' h=
+as no member named 'acpi_info'
+   ssif_info->addr_info.acpi_info.acpi_handle =3D acpi_handle;
+                       ^
+
+Caused by commit 66a4d9633da8 ("ipmi: Add SMBus interface driver (SSIF)").
+
+I have reverted that commit (and the following 1c99788eebd9 "ipmi:
+Handle I2C parms in the SSIF driver") for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/2Z9n+JDLqFo4BaivWt4h042
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUaa+/AAoJEMDTa8Ir7ZwVzksP/3NQjLaQ00MjBhs6CvDhkc3q
+vCdsccsXNdscTC7benrj13gK7I6Hm6RGubchysZqIOKmwEO5fgcUQq8+mCWR/9XO
+G6GpwtMd1QEcrv5kuAA29TKoLSoU3IlodBA8HP84+n/MaU4sjdw6I3pP20EHxC1y
+ABFz2NjTF8QEsT+UxmEjmxpz69vPR0ZrmTAfinDVztSl+wD/VGhiATsjfOYSODVN
+/8MHPSPtEl+L//QaTWmBKximfu7IdmTecHC9S7ZGHawX/N1FhbYXt7z6PJVG+bij
+P9Aj6pgHTmMz+OjdT8+ZtR+IoQCi0yjjI5X9031aMmGS5jnUl+j9YPSlP1A8gmOe
+odR+3YRHcg4/EgbRUGYEezJlEhX3gU+nMX/L4K6dzbh3N67kl4+kxPDn3KQ2Qxpk
+G7YqBpqZR72BVtLOQs5NbbxhzF+x88qwpnupxdNd9+aqOM96BwTvdO2VJSyyJidR
+5yiOGRAAQsjlLVYe23A7PQ3gbKlsOhyXI95cBO1epYnPGefAyiwyztScThEux3N3
+gfB3C/0CCi2QWCCFz9aHgGqnJSkpw9HXA+su3kD3wgK3IFJDb2x4sBOjCzUTG942
+oyGM8nQHFrG4G658eWrzI19eRJPuGe3DgPuA5bZ96gCaoWTSRWqi11zoZ/5YJPaf
+b5Z7uKCPXCfLIAKNO7xB
+=C1KJ
+-----END PGP SIGNATURE-----
+
+--Sig_/2Z9n+JDLqFo4BaivWt4h042--
