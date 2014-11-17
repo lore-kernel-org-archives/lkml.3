@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449AbaKQAQD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 19:16:03 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60451 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752193AbaKQAQA (ORCPT
+	id S1752685AbaKQAQT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 19:16:19 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:46733 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbaKQAQQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 19:16:00 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
-Subject: Re: [PATCH] ACPI / WAKEUP : enable wakeup power for physical child devices
-Date: Mon, 17 Nov 2014 01:37:01 +0100
-Message-ID: <2396976.mWgWcINWd3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1416139801-6537-1-git-send-email-Andrej.Skvortzov@gmail.com>
-References: <1416139801-6537-1-git-send-email-Andrej.Skvortzov@gmail.com>
+	Sun, 16 Nov 2014 19:16:16 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "davidlohr@hp.com" <davidlohr@hp.com>
+Subject: Re: [PATCH 2/3] hugetlb: alloc_bootmem_huge_page(): use IS_ALIGNED()
+Thread-Topic: [PATCH 2/3] hugetlb: alloc_bootmem_huge_page(): use
+ IS_ALIGNED()
+Thread-Index: AQHQAfsWayhCsaaeeEezAKUJWbIK6A==
+Date: Mon, 17 Nov 2014 00:11:51 +0000
+Message-ID: <20141117001228.GB4667@hori1.linux.bs1.fc.nec.co.jp>
+References: <1415831593-9020-1-git-send-email-lcapitulino@redhat.com>
+ <1415831593-9020-3-git-send-email-lcapitulino@redhat.com>
+In-Reply-To: <1415831593-9020-3-git-send-email-lcapitulino@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.20]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-ID: <DB9ACF5C0D0027439E0D9DB9690CD525@gisp.nec.co.jp>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 16, 2014 03:10:01 PM Andrey Skvortsov wrote:
-> commit f2b56bc808addb908a5bf435d9b942c02af9a7c4
-> ("ACPI / PM: Use device wakeup flags for handling ACPI wakeup devices")
-
-That commit is from 2011.  Can you please tell me what makes you think
-that it is the source of the problem?
-
-> broke wake-on-lan for Broadcom BCM4401 Ethernet card (b44) on Dell Vostro 1500 laptop.
-> device_may_wakeup for main ACPI device (PCIE) returns false, because it has
-> can_wakeup = 0. Therefore any physical devices connected to this parent
-> were not prepared for wakeup/suspend. But physical device is capable to
-> wakeup the system.
-
-If that is the case, then ->
-
-> To fix this issue device_may_wakeup was replaced with acpi_device_may_wakeup.
-> acpi_device_may_wakeup was written based on function
-> acpi_system_wakeup_device_seq_show
+On Wed, Nov 12, 2014 at 05:33:12PM -0500, Luiz Capitulino wrote:
+> No reason to duplicate the code of an existing macro.
 > 
-> Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+
+I think that we can apply the same macro for the following two lines in
+__unmap_hugepage_range():
+
+	BUG_ON(start & ~huge_page_mask(h));
+	BUG_ON(end & ~huge_page_mask(h));
+
+Anyway, this makes the code more readable.
+
+Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+
 > ---
->  drivers/acpi/wakeup.c |   45 +++++++++++++++++++++++++++++++++++++--------
->  1 files changed, 37 insertions(+), 8 deletions(-)
+>  mm/hugetlb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-> index 1638401..0da7e70 100644
-> --- a/drivers/acpi/wakeup.c
-> +++ b/drivers/acpi/wakeup.c
-> @@ -19,6 +19,34 @@
->  #define _COMPONENT		ACPI_SYSTEM_COMPONENT
->  ACPI_MODULE_NAME("wakeup_devices")
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 9fd7227..a10fd57 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1457,7 +1457,7 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
+>  	return 0;
 >  
-> +
-> +bool acpi_device_may_wakeup(struct acpi_device *dev)
-> +{
-> +	struct acpi_device_physical_node *entry;
-> +	bool may_wakeup = false;
-> +
-> +	mutex_lock(&dev->physical_node_lock);
-> +	if (!dev->physical_node_count)
-> +		may_wakeup = device_may_wakeup(&dev->dev);
-> +	else {
-> +		struct device *ldev;
-> +
-> +		list_for_each_entry(entry, &dev->physical_node_list, node) {
-> +			ldev = get_device(entry->dev);
-> +			if (!ldev)
-> +				continue;
-> +
-> +			may_wakeup = device_may_wakeup(&dev->dev) ||
-> +				device_may_wakeup(ldev);
-> +
-> +			put_device(ldev);
-> +		}
-> +	}
-> +
-> +	mutex_unlock(&dev->physical_node_lock);
-> +	return may_wakeup;
-> +}
-> +
->  /**
->   * acpi_enable_wakeup_devices - Enable wake-up device GPEs.
->   * @sleep_state: ACPI system sleep state.
-> @@ -35,13 +63,14 @@ void acpi_enable_wakeup_devices(u8 sleep_state)
->  		struct acpi_device *dev =
->  			container_of(node, struct acpi_device, wakeup_list);
->  
-> +
->  		if (!dev->wakeup.flags.valid
-> -		    || sleep_state > (u32) dev->wakeup.sleep_state
-> -		    || !(device_may_wakeup(&dev->dev)
-> -		        || dev->wakeup.prepare_count))
-> +			|| sleep_state > (u32) dev->wakeup.sleep_state
-> +			|| !(acpi_device_may_wakeup(dev)
-> +			    || dev->wakeup.prepare_count))
-
--> dev->wakeup.prepare_count here shold be different from 0 at this point.
-
->  			continue;
->  
-> -		if (device_may_wakeup(&dev->dev))
-> +		if (acpi_device_may_wakeup(dev))
->  			acpi_enable_wakeup_device_power(dev, sleep_state);
->  
->  		/* The wake-up power should have been enabled already. */
-> @@ -63,15 +92,15 @@ void acpi_disable_wakeup_devices(u8 sleep_state)
->  			container_of(node, struct acpi_device, wakeup_list);
->  
->  		if (!dev->wakeup.flags.valid
-> -		    || sleep_state > (u32) dev->wakeup.sleep_state
-> -		    || !(device_may_wakeup(&dev->dev)
-> -		        || dev->wakeup.prepare_count))
-> +			|| sleep_state > (u32) dev->wakeup.sleep_state
-> +			|| !(acpi_device_may_wakeup(dev)
-> +				|| dev->wakeup.prepare_count))
->  			continue;
->  
->  		acpi_set_gpe_wake_mask(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
->  				ACPI_GPE_DISABLE);
->  
-> -		if (device_may_wakeup(&dev->dev))
-> +		if (acpi_device_may_wakeup(dev))
->  			acpi_disable_wakeup_device_power(dev);
->  	}
->  }
-
-This is not the right fix.  The device_may_wakeup(&dev->dev) check in the
-above code is specifically for ACPI device objects that do *not* have physical
-devices assiciated with them (buttons etc.).
-
-I'll have a look at the driver in question next week (please remind me in
-case I get distracted).
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>  found:
+> -	BUG_ON((unsigned long)virt_to_phys(m) & (huge_page_size(h) - 1));
+> +	BUG_ON(!IS_ALIGNED(virt_to_phys(m), huge_page_size(h)));
+>  	/* Put them into a private list first because mem_map is not up yet */
+>  	list_add(&m->list, &huge_boot_pages);
+>  	m->hstate = h;
+> -- 
+> 1.9.3
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
