@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaKQN5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:57:06 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49084 "EHLO
+	id S1753291AbaKQNpZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:45:25 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48985 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753292AbaKQNpa (ORCPT
+	with ESMTP id S1753179AbaKQNpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:30 -0500
+	Mon, 17 Nov 2014 08:45:22 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 35/61] dmaengine: pl330: Split device_control
-Date: Mon, 17 Nov 2014 14:42:29 +0100
-Message-Id: <1416231775-31252-36-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 28/61] dmaengine: mmp-tdma: Split device_control
+Date: Mon, 17 Nov 2014 14:42:22 +0100
+Message-Id: <1416231775-31252-29-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,169 +24,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the AMBA PL330 DMA driver to make use
+Split the device_control callback of the Marvell MMP TDMA driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/pl330.c | 108 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 53 insertions(+), 55 deletions(-)
+ drivers/dma/mmp_tdma.c | 82 +++++++++++++++++++++++++++-----------------------
+ 1 file changed, 44 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 3c9f715cb8d7..c2db237e455b 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2062,72 +2062,69 @@ static int pl330_alloc_chan_resources(struct dma_chan *chan)
- 	return 1;
+diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
+index bfb46957c3dc..a8a79b1763d5 100644
+--- a/drivers/dma/mmp_tdma.c
++++ b/drivers/dma/mmp_tdma.c
+@@ -164,33 +164,46 @@ static void mmp_tdma_enable_chan(struct mmp_tdma_chan *tdmac)
+ 	tdmac->status = DMA_IN_PROGRESS;
  }
  
--static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned long arg)
-+static int pl330_config(struct dma_chan *chan,
-+			struct dma_slave_config *slave_config)
-+{
-+	struct dma_pl330_chan *pch = to_pchan(chan);
+-static void mmp_tdma_disable_chan(struct mmp_tdma_chan *tdmac)
++static int mmp_tdma_disable_chan(struct dma_chan *chan)
+ {
++	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
 +
-+	if (slave_config->direction == DMA_MEM_TO_DEV) {
-+		if (slave_config->dst_addr)
-+			pch->fifo_addr = slave_config->dst_addr;
-+		if (slave_config->dst_addr_width)
-+			pch->burst_sz = __ffs(slave_config->dst_addr_width);
-+		if (slave_config->dst_maxburst)
-+			pch->burst_len = slave_config->dst_maxburst;
-+	} else if (slave_config->direction == DMA_DEV_TO_MEM) {
-+		if (slave_config->src_addr)
-+			pch->fifo_addr = slave_config->src_addr;
-+		if (slave_config->src_addr_width)
-+			pch->burst_sz = __ffs(slave_config->src_addr_width);
-+		if (slave_config->src_maxburst)
-+			pch->burst_len = slave_config->src_maxburst;
-+	}
+ 	writel(readl(tdmac->reg_base + TDCR) & ~TDCR_CHANEN,
+ 					tdmac->reg_base + TDCR);
+ 
+ 	tdmac->status = DMA_COMPLETE;
 +
 +	return 0;
-+}
-+
-+static int pl330_terminate_all(struct dma_chan *chan)
- {
- 	struct dma_pl330_chan *pch = to_pchan(chan);
- 	struct dma_pl330_desc *desc;
- 	unsigned long flags;
- 	struct pl330_dmac *pl330 = pch->dmac;
--	struct dma_slave_config *slave_config;
- 	LIST_HEAD(list);
- 
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		spin_lock_irqsave(&pch->lock, flags);
--
--		spin_lock(&pl330->lock);
--		_stop(pch->thread);
--		spin_unlock(&pl330->lock);
-+	spin_lock_irqsave(&pch->lock, flags);
- 
--		pch->thread->req[0].desc = NULL;
--		pch->thread->req[1].desc = NULL;
--		pch->thread->req_running = -1;
-+	spin_lock(&pl330->lock);
-+	_stop(pch->thread);
-+	spin_unlock(&pl330->lock);
- 
--		/* Mark all desc done */
--		list_for_each_entry(desc, &pch->submitted_list, node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	pch->thread->req[0].desc = NULL;
-+	pch->thread->req[1].desc = NULL;
-+	pch->thread->req_running = -1;
- 
--		list_for_each_entry(desc, &pch->work_list , node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	/* Mark all desc done */
-+	list_for_each_entry(desc, &pch->submitted_list, node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
-+	}
- 
--		list_for_each_entry(desc, &pch->completed_list , node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	list_for_each_entry(desc, &pch->work_list , node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
-+	}
- 
--		list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
--		list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
--		list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
--		spin_unlock_irqrestore(&pch->lock, flags);
--		break;
--	case DMA_SLAVE_CONFIG:
--		slave_config = (struct dma_slave_config *)arg;
--
--		if (slave_config->direction == DMA_MEM_TO_DEV) {
--			if (slave_config->dst_addr)
--				pch->fifo_addr = slave_config->dst_addr;
--			if (slave_config->dst_addr_width)
--				pch->burst_sz = __ffs(slave_config->dst_addr_width);
--			if (slave_config->dst_maxburst)
--				pch->burst_len = slave_config->dst_maxburst;
--		} else if (slave_config->direction == DMA_DEV_TO_MEM) {
--			if (slave_config->src_addr)
--				pch->fifo_addr = slave_config->src_addr;
--			if (slave_config->src_addr_width)
--				pch->burst_sz = __ffs(slave_config->src_addr_width);
--			if (slave_config->src_maxburst)
--				pch->burst_len = slave_config->src_maxburst;
--		}
--		break;
--	default:
--		dev_err(pch->dmac->ddma.dev, "Not supported command.\n");
--		return -ENXIO;
-+	list_for_each_entry(desc, &pch->completed_list , node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
- 	}
- 
-+	list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
-+	list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
-+	list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
-+	spin_unlock_irqrestore(&pch->lock, flags);
-+
- 	return 0;
  }
  
-@@ -2714,7 +2711,8 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	pd->device_prep_dma_cyclic = pl330_prep_dma_cyclic;
- 	pd->device_tx_status = pl330_tx_status;
- 	pd->device_prep_slave_sg = pl330_prep_slave_sg;
--	pd->device_control = pl330_control;
-+	pd->device_config = pl330_config;
-+	pd->device_terminate_all = pl330_terminate_all;
- 	pd->device_issue_pending = pl330_issue_pending;
- 	pd->device_slave_caps = pl330_dma_device_slave_caps;
+-static void mmp_tdma_resume_chan(struct mmp_tdma_chan *tdmac)
++static int mmp_tdma_resume_chan(struct dma_chan *chan)
+ {
++	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
++
+ 	writel(readl(tdmac->reg_base + TDCR) | TDCR_CHANEN,
+ 					tdmac->reg_base + TDCR);
+ 	tdmac->status = DMA_IN_PROGRESS;
++
++	return 0;
+ }
  
-@@ -2762,7 +2760,7 @@ probe_err3:
+-static void mmp_tdma_pause_chan(struct mmp_tdma_chan *tdmac)
++static int mmp_tdma_pause_chan(struct dma_chan *chan)
+ {
++	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
++
+ 	writel(readl(tdmac->reg_base + TDCR) & ~TDCR_CHANEN,
+ 					tdmac->reg_base + TDCR);
+ 	tdmac->status = DMA_PAUSED;
++
++	return 0;
+ }
  
- 		/* Flush the channel */
- 		if (pch->thread) {
--			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-+			pl330_terminate_all(&pch->chan);
- 			pl330_free_chan_resources(&pch->chan);
- 		}
+-static int mmp_tdma_config_chan(struct mmp_tdma_chan *tdmac)
++static int mmp_tdma_config_chan(struct dma_chan *chan)
+ {
++	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
+ 	unsigned int tdcr = 0;
+ 
+-	mmp_tdma_disable_chan(tdmac);
++	mmp_tdma_disable_chan(chan);
+ 
+ 	if (tdmac->dir == DMA_MEM_TO_DEV)
+ 		tdcr = TDCR_DSTDIR_ADDR_HOLD | TDCR_SRCDIR_ADDR_INC;
+@@ -452,42 +465,32 @@ err_out:
+ 	return NULL;
+ }
+ 
+-static int mmp_tdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		unsigned long arg)
++static int mmp_tdma_terminate_all(struct dma_chan *chan)
+ {
+ 	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
+-	struct dma_slave_config *dmaengine_cfg = (void *)arg;
+-	int ret = 0;
+-
+-	switch (cmd) {
+-	case DMA_TERMINATE_ALL:
+-		mmp_tdma_disable_chan(tdmac);
+-		/* disable interrupt */
+-		mmp_tdma_enable_irq(tdmac, false);
+-		break;
+-	case DMA_PAUSE:
+-		mmp_tdma_pause_chan(tdmac);
+-		break;
+-	case DMA_RESUME:
+-		mmp_tdma_resume_chan(tdmac);
+-		break;
+-	case DMA_SLAVE_CONFIG:
+-		if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
+-			tdmac->dev_addr = dmaengine_cfg->src_addr;
+-			tdmac->burst_sz = dmaengine_cfg->src_maxburst;
+-			tdmac->buswidth = dmaengine_cfg->src_addr_width;
+-		} else {
+-			tdmac->dev_addr = dmaengine_cfg->dst_addr;
+-			tdmac->burst_sz = dmaengine_cfg->dst_maxburst;
+-			tdmac->buswidth = dmaengine_cfg->dst_addr_width;
+-		}
+-		tdmac->dir = dmaengine_cfg->direction;
+-		return mmp_tdma_config_chan(tdmac);
+-	default:
+-		ret = -ENOSYS;
++
++	mmp_tdma_disable_chan(chan);
++	/* disable interrupt */
++	mmp_tdma_enable_irq(tdmac, false);
++}
++
++static int mmp_tdma_config(struct dma_chan *chan,
++			   struct dma_slave_config *dmaengine_cfg)
++{
++	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
++
++	if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
++		tdmac->dev_addr = dmaengine_cfg->src_addr;
++		tdmac->burst_sz = dmaengine_cfg->src_maxburst;
++		tdmac->buswidth = dmaengine_cfg->src_addr_width;
++	} else {
++		tdmac->dev_addr = dmaengine_cfg->dst_addr;
++		tdmac->burst_sz = dmaengine_cfg->dst_maxburst;
++		tdmac->buswidth = dmaengine_cfg->dst_addr_width;
  	}
-@@ -2791,7 +2789,7 @@ static int pl330_remove(struct amba_device *adev)
++	tdmac->dir = dmaengine_cfg->direction;
  
- 		/* Flush the channel */
- 		if (pch->thread) {
--			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-+			pl330_terminate_all(&pch->chan);
- 			pl330_free_chan_resources(&pch->chan);
- 		}
- 	}
+-	return ret;
++	return mmp_tdma_config_chan(chan);
+ }
+ 
+ static enum dma_status mmp_tdma_tx_status(struct dma_chan *chan,
+@@ -668,7 +671,10 @@ static int mmp_tdma_probe(struct platform_device *pdev)
+ 	tdev->device.device_prep_dma_cyclic = mmp_tdma_prep_dma_cyclic;
+ 	tdev->device.device_tx_status = mmp_tdma_tx_status;
+ 	tdev->device.device_issue_pending = mmp_tdma_issue_pending;
+-	tdev->device.device_control = mmp_tdma_control;
++	tdev->device.device_config = mmp_tdma_config;
++	tdev->device.device_pause = mmp_tdma_pause_chan;
++	tdev->device.device_resume = mmp_tdma_resume_chan;
++	tdev->device.device_terminate_all = mmp_tdma_terminate_all;
+ 	tdev->device.copy_align = TDMA_ALIGNMENT;
+ 
+ 	dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
 -- 
 2.1.1
 
