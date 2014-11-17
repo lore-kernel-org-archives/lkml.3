@@ -1,119 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaKQWnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:43:22 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35948 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaKQWnU (ORCPT
+	id S1753383AbaKQWmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:42:51 -0500
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:54730 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246AbaKQWlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:43:20 -0500
-Date: Mon, 17 Nov 2014 23:43:14 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <alpine.DEB.2.11.1411172303070.3909@nanos>
-Message-ID: <alpine.DEB.2.11.1411172335100.3909@nanos>
-References: <20141114213124.GB3344@redhat.com> <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com> <alpine.DEB.2.11.1411142326510.3909@nanos> <CA+55aFxExBiRpPemPECKP9wMnR4F4J=ne8UoHKcXjntGB_OEgA@mail.gmail.com>
- <CA+55aFyBnd_Hbe46UpeRktS+ePkAdL5k7vEChUMEx3-e8O1Usg@mail.gmail.com> <alpine.DEB.2.11.1411172303070.3909@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 17 Nov 2014 17:41:52 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH V5 10/12] ARM: tegra: Add Tegra124 XUSB mailbox and xHCI controller
+Date: Mon, 17 Nov 2014 14:41:40 -0800
+Message-Id: <1416264102-1323-11-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
+References: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Nov 2014, Thomas Gleixner wrote:
-> On Mon, 17 Nov 2014, Linus Torvalds wrote:
-> >  	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
-> > -		csd->func(csd->info);
-> > +		smp_call_func_t func = csd->func;
-> > +		void *info = csd->info;
-> >  		csd_unlock(csd);
-> > +
-> > +		func(info);
-> 
-> No, that won't work for synchronous calls:
-> 
->     CPU 0      	    		CPU 1
-> 
->     csd_lock(csd);
->     queue_csd();
->     ipi();
-> 				func = csd->func;
-> 				info = csd->info;
-> 				csd_unlock(csd);
->     csd_lock_wait();    
-> 				func(info);
->    
-> The csd_lock_wait() side will succeed and therefor assume that the
-> call has been completed while the function has not been called at
-> all. Interesting explosions to follow.
-> 
-> The proper solution is to revert that commit and properly analyze the
-> problem which Jens was trying to solve and work from there.
+Add nodes for the Tegra XUSB mailbox and Tegra xHCI controller and
+add the PHY mailbox channel to the XUSB padctl node.
 
-So a combo of both (Jens and yours) might do the trick. Patch below.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+No changes from v4.
+No changes from v3.
+Changes from v2:
+ - Dropped channel specifier from mailbox bindings.
+ - Added mbox-names properties.
+Changes from v1:
+ - Updated to use common mailbox bindings.
+ - Added remaining clocks/resets.
+---
+ arch/arm/boot/dts/tegra124.dtsi | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-I think what Jens was trying to solve is:
-
-     CPU 0      	    		CPU 1
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index 478c555..73bc7a4 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -591,11 +591,52 @@
+ 		status = "disabled";
+ 	};
  
-     csd_lock(csd);
-     queue_csd();
-     ipi();
- 				csd->func(csd->info);
-     wait_for_completion(csd);
-				   complete(csd);
-     reuse_csd(csd);		
-				csd_unlock(csd);
-
-Thanks,
-
-	tglx	
-
-Index: linux/kernel/smp.c
-===================================================================
---- linux.orig/kernel/smp.c
-+++ linux/kernel/smp.c
-@@ -126,7 +126,7 @@ static void csd_lock(struct call_single_
- 
- static void csd_unlock(struct call_single_data *csd)
- {
--	WARN_ON((csd->flags & CSD_FLAG_WAIT) && !(csd->flags & CSD_FLAG_LOCK));
-+	WARN_ON(!(csd->flags & CSD_FLAG_LOCK));
- 
- 	/*
- 	 * ensure we're all done before releasing data:
-@@ -250,8 +250,23 @@ static void flush_smp_call_function_queu
- 	}
- 
- 	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
--		csd->func(csd->info);
--		csd_unlock(csd);
++	usb@0,70090000 {
++		compatible = "nvidia,tegra124-xhci";
++		reg = <0x0 0x70090000 0x0 0x8000>,
++		      <0x0 0x70098000 0x0 0x1000>,
++		      <0x0 0x70099000 0x0 0x1000>;
++		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_XUSB_HOST>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HOST_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FALCON_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_DIV2>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FS_SRC>,
++			 <&tegra_car TEGRA124_CLK_PLL_U_480M>,
++			 <&tegra_car TEGRA124_CLK_CLK_M>,
++			 <&tegra_car TEGRA124_CLK_PLL_E>;
++		clock-names = "xusb_host", "xusb_host_src", "xusb_dev",
++			      "xusb_dev_src", "xusb_falcon_src", "xusb_ss",
++			      "xusb_ss_div2", "xusb_ss_src", "xusb_hs_src",
++			      "xusb_fs_src", "pll_u_480m", "clk_m", "pll_e";
++		resets = <&tegra_car 89>, <&tegra_car 95>, <&tegra_car 156>,
++			 <&tegra_car 143>;
++		reset-names = "xusb_host", "xusb_dev", "xusb_ss", "xusb";
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
++		status = "disabled";
++	};
 +
-+		/*
-+		 * For synchronous calls we are not allowed to unlock
-+		 * before the callback returned. For the async case
-+		 * its the responsibility of the caller to keep
-+		 * csd->info consistent while the callback runs.
-+		 */
-+		if (csd->flags & CSD_FLAG_WAIT) {
-+			csd->func(csd->info);
-+			csd_unlock(csd);
-+		} else {
-+			smp_call_func_t func = csd->func;
-+			void *info = csd->info;
++	xusb_mbox: mailbox@0,70098000 {
++		compatible = "nvidia,tegra124-xusb-mbox";
++		reg = <0x0 0x70098000 0x0 0x1000>;
++		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
 +
-+			csd_unlock(csd);
-+			func(info);
-+		}
- 	}
++		#mbox-cells = <0>;
++	};
++
+ 	padctl: padctl@0,7009f000 {
+ 		compatible = "nvidia,tegra124-xusb-padctl";
+ 		reg = <0x0 0x7009f000 0x0 0x1000>;
+ 		resets = <&tegra_car 142>;
+ 		reset-names = "padctl";
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
  
- 	/*
+ 		#phy-cells = <1>;
+ 	};
+-- 
+2.1.0.rc2.206.gedb03e5
+
