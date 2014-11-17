@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaKQNqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:46:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49254 "EHLO
+	id S1753590AbaKQNqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:46:05 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49260 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753547AbaKQNqA (ORCPT
+	with ESMTP id S1753567AbaKQNqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:46:00 -0500
+	Mon, 17 Nov 2014 08:46:01 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 61/61] Documentation: dmaengine: Update the documentation
-Date: Mon, 17 Nov 2014 14:42:55 +0100
-Message-Id: <1416231775-31252-62-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 54/61] dmaengine: nbpfaxi: Declare slave capabilities for the generic code
+Date: Mon, 17 Nov 2014 14:42:48 +0100
+Message-Id: <1416231775-31252-55-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,125 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have splitted device_control and removed device_slave_caps in favor
-of a few dma_device variables, update the documentation accordingly.
+Now that the generic slave caps code can make use of the device assigned
+capabilities, instead of relying on a callback to be implemented.
+
+Make use of this code.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- Documentation/dmaengine/provider.txt | 93 ++++++++++++++++++++----------------
- 1 file changed, 51 insertions(+), 42 deletions(-)
+ drivers/dma/nbpfaxi.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/dmaengine/provider.txt b/Documentation/dmaengine/provider.txt
-index 766658ccf235..2c391cfe37eb 100644
---- a/Documentation/dmaengine/provider.txt
-+++ b/Documentation/dmaengine/provider.txt
-@@ -113,6 +113,31 @@ need to initialize a few fields in there:
-   * channels:	should be initialized as a list using the
- 		INIT_LIST_HEAD macro for example
+diff --git a/drivers/dma/nbpfaxi.c b/drivers/dma/nbpfaxi.c
+index 9f151dcd4f73..6a963928e958 100644
+--- a/drivers/dma/nbpfaxi.c
++++ b/drivers/dma/nbpfaxi.c
+@@ -1069,18 +1069,6 @@ static void nbpf_free_chan_resources(struct dma_chan *dchan)
+ 	}
+ }
  
-+  * src_addr_widths:
-+    - should contain a bitmask of the supported source transfer width
-+
-+  * dst_addr_widths:
-+    - should contain a bitmask of the supported destination transfer
-+      width
-+
-+  * directions:
-+    - should contain a bitmask of the supported slave directions
-+      (i.e. excluding mem2mem transfers)
-+
-+  * residue_granularity:
-+    - Granularity of the transfer residue reported to dma_set_residue.
-+    - This can be either:
-+      + Descriptor
-+        -> Your device doesn't support any kind of residue
-+           reporting. The framework will only know that a particular
-+           transaction descriptor is done.
-+      + Segment
-+        -> Your device is able to report which chunks have been
-+           transferred
-+      + Burst
-+        -> Your device is able to report which burst have been
-+           transferred
-+
-   * dev: 	should hold the pointer to the struct device associated
- 		to your current driver instance.
- 
-@@ -274,48 +299,32 @@ supported.
-        account the current period.
-      - This function can be called in an interrupt context.
- 
--   * device_control
--     - Used by client drivers to control and configure the channel it
--       has a handle on.
--     - Called with a command and an argument
--       + The command is one of the values listed by the enum
--         dma_ctrl_cmd. The valid commands are:
--         + DMA_PAUSE
--           + Pauses a transfer on the channel
--           + This command should operate synchronously on the channel,
--             pausing right away the work of the given channel
--         + DMA_RESUME
--           + Restarts a transfer on the channel
--           + This command should operate synchronously on the channel,
--             resuming right away the work of the given channel
--         + DMA_TERMINATE_ALL
--           + Aborts all the pending and ongoing transfers on the
--             channel
--           + This command should operate synchronously on the channel,
--             terminating right away all the channels
--         + DMA_SLAVE_CONFIG
--           + Reconfigures the channel with passed configuration
--           + This command should NOT perform synchronously, or on any
--             currently queued transfers, but only on subsequent ones
--           + In this case, the function will receive a
--             dma_slave_config structure pointer as an argument, that
--             will detail which configuration to use.
--           + Even though that structure contains a direction field,
--             this field is deprecated in favor of the direction
--             argument given to the prep_* functions
--         + FSLDMA_EXTERNAL_START
--           + TODO: Why does that even exist?
--       + The argument is an opaque unsigned long. This actually is a
--         pointer to a struct dma_slave_config that should be used only
--         in the DMA_SLAVE_CONFIG.
+-static int nbpf_slave_caps(struct dma_chan *dchan,
+-			   struct dma_slave_caps *caps)
+-{
+-	caps->src_addr_widths = NBPF_DMA_BUSWIDTHS;
+-	caps->dst_addr_widths = NBPF_DMA_BUSWIDTHS;
+-	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+-	caps->cmd_pause = false;
+-	caps->cmd_terminate = true;
 -
--  * device_slave_caps
--    - Called through the framework by client drivers in order to have
--      an idea of what are the properties of the channel allocated to
--      them.
--    - Such properties are the buswidth, available directions, etc.
--    - Required for every generic layer doing DMA transfers, such as
--      ASoC.
-+   * device_config
-+     - Reconfigures the channel with the configuration given as
-+       argument
-+     - This command should NOT perform synchronously, or on any
-+       currently queued transfers, but only on subsequent ones
-+     - In this case, the function will receive a dma_slave_config
-+       structure pointer as an argument, that will detail which
-+       configuration to use.
-+     - Even though that structure contains a direction field, this
-+       field is deprecated in favor of the direction argument given to
-+       the prep_* functions
-+
-+   * device_pause
-+     - Pauses a transfer on the channel
-+     - This command should operate synchronously on the channel,
-+       pausing right away the work of the given channel
-+
-+   * device_resume
-+     - Resumes a transfer on the channel
-+     - This command should operate synchronously on the channel,
-+       pausing right away the work of the given channel
-+
-+   * device_terminate_all
-+     - Aborts all the pending and ongoing transfers on the channel
-+     - This command should operate synchronously on the channel,
-+       terminating right away all the channels
+-	return 0;
+-}
+-
+ static struct dma_chan *nbpf_of_xlate(struct of_phandle_args *dma_spec,
+ 				      struct of_dma *ofdma)
+ {
+@@ -1411,7 +1399,6 @@ static int nbpf_probe(struct platform_device *pdev)
+ 	dma_dev->device_prep_dma_memcpy = nbpf_prep_memcpy;
+ 	dma_dev->device_tx_status = nbpf_tx_status;
+ 	dma_dev->device_issue_pending = nbpf_issue_pending;
+-	dma_dev->device_slave_caps = nbpf_slave_caps;
  
- Misc notes (stuff that should be documented, but don't really know
- where to put them)
+ 	/*
+ 	 * If we drop support for unaligned MEMCPY buffer addresses and / or
+@@ -1427,6 +1414,10 @@ static int nbpf_probe(struct platform_device *pdev)
+ 	dma_dev->device_pause = nbpf_pause;
+ 	dma_dev->device_terminate_all = nbpf_terminate_all;
+ 
++	dma_dev->src_addr_widths = NBPF_DMA_BUSWIDTHS;
++	dma_dev->dst_addr_widths = NBPF_DMA_BUSWIDTHS;
++	dma_dev->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
++
+ 	platform_set_drvdata(pdev, nbpf);
+ 
+ 	ret = clk_prepare_enable(nbpf->clk);
 -- 
 2.1.1
 
