@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaKQTkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:40:05 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:20977 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752663AbaKQTkE (ORCPT
+	id S1752483AbaKQTnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:43:33 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:50175 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaKQTna convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:40:04 -0500
-Date: Mon, 17 Nov 2014 14:39:45 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH 1/2] sched/deadline: Modify cpudl.free_cpus to reflect
- rd->span
-Message-ID: <20141117143945.25d4d7d0@gandalf.local.home>
-In-Reply-To: <1416240664-7200-1-git-send-email-pang.xunlei@linaro.org>
-References: <1416240664-7200-1-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 17 Nov 2014 14:43:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CA+rthh_yfMhmAGvJDpQwnpL6hKJvuZdeDsu4rJuvUQx_irRYZw@mail.gmail.com>
+References: <20141114213459.GA3832@www.outflux.net>
+	<20141117150926.GA1968@gondor.apana.org.au>
+	<CA+rthh_yfMhmAGvJDpQwnpL6hKJvuZdeDsu4rJuvUQx_irRYZw@mail.gmail.com>
+Date: Mon, 17 Nov 2014 11:43:30 -0800
+X-Google-Sender-Auth: zhPBQucqNn49LtHu9IQLMUDGpJ0
+Message-ID: <CAGXu5jK4vu0uJ2R+MjLfjhrMBOqoLcE_3=e-T=ea=u_ZzSatqw@mail.gmail.com>
+Subject: Re: [PATCH] crypto: prefix module autoloading with "crypto-"
+From: Kees Cook <keescook@chromium.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014 00:11:03 +0800
+On Mon, Nov 17, 2014 at 10:38 AM, Mathias Krause <minipli@googlemail.com> wrote:
+> On 17 November 2014 16:09, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+>> On Fri, Nov 14, 2014 at 01:34:59PM -0800, Kees Cook wrote:
+>>> This prefixes all crypto module loading with "crypto-" so we never run
+>>> the risk of exposing module auto-loading to userspace via a crypto API,
+>>> as demonstrated by Mathias Krause:
+>>>
+>>> https://lkml.org/lkml/2013/3/4/70
+>>>
+>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>
+>> Sorry but this doesn't build for me:
+>>
+>>   CC [M]  drivers/crypto/qat/qat_common/adf_ctl_drv.o
+>> drivers/crypto/qat/qat_common/adf_ctl_drv.c:490:21: error: expected declaration specifiers or ‘...’ before string constant
+>> make[3]: *** [drivers/crypto/qat/qat_common/adf_ctl_drv.o] Error 1
+>> make[2]: *** [drivers/crypto/qat/qat_common] Error 2
+>> make[1]: *** [drivers/crypto/qat] Error 2
+>> make[1]: *** Waiting for unfinished jobs....
+>
+> Looks like drivers/crypto/qat/qat_common/adf_ctl_drv.c is missing
+> '#include <linux/crypto.h>'.
 
-> index 539ca3c..9a69353
-> --- a/kernel/sched/cpudeadline.c
-> +++ b/kernel/sched/cpudeadline.c
-> @@ -107,7 +107,9 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
->  	int best_cpu = -1;
->  	const struct sched_dl_entity *dl_se = &p->dl;
->  
-> -	if (later_mask && cpumask_and(later_mask, later_mask, cp->free_cpus)) {
-> +	if (later_mask && cpumask_and(later_mask, cp->free_cpus,
-> +			&p->cpus_allowed) && cpumask_and(later_mask,
-> +			later_mask, cpu_active_mask)) {
+Ah, looks like I missed a few in my config. I'll attempt allmodconfig
+and send a v2.
 
-I did a quick review of this patch, and it looks fine to me. But the
-above looks ugly. Please change it to something more readable like:
+Thanks!
 
-	if (later_mask &&
-	    cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
-	    cpumask_and(later_mask, later_mask, cpu_active_mask)) {
+-Kees
 
-Thanks,
-
--- Steve
-
-
->  		best_cpu = cpumask_any(later_mask);
->  		goto out;
->  	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
-> @@ -186,6 +188,17 @@ out:
->  }
->  
-
+-- 
+Kees Cook
+Chrome OS Security
