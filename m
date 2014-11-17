@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaKQMqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:46:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54625 "EHLO mx2.suse.de"
+	id S1752549AbaKQMrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 07:47:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54641 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071AbaKQMqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:46:39 -0500
-Date: Mon, 17 Nov 2014 13:46:37 +0100
-Message-ID: <s5hk32ukn9u.wl-tiwai@suse.de>
+	id S1752505AbaKQMrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 07:47:02 -0500
+Date: Mon, 17 Nov 2014 13:47:01 +0100
+Message-ID: <s5hioiekn96.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: SF Markus Elfring <elfring@users.sourceforge.net>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
         Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] ALSA: lola: Deletion of an unnecessary check before the function call "vfree"
-In-Reply-To: <5469E09C.6040808@users.sourceforge.net>
+Subject: Re: [PATCH 1/1] ALSA: hdsp: Deletion of an unnecessary check before the function call "release_firmware"
+In-Reply-To: <5469E61F.6000002@users.sourceforge.net>
 References: <5307CAA2.8060406@users.sourceforge.net>
 	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
 	<530A086E.8010901@users.sourceforge.net>
@@ -32,7 +32,7 @@ References: <5307CAA2.8060406@users.sourceforge.net>
 	<530DD06F.4090703@users.sourceforge.net>
 	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
 	<5317A59D.4@users.sourceforge.net>
-	<5469E09C.6040808@users.sourceforge.net>
+	<5469E61F.6000002@users.sourceforge.net>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -42,14 +42,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 17 Nov 2014 12:48:44 +0100,
+At Mon, 17 Nov 2014 13:12:15 +0100,
 SF Markus Elfring wrote:
 > 
 > From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Mon, 17 Nov 2014 12:42:16 +0100
+> Date: Mon, 17 Nov 2014 13:04:14 +0100
 > 
-> The vfree() function performs also input parameter validation. Thus the test
-> around the call is not needed.
+> The release_firmware() function tests whether its argument is NULL and then
+> return immediately. Thus the test around the call is not needed.
 > 
 > This issue was detected by using the Coccinelle software.
 > 
@@ -61,23 +61,23 @@ Applied, thanks.
 Takashi
 
 > ---
->  sound/pci/lola/lola_mixer.c | 3 +--
+>  sound/pci/rme9652/hdsp.c | 3 +--
 >  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/sound/pci/lola/lola_mixer.c b/sound/pci/lola/lola_mixer.c
-> index 782f4d8..e7fe15d 100644
-> --- a/sound/pci/lola/lola_mixer.c
-> +++ b/sound/pci/lola/lola_mixer.c
-> @@ -108,8 +108,7 @@ int lola_init_pins(struct lola *chip, int dir, int *nidp)
+> diff --git a/sound/pci/rme9652/hdsp.c b/sound/pci/rme9652/hdsp.c
+> index 7646ba1..0ae568d 100644
+> --- a/sound/pci/rme9652/hdsp.c
+> +++ b/sound/pci/rme9652/hdsp.c
+> @@ -5368,8 +5368,7 @@ static int snd_hdsp_free(struct hdsp *hdsp)
 >  
->  void lola_free_mixer(struct lola *chip)
->  {
-> -	if (chip->mixer.array_saved)
-> -		vfree(chip->mixer.array_saved);
-> +	vfree(chip->mixer.array_saved);
->  }
+>  	snd_hdsp_free_buffers(hdsp);
 >  
->  int lola_init_mixer_widget(struct lola *chip, int nid)
+> -	if (hdsp->firmware)
+> -		release_firmware(hdsp->firmware);
+> +	release_firmware(hdsp->firmware);
+>  	vfree(hdsp->fw_uploaded);
+>  
+>  	if (hdsp->iobase)
 > -- 
 > 2.1.3
 > 
