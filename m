@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaKQEpF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 23:45:05 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:64196 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363AbaKQEpC (ORCPT
+	id S1753940AbaKQEwW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 23:52:22 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42550 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881AbaKQEwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 23:45:02 -0500
-From: Abhilash Kesavan <a.kesavan@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, jslaby@suse.cz
-Subject: [PATCH RESEND] serial: samsung: Fix serial config dependencies for exynos7
-Date: Mon, 17 Nov 2014 10:14:51 +0530
-Message-Id: <1416199491-4841-1-git-send-email-a.kesavan@samsung.com>
-X-Mailer: git-send-email 2.1.0
+	Sun, 16 Nov 2014 23:52:20 -0500
+Date: Sun, 16 Nov 2014 20:43:00 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pranith Kumar <bobby.prani@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/16] percpu: Replace smp_read_barrier_depends() with
+ lockless_dereference()
+Message-ID: <20141117044300.GM4460@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com>
+ <1415906662-4576-10-git-send-email-bobby.prani@gmail.com>
+ <20141114131448.GC21209@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114131448.GC21209@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111704-0017-0000-0000-0000065A3217
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
+On Fri, Nov 14, 2014 at 08:14:48AM -0500, Tejun Heo wrote:
+> On Thu, Nov 13, 2014 at 02:24:15PM -0500, Pranith Kumar wrote:
+> > Recently lockless_dereference() was added which can be used in place of
+> > hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+> > 
+> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> 
+> How should this be routed?  There's a pending change on the same
+> region of code and if this patch is routed outside percpu tree it'd
+> cause a conflict and I can't route this as lockless_dereference()
+> isn't in the mainline yet.  Maybe expose a git branch which contaisn
+> lockless_dereference() so that percpu can pull it in?
 
-Exynos7 has a similar serial controller to that present in older Samsung
-SoCs. To re-use the existing serial driver on Exynos7 we need to have
-SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS selected. This is not
-possible because these symbols are dependent on PLAT_SAMSUNG which is
-not present for the ARMv8 based exynos7.
+Actually, lockless_dereference() is now in mainline, if that makes it
+easier.
 
-Change the dependency of these symbols from PLAT_SAMSUNG to the serial
-driver thus making it available on exynos7. As the existing platform
-specific code making use of these symbols is related to uart driver this
-change in dependency should not cause any issues.
-
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
-Re-sending as the previous version did not reach Greg KH.
-
- drivers/tty/serial/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index e71a28b..d0ce88c 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -249,14 +249,14 @@ config SERIAL_SAMSUNG
- 
- config SERIAL_SAMSUNG_UARTS_4
- 	bool
--	depends on PLAT_SAMSUNG
-+	depends on SERIAL_SAMSUNG
- 	default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
- 	help
- 	  Internal node for the common case of 4 Samsung compatible UARTs
- 
- config SERIAL_SAMSUNG_UARTS
- 	int
--	depends on PLAT_SAMSUNG
-+	depends on SERIAL_SAMSUNG
- 	default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
- 	default 3
- 	help
--- 
-2.1.0
+							Thanx, Paul
 
