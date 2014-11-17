@@ -1,89 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118AbaKQOBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:01:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42984 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811AbaKQOBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 09:01:00 -0500
-Date: Mon, 17 Nov 2014 15:00:43 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: kan.liang@intel.com
-Cc: acme@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH V3 2/3] perf tool: Move cpumode resolve code to
- add_callchain_ip
-Message-ID: <20141117140043.GB21532@krava.brq.redhat.com>
-References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
- <1415972652-17310-3-git-send-email-kan.liang@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415972652-17310-3-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754146AbaKQOBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 09:01:32 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48985 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753039AbaKQNpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 08:45:14 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 21/61] dmaengine: fsl-edma: Split device_control
+Date: Mon, 17 Nov 2014 14:42:15 +0100
+Message-Id: <1416231775-31252-22-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 08:44:11AM -0500, kan.liang@intel.com wrote:
+Split the device_control callback of the Freescale EDMA driver to make use
+of the newly introduced callbacks, that will eventually be used to retrieve
+slave capabilities.
 
-SNIP
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/dma/fsl-edma.c | 106 +++++++++++++++++++++++++++----------------------
+ 1 file changed, 58 insertions(+), 48 deletions(-)
 
-> -	int i;
-> -	int j;
-> -	int err;
-> +	int i, j, err = 0;
->  	int skip_idx __maybe_unused;
->  
->  	callchain_cursor_reset(&callchain_cursor);
-> @@ -1467,39 +1489,13 @@ static int thread__resolve_callchain_sample(struct thread *thread,
->  #endif
->  		ip = chain->ips[j];
->  
-> -		if (ip >= PERF_CONTEXT_MAX) {
-> -			switch (ip) {
-> -			case PERF_CONTEXT_HV:
-> -				cpumode = PERF_RECORD_MISC_HYPERVISOR;
-> -				break;
-> -			case PERF_CONTEXT_KERNEL:
-> -				cpumode = PERF_RECORD_MISC_KERNEL;
-> -				break;
-> -			case PERF_CONTEXT_USER:
-> -				cpumode = PERF_RECORD_MISC_USER;
-> -				break;
-> -			default:
-> -				pr_debug("invalid callchain context: "
-> -					 "%"PRId64"\n", (s64) ip);
-> -				/*
-> -				 * It seems the callchain is corrupted.
-> -				 * Discard all.
-> -				 */
-> -				callchain_cursor_reset(&callchain_cursor);
-> -				return 0;
-> -			}
-> -			continue;
-> -		}
-> -
->  		err = add_callchain_ip(thread, parent, root_al,
->  				       cpumode, ip);
-> -		if (err == -EINVAL)
-> -			break;
+diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
+index 13df85a16438..b5b7474f8859 100644
+--- a/drivers/dma/fsl-edma.c
++++ b/drivers/dma/fsl-edma.c
+@@ -292,62 +292,69 @@ static void fsl_edma_free_desc(struct virt_dma_desc *vdesc)
+ 	kfree(fsl_desc);
+ }
+ 
+-static int fsl_edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		unsigned long arg)
++static int fsl_edma_terminate_all(struct dma_chan *chan)
+ {
+ 	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
+-	struct dma_slave_config *cfg = (void *)arg;
+ 	unsigned long flags;
+ 	LIST_HEAD(head);
+ 
+-	switch (cmd) {
+-	case DMA_TERMINATE_ALL:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	fsl_edma_disable_request(fsl_chan);
++	fsl_chan->edesc = NULL;
++	vchan_get_all_descriptors(&fsl_chan->vchan, &head);
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	vchan_dma_desc_free_list(&fsl_chan->vchan, &head);
++	return 0;
++}
++
++static int fsl_edma_pause(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	unsigned long flags;
++
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	if (fsl_chan->edesc) {
+ 		fsl_edma_disable_request(fsl_chan);
+-		fsl_chan->edesc = NULL;
+-		vchan_get_all_descriptors(&fsl_chan->vchan, &head);
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		vchan_dma_desc_free_list(&fsl_chan->vchan, &head);
+-		return 0;
+-
+-	case DMA_SLAVE_CONFIG:
+-		fsl_chan->fsc.dir = cfg->direction;
+-		if (cfg->direction == DMA_DEV_TO_MEM) {
+-			fsl_chan->fsc.dev_addr = cfg->src_addr;
+-			fsl_chan->fsc.addr_width = cfg->src_addr_width;
+-			fsl_chan->fsc.burst = cfg->src_maxburst;
+-			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->src_addr_width);
+-		} else if (cfg->direction == DMA_MEM_TO_DEV) {
+-			fsl_chan->fsc.dev_addr = cfg->dst_addr;
+-			fsl_chan->fsc.addr_width = cfg->dst_addr_width;
+-			fsl_chan->fsc.burst = cfg->dst_maxburst;
+-			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->dst_addr_width);
+-		} else {
+-			return -EINVAL;
+-		}
+-		return 0;
++		fsl_chan->status = DMA_PAUSED;
++	}
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	return 0;
++}
+ 
+-	case DMA_PAUSE:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
+-		if (fsl_chan->edesc) {
+-			fsl_edma_disable_request(fsl_chan);
+-			fsl_chan->status = DMA_PAUSED;
+-		}
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		return 0;
+-
+-	case DMA_RESUME:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
+-		if (fsl_chan->edesc) {
+-			fsl_edma_enable_request(fsl_chan);
+-			fsl_chan->status = DMA_IN_PROGRESS;
+-		}
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		return 0;
++static int fsl_edma_resume(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	unsigned long flags;
+ 
+-	default:
+-		return -ENXIO;
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	if (fsl_chan->edesc) {
++		fsl_edma_enable_request(fsl_chan);
++		fsl_chan->status = DMA_IN_PROGRESS;
+ 	}
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	return 0;
++}
++
++static int fsl_edma_slave_config(struct dma_chan *chan,
++				 struct dma_slave_config *cfg)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++
++	fsl_chan->fsc.dir = cfg->direction;
++	if (cfg->direction == DMA_DEV_TO_MEM) {
++		fsl_chan->fsc.dev_addr = cfg->src_addr;
++		fsl_chan->fsc.addr_width = cfg->src_addr_width;
++		fsl_chan->fsc.burst = cfg->src_maxburst;
++		fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->src_addr_width);
++	} else if (cfg->direction == DMA_MEM_TO_DEV) {
++		fsl_chan->fsc.dev_addr = cfg->dst_addr;
++		fsl_chan->fsc.addr_width = cfg->dst_addr_width;
++		fsl_chan->fsc.burst = cfg->dst_maxburst;
++		fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->dst_addr_width);
++	} else {
++			return -EINVAL;
++	}
++	return 0;
+ }
+ 
+ static size_t fsl_edma_desc_residue(struct fsl_edma_chan *fsl_chan,
+@@ -914,7 +921,10 @@ static int fsl_edma_probe(struct platform_device *pdev)
+ 	fsl_edma->dma_dev.device_tx_status = fsl_edma_tx_status;
+ 	fsl_edma->dma_dev.device_prep_slave_sg = fsl_edma_prep_slave_sg;
+ 	fsl_edma->dma_dev.device_prep_dma_cyclic = fsl_edma_prep_dma_cyclic;
+-	fsl_edma->dma_dev.device_control = fsl_edma_control;
++	fsl_edma->dma_dev.device_config = fsl_edma_slave_config;
++	fsl_edma->dma_dev.device_pause = fsl_edma_pause;
++	fsl_edma->dma_dev.device_resume = fsl_edma_resume;
++	fsl_edma->dma_dev.device_terminate_all = fsl_edma_terminate_all;
+ 	fsl_edma->dma_dev.device_issue_pending = fsl_edma_issue_pending;
+ 	fsl_edma->dma_dev.device_slave_caps = fsl_dma_device_slave_caps;
+ 
+-- 
+2.1.1
 
-yea, I was wondering, why we did not spot this nop before ;-)
-
->  		if (err)
-> -			return err;
-> +			goto exit;
-
-I dont understand this change seems like extra nop complication..
-why not return in here and rather recheck at the end again?
-
-jirka
-
->  	}
-> -
-> -	return 0;
-> +exit:
-> +	return (err < 0) ? err : 0;
->  }
