@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaKQVuT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:50:19 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:41713 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaKQVuQ (ORCPT
+	id S1752695AbaKQVvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 16:51:15 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:37993 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752164AbaKQVvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:50:16 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>, ssantosh@kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
-	<1600093.60yAP0Qpua@wuerfel> <7h389h3aif.fsf@deeprootsystems.com>
-	<1618855.DXsjWXLqau@wuerfel>
-Date: Mon, 17 Nov 2014 13:50:13 -0800
-In-Reply-To: <1618855.DXsjWXLqau@wuerfel> (Arnd Bergmann's message of "Mon, 17
-	Nov 2014 21:37:37 +0100")
-Message-ID: <7hsihhzecq.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 17 Nov 2014 16:51:13 -0500
+X-Sasl-enc: +/eGzgXV9RXpJRYVs8cuVs6ZPN29JJjIh2IaswxgGBc4 1416261072
+Date: Mon, 17 Nov 2014 13:51:11 -0800
+From: Greg KH <greg@kroah.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Antonio Borneo <borneo.antonio@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] HID: i2c-hid: fix race condition reading reports
+Message-ID: <20141117215111.GA19828@kroah.com>
+References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
+ <20141117214305.GC30324@mail.corp.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117214305.GC30324@mail.corp.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+On Mon, Nov 17, 2014 at 04:43:05PM -0500, Benjamin Tissoires wrote:
+> Hey Antonio,
+> 
+> On Nov 16 2014 or thereabouts, Antonio Borneo wrote:
+> > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+> > 
+> > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+> > 
+> > Current driver uses a common buffer for reading reports either
+> > synchronously in i2c_hid_get_raw_report() and asynchronously in
+> > the interrupt handler.
+> > There is race condition if an interrupt arrives immediately after
+> > the report is received in i2c_hid_get_raw_report(); the common
+> > buffer is modified by the interrupt handler with the new report
+> > and then i2c_hid_get_raw_report() proceed using wrong data.
+> > 
+> > Fix it by using a separate buffers for asynchronous reports.
+> > 
+> > Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+> > [Antonio Borneo: cleanup and rebase to v3.17]
+> > Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+> > Cc: stable@vger.kernel.org
+> 
+> For your next submission, when you want a patch to go in stable, put CC
+> here, but please do not CC the actual mail to stable@. Stable should receive
+> either mails which are already in Linus' tree, or which refer a commit
+> in Linus' tree in case it does not applies smoothly.
+> 
+> [keeping stable@ here to show them that this one should not get picked
+> right now]
 
-> On Monday 17 November 2014 11:14:16 Kevin Hilman wrote:
->> >> 
->> >> So, The Keystone 2 Generic PM Controller is just a proxy PM layer here between
->> >> device and Generic clock manipulation PM callbacks.
->> >> It fills per-device clock list when device is attached to GPD and
->> >> ensures that all clocks from that list enabled/disabled when device is
->> >> started/stopped.
->> >
->> > The idea of such a generic power domain implementation sounds useful, but
->> > it has absolutely no business in platform specific code.
->> 
->> Yes it does.  This isn't a generic power domain implementation, but
->> rather just the platform-specific glue that hooks up the clocks to the
->> right devices and power-domains so that the generic power-domain and
->> generic pm_clocks code does the right thing.
->
-> How would you do this on an arm64 version of keystone then? With
-> the current approach, you'd need to add a machine specific directory,
-> and that seems completely pointless since this is not even about
-> a hardware requirement.
+stable@ is smarter than that, I don't mind seeing patches that are
+coming in the future like this at all, it's not a problem.
 
-Yeah, you're right.  I misunderstood you're original comment.
+thanks,
 
->> > I suggest you either remove the power domain proxy from your drivers
->> > and use the clocks directly, 
->> 
->> No.  That's a step in the wrong direction.  This change isn't affecting
->> drivers directly.  It's the runtime PM and generic power domain layers
->> that handle this, and runtime PM adapted drivers don't need any changes.
->>  
->> > or come up with an implementation that can be used across other
->> > platforms and CPU architectures.
->> 
->> We already have those in the generic power domain and the pm_clock
->> layers.  This series is just hooking those up for Keystone.
->
-> Then why not add the missing piece to the generic power domain
-> code to avoid having to add infrastructure to the platform
-> for it?
-
-Yes, good point.  There is nothing keystone-specific in this glue.
-
-Grygorii, what about adding a feature to the generic domain parsing so
-that it can get clocks from device nodes that are part of the domain,
-and so it sets up pm_clk accordingly.
-
-I've recently seen other SoCs doing very similar, so this really should
-be generalized.
-
-I've been looking at this primarily as a right incremental improvement
-from what is there for Keystone today, but Arnd is right.  This should
-be moved out of platform code.
-
-Kevin
+greg k-h
