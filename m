@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaKQNts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:49:48 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49102 "EHLO
+	id S1753830AbaKQNuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:50:03 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49106 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753052AbaKQNpx (ORCPT
+	with ESMTP id S1753474AbaKQNpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 08:45:53 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 14/61] dmaengine: bcm2835: Split device_control
-Date: Mon, 17 Nov 2014 14:42:08 +0100
-Message-Id: <1416231775-31252-15-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 15/61] dmaengine: coh901318: Split device_control
+Date: Mon, 17 Nov 2014 14:42:09 +0100
+Message-Id: <1416231775-31252-16-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,82 +24,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Broadcom BCM2835 DMA driver to make
-use of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+Split the device_control callback of the ST-Ericsson COH901318 DMA driver to
+make use of the newly introduced callbacks, that will eventually be used to
+retrieve slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/bcm2835-dma.c | 31 ++++++++-----------------------
- 1 file changed, 8 insertions(+), 23 deletions(-)
+ drivers/dma/coh901318.c | 137 +++++++++++++++++++++---------------------------
+ 1 file changed, 60 insertions(+), 77 deletions(-)
 
-diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
-index 3feba6c25836..13b05c1673b1 100644
---- a/drivers/dma/bcm2835-dma.c
-+++ b/drivers/dma/bcm2835-dma.c
-@@ -436,9 +436,11 @@ static struct dma_async_tx_descriptor *bcm2835_dma_prep_dma_cyclic(
- 	return vchan_tx_prep(&c->vc, &d->vd, flags);
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index e88588d8ecd3..418e4e4fb7ba 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -2114,6 +2114,57 @@ static irqreturn_t dma_irq_handler(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
  }
  
--static int bcm2835_dma_slave_config(struct bcm2835_chan *c,
--		struct dma_slave_config *cfg)
-+static int bcm2835_dma_slave_config(struct dma_chan *chan,
-+				    struct dma_slave_config *cfg)
- {
-+	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++static int coh901318_terminate_all(struct dma_chan *chan)
++{
++	unsigned long flags;
++	struct coh901318_chan *cohc = to_coh901318_chan(chan);
++	struct coh901318_desc *cohd;
++	void __iomem *virtbase = cohc->base->virtbase;
 +
- 	if ((cfg->direction == DMA_DEV_TO_MEM &&
- 	     cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
- 	    (cfg->direction == DMA_MEM_TO_DEV &&
-@@ -452,8 +454,9 @@ static int bcm2835_dma_slave_config(struct bcm2835_chan *c,
- 	return 0;
- }
- 
--static int bcm2835_dma_terminate_all(struct bcm2835_chan *c)
-+static int bcm2835_dma_terminate_all(struct dma_chan *chan)
++	/* The remainder of this function terminates the transfer */
++	coh901318_pause(chan);
++	spin_lock_irqsave(&cohc->lock, flags);
++
++	/* Clear any pending BE or TC interrupt */
++	if (cohc->id < 32) {
++		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
++		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
++	} else {
++		writel(1 << (cohc->id - 32), virtbase +
++		       COH901318_BE_INT_CLEAR2);
++		writel(1 << (cohc->id - 32), virtbase +
++		       COH901318_TC_INT_CLEAR2);
++	}
++
++	enable_powersave(cohc);
++
++	while ((cohd = coh901318_first_active_get(cohc))) {
++		/* release the lli allocation*/
++		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
++
++		/* return desc to free-list */
++		coh901318_desc_remove(cohd);
++		coh901318_desc_free(cohc, cohd);
++	}
++
++	while ((cohd = coh901318_first_queued(cohc))) {
++		/* release the lli allocation*/
++		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
++
++		/* return desc to free-list */
++		coh901318_desc_remove(cohd);
++		coh901318_desc_free(cohc, cohd);
++	}
++
++
++	cohc->nbr_active_done = 0;
++	cohc->busy = 0;
++
++	spin_unlock_irqrestore(&cohc->lock, flags);
++
++	return 0;
++}
++
+ static int coh901318_alloc_chan_resources(struct dma_chan *chan)
  {
-+	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
- 	struct bcm2835_dmadev *d = to_bcm2835_dma_dev(c->vc.chan.device);
- 	unsigned long flags;
- 	int timeout = 10000;
-@@ -495,24 +498,6 @@ static int bcm2835_dma_terminate_all(struct bcm2835_chan *c)
- 	return 0;
+ 	struct coh901318_chan	*cohc = to_coh901318_chan(chan);
+@@ -2156,7 +2207,7 @@ coh901318_free_chan_resources(struct dma_chan *chan)
+ 
+ 	spin_unlock_irqrestore(&cohc->lock, flags);
+ 
+-	dmaengine_terminate_all(chan);
++	coh901318_terminate_all(chan);
  }
  
--static int bcm2835_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
+ 
+@@ -2540,80 +2591,6 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
+ 	cohc->ctrl = ctrl;
+ }
+ 
+-static int
+-coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		  unsigned long arg)
 -{
--	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
+-	unsigned long flags;
+-	struct coh901318_chan *cohc = to_coh901318_chan(chan);
+-	struct coh901318_desc *cohd;
+-	void __iomem *virtbase = cohc->base->virtbase;
 -
--	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		return bcm2835_dma_slave_config(c,
--				(struct dma_slave_config *)arg);
+-	if (cmd == DMA_SLAVE_CONFIG) {
+-		struct dma_slave_config *config =
+-			(struct dma_slave_config *) arg;
 -
--	case DMA_TERMINATE_ALL:
--		return bcm2835_dma_terminate_all(c);
+-		coh901318_dma_set_runtimeconfig(chan, config);
+-		return 0;
+-	  }
 -
--	default:
--		return -ENXIO;
+-	if (cmd == DMA_PAUSE) {
+-		coh901318_pause(chan);
+-		return 0;
 -	}
+-
+-	if (cmd == DMA_RESUME) {
+-		coh901318_resume(chan);
+-		return 0;
+-	}
+-
+-	if (cmd != DMA_TERMINATE_ALL)
+-		return -ENXIO;
+-
+-	/* The remainder of this function terminates the transfer */
+-	coh901318_pause(chan);
+-	spin_lock_irqsave(&cohc->lock, flags);
+-
+-	/* Clear any pending BE or TC interrupt */
+-	if (cohc->id < 32) {
+-		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
+-		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
+-	} else {
+-		writel(1 << (cohc->id - 32), virtbase +
+-		       COH901318_BE_INT_CLEAR2);
+-		writel(1 << (cohc->id - 32), virtbase +
+-		       COH901318_TC_INT_CLEAR2);
+-	}
+-
+-	enable_powersave(cohc);
+-
+-	while ((cohd = coh901318_first_active_get(cohc))) {
+-		/* release the lli allocation*/
+-		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
+-
+-		/* return desc to free-list */
+-		coh901318_desc_remove(cohd);
+-		coh901318_desc_free(cohc, cohd);
+-	}
+-
+-	while ((cohd = coh901318_first_queued(cohc))) {
+-		/* release the lli allocation*/
+-		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
+-
+-		/* return desc to free-list */
+-		coh901318_desc_remove(cohd);
+-		coh901318_desc_free(cohc, cohd);
+-	}
+-
+-
+-	cohc->nbr_active_done = 0;
+-	cohc->busy = 0;
+-
+-	spin_unlock_irqrestore(&cohc->lock, flags);
+-
+-	return 0;
 -}
 -
- static int bcm2835_dma_chan_init(struct bcm2835_dmadev *d, int chan_id, int irq)
+ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+ 			 struct coh901318_base *base)
  {
- 	struct bcm2835_chan *c;
-@@ -615,9 +600,9 @@ static int bcm2835_dma_probe(struct platform_device *pdev)
- 	od->ddev.device_free_chan_resources = bcm2835_dma_free_chan_resources;
- 	od->ddev.device_tx_status = bcm2835_dma_tx_status;
- 	od->ddev.device_issue_pending = bcm2835_dma_issue_pending;
--	od->ddev.device_slave_caps = bcm2835_dma_device_slave_caps;
- 	od->ddev.device_prep_dma_cyclic = bcm2835_dma_prep_dma_cyclic;
--	od->ddev.device_control = bcm2835_dma_control;
-+	od->ddev.device_config = bcm2835_dma_slave_config;
-+	od->ddev.device_terminate_all = bcm2835_dma_terminate_all;
- 	od->ddev.dev = &pdev->dev;
- 	INIT_LIST_HEAD(&od->ddev.channels);
- 	spin_lock_init(&od->lock);
+@@ -2717,7 +2694,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
+ 	base->dma_slave.device_prep_slave_sg = coh901318_prep_slave_sg;
+ 	base->dma_slave.device_tx_status = coh901318_tx_status;
+ 	base->dma_slave.device_issue_pending = coh901318_issue_pending;
+-	base->dma_slave.device_control = coh901318_control;
++	base->dma_slave.device_config = coh901318_dma_set_runtimeconfig;
++	base->dma_slave.device_pause = coh901318_pause;
++	base->dma_slave.device_resume = coh901318_resume;
++	base->dma_slave.device_terminate_all = coh901318_terminate_all;
+ 	base->dma_slave.dev = &pdev->dev;
+ 
+ 	err = dma_async_device_register(&base->dma_slave);
+@@ -2737,7 +2717,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
+ 	base->dma_memcpy.device_prep_dma_memcpy = coh901318_prep_memcpy;
+ 	base->dma_memcpy.device_tx_status = coh901318_tx_status;
+ 	base->dma_memcpy.device_issue_pending = coh901318_issue_pending;
+-	base->dma_memcpy.device_control = coh901318_control;
++	base->dma_memcpy.device_config = coh901318_dma_set_runtimeconfig;
++	base->dma_memcpy.device_pause = coh901318_pause;
++	base->dma_memcpy.device_resume = coh901318_resume;
++	base->dma_memcpy.device_terminate_all = coh901318_terminate_all;
+ 	base->dma_memcpy.dev = &pdev->dev;
+ 	/*
+ 	 * This controller can only access address at even 32bit boundaries,
 -- 
 2.1.1
 
