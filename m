@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaKQDMI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 22:12:08 -0500
-Received: from ozlabs.org ([103.22.144.67]:51821 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463AbaKQDMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 22:12:06 -0500
-Date: Mon, 17 Nov 2014 14:11:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-ID: <20141117141158.438636fd@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753702AbaKQDRj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 22:17:39 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:34635 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbaKQDRi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Nov 2014 22:17:38 -0500
+Message-ID: <546968CB.1070802@hitachi.com>
+Date: Mon, 17 Nov 2014 12:17:31 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/m2JCHI1uBioA0jVdI/OBfa7"; protocol="application/pgp-signature"
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
+        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
+        brendan.d.gregg@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: [RFC] perf-cache command interface design
+References: <87lhnr5sbl.fsf@sejong.aot.lge.com> <54588905.7040002@linux.vnet.ibm.com> <5458CD15.4010101@hitachi.com> <874muew2hk.fsf@sejong.aot.lge.com> <5459E865.6050207@hitachi.com> <545B1DDE.9000202@linux.vnet.ibm.com> <545C80F4.4020905@hitachi.com> <54609A8C.4050308@hitachi.com> <20141110122321.GC4468@redhat.com> <5461B276.50004@hitachi.com> <20141111131030.GG4468@redhat.com> <54637C05.5090807@hitachi.com> <87oas6ttf8.fsf@sejong.aot.lge.com>
+In-Reply-To: <87oas6ttf8.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/m2JCHI1uBioA0jVdI/OBfa7
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+(2014/11/17 12:08), Namhyung Kim wrote:
+> Hi Masami,
+> 
+> On Thu, 13 Nov 2014 00:25:57 +0900, Masami Hiramatsu wrote:
+>> (2014/11/11 22:10), Arnaldo Carvalho de Melo wrote:
+>>> What I meant was, what is wrong with replacing:
+>>>
+>>>  perf cache --probe <SPEC>  # for the current kernel
+>>>
+>>> With:
+>>>
+>>>  perf cache --add <PROBE-SPEC> # for the current kernel
+>>>
+>>> And have it figure out that what is being added is a probe and do the
+>>> right thing?
+>>
+>> As I've said previously, PROBE-SPEC can be same as FILES (imagine that a binary
+>> file which has same name function in the kernel.)
+>> Moreover, PROBE-SPEC requires the target binary(or kernel module) except for
+>> kernel probes. In that case, anyway we need -x or -m options with file-path
+>> for --add, that is very strange.
+>>
+>> e.g.
+>>
+>> For me,
+>>
+>>  perf cache --add ./binary --probe '*'
+>>
+>> looks more natural than
+>>
+>>  perf cache --add '*' -exec ./binary
+>>
+>> since in other cases(sdt/elf), we'll just do
+>>
+>>  perf cache --add ./binary
+> 
+> I prefer this too.  But I'd like make the 'add' part a subcommand rather
+> than option like we do in perf kmem/kvm/list/lock/mem/sched ...  And it
+> can handle multiple files at once.  What about this?
+> 
+>   perf cache add [--elf|--sdt|--probe <spec>] <binary> [<binary>...]
 
-Hi Dave,
+OK, that's good to me. And I think --elf/--sdt is meaningless.
+Only --probe option is required, since we can scan the elf file to
+add sdt cache when adding elf binary :)
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/tegra/dc.c between commit 8ff64c17f3be ("drm/tegra: dc:
-Add missing call to drm_vblank_on()") from Linus' tree and commits
-205d48edee84 ("drm/tegra: dc: Factor out DC, window and cursor commit")
-and c7679306a923 ("drm/tegra: dc: Universal plane support") from the
-drm tree.
+Thank you,
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/gpu/drm/tegra/dc.c
-index 054a79f143ae,b957908aec73..000000000000
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@@ -751,7 -906,8 +906,8 @@@ static void tegra_crtc_disable(struct d
-  		}
-  	}
- =20
- -	drm_vblank_off(drm, dc->pipe);
- +	drm_crtc_vblank_off(crtc);
-+ 	tegra_dc_commit(dc);
-  }
- =20
-  static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
-@@@ -934,15 -1090,9 +1090,9 @@@ static void tegra_crtc_prepare(struct d
-  static void tegra_crtc_commit(struct drm_crtc *crtc)
-  {
-  	struct tegra_dc *dc =3D to_tegra_dc(crtc);
-- 	unsigned long value;
--=20
-- 	value =3D GENERAL_UPDATE | WIN_A_UPDATE;
-- 	tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
--=20
-- 	value =3D GENERAL_ACT_REQ | WIN_A_ACT_REQ;
-- 	tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
- =20
- -	drm_vblank_post_modeset(crtc->dev, dc->pipe);
- +	drm_crtc_vblank_on(crtc);
-+ 	tegra_dc_commit(dc);
-  }
- =20
-  static void tegra_crtc_load_lut(struct drm_crtc *crtc)
-
---Sig_/m2JCHI1uBioA0jVdI/OBfa7
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUaWeDAAoJEMDTa8Ir7ZwVtwIP/3K3H92RoGmz0QAQlkb2+mee
-OT99NUNYPdysrWnXhiEz7GaGYCx0MwnNMrEzbsPs/CSRWuBbg2cYRkvEW+c7GTAa
-fBkxBIE9GPXESvWk6HJZkfh9jWyFf1rC+aZ/lW/Ea0gd3tahvTMxnZZ0eVKCVQec
-Nhdr/JT36Jl8Sjlb1WYV/pKWwAgtlzPDQxfvF1MebXnbz7nIsev8CYPXwFQ8/Vma
-exnmdEBZykwLDNaueYVRh46Uj/umOFnzQWprONNSN/8O4wwpzuHI/XqQVL+X7Dvf
-47+VPZgmNVS7XzWP2WAV4ZlIjo6KgLwYAFC8PLSSIfRoKcz4gx3A/mcTjbPO5QiU
-+O5S3lfGppTupIy5uX1FnfwuinvIcX5LHOp/gxjfipk8Cf2pdVU7dj+XHa2EbvMK
-IN368AhHvNcX4HRpSZbPfuh/xp/8hthCxO/5Cdte9KfABQjKdH41PGmxmI/mN9Bj
-dpEGEP9RgcwUeiwRNzakHecKaGSKY/OgJPrHgNBiU//m4hEGPHuRDQjVRiFbgogm
-IV9R1JdVgFkys1ebvQH33T3RI36xu6Tni7AE6CTJez88nD4LMQI6bjols8Bx/o3t
-ZQOWTbF0F6LbSAWhT+OskFQuZOgGEmqhpKCncdMa9I36FLtaILaTUVy+VGc4Xq6X
-JGNbU2L1gVtdMEms3Emq
-=4x9t
------END PGP SIGNATURE-----
-
---Sig_/m2JCHI1uBioA0jVdI/OBfa7--
