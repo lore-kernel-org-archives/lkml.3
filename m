@@ -1,219 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbaKQTME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:12:04 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:45105 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaKQTIQ (ORCPT
+	id S1753282AbaKQTMU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:12:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:22588 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752423AbaKQTMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:08:16 -0500
-From: Stephane Eranian <eranian@google.com>
+	Mon, 17 Nov 2014 14:12:18 -0500
+Date: Mon, 17 Nov 2014 14:12:15 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v3 05/13] perf/x86: add cross-HT counter exclusion infrastructure
-Date: Mon, 17 Nov 2014 20:06:57 +0100
-Message-Id: <1416251225-17721-6-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416251225-17721-1-git-send-email-eranian@google.com>
-References: <1416251225-17721-1-git-send-email-eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH 2/2] tracing: Use trace_seq_used() and seq_buf_used()
+ instead of len
+Message-ID: <20141117141215.2dbd5f12@gandalf.local.home>
+In-Reply-To: <20141117123250.10f6f57c@gandalf.local.home>
+References: <20141115045847.712848224@goodmis.org>
+	<20141115050603.904875201@goodmis.org>
+	<20141117123250.10f6f57c@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
 
-This patch adds a new shared_regs style structure to the
-per-cpu x86 state (cpuc). It is used to coordinate access
-between counters which must be used with exclusion across
-HyperThreads on Intel processors. This new struct is not
-needed on each PMU, thus is is allocated on demand.
+> I don't like the fact that I did a code structure change with this
+> patch. This patch should be just a simple conversion of len to
+> seq_buf_used(). I'm going to strip this change out and put it before
+> this patch.
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+
+As the seq_buf->len will soon be +1 size when there's an overflow, we
+must use trace_seq_used() or seq_buf_used() methods to get the real
+length. This will prevent buffer overflow issues if just the len
+of the seq_buf descriptor is used to copy memory.
+
+Link: http://lkml.kernel.org/r/20141114121911.09ba3d38@gandalf.local.home
+
+Reported-by: Petr Mladek <pmladek@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/cpu/perf_event.h       | 32 +++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel.c | 71 +++++++++++++++++++++++++++++++---
- 2 files changed, 98 insertions(+), 5 deletions(-)
+ include/linux/trace_seq.h            | 20 +++++++++++++++++++-
+ kernel/trace/seq_buf.c               |  2 +-
+ kernel/trace/trace.c                 | 22 +++++++++++-----------
+ kernel/trace/trace_events.c          |  9 ++++++---
+ kernel/trace/trace_functions_graph.c |  5 ++++-
+ kernel/trace/trace_seq.c             |  2 +-
+ 6 files changed, 42 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 141c17c..b7ab4c8 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -71,6 +71,7 @@ struct event_constraint {
- #define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
- #define PERF_X86_EVENT_PEBS_LD_HSW	0x10 /* haswell style datala, load */
- #define PERF_X86_EVENT_PEBS_NA_HSW	0x20 /* haswell style datala, unknown */
-+#define PERF_X86_EVENT_EXCL		0x40 /* HT exclusivity on counter */
- 
- struct amd_nb {
- 	int nb_id;  /* NorthBridge id */
-@@ -121,6 +122,26 @@ struct intel_shared_regs {
- 	unsigned                core_id;	/* per-core: core id */
- };
- 
-+enum intel_excl_state_type {
-+	INTEL_EXCL_UNUSED    = 0, /* counter is unused */
-+	INTEL_EXCL_SHARED    = 1, /* counter can be used by both threads */
-+	INTEL_EXCL_EXCLUSIVE = 2, /* counter can be used by one thread only */
-+};
-+
-+struct intel_excl_states {
-+	enum intel_excl_state_type init_state[X86_PMC_IDX_MAX];
-+	enum intel_excl_state_type state[X86_PMC_IDX_MAX];
-+};
-+
-+struct intel_excl_cntrs {
-+	spinlock_t	lock;
-+
-+	struct intel_excl_states states[2];
-+
-+	int		refcnt;		/* per-core: #HT threads */
-+	unsigned	core_id;	/* per-core: core id */
-+};
-+
- #define MAX_LBR_ENTRIES		16
- 
- enum {
-@@ -183,6 +204,12 @@ struct cpu_hw_events {
- 	 * used on Intel NHM/WSM/SNB
- 	 */
- 	struct intel_shared_regs	*shared_regs;
-+	/*
-+	 * manage exclusive counter access between hyperthread
-+	 */
-+	struct event_constraint *constraint_list; /* in enable order */
-+	struct intel_excl_cntrs		*excl_cntrs;
-+	int excl_thread_id; /* 0 or 1 */
- 
- 	/*
- 	 * AMD specific bits
-@@ -206,6 +233,10 @@ struct cpu_hw_events {
- #define EVENT_CONSTRAINT(c, n, m)	\
- 	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
- 
-+#define INTEL_EXCLEVT_CONSTRAINT(c, n)	\
-+	__EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT, HWEIGHT(n),\
-+			   0, PERF_X86_EVENT_EXCL)
-+
- /*
-  * The overlap flag marks event constraints with overlapping counter
-  * masks. This is the case if the counter mask of such an event is not
-@@ -543,6 +574,7 @@ do {									\
-  */
- #define PMU_FL_NO_HT_SHARING	0x1 /* no hyper-threading resource sharing */
- #define PMU_FL_HAS_RSP_1	0x2 /* has 2 equivalent offcore_rsp regs   */
-+#define PMU_FL_EXCL_CNTRS	0x4 /* has exclusive counter requirements  */
- 
- #define EVENT_VAR(_id)  event_attr_##_id
- #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 9b60b17..eb1d938 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1984,16 +1984,52 @@ struct intel_shared_regs *allocate_shared_regs(int cpu)
- 	return regs;
+diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
+index 85d37106be3d..cfaf5a1d4bad 100644
+--- a/include/linux/trace_seq.h
++++ b/include/linux/trace_seq.h
+@@ -24,6 +24,24 @@ trace_seq_init(struct trace_seq *s)
  }
  
-+struct intel_excl_cntrs *allocate_excl_cntrs(int cpu)
+ /**
++ * trace_seq_used - amount of actual data written to buffer
++ * @s: trace sequence descriptor
++ *
++ * Returns the amount of data written to the buffer.
++ *
++ * IMPORTANT!
++ *
++ * Use this instead of @s->seq.len if you need to pass the amount
++ * of data from the buffer to another buffer (userspace, or what not).
++ * The @s->seq.len on overflow is bigger than the buffer size and
++ * using it can cause access to undefined memory.
++ */
++static inline int trace_seq_used(struct trace_seq *s)
 +{
-+	struct intel_excl_cntrs *c;
-+	int i;
-+
-+	c = kzalloc_node(sizeof(struct intel_excl_cntrs),
-+			 GFP_KERNEL, cpu_to_node(cpu));
-+	if (c) {
-+		spin_lock_init(&c->lock);
-+		for (i = 0; i < X86_PMC_IDX_MAX; i++) {
-+			c->states[0].state[i] = INTEL_EXCL_UNUSED;
-+			c->states[0].init_state[i] = INTEL_EXCL_UNUSED;
-+
-+			c->states[1].state[i] = INTEL_EXCL_UNUSED;
-+			c->states[1].init_state[i] = INTEL_EXCL_UNUSED;
-+		}
-+		c->core_id = -1;
-+	}
-+	return c;
++	return seq_buf_used(&s->seq);
 +}
 +
- static int intel_pmu_cpu_prepare(int cpu)
++/**
+  * trace_seq_buffer_ptr - return pointer to next location in buffer
+  * @s: trace sequence descriptor
+  *
+@@ -35,7 +53,7 @@ trace_seq_init(struct trace_seq *s)
+ static inline unsigned char *
+ trace_seq_buffer_ptr(struct trace_seq *s)
  {
- 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 
--	if (!(x86_pmu.extra_regs || x86_pmu.lbr_sel_map))
--		return NOTIFY_OK;
-+	if (x86_pmu.extra_regs || x86_pmu.lbr_sel_map) {
-+		cpuc->shared_regs = allocate_shared_regs(cpu);
-+		if (!cpuc->shared_regs)
-+			return NOTIFY_BAD;
-+	}
- 
--	cpuc->shared_regs = allocate_shared_regs(cpu);
--	if (!cpuc->shared_regs)
--		return NOTIFY_BAD;
-+	if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
-+		size_t sz = X86_PMC_IDX_MAX * sizeof(struct event_constraint);
-+
-+		cpuc->constraint_list = kzalloc(sz, GFP_KERNEL);
-+		if (!cpuc->constraint_list)
-+			return NOTIFY_BAD;
-+
-+		cpuc->excl_cntrs = allocate_excl_cntrs(cpu);
-+		if (!cpuc->excl_cntrs) {
-+			kfree(cpuc->constraint_list);
-+			kfree(cpuc->shared_regs);
-+			return NOTIFY_BAD;
-+		}
-+		cpuc->excl_thread_id = 0;
-+	}
- 
- 	return NOTIFY_OK;
- }
-@@ -2034,12 +2070,29 @@ static void intel_pmu_cpu_starting(int cpu)
- 
- 	if (x86_pmu.lbr_sel_map)
- 		cpuc->lbr_sel = &cpuc->shared_regs->regs[EXTRA_REG_LBR];
-+
-+	if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
-+		for_each_cpu(i, topology_thread_cpumask(cpu)) {
-+			struct intel_excl_cntrs *c;
-+
-+			c = per_cpu(cpu_hw_events, i).excl_cntrs;
-+			if (c && c->core_id == core_id) {
-+				cpuc->kfree_on_online[1] = cpuc->excl_cntrs;
-+				cpuc->excl_cntrs = c;
-+				cpuc->excl_thread_id = 1;
-+				break;
-+			}
-+		}
-+		cpuc->excl_cntrs->core_id = core_id;
-+		cpuc->excl_cntrs->refcnt++;
-+	}
+-	return s->buffer + s->seq.len;
++	return s->buffer + seq_buf_used(&s->seq);
  }
  
- static void intel_pmu_cpu_dying(int cpu)
- {
- 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 	struct intel_shared_regs *pc;
-+	struct intel_excl_cntrs *c;
+ /**
+diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+index 9ec5305d9da7..ce17f65268ed 100644
+--- a/kernel/trace/seq_buf.c
++++ b/kernel/trace/seq_buf.c
+@@ -328,7 +328,7 @@ int seq_buf_to_user(struct seq_buf *s, char __user *ubuf, int cnt)
+ 	if (s->len <= s->readpos)
+ 		return -EBUSY;
  
- 	pc = cpuc->shared_regs;
- 	if (pc) {
-@@ -2047,6 +2100,14 @@ static void intel_pmu_cpu_dying(int cpu)
- 			kfree(pc);
- 		cpuc->shared_regs = NULL;
+-	len = s->len - s->readpos;
++	len = seq_buf_used(s) - s->readpos;
+ 	if (cnt > len)
+ 		cnt = len;
+ 	ret = copy_to_user(ubuf, s->buffer + s->readpos, cnt);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 2dbc18e5f929..9023446b2c2b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -944,10 +944,10 @@ static ssize_t trace_seq_to_buffer(struct trace_seq *s, void *buf, size_t cnt)
+ {
+ 	int len;
+ 
+-	if (s->seq.len <= s->seq.readpos)
++	if (trace_seq_used(s) <= s->seq.readpos)
+ 		return -EBUSY;
+ 
+-	len = s->seq.len - s->seq.readpos;
++	len = trace_seq_used(s) - s->seq.readpos;
+ 	if (cnt > len)
+ 		cnt = len;
+ 	memcpy(buf, s->buffer + s->seq.readpos, cnt);
+@@ -4514,18 +4514,18 @@ waitagain:
+ 	trace_access_lock(iter->cpu_file);
+ 	while (trace_find_next_entry_inc(iter) != NULL) {
+ 		enum print_line_t ret;
+-		int len = iter->seq.seq.len;
++		int save_len = iter->seq.seq.len;
+ 
+ 		ret = print_trace_line(iter);
+ 		if (ret == TRACE_TYPE_PARTIAL_LINE) {
+ 			/* don't print partial lines */
+-			iter->seq.seq.len = len;
++			iter->seq.seq.len = save_len;
+ 			break;
+ 		}
+ 		if (ret != TRACE_TYPE_NO_CONSUME)
+ 			trace_consume(iter);
+ 
+-		if (iter->seq.seq.len >= cnt)
++		if (trace_seq_used(&iter->seq) >= cnt)
+ 			break;
+ 
+ 		/*
+@@ -4541,7 +4541,7 @@ waitagain:
+ 
+ 	/* Now copy what we have to the user */
+ 	sret = trace_seq_to_user(&iter->seq, ubuf, cnt);
+-	if (iter->seq.seq.readpos >= iter->seq.seq.len)
++	if (iter->seq.seq.readpos >= trace_seq_used(&iter->seq))
+ 		trace_seq_init(&iter->seq);
+ 
+ 	/*
+@@ -4598,14 +4598,13 @@ tracing_fill_pipe_page(size_t rem, struct trace_iterator *iter)
+ 			break;
+ 		}
+ 
+-		count = iter->seq.seq.len - save_len;
++		count = trace_seq_used(&iter->seq) - save_len;
+ 		if (rem < count) {
+ 			rem = 0;
+ 			iter->seq.seq.len = save_len;
+ 			break;
+ 		}
+ 
+-
+ 		if (ret != TRACE_TYPE_NO_CONSUME)
+ 			trace_consume(iter);
+ 		rem -= count;
+@@ -4683,13 +4682,13 @@ static ssize_t tracing_splice_read_pipe(struct file *filp,
+ 		/* Copy the data into the page, so we can start over. */
+ 		ret = trace_seq_to_buffer(&iter->seq,
+ 					  page_address(spd.pages[i]),
+-					  iter->seq.seq.len);
++					  trace_seq_used(&iter->seq));
+ 		if (ret < 0) {
+ 			__free_page(spd.pages[i]);
+ 			break;
+ 		}
+ 		spd.partial[i].offset = 0;
+-		spd.partial[i].len = iter->seq.seq.len;
++		spd.partial[i].len = trace_seq_used(&iter->seq);
+ 
+ 		trace_seq_init(&iter->seq);
  	}
-+	c = cpuc->excl_cntrs;
-+	if (c) {
-+		if (c->core_id == -1 || --c->refcnt == 0)
-+			kfree(c);
-+		cpuc->excl_cntrs = NULL;
-+		kfree(cpuc->constraint_list);
-+		cpuc->constraint_list = NULL;
-+	}
+@@ -5690,7 +5689,8 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
+ 	cnt = ring_buffer_read_events_cpu(trace_buf->buffer, cpu);
+ 	trace_seq_printf(s, "read events: %ld\n", cnt);
  
- 	fini_debug_store_on_cpu(cpu);
+-	count = simple_read_from_buffer(ubuf, count, ppos, s->buffer, s->seq.len);
++	count = simple_read_from_buffer(ubuf, count, ppos,
++					s->buffer, trace_seq_used(s));
+ 
+ 	kfree(s);
+ 
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 4d0067dd7f88..935cbea78532 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1044,7 +1044,8 @@ event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 	mutex_unlock(&event_mutex);
+ 
+ 	if (file)
+-		r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->seq.len);
++		r = simple_read_from_buffer(ubuf, cnt, ppos,
++					    s->buffer, trace_seq_used(s));
+ 
+ 	kfree(s);
+ 
+@@ -1210,7 +1211,8 @@ subsystem_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 	trace_seq_init(s);
+ 
+ 	print_subsystem_event_filter(system, s);
+-	r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->seq.len);
++	r = simple_read_from_buffer(ubuf, cnt, ppos,
++				    s->buffer, trace_seq_used(s));
+ 
+ 	kfree(s);
+ 
+@@ -1265,7 +1267,8 @@ show_header(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ 	trace_seq_init(s);
+ 
+ 	func(s);
+-	r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->seq.len);
++	r = simple_read_from_buffer(ubuf, cnt, ppos,
++				    s->buffer, trace_seq_used(s));
+ 
+ 	kfree(s);
+ 
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 6d1342ae7a44..ec35468349a7 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -1153,6 +1153,9 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
+ 			return ret;
+ 	}
+ 
++	if (trace_seq_has_overflowed(s))
++		goto out;
++
+ 	/* Strip ending newline */
+ 	if (s->buffer[s->seq.len - 1] == '\n') {
+ 		s->buffer[s->seq.len - 1] = '\0';
+@@ -1160,7 +1163,7 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
+ 	}
+ 
+ 	trace_seq_puts(s, " */\n");
+-
++ out:
+ 	return trace_handle_return(s);
  }
+ 
+diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
+index 087fa514069d..0c7aab4dd94f 100644
+--- a/kernel/trace/trace_seq.c
++++ b/kernel/trace/trace_seq.c
+@@ -30,7 +30,7 @@
+ #define TRACE_SEQ_BUF_LEFT(s) seq_buf_buffer_left(&(s)->seq)
+ 
+ /* How much buffer is written? */
+-#define TRACE_SEQ_BUF_USED(s) min((s)->seq.len, (unsigned int)(PAGE_SIZE - 1))
++#define TRACE_SEQ_BUF_USED(s) seq_buf_used(&(s)->seq)
+ 
+ /*
+  * trace_seq should work with being initialized with 0s.
 -- 
-1.9.1
+1.8.1.4
 
