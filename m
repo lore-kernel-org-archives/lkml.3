@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaKQMXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:23:44 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:40414 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbaKQMXm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:23:42 -0500
-Date: Mon, 17 Nov 2014 12:23:33 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: gyungoh@gmail.com
-Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
-        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v7 4/9] devicetree: backlight: Add new SKY81452
- backlight binding
-Message-ID: <20141117122333.GQ24004@x1>
-References: <1416213190-20935-1-git-send-email-jack.yoo@skyworksinc.com>
- <1416213190-20935-5-git-send-email-jack.yoo@skyworksinc.com>
+	id S1751996AbaKQMao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 07:30:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:42774 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632AbaKQMan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 07:30:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,402,1413270000"; 
+   d="scan'208";a="609062536"
+Date: Mon, 17 Nov 2014 14:30:39 +0200
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] spi: add support for DLN-2 USB-SPI adapter
+Message-ID: <20141117123039.GB2583@lpalcu-linux>
+References: <1415799490-27989-1-git-send-email-laurentiu.palcu@intel.com>
+ <1415799490-27989-2-git-send-email-laurentiu.palcu@intel.com>
+ <20141113122728.GA18285@localhost>
+ <20141113151721.GQ5826@lpalcu-linux>
+ <20141114105645.GB18285@localhost>
+ <20141117103300.GA2583@lpalcu-linux>
+ <20141117115316.GA19375@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416213190-20935-5-git-send-email-jack.yoo@skyworksinc.com>
+In-Reply-To: <20141117115316.GA19375@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Nov 2014, gyungoh@gmail.com wrote:
-
-> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+On Mon, Nov 17, 2014 at 12:53:16PM +0100, Johan Hovold wrote:
+> On Mon, Nov 17, 2014 at 12:33:01PM +0200, Laurentiu Palcu wrote:
+> > Hi Johan,
+> > 
+> > On Fri, Nov 14, 2014 at 11:56:45AM +0100, Johan Havold wrote:
+> > > On Thu, Nov 13, 2014 at 05:17:21PM +0200, Laurentiu Palcu wrote:
+> > > > Hi Johan,
+> > > > 
+> > > > On Thu, Nov 13, 2014 at 01:27:28PM +0100, Johan Havold wrote:
+> > > > > On Wed, Nov 12, 2014 at 03:38:09PM +0200, Laurentiu Palcu wrote:
 > 
-> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> ---
-> Changes v7:
-> Nothing
+> > > And since there's no gain from using the global buffer why not simply
+> > > use stack allocated ones here as well (e.g. for both tx and rx above)?
+> >
+> > However, I will give this a shot though... Sounds reasonable and I could
+> > probably lose the struct constructs too if the struct contains just
+> > one field.
 > 
-> Changes v6:
-> Nothing
-> 
-> Changes v5:
-> Nothing
-> 
-> Changes v4:
-> Nothing
-> 
-> Changes v3:
-> Nothing
-> 
-> Changes v2:
-> Added reg attribute for I2C slave address
-> 
->  .../video/backlight/sky81452-backlight.txt         | 24 ++++++++++++++++++++++
->  1 file changed, 24 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-> new file mode 100644
-> index 0000000..2c2d947
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-> @@ -0,0 +1,24 @@
-> +SKY81452-backlight bindings
-> +
-> +Required properties:
-> +- compatible		: Must be "skyworks,sky81452-backlight"
-> +
-> +Optional properties:
-> +- name			: Name of backlight device. Default is 'lcd-backlight'.
-> +- gpio-enable		: GPIO to use to EN pin.
-> +- enable		: Enable mask for current sink channel 1 to 6.
-> +- ignore-pwm		: Ignore both PWM input
-> +- dpwm-mode		: Enable DPWM dimming mode, otherwise Analog dimming mode
-> +- phase-shift		: Enable phase shift mode
-> +- ovp-level		: Over-voltage protection level. Should be between 14 or 28V.
-> +- short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
-> +- boost-current-limit	: It should be one of 800, 1100 and 1500mA.
+> You might want to keep the structs for single-field messages for
+> consistency reasons (also used in the other dln2 subdrivers).
+Ok, fair enough.
 
-These are going to need some serious reviewing from the DT guys.  Each
-property should either have a vendor prefix or be made generic and
-placed in the generic DT documentation for the subsystem.  The name
-'enable' is far to generic we don't tend to put masks in DT.  There
-is already a generic property for GPIO enable pins.
-
-> +Example:
-> +
-> +	backlight {
-> +		compatible = "skyworks,sky81452-backlight";
-> +		name = "pwm-backlight";
-> +		enable = <0x3F>;
-
-Lower case.
-
-> +		ignore-pwm;
-
-You should probably demonstrate more of your properties here.
-
-> +	};
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+laurentiu
