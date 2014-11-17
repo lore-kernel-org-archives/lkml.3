@@ -1,142 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaKQNyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:54:49 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49102 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753349AbaKQNpd (ORCPT
+	id S1753992AbaKQNyr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:54:47 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41288 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365AbaKQNpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:33 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 39/61] dmaengine: sh: Split device_control
-Date: Mon, 17 Nov 2014 14:42:33 +0100
-Message-Id: <1416231775-31252-40-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 17 Nov 2014 08:45:36 -0500
+Date: Mon, 17 Nov 2014 16:45:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] kernel-audit: Deletion of an unnecessary check
+ before the function call "audit_log_end"
+Message-ID: <20141117134515.GE4905@mwanda>
+References: <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54687F1A.1010809@users.sourceforge.net>
+ <20141116111023.GA4905@mwanda>
+ <20141116111446.GA4956@mwanda>
+ <54688F15.9070703@users.sourceforge.net>
+ <20141117073408.GC4905@mwanda>
+ <5469B836.8030507@users.sourceforge.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5469B836.8030507@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Super-H DMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+On Mon, Nov 17, 2014 at 09:56:22AM +0100, SF Markus Elfring wrote:
+> > You removed the statement from "if (foo) kfree_fsm(foo);" so now it
+> > prints a warning.
+> > 
+> > drivers/s390/net/fsm.c
+> 
+> Would it be better to continue the clarification of affected implementation details
+> under the discussion topic "s390/net: Deletion of unnecessary checks before two function calls"?
+> 
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
- drivers/dma/sh/shdma-base.c | 72 +++++++++++++++++++++------------------------
- 1 file changed, 33 insertions(+), 39 deletions(-)
+What do you want me to clarify?  Do you still not see the bug?
 
-diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
-index 3a2adb131d46..8ee383d339a5 100644
---- a/drivers/dma/sh/shdma-base.c
-+++ b/drivers/dma/sh/shdma-base.c
-@@ -729,57 +729,50 @@ static struct dma_async_tx_descriptor *shdma_prep_dma_cyclic(
- 	return desc;
- }
- 
--static int shdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			  unsigned long arg)
-+static int shdma_terminate_all(struct dma_chan *chan)
- {
- 	struct shdma_chan *schan = to_shdma_chan(chan);
- 	struct shdma_dev *sdev = to_shdma_dev(chan->device);
- 	const struct shdma_ops *ops = sdev->ops;
--	struct dma_slave_config *config;
- 	unsigned long flags;
--	int ret;
- 
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		spin_lock_irqsave(&schan->chan_lock, flags);
--		ops->halt_channel(schan);
-+	spin_lock_irqsave(&schan->chan_lock, flags);
-+	ops->halt_channel(schan);
- 
--		if (ops->get_partial && !list_empty(&schan->ld_queue)) {
--			/* Record partial transfer */
--			struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
--						struct shdma_desc, node);
--			desc->partial = ops->get_partial(schan, desc);
--		}
-+	if (ops->get_partial && !list_empty(&schan->ld_queue)) {
-+		/* Record partial transfer */
-+		struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
-+							   struct shdma_desc, node);
-+		desc->partial = ops->get_partial(schan, desc);
-+	}
- 
--		spin_unlock_irqrestore(&schan->chan_lock, flags);
-+	spin_unlock_irqrestore(&schan->chan_lock, flags);
- 
--		shdma_chan_ld_cleanup(schan, true);
--		break;
--	case DMA_SLAVE_CONFIG:
--		/*
--		 * So far only .slave_id is used, but the slave drivers are
--		 * encouraged to also set a transfer direction and an address.
--		 */
--		if (!arg)
--			return -EINVAL;
--		/*
--		 * We could lock this, but you shouldn't be configuring the
--		 * channel, while using it...
--		 */
--		config = (struct dma_slave_config *)arg;
--		ret = shdma_setup_slave(schan, config->slave_id,
--					config->direction == DMA_DEV_TO_MEM ?
--					config->src_addr : config->dst_addr);
--		if (ret < 0)
--			return ret;
--		break;
--	default:
--		return -ENXIO;
--	}
-+	shdma_chan_ld_cleanup(schan, true);
- 
- 	return 0;
- }
- 
-+static int shdma_config(struct dma_chan *chan,
-+			struct dma_slave_config *config)
-+{
-+	struct shdma_chan *schan = to_shdma_chan(chan);
-+
-+	/*
-+	 * So far only .slave_id is used, but the slave drivers are
-+	 * encouraged to also set a transfer direction and an address.
-+	 */
-+	if (!config)
-+		return -EINVAL;
-+	/*
-+	 * We could lock this, but you shouldn't be configuring the
-+	 * channel, while using it...
-+	 */
-+	return shdma_setup_slave(schan, config->slave_id,
-+				 config->direction == DMA_DEV_TO_MEM ?
-+				 config->src_addr : config->dst_addr);
-+}
-+
- static void shdma_issue_pending(struct dma_chan *chan)
- {
- 	struct shdma_chan *schan = to_shdma_chan(chan);
-@@ -1002,7 +995,8 @@ int shdma_init(struct device *dev, struct shdma_dev *sdev,
- 	/* Compulsory for DMA_SLAVE fields */
- 	dma_dev->device_prep_slave_sg = shdma_prep_slave_sg;
- 	dma_dev->device_prep_dma_cyclic = shdma_prep_dma_cyclic;
--	dma_dev->device_control = shdma_control;
-+	dma_dev->device_config = shdma_config;
-+	dma_dev->device_terminate_all = shdma_terminate_all;
- 
- 	dma_dev->dev = dev;
- 
--- 
-2.1.1
+regards,
+dan carpenter
 
