@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaKQVzq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:55:46 -0500
-Received: from mga14.intel.com ([192.55.52.115]:28442 "EHLO mga14.intel.com"
+	id S1752865AbaKQV40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 16:56:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52862 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaKQVzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:55:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="417811886"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>
-CC: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphCABQ+BAIAAEq4AgAAB1ACAAACVgP//kExA
-Date: Mon, 17 Nov 2014 21:55:42 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
- <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
- <20141112103011.GA16807@pd.tnic>
- <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
- <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
- <20141117185030.GA25157@pd.tnic>
- <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
- <20141117200354.GB25157@pd.tnic>
- <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
-In-Reply-To: <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1752685AbaKQV4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 16:56:24 -0500
+Message-ID: <546A6EB2.6020304@redhat.com>
+Date: Mon, 17 Nov 2014 13:54:58 -0800
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        donald.c.skidmore@intel.com, matthew.vick@intel.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, nic_swsd@realtek.com,
+        Will Deacon <will.deacon@arm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Tony Luck <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb()
+ and fast_wmb()
+References: <20141117171005.22333.96544.stgit@ahduyck-server>	<20141117171812.22333.90395.stgit@ahduyck-server> <CA+55aFxZ9dhB074p3OAQLyQ53TuRjVOo33h6OOda1soh-9xxnQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxZ9dhB074p3OAQLyQ53TuRjVOo33h6OOda1soh-9xxnQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAHLtraZ016182
 
->> However, I'd like to be very sure this thing doesn't introduce any
->> regressions to the MCA code. So even if Tony's testing passes, I'd like
->> to be very conservative here and stress it more than usual. Because once
->> this thing hits upstream and stuff starts breaking, it'll be a serious
->> PITA reverting it.
 
-The test I left running on Friday was just running the stack-switch asm
-patch, without any mce.c changes.  It died at 16000 iterations with the
-mce synchronization issue.
+On 11/17/2014 12:52 PM, Linus Torvalds wrote:
+> On Mon, Nov 17, 2014 at 9:18 AM, Alexander Duyck
+> <alexander.h.duyck@redhat.com> wrote:
+>> There are a number of situations where the mandatory barriers rmb() and
+>> wmb() are used to order memory/memory operations in the device drivers
+>> and those barriers are much heavier than they actually need to be.
+> Ugh. I absolutely despise the name.
+>
+> It's not "fast". It's just limited. It's the same as "smp_*mb()", in
+> that it works on cacheable memory, but it actually stays around even
+> for non-SMP builds.
+>
+> So I think the name is actively misleading.
+>
+> Naming should be about what it does, not about some kind of PR thing
+> that confuses people into thinking it's "better".
+>
+> Maybe "dma_*mb()" would be acceptable, and ends up having the same
+> naming convention as "smb_*mb()", and explains what it's about.
 
-This morning I started a new test with all the mce changes (no TIF_MCE_NOTIFY,
-just process the recovery in the tail of do_machine_check().
+What would you think of the name "coherent_*mb()"?  I would prefer to 
+avoid dma in the name since, at least in my mind, that implies MMIO.
 
-It just passed the 18000 point, and it still going.  In addition I've been throwing
-the odd "make -j144" kernel build at the machine so we check out the non-idle
-paths too.
+It also ties in well with dma_alloc_coherent/dma_free_coherent which is 
+what would typically be used to allocate the memory we would be using 
+the barrier to protect anyway.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> And yes, in the same spirit, it would probably be good to try to
+> eventually get rid of the plain "*mb()" functions, and perhaps call
+> them "mmio_*mb()" to clarify that they are about ordering memory wrt
+> mmio.
+>
+> Hmm?
+>
+>                          Linus
+
+I will work on pulling all of the coherent barrier cases out of using 
+the plain "*mb()" calls first.  We need to sort that out before we could 
+look at renaming the plain barrier functions.
+
+- Alex
