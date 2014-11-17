@@ -1,78 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaKQNkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:40:49 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48660 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752266AbaKQNfy (ORCPT
+	id S1752647AbaKQNm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:42:57 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:38450 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244AbaKQNmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:35:54 -0500
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, michal.simek@xilinx.com,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v8 04/13] ARM: dts: berlin: add a required reset property in the chip controller node
-Date: Mon, 17 Nov 2014 14:35:38 +0100
-Message-Id: <1416231347-27193-5-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com>
+	Mon, 17 Nov 2014 08:42:55 -0500
+Message-ID: <5469FB17.4030603@linaro.org>
+Date: Mon, 17 Nov 2014 14:41:43 +0100
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Wu, Feng" <feng.wu@intel.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+CC: "eric.auger@st.com" <eric.auger@st.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "joel.schopp@amd.com" <joel.schopp@amd.com>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        "john.liuli@huawei.com" <john.liuli@huawei.com>
+Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
+References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>	 <1409691941.3804.133.camel@ul30vt.home> <20140911031044.GK2784@lvm> <1410412173.2982.288.camel@ul30vt.home> <E959C4978C3B6342920538CF579893F002291EBC@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F002291EBC@SHSMSX104.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The chip controller node now also describes the Marvell Berlin reset
-controller. Add the required 'reset-cells' property.
+Hi Feng,
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- arch/arm/boot/dts/berlin2.dtsi   | 1 +
- arch/arm/boot/dts/berlin2cd.dtsi | 1 +
- arch/arm/boot/dts/berlin2q.dtsi  | 1 +
- 3 files changed, 3 insertions(+)
+I will submit a PATCH v3 release end of this week.
 
-diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-index 9d7c810ebd0b..d7e81e124de0 100644
---- a/arch/arm/boot/dts/berlin2.dtsi
-+++ b/arch/arm/boot/dts/berlin2.dtsi
-@@ -249,6 +249,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index cc1df65da504..68f7032b4686 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -231,6 +231,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2cd-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 891d56b03922..2de8d6f8973c 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -349,6 +349,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2q-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>, <0xdd0170 0x10>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
--- 
-2.1.0
+Best Regards
+
+Eric
+
+On 11/17/2014 12:25 PM, Wu, Feng wrote:
+> 
+> 
+>> -----Original Message-----
+>> From: linux-kernel-owner@vger.kernel.org
+>> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Alex Williamson
+>> Sent: Thursday, September 11, 2014 1:10 PM
+>> To: Christoffer Dall
+>> Cc: Eric Auger; eric.auger@st.com; marc.zyngier@arm.com;
+>> linux-arm-kernel@lists.infradead.org; kvmarm@lists.cs.columbia.edu;
+>> kvm@vger.kernel.org; joel.schopp@amd.com; kim.phillips@freescale.com;
+>> paulus@samba.org; gleb@kernel.org; pbonzini@redhat.com;
+>> linux-kernel@vger.kernel.org; patches@linaro.org; will.deacon@arm.com;
+>> a.motakis@virtualopensystems.com; a.rigo@virtualopensystems.com;
+>> john.liuli@huawei.com
+>> Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
+>>
+>> On Thu, 2014-09-11 at 05:10 +0200, Christoffer Dall wrote:
+>>> On Tue, Sep 02, 2014 at 03:05:41PM -0600, Alex Williamson wrote:
+>>>> On Mon, 2014-09-01 at 14:52 +0200, Eric Auger wrote:
+>>>>> This RFC proposes an integration of "ARM: Forwarding physical
+>>>>> interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
+>>>>> KVM.
+>>>>>
+>>>>> It enables to transform a VFIO platform driver IRQ into a forwarded
+>>>>> IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
+>>>>> switch can be avoided on guest virtual IRQ completion. Before this
+>>>>> patch, a maintenance IRQ was triggered on the virtual IRQ completion.
+>>>>>
+>>>>> When the IRQ is forwarded, the VFIO platform driver does not need to
+>>>>> disable the IRQ anymore. Indeed when returning from the IRQ handler
+>>>>> the IRQ is not deactivated. Only its priority is lowered. This means
+>>>>> the same IRQ cannot hit before the guest completes the virtual IRQ
+>>>>> and the GIC automatically deactivates the corresponding physical IRQ.
+>>>>>
+>>>>> Besides, the injection still is based on irqfd triggering. The only
+>>>>> impact on irqfd process is resamplefd is not called anymore on
+>>>>> virtual IRQ completion since this latter becomes "transparent".
+>>>>>
+>>>>> The current integration is based on an extension of the KVM-VFIO
+>>>>> device, previously used by KVM to interact with VFIO groups. The
+>>>>> patch serie now enables KVM to directly interact with a VFIO
+>>>>> platform device. The VFIO external API was extended for that purpose.
+>>>>>
+>>>>> Th KVM-VFIO device can get/put the vfio platform device, check its
+>>>>> integrity and type, get the IRQ number associated to an IRQ index.
+>>>>>
+>>>>> The IRQ forward programming is architecture specific (virtual interrupt
+>>>>> controller programming basically). However the whole infrastructure is
+>>>>> kept generic.
+>>>>>
+>>>>> from a user point of view, the functionality is provided through new
+>>>>> KVM-VFIO device commands,
+>> KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
+>>>>> and the capability can be checked with KVM_HAS_DEVICE_ATTR.
+>>>>> Assignment can only be changed when the physical IRQ is not active.
+>>>>> It is the responsability of the user to do this check.
+>>>>>
+>>>>> This patch serie has the following dependencies:
+>>>>> - "ARM: Forwarding physical interrupts to a guest VM"
+>>>>>   (http://lwn.net/Articles/603514/) in
+>>>>> - [PATCH v3] irqfd for ARM
+>>>>> - and obviously the VFIO platform driver serie:
+>>>>>   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
+>>>>>   https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
+>>>>>
+>>>>> Integrated pieces can be found at
+>>>>> ssh://git.linaro.org/people/eric.auger/linux.git
+>>>>> on branch 3.17rc3_irqfd_forward_integ_v2
+>>>>>
+>>>>> This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
+>>>>>
+>>>>> v1 -> v2:
+>>>>> - forward control is moved from architecture specific file into generic
+>>>>>   vfio.c module.
+>>>>>   only kvm_arch_set_fwd_state remains architecture specific
+>>>>> - integrate Kim's patch which enables KVM-VFIO for ARM
+>>>>> - fix vgic state bypass in vgic_queue_hwirq
+>>>>> - struct kvm_arch_forwarded_irq moved from
+>> arch/arm/include/uapi/asm/kvm.h
+>>>>>   to include/uapi/linux/kvm.h
+>>>>>   also irq_index renamed into index and guest_irq renamed into gsi
+>>>>> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
+>>>>> - vfio_external_get_base_device renamed into vfio_external_base_device
+>>>>> - vfio_external_get_type removed
+>>>>> - kvm_vfio_external_get_base_device renamed into
+>> kvm_vfio_external_base_device
+>>>>> - __KVM_HAVE_ARCH_KVM_VFIO renamed into
+>> __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
+>>>>>
+>>>>> Eric Auger (8):
+>>>>>   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
+>>>>>     IRQ
+>>>>>   KVM: ARM: VGIC: add forwarded irq rbtree lock
+>>>>>   VFIO: platform: handler tests whether the IRQ is forwarded
+>>>>>   KVM: KVM-VFIO: update user API to program forwarded IRQ
+>>>>>   VFIO: Extend external user API
+>>>>>   KVM: KVM-VFIO: add new VFIO external API hooks
+>>>>>   KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ
+>> forwarding
+>>>>>     control
+>>>>>   KVM: KVM-VFIO: ARM forwarding control
+>>>>>
+>>>>> Kim Phillips (1):
+>>>>>   ARM: KVM: Enable the KVM-VFIO device
+>>>>>
+>>>>>  Documentation/virtual/kvm/devices/vfio.txt |  26 ++
+>>>>>  arch/arm/include/asm/kvm_host.h            |   7 +
+>>>>>  arch/arm/kvm/Kconfig                       |   1 +
+>>>>>  arch/arm/kvm/Makefile                      |   4 +-
+>>>>>  arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
+>>>>>  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
+>>>>>  drivers/vfio/vfio.c                        |  24 ++
+>>>>>  include/kvm/arm_vgic.h                     |   1 +
+>>>>>  include/linux/kvm_host.h                   |  27 ++
+>>>>>  include/linux/vfio.h                       |   3 +
+>>>>>  include/uapi/linux/kvm.h                   |   9 +
+>>>>>  virt/kvm/arm/vgic.c                        |  59 +++-
+>>>>>  virt/kvm/vfio.c                            | 497
+>> ++++++++++++++++++++++++++++-
+>>>>>  13 files changed, 733 insertions(+), 17 deletions(-)
+>>>>>  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
+>>>>>
+>>>>
+>>>> Have we ventured too far in the other direction?  I suppose what I was
+>>>> hoping to see was something more like:
+>>>>
+>>>> 	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:{
+>>>>
+>>>> 		/* get vfio_device */
+>>>>
+>>>> 		/* get mutex */
+>>>>
+>>>> 		/* verify device+irq isn't already forwarded */
+>>>>
+>>>> 		/* allocate device/forwarded irq */
+>>>>
+>>>> 		/* get struct device */
+>>>>
+>>>> 		/* callout to arch code passing struct device, gsi, ... */
+>>>>
+>>>> 		/* if success, add to kv, else free and error */
+>>>>
+>>>> 		/* mutex unlock */
+>>>> 	}
+>>>
+>>> I think that's essentially what this patch set is trying to do, but
+>>> there are just too many complicated intertwining cases right now that
+>>> makes the code hard to read.
+>>>
+>>>>
+>>>> Exposing the internal mutex out to arch code, as in v1, was an
+>>>> indication that we were pushing too much out to arch code, but including
+>>>> platform_device.h into virt/kvm/vfio.c tells me we're still not
+>>>> abstracting at the right point.  Thanks,
+>>>>
+>>> I raised my eyebrows over the platform device bus thingy here as well,
+>>> but on the other hand, there's nothing ARM-specific about referring to
+>>> the platform device bus.
+>>>
+>>> I think perhaps it just has to be made more clear that the generic code
+>>> deals with translating the device resources in the necessary way, and
+>>> currently it only supports vfio-platform devices?
+>>
+>> Ok, you're probably right, looking at it again it is closer than I
+>> thought.  At the same time, the use of platform device in
+>> virt/kvm/vfio.c is pointless and can easily be pushed out to the arch
+>> code as just another error return case.  vfio.c doesn't need to be aware
+>> of hwirq.  The rest of the code is just overly complicated, with three
+>> different cleanup functions and validation function bloat.  Thanks,
+>>
+>> Alex
+> 
+> 
+> Hi Alex, Could you please tell what is the current status of this patch set.
+> As you mentioned in another thread, something(such as, kvm_vfio_device_get_external_user(), etc.)
+> in this patch set can be leveraged for VT-d Posted-interrtups.
+> 
+> Thanks,
+> Feng
+> 
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
