@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaKQLiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:38:08 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:34068 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548AbaKQLiG (ORCPT
+	id S1752660AbaKQLkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:40:43 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46009 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaKQLkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:38:06 -0500
-Date: Mon, 17 Nov 2014 11:37:34 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use
- setgroups to drop groups
-Message-ID: <20141117113734.396798e6@lxorguk.ukuu.org.uk>
-In-Reply-To: <20141116045232.GB18880@thin>
-References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
-	<0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
-	<87d28osceg.fsf@x220.int.ebiederm.org>
-	<20141115192924.GB19060@thin>
-	<CALCETrUM=GqsOumTmDMF4B5GS1w=x56t41eE-2xW1bBOfUz02w@mail.gmail.com>
-	<20141115202042.GA20900@thin>
-	<20141116020511.GB5507@thunk.org>
-	<6C690A2C-8EB1-421A-94C3-9803AFB95760@joshtriplett.org>
-	<20141116034005.GC5507@thunk.org>
-	<20141116045232.GB18880@thin>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Mon, 17 Nov 2014 06:40:41 -0500
+Date: Mon, 17 Nov 2014 12:40:35 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
+ for tegra driver
+Message-ID: <20141117114034.GE25699@ulmo>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SWTRyWv/ijrBap1m"
+Content-Disposition: inline
+In-Reply-To: <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> optional), I can do that too.  The security model of "having a group
-> gives you less privilege than not having it" seems crazy, but
-> nonetheless I can see a couple of easy ways that we can avoid breaking
 
-It's an old pattern of use that makes complete sense in a traditional
-Unix permission world because it's the only way to do "exclude {list}"
-nicely. Our default IMHO shouldn't break this.
+--SWTRyWv/ijrBap1m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> that pattern, no_new_privs being one of them.  I'd like to make sure
-> that nobody sees any other real-world corner case that unprivileged
-> setgroups would break.
+On Thu, Nov 13, 2014 at 06:02:42PM +0100, Lukasz Majewski wrote:
+> When CPU freq is used as a thermal zone cooling device, one needs to wait
+> until cpufreq subsystem is properly initialized.
+>=20
+> This code is similar to the one already available in imx_thermal.c file.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> ---
+>  drivers/thermal/tegra_soctherm.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+>=20
+> diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soc=
+therm.c
+> index 70f7e9e..9c5aaa4 100644
+> --- a/drivers/thermal/tegra_soctherm.c
+> +++ b/drivers/thermal/tegra_soctherm.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/reset.h>
+>  #include <linux/thermal.h>
+> +#include <linux/cpufreq.h>
+> =20
+>  #include <soc/tegra/fuse.h>
+> =20
+> @@ -346,6 +347,12 @@ static int tegra_soctherm_probe(struct platform_devi=
+ce *pdev)
+> =20
+>  	const struct tegra_tsensor *tsensors =3D t124_tsensors;
+> =20
+> +#ifdef CONFIG_CPU_THERMAL
+> +	if (!cpufreq_get_current_driver()) {
+> +		dev_dbg(&pdev->dev, "no cpufreq driver!");
 
-Barring the usual risk of people doing improper error checking I don't
-see one immediately.
+Shouldn't this rather be dev_err() or dev_warn() to give at least some
+clue as to the cause?
 
-For containers I think it actually makes sense that the sysctl can be
-applied per container anyway.
+Thierry
 
-Alan
+--SWTRyWv/ijrBap1m
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUad6yAAoJEN0jrNd/PrOhJA8P/0ENnloNjC6BTahtRDY/neyO
+Pp8jazZYQ6i1FeBqGXD6sa8ccsRzzLI0K5MuI+oaKnYyw8w3qJtUtIRs4p3lyvV0
+dyCuyx5Twn8UrJHZj76q6Zv1NHUiulCyqZOxqjljNjuGtptfWBUDxjhtWNINIqFq
+G4Uyr0dBIF485xi03UApagiQ5dQFeIFNjqkB6e56s29ztzf3NmHcjkjMs8pjLtef
+cgOoQSDGqdE1ZqFezo0JFu6KRMUkVBUbwZyuWNM4n/2hlpRNNonsmPg8nnjYv6LC
+MjP3H7cFZUC1sQDymj5as5zdBmqRpgxLlQS9Vsw+PDHCKgowKzQRTVFHPLEsZJpY
+4IFKI+QvErAMJqNPC8O680WFBttzfZY5EekxsVIyE/Wse330/Lf+833wNflsLE9W
+t1bSeLKxnKgYpVoDXq0/viEuChdah6eZNa+zw5q/KpvitV3rYSyFjgkwfFWm29Fi
+CeYHJ7glR4TymHDFfOM7E8FuleHOzMwYN9iSO0lBzurqprSHlA+VMOlvrx6lMeDe
+EVXcq/SqMPnLo47Zjk3CLvg5+Sowd47Gk075yLgyYzocWiJ1yPP8Zq24IjsI7rUT
+Yv+UHj4q7+AlCefYkEmb7ftoSzgvXY8VsRomrBxlciErwme5/6OPP77wm/CODu18
+P3OvVXHJVVe5aZl2OTCG
+=XUiC
+-----END PGP SIGNATURE-----
+
+--SWTRyWv/ijrBap1m--
