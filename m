@@ -1,39 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaKQJYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:24:07 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:36955 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaKQJYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:24:04 -0500
-Message-ID: <5469BEAF.9030707@redhat.com>
-Date: Mon, 17 Nov 2014 10:23:59 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751923AbaKQJZB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:25:01 -0500
+Received: from sym2.noone.org ([178.63.92.236]:55382 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751635AbaKQJZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 04:25:00 -0500
+Date: Mon, 17 Nov 2014 10:24:56 +0100
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Dmitry Torokhov <dtor@chromium.org>
+Cc: Ley Foon Tan <lftan@altera.com>, nios2-dev@lists.rocketboards.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nios2: fix error handling of irq_of_parse_and_map
+Message-ID: <20141117092456.GA3247@distanz.ch>
+References: <20141114220419.GA32497@dtor-ws>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.comp.emulators.kvm.devel
-To: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-CC: imammedo@redhat.com
-Subject: Re: [PATCH 0/3] KVM: simplification to the memslots code
-References: <1415963522-5255-1-git-send-email-pbonzini@redhat.com> <546955BF.6020104@lab.ntt.co.jp>
-In-Reply-To: <546955BF.6020104@lab.ntt.co.jp>
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114220419.GA32497@dtor-ws>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014-11-14 at 23:04:19 +0100, Dmitry Torokhov <dtor@chromium.org> wrote:
+> Return value of irq_of_parse_and_map() is unsigned int, with 0
+> indicating failure, so testing for negative result never works.
+> 
+> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
 
+Reviewed-by: Tobias Klauser <tklauser@distanz.ch>
 
-On 17/11/2014 02:56, Takuya Yoshikawa wrote:
->> > here are a few small patches that simplify __kvm_set_memory_region
->> > and associated code.  Can you please review them?
-> Ah, already queued.  Sorry for being late to respond.
-
-While they are not in kvm/next, there's time to add Reviewed-by's and
-all that.  kvm/queue basically means "I want Fengguang to compile-test
-them, some testing done on x86_64".
-
-Paolo
+Thanks for catching this.
