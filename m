@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaKQLCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:02:08 -0500
+	id S1753136AbaKQLCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:02:31 -0500
 Received: from mga02.intel.com ([134.134.136.20]:1455 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752351AbaKQLAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:00:23 -0500
+	id S1752914AbaKQLAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 06:00:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="487988997"
+   d="scan'208";a="487988957"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
@@ -18,12 +18,12 @@ To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [Patch V3 4/9] irqdomain: Introduce helper function irq_domain_add_hierarchy()
-Date: Mon, 17 Nov 2014 19:03:17 +0800
-Message-Id: <1416222202-28002-5-git-send-email-jiang.liu@linux.intel.com>
+Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [Patch V3 2/9] irqdomain: Use consistent prototype for irq_domain_free_irqs_*
+Date: Mon, 17 Nov 2014 19:03:15 +0800
+Message-Id: <1416222202-28002-3-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1416222202-28002-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1416222202-28002-1-git-send-email-jiang.liu@linux.intel.com>
@@ -31,61 +31,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper function irq_domain_add_hierarchy(), which creates
-a linear irqdomain if parameter 'size' is not zero, otherwise creates
-a tree irqdomain.
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
 
+When using irq_domain_free_irqs_top() directly in irq_domain_ops, gcc
+generate the following warnings:
+
+../drivers/irqchip/irq-gic.c:879:2: warning: initialization from incompatible pointer type [enabled by default]
+../drivers/irqchip/irq-gic.c:879:2: warning: (near initialization for 'gic_irq_domain_hierarchy_ops.free') [enabled by default]
+
+Change to use consistent prototype for all irq_domain_free_irqs*
+
+Better to fold this into "irqdomain: Introduce new interfaces to
+support hierarchy irqdomains".
+
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- include/linux/irqdomain.h |    4 ++++
- kernel/irq/irqdomain.c    |   19 +++++++++++++++++++
- 2 files changed, 23 insertions(+)
+ include/linux/irqdomain.h |    9 +++++----
+ kernel/irq/irqdomain.c    |    8 ++++----
+ 2 files changed, 9 insertions(+), 8 deletions(-)
 
 diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index ad92b0b15945..30e8c753fa98 100644
+index 640a1ec54772..fbe542967c20 100644
 --- a/include/linux/irqdomain.h
 +++ b/include/linux/irqdomain.h
-@@ -248,6 +248,10 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d, struct device_node *ctrlr,
- extern struct irq_data *irq_domain_get_irq_data(struct irq_domain *domain,
- 						unsigned int virq);
- #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-+extern struct irq_domain *irq_domain_add_hierarchy(struct irq_domain *parent,
-+			unsigned int flags, unsigned int size,
-+			struct device_node *node,
-+			const struct irq_domain_ops *ops, void *host_data);
- extern int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
- 				   unsigned int nr_irqs, int node, void *arg,
- 				   bool realloc);
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 03fc7d018324..73c66d6f9ffc 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -742,6 +742,25 @@ static int irq_domain_alloc_descs(int virq, unsigned int cnt,
+@@ -270,12 +270,13 @@ extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
+ 				void *handler_data, const char *handler_name);
+ extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
+ extern void irq_domain_free_irqs_common(struct irq_domain *domain,
+-					int virq, int nr_irqs);
++					unsigned int virq,
++					unsigned int nr_irqs);
+ extern void irq_domain_free_irqs_top(struct irq_domain *domain,
+-				     int virq, int nr_irqs);
++				     unsigned int virq, unsigned int nr_irqs);
+ 
+ static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
+-				int irq_base, unsigned int nr_irqs, void *arg)
++			unsigned int irq_base, unsigned int nr_irqs, void *arg)
+ {
+ 	if (domain->parent && domain->parent->ops->alloc)
+ 		return domain->parent->ops->alloc(domain->parent, irq_base,
+@@ -284,7 +285,7 @@ static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
  }
  
- #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-+struct irq_domain *irq_domain_add_hierarchy(struct irq_domain *parent,
-+			unsigned int flags, unsigned int size,
-+			struct device_node *node,
-+			const struct irq_domain_ops *ops, void *host_data)
-+{
-+	struct irq_domain *domain;
-+
-+	if (size)
-+		domain = irq_domain_add_linear(node, size, ops, host_data);
-+	else
-+		domain = irq_domain_add_tree(node, ops, host_data);
-+	if (domain) {
-+		domain->parent = parent;
-+		domain->flags |= flags;
-+	}
-+
-+	return domain;
-+}
-+
- static void irq_domain_insert_irq(int virq)
+ static inline void irq_domain_free_irqs_parent(struct irq_domain *domain,
+-					int irq_base, unsigned int nr_irqs)
++				unsigned int irq_base, unsigned int nr_irqs)
  {
- 	struct irq_data *data;
+ 	if (domain->parent && domain->parent->ops->free)
+ 		domain->parent->ops->free(domain->parent, irq_base, nr_irqs);
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 8b0eddee0b21..705fb573e509 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -899,8 +899,8 @@ void irq_domain_reset_irq_data(struct irq_data *irq_data)
+ 	irq_data->chip_data = NULL;
+ }
+ 
+-void irq_domain_free_irqs_common(struct irq_domain *domain, int virq,
+-				 int nr_irqs)
++void irq_domain_free_irqs_common(struct irq_domain *domain, unsigned int virq,
++				 unsigned int nr_irqs)
+ {
+ 	int i;
+ 	struct irq_data *irq_data;
+@@ -913,8 +913,8 @@ void irq_domain_free_irqs_common(struct irq_domain *domain, int virq,
+ 	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
+ }
+ 
+-void irq_domain_free_irqs_top(struct irq_domain *domain, int virq,
+-			      int nr_irqs)
++void irq_domain_free_irqs_top(struct irq_domain *domain, unsigned int virq,
++			      unsigned int nr_irqs)
+ {
+ 	int i;
+ 
 -- 
 1.7.10.4
 
