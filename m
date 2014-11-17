@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290AbaKQPay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:30:54 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:57057 "EHLO
+	id S1752717AbaKQPbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:31:35 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:57052 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaKQPar (ORCPT
+	with ESMTP id S1751891AbaKQPap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:30:47 -0500
+	Mon, 17 Nov 2014 10:30:45 -0500
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Doug Anderson <dianders@chromium.org>,
@@ -14,9 +14,9 @@ Cc: Doug Anderson <dianders@chromium.org>,
         Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
         Gwendal Grignou <gwendal@google.com>, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 3/3] mfd: cros_ec: Expose Chrome OS Lightbar to users
-Date: Mon, 17 Nov 2014 16:30:13 +0100
-Message-Id: <1416238213-15263-4-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH 2/3] mfd: cros_ec: Create sysfs attributes for the ChromeOS EC.
+Date: Mon, 17 Nov 2014 16:30:12 +0100
+Message-Id: <1416238213-15263-3-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -26,109 +26,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bill Richardson <wfrichar@chromium.org>
 
-This adds some sysfs entries to provide userspace control of the
-four-element LED "lightbar" on the Chromebook Pixel. This only instantiates
-the lightbar controls if the device actually exists.
+This adds the first few sysfs attributes for the Chrome OS EC. These
+controls are made available under /sys/devices/virtual/chromeos/cros_ec
 
-To prevent DoS attacks, this interface is limited to 20 accesses/second,
-although that rate can be adjusted by a privileged user.
+    flashinfo   - display current flash info
+    reboot      - tell the EC to reboot in various ways
+    version     - information about the EC software and hardware
 
-On Chromebooks without a lightbar, this should have no effect. On the
-Chromebook Pixel, you should be able to do things like this:
+Future changes will build on this to add additional controls.
 
-    $ cd /sys/devices/virtual/chromeos/cros_ec/lightbar
-    $ echo 0x80 > brightness
-    $ echo 255 > brightness
-    $
-    $ cat sequence
-    S0
-    $ echo konami > sequence
-    $ cat sequence
-    KONAMI
-    $
-    $ cat sequence
-    S0
+>From a root shell, you should be able to do things like this:
 
-And
+    cd /sys/devices/virtual/chromeos/cros_ec
+    cat flashinfo
+    cat version
+    echo rw > reboot
+    cat version
+    echo ro > reboot
+    cat version
+    echo rw > reboot
+    cat version
+    echo cold > reboot
 
-    $ cd /sys/devices/virtual/chromeos/cros_ec/lightbar
-    $ echo stop > sequence
-    $ echo "4 255 255 255" > led_rgb
-    $ echo "0 255 0 0  1 0 255 0  2 0 0 255  3 255 255 0" > led_rgb
-    $ echo run  > sequence
-
-Test the DoS prevention with this:
-
-    $ cd /sys/devices/virtual/chromeos/cros_ec/lightbar
-    $ echo 500 > interval_msec
-    $ time (cat version version version version version version version)
+That last command will reboot the AP too.
 
 Signed-off-by: Bill Richardson <wfrichar@chromium.org>
 Reviewed-by: Olof Johansson <olofj@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Benson Leung <bleung@chromium.org>
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- drivers/mfd/Makefile           |   2 +-
- drivers/mfd/cros_ec_dev.c      |   2 +
- drivers/mfd/cros_ec_dev.h      |   3 +
- drivers/mfd/cros_ec_lightbar.c | 347 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 353 insertions(+), 1 deletion(-)
- create mode 100644 drivers/mfd/cros_ec_lightbar.c
+ drivers/mfd/Makefile        |   3 +-
+ drivers/mfd/cros_ec_dev.c   |  10 +-
+ drivers/mfd/cros_ec_dev.h   |  26 +++++
+ drivers/mfd/cros_ec_sysfs.c | 271 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 307 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/mfd/cros_ec_dev.h
+ create mode 100644 drivers/mfd/cros_ec_sysfs.c
 
 diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index eb96986..54ef1bf 100644
+index 5104a25..eb96986 100644
 --- a/drivers/mfd/Makefile
 +++ b/drivers/mfd/Makefile
-@@ -12,7 +12,7 @@ obj-$(CONFIG_MFD_BCM590XX)	+= bcm590xx.o
+@@ -12,7 +12,8 @@ obj-$(CONFIG_MFD_BCM590XX)	+= bcm590xx.o
  obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
  obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
  obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
--cros_ec_devs-objs		:= cros_ec_dev.o cros_ec_sysfs.o
-+cros_ec_devs-objs		:= cros_ec_dev.o cros_ec_sysfs.o cros_ec_lightbar.o
- obj-$(CONFIG_MFD_CROS_EC_DEV)	+= cros_ec_devs.o
+-obj-$(CONFIG_MFD_CROS_EC_DEV)	+= cros_ec_dev.o
++cros_ec_devs-objs		:= cros_ec_dev.o cros_ec_sysfs.o
++obj-$(CONFIG_MFD_CROS_EC_DEV)	+= cros_ec_devs.o
  
  rtsx_pci-objs			:= rtsx_pcr.o rtsx_gops.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+ obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
 diff --git a/drivers/mfd/cros_ec_dev.c b/drivers/mfd/cros_ec_dev.c
-index 1db60dd..dbffac9 100644
+index c18eb40..1db60dd 100644
 --- a/drivers/mfd/cros_ec_dev.c
 +++ b/drivers/mfd/cros_ec_dev.c
-@@ -324,6 +324,7 @@ static int ec_device_probe(struct platform_device *pdev)
+@@ -32,6 +32,8 @@
+ #include <linux/types.h>
+ #include <linux/uaccess.h>
  
- 	/* Initialize extra interfaces */
- 	ec_dev_sysfs_init(ec);
-+	ec_dev_lightbar_init(ec);
++#include "cros_ec_dev.h"
++
+ /* Device variables */
+ #define CROS_CLASS_NAME "chromeos"
+ static struct cros_ec_device *ec;
+@@ -311,15 +313,18 @@ static int ec_device_probe(struct platform_device *pdev)
+ 		goto failed_chrdevreg;
+ 	}
  
+-	/* Instantiate it */
++	/* Instantiate it (and remember the EC) */
+ 	ec->vdev = device_create(cros_class, NULL, MKDEV(ec_major, 0),
+-				 NULL, CROS_EC_DEV_NAME);
++				 ec, CROS_EC_DEV_NAME);
+ 	if (IS_ERR(ec->vdev)) {
+ 		pr_err("failed to create device\n");
+ 		retval = PTR_ERR(ec->vdev);
+ 		goto failed_devreg;
+ 	}
+ 
++	/* Initialize extra interfaces */
++	ec_dev_sysfs_init(ec);
++
  	return 0;
  
-@@ -337,6 +338,7 @@ failed_class:
+ failed_devreg:
+@@ -332,6 +337,7 @@ failed_class:
  
  static int ec_device_remove(struct platform_device *pdev)
  {
-+	ec_dev_lightbar_remove(ec);
- 	ec_dev_sysfs_remove(ec);
++	ec_dev_sysfs_remove(ec);
  	device_destroy(cros_class, MKDEV(ec_major, 0));
  	unregister_chrdev(ec_major, CROS_EC_DEV_NAME);
+ 	class_destroy(cros_class);
 diff --git a/drivers/mfd/cros_ec_dev.h b/drivers/mfd/cros_ec_dev.h
-index 0bb833e..cb17f4c 100644
---- a/drivers/mfd/cros_ec_dev.h
-+++ b/drivers/mfd/cros_ec_dev.h
-@@ -23,4 +23,7 @@ struct cros_ec_device;
- void ec_dev_sysfs_init(struct cros_ec_device *);
- void ec_dev_sysfs_remove(struct cros_ec_device *);
- 
-+void ec_dev_lightbar_init(struct cros_ec_device *);
-+void ec_dev_lightbar_remove(struct cros_ec_device *);
-+
- #endif	/* _DRV_CROS_EC_DEV_H_ */
-diff --git a/drivers/mfd/cros_ec_lightbar.c b/drivers/mfd/cros_ec_lightbar.c
 new file mode 100644
-index 0000000..fb1282d
+index 0000000..0bb833e
 --- /dev/null
-+++ b/drivers/mfd/cros_ec_lightbar.c
-@@ -0,0 +1,347 @@
++++ b/drivers/mfd/cros_ec_dev.h
+@@ -0,0 +1,26 @@
 +/*
-+ * cros_ec_lightbar - expose the Chromebook Pixel lightbar to userspace
++ * Copyright (C) 2014 Google, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program. If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _DRV_CROS_EC_DEV_H_
++#define _DRV_CROS_EC_DEV_H_
++
++struct cros_ec_device;
++
++void ec_dev_sysfs_init(struct cros_ec_device *);
++void ec_dev_sysfs_remove(struct cros_ec_device *);
++
++#endif	/* _DRV_CROS_EC_DEV_H_ */
+diff --git a/drivers/mfd/cros_ec_sysfs.c b/drivers/mfd/cros_ec_sysfs.c
+new file mode 100644
+index 0000000..7359c9f
+--- /dev/null
++++ b/drivers/mfd/cros_ec_sysfs.c
+@@ -0,0 +1,271 @@
++/*
++ * cros_ec_sysfs - expose the Chrome OS EC through sysfs
 + *
 + * Copyright (C) 2014 Google, Inc.
 + *
@@ -146,7 +175,7 @@ index 0000000..fb1282d
 + * along with this program. If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#define pr_fmt(fmt) "cros_ec_lightbar: " fmt
++#define pr_fmt(fmt) "cros_ec_sysfs: " fmt
 +
 +#include <linux/ctype.h>
 +#include <linux/delay.h>
@@ -158,236 +187,111 @@ index 0000000..fb1282d
 +#include <linux/mfd/cros_ec_dev.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/sched.h>
++#include <linux/printk.h>
++#include <linux/stat.h>
 +#include <linux/types.h>
 +#include <linux/uaccess.h>
 +
 +#include "cros_ec_dev.h"
 +
-+/* Rate-limit the lightbar interface to prevent DoS. */
-+static unsigned long lb_interval_jiffies = 50 * HZ / 1000;
++/* Accessor functions */
 +
-+static ssize_t interval_msec_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf)
++static ssize_t show_ec_reboot(struct device *dev,
++			      struct device_attribute *attr, char *buf)
 +{
-+	unsigned long msec = lb_interval_jiffies * 1000 / HZ;
++	int count = 0;
 +
-+	return scnprintf(buf, PAGE_SIZE, "%lu\n", msec);
-+}
-+
-+static ssize_t interval_msec_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count)
-+{
-+	unsigned long msec;
-+
-+	if (kstrtoul(buf, 0, &msec))
-+		return -EINVAL;
-+
-+	lb_interval_jiffies = msec * HZ / 1000;
-+
++	count += scnprintf(buf + count, PAGE_SIZE - count,
++			   "ro|rw|cancel|cold|disable-jump|hibernate");
++	count += scnprintf(buf + count, PAGE_SIZE - count,
++			   " [at-shutdown]\n");
 +	return count;
 +}
 +
-+static DEFINE_MUTEX(lb_mutex);
-+/* Return 0 if able to throttle correctly, error otherwise */
-+static int lb_throttle(void)
++static ssize_t store_ec_reboot(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t count)
 +{
-+	static unsigned long last_access;
-+	unsigned long now, next_timeslot;
-+	long delay;
-+	int ret = 0;
-+
-+	mutex_lock(&lb_mutex);
-+
-+	now = jiffies;
-+	next_timeslot = last_access + lb_interval_jiffies;
-+
-+	if (time_before(now, next_timeslot)) {
-+		delay = (long)(next_timeslot) - (long)now;
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (schedule_timeout(delay) > 0) {
-+			/* interrupted - just abort */
-+			ret = -EINTR;
-+			goto out;
-+		}
-+		now = jiffies;
-+	}
-+
-+	last_access = now;
-+out:
-+	mutex_unlock(&lb_mutex);
-+
-+	return ret;
-+}
-+
-+#define INIT_MSG(P, R) { \
-+		.command = EC_CMD_LIGHTBAR_CMD, \
-+		.outdata = (uint8_t *)&P, \
-+		.outsize = sizeof(P), \
-+		.indata = (uint8_t *)&R, \
-+		.insize = sizeof(R), \
-+	}
-+
-+static int get_lightbar_version(struct cros_ec_device *ec,
-+				uint32_t *ver_ptr, uint32_t *flg_ptr)
-+{
-+	struct ec_params_lightbar param;
-+	struct ec_response_lightbar resp;
-+	struct cros_ec_command msg = INIT_MSG(param, resp);
++	static const struct {
++		const char * const str;
++		uint8_t cmd;
++		uint8_t flags;
++	} words[] = {
++		{"cancel",       EC_REBOOT_CANCEL, 0},
++		{"ro",           EC_REBOOT_JUMP_RO, 0},
++		{"rw",           EC_REBOOT_JUMP_RW, 0},
++		{"cold",         EC_REBOOT_COLD, 0},
++		{"disable-jump", EC_REBOOT_DISABLE_JUMP, 0},
++		{"hibernate",    EC_REBOOT_HIBERNATE, 0},
++		{"at-shutdown",  -1, EC_REBOOT_FLAG_ON_AP_SHUTDOWN},
++	};
++	struct ec_params_reboot_ec param;
++	struct cros_ec_command msg = { 0 };
++	int got_cmd = 0, offset = 0;
++	int i;
 +	int ret;
-+
-+	param.cmd = LIGHTBAR_CMD_VERSION;
-+	ret = cros_ec_cmd_xfer(ec, &msg);
-+	if (ret < 0)
-+		return 0;
-+
-+	switch (msg.result) {
-+	case EC_RES_INVALID_PARAM:
-+		/* Pixel had no version command. */
-+		if (ver_ptr)
-+			*ver_ptr = 0;
-+		if (flg_ptr)
-+			*flg_ptr = 0;
-+		return 1;
-+
-+	case EC_RES_SUCCESS:
-+		/* Future devices w/lightbars should implement this command */
-+		if (ver_ptr)
-+			*ver_ptr = resp.version.num;
-+		if (flg_ptr)
-+			*flg_ptr = resp.version.flags;
-+		return 1;
-+	}
-+
-+	/* Anything else (ie, EC_RES_INVALID_COMMAND) - no lightbar */
-+	return 0;
-+}
-+
-+static ssize_t version_show(struct device *dev,
-+			    struct device_attribute *attr, char *buf)
-+{
-+	uint32_t version, flags;
-+	struct cros_ec_device *ec = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = lb_throttle();
-+	if (ret)
-+		return ret;
-+
-+	/* This should always succeed, because we check during init. */
-+	if (!get_lightbar_version(ec, &version, &flags))
-+		return -EIO;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%d %d\n", version, flags);
-+}
-+
-+static ssize_t brightness_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct ec_params_lightbar param;
-+	struct ec_response_lightbar resp;
-+	struct cros_ec_command msg = INIT_MSG(param, resp);
-+	int ret;
-+	unsigned int val;
 +	struct cros_ec_device *ec = dev_get_drvdata(dev);
 +
-+	if (kstrtouint(buf, 0, &val))
-+		return -EINVAL;
-+	param.cmd = LIGHTBAR_CMD_BRIGHTNESS;
-+	param.brightness.num = val;
-+	ret = lb_throttle();
-+	if (ret)
-+		return ret;
-+	ret = cros_ec_cmd_xfer(ec, &msg);
-+	if (ret < 0)
-+		return ret;
-+	if (msg.result != EC_RES_SUCCESS)
-+		return -EINVAL;
-+
-+	return count;
-+}
-+
-+
-+/*
-+ * We expect numbers, and we'll keep reading until we find them, skipping over
-+ * any whitespace (sysfs guarantees that the input is null-terminated). Every
-+ * four numbers are sent to the lightbar as <LED,R,G,B>. We fail at the first
-+ * parsing error, if we don't parse any numbers, or if we have numbers left
-+ * over.
-+ */
-+static ssize_t led_rgb_store(struct device *dev, struct device_attribute *attr,
-+			     const char *buf, size_t count)
-+{
-+	struct ec_params_lightbar param;
-+	struct ec_response_lightbar resp;
-+	struct cros_ec_command msg = INIT_MSG(param, resp);
-+	struct cros_ec_device *ec = dev_get_drvdata(dev);
-+	unsigned int val[4];
-+	int ret, i = 0, j = 0, ok = 0;
-+
-+	do {
-+		/* Skip any whitespace */
-+		while (*buf && isspace(*buf))
-+			buf++;
-+		if (!*buf)
++	param.flags = 0;
++	while (1) {
++		/* Find word to start scanning */
++		while (buf[offset] && isspace(buf[offset]))
++			offset++;
++		if (!buf[offset])
 +			break;
 +
-+		if (kstrtouint(buf, 0, &val[i++]))
-+			return -EINVAL;
-+
-+		if (i == 4) {
-+			param.cmd = LIGHTBAR_CMD_RGB;
-+			param.rgb.led = val[0];
-+			param.rgb.red = val[1];
-+			param.rgb.green = val[2];
-+			param.rgb.blue = val[3];
-+			/*
-+			 * Throttle only the first of every four transactions,
-+			 * so that the user can update all four LEDs at once.
-+			 */
-+			if ((j++ % 4) == 0) {
-+				ret = lb_throttle();
-+				if (ret)
-+					return ret;
++		for (i = 0; i < ARRAY_SIZE(words); i++) {
++			if (!strncasecmp(words[i].str, buf+offset,
++					 strlen(words[i].str))) {
++				if (words[i].flags) {
++					param.flags |= words[i].flags;
++				} else {
++					param.cmd = words[i].cmd;
++					got_cmd = 1;
++				}
++				break;
 +			}
-+			ret = cros_ec_cmd_xfer(ec, &msg);
-+			if (ret < 0)
-+				return ret;
-+			if (msg.result != EC_RES_SUCCESS)
-+				return -EINVAL;
-+			i = 0;
-+			ok = 1;
 +		}
 +
-+		/* Skip over the number we just read */
-+		while (*buf && !isspace(*buf))
-+			buf++;
++		/* On to the next word, if any */
++		while (buf[offset] && !isspace(buf[offset]))
++			offset++;
++	}
 +
-+	} while (*buf);
++	if (!got_cmd)
++		return -EINVAL;
 +
-+	return (ok && i == 0) ? count : -EINVAL;
++	msg.command = EC_CMD_REBOOT_EC;
++	msg.outdata = (uint8_t *)&param;
++	msg.outsize = sizeof(param);
++	ret = cros_ec_cmd_xfer(ec, &msg);
++	if (ret < 0)
++		return ret;
++	if (msg.result != EC_RES_SUCCESS) {
++		dev_dbg(ec->dev, "EC result %d\n", msg.result);
++		return -EINVAL;
++	}
++
++	return count;
 +}
 +
-+static const char const *seqname[] = {
-+	"ERROR", "S5", "S3", "S0", "S5S3", "S3S0",
-+	"S0S3", "S3S5", "STOP", "RUN", "PULSE", "TEST", "KONAMI",
-+};
-+
-+static ssize_t sequence_show(struct device *dev,
-+			     struct device_attribute *attr, char *buf)
++static ssize_t show_ec_version(struct device *dev,
++			       struct device_attribute *attr, char *buf)
 +{
-+	struct ec_params_lightbar param;
-+	struct ec_response_lightbar resp;
-+	struct cros_ec_command msg = INIT_MSG(param, resp);
++	static const char * const image_names[] = {"unknown", "RO", "RW"};
++	struct ec_response_get_version r_ver;
++	struct ec_response_get_chip_info r_chip;
++	struct ec_response_board_version r_board;
++	struct cros_ec_command msg = { 0 };
++	char r_build_string[EC_HOST_PARAM_SIZE];
 +	int ret;
++	int count = 0;
 +	struct cros_ec_device *ec = dev_get_drvdata(dev);
 +
-+	param.cmd = LIGHTBAR_CMD_GET_SEQ;
-+	ret = lb_throttle();
-+	if (ret)
-+		return ret;
++	/* Get versions. RW may change. */
++	msg.command = EC_CMD_GET_VERSION;
++	msg.indata = (uint8_t *)&r_ver;
++	msg.insize = sizeof(r_ver);
 +	ret = cros_ec_cmd_xfer(ec, &msg);
 +	if (ret < 0)
 +		return ret;
@@ -395,84 +299,133 @@ index 0000000..fb1282d
 +		return scnprintf(buf, PAGE_SIZE,
 +				 "ERROR: EC returned %d\n", msg.result);
 +
-+	if (resp.get_seq.num >= ARRAY_SIZE(seqname))
-+		return scnprintf(buf, PAGE_SIZE, "%d\n", resp.get_seq.num);
-+	else
-+		return scnprintf(buf, PAGE_SIZE, "%s\n",
-+				 seqname[resp.get_seq.num]);
-+}
++	/* Strings should be null-terminated, but let's be sure. */
++	r_ver.version_string_ro[sizeof(r_ver.version_string_ro) - 1] = '\0';
++	r_ver.version_string_rw[sizeof(r_ver.version_string_rw) - 1] = '\0';
++	count += scnprintf(buf + count, PAGE_SIZE - count,
++			   "RO version:    %s\n", r_ver.version_string_ro);
++	count += scnprintf(buf + count, PAGE_SIZE - count,
++			   "RW version:    %s\n", r_ver.version_string_rw);
++	count += scnprintf(buf + count, PAGE_SIZE - count,
++			   "Firmware copy: %s\n",
++			   (r_ver.current_image < ARRAY_SIZE(image_names) ?
++			    image_names[r_ver.current_image] : "?"));
 +
-+static ssize_t sequence_store(struct device *dev, struct device_attribute *attr,
-+			      const char *buf, size_t count)
-+{
-+	struct ec_params_lightbar param;
-+	struct ec_response_lightbar resp;
-+	struct cros_ec_command msg = INIT_MSG(param, resp);
-+	unsigned int num;
-+	int ret, len;
-+	struct cros_ec_device *ec = dev_get_drvdata(dev);
-+
-+	for (len = 0; len < count; len++)
-+		if (!isalnum(buf[len]))
-+			break;
-+
-+	for (num = 0; num < ARRAY_SIZE(seqname); num++)
-+		if (!strncasecmp(seqname[num], buf, len))
-+			break;
-+
-+	if (num >= ARRAY_SIZE(seqname))
-+		kstrtouint(buf, 0, &num);
-+
-+	param.cmd = LIGHTBAR_CMD_SEQ;
-+	param.seq.num = num;
-+	ret = lb_throttle();
-+	if (ret)
-+		return ret;
++	/* Get build info. */
++	msg.command = EC_CMD_GET_BUILD_INFO;
++	msg.indata = (uint8_t *)r_build_string;
++	msg.insize = sizeof(r_build_string);
 +	ret = cros_ec_cmd_xfer(ec, &msg);
 +	if (ret < 0)
-+		return ret;
-+	if (msg.result != EC_RES_SUCCESS)
-+		return -EINVAL;
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Build info:    XFER ERROR %d\n", ret);
++	else if (msg.result != EC_RES_SUCCESS)
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Build info:    EC error %d\n", msg.result);
++	else {
++		r_build_string[sizeof(r_build_string) - 1] = '\0';
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Build info:    %s\n", r_build_string);
++	}
++
++	/* Get chip info. */
++	msg.command = EC_CMD_GET_CHIP_INFO;
++	msg.indata = (uint8_t *)&r_chip;
++	msg.insize = sizeof(r_chip);
++	ret = cros_ec_cmd_xfer(ec, &msg);
++	if (ret < 0)
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Chip info:     XFER ERROR %d\n", ret);
++	else if (msg.result != EC_RES_SUCCESS)
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Chip info:     EC error %d\n", msg.result);
++	else {
++		r_chip.vendor[sizeof(r_chip.vendor) - 1] = '\0';
++		r_chip.name[sizeof(r_chip.name) - 1] = '\0';
++		r_chip.revision[sizeof(r_chip.revision) - 1] = '\0';
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Chip vendor:   %s\n", r_chip.vendor);
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Chip name:     %s\n", r_chip.name);
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Chip revision: %s\n", r_chip.revision);
++	}
++
++	/* Get board version */
++	msg.command = EC_CMD_GET_BOARD_VERSION;
++	msg.indata = (uint8_t *)&r_board;
++	msg.insize = sizeof(r_board);
++	ret = cros_ec_cmd_xfer(ec, &msg);
++	if (ret < 0)
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Board version: XFER ERROR %d\n", ret);
++	else if (msg.result != EC_RES_SUCCESS)
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Board version: EC error %d\n", msg.result);
++	else {
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				   "Board version: %d\n",
++				   r_board.board_version);
++	}
 +
 +	return count;
 +}
 +
-+/* Module initialization */
-+
-+static DEVICE_ATTR_RW(interval_msec);
-+static DEVICE_ATTR_RO(version);
-+static DEVICE_ATTR_WO(brightness);
-+static DEVICE_ATTR_WO(led_rgb);
-+static DEVICE_ATTR_RW(sequence);
-+static struct attribute *__lb_cmds_attrs[] = {
-+	&dev_attr_interval_msec.attr,
-+	&dev_attr_version.attr,
-+	&dev_attr_brightness.attr,
-+	&dev_attr_led_rgb.attr,
-+	&dev_attr_sequence.attr,
-+	NULL,
-+};
-+static struct attribute_group lb_cmds_attr_group = {
-+	.name = "lightbar",
-+	.attrs = __lb_cmds_attrs,
-+};
-+
-+void ec_dev_lightbar_init(struct cros_ec_device *ec)
++static ssize_t show_ec_flashinfo(struct device *dev,
++				 struct device_attribute *attr, char *buf)
 +{
-+	int ret = 0;
++	struct ec_response_flash_info resp;
++	struct cros_ec_command msg = { 0 };
++	int ret;
++	struct cros_ec_device *ec = dev_get_drvdata(dev);
 +
-+	/* Only instantiate this stuff if the EC has a lightbar */
-+	if (!get_lightbar_version(ec, NULL, NULL))
-+		return;
++	/* The flash info shouldn't ever change, but ask each time anyway. */
++	msg.command = EC_CMD_FLASH_INFO;
++	msg.indata = (uint8_t *)&resp;
++	msg.insize = sizeof(resp);
++	ret = cros_ec_cmd_xfer(ec, &msg);
++	if (ret < 0)
++		return ret;
++	if (msg.result != EC_RES_SUCCESS)
++		return scnprintf(buf, PAGE_SIZE,
++				 "ERROR: EC returned %d\n", msg.result);
 +
-+	ret = sysfs_create_group(&ec->vdev->kobj, &lb_cmds_attr_group);
-+	if (ret)
-+		pr_warn("sysfs_create_group() failed: %d\n", ret);
++	return scnprintf(buf, PAGE_SIZE,
++			 "FlashSize %d\nWriteSize %d\n"
++			 "EraseSize %d\nProtectSize %d\n",
++			 resp.flash_size, resp.write_block_size,
++			 resp.erase_block_size, resp.protect_block_size);
 +}
 +
-+void ec_dev_lightbar_remove(struct cros_ec_device *ec)
++/* Module initialization */
++
++static DEVICE_ATTR(reboot, S_IWUSR | S_IRUGO, show_ec_reboot, store_ec_reboot);
++static DEVICE_ATTR(version, S_IRUGO, show_ec_version, NULL);
++static DEVICE_ATTR(flashinfo, S_IRUGO, show_ec_flashinfo, NULL);
++
++static struct attribute *__ec_attrs[] = {
++	&dev_attr_reboot.attr,
++	&dev_attr_version.attr,
++	&dev_attr_flashinfo.attr,
++	NULL,
++};
++
++static struct attribute_group ec_attr_group = {
++	.attrs = __ec_attrs,
++};
++
++void ec_dev_sysfs_init(struct cros_ec_device *ec)
 +{
-+	sysfs_remove_group(&ec->vdev->kobj, &lb_cmds_attr_group);
++	int error;
++
++	error = sysfs_create_group(&ec->vdev->kobj, &ec_attr_group);
++	if (error)
++		pr_warn("failed to create group: %d\n", error);
++}
++
++void ec_dev_sysfs_remove(struct cros_ec_device *ec)
++{
++	sysfs_remove_group(&ec->vdev->kobj, &ec_attr_group);
 +}
 -- 
 2.1.0
