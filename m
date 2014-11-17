@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaKQWvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:51:18 -0500
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:58579 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380AbaKQWue (ORCPT
+	id S1753634AbaKQWvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:51:16 -0500
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:56146 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386AbaKQWue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 17:50:34 -0500
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
+Cc: Andrew Bresticker <abrestic@chromium.org>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
@@ -28,9 +27,9 @@ Cc: Benson Leung <bleung@chromium.org>,
         Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org
-Subject: [PATCH V5 03/12] mailbox: Fix up error handling in mbox_request_channel()
-Date: Mon, 17 Nov 2014 14:41:33 -0800
-Message-Id: <1416264102-1323-4-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V5 04/12] of: Add NVIDIA Tegra XUSB mailbox binding
+Date: Mon, 17 Nov 2014 14:41:34 -0800
+Message-Id: <1416264102-1323-5-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
 References: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
@@ -38,58 +37,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benson Leung <bleung@chromium.org>
+Add device-tree bindings for the Tegra XUSB mailbox which will be used
+for communication between the Tegra xHCI controller's firmware and the
+host processor.
 
-mbox_request_channel() currently returns EBUSY in the event the controller
-is not present or if of_xlate() fails, but in neither case is EBUSY really
-appropriate.  Return EPROBE_DEFER if the controller is not yet present
-and change of_xlate() to return an ERR_PTR instead of NULL so that the
-error can be propagated back to the caller of mbox_request_channel().
-
-Signed-off-by: Benson Leung <bleung@chromium.org>
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
-New for v5.
+No changes from v3/v4.
+Changes from v2:
+ - Dropped channel specifier.
+ - Added pointer to mailbox documentation.
+Changes from v1:
+ - Updated to use common mailbox bindings.
 ---
- drivers/mailbox/mailbox.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ .../bindings/mailbox/nvidia,tegra124-xusb-mbox.txt | 32 ++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
 
-diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
-index c281e55..7b1e258 100644
---- a/drivers/mailbox/mailbox.c
-+++ b/drivers/mailbox/mailbox.c
-@@ -318,7 +318,7 @@ struct mbox_chan *mbox_request_channel(struct mbox_client *cl, int index)
- 		return ERR_PTR(-ENODEV);
- 	}
- 
--	chan = NULL;
-+	chan = ERR_PTR(-EPROBE_DEFER);
- 	list_for_each_entry(mbox, &mbox_cons, node)
- 		if (mbox->dev->of_node == spec.np) {
- 			chan = mbox->of_xlate(mbox, &spec);
-@@ -327,7 +327,12 @@ struct mbox_chan *mbox_request_channel(struct mbox_client *cl, int index)
- 
- 	of_node_put(spec.np);
- 
--	if (!chan || chan->cl || !try_module_get(mbox->dev->driver->owner)) {
-+	if (IS_ERR(chan)) {
-+		mutex_unlock(&con_mutex);
-+		return chan;
-+	}
+diff --git a/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt b/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+new file mode 100644
+index 0000000..b35ea6e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+@@ -0,0 +1,32 @@
++NVIDIA Tegra XUSB mailbox
++=========================
 +
-+	if (chan->cl || !try_module_get(mbox->dev->driver->owner)) {
- 		dev_dbg(dev, "%s: mailbox not free\n", __func__);
- 		mutex_unlock(&con_mutex);
- 		return ERR_PTR(-EBUSY);
-@@ -390,7 +395,7 @@ of_mbox_index_xlate(struct mbox_controller *mbox,
- 	int ind = sp->args[0];
- 
- 	if (ind >= mbox->num_chans)
--		return NULL;
-+		return ERR_PTR(-EINVAL);
- 
- 	return &mbox->chans[ind];
- }
++The Tegra XUSB mailbox is used by the Tegra xHCI controller's firmware to
++communicate requests to the host and PHY drivers.
++
++Refer to ./mailbox.txt for generic information about mailbox device-tree
++bindings.
++
++Required properties:
++--------------------
++ - compatible: Should be "nvidia,tegra124-xusb-mbox".
++ - reg: Address and length of the XUSB FPCI registers.
++ - interrupts: XUSB mailbox interrupt.
++ - #mbox-cells: Should be 0.  There is only one physical channel.
++
++Example:
++--------
++	xusb_mbox: mailbox@0,70098000 {
++		compatible = "nvidia,tegra124-xusb-mbox";
++		reg = <0x0 0x70098000 0x0 0x1000>;
++		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
++
++		#mbox-cells = <0>;
++	};
++
++	usb@0,70090000 {
++		...
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
++		...
++	};
 -- 
 2.1.0.rc2.206.gedb03e5
 
