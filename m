@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaKQMvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:51:42 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:52146 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751483AbaKQMvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:51:40 -0500
-Message-ID: <5469EF4C.1050007@kapsi.fi>
-Date: Mon, 17 Nov 2014 14:51:24 +0200
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
+	id S1752173AbaKQMwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 07:52:08 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:58008 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaKQMwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 07:52:06 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-ae-5469ef73e61c
+Date: Mon, 17 Nov 2014 13:51:42 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
 To: Thierry Reding <thierry.reding@gmail.com>
-CC: Lukasz Majewski <l.majewski@samsung.com>,
+Cc: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
         Eduardo Valentin <edubezval@gmail.com>,
         Zhang Rui <rui.zhang@intel.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
@@ -28,39 +27,89 @@ CC: Lukasz Majewski <l.majewski@samsung.com>,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
  for tegra driver
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com> <1415898165-27406-1-git-send-email-l.majewski@samsung.com> <1415898165-27406-6-git-send-email-l.majewski@samsung.com> <5465DDC5.6090301@kapsi.fi> <20141117114341.GF25699@ulmo>
-In-Reply-To: <20141117114341.GF25699@ulmo>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Message-id: <20141117135142.6692c9d5@amdc2363>
+In-reply-to: <20141117115743.GG25699@ulmo>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
+ <5465DDC5.6090301@kapsi.fi> <20141114122437.6742ea68@amdc2363>
+ <20141117115743.GG25699@ulmo>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jQd3i95khBv3tvBYbZ6xntZh/5Rqr
+	xelTC1gtzr16xGLxtrnY4tXhXYwWbx5xW1zeNYfN4nPvEUaLzi+z2CxufzjAbPHg6jQ2iycP
+	+9gsXh1sY7H4uWsei8WxEzNYHQQ8nmy6yOixc9Zddo/Fe14yeVw694fZY920t8weByafY/Xo
+	bX7H5vHtzEQWj74tqxg9nv7Yy+zxeZOcx8a5oQE8UVw2Kak5mWWpRfp2CVwZrxa5FlzgrTjU
+	toypgfESVxcjJ4eEgInEj2dz2SBsMYkL99YD2VwcQgLTGSX2XzgF5fxilPh29xkjSBWLgKrE
+	093vmUFsNgE9ic93nzKB2CICuhL/T79hAWlgFuhmlVh44RYLSEJYIF7izvdL7CA2L1DDrTUP
+	wAZxCmhJnPwzkwViw0ImicdbD4Al+AUkJdr//WCGuMlO4tynDVDNghI/Jt8DG8oM1Lx5WxMr
+	hC0vsXnNW+YJjIKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBsflM
+	egfjqgaLQ4wCHIxKPLw7sjNDhFgTy4orcw8xSnAwK4nwxlwECvGmJFZWpRblxxeV5qQWH2KU
+	5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamAMfHllwePQvOcHbz+5vOmw9a+ZFQcPMCXc
+	3fqZl3XDoZStxsJztvX+cfzFFl3sWLb6xIJGn4O5m7lKX+9gWcefYrjJa87tdPkc8VtyKw4v
+	2vHr7IXs189qr11TtlPlc2COMF542mxVHFNMq4kp652SU1dYH87iv9P28EXEzHK2F3N3H6qt
+	YhexU2Ipzkg01GIuKk4EACWYxxLJAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2014 01:43 PM, Thierry Reding wrote:
-> On Fri, Nov 14, 2014 at 12:47:33PM +0200, Mikko Perttunen wrote:
->> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
->>
->> One potential issue I can see is that if the cpufreq driver fails to probe
->> then you'll never get the thermal driver either. For example, Tegra124
->> currently has no cpufreq driver, so if CONFIG_CPU_THERMAL was enabled, then
->> the soctherm driver would never be able to probe. But I don't really have a
->> solution for this either.
->
-> It doesn't seem like there's any code whatsoever to deal with cpufreq
-> within the soctherm driver, so deferring probe based on something we're
-> not using anyway seems rather useless.
->
+Hi Thierry,
+
+> On Fri, Nov 14, 2014 at 12:24:37PM +0100, Lukasz Majewski wrote:
+> > Hi Mikko,
+> > 
+> > > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+> > 
+> > Thanks for testing.
+> > 
+> > > 
+> > > One potential issue I can see is that if the cpufreq driver fails
+> > > to probe then you'll never get the thermal driver either. For
+> > > example, Tegra124 currently has no cpufreq driver, so if
+> > > CONFIG_CPU_THERMAL was enabled, then the soctherm driver would
+> > > never be able to probe.
+> > 
+> > Yes, this is a potential issue. However, this option in
+> > tegra_defconfig is by default disabled when thermal is enabled.
+> 
+> Not everybody uses tegra_defconfig for their kernel builds. In fact
+> I'd imagine that the majority of kernels use a variant of
+> multi_v7_defconfig and therefore CPU_THERMAL might get enabled
+> irrespective of any Tegra support.
+
+I see your point. 
+
+> 
+> I think a better solution would be to add this check only when proper
+> support for CPU frequency based cooling is added. That is, when a call
+> to cpufreq_cooling_register() (or a variant thereof) is added.
+
+For the above reason the code is only compiled in when user enable
+CONFIG_CPU_THERMAL.
+
+> 
+> But while at it, why not make it so that cpufreq_cooling_register()
+> detects if a cpufreq driver has been registered yet and propagate
+> -EPROBE_DEFER if necessary?
+
+cpufreq_cooling_register() may be a good place to add check for
+deferred probe.
+
+The problem with cpufreq_cooling_register() is that it may be called
+late in the probe function (as it is done now in Exynos).
+
+
+> 
 > Thierry
->
 
-My understanding is that there needs to be no code inside soctherm to 
-handle it, as the cpufreq driver (cpufreq-dt) will register a cooling 
-device that will then be bound to the soctherm sensors using the 
-of-thermal device tree properties. At this moment, however, we don't 
-have that cpufreq driver so this patch is still useless for Tegra.
 
-Mikko
 
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
