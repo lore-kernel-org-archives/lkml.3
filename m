@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaKQRIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 12:08:30 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:34819 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaKQRI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 12:08:28 -0500
+	id S1751677AbaKQRMO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 12:12:14 -0500
+Received: from mout.web.de ([212.227.17.12]:52098 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750920AbaKQRMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 12:12:12 -0500
+Message-ID: <546A2C5C.8080800@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 18:11:56 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
-References: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
-Date: Mon, 17 Nov 2014 15:08:25 -0200
-Message-ID: <CAOMZO5BsfCfP+bMfYWZ9C=Sp0sWkEr6WoRRygw18EfW2T_k3oQ@mail.gmail.com>
-Subject: Re: [PATCH] i2c: core: Fix probing of i2c slaves without interrupts
-From: Fabio Estevam <festevam@gmail.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] perf tools: Deletion of unnecessary checks before two
+ function calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:2MwEubM/gfjlZY0lMiHpoyfFW6K84l2YQQFIqGlewcvBCm6+LBg
+ G3w/YuEpbpfM1NfqqZRu5fWkkEgqILmIvr7DN6yyRXlBvv49s4ezXBpJ06ANtVYYeotz6d1
+ CutI5aNbjVMQI4nejev1xk4VyECQN8LI/VKyYl/Rp9PhqdIcTk4be+PVye1BE72hgesmZhk
+ COP1ajxTWZdtJSXRELqQw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 9:43 AM, Geert Uytterhoeven
-<geert+renesas@glider.be> wrote:
-> Since commit 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time"),
-> i2c slaves without interrupts (e.g. da9210 and at24 on r8a7791/koelsch)
-> fail to probe:
->
->     at24: probe of 2-0050 failed with error -22
->
->     da9210: probe of 6-0068 failed with error -22
->
-> This happens because the call to of_irq_get() in i2c_device_probe()
-> returns -EINVAL.
->
-> If a device node does not have an "interrupts" property,
-> of_irq_parse_one() fails. Unlike irq_of_parse_and_map(), of_irq_get()
-> does not ignore errors from of_irq_parse_one(), but forwards them.
->
-> Make i2c_device_probe() ignore all errors but -EPROBE_DEFER to fix this,
-> just like platform_get_irq() and platform_get_irq_byname() already do.
->
-> Fixes: 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time")
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 18:05:57 +0100
 
-With this patch applied my codec and PMIC can be probed again:
+The functions free_event_desc() and strfilter__delete() test whether their
+argument is NULL and then return immediately. Thus the test around the call
+is not needed.
 
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+This issue was detected by using the Coccinelle software.
 
-Thanks
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ tools/perf/builtin-probe.c | 6 ++----
+ tools/perf/util/header.c   | 3 +--
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index c63fa29..1b72bf2 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -254,8 +254,7 @@ static int opt_set_filter(const struct option *opt __maybe_unused,
+ 
+ 	if (str) {
+ 		pr_debug2("Set filter: %s\n", str);
+-		if (params.filter)
+-			strfilter__delete(params.filter);
++		strfilter__delete(params.filter);
+ 		params.filter = strfilter__new(str, &err);
+ 		if (!params.filter) {
+ 			pr_err("Filter parse error at %td.\n", err - str + 1);
+@@ -283,8 +282,7 @@ static void cleanup_params(void)
+ 		strlist__delete(params.dellist);
+ 	line_range__clear(&params.line_range);
+ 	free(params.target);
+-	if (params.filter)
+-		strfilter__delete(params.filter);
++	strfilter__delete(params.filter);
+ 	memset(&params, 0, sizeof(params));
+ }
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 158c787..a62fbc6 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1367,8 +1367,7 @@ out:
+ 	free(buf);
+ 	return events;
+ error:
+-	if (events)
+-		free_event_desc(events);
++	free_event_desc(events);
+ 	events = NULL;
+ 	goto out;
+ }
+-- 
+2.1.3
+
