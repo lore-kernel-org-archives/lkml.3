@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaKQMyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:54:41 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38271 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751751AbaKQMyj (ORCPT
+	id S1751834AbaKQNDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:03:06 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:58796 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaKQNDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:54:39 -0500
-Date: Mon, 17 Nov 2014 12:54:33 +0000
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, broonie@kernel.org,
-        linus.walleij@linaro.org, gnurou@gmail.com,
-        alsa-devel@alsa-project.org, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: arizona: Add support for CS47L24
-Message-ID: <20141117125433.GA29518@opensource.wolfsonmicro.com>
-References: <20141111165227.GA24344@opensource.wolfsonmicro.com> <20141111171532.GA26106@opensource.wolfsonmicro.com> <20141113101228.GE24004@x1> <20141113164017.GA12443@opensource.wolfsonmicro.com> <20141117121648.GP24004@x1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141117121648.GP24004@x1>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Mon, 17 Nov 2014 08:03:03 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-13-5469f2041219
+Date: Mon, 17 Nov 2014 14:02:45 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
+ for tegra driver
+Message-id: <20141117140245.51837653@amdc2363>
+In-reply-to: <20141117120105.GH25699@ulmo>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
+ <5465DDC5.6090301@kapsi.fi> <20141117114341.GF25699@ulmo>
+ <20141117125013.3493a3a1@amdc2363> <20141117120105.GH25699@ulmo>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jQV2WT5khBlNuqllsnLGe1WL+lWus
+	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbXF51xw2i8+9RxgtOr/MYrO4/eEAs8WDq9PYLJ48
+	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5HHp3B9mj3XT3jJ7HJh8jtWj
+	t/kdm8e3MxNZPPq2rGL0ePpjL7PH501yHhvnhgbwRHHZpKTmZJalFunbJXBl/N98lbWgj6/i
+	yK4NrA2MndxdjBwcEgImEl+eGXcxcgKZYhIX7q1nA7GFBKYzSlyYl93FyAVk/2KUePljAhNI
+	gkVAVeL7swnsIDabgJ7E57tPweIiAroS/0+/YQFpYBboZpVYeOEWC0hCWCBe4s73S2ANvEAN
+	TZvbmUFsTgEtiTeLJ0Jt288kcfZvIIjNLyAp0f7vBzPERXYS5z5tgOoVlPgx+R7YTGag3s3b
+	mlghbHmJzWveMk9gFJyFpGwWkrJZSMoWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO
+	y2fSOxhXNVgcYhTgYFTi4d2RnRkixJpYVlyZe4hRgoNZSYQ35iJQiDclsbIqtSg/vqg0J7X4
+	EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA+PqUzaapsvMH6xQXfC07PTfv055f6I+
+	7szOy5L3VBWrO7hL7cme6xPZJj1LyltzILjj2F3+JIuytM4F9T5PFeSWTDP4VrzoWnWMui6b
+	47Vj33ZkbagxePJkiqeRkIR0EFeEXK7KkYfzZue/8JhZKvP3C88UuW3BLx1vVxQsmL3RoKfN
+	8qzigitKLMUZiYZazEXFiQCE2C03xwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 12:16:48PM +0000, Lee Jones wrote:
-> On Thu, 13 Nov 2014, Charles Keepax wrote:
-> 
-> > On Thu, Nov 13, 2014 at 10:12:28AM +0000, Lee Jones wrote:
-> > > On Tue, 11 Nov 2014, Richard Fitzgerald wrote:
-> > > 
-> > > > Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-> > > > ---
-> > > >  drivers/mfd/Kconfig              |    6 +
-> > > >  drivers/mfd/Makefile             |    3 +
-> > > >  drivers/mfd/arizona-core.c       |   91 ++-
-> > > >  drivers/mfd/arizona-irq.c        |   42 +-
-> > > >  drivers/mfd/arizona-spi.c        |    9 +
-> > > >  drivers/mfd/arizona.h            |    5 +
-> > > >  drivers/mfd/cs47l24-tables.c     | 1632 ++++++++++++++++++++++++++++++++++++++
-> > > 
-> > > No chance.
-> > > 
-> > > Please resend with these in a header file (like all of the others).
-> > > 
-> > > I'd also like Charles' Reviewed-by before accepting.
+Hi Thierry,
+
+> On Mon, Nov 17, 2014 at 12:50:13PM +0100, Lukasz Majewski wrote:
+> > Hi Thierry,
 > > 
-> > This looks good to me. I don't quite follow what you are
-> > requesting with the header file? This still uses the header file
-> > for the registers but just defining which are available on this
-> > chip.
+> > > On Fri, Nov 14, 2014 at 12:47:33PM +0200, Mikko Perttunen wrote:
+> > > > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+> > > > 
+> > > > One potential issue I can see is that if the cpufreq driver
+> > > > fails to probe then you'll never get the thermal driver either.
+> > > > For example, Tegra124 currently has no cpufreq driver, so if
+> > > > CONFIG_CPU_THERMAL was enabled, then the soctherm driver would
+> > > > never be able to probe. But I don't really have a solution for
+> > > > this either.
+> > > 
+> > > It doesn't seem like there's any code whatsoever to deal with
+> > > cpufreq within the soctherm driver, so deferring probe based on
+> > > something we're not using anyway seems rather useless.
+> > 
+> > So, If I understood you correctly - this patch is not needed in the 
+> > /tegra_soctherm.c:[tegra_defconfig] driver and can be safely
+> > omitted in v2 of this driver.
 > 
-> Looks like I was a little hasty with my comments.  However 8000 lines
-> over 4 platforms just to describe which registers are readable is all
-> a little bit grim.  Is there any way you can use ranges instead of
-> listing every single register on the chip?  How many gaps are there? 
+> What I'm saying is that I don't think doing this mass conversion
+> wholesale is useful since none of the drivers register a cooling
+> device based on cpufreq. In other words: if you're not going to use a
+> feature there's no use testing for it.
 > 
 
-It's debatable. Ranges would be possible but there are a lot of gaps.
-Personally, speaking as someone who has to maintain these drivers, I
-like that fact that I can look at this file and see exactly which registers
-are readable and volatile because they are all explicitly listed. It's also
-useful that the files are searchable for specific registers.
+It seems, like one option here would be to add deferred proble to
+cpufreq_cooling_register() or check which driver in its thermal probe
+is calling cpufreq_cooling_register() function.
 
-I'll point Charles at this to get his opinion.
+The latter option explains why in the imx_thermal.c file we check for
+deferred probe without #ifdefs for CONFIG_CPU_THERMAL.
 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+If no objections, I would like to stick to the code already available
+in imx_thermal.c.
+
+> Thierry
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
