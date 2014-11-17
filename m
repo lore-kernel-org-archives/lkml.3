@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaKQAnI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 19:43:08 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:27864 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825AbaKQAnE (ORCPT
+	id S1752900AbaKQAng (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 19:43:36 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:8213 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaKQAnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 19:43:04 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-bd-546944969f17
+	Sun, 16 Nov 2014 19:43:33 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-c7-54694496cc3b
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: lee.jones@linaro.org, broonie@kernel.org, mturquette@linaro.org,
         a.zummo@towertech.it
@@ -15,35 +15,38 @@ Cc: lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
         geunsik.lim@samsung.com, inki.dae@samsung.com,
         kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 0/5] mfd: sec-core: Add support S2MPS13 PMIC device
-Date: Mon, 17 Nov 2014 09:42:55 +0900
-Message-id: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 5/5] mfd: s2mps11: Add binding documentation for Samsung
+ S2MPS13 PMIC
+Date: Mon, 17 Nov 2014 09:43:00 +0900
+Message-id: <1416184980-532-6-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsWyRsSkSHeaS2aIweHbEhZLLl5lt5j68Amb
-	xfUvz1kt5h85x2rxZ0Irm8Wk+xNYLM42vWG3uP/1KKPFtysdTBaXd81hs3g64SKbxeluVouL
-	K74wOfB67Jx1l91j06pONo871/awecw7GejRt2UVo8f0eT+ZPD5vkgtgj+KySUnNySxLLdK3
-	S+DKuN24h72gj6ti4rkupgbGSexdjJwcEgImEnd+fmOFsMUkLtxbz9bFyMUhJLCUUaJ93h0m
-	mKK2rh1QiemMEosatrJAOE1MEnv3tDGDVLEJaEnsf3GDDcQWEYiWOP70OCNIEbPAZ0aJZ5c2
-	ge0TFnCWOHJxMlA3BweLgKrExn25IGFeoPDB66vYILYpSCxbPpMVpFdCYBu7xOwn68DOYBEQ
-	kPg2+RBYr4SArMSmA8wQ9ZISB1fcYJnAKLiAkWEVo2hqQXJBcVJ6kalecWJucWleul5yfu4m
-	RmAUnP73bOIOxvsHrA8xCnAwKvHwclhnhAixJpYVV+YeYjQF2jCRWUo0OR8Ya3kl8YbGZkYW
-	piamxkbmlmZK4rw60j+DhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTCqFH79JvUhNYuN5/33
-	vwd/fua6vnB7TM0ZeduUdOfteyYfPBd7V2TOw9vHH9eyxPTP4XGdEi3pxx/74a4iR+7xqBNs
-	7dX7k68cu1Du4X41desGZp8A1iot1tdfH00p2/N2V2tv9Mx1fTsP3q1+Uu3b5FOwMSq1zF/C
-	TfRuo8Pidze7dz/otelXYinOSDTUYi4qTgQAsOPFSX0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jQd1pLpkhBg8+C1gsuXiV3WLqwyds
+In-reply-to: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
+References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSoDvNJTPE4NUzG4slF6+yW0x9+ITN
+	4vqX56wW84+cY7X4M6GVzWLS/QksFmeb3rBb3P96lNHi25UOJovLu+awWTydcJHN4nQ3q8XF
+	FV+YHHg9ds66y+6xaVUnm8eda3vYPOadDPTo27KK0WP6vJ9MHp83yQWwR3HZpKTmZJalFunb
+	JXBlLFw5ia1gm3TFnV+3GBsYD4l2MXJySAiYSOze8J4JwhaTuHBvPVsXIxeHkMBSRon+1c9Z
+	YYom/HnICpGYzigxtXUZM4TTxCSxd08bM0gVm4CWxP4XN9hAbBGBaInjT48zghQxC3xmlHh2
+	aRN7FyMHh7BAuMSRl9wgNSwCqhIT5nwDq+cVcJZ4evI9I8Q2BYlly2eCbeYUcJHY0LwMbL4Q
+	UM2bzzfAzpMQuMYu0b/3CyvEIAGJb5MPsYDMlxCQldh0gBlijqTEwRU3WCYwCi9gZFjFKJpa
+	kFxQnJReZKpXnJhbXJqXrpecn7uJERg1p/89m7iD8f4B60OMAhyMSjy8HNYZIUKsiWXFlbmH
+	GE2BNkxklhJNzgfGZl5JvKGxmZGFqYmpsZG5pZmSOK+O9M9gIYH0xJLU7NTUgtSi+KLSnNTi
+	Q4xMHJxSDYwrH2YWb2V583v6WotV90Na6ve+fMDJ8FQ3/lbFzd7rG3KLeMxP1h9g7Hv+X3Pm
+	640275aurZ3+eoLi227+DvkXHFd8XxrejX9llK04r+xR//fy5NyHh0QV5y6ScTfYEf27Zn+j
+	cI75iZiWHXsOcO4saZwxTdJmUouiSsnEn+27gg10noj8vc6oxFKckWioxVxUnAgAH1XGe5UC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t9jQd1pLpkhBvtmm1gsuXiV3WLqwyds
 	Fte/PGe1mH/kHKvFnwmtbBaT7k9gsTjb9Ibd4v7Xo4wW3650MFlc3jWHzeLphItsFqe7WS0u
 	rvjC5MDrsXPWXXaPTas62TzuXNvD5jHvZKBH35ZVjB7T5/1k8vi8SS6APaqB0SYjNTEltUgh
 	NS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6FolhbLEnFKgUEBicbGS
-	vh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8btxj3sBX1cFRPPdTE1ME5i72Lk5JAQMJFo69rB
-	BmGLSVy4tx7I5uIQEpjOKLGoYSsLhNPEJLF3TxszSBWbgJbE/hc3wDpEBKIljj89zghSxCzw
-	mVHi2aVNYGOFBZwljlycDNTNwcEioCqxcV8uSJgXKHzw+iqobQoSy5bPZJ3AyL2AkWEVo2hq
-	QXJBcVJ6rpFecWJucWleul5yfu4mRnCMPZPewbiqweIQowAHoxIP7waLjBAh1sSy4srcQ4wS
-	HMxKIrxLdDJDhHhTEiurUovy44tKc1KLDzGaAi2fyCwlmpwPjP+8knhDYxMzI0sjc0MLI2Nz
-	JXHeg63WgUIC6YklqdmpqQWpRTB9TBycUg2MYrvVJ/P/4qnRKGyJtfSSbWHtesHBd9l37tQn
-	J28ebLsz9YP18hSNn5KuVjsUhBdNizPcZMo6d4PhBk7959+iw26dc9wpOHuttbz12l+tBScz
-	Tu27svNm2ZT4+JrZl3a+cZ8t5/CCdbLN6VNsKakeMv/b6uZ3HzNqvxayboI9I1cv57rg8nsL
-	lViKMxINtZiLihMBmOCZ1ccCAAA=
+	vh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bClZPYCrZJV9z5dYuxgfGQaBcjJ4eEgInEhD8P
+	WSFsMYkL99azdTFycQgJTGeUmNq6jBnCaWKS2LunjRmkik1AS2L/ixtsILaIQLTE8afHGUGK
+	mAU+M0o8u7SJvYuRg0NYIFziyEtukBoWAVWJCXO+gdXzCjhLPD35nhFim4LEsuUzwTZzCrhI
+	bGheBjZfCKjmzecbbBMYeRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7JZ9I7GFc1
+	WBxiFOBgVOLh3WCRESLEmlhWXJl7iFGCg1lJhHeJTmaIEG9KYmVValF+fFFpTmrxIUZToKsm
+	MkuJJucD00VeSbyhsYmZkaWRuaGFkbG5kjjvwVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQbG5Z/D
+	ZbsfnAw44P/iWNP5+8z2i3iKlaadWF6Y6t9wNfiA/Svhfy8tJsuumLTUWoDp2psHH3/lbFmz
+	sXvDdaXX6Y9fpZqKZzULH77CaBSh4v3xscCCy4kfp5TN8hNUtOCIbXnAuXt7cKXO3nWitx/b
+	bjyTNXVH4OQkvw97hfv/p8YnR9uWsl9XV2Ipzkg01GIuKk4EAB5fptHfAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,30 +54,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds Samsung S2MPS13 PMIC device driver in existing S2MPS11 PMIC
-driver. The S2MPS13 has just the differnet number of regulator from existing
-S2MPS14 PMIC and RTC/CLOCK IP of S2MPS13 is the same with S2MPS14. S2MPS13
-PMIC has LDO[1-40] and BUCK[1-10] regulators.
+This patch adds the binding documentation for Samsung S2MPS13 PMIC
+which is similiar with existing S2MPS14 PMIC. S2MPS13 has the different number
+of regulators from S2MPS14 and RTC/Clock is the same with the S2MPS14.
 
-Chanwoo Choi (5):
-  mfd: sec-core: Add support for S2MPS13 device
-  regulator: s2mps11: Add support S2MPS13 regulator device
-  clk: s2mps11: Add the support for S2MPS13 PMIC clock
-  rtc: s5m: Add the support for S2MPS13 RTC
-  mfd: s2mps11: Add binding documentation for Samsung S2MPS13 PMIC
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/s2mps11.txt | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
- Documentation/devicetree/bindings/mfd/s2mps11.txt |  22 +--
- drivers/clk/clk-s2mps11.c                         |  24 +++
- drivers/mfd/sec-core.c                            |  31 ++++
- drivers/mfd/sec-irq.c                             |  23 ++-
- drivers/regulator/Kconfig                         |  10 +-
- drivers/regulator/s2mps11.c                       | 102 +++++++++++-
- drivers/rtc/rtc-s5m.c                             |  15 +-
- include/linux/mfd/samsung/core.h                  |   2 +
- include/linux/mfd/samsung/s2mps13.h               | 186 ++++++++++++++++++++++
- 9 files changed, 390 insertions(+), 25 deletions(-)
- create mode 100644 include/linux/mfd/samsung/s2mps13.h
-
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index 0e4026a..57a0450 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -1,5 +1,5 @@
+ 
+-* Samsung S2MPS11, S2MPS14 and S2MPU02 Voltage and Current Regulator
++* Samsung S2MPS11, S2MPS13, S2MPS14 and S2MPU02 Voltage and Current Regulator
+ 
+ The Samsung S2MPS11 is a multi-function device which includes voltage and
+ current regulators, RTC, charger controller and other sub-blocks. It is
+@@ -7,8 +7,8 @@ interfaced to the host controller using an I2C interface. Each sub-block is
+ addressed by the host system using different I2C slave addresses.
+ 
+ Required properties:
+-- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic"
+-              or "samsung,s2mpu02-pmic".
++- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps13-pmic"
++	      or "samsung,s2mps14-pmic" or "samsung,s2mpu02-pmic".
+ - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
+ 
+ Optional properties:
+@@ -17,8 +17,8 @@ Optional properties:
+ - interrupts: Interrupt specifiers for interrupt sources.
+ 
+ Optional nodes:
+-- clocks: s2mps11 and s5m8767 provide three(AP/CP/BT) buffered 32.768 KHz
+-  outputs, so to register these as clocks with common clock framework
++- clocks: s2mps11, s2mps13 and s5m8767 provide three(AP/CP/BT) buffered 32.768
++  KHz outputs, so to register these as clocks with common clock framework
+   instantiate a sub-node named "clocks". It uses the common clock binding
+   documented in :
+   [Documentation/devicetree/bindings/clock/clock-bindings.txt]
+@@ -30,12 +30,12 @@ Optional nodes:
+     the clock which they consume.
+     Clock               ID           Devices
+     ----------------------------------------------------------
+-    32KhzAP		0            S2MPS11, S2MPS14, S5M8767
+-    32KhzCP		1            S2MPS11, S5M8767
+-    32KhzBT		2            S2MPS11, S2MPS14, S5M8767
++    32KhzAP		0            S2MPS11, S2MPS13, S2MPS14, S5M8767
++    32KhzCP		1            S2MPS11, S2MPS13, S5M8767
++    32KhzBT		2            S2MPS11, S2MPS13, S2MPS14, S5M8767
+ 
+-  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps14-clk",
+-		"samsung,s5m8767-clk"
++  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps13-clk",
++		"samsung,s2mps14-clk", "samsung,s5m8767-clk"
+ 
+ - regulators: The regulators of s2mps11 that have to be instantiated should be
+ included in a sub-node named 'regulators'. Regulator nodes included in this
+@@ -81,12 +81,14 @@ as per the datasheet of s2mps11.
+ 	- LDOn
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 38
++			- S2MPS13: 1 to 40
+ 			- S2MPS14: 1 to 25
+ 			- S2MPU02: 1 to 28
+ 		  - Example: LDO1, LDO2, LDO28
+ 	- BUCKn
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 10
++			- S2MPS13: 1 to 10
+ 			- S2MPS14: 1 to 5
+ 			- S2MPU02: 1 to 7
+ 		  - Example: BUCK1, BUCK2, BUCK9
 -- 
 1.8.5.5
 
