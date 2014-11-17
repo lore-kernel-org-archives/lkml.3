@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaKQNpb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:45:31 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48964 "EHLO
+	id S1754034AbaKQN4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:56:14 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49096 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753284AbaKQNpZ (ORCPT
+	with ESMTP id S1753322AbaKQNpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:25 -0500
+	Mon, 17 Nov 2014 08:45:31 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 31/61] dmaengine: mpc512x: Split device_control
-Date: Mon, 17 Nov 2014 14:42:25 +0100
-Message-Id: <1416231775-31252-32-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 36/61] dmaengine: bam-dma: Split device_control
+Date: Mon, 17 Nov 2014 14:42:30 +0100
+Message-Id: <1416231775-31252-37-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,158 +24,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Freescale MPC512x DMA driver to make
-use of the newly introduced callbacks, that will eventually be used to retrieve
+Split the device_control callback of the Qualcomm BAM DMA driver to make use
+of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/mpc512x_dma.c | 111 +++++++++++++++++++++-------------------------
- 1 file changed, 51 insertions(+), 60 deletions(-)
+ drivers/dma/qcom_bam_dma.c | 85 +++++++++++++++++++++++-----------------------
+ 1 file changed, 43 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
-index 01bec4023de2..57d2457545f3 100644
---- a/drivers/dma/mpc512x_dma.c
-+++ b/drivers/dma/mpc512x_dma.c
-@@ -800,79 +800,69 @@ err_prep:
- 	return NULL;
+diff --git a/drivers/dma/qcom_bam_dma.c b/drivers/dma/qcom_bam_dma.c
+index 3122a99ec06b..d7a33b3ac466 100644
+--- a/drivers/dma/qcom_bam_dma.c
++++ b/drivers/dma/qcom_bam_dma.c
+@@ -530,11 +530,18 @@ static void bam_free_chan(struct dma_chan *chan)
+  * Sets slave configuration for channel
+  *
+  */
+-static void bam_slave_config(struct bam_chan *bchan,
+-		struct dma_slave_config *cfg)
++static int bam_slave_config(struct dma_chan *chan,
++			    struct dma_slave_config *cfg)
+ {
++	struct bam_chan *bchan = to_bam_chan(chan);
++	unsigned long flag;
++
++	spin_lock_irqsave(&bchan->vc.lock, flag);
+ 	memcpy(&bchan->slave, cfg, sizeof(*cfg));
+ 	bchan->reconfigure = 1;
++	spin_unlock_irqrestore(&bchan->vc.lock, flag);
++
++	return 0;
  }
  
--static int mpc_dma_device_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--							unsigned long arg)
-+static int mpc_dma_device_config(struct dma_chan *chan,
-+				 struct dma_slave_config *cfg)
+ /**
+@@ -627,8 +634,9 @@ err_out:
+  * No callbacks are done
+  *
+  */
+-static void bam_dma_terminate_all(struct bam_chan *bchan)
++static int bam_dma_terminate_all(struct dma_chan *chan)
  {
--	struct mpc_dma_chan *mchan;
--	struct mpc_dma *mdma;
--	struct dma_slave_config *cfg;
-+	struct mpc_dma_chan *mchan = dma_chan_to_mpc_dma_chan(chan);
- 	unsigned long flags;
++	struct bam_chan *bchan = to_bam_chan(chan);
+ 	unsigned long flag;
+ 	LIST_HEAD(head);
  
--	mchan = dma_chan_to_mpc_dma_chan(chan);
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		/* Disable channel requests */
--		mdma = dma_chan_to_mpc_dma(chan);
--
--		spin_lock_irqsave(&mchan->lock, flags);
--
--		out_8(&mdma->regs->dmacerq, chan->chan_id);
--		list_splice_tail_init(&mchan->prepared, &mchan->free);
--		list_splice_tail_init(&mchan->queued, &mchan->free);
--		list_splice_tail_init(&mchan->active, &mchan->free);
--
--		spin_unlock_irqrestore(&mchan->lock, flags);
-+	/*
-+	 * Software constraints:
-+	 *  - only transfers between a peripheral device and
-+	 *     memory are supported;
-+	 *  - only peripheral devices with 4-byte FIFO access register
-+	 *     are supported;
-+	 *  - minimal transfer chunk is 4 bytes and consequently
-+	 *     source and destination addresses must be 4-byte aligned
-+	 *     and transfer size must be aligned on (4 * maxburst)
-+	 *     boundary;
-+	 *  - during the transfer RAM address is being incremented by
-+	 *     the size of minimal transfer chunk;
-+	 *  - peripheral port's address is constant during the transfer.
-+	 */
+@@ -643,56 +651,46 @@ static void bam_dma_terminate_all(struct bam_chan *bchan)
+ 	spin_unlock_irqrestore(&bchan->vc.lock, flag);
  
--		return 0;
-+	if (cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
-+	    cfg->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
-+	    !IS_ALIGNED(cfg->src_addr, 4) ||
-+	    !IS_ALIGNED(cfg->dst_addr, 4)) {
-+		return -EINVAL;
-+	}
+ 	vchan_dma_desc_free_list(&bchan->vc, &head);
++
++	return 0;
+ }
  
--	case DMA_SLAVE_CONFIG:
--		/*
--		 * Software constraints:
--		 *  - only transfers between a peripheral device and
--		 *     memory are supported;
--		 *  - only peripheral devices with 4-byte FIFO access register
--		 *     are supported;
--		 *  - minimal transfer chunk is 4 bytes and consequently
--		 *     source and destination addresses must be 4-byte aligned
--		 *     and transfer size must be aligned on (4 * maxburst)
--		 *     boundary;
--		 *  - during the transfer RAM address is being incremented by
--		 *     the size of minimal transfer chunk;
--		 *  - peripheral port's address is constant during the transfer.
--		 */
-+	spin_lock_irqsave(&mchan->lock, flags);
- 
--		cfg = (void *)arg;
-+	mchan->src_per_paddr = cfg->src_addr;
-+	mchan->src_tcd_nunits = cfg->src_maxburst;
-+	mchan->dst_per_paddr = cfg->dst_addr;
-+	mchan->dst_tcd_nunits = cfg->dst_maxburst;
- 
--		if (cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
--		    cfg->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
--		    !IS_ALIGNED(cfg->src_addr, 4) ||
--		    !IS_ALIGNED(cfg->dst_addr, 4)) {
--			return -EINVAL;
--		}
-+	/* Apply defaults */
-+	if (mchan->src_tcd_nunits == 0)
-+		mchan->src_tcd_nunits = 1;
-+	if (mchan->dst_tcd_nunits == 0)
-+		mchan->dst_tcd_nunits = 1;
- 
--		spin_lock_irqsave(&mchan->lock, flags);
-+	spin_unlock_irqrestore(&mchan->lock, flags);
- 
--		mchan->src_per_paddr = cfg->src_addr;
--		mchan->src_tcd_nunits = cfg->src_maxburst;
--		mchan->dst_per_paddr = cfg->dst_addr;
--		mchan->dst_tcd_nunits = cfg->dst_maxburst;
+ /**
+- * bam_control - DMA device control
++ * bam_pause - Pause DMA channel
+  * @chan: dma channel
+- * @cmd: control cmd
+- * @arg: cmd argument
+  *
+- * Perform DMA control command
++ */
++static int bam_pause(struct dma_chan *chan)
++{
++	struct bam_chan *bchan = to_bam_chan(chan);
++	struct bam_device *bdev = bchan->bdev;
++	unsigned long flag;
++
++	spin_lock_irqsave(&bchan->vc.lock, flag);
++	writel_relaxed(1, bam_addr(bdev, bchan->id, BAM_P_HALT));
++	bchan->paused = 1;
++	spin_unlock_irqrestore(&bchan->vc.lock, flag);
++
 +	return 0;
 +}
++
++/**
++ * bam_resume - Resume DMA channel operations
++ * @chan: dma channel
+  *
+  */
+-static int bam_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	unsigned long arg)
++static int bam_resume(struct dma_chan *chan)
+ {
+ 	struct bam_chan *bchan = to_bam_chan(chan);
+ 	struct bam_device *bdev = bchan->bdev;
+-	int ret = 0;
+ 	unsigned long flag;
  
--		/* Apply defaults */
--		if (mchan->src_tcd_nunits == 0)
--			mchan->src_tcd_nunits = 1;
--		if (mchan->dst_tcd_nunits == 0)
--			mchan->dst_tcd_nunits = 1;
-+static int mpc_dma_device_terminate_all(struct dma_chan *chan)
-+{
-+	struct mpc_dma_chan *mchan = dma_chan_to_mpc_dma_chan(chan);
-+	struct mpc_dma *mdma = dma_chan_to_mpc_dma(chan);
-+	unsigned long flags;
- 
--		spin_unlock_irqrestore(&mchan->lock, flags);
-+	/* Disable channel requests */
-+	spin_lock_irqsave(&mchan->lock, flags);
- 
--		return 0;
-+	out_8(&mdma->regs->dmacerq, chan->chan_id);
-+	list_splice_tail_init(&mchan->prepared, &mchan->free);
-+	list_splice_tail_init(&mchan->queued, &mchan->free);
-+	list_splice_tail_init(&mchan->active, &mchan->free);
- 
+-	switch (cmd) {
+-	case DMA_PAUSE:
+-		spin_lock_irqsave(&bchan->vc.lock, flag);
+-		writel_relaxed(1, bam_addr(bdev, bchan->id, BAM_P_HALT));
+-		bchan->paused = 1;
+-		spin_unlock_irqrestore(&bchan->vc.lock, flag);
+-		break;
+-
+-	case DMA_RESUME:
+-		spin_lock_irqsave(&bchan->vc.lock, flag);
+-		writel_relaxed(0, bam_addr(bdev, bchan->id, BAM_P_HALT));
+-		bchan->paused = 0;
+-		spin_unlock_irqrestore(&bchan->vc.lock, flag);
+-		break;
+-
+-	case DMA_TERMINATE_ALL:
+-		bam_dma_terminate_all(bchan);
+-		break;
+-
+-	case DMA_SLAVE_CONFIG:
+-		spin_lock_irqsave(&bchan->vc.lock, flag);
+-		bam_slave_config(bchan, (struct dma_slave_config *)arg);
+-		spin_unlock_irqrestore(&bchan->vc.lock, flag);
+-		break;
+-
 -	default:
--		/* Unknown command */
+-		ret = -ENXIO;
 -		break;
 -	}
-+	spin_unlock_irqrestore(&mchan->lock, flags);
++	spin_lock_irqsave(&bchan->vc.lock, flag);
++	writel_relaxed(0, bam_addr(bdev, bchan->id, BAM_P_HALT));
++	bchan->paused = 0;
++	spin_unlock_irqrestore(&bchan->vc.lock, flag);
  
--	return -ENXIO;
+-	return ret;
 +	return 0;
  }
  
- static int mpc_dma_probe(struct platform_device *op)
-@@ -963,7 +953,8 @@ static int mpc_dma_probe(struct platform_device *op)
- 	dma->device_tx_status = mpc_dma_tx_status;
- 	dma->device_prep_dma_memcpy = mpc_dma_prep_memcpy;
- 	dma->device_prep_slave_sg = mpc_dma_prep_slave_sg;
--	dma->device_control = mpc_dma_device_control;
-+	dma->device_config = mpc_dma_device_config;
-+	dma->device_terminate_all = mpc_dma_device_terminate_all;
+ /**
+@@ -1148,7 +1146,10 @@ static int bam_dma_probe(struct platform_device *pdev)
+ 	bdev->common.device_alloc_chan_resources = bam_alloc_chan;
+ 	bdev->common.device_free_chan_resources = bam_free_chan;
+ 	bdev->common.device_prep_slave_sg = bam_prep_slave_sg;
+-	bdev->common.device_control = bam_control;
++	bdev->common.device_config = bam_slave_config;
++	bdev->common.device_pause = bam_pause;
++	bdev->common.device_resume = bam_resume;
++	bdev->common.device_terminate_all = bam_dma_terminate_all;
+ 	bdev->common.device_issue_pending = bam_issue_pending;
+ 	bdev->common.device_tx_status = bam_tx_status;
+ 	bdev->common.dev = bdev->dev;
+@@ -1187,7 +1188,7 @@ static int bam_dma_remove(struct platform_device *pdev)
+ 	devm_free_irq(bdev->dev, bdev->irq, bdev);
  
- 	INIT_LIST_HEAD(&dma->channels);
- 	dma_cap_set(DMA_MEMCPY, dma->cap_mask);
+ 	for (i = 0; i < bdev->num_channels; i++) {
+-		bam_dma_terminate_all(&bdev->channels[i]);
++		bam_dma_terminate_all(&bdev->channels[i].vc.chan);
+ 		tasklet_kill(&bdev->channels[i].vc.task);
+ 
+ 		dma_free_writecombine(bdev->dev, BAM_DESC_FIFO_SIZE,
 -- 
 2.1.1
 
