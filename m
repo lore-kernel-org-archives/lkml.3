@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaKQQmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 11:42:33 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:56795 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaKQQmb (ORCPT
+	id S1751738AbaKQQsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 11:48:19 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:41171 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaKQQsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 11:42:31 -0500
-From: Alexander Kochetkov <al.kochet@gmail.com>
-To: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexander Kochetkov <al.kochet@gmail.com>
-Subject: [PATCH] Fixes: 1d7afc9 i2c: omap: ack IRQ in parts
-Date: Mon, 17 Nov 2014 20:41:57 +0400
-Message-Id: <1416242517-29885-1-git-send-email-al.kochet@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 17 Nov 2014 11:48:18 -0500
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, srinivas.kandagatla@gmail.com,
+        patrice.chotard@st.com, arnd@arndb.de
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
+Subject: [PATCH v3 00/11] Add stih410 SoC/board and USB2/1.1 support for stih416
+Date: Mon, 17 Nov 2014 16:47:53 +0000
+Message-Id: <1416242884-5261-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 1d7afc95946487945cc7f5019b41255b72224b70 (i2c: omap: ack IRQ in parts)
-changed the interrupt handler to complete transfers without clearing
-XRDY (AL case) and ARDY (NACK case) flags. XRDY or ARDY interrupts will be
-fired again. As a result, ISR keep processing transfer after it was already
-complete (from the driver code point of view).
+Hi folks,
 
-A didn't see real impacts of the 1d7afc9, but it is really bad idea to
-have ISR running on user data after transfer was complete.
+This series adds the required device tree nodes to enable the usb2/1.1 phy
+and usb2/1.1 controllers on the stih416-b2120 board.
 
-It looks, what 1d7afc9 violate TI specs in what how AL and NACK should be
-handled (see Note 1, sprugn4r, Figure 17-31 and Figure 17-32).
+It additionally re-works and adds support for the new stih410 SoC which is
+very similar to the stih407 SoC, by abstracting out the common parts
+into common dt files.
 
-According to specs (if I understood correctly), in case of NACK and AL driver
-must reset NACK, AL, ARDY, RDR, and RRDY (Master Receive Mode), and
-NACK, AL, ARDY, and XDR (Master Transmitter Mode).
+After Arnds feedback regarding mixing address spaces in the stih407-picophy
+dt nodes, I've tempoarily removed these patches from the series until the
+underlying driver has been fixed, as ideally I would like to get the rest
+of this series into 3.19
 
-All that is done down the code under the if condition:
-if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK | OMAP_I2C_STAT_AL)) ...
+As well as adding dt nodes it also enables the relevant drivers in the 
+multi_v7_defconfig.
 
-The patch restore pre 1d7afc9 logic of handling NACK and AL interrupts, so
-no interrupts is fired after ISR informs the rest of driver what transfer
-complete.
+Finally we update the default bootargs for stih407-b2120 and stih410-b2120
+to boot with the clk_ignore_unused kernel parameter so as not to hang
+the SoC when the (as yet) unreferenced interconnect clocks get disabled
+by CCF (this is a tempoary solution).
 
-Note: instead of removing break under NACK case, we could just replace 'break'
-with 'continue' and allow NACK transfer to finish using ARDY event. I found
-that NACK and ARDY bits usually set together. That case confirm TI wiki:
-http://processors.wiki.ti.com/index.php/I2C_Tips#Detecting_and_handling_NACK
+This series has been tested on stih416-b2020 and stih410-b2120 SoC/boards.
 
-In order if someone interested in the event traces for NACK and AL cases,
-I sent them to mailing list.
+Changes since v1:
+- Leave bootargs & memory dt nodes in board files (Arnd)
+- Remove '0x' from the unit address in all instances. (Arnd)
+- Remove 'status="okay"' from some nodes (Arnd)
+- Remove some legacy extra nodes which only contain status property (Arnd)
+- Fix stih410 commit description (Maxime)
+- Add a stih410.dtsi and stih410-pinctrl.dtsi files (Maxime)
+- Remove superflous '\n' (Lee)
+- Add a '\n' between the sentries and #include (Lee)
 
-Tested on Beagleboard XM C.
+Changes since v2:
+- Remove picophy and ehci/ohci dt nodes for stih407 / stih410 until reg binding is fixed
+- Update miphy365 over to common convention of phy@ (Arnd)
 
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Cc: <stable@vger.kernel.org> # v3.7+
----
- drivers/i2c/busses/i2c-omap.c |    2 --
- 1 file changed, 2 deletions(-)
+Peter Griffin (11):
+  ARM: STi: DT: STiH416: Add pinctl setup for usb controllers.
+  ARM: STi: DT: STiH416: Add DT node for the stih415/6 usb2 phy
+  ARM: STi: DT: STiH416: Add DT nodes for the ehci and ohci usb
+    controllers.
+  ARM: multi_v7_defconfig: Enable st ohci and ehci HCD drivers.
+  ARM: multi_v7_defconfig: Enable stih415/6 usb2 phy driver.
+  ARM: STi: DT: STiH410: Add defines for STiH410 DT clocks
+  ARM: STi: DT: STiH410:  Add pinctl config for usb controllers.
+  ARM: STi: DT: STih407: Abstract common dt nodes into shared files.
+  ARM: STi: DT: STiH410: Add STiH410 SoC and b2120 board support.
+  ARM: STi: DT: STih407: STih410: Add clk_ignore_unused to kernel
+    bootargs
+  ARM: STi: DT: STiH416: Change miphy356 node name to phy@fe382000
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 90dcc2e..9af7095 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -926,14 +926,12 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
- 		if (stat & OMAP_I2C_STAT_NACK) {
- 			err |= OMAP_I2C_STAT_NACK;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
--			break;
- 		}
- 
- 		if (stat & OMAP_I2C_STAT_AL) {
- 			dev_err(dev->dev, "Arbitration lost\n");
- 			err |= OMAP_I2C_STAT_AL;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_AL);
--			break;
- 		}
- 
- 		/*
+ arch/arm/boot/dts/Makefile               |   1 +
+ arch/arm/boot/dts/stih407-b2120.dts      |  55 +----
+ arch/arm/boot/dts/stih407-family.dtsi    | 278 +++++++++++++++++++++++++
+ arch/arm/boot/dts/stih407.dtsi           | 279 -------------------------
+ arch/arm/boot/dts/stih410-b2120.dts      |  29 +++
+ arch/arm/boot/dts/stih410-clock.dtsi     | 338 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih410-pinctrl.dtsi   |  34 ++++
+ arch/arm/boot/dts/stih410.dtsi           |  14 ++
+ arch/arm/boot/dts/stih416-b2020.dts      |   2 +-
+ arch/arm/boot/dts/stih416-b2020e.dts     |   2 +-
+ arch/arm/boot/dts/stih416-pinctrl.dtsi   |  34 ++++
+ arch/arm/boot/dts/stih416.dtsi           | 131 +++++++++++-
+ arch/arm/boot/dts/stihxxx-b2120.dtsi     |  59 ++++++
+ arch/arm/configs/multi_v7_defconfig      |   3 +
+ include/dt-bindings/clock/stih410-clks.h |  25 +++
+ 15 files changed, 951 insertions(+), 333 deletions(-)
+ create mode 100644 arch/arm/boot/dts/stih407-family.dtsi
+ delete mode 100644 arch/arm/boot/dts/stih407.dtsi
+ create mode 100644 arch/arm/boot/dts/stih410-b2120.dts
+ create mode 100644 arch/arm/boot/dts/stih410-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih410-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih410.dtsi
+ create mode 100644 arch/arm/boot/dts/stihxxx-b2120.dtsi
+ create mode 100644 include/dt-bindings/clock/stih410-clks.h
+
 -- 
-1.7.9.5
+1.9.1
 
