@@ -1,166 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaKQXks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 18:40:48 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45566 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596AbaKQXkq (ORCPT
+	id S1752984AbaKQXnI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 18:43:08 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:33889 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982AbaKQXnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 18:40:46 -0500
-Date: Mon, 17 Nov 2014 23:40:12 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Flora Fu <flora.fu@mediatek.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Dongdong Cheng <dongdong.cheng@mediatek.com>
-Message-ID: <20141117234012.GE22111@sirena.org.uk>
-References: <1416210027-5562-1-git-send-email-flora.fu@mediatek.com>
- <1416210027-5562-4-git-send-email-flora.fu@mediatek.com>
+	Mon, 17 Nov 2014 18:43:06 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="imjhCm/Pyz7Rq5F2"
-Content-Disposition: inline
-In-Reply-To: <1416210027-5562-4-git-send-email-flora.fu@mediatek.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 149.254.182.38
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/7] regulator: MT6397: Add support for MT6397 regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20141111035902.GC28161@google.com>
+References: <1414865479-25792-1-git-send-email-prarit@redhat.com> <20141111035902.GC28161@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 17 Nov 2014 16:42:44 -0700
+Message-ID: <CAErSpo7q1U_HpEeB_pMWJPae3a+oysEwR660m2bV5KdZ7oCr0w@mail.gmail.com>
+Subject: Re: [PATCH] pci, add FW_BUG warning to pci= kernel option
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Myron Stowe <mstowe@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 10, 2014 at 8:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc lkml, linux-arch, Linus]
+>
+> On Sat, Nov 01, 2014 at 02:11:19PM -0400, Prarit Bhargava wrote:
+>> The kernel should boot PCI without the use of kernel parameters.  Display
+>> a FW_BUG warning when pci= is used.
+>>
+>> Cc: Myron Stowe <mstowe@redhat.com>
+>> Cc: linux-pci@vger.kernel.org
+>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>> ---
+>>  drivers/pci/pci.c |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>> index 625a4ac..5172060b 100644
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -4515,6 +4515,8 @@ static int __init pci_setup(char *str)
+>>               }
+>>               str = k;
+>>       }
+>> +     add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
+>> +     pr_crit(FW_BUG "The PCI configuration has been overridden thorugh the use of pci=.  Please report the issue you are attempting to resolve to your hardware vendor.\n");
+>
+> My goal is to be able to boot without any "pci=" parameters, so from that
+> perspective, I like this.
+>
+> When people have a problem booting Linux, they often try a variety of
+> things like "pci=assign-busses", "pci=nocrs", "pci=nomsi", "pci=nommconf",
+> "pci=noacpi", etc.  If they find something that works, there's a tendency
+> to treat that as a "solution."  I'd rather that they report it, so we can
+> try to fix the bug or add a quirk so the *next* person won't have to figure
+> out the right parameters to use.
+>
+> My worry is that there are a few things where Linux isn't smart enough to
+> do the right thing automatically, and I don't think we'll have a good
+> solution in the near future.  For example:
+>
+>     pci=norom
+>     pci=pcie_bus_perf,pcie_bus_safe,etc.
+>     pci=cbiosize=...
+>     pci=cbmemsize=...
+>     pci=resource_alignment=...
+>     pci=hpiosize=...
+>     pci=hpmemsize=...
+>     pci=realloc
+>
+> I don't like the fact that these options exist, but I suspect there are
+> users that do depend on them and might find this warning too aggressive.
+>
+> So I'm interested in opinions on whether this is a good idea at all and
+> whether we should exclude some options from the warning/tainting.
 
---imjhCm/Pyz7Rq5F2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Prarit,
 
-On Mon, Nov 17, 2014 at 03:40:23PM +0800, Flora Fu wrote:
+We didn't get any nibbles :)
 
-This looks mostly good but there are a few fairly straightfoward things:
+I don't think we can realistically taint the kernel for *all* "pci="
+options.  So if you want to pursue this, maybe you could enhance this
+so we can have a whitelist of options that we will support without
+tainting.  Then we can argue about what should be on the list and go
+from there.  Does that seem reasonable?
 
-> @@ -725,5 +725,11 @@ config REGULATOR_WM8994
->  	  This driver provides support for the voltage regulators on the
->  	  WM8994 CODEC.
-> =20
-> +config REGULATOR_MT6397
-> +	tristate "MediaTek MT6397 PMIC"
-> +	depends on MFD_MT6397
-> +	help
-> +	   This driver provides support for the voltage regulators on the Media=
-Tek MT6397 PMIC.
-> +
->  endif
+This is a somewhat more aggressive use of tainting than we've had in
+the past, so we might have to iterate on this a bit.
 
-Keep this and the Makefile sorted.
-
-> +static int mt6397_buck_set_voltage_sel(struct regulator_dev *rdev, unsig=
-ned sel)
-> +{
-
-
-> +	vosel =3D info->buck_conf.vosel_reg;
-> +	voselon =3D info->buck_conf.voselon_reg;
-> +	vosel_mask =3D info->buck_conf.vosel_mask;
-
-Please use the standard way of specifying data even if you can't use the
-standard function.
-
-> +
-> +	ret =3D regmap_update_bits(rdev->regmap, vosel, vosel_mask, sel);
-> +	if (ret !=3D 0) {
-> +		dev_err(&rdev->dev, "Failed to update vosel: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	ret =3D regmap_update_bits(rdev->regmap, voselon, vosel_mask, sel);
-> +	if (ret !=3D 0) {
-> +		dev_err(&rdev->dev, "Failed to update vosel_on: %d\n", ret);
-> +		return ret;
-> +	}
-> +	return 0;
-
-You should add comments here explaining what's going on - it's very
-strange to have to write the same value to two different registers and
-the names of the registers look suspicously like this is something to do
-with a suspend mode...
-
-Missing blank line before the return too.
-
-> +static int mt6397_buck_get_voltage_sel(struct regulator_dev *rdev)
-> +{
-
-You could use the regmap based helper for this.
-
-> +static int mt6397_ldo_set_voltage_sel(struct regulator_dev *rdev, unsign=
-ed sel)
-> +{
-
-The LDO operations appear to be identical to the standard regmap
-helpers, please use them.
-
-> +	if (is_fixed)
-> +		return 0;
-
-You should use the standard fixed voltage regulator support rather than=20
-
-> +static int mt6397_regulator_is_enabled(struct regulator_dev *rdev)
-> +{
-
-Again this looks like it should be using helpers.
-
-> +#define MT6397_REGULATOR_OF_MATCH(_name, _id)			\
-> +[MT6397_ID_##_id] =3D {						\
-> +	.name =3D #_name,						\
-> +	.driver_data =3D &mt6397_regulators[MT6397_ID_##_id],	\
-> +}
-
-Define regulators_node and of_match in the regulator desc and you can
-remove both this table and all your DT matching code in the driver, the
-core will handle it for you.
-
-> +	if ((reg_value & 0xFF) =3D=3D MT6397_REGULATOR_ID91) {
-> +		j =3D MT6397_ID_VCAMIO;
-> +		mt6397_regulator_matches[j].init_data->constraints.min_uV =3D
-> +		1000000;
-> +		mt6397_regulators[j].desc.volt_table =3D ldo_volt_table5_v2;
-> +	}
-
-Use a switch statement, that way other variants can be added more
-easily.
-
---imjhCm/Pyz7Rq5F2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUaodbAAoJECTWi3JdVIfQRbsIAIS19O6HdHxuY4s95wHXapxJ
-J5WGr2+DiVqEAQVW4PxUUtOGpbks3TM3nRP35va8Pu7xfZQ1A9m+cPEiHLKYoj6G
-qbXKM25cSBfkZ/i/c9FmdUI06X5GPdE6INUswxLvWLGZMZl9Pw9QtbYHbedvhUFa
-wF5TP0XJrT0XA0yXfAW5Ce3ccwNsPTFw1eX8SJKKE+ShVbSzYmvKBVEmdloZWgr4
-yGFeb1mUm2o5Yhpbt8a6z+YrWlshSGUHBDiR01HGlFUHYaOpqHQhgaPIxjhzBKzP
-Fs7GqMduqCTIDu/lxjZaeucP+sLsQ6KpiYeWBFLwqptxiuPWYf5ISuFF0OGUlXw=
-=9Hzy
------END PGP SIGNATURE-----
-
---imjhCm/Pyz7Rq5F2--
+Bjorn
