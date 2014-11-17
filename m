@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaKQPMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:12:08 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:46122 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaKQPMF (ORCPT
+	id S1753514AbaKQPMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:12:19 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:56277 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaKQPMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:12:05 -0500
+	Mon, 17 Nov 2014 10:12:15 -0500
+Date: Mon, 17 Nov 2014 15:12:11 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: Re: [PATCH v2 1/3] firmware loader: Introduce new API -
+ request_firmware_abort()
+Message-ID: <20141117151211.GB6810@console-pimps.org>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+ <20141108190655.GA2638@kroah.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B8529E3@PGSMSX102.gar.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141117145651.GR24004@x1>
-References: <1415708457-18798-1-git-send-email-octavian.purdila@intel.com>
-	<1415708457-18798-3-git-send-email-octavian.purdila@intel.com>
-	<20141113162315.GC1275@katana>
-	<20141117145651.GR24004@x1>
-Date: Mon, 17 Nov 2014 17:12:03 +0200
-Message-ID: <CAE1zot+9-JMjKWST4VDifrjau=kXoxWB=GOHx06h8szwMwiCwg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i2c: dln2: simplify return flow for dln2_i2c_enable
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        Johan Hovold <johan@kernel.org>, Julia Lawall <julia.lawall@lip6.fr>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F54AEECA5E2B9541821D670476DAE19C2B8529E3@PGSMSX102.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 4:56 PM, Lee Jones <lee.jones@linaro.org> wrote:
->
-> On Thu, 13 Nov 2014, Wolfram Sang wrote:
->
-> > On Tue, Nov 11, 2014 at 02:20:57PM +0200, Octavian Purdila wrote:
-> > > This fixes the following kbuild test robot warning:
-> > >
-> > > >> drivers/i2c/busses/i2c-dln2.c:70:1-4: WARNING: end returns can be simplified if negative or 0 value
-> > >
-> > > Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> > > Reported-by: Julia Lawall <julia.lawall@lip6.fr>
-> > >
-> > > Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> >
-> > Acked-by: Wolfram Sang <wsa@the-dreams.de>
-> >
-> > Lee, I think it is easiest if you simply add it to the branch you have
-> > for this driver. OK?
->
-> Octavian indicated that he needs to send a v2 of the second patch.  I
-> assume he will add your Ack to this patch when he does with a note
-> saying that it needs to be added to the I2C IB.
->
+On Thu, 13 Nov, at 02:51:28AM, Kweh, Hock Leong wrote:
+> 
+> Hi everyone,
+> 
+> First of all, I would like to apologize if my commit message gives you guys an impression
+> that to use request_firmware_abort(), you guys MUST do the synchronization on your own. 
+> But the fact is, it is not a MUST. Below will provide more detail.
+> 
+> Regarding this synchronization topic, I would like to open a discussion to get a
+> better approach to handle this problem. Before jumping onto the design, I would
+> like to give a background of why I am doing in this way.
+> 
+> - Only doing module unload is required to be aware of this synchronization
+> 	-> Ensuring the call back does not fall into unloaded code which may cause
+> 	     undefined behavior.
+> 	-> Ensuring the put_device() & module_put() code have finished in firmware_class.c
+> 	     function request_firmware_work_func() before the device is unregistered
+> 	     and module unloaded happen.
 
-Hi Lee,
+Shouldn't the existing module_{put,get}() and {put,get}_device() calls
+provide all the necessary synchronisation?
 
-Yes, I will to that, and add a couple more fixes from Dan Carpenter, a
-little bit later tonight.
+Module unload should not be possible while other code is using the
+module (and the module refcnt has been incremented accordindly).
+
+Right?
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
