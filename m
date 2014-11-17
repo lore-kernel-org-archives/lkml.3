@@ -1,117 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaKQVPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:15:55 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:35659 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923AbaKQVPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:15:54 -0500
-Date: Mon, 17 Nov 2014 16:15:46 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH block/for-next 3/4] cgroup, block: implement task_get_css()
- and use it in bio_associate_current()
-Message-ID: <20141117211546.GF23126@htj.dyndns.org>
-References: <20141117211321.GD23126@htj.dyndns.org>
- <20141117211357.GE23126@htj.dyndns.org>
+	id S1752884AbaKQVQC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 16:16:02 -0500
+Received: from relay1.sgi.com ([192.48.180.66]:58471 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751923AbaKQVP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 16:15:57 -0500
+Date: Mon, 17 Nov 2014 15:16:15 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Alex Thorlton <athorlton@sgi.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
+Message-ID: <20141117211615.GT21147@sgi.com>
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+ <87lho0pf4l.fsf@tassilo.jf.intel.com>
+ <544F9302.4010001@redhat.com>
+ <20141110110357.GY21422@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141117211357.GE23126@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141110110357.GY21422@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio_associate_current() currently open codes task_css() and
-css_tryget_online() to find and pin $current's blkcg css.  Abstract it
-into task_get_css() which is implemented from cgroup side.  As a task
-is always associated with an online css for every subsystem except
-while the css_set update is propagating, task_get_css() retries till
-css_tryget_online() succeeds.
+On Mon, Nov 10, 2014 at 11:03:57AM +0000, Mel Gorman wrote:
+> On Tue, Oct 28, 2014 at 08:58:42AM -0400, Rik van Riel wrote:
+> > On 10/28/2014 08:12 AM, Andi Kleen wrote:
+> > > Alex Thorlton <athorlton@sgi.com> writes:
+> > > 
+> > >> Last week, while discussing possible fixes for some unexpected/unwanted behavior
+> > >> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
+> > >> mentioned possibly changing changing khugepaged to work as a task_work function
+> > >> instead of a kernel thread.  This will give us finer grained control over the
+> > >> page collapse scans, eliminate some unnecessary scans since tasks that are
+> > >> relatively inactive will not be scanned often, and eliminate the unwanted
+> > >> behavior described in the email thread I mentioned.
+> > > 
+> > > With your change, what would happen in a single threaded case?
+> > > 
+> > > Previously one core would scan and another would run the workload.
+> > > With your change both scanning and running would be on the same
+> > > core.
+> > > 
+> > > Would seem like a step backwards to me.
+> > 
+> 
+> Only in the single-threaded, one process for the whole system case.
+> khugepaged can only scan one address space at a time and if processes
+> fail to allocate a huge page on fault then they must wait until
+> khugepaged gets to scan them. The wait time is not unbounded, but it
+> could be considerable.
+> 
+> As pointed out elsewhere, scanning from task-work context allows the
+> scan rate to adapt due to different inputs -- runtime on CPU probably
+> being the most relevant. Another scan factor could be NUMA sharing within
+> THP-boundaries in which case we don't want to either collapse or continue
+> scanning at the same rate.
+> 
+> > It's not just scanning, either.
+> > 
+> > Memory compaction can spend a lot of time waiting on
+> > locks. Not consuming CPU or anything, but just waiting.
+> > 
+> 
+> I did not pick apart the implementation closely as it's still RFC but
+> there is no requirement for the reclaim/compaction to take place from
+> task work context. That would likely cause user-visible stalls in any
+> number of situations can trigger bug reports.
 
-This is a cleanup and shouldn't lead to noticeable behavior changes.
+Not much to pick apart, really.  Basically just turns off khugepaged and
+calls into the mm scan code from a task work function.  I didn't
+consider the problems with possibly hitting compaction code.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>
----
-Hello,
+> One possibility would be to try allocate a THP GFP_ATOMIC from task_work
+> context and only start the scan if that allocation succeeds. Scan the
+> address space for a THP to collapse. If a collapse target it found and
+> the allocated THP is on the correct node then great -- use it. If not,
+> the first page should be freed and a second GFP_ATOMIC allocation
+> attempt made. 
 
-This one can be routed through either cgroup or block tree but I think
-it'd be easier to route this through block as there will be more block
-changes in the area.
+I like this idea, especially because it wouldn't be all that complicated
+to implement.  I'll take a look at doing something like this.
 
-Thanks.
+> If a THP allocation fails then wake we need something to try allocate the
+> page on the processes behalf. khugepaged could be repurposed to do the
+> reclaim/compaction step or kswapd could be woken up.
 
- block/bio.c            |   11 +----------
- include/linux/cgroup.h |   25 +++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 10 deletions(-)
+I think keeping khugepaged around to do the reclaim/compaction stuff
+sounds like a good idea as well.  khugepaged could continue to scan in
+the same way that it does now, but the only work it would do would be to
+handle compaction/reclaim.  I don't know that code path very well, so
+I'm not really sure if that makes a lot of sense, but I'll look into it.
 
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -1997,7 +1997,6 @@ EXPORT_SYMBOL(bioset_create_nobvec);
- int bio_associate_current(struct bio *bio)
- {
- 	struct io_context *ioc;
--	struct cgroup_subsys_state *css;
- 
- 	if (bio->bi_ioc)
- 		return -EBUSY;
-@@ -2006,17 +2005,9 @@ int bio_associate_current(struct bio *bi
- 	if (!ioc)
- 		return -ENOENT;
- 
--	/* acquire active ref on @ioc and associate */
- 	get_io_context_active(ioc);
- 	bio->bi_ioc = ioc;
--
--	/* associate blkcg if exists */
--	rcu_read_lock();
--	css = task_css(current, blkio_cgrp_id);
--	if (css && css_tryget_online(css))
--		bio->bi_css = css;
--	rcu_read_unlock();
--
-+	bio->bi_css = task_get_css(current, blkio_cgrp_id);
- 	return 0;
- }
- 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -748,6 +748,31 @@ static inline struct cgroup_subsys_state
- }
- 
- /**
-+ * task_get_css - find and get the css for (task, subsys)
-+ * @task: the target task
-+ * @subsys_id: the target subsystem ID
-+ *
-+ * Find the css for the (@task, @subsys_id) combination, increment a
-+ * reference on and return it.  This function is guaranteed to return a
-+ * valid css.
-+ */
-+static inline struct cgroup_subsys_state *
-+task_get_css(struct task_struct *task, int subsys_id)
-+{
-+	struct cgroup_subsys_state *css;
-+
-+	rcu_read_lock();
-+	while (true) {
-+		css = task_css(task, subsys_id);
-+		if (likely(css_tryget_online(css)))
-+			break;
-+		cpu_relax();
-+	}
-+	rcu_read_unlock();
-+	return css;
-+}
-+
-+/**
-  * task_css_is_root - test whether a task belongs to the root css
-  * @task: the target task
-  * @subsys_id: the target subsystem ID
+> > I am not convinced that moving all that waiting to task
+> > context is a good idea.
+> > 
+> 
+> It allows the scanning of page tables to be parallelised, moves the
+> work into the task context where it can be accounted for and the scan
+> rate can be adapted to prevent useless work. I think those are desirable
+> characteristics although there is no data on the expected gains of doing
+> something like this. It's the proper deferral of THP allocations that is
+> likely to cause the most headaches.
+
+I might have missed something in the code, but isn't it possible to run
+into compaction if a high-order allocation fails from task context
+already?  It would likely be rare to hit, but I don't see anything that
+prevents it.  That being said, the way the scans work in this code,
+I'm adding in an extra opportunity to run into compaction code, which
+probably isn't desirable.
+
+- Alex
