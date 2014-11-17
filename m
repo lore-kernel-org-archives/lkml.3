@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaKQV7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:59:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53114 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbaKQV7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:59:46 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, sgrubb@redhat.com,
-        eparis@parisplace.org
-Subject: Re: [PATCH] audit: convert status version to a feature bitmap
-Date: Mon, 17 Nov 2014 16:59:38 -0500
-Message-ID: <22486502.DVxKTqPvb6@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.2 (Linux/3.16.7-gentoo; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <31e5843487fb1596bbae61e5b8be9efb540c471f.1416257393.git.rgb@redhat.com>
-References: <12539378.gxbYIULgU3@sifl> <31e5843487fb1596bbae61e5b8be9efb540c471f.1416257393.git.rgb@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752602AbaKQWGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:06:03 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:48270 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791AbaKQWGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 17:06:01 -0500
+Message-ID: <1416261956.18588.9.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 1/1 net-next] net/core: include linux/types.h instead of
+ asm/types.h
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: fabf@skynet.be, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Mon, 17 Nov 2014 14:05:56 -0800
+In-Reply-To: <20141117.163532.788436432373669437.davem@davemloft.net>
+References: <1416258502-9001-1-git-send-email-fabf@skynet.be>
+	 <1416259376.18588.8.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20141117.163532.788436432373669437.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 17, 2014 03:51:01 PM Richard Guy Briggs wrote:
-> The version field defined in the audit status structure was found to have
-> limitations in terms of its expressibility of features supported.  This is
-> distict from the get/set features call to be able to command those features
-> that are present.
+On Mon, 2014-11-17 at 16:35 -0500, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Mon, 17 Nov 2014 13:22:56 -0800
 > 
-> Converting this field from a version number to a feature bitmap will allow
-> distributions to selectively backport and support certain features and will
-> allow upstream to be able to deprecate features in the future.  It will
-> allow userspace clients to first query the kernel for which features are
-> actually present and supported.  Currently, EINVAL is returned rather than
-> EOPNOTSUP, which isn't helpful in determining if there was an error in the
-> command, or if it simply isn't supported yet.  Past features are not
-> represented by this bitmap, but their use may be converted to EOPNOTSUP if
-> needed in the future.
+> > On Mon, 2014-11-17 at 22:08 +0100, Fabian Frederick wrote:
+> >> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> >> ---
+> >>  net/core/link_watch.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >> 
+> >> diff --git a/net/core/link_watch.c b/net/core/link_watch.c
+> >> index bd0767e..49a9e3e 100644
+> >> --- a/net/core/link_watch.c
+> >> +++ b/net/core/link_watch.c
+> >> @@ -21,7 +21,7 @@
+> >>  #include <linux/spinlock.h>
+> >>  #include <linux/workqueue.h>
+> >>  #include <linux/bitops.h>
+> >> -#include <asm/types.h>
+> >> +#include <linux/types.h>
+> >>  
+> > 
+> > We have 99 such occurrences in net/
+> > 
+> > Are you going to send 99 patches ?
 > 
-> Since "version" is too generic to convert with a #define, use a union in the
-> struct status, introducing the member "feature_bitmap" unionized with
-> "version".
-> 
-> Convert existing AUDIT_VERSION_* macros over to AUDIT_FEATURE_BITMAP*
-> counterparts, leaving the former for backwards compatibility.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  include/uapi/linux/audit.h |   17 +++++++++++++----
->  kernel/audit.c             |    2 +-
->  2 files changed, 14 insertions(+), 5 deletions(-)
+> Yeah, probably best to consolidate into one or a few patches.
 
-Applied to the audit next branch, thanks Richard.
+BTW the 99 occurrences are for asm/uaccess.h, it seems I gave the reply
+on the wrong patch.
 
- * git://git.infradead.org/users/pcmoore/audit next
 
--- 
-paul moore
-security and virtualization @ redhat
+
 
