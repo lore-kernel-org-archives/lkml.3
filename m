@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaKQK0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:26:23 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:45166 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbaKQK0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:26:20 -0500
-Message-ID: <5469CD47.3040409@cogentembedded.com>
-Date: Mon, 17 Nov 2014 13:26:15 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752290AbaKQK3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:29:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751636AbaKQK3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 05:29:02 -0500
+Date: Mon, 17 Nov 2014 12:28:49 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V3 1/2] virtio: introduce methods of sanitizing device
+ features
+Message-ID: <20141117102848.GH20133@redhat.com>
+References: <1416215838-21700-1-git-send-email-jasowang@redhat.com>
+ <20141117093701.GC20133@redhat.com>
+ <20141117104430.54362e7d.cornelia.huck@de.ibm.com>
+ <20141117101139.GE20133@redhat.com>
+ <20141117112048.0b0480ff.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Rob Herring <robh@kernel.org>
-CC: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus <magnus.damm@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Joe Perches <joe@perches.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v4] of: replace Asahi Kasei Corp venter prefix
-References: <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com>	<20140922130026.GK3290@leverpostej>	<CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>	<20140922132743.GM3290@leverpostej>	<87y4rfhmgl.wl%kuninori.morimoto.gx@renesas.com>	<1415845309.4269.6.camel@perches.com>	<20141113025105.GA16652@verge.net.au>	<87vbmjhj00.wl%kuninori.morimoto.gx@renesas.com>	<20141113110740.GE3815@sirena.org.uk>	<87k32yd0bd.wl%kuninori.morimoto.gx@renesas.com>	<20141114093554.GC3810@ulmo> <87y4ra8xac.wl%kuninori.morimoto.gx@renesas.com>
-In-Reply-To: <87y4ra8xac.wl%kuninori.morimoto.gx@renesas.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117112048.0b0480ff.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Nov 17, 2014 at 11:20:48AM +0100, Cornelia Huck wrote:
+> On Mon, 17 Nov 2014 12:11:39 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > On Mon, Nov 17, 2014 at 10:44:30AM +0100, Cornelia Huck wrote:
+> > > On Mon, 17 Nov 2014 11:37:01 +0200
+> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > 
+> > > > On Mon, Nov 17, 2014 at 05:17:17PM +0800, Jason Wang wrote:
+> > > > > Buggy host may advertised buggy host features (a usual case is that host
+> > > > > advertise a feature whose dependencies were missed). In this case, driver
+> > > > > should detect and disable the buggy features by itself.
+> > > > > 
+> > > > > This patch introduces driver specific sanitize_features() method which is
+> > > > > called just before features finalizing to detect and disable buggy features
+> > > > > advertised by host.
+> > > > > 
+> > > > > Virtio-net will be the first user.
+> > > > > 
+> > > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > > > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > > > > Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+> > > > > Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> > > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > > > 
+> > > > Hmm this conflicts with virtio 1.0 work: we drop
+> > > > features as bitmap there.
+> > > 
+> > > But that's an implementation detail, no? We'll still need a way for the
+> > > driver to sanitize features, and I think this interface works just fine.
+> > 
+> > Now that you mention it, I don't think we do.
+> > 
+> > The spec is quite explicit that devices must not expose invalid
+> > combinations of features.
+> 
+> Unfortunately, this does not ensure that there won't be buggy
+> hypervisors out there, just as there's buggy hardware floating around.
+> 
+> > 
+> > Admittedly, BUG_ON isn't very friendly to hypervisors.
+> > 
+> > But e.g. failing probe seems better than trying to work around
+> > hypervisor bugs - otherwise we'll be stuck maintaining compatibility
+> > with hypervisors forever.
+> 
+> Good point. Failing probe is still much better than hitting BUG_ONs.
+> 
+> We'll still need a driver callback, though, that can return an error on
+> bogus feature bit combinations.
 
-On 11/17/2014 3:51 AM, Kuninori Morimoto wrote:
+Why bother?  Just check features at start of probe, and return an error.
 
-> From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-
-    s/venter/vendor/ in the subject. Sorry for a late comment.
-
-> Current vendor-prefixes.txt already has "ak" prefix for Asahi Kasei Corp
-> by ae8c4209af2c(of: Add vendor prefix for Asahi Kasei Corp.)
-
-> It went through the appropriate review process. But, almost all
-> Asahi Kasei chip drivers are using "asahi-kasei" prefix today.
-> (arch/arm/boot/dts/tegra20-seaboard.dts only is using "ak,ak8975",
->   but there are instances of "asahi-kasei,ak8975" in other dts files.
->   And drivers/iio/magnetometer/ak8975.c doesn't support "ak,ak8975")
-> So, we made a mistake there.
-
-> In addition, checkpatch.pl reports WARNING if it is using "asahi-kasei"
-> prerfix in DT file.
-> (DT compatible string vendor "asahi-kasei" appears un-documented)
-
-> Marking it deprecated and warning with checkpatch is certainly
-> preferable. So, this patch replace "ak" to "asahi-kasei" in
-> vendor-prefixes.txt. (and fixup tegra20-seaboard)
-
-> OTOH, Asahi Kasei is usually referred to as "AKM", but this patch
-> doesn't care about it. Because no DT is using that today.
-
-> Acked-by: Thierry Reding <treding@nvidia.com>
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
-> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-
-    One normally places ACKs after his own sign-off.
-
-WBR, Sergei
-
+-- 
+MST
