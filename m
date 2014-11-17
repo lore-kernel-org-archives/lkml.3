@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaKQLnV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:43:21 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:44395 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaKQLnT (ORCPT
+	id S1752710AbaKQLns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:43:48 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:50763 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaKQLnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:43:19 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] i2c: core: Fix probing of i2c slaves without interrupts
-Date: Mon, 17 Nov 2014 12:43:00 +0100
-Message-Id: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	Mon, 17 Nov 2014 06:43:46 -0500
+Date: Mon, 17 Nov 2014 12:43:42 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: Lukasz Majewski <l.majewski@samsung.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
+ for tegra driver
+Message-ID: <20141117114341.GF25699@ulmo>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+ <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
+ <5465DDC5.6090301@kapsi.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VuQYccsttdhdIfIP"
+Content-Disposition: inline
+In-Reply-To: <5465DDC5.6090301@kapsi.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time"),
-i2c slaves without interrupts (e.g. da9210 and at24 on r8a7791/koelsch)
-fail to probe:
 
-    at24: probe of 2-0050 failed with error -22
+--VuQYccsttdhdIfIP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    da9210: probe of 6-0068 failed with error -22
+On Fri, Nov 14, 2014 at 12:47:33PM +0200, Mikko Perttunen wrote:
+> Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+>=20
+> One potential issue I can see is that if the cpufreq driver fails to probe
+> then you'll never get the thermal driver either. For example, Tegra124
+> currently has no cpufreq driver, so if CONFIG_CPU_THERMAL was enabled, th=
+en
+> the soctherm driver would never be able to probe. But I don't really have=
+ a
+> solution for this either.
 
-This happens because the call to of_irq_get() in i2c_device_probe()
-returns -EINVAL.
+It doesn't seem like there's any code whatsoever to deal with cpufreq
+within the soctherm driver, so deferring probe based on something we're
+not using anyway seems rather useless.
 
-If a device node does not have an "interrupts" property,
-of_irq_parse_one() fails. Unlike irq_of_parse_and_map(), of_irq_get()
-does not ignore errors from of_irq_parse_one(), but forwards them.
+Thierry
 
-Make i2c_device_probe() ignore all errors but -EPROBE_DEFER to fix this,
-just like platform_get_irq() and platform_get_irq_byname() already do.
+--VuQYccsttdhdIfIP
+Content-Type: application/pgp-signature
 
-Fixes: 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time")
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- drivers/i2c/i2c-core.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index a0768d6dffc28aae..cf830915713b387a 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -629,8 +629,10 @@ static int i2c_device_probe(struct device *dev)
- 	if (!client->irq && dev->of_node) {
- 		int irq = of_irq_get(dev->of_node, 0);
- 
--		if (irq < 0)
-+		if (irq == -EPROBE_DEFER)
- 			return irq;
-+		if (irq < 0)
-+			irq = 0;
- 
- 		client->irq = irq;
- 	}
--- 
-1.9.1
+iQIcBAEBAgAGBQJUad9tAAoJEN0jrNd/PrOhLIsP/1G321EqqSncBH2hzi6gCgxG
+3soPbr2DILZiCD2PlNuzWohtQe8Z8vuYKc/MmtHxJbx2X1gHMuwq/TFk1LeszZR7
+NWYwjkfKzzDEOVoVVLdbi+8Mu36pJws0Q8YU8WGatoJWfnUWblsWB1UyGThLWm3p
+Pw8dxgFuTzQELXbdn5aaHLz0YjZvu7NdoxNAwK2wiq5O1/94oDclqIYkcXWf5ddv
+hU7FUx5/yvJA3xwtnT5PgchX10ZL6ey6sB3ScTnUz9scZM+4e0BzEN2E8C5L983Y
+OjmpMFtQpyGdEhoo/9vc3QpGPOx5oc91IjseaDQZLL9ZCZF18p4WcdrldxxAVEbI
+QCFKXlG3tOOIf53wlM6HvlhBBHLMF8AK54oDqVBhDOketFBnSdt6Wlv5GDQDHozg
+PgJnjjqx4wjmtJ9fjImlNr2kM/eJxec43T6jgjPXVcYXx0M3yzZmwPtMxvfe/B1f
+tWUy9WbPtBHX0nXCfOeZvlPx9IL3NdDhGhZe6+9h1gln0EU7lnmSiZKTe+zKJoEv
+57ip63aEwUqxZFxnKsXIn70RyhJX1y8h5yK1XAmYzBMWls66PWQwE4TlQQRMafgy
+f9sc5MNXV55NXRd/9gB9PU+Ql1w2eHdt1PoKYwBcw6s6BuLf1q+2rEWQLFaUhTHm
+Elt+qT+JqM+KJElClzwQ
+=u8ec
+-----END PGP SIGNATURE-----
 
+--VuQYccsttdhdIfIP--
