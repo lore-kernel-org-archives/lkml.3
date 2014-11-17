@@ -1,106 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaKQSTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:19:35 -0500
-Received: from mout.web.de ([212.227.15.3]:53500 "EHLO mout.web.de"
+	id S1752433AbaKQSV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:21:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33665 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146AbaKQSTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:19:33 -0500
-Message-ID: <546A3C2A.9050401@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 19:19:22 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751220AbaKQSV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 13:21:57 -0500
+Subject: [PATCH 4/4] fm10k/igb/ixgbe: Use fast_rmb on Rx descriptor reads
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
+        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
+        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
+        michael@ellerman.id.au, tony.luck@intel.com,
+        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
+        fweisbec@gmail.com, davem@davemloft.net
+Date: Mon, 17 Nov 2014 09:18:40 -0800
+Message-ID: <20141117171839.22333.25487.stgit@ahduyck-server>
+In-Reply-To: <20141117171005.22333.96544.stgit@ahduyck-server>
+References: <20141117171005.22333.96544.stgit@ahduyck-server>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] hfs/hfs+: Deletion of unnecessary checks before the function
- call "hfs_bnode_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:q9JVqi1sl3p3iXoEdrfLm3cd/gE0WSKGwJPxOPuCJZc5zCJTdtJ
- Zeqa8Lu24TcWFX5kMkRYeZQqjVT3fUuJudQ8NFS+hj/PfShlza7Up32NNQ8IJwvGXtuO7Ub
- CAcS/MEs3v/kds7m+1sz/Y+EdQgc3nVVkW9aZcIxqxfJZZPT5miTBFvb+JunOgusWUjsPqU
- yJtHnjhGSd2aCdfMhRJdA==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 19:13:56 +0100
+This change makes it so that fast_rmb is used when reading the Rx
+descriptor.  The advantage of fast_rmb is that it allows for a much
+lower cost barrier on x86, powerpc, arm, and arm64 architectures than a
+traditional memory barrier when dealing with reads that only have to
+synchronize to system memory.
 
-The hfs_bnode_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+In addition I have updated the code so that it just checks to see if any
+bits have been set instead of just the DD bit since the DD bit will always
+be set as a part of a descriptor write-back so we just need to check for a
+non-zero value being present at that memory location rather than just
+checking for any specific bit.  This allows the code itself to appear much
+cleaner and allows the compiler more room to optimize.
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Matthew Vick <matthew.vick@intel.com>
+Cc: Don Skidmore <donald.c.skidmore@intel.com>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
 ---
- fs/hfs/bfind.c     | 3 +--
- fs/hfs/brec.c      | 3 +--
- fs/hfsplus/bfind.c | 3 +--
- fs/hfsplus/brec.c  | 3 +--
- 4 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +++---
+ drivers/net/ethernet/intel/igb/igb_main.c     |    6 +++---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 ++++-----
+ 3 files changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/fs/hfs/bfind.c b/fs/hfs/bfind.c
-index de69d8a..0e26523 100644
---- a/fs/hfs/bfind.c
-+++ b/fs/hfs/bfind.c
-@@ -100,8 +100,7 @@ int hfs_brec_find(struct hfs_find_data *fd)
- 	int height, res;
+diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_main.c b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
+index e645af4..ba959b9 100644
+--- a/drivers/net/ethernet/intel/fm10k/fm10k_main.c
++++ b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
+@@ -620,14 +620,14 @@ static bool fm10k_clean_rx_irq(struct fm10k_q_vector *q_vector,
  
- 	tree = fd->tree;
--	if (fd->bnode)
--		hfs_bnode_put(fd->bnode);
-+	hfs_bnode_put(fd->bnode);
- 	fd->bnode = NULL;
- 	nidx = tree->root;
- 	if (!nidx)
-diff --git a/fs/hfs/brec.c b/fs/hfs/brec.c
-index 9f4ee7f..3a52b2c 100644
---- a/fs/hfs/brec.c
-+++ b/fs/hfs/brec.c
-@@ -272,8 +272,7 @@ static struct hfs_bnode *hfs_bnode_split(struct hfs_find_data *fd)
- 		/* panic? */
- 		hfs_bnode_put(node);
- 		hfs_bnode_put(new_node);
--		if (next_node)
--			hfs_bnode_put(next_node);
-+		hfs_bnode_put(next_node);
- 		return ERR_PTR(-ENOSPC);
- 	}
+ 		rx_desc = FM10K_RX_DESC(rx_ring, rx_ring->next_to_clean);
  
-diff --git a/fs/hfsplus/bfind.c b/fs/hfsplus/bfind.c
-index c1422d9..7be88e3 100644
---- a/fs/hfsplus/bfind.c
-+++ b/fs/hfsplus/bfind.c
-@@ -171,8 +171,7 @@ int hfs_brec_find(struct hfs_find_data *fd, search_strategy_t do_key_compare)
- 	int height, res;
+-		if (!fm10k_test_staterr(rx_desc, FM10K_RXD_STATUS_DD))
++		if (!rx_desc->d.staterr)
+ 			break;
  
- 	tree = fd->tree;
--	if (fd->bnode)
--		hfs_bnode_put(fd->bnode);
-+	hfs_bnode_put(fd->bnode);
- 	fd->bnode = NULL;
- 	nidx = tree->root;
- 	if (!nidx)
-diff --git a/fs/hfsplus/brec.c b/fs/hfsplus/brec.c
-index 6e560d5..59bab47 100644
---- a/fs/hfsplus/brec.c
-+++ b/fs/hfsplus/brec.c
-@@ -276,8 +276,7 @@ static struct hfs_bnode *hfs_bnode_split(struct hfs_find_data *fd)
- 		/* panic? */
- 		hfs_bnode_put(node);
- 		hfs_bnode_put(new_node);
--		if (next_node)
--			hfs_bnode_put(next_node);
-+		hfs_bnode_put(next_node);
- 		return ERR_PTR(-ENOSPC);
- 	}
+ 		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STATUS_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		fast_rmb();
  
--- 
-2.1.3
+ 		/* retrieve a buffer from the ring */
+ 		skb = fm10k_fetch_rx_buffer(rx_ring, rx_desc, skb);
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index a2d72a8..3dbbaa8 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6918,14 +6918,14 @@ static bool igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
+ 
+ 		rx_desc = IGB_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!igb_test_staterr(rx_desc, E1000_RXD_STAT_DD))
++		if (!rx_desc->wb.upper.status_error)
+ 			break;
+ 
+ 		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STAT_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		fast_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = igb_fetch_rx_buffer(rx_ring, rx_desc, skb);
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index d2df4e3..890d740 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -2003,15 +2003,14 @@ static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 
+ 		rx_desc = IXGBE_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!ixgbe_test_staterr(rx_desc, IXGBE_RXD_STAT_DD))
++		if (!rx_desc->wb.upper.status_error)
+ 			break;
+ 
+-		/*
+-		 * This memory barrier is needed to keep us from reading
++		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STAT_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		fast_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = ixgbe_fetch_rx_buffer(rx_ring, rx_desc);
 
