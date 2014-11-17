@@ -1,68 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaKQFJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 00:09:36 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39938 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaKQFJf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 00:09:35 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: kan.liang@intel.com
-Cc: acme@kernel.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH V2 2/3] perf tool:perf diff support for different binaries
-References: <1415653280-1374-1-git-send-email-kan.liang@intel.com>
-	<1415653280-1374-3-git-send-email-kan.liang@intel.com>
-Date: Mon, 17 Nov 2014 14:09:33 +0900
-In-Reply-To: <1415653280-1374-3-git-send-email-kan.liang@intel.com> (kan
-	liang's message of "Mon, 10 Nov 2014 16:01:19 -0500")
-Message-ID: <87fvditnua.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753958AbaKQFML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 00:12:11 -0500
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:61750 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752695AbaKQFMJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 00:12:09 -0500
+From: Anil Gurumurthy <Anil.Gurumurthy@qlogic.com>
+To: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Sudarsana Kalluru <Sudarsana.Kalluru@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH V4 linux-next RESEND 2] bfa: replace 2
+ kzalloc/copy_from_user by memdup_user
+Thread-Topic: [PATCH V4 linux-next RESEND 2] bfa: replace 2
+ kzalloc/copy_from_user by memdup_user
+Thread-Index: AQHQADvO/bHQKLvWKUSLTcWGklbMaJxkSO0w
+Date: Mon, 17 Nov 2014 05:11:46 +0000
+Message-ID: <20B1A3CBD98F3845B3F5F56D8597EF59FD4166@avmb2.qlogic.org>
+References: <1415990998-29659-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1415990998-29659-1-git-send-email-fabf@skynet.be>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7624 signatures=670576
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1411170048
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014 16:01:19 -0500, kan liang wrote:
-> From: Kan Liang <kan.liang@intel.com>
->
-> Currently, the perf diff only works with same binaries. That's because
-> it compares the symbol start address. It doesn't work if the perf.data
-> comes from different binaries. This patch matches the function names.
->
-> Signed-off-by: Kan Liang <kan.liang@intel.com>
+Patch looks good. 
+Thanks!
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+-----Original Message-----
+From: Fabian Frederick [mailto:fabf@skynet.be] 
+Sent: 15 November 2014 00:20
+To: linux-kernel
+Cc: Joe Perches; Greg Kroah-Hartman; One Thousand Gnomes; Fabian Frederick; Anil Gurumurthy; Sudarsana Kalluru; James E.J. Bottomley; linux-scsi
+Subject: [PATCH V4 linux-next RESEND 2] bfa: replace 2 kzalloc/copy_from_user by memdup_user
 
-Thanks,
-Namhyung
+This patch also removes unnecessary printk(KERN_INFO
 
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V4: remove blank line after memdup_user
+V3: memdup_user first argument is already void __user * (thanks to Joe Perches)
+    typo in title
+V2: Remove printk(KERN_INFO (suggested by Alan)
 
-> ---
->  tools/perf/util/sort.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
->
-> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> index 9402885..ee235ab 100644
-> --- a/tools/perf/util/sort.c
-> +++ b/tools/perf/util/sort.c
-> @@ -1430,6 +1430,15 @@ int sort_dimension__add(const char *tok)
->  			sort__has_parent = 1;
->  		} else if (sd->entry == &sort_sym) {
->  			sort__has_sym = 1;
-> +			/*
-> +			 * perf diff displays the performance difference amongst
-> +			 * two or more perf.data files. Those files could come from
-> +			 * different binaries. So we should not compare their ips.
-> +			 * The name of symble should be the key we do compare.
-> +			 */
-> +			if (sort__mode == SORT_MODE__DIFF)
-> +				sd->entry->se_collapse = sort__sym_sort;
-> +
->  		} else if (sd->entry == &sort_dso) {
->  			sort__has_dso = 1;
->  		}
+ drivers/scsi/bfa/bfad_debugfs.c | 30 ++++++------------------------
+ 1 file changed, 6 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c index 8e83d04..74a307c 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -260,18 +260,9 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
+-
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	kern_buf = memdup_user(buf, nbytes);
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &len);
+ 	if (rc < 2) {
+@@ -336,18 +327,9 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
+-
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	kern_buf = memdup_user(buf, nbytes);
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &val);
+ 	if (rc < 2) {
+--
+1.9.3
+
