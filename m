@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210AbaKQLss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:48:48 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:26275 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaKQLso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:48:44 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-38-5469e09863af
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
-        linux-omap@vger.kernel.org, linus.walleij@linaro.org, tony@atomide.com,
-        drake@endlessm.com, loeliger@gmail.com,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v9 7/7] ARM: dts: exynos4: Add nodes for L2 cache controller
-Date: Mon, 17 Nov 2014 12:48:29 +0100
-Message-id: <1416224909-4290-8-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1416224909-4290-1-git-send-email-m.szyprowski@samsung.com>
-References: <1416224909-4290-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xK7ozHmSGGMz5IG3xd9IxdotH8x8z
-	W/QuuMpmcbbpDbvF9s4Z7BZT/ixnstj0+BqrxeVdc9gsZi/pZ7GYcX4fk8Xty7wW57ZvYbFY
-	e+Quu8XS6xeZLE5d/8xmsWrXH0aL/Ve8HAQ91sxbw+jR0tzD5vH71yRGj29fJ7F4XO7rZfJY
-	9D3LY+esu+wed67tYfPYvKTe48qJJlaPvi2rGD0+b5IL4InisklJzcksSy3St0vgytjwZj1z
-	wSS+ionvsxoYb3F3MXJwSAiYSJzqLe5i5AQyxSQu3FvP1sXIxSEksJRRYtPOiywQTh+TRH/L
-	HhaQKjYBQ4mut11sILaIgJvEv3WHwDqYBT4zS1x6tIYVJCEs4COx+tNUMJtFQFVizocL7CDb
-	eAXcJVYe4IHYJifx/+UKJhCbU8BD4tv3A2wgJUJAJa2POCcw8i5gZFjFKJpamlxQnJSea6RX
-	nJhbXJqXrpecn7uJERLyX3cwLj1mdYhRgINRiYf3QFFmiBBrYllxZe4hRgkOZiUR3piLQCHe
-	lMTKqtSi/Pii0pzU4kOMTBycUg2Mx+bWCfLpNvHrfmCa03Y/zOZMsHbFs6jTRxLvzhH8P1d+
-	xcIe5Q8HsuuYli416DcRcAg2eJ3vJns/0NW+XGBf6JbOEHXOlo88PCzzBPxuNHsbvpUyb3Sw
-	/STdGno0sPtloYmqadSeXJnSu8LXG61vrWUJOSsq22y3KUL22nGdmXumTbYNN1NiKc5INNRi
-	LipOBAC+HxbBVwIAAA==
+	id S1752354AbaKQLs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:48:58 -0500
+Received: from mout.web.de ([212.227.17.12]:57153 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752266AbaKQLs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 06:48:56 -0500
+Message-ID: <5469E09C.6040808@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 12:48:44 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] ALSA: lola: Deletion of an unnecessary check before the
+ function call "vfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:yKpGRLGtY0A7tVMG08tW4aPCxptTBvsfjv/vXnYmjGjsQ7R0RT9
+ tx/lgccJRdr38DgkPKJC700yErf7VPNuP4f2V+4qfHa8MrKEmw6ko7C+mzuuremxxrfmG8F
+ IGmb7e52c8dYkL1z1mCVx6GAab2QnTYuRKExVvAhFT9Xm/3A+nWHf5hcQ/0+HiTq4r2zJjM
+ 4keN2EjKOsx8sJDfIYXyQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 12:42:16 +0100
 
-This patch adds device tree nodes for L2 cache controller present on
-Exynos4 SoCs.
+The vfree() function performs also input parameter validation. Thus the test
+around the call is not needed.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- arch/arm/boot/dts/exynos4210.dtsi |  9 +++++++++
- arch/arm/boot/dts/exynos4x12.dtsi | 14 ++++++++++++++
- 2 files changed, 23 insertions(+)
+ sound/pci/lola/lola_mixer.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-index 807bb5bf91fc..8a182c43e314 100644
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@ -64,6 +64,15 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
+diff --git a/sound/pci/lola/lola_mixer.c b/sound/pci/lola/lola_mixer.c
+index 782f4d8..e7fe15d 100644
+--- a/sound/pci/lola/lola_mixer.c
++++ b/sound/pci/lola/lola_mixer.c
+@@ -108,8 +108,7 @@ int lola_init_pins(struct lola *chip, int dir, int *nidp)
  
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <2 2 1>;
-+	};
-+
- 	gic: interrupt-controller@10490000 {
- 		cpu-offset = <0x8000>;
- 	};
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index 861bb919f6d3..c7adfd60ad3a 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -54,6 +54,20 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
+ void lola_free_mixer(struct lola *chip)
+ {
+-	if (chip->mixer.array_saved)
+-		vfree(chip->mixer.array_saved);
++	vfree(chip->mixer.array_saved);
+ }
  
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <3 2 1>;
-+		arm,double-linefill = <1>;
-+		arm,double-linefill-incr = <0>;
-+		arm,double-linefill-wrap = <1>;
-+		arm,prefetch-drop = <1>;
-+		arm,prefetch-offset = <7>;
-+	};
-+
- 	clock: clock-controller@10030000 {
- 		compatible = "samsung,exynos4412-clock";
- 		reg = <0x10030000 0x20000>;
+ int lola_init_mixer_widget(struct lola *chip, int nid)
 -- 
-1.9.2
+2.1.3
+
 
