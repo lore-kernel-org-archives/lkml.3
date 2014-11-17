@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaKQQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 11:49:57 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:46597 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210AbaKQQsc (ORCPT
+	id S1752755AbaKQQud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 11:50:33 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45816 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923AbaKQQs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 11:48:32 -0500
+	Mon, 17 Nov 2014 11:48:27 -0500
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         maxime.coquelin@st.com, srinivas.kandagatla@gmail.com,
         patrice.chotard@st.com, arnd@arndb.de
 Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
-Subject: [PATCH v3 06/11] ARM: STi: DT: STiH410: Add defines for STiH410 DT clocks
-Date: Mon, 17 Nov 2014 16:47:59 +0000
-Message-Id: <1416242884-5261-7-git-send-email-peter.griffin@linaro.org>
+Subject: [PATCH v3 04/11] ARM: multi_v7_defconfig: Enable st ohci and ehci HCD drivers.
+Date: Mon, 17 Nov 2014 16:47:57 +0000
+Message-Id: <1416242884-5261-5-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416242884-5261-1-git-send-email-peter.griffin@linaro.org>
 References: <1416242884-5261-1-git-send-email-peter.griffin@linaro.org>
@@ -22,47 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although most clock outputs are the same as stih407 SoC, stih410
-also has some additional new clock outputs.
+Enable the ehci and ohci drivers in the multi_v7_defconfig so that
+the USB controllers on stih41x work by default.
 
 Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/dt-bindings/clock/stih410-clks.h | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 include/dt-bindings/clock/stih410-clks.h
+ arch/arm/configs/multi_v7_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/dt-bindings/clock/stih410-clks.h b/include/dt-bindings/clock/stih410-clks.h
-new file mode 100644
-index 0000000..2097a4b
---- /dev/null
-+++ b/include/dt-bindings/clock/stih410-clks.h
-@@ -0,0 +1,25 @@
-+/*
-+ * This header provides constants clk index STMicroelectronics
-+ * STiH410 SoC.
-+ */
-+#ifndef _DT_BINDINGS_CLK_STIH410
-+#define _DT_BINDINGS_CLK_STIH410
-+
-+#include "stih407-clks.h"
-+
-+/* STiH410 introduces new clock outputs compared to STiH407 */
-+
-+/* CLOCKGEN C0 */
-+#define CLK_TX_ICN_HADES	32
-+#define CLK_RX_ICN_HADES	33
-+#define CLK_ICN_REG_16		34
-+#define CLK_PP_HADES		35
-+#define CLK_CLUST_HADES		36
-+#define CLK_HWPE_HADES		37
-+#define CLK_FC_HADES		38
-+
-+/* CLOCKGEN D0 */
-+#define CLK_PCMR10_MASTER	4
-+#define CLK_USB2_PHY		5
-+
-+#endif
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 491b7d5..c7a9517 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -318,9 +318,11 @@ CONFIG_USB_XHCI_HCD=y
+ CONFIG_USB_XHCI_MVEBU=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_TEGRA=y
++CONFIG_USB_EHCI_HCD_STI=y
+ CONFIG_USB_EHCI_HCD_PLATFORM=y
+ CONFIG_USB_ISP1760_HCD=y
+ CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_OHCI_HCD_STI=y
+ CONFIG_USB_OHCI_HCD_PLATFORM=y
+ CONFIG_USB_STORAGE=y
+ CONFIG_USB_CHIPIDEA=y
 -- 
 1.9.1
 
