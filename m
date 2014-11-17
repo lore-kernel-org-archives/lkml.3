@@ -1,88 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672AbaKQK5Q (ORCPT <rfc822;w@1wt.eu>);
+	id S1752698AbaKQK5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:57:20 -0500
+Received: from regular1.263xmail.com ([211.150.99.132]:47232 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651AbaKQK5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 05:57:16 -0500
-Received: from mail-bn1on0115.outbound.protection.outlook.com ([157.56.110.115]:56352
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751057AbaKQK5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:57:11 -0500
-From: Yuan Yao <yao.yuan@freescale.com>
-To: <wsa@the-dreams.de>, <marex@denx.de>
-CC: <LW@KARO-electronics.de>, <mark.rutland@arm.com>,
-        <fugang.duan@freescale.com>, <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: [PATCH v10 1/3] i2c: imx: Sort include headers alphabetically
-Date: Mon, 17 Nov 2014 18:40:34 +0800
-Message-ID: <1416220836-7666-2-git-send-email-yao.yuan@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-In-Reply-To: <1416220836-7666-1-git-send-email-yao.yuan@freescale.com>
-References: <1416220836-7666-1-git-send-email-yao.yuan@freescale.com>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yao.yuan@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(88136002)(87286001)(64706001)(20776003)(50986999)(104166001)(47776003)(105606002)(77156002)(95666004)(87936001)(4396001)(102836001)(50226001)(89996001)(76176999)(85426001)(84676001)(33646002)(104016003)(99396003)(50466002)(36756003)(120916001)(48376002)(6806004)(68736004)(19580405001)(19580395003)(44976005)(86362001)(93916002)(21056001)(107046002)(97736003)(229853001)(62966003)(31966008)(92566001)(46102003)(92726001)(106466001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB371;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB371;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB371;
-X-Forefront-PRVS: 03982FDC1D
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB371;
-X-OriginatorOrg: freescale.com
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <fafd40ae54f3ab6282571121ed662682>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v12 06/11] drm: bridge/dw_hdmi: add support for multi-byte register width access
+Date: Mon, 17 Nov 2014 18:56:59 +0800
+Message-Id: <1416221819-13080-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the inlcude headers aren't sorted alphabetically, then the
-logical choice is to append new ones, however that creates a
-lot of potential for conflicts or duplicates because every change
-will then add new includes in the same location.
+On rockchip rk3288, only word(32-bit) accesses are
+permitted for hdmi registers.  Byte width accesses (writeb,
+readb) generate an imprecise external abort.
 
-Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+
 ---
- drivers/i2c/busses/i2c-imx.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index a7a2a79..d025c47 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -32,22 +32,22 @@
- /** Includes *******************************************************************
- *******************************************************************************/
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6:
+- move some modification to  patch#6
+- refactor register access without reg_shift
+
+Changes in v5:
+- refactor reg-io-width
+
+Changes in v4: None
+Changes in v3:
+- split multi-register access to one indepent patch
+
+Changes in v2: None
+
+ drivers/gpu/drm/bridge/dw_hdmi.c | 57 +++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 51 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index f904bb4..229aa7a 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -100,6 +100,11 @@ struct hdmi_data_info {
+ 	struct hdmi_vmode video_mode;
+ };
  
--#include <linux/init.h>
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/errno.h>
--#include <linux/err.h>
--#include <linux/interrupt.h>
-+#include <linux/clk.h>
- #include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/errno.h>
- #include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
--#include <linux/sched.h>
--#include <linux/platform_device.h>
--#include <linux/clk.h>
--#include <linux/slab.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/platform_data/i2c-imx.h>
-+#include <linux/platform_device.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
++union dw_reg_ptr {
++	u32 __iomem *p32;
++	u8 __iomem *p8;
++};
++
+ struct dw_hdmi {
+ 	struct drm_connector connector;
+ 	struct drm_encoder *encoder;
+@@ -121,20 +126,43 @@ struct dw_hdmi {
  
- /** Defines ********************************************************************
- *******************************************************************************/
+ 	struct regmap *regmap;
+ 	struct i2c_adapter *ddc;
+-	void __iomem *regs;
++	union dw_reg_ptr regs;
+ 
+ 	unsigned int sample_rate;
+ 	int ratio;
++
++	void (*write)(struct dw_hdmi *hdmi, u8 val, int offset);
++	u8 (*read)(struct dw_hdmi *hdmi, int offset);
+ };
+ 
++static void dw_hdmi_writel(struct dw_hdmi *hdmi, u8 val, int offset)
++{
++	writel(val, hdmi->regs.p32 + offset);
++}
++
++static u8 dw_hdmi_readl(struct dw_hdmi *hdmi, int offset)
++{
++	return readl(hdmi->regs.p32 + offset);
++}
++
++static void dw_hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
++{
++	writeb(val, hdmi->regs.p8 + offset);
++}
++
++static u8 dw_hdmi_readb(struct dw_hdmi *hdmi, int offset)
++{
++	return readb(hdmi->regs.p8 + offset);
++}
++
+ static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
+ {
+-	writeb(val, hdmi->regs + offset);
++	hdmi->write(hdmi, val, offset);
+ }
+ 
+ static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
+ {
+-	return readb(hdmi->regs + offset);
++	return hdmi->read(hdmi, offset);
+ }
+ 
+ static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
+@@ -1508,6 +1536,7 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 	struct resource *iores;
+ 	struct dw_hdmi *hdmi;
+ 	int ret, irq;
++	u32 val = 1;
+ 
+ 	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+ 	if (!hdmi)
+@@ -1520,6 +1549,22 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 	hdmi->ratio = 100;
+ 	hdmi->encoder = encoder;
+ 
++	of_property_read_u32(np, "reg-io-width", &val);
++
++	switch (val) {
++	case 4:
++		hdmi->write = dw_hdmi_writel;
++		hdmi->read = dw_hdmi_readl;
++		break;
++	case 1:
++		hdmi->write = dw_hdmi_writeb;
++		hdmi->read = dw_hdmi_readb;
++		break;
++	default:
++		dev_err(dev, "reg-io-width must be 1 or 4\n");
++		return -EINVAL;
++	}
++
+ 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
+ 	if (ddc_node) {
+ 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
+@@ -1544,9 +1589,9 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 		return ret;
+ 
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	hdmi->regs = devm_ioremap_resource(dev, iores);
+-	if (IS_ERR(hdmi->regs))
+-		return PTR_ERR(hdmi->regs);
++	hdmi->regs.p32 = devm_ioremap_resource(dev, iores);
++	if (IS_ERR(hdmi->regs.p32))
++		return PTR_ERR(hdmi->regs.p32);
+ 
+ 	/* Product and revision IDs */
+ 	dev_info(dev,
 -- 
-2.1.0.27.g96db324
+1.9.1
+
 
