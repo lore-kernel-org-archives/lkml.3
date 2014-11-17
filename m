@@ -1,209 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832AbaKQWGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:06:36 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:33088 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657AbaKQWGf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:06:35 -0500
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        iommu@lists.linux-foundation.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: Matt Wagantall <mattw@codeaurora.org>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>
-Subject: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling macros
-Date: Mon, 17 Nov 2014 14:06:12 -0800
-Message-Id: <1416261972-2756-1-git-send-email-mitchelh@codeaurora.org>
-X-Mailer: git-send-email 2.1.3
+	id S1752970AbaKQWHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:07:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37560 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752025AbaKQWHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 17:07:22 -0500
+Date: Mon, 17 Nov 2014 17:07:06 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: Antonio Borneo <borneo.antonio@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] HID: i2c-hid: fix race condition reading reports
+Message-ID: <20141117220706.GD30324@mail.corp.redhat.com>
+References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
+ <20141117214305.GC30324@mail.corp.redhat.com>
+ <20141117215111.GA19828@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141117215111.GA19828@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Wagantall <mattw@codeaurora.org>
+On Nov 17 2014 or thereabouts, Greg KH wrote:
+> On Mon, Nov 17, 2014 at 04:43:05PM -0500, Benjamin Tissoires wrote:
+> > Hey Antonio,
+> > 
+> > On Nov 16 2014 or thereabouts, Antonio Borneo wrote:
+> > > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+> > > 
+> > > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+> > > 
+> > > Current driver uses a common buffer for reading reports either
+> > > synchronously in i2c_hid_get_raw_report() and asynchronously in
+> > > the interrupt handler.
+> > > There is race condition if an interrupt arrives immediately after
+> > > the report is received in i2c_hid_get_raw_report(); the common
+> > > buffer is modified by the interrupt handler with the new report
+> > > and then i2c_hid_get_raw_report() proceed using wrong data.
+> > > 
+> > > Fix it by using a separate buffers for asynchronous reports.
+> > > 
+> > > Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+> > > [Antonio Borneo: cleanup and rebase to v3.17]
+> > > Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+> > > Cc: stable@vger.kernel.org
+> > 
+> > For your next submission, when you want a patch to go in stable, put CC
+> > here, but please do not CC the actual mail to stable@. Stable should receive
+> > either mails which are already in Linus' tree, or which refer a commit
+> > in Linus' tree in case it does not applies smoothly.
+> > 
+> > [keeping stable@ here to show them that this one should not get picked
+> > right now]
+> 
+> stable@ is smarter than that, I don't mind seeing patches that are
+> coming in the future like this at all, it's not a problem.
+> 
 
-It is sometimes necessary to poll a memory-mapped register until its value
-satisfies some condition. Introduce a family of convenience macros that do
-this. Tight-looping, sleeping, and timing out can all be accomplished using
-these macros.
+OK. Sorry for the noise then. I assumed that if everybody starts sending
+potential patches to stable without them being the accepted ones, you
+will end up having to deal with a lot more workload that you already have.
 
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Matt Wagantall <mattw@codeaurora.org>
-Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
----
-Sorry for any confusion regarding the genesis of this patch.  Let me try to
-clarify the history here.  This patch was originally part of a series [1]
-for adding support for IOMMU address translations through an ARM SMMU
-hardware register.  The other patch in the series (the one that actually
-uses these macros and implements said hardware address translations) was
-Ack'd by the driver maintainer there (Will Deacon) so I've pulled this
-patch out to avoid resending an already Ack'd patch over and over again.
+And just to be sure that there is no misinterpretation, I did not wanted
+to imply that stable was not smart enough to deal with such patches... I
+really appreciate the work done and my concern was to not add workload.
 
-In short, please see [1] for previous discussion and the first user of
-these macros.
+Cheers,
+Benjamin
 
-[1] http://thread.gmane.org/gmane.linux.kernel.iommu/7140
-
-Changes since v7:
-  - sorted helper macros by size (b, w, l, q)
-  - removed some of the more esoteric (or flat-out bogus) helper macros
----
- include/linux/iopoll.h | 140 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 140 insertions(+)
- create mode 100644 include/linux/iopoll.h
-
-diff --git a/include/linux/iopoll.h b/include/linux/iopoll.h
-new file mode 100644
-index 0000000000..bd161dae2d
---- /dev/null
-+++ b/include/linux/iopoll.h
-@@ -0,0 +1,140 @@
-+/*
-+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _LINUX_IOPOLL_H
-+#define _LINUX_IOPOLL_H
-+
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/hrtimer.h>
-+#include <linux/delay.h>
-+#include <linux/errno.h>
-+#include <linux/io.h>
-+
-+/**
-+ * readx_poll_timeout - Periodically poll an address until a condition is met or a timeout occurs
-+ * @op: accessor function (takes @addr as its only argument)
-+ * @addr: Address to poll
-+ * @val: Variable to read the value into
-+ * @cond: Break condition (usually involving @val)
-+ * @sleep_us: Maximum time to sleep between reads in us (0 tight-loops)
-+ * @timeout_us: Timeout in us, 0 means never timeout
-+ *
-+ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-+ * case, the last read value at @addr is stored in @val. Must not
-+ * be called from atomic context if sleep_us or timeout_us are used.
-+ *
-+ * When available, you'll probably want to use one of the specialized
-+ * macros defined below rather than this macro directly.
-+ */
-+#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
-+({ \
-+	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-+	might_sleep_if(sleep_us); \
-+	for (;;) { \
-+		(val) = op(addr); \
-+		if (cond) \
-+			break; \
-+		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-+			(val) = op(addr); \
-+			break; \
-+		} \
-+		if (sleep_us) \
-+			usleep_range((sleep_us >> 2) + 1, sleep_us); \
-+	} \
-+	(cond) ? 0 : -ETIMEDOUT; \
-+})
-+
-+/**
-+ * readx_poll_timeout_atomic - Periodically poll an address until a condition is met or a timeout occurs
-+ * @op: accessor function (takes @addr as its only argument)
-+ * @addr: Address to poll
-+ * @val: Variable to read the value into
-+ * @cond: Break condition (usually involving @val)
-+ * @delay_us: Time to udelay between reads in us (0 tight-loops)
-+ * @timeout_us: Timeout in us, 0 means never timeout
-+ *
-+ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-+ * case, the last read value at @addr is stored in @val.
-+ *
-+ * When available, you'll probably want to use one of the specialized
-+ * macros defined below rather than this macro directly.
-+ */
-+#define readx_poll_timeout_atomic(op, addr, val, cond, delay_us, timeout_us) \
-+({ \
-+	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-+	for (;;) { \
-+		(val) = op(addr); \
-+		if (cond) \
-+			break; \
-+		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-+			(val) = op(addr); \
-+			break; \
-+		} \
-+		if (delay_us) \
-+			udelay(delay_us);	\
-+	} \
-+	(cond) ? 0 : -ETIMEDOUT; \
-+})
-+
-+
-+#define readb_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readb, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readb, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readw, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readw, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readl, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readl, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readq, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readq, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#endif /* _LINUX_IOPOLL_H */
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+> thanks,
+> 
+> greg k-h
