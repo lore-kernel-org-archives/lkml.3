@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaKQK7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:59:10 -0500
-Received: from regular1.263xmail.com ([211.150.99.130]:38925 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaKQK7H (ORCPT
+	id S1752873AbaKQK7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:59:20 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37983 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751668AbaKQK7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:59:07 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <f4b7edabdb7e302bee213c8b18244979>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v12 10/11] dt-bindings: Add documentation for rockchip dw hdmi
-Date: Mon, 17 Nov 2014 18:58:49 +0800
-Message-Id: <1416221929-13272-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415793593-5075-1-git-send-email-andy.yan@rock-chips.com>
+	Mon, 17 Nov 2014 05:59:15 -0500
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, ben-linux@fluff.org,
+        kgene.kim@samsung.com, broonie@kernel.org
+Cc: perex@perex.cz, tiwai@suse.de, galak@codeaurora.org, sbkim73@samsung.com,
+        lgirdwood@gmail.com, ckeepax@opensource.wolfsonmicro.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: [PATCH] ASoC: samsung-i2s: Add 192kHz config option
+Date: Mon, 17 Nov 2014 10:57:54 +0000
+Message-Id: <1416221874-22092-1-git-send-email-rf@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+Adds QUIRK_SUPPORTS_192KHZ to allow 192kHz rate
+to be selected for hardware that supports it.
 
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 ---
+ .../devicetree/bindings/sound/samsung-i2s.txt      |    2 ++
+ include/linux/platform_data/asoc-s3c.h             |    1 +
+ sound/soc/samsung/i2s.c                            |    8 ++++++++
+ 3 files changed, 11 insertions(+), 0 deletions(-)
 
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8:
-- Add documentation for rockchip dw hdmi
-
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-Changes in v2: None
-
- .../devicetree/bindings/video/dw_hdmi-rockchip.txt | 43 ++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
-
-diff --git a/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
-new file mode 100644
-index 0000000..0735464
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
-@@ -0,0 +1,43 @@
-+Rockchip specific extensions to the Synopsys Designware HDMI
-+================================
+diff --git a/Documentation/devicetree/bindings/sound/samsung-i2s.txt b/Documentation/devicetree/bindings/sound/samsung-i2s.txt
+index d188296..c3f3950 100644
+--- a/Documentation/devicetree/bindings/sound/samsung-i2s.txt
++++ b/Documentation/devicetree/bindings/sound/samsung-i2s.txt
+@@ -40,6 +40,8 @@ Optional SoC Specific Properties:
+   sub system(used in secondary sound source).
+ - pinctrl-0: Should specify pin control groups used for this controller.
+ - pinctrl-names: Should contain only one value - "default".
++- samsung,supports-192khz: specify this (without a value) if you want to allow
++    192000 sample rate over the I2S link.
+ 
+ Example:
+ 
+diff --git a/include/linux/platform_data/asoc-s3c.h b/include/linux/platform_data/asoc-s3c.h
+index 5e0bc77..6d0702d 100644
+--- a/include/linux/platform_data/asoc-s3c.h
++++ b/include/linux/platform_data/asoc-s3c.h
+@@ -28,6 +28,7 @@ struct samsung_i2s {
+ #define QUIRK_NEED_RSTCLR	(1 << 3)
+ #define QUIRK_SUPPORTS_TDM	(1 << 4)
+ #define QUIRK_SUPPORTS_IDMA	(1 << 5)
++#define QUIRK_SUPPORTS_192KHZ	(1 << 6)
+ 	/* Quirks of the I2S controller */
+ 	u32 quirks;
+ 	dma_addr_t idma_addr;
+diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
+index 947352d..f688e89 100644
+--- a/sound/soc/samsung/i2s.c
++++ b/sound/soc/samsung/i2s.c
+@@ -1219,6 +1219,9 @@ static int samsung_i2s_probe(struct platform_device *pdev)
+ 						"specified");
+ 			}
+ 		}
 +
-+Required properties:
-+- compatible: "rockchip,rk3288-dw-hdmi";
-+- reg: Physical base address and length of the controller's registers.
-+- ddc-i2c-bus:  phandle of an I2C controller used for DDC EDID probing
-+- clocks: from common clock binding: handle to hdmi clock.
-+- clock-names: should be "clk" "hdcp_clk"
-+- rockchip,grf: this soc should set GRF regs to mux vopl/vopb.
-+- interrupts: HDMI interrupt number
-+- ports: contain a port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt. For
-+  vopb,set the reg = <0> and set the reg = <1> for vopl.
-+- reg-io-width: the width of the reg:1,4, the value should be 4 on
-+  rk3288 platform
++		if (of_find_property(np, "samsung,supports-192khz", NULL))
++			quirks |= QUIRK_SUPPORTS_192KHZ;
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -1247,6 +1250,11 @@ static int samsung_i2s_probe(struct platform_device *pdev)
+ 	if (quirks & QUIRK_PRI_6CHAN)
+ 		pri_dai->i2s_dai_drv.playback.channels_max = 6;
+ 
++	if (quirks & QUIRK_SUPPORTS_192KHZ) {
++		pri_dai->i2s_dai_drv.playback.rates |= SNDRV_PCM_RATE_192000;
++		pri_dai->i2s_dai_drv.capture.rates |= SNDRV_PCM_RATE_192000;
++	}
 +
-+Example:
-+hdmi: hdmi@ff980000 {
-+	compatible = "rockchip,rk3288-dw-hdmi";
-+	reg = <0xff980000 0x20000>;
-+	reg-io-width = <4>;
-+	ddc-i2c-bus = <&i2c5>;
-+	rockchip,grf = <&grf>;
-+	interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru  PCLK_HDMI_CTRL>, <&cru SCLK_HDMI_HDCP>;
-+	clock-names = "clk", "hdcp_clk";
-+	status = "disabled";
-+	ports {
-+		hdmi_in: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			hdmi_in_vopb: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint = <&vopb_out_hdmi>;
-+			};
-+			hdmi_in_vopl: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint = <&vopl_out_hdmi>;
-+			};
-+		};
-+	};
-+};
+ 	if (quirks & QUIRK_SEC_DAI) {
+ 		sec_dai = i2s_alloc_dai(pdev, true);
+ 		if (!sec_dai) {
 -- 
-1.9.1
-
+1.7.2.5
 
