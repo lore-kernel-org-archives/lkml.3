@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaKQAng (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 19:43:36 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:8213 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112AbaKQAnd (ORCPT
+	id S1752938AbaKQAnz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 19:43:55 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:27864 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649AbaKQAnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 19:43:33 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-c7-54694496cc3b
+	Sun, 16 Nov 2014 19:43:07 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-c6-5469449615a2
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: lee.jones@linaro.org, broonie@kernel.org, mturquette@linaro.org,
         a.zummo@towertech.it
@@ -15,38 +15,37 @@ Cc: lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
         geunsik.lim@samsung.com, inki.dae@samsung.com,
         kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 5/5] mfd: s2mps11: Add binding documentation for Samsung
- S2MPS13 PMIC
-Date: Mon, 17 Nov 2014 09:43:00 +0900
-Message-id: <1416184980-532-6-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 4/5] rtc: s5m: Add the support for S2MPS13 RTC
+Date: Mon, 17 Nov 2014 09:42:59 +0900
+Message-id: <1416184980-532-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
 References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSoDvNJTPE4NUzG4slF6+yW0x9+ITN
-	4vqX56wW84+cY7X4M6GVzWLS/QksFmeb3rBb3P96lNHi25UOJovLu+awWTydcJHN4nQ3q8XF
-	FV+YHHg9ds66y+6xaVUnm8eda3vYPOadDPTo27KK0WP6vJ9MHp83yQWwR3HZpKTmZJalFunb
-	JXBlLFw5ia1gm3TFnV+3GBsYD4l2MXJySAiYSOze8J4JwhaTuHBvPVsXIxeHkMBSRon+1c9Z
-	YYom/HnICpGYzigxtXUZM4TTxCSxd08bM0gVm4CWxP4XN9hAbBGBaInjT48zghQxC3xmlHh2
-	aRN7FyMHh7BAuMSRl9wgNSwCqhIT5nwDq+cVcJZ4evI9I8Q2BYlly2eCbeYUcJHY0LwMbL4Q
-	UM2bzzfAzpMQuMYu0b/3CyvEIAGJb5MPsYDMlxCQldh0gBlijqTEwRU3WCYwCi9gZFjFKJpa
-	kFxQnJReZKpXnJhbXJqXrpecn7uJERg1p/89m7iD8f4B60OMAhyMSjy8HNYZIUKsiWXFlbmH
-	GE2BNkxklhJNzgfGZl5JvKGxmZGFqYmpsZG5pZmSOK+O9M9gIYH0xJLU7NTUgtSi+KLSnNTi
-	Q4xMHJxSDYwrH2YWb2V583v6WotV90Na6ve+fMDJ8FQ3/lbFzd7rG3KLeMxP1h9g7Hv+X3Pm
-	640275aurZ3+eoLi227+DvkXHFd8XxrejX9llK04r+xR//fy5NyHh0QV5y6ScTfYEf27Zn+j
-	cI75iZiWHXsOcO4saZwxTdJmUouiSsnEn+27gg10noj8vc6oxFKckWioxVxUnAgAH1XGe5UC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t9jQd1pLpkhBvtmm1gsuXiV3WLqwyds
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSoDvNJTPEYFW/qcWSi1fZLaY+fMJm
+	cf3Lc1aL+UfOsVr8mdDKZjHp/gQWi7NNb9gt7n89ymjx7UoHk8XlXXPYLJ5OuMhmcbqb1eLi
+	ii9MDrweO2fdZffYtKqTzePOtT1sHvNOBnr0bVnF6DF93k8mj8+b5ALYo7hsUlJzMstSi/Tt
+	Ergytre0sBUskam4NP8tcwPjR7EuRk4OCQETif1dF1ggbDGJC/fWs3UxcnEICSxllNi27hYz
+	TNGlW9uYQGwhgemMEvOP50IUNTFJ7N3TBlbEJqAlsf/FDTYQW0QgWuL40+OMIEXMAp8ZJZ5d
+	2sQOkhAWsJOYf3MJ2DoWAVWJe3tvsILYvALOEg07WlghtilILFs+E8zmFHCR2NC8jBlis7PE
+	m883wM6TELjELtF79hYTxCABiW+TDwEN5QBKyEpsOgB1taTEwRU3WCYwCi9gZFjFKJpakFxQ
+	nJReZKpXnJhbXJqXrpecn7uJERg1p/89m7iD8f4B60OMAhyMSjy8HNYZIUKsiWXFlbmHGE2B
+	NkxklhJNzgfGZl5JvKGxmZGFqYmpsZG5pZmSOK+O9M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xM
+	HJxSDYwum5xlOPZafVn3obvKrrLqCH9mjgjPi6bbB9saUlbns3CEPpdQsYxLdntf9iniJ8OX
+	AgEDQTPumNMH3fYe+HHDejN3cP8LO4kMI7u7hgFCMxY1S760nn3Qgf39NtXKLV6bEko+nU3Q
+	jpvlaVdutnvFJa35N27piTVv5nTRtnp8VL7H0FNWTomlOCPRUIu5qDgRAIVUe+mVAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t9jQd1pLpkhBie/6VgsuXiV3WLqwyds
 	Fte/PGe1mH/kHKvFnwmtbBaT7k9gsTjb9Ibd4v7Xo4wW3650MFlc3jWHzeLphItsFqe7WS0u
 	rvjC5MDrsXPWXXaPTas62TzuXNvD5jHvZKBH35ZVjB7T5/1k8vi8SS6APaqB0SYjNTEltUgh
 	NS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6FolhbLEnFKgUEBicbGS
-	vh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bClZPYCrZJV9z5dYuxgfGQaBcjJ4eEgInEhD8P
-	WSFsMYkL99azdTFycQgJTGeUmNq6jBnCaWKS2LunjRmkik1AS2L/ixtsILaIQLTE8afHGUGK
-	mAU+M0o8u7SJvYuRg0NYIFziyEtukBoWAVWJCXO+gdXzCjhLPD35nhFim4LEsuUzwTZzCrhI
-	bGheBjZfCKjmzecbbBMYeRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7JZ9I7GFc1
-	WBxiFOBgVOLh3WCRESLEmlhWXJl7iFGCg1lJhHeJTmaIEG9KYmVValF+fFFpTmrxIUZToKsm
-	MkuJJucD00VeSbyhsYmZkaWRuaGFkbG5kjjvwVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQbG5Z/D
-	ZbsfnAw44P/iWNP5+8z2i3iKlaadWF6Y6t9wNfiA/Svhfy8tJsuumLTUWoDp2psHH3/lbFmz
-	sXvDdaXX6Y9fpZqKZzULH77CaBSh4v3xscCCy4kfp5TN8hNUtOCIbXnAuXt7cKXO3nWitx/b
-	bjyTNXVH4OQkvw97hfv/p8YnR9uWsl9XV2Ipzkg01GIuKk4EAB5fptHfAgAA
+	vh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8b2lha2giUyFZfmv2VuYPwo1sXIySEhYCJx6dY2
+	JghbTOLCvfVsILaQwHRGifnHc7sYuYDsJiaJvXvamEESbAJaEvtf3AArEhGIljj+9DgjSBGz
+	wGdGiWeXNrGDJIQF7CTm31zCAmKzCKhK3Nt7gxXE5hVwlmjY0cIKsU1BYtnymWA2p4CLxIbm
+	ZcwQm50l3ny+wTaBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOCYfCa9g3FVg8Uh
+	RgEORiUe3g0WGSFCrIllxZW5hxglOJiVRHiX6GSGCPGmJFZWpRblxxeV5qQWH2I0BbpqIrOU
+	aHI+MF3klcQbGpuYGVkamRtaGBmbK4nzHmy1DhQSSE8sSc1OTS1ILYLpY+LglGpgjFTQv/5G
+	Y0/tPL0Jiw++2r+fa/+Nnqwz2y483dqcqRnuYq2ve6Cy++LqhjPnW1bPl5i4dsOvlmV3wmY+
+	M7D023/sVNr7NWJTE2/rGlabcp/o4bMW/n/64g/rYpUGXgZHg5tVqR1Mec4cJy+w+Lzd3Sz5
+	4e/iz0en3l17Te70VfvQi7qu4R0/pJVYijMSDbWYi4oTAY/jmtffAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,82 +53,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the binding documentation for Samsung S2MPS13 PMIC
-which is similiar with existing S2MPS14 PMIC. S2MPS13 has the different number
-of regulators from S2MPS14 and RTC/Clock is the same with the S2MPS14.
+This patch adds only the compatible string for S2MPS13 clock which is identical
+with S2MPS14 clock driver.
 
-Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- Documentation/devicetree/bindings/mfd/s2mps11.txt | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/rtc/rtc-s5m.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-index 0e4026a..57a0450 100644
---- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -1,5 +1,5 @@
+diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+index 8754c33..e5fdfd3 100644
+--- a/drivers/rtc/rtc-s5m.c
++++ b/drivers/rtc/rtc-s5m.c
+@@ -191,6 +191,7 @@ static inline int s5m_check_peding_alarm_interrupt(struct s5m_rtc_info *info,
+ 		ret = regmap_read(info->regmap, S5M_RTC_STATUS, &val);
+ 		val &= S5M_ALARM0_STATUS;
+ 		break;
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		ret = regmap_read(info->s5m87xx->regmap_pmic, S2MPS14_REG_ST2,
+ 				&val);
+@@ -254,6 +255,7 @@ static inline int s5m8767_rtc_set_alarm_reg(struct s5m_rtc_info *info)
+ 	case S5M8767X:
+ 		data &= ~S5M_RTC_TIME_EN_MASK;
+ 		break;
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		data |= S2MPS_RTC_RUDR_MASK;
+ 		break;
+@@ -311,7 +313,9 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	u8 data[info->regs->regs_count];
+ 	int ret;
  
--* Samsung S2MPS11, S2MPS14 and S2MPU02 Voltage and Current Regulator
-+* Samsung S2MPS11, S2MPS13, S2MPS14 and S2MPU02 Voltage and Current Regulator
+-	if (info->device_type == S2MPS14X) {
++	switch (info->device_type) {
++	case S2MPS13X:
++	case S2MPS14X:
+ 		ret = regmap_update_bits(info->regmap,
+ 				info->regs->rtc_udr_update,
+ 				S2MPS_RTC_RUDR_MASK, S2MPS_RTC_RUDR_MASK);
+@@ -333,6 +337,7 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 		break;
  
- The Samsung S2MPS11 is a multi-function device which includes voltage and
- current regulators, RTC, charger controller and other sub-blocks. It is
-@@ -7,8 +7,8 @@ interfaced to the host controller using an I2C interface. Each sub-block is
- addressed by the host system using different I2C slave addresses.
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		s5m8767_data_to_tm(data, tm, info->rtc_24hr_mode);
+ 		break;
+@@ -359,6 +364,7 @@ static int s5m_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 		s5m8763_tm_to_data(tm, data);
+ 		break;
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		ret = s5m8767_tm_to_data(tm, data);
+ 		break;
+@@ -406,6 +412,7 @@ static int s5m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		break;
  
- Required properties:
--- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic"
--              or "samsung,s2mpu02-pmic".
-+- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps13-pmic"
-+	      or "samsung,s2mps14-pmic" or "samsung,s2mpu02-pmic".
- - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		s5m8767_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
+ 		alrm->enabled = 0;
+@@ -454,6 +461,7 @@ static int s5m_rtc_stop_alarm(struct s5m_rtc_info *info)
+ 		break;
  
- Optional properties:
-@@ -17,8 +17,8 @@ Optional properties:
- - interrupts: Interrupt specifiers for interrupt sources.
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		for (i = 0; i < info->regs->regs_count; i++)
+ 			data[i] &= ~ALARM_ENABLE_MASK;
+@@ -498,6 +506,7 @@ static int s5m_rtc_start_alarm(struct s5m_rtc_info *info)
+ 		break;
  
- Optional nodes:
--- clocks: s2mps11 and s5m8767 provide three(AP/CP/BT) buffered 32.768 KHz
--  outputs, so to register these as clocks with common clock framework
-+- clocks: s2mps11, s2mps13 and s5m8767 provide three(AP/CP/BT) buffered 32.768
-+  KHz outputs, so to register these as clocks with common clock framework
-   instantiate a sub-node named "clocks". It uses the common clock binding
-   documented in :
-   [Documentation/devicetree/bindings/clock/clock-bindings.txt]
-@@ -30,12 +30,12 @@ Optional nodes:
-     the clock which they consume.
-     Clock               ID           Devices
-     ----------------------------------------------------------
--    32KhzAP		0            S2MPS11, S2MPS14, S5M8767
--    32KhzCP		1            S2MPS11, S5M8767
--    32KhzBT		2            S2MPS11, S2MPS14, S5M8767
-+    32KhzAP		0            S2MPS11, S2MPS13, S2MPS14, S5M8767
-+    32KhzCP		1            S2MPS11, S2MPS13, S5M8767
-+    32KhzBT		2            S2MPS11, S2MPS13, S2MPS14, S5M8767
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		data[RTC_SEC] |= ALARM_ENABLE_MASK;
+ 		data[RTC_MIN] |= ALARM_ENABLE_MASK;
+@@ -537,6 +546,7 @@ static int s5m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		break;
  
--  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps14-clk",
--		"samsung,s5m8767-clk"
-+  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps13-clk",
-+		"samsung,s2mps14-clk", "samsung,s5m8767-clk"
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		s5m8767_tm_to_data(&alrm->time, data);
+ 		break;
+@@ -641,6 +651,7 @@ static int s5m8767_rtc_init_reg(struct s5m_rtc_info *info)
+ 		ret = regmap_raw_write(info->regmap, S5M_ALARM0_CONF, data, 2);
+ 		break;
  
- - regulators: The regulators of s2mps11 that have to be instantiated should be
- included in a sub-node named 'regulators'. Regulator nodes included in this
-@@ -81,12 +81,14 @@ as per the datasheet of s2mps11.
- 	- LDOn
- 		  - valid values for n are:
- 			- S2MPS11: 1 to 38
-+			- S2MPS13: 1 to 40
- 			- S2MPS14: 1 to 25
- 			- S2MPU02: 1 to 28
- 		  - Example: LDO1, LDO2, LDO28
- 	- BUCKn
- 		  - valid values for n are:
- 			- S2MPS11: 1 to 10
-+			- S2MPS13: 1 to 10
- 			- S2MPS14: 1 to 5
- 			- S2MPU02: 1 to 7
- 		  - Example: BUCK1, BUCK2, BUCK9
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		data[0] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
+ 		ret = regmap_write(info->regmap, info->regs->ctrl, data[0]);
+@@ -678,6 +689,7 @@ static int s5m_rtc_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	switch (pdata->device_type) {
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		regmap_cfg = &s2mps14_rtc_regmap_config;
+ 		info->regs = &s2mps_rtc_regs;
+@@ -831,6 +843,7 @@ static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
+ 
+ static const struct platform_device_id s5m_rtc_id[] = {
+ 	{ "s5m-rtc",		S5M8767X },
++	{ "s2mps13-rtc",	S2MPS13X },
+ 	{ "s2mps14-rtc",	S2MPS14X },
+ };
+ 
 -- 
 1.8.5.5
 
