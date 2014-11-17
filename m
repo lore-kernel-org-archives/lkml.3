@@ -1,147 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaKQV2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:28:39 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:32832 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159AbaKQV2g (ORCPT
+	id S1752823AbaKQV3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 16:29:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51243 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaKQV3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:28:36 -0500
-Message-ID: <546A687F.6050104@linaro.org>
-Date: Mon, 17 Nov 2014 22:28:31 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
+	Mon, 17 Nov 2014 16:29:01 -0500
+Date: Mon, 17 Nov 2014 13:29:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 4/4] clocksource: mips-gic: Add device-tree support
-References: <1415821419-26974-1-git-send-email-abrestic@chromium.org> <1415821419-26974-5-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1415821419-26974-5-git-send-email-abrestic@chromium.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] mm: move swp_entry_t definition to
+ include/linux/mm_types.h
+Message-Id: <20141117132900.da426ddb56a3eeb01a484b38@linux-foundation.org>
+In-Reply-To: <20141117211723.GH23126@htj.dyndns.org>
+References: <20141117211723.GH23126@htj.dyndns.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2014 08:43 PM, Andrew Bresticker wrote:
-> Parse the GIC timer frequency and interrupt from the device-tree.
->
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Mon, 17 Nov 2014 16:17:23 -0500 Tejun Heo <tj@kernel.org> wrote:
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-
-> ---
-> Changes from v4:
->   - don't probe from irqchip; just warn if DT is wrong
-> Changes from v3:
->   - probe from GIC irqchip
-> New for v3.
-> ---
->   drivers/clocksource/Kconfig          |  1 +
->   drivers/clocksource/mips-gic-timer.c | 41 ++++++++++++++++++++++++++++++------
->   2 files changed, 35 insertions(+), 7 deletions(-)
+> swp_entry_t being defined in include/linux/swap.h instead of
+> include/linux/mm_types.h causes cyclic include dependency later when
+> include/linux/page_cgroup.h is included from writeback path.  Move the
+> definition to include/linux/mm_types.h.
+> 
+> While at it, reformat the comment above it.
 >
-> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-> index cb7e7f4..89836dc 100644
-> --- a/drivers/clocksource/Kconfig
-> +++ b/drivers/clocksource/Kconfig
-> @@ -226,5 +226,6 @@ config CLKSRC_VERSATILE
->   config CLKSRC_MIPS_GIC
->   	bool
->   	depends on MIPS_GIC
-> +	select CLKSRC_OF
+> ...
 >
->   endmenu
-> diff --git a/drivers/clocksource/mips-gic-timer.c b/drivers/clocksource/mips-gic-timer.c
-> index a749c81..3bd31b1 100644
-> --- a/drivers/clocksource/mips-gic-timer.c
-> +++ b/drivers/clocksource/mips-gic-timer.c
-> @@ -11,6 +11,7 @@
->   #include <linux/interrupt.h>
->   #include <linux/irqchip/mips-gic.h>
->   #include <linux/notifier.h>
-> +#include <linux/of_irq.h>
->   #include <linux/percpu.h>
->   #include <linux/smp.h>
->   #include <linux/time.h>
-> @@ -101,8 +102,6 @@ static int gic_clockevent_init(void)
->   	if (!cpu_has_counter || !gic_frequency)
->   		return -ENXIO;
->
-> -	gic_timer_irq = MIPS_GIC_IRQ_BASE +
-> -		GIC_LOCAL_TO_HWIRQ(GIC_LOCAL_INT_COMPARE);
->   	setup_percpu_irq(gic_timer_irq, &gic_compare_irqaction);
->
->   	register_cpu_notifier(&gic_cpu_nb);
-> @@ -123,17 +122,45 @@ static struct clocksource gic_clocksource = {
->   	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
->   };
->
-> -void __init gic_clocksource_init(unsigned int frequency)
-> +static void __init __gic_clocksource_init(void)
->   {
-> -	gic_frequency = frequency;
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -525,4 +525,12 @@ enum tlb_flush_reason {
+>  	NR_TLB_FLUSH_REASONS,
+>  };
+>  
+> + /*
+> +  * A swap entry has to fit into a "unsigned long", as the entry is hidden
+> +  * in the "index" field of the swapper address space.
+> +  */
+> +typedef struct {
+> +	unsigned long val;
+> +} swp_entry_t;
+> +
+>  #endif /* _LINUX_MM_TYPES_H */
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -102,14 +102,6 @@ union swap_header {
+>  	} info;
+>  };
+>  
+> - /* A swap entry has to fit into a "unsigned long", as
+> -  * the entry is hidden in the "index" field of the
+> -  * swapper address space.
+> -  */
+> -typedef struct {
+> -	unsigned long val;
+> -} swp_entry_t;
 > -
->   	/* Set clocksource mask. */
->   	gic_clocksource.mask = CLOCKSOURCE_MASK(gic_get_count_width());
->
->   	/* Calculate a somewhat reasonable rating value. */
-> -	gic_clocksource.rating = 200 + frequency / 10000000;
-> +	gic_clocksource.rating = 200 + gic_frequency / 10000000;
->
-> -	clocksource_register_hz(&gic_clocksource, frequency);
-> +	clocksource_register_hz(&gic_clocksource, gic_frequency);
->
->   	gic_clockevent_init();
->   }
-> +
-> +void __init gic_clocksource_init(unsigned int frequency)
-> +{
-> +	gic_frequency = frequency;
-> +	gic_timer_irq = MIPS_GIC_IRQ_BASE +
-> +		GIC_LOCAL_TO_HWIRQ(GIC_LOCAL_INT_COMPARE);
-> +
-> +	__gic_clocksource_init();
-> +}
-> +
-> +static void __init gic_clocksource_of_init(struct device_node *node)
-> +{
-> +	if (WARN_ON(!gic_present || !node->parent ||
-> +		    !of_device_is_compatible(node->parent, "mti,gic")))
-> +		return;
-> +
-> +	if (of_property_read_u32(node, "clock-frequency", &gic_frequency)) {
-> +		pr_err("GIC frequency not specified.\n");
-> +		return;
-> +	}
-> +	gic_timer_irq = irq_of_parse_and_map(node, 0);
-> +	if (!gic_timer_irq) {
-> +		pr_err("GIC timer IRQ not specified.\n");
-> +		return;
-> +	}
-> +
-> +	__gic_clocksource_init();
-> +}
-> +CLOCKSOURCE_OF_DECLARE(mips_gic_timer, "mti,gic-timer",
-> +		       gic_clocksource_of_init);
->
+>  /*
+>   * current->reclaim_state points to one of these when a task is running
+>   * memory reclaim
 
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Looks OK to me.  Do you have some patch which depends on this?  If
+so, please merge this via whatever tree carries that patch?
 
