@@ -1,105 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaKQNDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:03:06 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:58796 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaKQNDD (ORCPT
+	id S1752032AbaKQNFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:05:36 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:48899 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaKQNFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:03:03 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-13-5469f2041219
-Date: Mon, 17 Nov 2014 14:02:45 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
- for tegra driver
-Message-id: <20141117140245.51837653@amdc2363>
-In-reply-to: <20141117120105.GH25699@ulmo>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
- <5465DDC5.6090301@kapsi.fi> <20141117114341.GF25699@ulmo>
- <20141117125013.3493a3a1@amdc2363> <20141117120105.GH25699@ulmo>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jQV2WT5khBlNuqllsnLGe1WL+lWus
-	FqdPLWC1OPfqEYvF2+Zii1eHdzFavHnEbXF51xw2i8+9RxgtOr/MYrO4/eEAs8WDq9PYLJ48
-	7GOzeHWwjcXi5655LBbHTsxgdRDweLLpIqPHzll32T0W73nJ5HHp3B9mj3XT3jJ7HJh8jtWj
-	t/kdm8e3MxNZPPq2rGL0ePpjL7PH501yHhvnhgbwRHHZpKTmZJalFunbJXBl/N98lbWgj6/i
-	yK4NrA2MndxdjBwcEgImEl+eGXcxcgKZYhIX7q1nA7GFBKYzSlyYl93FyAVk/2KUePljAhNI
-	gkVAVeL7swnsIDabgJ7E57tPweIiAroS/0+/YQFpYBboZpVYeOEWC0hCWCBe4s73S2ANvEAN
-	TZvbmUFsTgEtiTeLJ0Jt288kcfZvIIjNLyAp0f7vBzPERXYS5z5tgOoVlPgx+R7YTGag3s3b
-	mlghbHmJzWveMk9gFJyFpGwWkrJZSMoWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO
-	y2fSOxhXNVgcYhTgYFTi4d2RnRkixJpYVlyZe4hRgoNZSYQ35iJQiDclsbIqtSg/vqg0J7X4
-	EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA+PqUzaapsvMH6xQXfC07PTfv055f6I+
-	7szOy5L3VBWrO7hL7cme6xPZJj1LyltzILjj2F3+JIuytM4F9T5PFeSWTDP4VrzoWnWMui6b
-	47Vj33ZkbagxePJkiqeRkIR0EFeEXK7KkYfzZue/8JhZKvP3C88UuW3BLx1vVxQsmL3RoKfN
-	8qzigitKLMUZiYZazEXFiQCE2C03xwIAAA==
+	Mon, 17 Nov 2014 08:05:34 -0500
+From: Daniel Dressler <danieru.dressler@gmail.com>
+To: danieru.dressler@gmail.com
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org (open list:BTRFS FILE SYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] Btrfs: delayed-inode: replace root args iff only fs_info used
+Date: Mon, 17 Nov 2014 22:05:02 +0900
+Message-Id: <1416229502-22368-1-git-send-email-danieru.dressler@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <danieru.dressler@gmail.com>
+References: <danieru.dressler@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+This is the second independent patch of a larger
+project to cleanup btrfs's internal usage of
+btrfs_root. Many functions take btrfs_root
+only to grab the fs_info struct.
 
-> On Mon, Nov 17, 2014 at 12:50:13PM +0100, Lukasz Majewski wrote:
-> > Hi Thierry,
-> > 
-> > > On Fri, Nov 14, 2014 at 12:47:33PM +0200, Mikko Perttunen wrote:
-> > > > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-> > > > 
-> > > > One potential issue I can see is that if the cpufreq driver
-> > > > fails to probe then you'll never get the thermal driver either.
-> > > > For example, Tegra124 currently has no cpufreq driver, so if
-> > > > CONFIG_CPU_THERMAL was enabled, then the soctherm driver would
-> > > > never be able to probe. But I don't really have a solution for
-> > > > this either.
-> > > 
-> > > It doesn't seem like there's any code whatsoever to deal with
-> > > cpufreq within the soctherm driver, so deferring probe based on
-> > > something we're not using anyway seems rather useless.
-> > 
-> > So, If I understood you correctly - this patch is not needed in the 
-> > /tegra_soctherm.c:[tegra_defconfig] driver and can be safely
-> > omitted in v2 of this driver.
-> 
-> What I'm saying is that I don't think doing this mass conversion
-> wholesale is useful since none of the drivers register a cooling
-> device based on cpufreq. In other words: if you're not going to use a
-> feature there's no use testing for it.
-> 
+By requiring a root these functions cause
+programmer overhead. That these functions can
+accept any valid root is not obvious until
+inspection.
 
-It seems, like one option here would be to add deferred proble to
-cpufreq_cooling_register() or check which driver in its thermal probe
-is calling cpufreq_cooling_register() function.
+This patch reduces the specificity of such
+functions to accept the fs_info directly.
 
-The latter option explains why in the imx_thermal.c file we check for
-deferred probe without #ifdefs for CONFIG_CPU_THERMAL.
+These patches can be applied independently
+and thus are not being submitted as a patch
+series. There should be about 26 patches by
+the project's completion. Each patch will
+cleanup between 1 and 34 functions apiece.
+Each patch covers a single file's functions.
 
-If no objections, I would like to stick to the code already available
-in imx_thermal.c.
+This patch affects the following function(s):
+  1) btrfs_wq_run_delayed_node
 
-> Thierry
+Signed-off-by: Daniel Dressler <danieru.dressler@gmail.com>
+---
+ fs/btrfs/delayed-inode.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
+diff --git a/fs/btrfs/delayed-inode.c b/fs/btrfs/delayed-inode.c
+index 054577b..e590da6 100644
+--- a/fs/btrfs/delayed-inode.c
++++ b/fs/btrfs/delayed-inode.c
+@@ -1383,7 +1383,7 @@ out:
+ 
+ 
+ static int btrfs_wq_run_delayed_node(struct btrfs_delayed_root *delayed_root,
+-				     struct btrfs_root *root, int nr)
++				     struct btrfs_fs_info *fs_info, int nr)
+ {
+ 	struct btrfs_async_delayed_work *async_work;
+ 
+@@ -1399,7 +1399,7 @@ static int btrfs_wq_run_delayed_node(struct btrfs_delayed_root *delayed_root,
+ 			btrfs_async_run_delayed_root, NULL, NULL);
+ 	async_work->nr = nr;
+ 
+-	btrfs_queue_work(root->fs_info->delayed_workers, &async_work->work);
++	btrfs_queue_work(fs_info->delayed_workers, &async_work->work);
+ 	return 0;
+ }
+ 
+@@ -1426,6 +1426,7 @@ static int could_end_wait(struct btrfs_delayed_root *delayed_root, int seq)
+ void btrfs_balance_delayed_items(struct btrfs_root *root)
+ {
+ 	struct btrfs_delayed_root *delayed_root;
++	struct btrfs_fs_info *fs_info = root->fs_info;
+ 
+ 	delayed_root = btrfs_get_delayed_root(root);
+ 
+@@ -1438,7 +1439,7 @@ void btrfs_balance_delayed_items(struct btrfs_root *root)
+ 
+ 		seq = atomic_read(&delayed_root->items_seq);
+ 
+-		ret = btrfs_wq_run_delayed_node(delayed_root, root, 0);
++		ret = btrfs_wq_run_delayed_node(delayed_root, fs_info, 0);
+ 		if (ret)
+ 			return;
+ 
+@@ -1447,7 +1448,7 @@ void btrfs_balance_delayed_items(struct btrfs_root *root)
+ 		return;
+ 	}
+ 
+-	btrfs_wq_run_delayed_node(delayed_root, root, BTRFS_DELAYED_BATCH);
++	btrfs_wq_run_delayed_node(delayed_root, fs_info, BTRFS_DELAYED_BATCH);
+ }
+ 
+ /* Will return 0 or -ENOMEM */
 -- 
-Best regards,
+2.1.0
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
