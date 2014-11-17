@@ -1,209 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411AbaKQGrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 01:47:18 -0500
-Received: from mail-bl2on0120.outbound.protection.outlook.com ([65.55.169.120]:34197
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750964AbaKQGrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 01:47:17 -0500
-Date: Mon, 17 Nov 2014 13:40:22 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>,
-        <p.zabel@pengutronix.de>, <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 08/13] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20141117054021.GB30017@shlinux2>
-References: <1415978763-27345-1-git-send-email-antoine.tenart@free-electrons.com>
- <1415978763-27345-9-git-send-email-antoine.tenart@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1415978763-27345-9-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(199003)(189002)(31966008)(23726002)(47776003)(64706001)(20776003)(92726001)(92566001)(99396003)(104016003)(110136001)(95666004)(21056001)(77156002)(33656002)(106466001)(62966003)(107046002)(105606002)(46406003)(83506001)(84676001)(120916001)(68736004)(50466002)(4396001)(102836001)(46102003)(19580395003)(19580405001)(44976005)(6806004)(97736003)(86362001)(97756001)(33716001)(76176999)(87936001)(54356999)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0629;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
-X-Forefront-PRVS: 03982FDC1D
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
-X-OriginatorOrg: freescale.com
+	id S1751352AbaKQGxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 01:53:40 -0500
+Received: from ozlabs.org ([103.22.144.67]:44066 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964AbaKQGxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 01:53:39 -0500
+Message-ID: <1416207214.2826.3.camel@concordia>
+Subject: Re: [PATCH] [powerpc] Fix Text randomization
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Vineeth Vijayan <vvijayan@mvista.com>
+Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
+Date: Mon, 17 Nov 2014 17:53:34 +1100
+In-Reply-To: <1415956325-10124-1-git-send-email-vvijayan@mvista.com>
+References: <1415956325-10124-1-git-send-email-vvijayan@mvista.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 04:25:58PM +0100, Antoine Tenart wrote:
-> Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> and DMA mask, to support USB2 ChipIdea controllers that don't need
-> specific functions.
+On Fri, 2014-11-14 at 14:42 +0530, Vineeth Vijayan wrote:
+> Now there is no way to disable TEXT randomization on a PPC32/PPC64
+> machine. Text randomization happens even in the case of "echo 0 >
+> /proc/sys/kernel/randomize_va_space"
 > 
-> Tested on the Marvell Berlin SoCs USB controllers.
+> This happens due to the incorrect definition of ELF_ET_DYN_BASE
+> at arch/powerpc/include/asm/elf.h
 > 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> The function randomize_et_dyn is redundant and is removed.
 
-I remember someone tested it before, you can add his tested-by if you
-can find it.
+The patch looks OK, but for the change log I was thinking something more like
+this:
 
-> ---
->  drivers/usb/chipidea/Makefile       |   1 +
->  drivers/usb/chipidea/ci_hdrc_usb2.c | 117 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 118 insertions(+)
->  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
-> 
-> diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-> index 2f099c7df7b5..1fc86a2ca22d 100644
-> --- a/drivers/usb/chipidea/Makefile
-> +++ b/drivers/usb/chipidea/Makefile
-> @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+= otg_fsm.o
->  
->  # Glue/Bridge layers go here
->  
-> +obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_usb2.o
->  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_msm.o
->  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_zevio.o
->  
-> diff --git a/drivers/usb/chipidea/ci_hdrc_usb2.c b/drivers/usb/chipidea/ci_hdrc_usb2.c
-> new file mode 100644
-> index 000000000000..15a0947483b8
-> --- /dev/null
-> +++ b/drivers/usb/chipidea/ci_hdrc_usb2.c
-> @@ -0,0 +1,117 @@
-> +/*
-> + * Copyright (C) 2014 Marvell Technology Group Ltd.
-> + *
-> + * Antoine Tenart <antoine.tenart@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/dma-mapping.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/usb/chipidea.h>
-> +#include <linux/usb/hcd.h>
-> +#include <linux/usb/ulpi.h>
-> +
-> +#include "ci.h"
-> +
-> +struct ci_hdrc_usb2_priv {
-> +	struct platform_device	*ci_pdev;
-> +	struct clk		*clk;
-> +};
-> +
-> +static struct ci_hdrc_platform_data ci_default_pdata = {
-> +	.capoffset	= DEF_CAPOFFSET,
-> +	.flags		= CI_HDRC_REQUIRE_TRANSCEIVER |
-> +			  CI_HDRC_DISABLE_STREAMING,
-> +};
-> +
 
-"CI_HDRC_REQUIRE_TRANSCEIVER" is deleted, have you rebased my next tree?
+powerpc: Use generic PIE randomization
 
-> +static int ci_hdrc_usb2_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct ci_hdrc_usb2_priv *priv;
-> +	struct ci_hdrc_platform_data *ci_pdata = dev_get_platdata(&pdev->dev);
+Back in 2009 we merged 501cb16d3cfd "Randomise PIEs", which added support for
+randomizing PIE (Position Independent Executable) binaries.
 
-You can dev instead of &pdev->dev.
+That commit added randomize_et_dyn(), which correctly randomized the addresses,
+but failed to honor PF_RANDOMIZE. That means it was not possible to disable PIE
+randomization via the personality flag, or /proc/sys/kernel/randomize_va_space.
 
-> +	int ret;
-> +
-> +	if (!ci_pdata)
-> +		ci_pdata = &ci_default_pdata;
-> +
-> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +
-> +	priv->clk = devm_clk_get(dev, NULL);
-> +	if (!IS_ERR(priv->clk)) {
-> +		ret = clk_prepare_enable(priv->clk);
-> +		if (ret) {
-> +			dev_err(dev, "failed to enable the clock: %d\n", ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-> +	if (ret)
-> +		goto clk_err;
-> +
-> +	ci_pdata->name = dev_name(&pdev->dev);
-> +
-> +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
-> +					   pdev->num_resources, ci_pdata);
-> +	if (IS_ERR(priv->ci_pdev)) {
-> +		ret = PTR_ERR(priv->ci_pdev);
-> +		if (ret != -EPROBE_DEFER)
-> +			dev_err(dev,
-> +				"failed to register ci_hdrc platform device: %d\n",
-> +				ret);
-> +		goto clk_err;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, priv);
-> +
-> +	pm_runtime_no_callbacks(dev);
-> +	pm_runtime_enable(dev);
-> +
-> +	return 0;
-> +
-> +clk_err:
-> +	if (!IS_ERR(priv->clk))
-> +		clk_disable_unprepare(priv->clk);
-> +	return ret;
-> +}
-> +
-> +static int ci_hdrc_usb2_remove(struct platform_device *pdev)
-> +{
-> +	struct ci_hdrc_usb2_priv *priv = platform_get_drvdata(pdev);
-> +
-> +	pm_runtime_disable(&pdev->dev);
-> +	ci_hdrc_remove_device(priv->ci_pdev);
-> +	clk_disable_unprepare(priv->clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id ci_hdrc_usb2_of_match[] = {
-> +	{ .compatible = "chipidea,usb2" },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, ci_hdrc_usb2_of_match);
-> +
-> +static struct platform_driver ci_hdrc_usb2_driver = {
-> +	.probe	= ci_hdrc_usb2_probe,
-> +	.remove	= ci_hdrc_usb2_remove,
-> +	.driver	= {
-> +		.name		= "chipidea-usb2",
-> +		.owner		= THIS_MODULE,
-> +		.of_match_table	= of_match_ptr(ci_hdrc_usb2_of_match),
-> +	},
-> +};
-> +module_platform_driver(ci_hdrc_usb2_driver);
-> +
-> +MODULE_DESCRIPTION("ChipIdea HDRC USB2 binding for ci13xxx");
-> +MODULE_AUTHOR("Antoine Tenart <antoine.tenart@free-electrons.com>");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 2.1.0
-> 
+Since then there has been generic support for PIE randomization added to
+binfmt_elf.c, selectable via ARCH_BINFMT_ELF_RANDOMIZE_PIE.
 
--- 
+Enabling that allows us to drop randomize_et_dyn(), which means we start
+honoring PF_RANDOMIZE correctly.
 
-Best Regards,
-Peter Chen
+It also causes a fairly major change to how we layout PIE binaries.
+
+Currently we will place the binary at 512MB-520MB for 32 bit binaries, or
+512MB-1.5GB for 64 bit binaries, eg:
+
+    $ cat /proc/$$/maps
+    4e550000-4e580000 r-xp 00000000 08:02 129813       /bin/dash
+    4e580000-4e590000 rw-p 00020000 08:02 129813       /bin/dash
+    10014110000-10014140000 rw-p 00000000 00:00 0      [heap]
+    3fffaa3f0000-3fffaa5a0000 r-xp 00000000 08:02 921  /lib/powerpc64le-linux-gnu/libc-2.19.so
+    3fffaa5a0000-3fffaa5b0000 rw-p 001a0000 08:02 921  /lib/powerpc64le-linux-gnu/libc-2.19.so
+    3fffaa5c0000-3fffaa5d0000 rw-p 00000000 00:00 0 
+    3fffaa5d0000-3fffaa5f0000 r-xp 00000000 00:00 0    [vdso]
+    3fffaa5f0000-3fffaa620000 r-xp 00000000 08:02 1246 /lib/powerpc64le-linux-gnu/ld-2.19.so
+    3fffaa620000-3fffaa630000 rw-p 00020000 08:02 1246 /lib/powerpc64le-linux-gnu/ld-2.19.so
+    3ffffc340000-3ffffc370000 rw-p 00000000 00:00 0    [stack]
+
+With this commit applied we don't do any special randomisation for the binary,
+and instead rely on mmap randomisation. This means the binary ends up at high
+addresses, eg:
+
+    $ cat /proc/$$/maps
+    3fff99820000-3fff999d0000 r-xp 00000000 08:02 921    /lib/powerpc64le-linux-gnu/libc-2.19.so
+    3fff999d0000-3fff999e0000 rw-p 001a0000 08:02 921    /lib/powerpc64le-linux-gnu/libc-2.19.so
+    3fff999f0000-3fff99a00000 rw-p 00000000 00:00 0 
+    3fff99a00000-3fff99a20000 r-xp 00000000 00:00 0      [vdso]
+    3fff99a20000-3fff99a50000 r-xp 00000000 08:02 1246   /lib/powerpc64le-linux-gnu/ld-2.19.so
+    3fff99a50000-3fff99a60000 rw-p 00020000 08:02 1246   /lib/powerpc64le-linux-gnu/ld-2.19.so
+    3fff99a60000-3fff99a90000 r-xp 00000000 08:02 129813 /bin/dash
+    3fff99a90000-3fff99aa0000 rw-p 00020000 08:02 129813 /bin/dash
+    3fffc3de0000-3fffc3e10000 rw-p 00000000 00:00 0      [stack]
+    3fffc55e0000-3fffc5610000 rw-p 00000000 00:00 0      [heap]
+
+Although this should be OK, it's possible it might break badly written
+binaries that make assumptions about the address space layout.
+
+
+cheers
+
+
