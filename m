@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaKQShR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:37:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49971 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaKQShP (ORCPT
+	id S1752507AbaKQSiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:38:24 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:59305 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaKQSiX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:37:15 -0500
-Date: Mon, 17 Nov 2014 10:37:14 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Karol Lewandowski <lmctlx@gmail.com>
-Cc: pmoore@redhat.com, jkosina@suse.cz, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org, arnd@arndb.de,
-        tj@kernel.org, desrt@desrt.ca, simon.mcvittie@collabora.co.uk,
-        daniel@zonque.org, dh.herrmann@gmail.com, casey.schaufler@intel.com,
-        marcel@holtmann.org, tixxdz@opendz.org,
-        javier.martinez@collabora.co.uk, alban.crequy@collabora.co.uk,
-        linux-security-module@vger.kernel.org, r.krypa@samsung.com,
-        Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH 1/5] kdbus: extend structures with security pointer for
- lsm
-Message-ID: <20141117183714.GC12343@kroah.com>
-References: <54539AF3.6060302@samsung.com>
- <1414773397-26490-1-git-send-email-k.lewandowsk@samsung.com>
- <1414773397-26490-2-git-send-email-k.lewandowsk@samsung.com>
- <20141117014732.GA21745@pix>
+	Mon, 17 Nov 2014 13:38:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141117014732.GA21745@pix>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141117150926.GA1968@gondor.apana.org.au>
+References: <20141114213459.GA3832@www.outflux.net>
+	<20141117150926.GA1968@gondor.apana.org.au>
+Date: Mon, 17 Nov 2014 19:38:21 +0100
+Message-ID: <CA+rthh_yfMhmAGvJDpQwnpL6hKJvuZdeDsu4rJuvUQx_irRYZw@mail.gmail.com>
+Subject: Re: [PATCH] crypto: prefix module autoloading with "crypto-"
+From: Mathias Krause <minipli@googlemail.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 02:47:32AM +0100, Karol Lewandowski wrote:
-> On Fri, Oct 31, 2014 at 05:36:33PM +0100, Karol Lewandowski wrote:
-> > Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> > ---
-> >  drivers/misc/kdbus/bus.h        | 2 ++
-> >  drivers/misc/kdbus/connection.h | 2 ++
-> >  drivers/misc/kdbus/domain.h     | 2 ++
-> >  3 files changed, 6 insertions(+)
-> > 
-> > diff --git a/drivers/misc/kdbus/bus.h b/drivers/misc/kdbus/bus.h
-> > index fd9d843..5c403ef 100644
-> > --- a/drivers/misc/kdbus/bus.h
-> > +++ b/drivers/misc/kdbus/bus.h
-> > @@ -49,6 +49,7 @@
-> >   * @conn_hash:		Map of connection IDs
-> >   * @monitors_list:	Connections that monitor this bus
-> >   * @meta:		Meta information about the bus creator
-> > + * @security:		LSM security blob
-> >   *
-> >   * A bus provides a "bus" endpoint / device node.
-> >   *
-> > @@ -84,6 +85,7 @@ struct kdbus_bus {
-> >  	struct list_head monitors_list;
-> >  
-> >  	struct kdbus_meta *meta;
-> > +	void *security;
-> 
-> One minor note - with possibility of LSM modules trying to access
-> these structures it would be worth to have kdbus headers in, say
-> include/linux/kdbus or similar globally accessible location.
+On 17 November 2014 16:09, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+> On Fri, Nov 14, 2014 at 01:34:59PM -0800, Kees Cook wrote:
+>> This prefixes all crypto module loading with "crypto-" so we never run
+>> the risk of exposing module auto-loading to userspace via a crypto API,
+>> as demonstrated by Mathias Krause:
+>>
+>> https://lkml.org/lkml/2013/3/4/70
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>
+> Sorry but this doesn't build for me:
+>
+>   CC [M]  drivers/crypto/qat/qat_common/adf_ctl_drv.o
+> drivers/crypto/qat/qat_common/adf_ctl_drv.c:490:21: error: expected declaration specifiers or ‘...’ before string constant
+> make[3]: *** [drivers/crypto/qat/qat_common/adf_ctl_drv.o] Error 1
+> make[2]: *** [drivers/crypto/qat/qat_common] Error 2
+> make[1]: *** [drivers/crypto/qat] Error 2
+> make[1]: *** Waiting for unfinished jobs....
 
-Yes, that is a good idea.
+Looks like drivers/crypto/qat/qat_common/adf_ctl_drv.c is missing
+'#include <linux/crypto.h>'.
+
+Mathias
