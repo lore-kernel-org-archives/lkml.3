@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173AbaKQMwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:52:08 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:58008 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813AbaKQMwG (ORCPT
+	id S1752328AbaKQMwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 07:52:14 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:47020 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaKQMwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:52:06 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-ae-5469ef73e61c
-Date: Mon, 17 Nov 2014 13:51:42 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+	Mon, 17 Nov 2014 07:52:10 -0500
+Date: Mon, 17 Nov 2014 13:52:07 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Ray Jui <rjui@broadcom.com>, Arun Ramamurthy <arunrama@broadcom.com>,
+        bcm-kernel-feedback-list@broadcom.com, linux-pwm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thermal:cpu cooling:tegra: Provide deferred probing
- for tegra driver
-Message-id: <20141117135142.6692c9d5@amdc2363>
-In-reply-to: <20141117115743.GG25699@ulmo>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
- <1415898165-27406-6-git-send-email-l.majewski@samsung.com>
- <5465DDC5.6090301@kapsi.fi> <20141114122437.6742ea68@amdc2363>
- <20141117115743.GG25699@ulmo>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jQd3i95khBv3tvBYbZ6xntZh/5Rqr
-	xelTC1gtzr16xGLxtrnY4tXhXYwWbx5xW1zeNYfN4nPvEUaLzi+z2CxufzjAbPHg6jQ2iycP
-	+9gsXh1sY7H4uWsei8WxEzNYHQQ8nmy6yOixc9Zddo/Fe14yeVw694fZY920t8weByafY/Xo
-	bX7H5vHtzEQWj74tqxg9nv7Yy+zxeZOcx8a5oQE8UVw2Kak5mWWpRfp2CVwZrxa5FlzgrTjU
-	toypgfESVxcjJ4eEgInEj2dz2SBsMYkL99YD2VwcQgLTGSX2XzgF5fxilPh29xkjSBWLgKrE
-	093vmUFsNgE9ic93nzKB2CICuhL/T79hAWlgFuhmlVh44RYLSEJYIF7izvdL7CA2L1DDrTUP
-	wAZxCmhJnPwzkwViw0ImicdbD4Al+AUkJdr//WCGuMlO4tynDVDNghI/Jt8DG8oM1Lx5WxMr
-	hC0vsXnNW+YJjIKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBsflM
-	egfjqgaLQ4wCHIxKPLw7sjNDhFgTy4orcw8xSnAwK4nwxlwECvGmJFZWpRblxxeV5qQWH2KU
-	5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamAMfHllwePQvOcHbz+5vOmw9a+ZFQcPMCXc
-	3fqZl3XDoZStxsJztvX+cfzFFl3sWLb6xIJGn4O5m7lKX+9gWcefYrjJa87tdPkc8VtyKw4v
-	2vHr7IXs189qr11TtlPlc2COMF542mxVHFNMq4kp652SU1dYH87iv9P28EXEzHK2F3N3H6qt
-	YhexU2Ipzkg01GIuKk4EACWYxxLJAgAA
+Subject: Re: [PATCH 4/4] pwm: kona: Update dependency to ARCH_BCM
+Message-ID: <20141117125205.GA18767@ulmo>
+References: <sbranden@broadcom.com>
+ <1415989800-7515-1-git-send-email-sbranden@broadcom.com>
+ <1415989800-7515-5-git-send-email-sbranden@broadcom.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+In-Reply-To: <1415989800-7515-5-git-send-email-sbranden@broadcom.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
 
-> On Fri, Nov 14, 2014 at 12:24:37PM +0100, Lukasz Majewski wrote:
-> > Hi Mikko,
-> > 
-> > > Tested-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-> > 
-> > Thanks for testing.
-> > 
-> > > 
-> > > One potential issue I can see is that if the cpufreq driver fails
-> > > to probe then you'll never get the thermal driver either. For
-> > > example, Tegra124 currently has no cpufreq driver, so if
-> > > CONFIG_CPU_THERMAL was enabled, then the soctherm driver would
-> > > never be able to probe.
-> > 
-> > Yes, this is a potential issue. However, this option in
-> > tegra_defconfig is by default disabled when thermal is enabled.
-> 
-> Not everybody uses tegra_defconfig for their kernel builds. In fact
-> I'd imagine that the majority of kernels use a variant of
-> multi_v7_defconfig and therefore CPU_THERMAL might get enabled
-> irrespective of any Tegra support.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I see your point. 
+On Fri, Nov 14, 2014 at 10:30:00AM -0800, Scott Branden wrote:
+> From: Arun Ramamurthy <arunrama@broadcom.com>
+>=20
 
-> 
-> I think a better solution would be to add this check only when proper
-> support for CPU frequency based cooling is added. That is, when a call
-> to cpufreq_cooling_register() (or a variant thereof) is added.
+There's no patch description here. You should describe why you make this
+change.
 
-For the above reason the code is only compiled in when user enable
-CONFIG_CPU_THERMAL.
+Thierry
 
-> 
-> But while at it, why not make it so that cpufreq_cooling_register()
-> detects if a cpufreq driver has been registered yet and propagate
-> -EPROBE_DEFER if necessary?
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature
 
-cpufreq_cooling_register() may be a good place to add check for
-deferred probe.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-The problem with cpufreq_cooling_register() is that it may be called
-late in the probe function (as it is done now in Exynos).
+iQIcBAEBAgAGBQJUae91AAoJEN0jrNd/PrOhdUcQAJ0u7zXaci1aRziAsoI1tCTc
+EV6dTJDLmXA1mGW2hFZwsZVdvCiUp63FwLCjy6+SZeVw/kkXnqf25xhWQZuPQTMa
+93cXzoQAGXcbDfkyNqpM2YG7uLOnreyyIBX4ox4UY8SmL7TswYttCNScl2Jo9Z0W
+TKjlSg1Q5AEsE95SUUhhF590K/lyue7jhJVewwYoeHwvegUORIaySigA4T3iJCB2
+KCy5q0VUFfJooRb/wLQyb9xaTno9S4eATNjhFshmojNeZI9NTnadDfpIsVC0O3un
+egRWnTaGWKxVGF+4TwdvEozPpFVIWYnma6brXANMiI/MTaF1xZlr8B0bBrJwNDEO
+enrwaZfxK/K2lpwPA0BxX2MLJO+Hzpxl11KhzudVl0Mpv2FslLYE/rd6XZ5wUEKr
+LypN/4oXTDPTH6hsIgUbhcsrSqQOsJK7niiO2lhHx4HzfUIunl/jjw6ObBIADbNZ
+DxlwM2jurc+hkfwmEG2XC8KIVgtid2hHwHIK6B7Zoiksb7JJVGJ+X0/nQOQbZgfX
+ojuP3hqZwVSAo3i5uIpAV6MHcwPnJ4dsuESJEfHsIIWM+Qj2ROFheqNCgDCMyFIu
+U0H8qpIidixiYxwuH32qVIn7p+aBNDJV0rX8Y7xJPMwrGxkCDUizMgqbq5+h9N9k
+51UDIkTrTHtDGQ4GUZHy
+=l8oL
+-----END PGP SIGNATURE-----
 
-
-> 
-> Thierry
-
-
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+--UugvWAfsgieZRqgk--
