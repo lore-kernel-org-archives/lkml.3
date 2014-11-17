@@ -1,112 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136AbaKQLCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:02:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1455 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752914AbaKQLAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:00:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="487988957"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: [Patch V3 2/9] irqdomain: Use consistent prototype for irq_domain_free_irqs_*
-Date: Mon, 17 Nov 2014 19:03:15 +0800
-Message-Id: <1416222202-28002-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1416222202-28002-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1416222202-28002-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1753116AbaKQLCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:02:30 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:46204 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720AbaKQLC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 06:02:26 -0500
+Message-ID: <5469D5B2.8040009@gmail.com>
+Date: Mon, 17 Nov 2014 19:02:10 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: [PATCH 2/2] sched/deadline: fix start high-res preemption tick
+ for a non-running task
+References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com> <1415670747-58726-2-git-send-email-wanpeng.li@linux.intel.com> <54647BDC.6050804@arm.com> <5464882D.40504@gmail.com> <5469C503.9010007@arm.com>
+In-Reply-To: <5469C503.9010007@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Hi Juri,
+On 11/17/14, 5:50 PM, Juri Lelli wrote:
+> Hi,
+>
+> On 13/11/14 10:30, Wanpeng Li wrote:
+>> Hi Juri,
+>> On 11/13/14, 5:37 PM, Juri Lelli wrote:
+>>> Hi,
+>>>
+>>> not sure I understand what the problem is here.
+>>>
+>>> On 11/11/14 01:52, Wanpeng Li wrote:
+>>>> Queued ticks are scheduled to match the budget, which means the budget
+>>>> is overall consumed and the dl task should be throttled.
+>>> ... enforce the budget? It means that when the budget is consumed the
+>>> task has to be throttled...
+>> Agreed.
+>>
+>>>> Dl task will
+>>>> be replenished immediately if fail to start a dl timer.
+>>>>
+>>>> However, the curr maybe not the left most dl task in the rb tree any
+>>>> more after this immediately replenished and reschedule is needed.
+>>>> Start high-res preemption tick for this upcoming rescheduled dl task
+>>>> is not correct.
+>>>>
+>>> So, the task that is going to preempt curr is picked by
+>>> pick_next_task_dl(), that correctly starts the hrtick for this new task.
+>>>
+>>> Maybe you can add more information about what you are seeing? A callpath
+>>> maybe?
+>> The parameter of task_tick_dl() queued == 1 means that hrtick is fired.
+>> hrtick() => task_tick_dl( , ,1), so p->dl.runtime should be <= 0 if
+>> queued == 1. What I see is queued == 1 && p->dl.runtime > 0 && p is not
+>> the left most task and hrtick is start for this task.
+>>
+> Oh, right, now it makes sense. Good catch! :)
+>
+> Could you please post a second version with a more explanatory changelog
+> and maybe a comment just above the check?
 
-When using irq_domain_free_irqs_top() directly in irq_domain_ops, gcc
-generate the following warnings:
+Ok, I will do it and send out a new version tomorrow. ;-) Btw, could you 
+review this patch? https://lkml.org/lkml/2014/11/13/51 The bug is 
+introduced by deadline.
 
-../drivers/irqchip/irq-gic.c:879:2: warning: initialization from incompatible pointer type [enabled by default]
-../drivers/irqchip/irq-gic.c:879:2: warning: (near initialization for 'gic_irq_domain_hierarchy_ops.free') [enabled by default]
+Regards,
+Wanpeng Li
 
-Change to use consistent prototype for all irq_domain_free_irqs*
-
-Better to fold this into "irqdomain: Introduce new interfaces to
-support hierarchy irqdomains".
-
-Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- include/linux/irqdomain.h |    9 +++++----
- kernel/irq/irqdomain.c    |    8 ++++----
- 2 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 640a1ec54772..fbe542967c20 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -270,12 +270,13 @@ extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
- 				void *handler_data, const char *handler_name);
- extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
- extern void irq_domain_free_irqs_common(struct irq_domain *domain,
--					int virq, int nr_irqs);
-+					unsigned int virq,
-+					unsigned int nr_irqs);
- extern void irq_domain_free_irqs_top(struct irq_domain *domain,
--				     int virq, int nr_irqs);
-+				     unsigned int virq, unsigned int nr_irqs);
- 
- static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
--				int irq_base, unsigned int nr_irqs, void *arg)
-+			unsigned int irq_base, unsigned int nr_irqs, void *arg)
- {
- 	if (domain->parent && domain->parent->ops->alloc)
- 		return domain->parent->ops->alloc(domain->parent, irq_base,
-@@ -284,7 +285,7 @@ static inline int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
- }
- 
- static inline void irq_domain_free_irqs_parent(struct irq_domain *domain,
--					int irq_base, unsigned int nr_irqs)
-+				unsigned int irq_base, unsigned int nr_irqs)
- {
- 	if (domain->parent && domain->parent->ops->free)
- 		domain->parent->ops->free(domain->parent, irq_base, nr_irqs);
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 8b0eddee0b21..705fb573e509 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -899,8 +899,8 @@ void irq_domain_reset_irq_data(struct irq_data *irq_data)
- 	irq_data->chip_data = NULL;
- }
- 
--void irq_domain_free_irqs_common(struct irq_domain *domain, int virq,
--				 int nr_irqs)
-+void irq_domain_free_irqs_common(struct irq_domain *domain, unsigned int virq,
-+				 unsigned int nr_irqs)
- {
- 	int i;
- 	struct irq_data *irq_data;
-@@ -913,8 +913,8 @@ void irq_domain_free_irqs_common(struct irq_domain *domain, int virq,
- 	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
- }
- 
--void irq_domain_free_irqs_top(struct irq_domain *domain, int virq,
--			      int nr_irqs)
-+void irq_domain_free_irqs_top(struct irq_domain *domain, unsigned int virq,
-+			      unsigned int nr_irqs)
- {
- 	int i;
- 
--- 
-1.7.10.4
+>   
+> Thanks,
+>
+> - Juri
+>
+>> Regards,
+>> Wanpeng Li
+>>
+>>> Thanks,
+>>>
+>>> - Juri
+>>>
+>>>> This patch fix it by not starting high-res preemption tick for a
+>>>> non-running dl task.
+>>>>
+>>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>>> ---
+>>>>    kernel/sched/deadline.c | 3 ++-
+>>>>    1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>>>> index 56674f6..2a6a5bb 100644
+>>>> --- a/kernel/sched/deadline.c
+>>>> +++ b/kernel/sched/deadline.c
+>>>> @@ -1090,7 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
+>>>>    {
+>>>>    	update_curr_dl(rq);
+>>>>    
+>>>> -	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
+>>>> +	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0 &&
+>>>> +	    is_leftmost(p, &rq->dl))
+>>>>    		start_hrtick_dl(rq, p);
+>>>>    }
+>>>>    
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 
