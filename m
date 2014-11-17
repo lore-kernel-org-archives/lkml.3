@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216AbaKQMpk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:45:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54578 "EHLO mx2.suse.de"
+	id S1752306AbaKQMqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 07:46:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54587 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116AbaKQMpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:45:38 -0500
-Date: Mon, 17 Nov 2014 13:45:36 +0100
-Message-ID: <s5hmw7qknbj.wl-tiwai@suse.de>
+	id S1751138AbaKQMqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 07:46:10 -0500
+Date: Mon, 17 Nov 2014 13:46:08 +0100
+Message-ID: <s5hlhnaknan.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: SF Markus Elfring <elfring@users.sourceforge.net>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
         Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] ALSA: hda: Deletion of unnecessary checks before two function calls
-In-Reply-To: <5469C8C8.8010306@users.sourceforge.net>
+Subject: Re: [PATCH 1/1] ALSA: ice17xx: Deletion of unnecessary checks before the function call "snd_ac97_resume"
+In-Reply-To: <5469CF2E.6040408@users.sourceforge.net>
 References: <5307CAA2.8060406@users.sourceforge.net>
 	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
 	<530A086E.8010901@users.sourceforge.net>
@@ -32,7 +32,7 @@ References: <5307CAA2.8060406@users.sourceforge.net>
 	<530DD06F.4090703@users.sourceforge.net>
 	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
 	<5317A59D.4@users.sourceforge.net>
-	<5469C8C8.8010306@users.sourceforge.net>
+	<5469CF2E.6040408@users.sourceforge.net>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -42,15 +42,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 17 Nov 2014 11:07:04 +0100,
+At Mon, 17 Nov 2014 11:34:22 +0100,
 SF Markus Elfring wrote:
 > 
 > From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Mon, 17 Nov 2014 10:44:33 +0100
+> Date: Mon, 17 Nov 2014 11:28:02 +0100
 > 
-> The functions kfree() and release_firmware() test whether their argument
-> is NULL and then return immediately. Thus the test around the call
-> is not needed.
+> The snd_ac97_resume() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 > 
 > This issue was detected by using the Coccinelle software.
 > 
@@ -62,38 +61,38 @@ Applied, thanks.
 Takashi
 
 > ---
->  sound/pci/hda/hda_codec.c | 3 +--
->  sound/pci/hda/hda_intel.c | 3 +--
+>  sound/pci/ice1712/ice1712.c | 3 +--
+>  sound/pci/ice1712/ice1724.c | 3 +--
 >  2 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-> index ec6a7d0..3fe8859 100644
-> --- a/sound/pci/hda/hda_codec.c
-> +++ b/sound/pci/hda/hda_codec.c
-> @@ -827,8 +827,7 @@ static void snd_hda_bus_free(struct hda_bus *bus)
->  	WARN_ON(!list_empty(&bus->codec_list));
->  	if (bus->workq)
->  		flush_workqueue(bus->workq);
-> -	if (bus->unsol)
-> -		kfree(bus->unsol);
-> +	kfree(bus->unsol);
->  	if (bus->ops.private_free)
->  		bus->ops.private_free(bus);
->  	if (bus->workq)
-> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-> index 0a7f848..b4ec4e1 100644
-> --- a/sound/pci/hda/hda_intel.c
-> +++ b/sound/pci/hda/hda_intel.c
-> @@ -1129,8 +1129,7 @@ static int azx_free(struct azx *chip)
->  	pci_disable_device(chip->pci);
->  	kfree(chip->azx_dev);
->  #ifdef CONFIG_SND_HDA_PATCH_LOADER
-> -	if (chip->fw)
-> -		release_firmware(chip->fw);
-> +	release_firmware(chip->fw);
->  #endif
->  	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
->  		hda_display_power(false);
+> diff --git a/sound/pci/ice1712/ice1712.c b/sound/pci/ice1712/ice1712.c
+> index 87f7fc4..e1e18b5 100644
+> --- a/sound/pci/ice1712/ice1712.c
+> +++ b/sound/pci/ice1712/ice1712.c
+> @@ -2905,8 +2905,7 @@ static int snd_ice1712_resume(struct device *dev)
+>  	outw(ice->pm_saved_spdif_ctrl, ICEMT(ice, ROUTE_SPDOUT));
+>  	outw(ice->pm_saved_route, ICEMT(ice, ROUTE_PSDOUT03));
+>  
+> -	if (ice->ac97)
+> -		snd_ac97_resume(ice->ac97);
+> +	snd_ac97_resume(ice->ac97);
+>  
+>  	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
+>  	return 0;
+> diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
+> index 08cb08a..0e56835 100644
+> --- a/sound/pci/ice1712/ice1724.c
+> +++ b/sound/pci/ice1712/ice1724.c
+> @@ -2884,8 +2884,7 @@ static int snd_vt1724_resume(struct device *dev)
+>  	outb(ice->pm_saved_spdif_cfg, ICEREG1724(ice, SPDIF_CFG));
+>  	outl(ice->pm_saved_route, ICEMT1724(ice, ROUTE_PLAYBACK));
+>  
+> -	if (ice->ac97)
+> -		snd_ac97_resume(ice->ac97);
+> +	snd_ac97_resume(ice->ac97);
+>  
+>  	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
+>  	return 0;
 > -- 
 > 2.1.3
 > 
