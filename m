@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaKQNie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:38:34 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43084 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaKQNia (ORCPT
+	id S1752918AbaKQNgA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:36:00 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48642 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751966AbaKQNfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:38:30 -0500
-Date: Mon, 17 Nov 2014 13:37:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: gyungoh@gmail.com
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Message-ID: <20141117133759.GZ2722@sirena.org.uk>
-References: <1416213190-20935-1-git-send-email-jack.yoo@skyworksinc.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="c6YcJYqqMhegfX14"
-Content-Disposition: inline
-In-Reply-To: <1416213190-20935-1-git-send-email-jack.yoo@skyworksinc.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 176.12.107.140
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RESUBMIT PATCH v7 0/9] Add Skyworks SKY81452 device drivers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 17 Nov 2014 08:35:53 -0500
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
+        p.zabel@pengutronix.de
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, michal.simek@xilinx.com,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v8 00/13] ARM: berlin: USB support
+Date: Mon, 17 Nov 2014 14:35:34 +0100
+Message-Id: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series adds the support for ChipIdea USB2 (ci13xxx) controllers,
+the USB PHYs of the Marvell Berlin SoCs and also adds a reset
+controller for these SoCs.
 
---c6YcJYqqMhegfX14
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The reset controller is used by the PHY driver and shares the
+existing chip controller node with the clocks and one pin controller.
 
-On Mon, Nov 17, 2014 at 05:33:01PM +0900, gyungoh@gmail.com wrote:
-> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
->=20
-> This patch set includes regulator and backlight driver for SKY81452.
-> Also it includes documents for device tree and module.
-> The initial version of sky81452-regulator was applied. Fo this, increment=
-al
-> patches are included.
+The Marvell Berlin USB controllers are host only on the BG2Q and are
+compatible with USB ChipIdea. We here add a glue to use the available
+common functions for this kind of controllers, and add a generic USB2
+ChipIdea driver. A PHY driver is also added to control the USB PHY.
 
-Don't include things like RESUBMIT which just point out the obvious in
-your subject lines since it obscures useful content.  What I'm seeing in
-my inbox is things like:
+This series applies on top of Peter Chen's ci-for-usb-next branch[1]
+containing the generic PHY support in the USB framework[2].
 
-    307 N T 11/17 gyungoh@gmail.c (3.1K) =E2=94=9C=E2=94=80>[RESUBMIT PATCH=
- v7 7/9] regulator: s
+Patches 1-4 should already have been taken by Sebastian.
 
-which don't give any indication if there's something important to be
-looked at.
+Changes since v7:
+	- rebased on top of the latest CI for-next branch of Peter[1]
+	- removed CI_HDRC_REQUIRE_TRANSCEIVER
+	- added a missing tested-by
+	- some cosmetic fixes and a commit message reword
 
---c6YcJYqqMhegfX14
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Changes since v6:
+        - removed ci_hdrc_usb2_dt_probe
+        - fixed a bug in the ChipIdea core for PHY handling
+        - called unconditionally dma_set_mask_and_coherent()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Changes since v5:
+        - added a missing header in ci_hdrc_usb2
 
-iQEcBAEBAgAGBQJUafoxAAoJECTWi3JdVIfQijQH/icx4oNG++b4I/NloFBNsUqD
-/Q3Vy/x5ySzigE7ACwtgAZN6x0AIp/9KjqyPD74I+ZAuJpXdBod8cHLy6z6iD3Bu
-5QyLdKAB9NiJ+XoBzLRCN1qkrsKJprMut95X+zCybw9i7JBBkcBrmtOzOq2NP24w
-XzGLBiM63/PLB1OjSLypDnzc2VJSOubCsxcSpTERD+kYL07FTkdkRHw3VzSzAW45
-tczlsM/2kZmcJqR1eBHpjXr82BfMNuFen5d80RkPu8z1IszPwGD5P3s1zjJBeIGR
-akfRmKHrrhUQdCGugeDT9KcwKvucc2p1Im4iHZxEPcp1sfzLMBN33ST/9HdRMpI=
-=J/mR
------END PGP SIGNATURE-----
+Changes since v4:
+        - fixed the error handling of ci_hdrc_usb2_probe()
 
---c6YcJYqqMhegfX14--
+Changes since v3:
+        - removed the DMA mask property
+        - moved the clock handling in the common probe function
+        - fixed the documentation for the USB2 ChipIdea USB PHY binding
+        - made sure the reset bit is 0-31 in the reset driver
+
+Changes since v2:
+        - moved the PHY driver to the generic PHY framework
+        - changed the compatible to 'chipidea,usb2'
+        - added a property to set the DMA mask in the USB2 CI driver
+        - separated dt specific calls in the CI probing function
+        - rebased on top of the generic PHY support for CI[2]
+
+Changes since v1:
+        - made the Berlin CI USB driver a generic one
+        - added support to custom offset for the reset register
+        - added fixed regulators to support supply the VBUS
+        - modified the PHY driver to support the one one the BG2CD as
+          well
+        - documented the reset properties
+        - added bindings for the BG2CD
+        - cosmetic fixes
+
+[1] https://github.com/hzpeterchen/linux-usb.git ci-for-usb-next
+[2] git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+
+Antoine Tenart (11):
+  reset: add the Berlin reset controller driver
+  Documentation: bindings: add reset bindings docs for Marvell Berlin
+    SoCs
+  ARM: Berlin: select the reset controller
+  ARM: dts: berlin: add a required reset property in the chip controller
+    node
+  phy: add the Berlin USB PHY driver
+  Documentation: bindings: add doc for the Berlin USB PHY
+  usb: chipidea: fix phy handling
+  usb: chipidea: add a usb2 driver for ci13xxx
+  Documentation: bindings: add doc for the USB2 ChipIdea USB driver
+  ARM: dts: berlin: add BG2Q nodes for USB support
+  ARM: dts: Berlin: enable USB on the BG2Q DMP
+
+Sebastian Hesselbarth (2):
+  ARM: dts: berlin: add BG2CD nodes for USB support
+  ARM: dts: berlin: enable USB on the Google Chromecast
+
+ .../devicetree/bindings/arm/marvell,berlin.txt     |  10 +
+ .../devicetree/bindings/phy/berlin-usb-phy.txt     |  16 ++
+ .../devicetree/bindings/usb/ci-hdrc-usb2.txt       |  24 +++
+ arch/arm/boot/dts/berlin2.dtsi                     |   1 +
+ arch/arm/boot/dts/berlin2cd-google-chromecast.dts  |   4 +
+ arch/arm/boot/dts/berlin2cd.dtsi                   |  37 ++++
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |  53 +++++
+ arch/arm/boot/dts/berlin2q.dtsi                    |  56 ++++++
+ arch/arm/mach-berlin/Kconfig                       |   2 +
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-berlin-usb.c                       | 224 +++++++++++++++++++++
+ drivers/reset/Makefile                             |   1 +
+ drivers/reset/reset-berlin.c                       | 131 ++++++++++++
+ drivers/usb/chipidea/Makefile                      |   1 +
+ drivers/usb/chipidea/ci_hdrc_usb2.c                | 116 +++++++++++
+ drivers/usb/chipidea/core.c                        |   4 +-
+ 17 files changed, 686 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+ create mode 100644 drivers/phy/phy-berlin-usb.c
+ create mode 100644 drivers/reset/reset-berlin.c
+ create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
+
+-- 
+2.1.0
+
