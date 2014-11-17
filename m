@@ -1,179 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaKQJwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:52:36 -0500
-Received: from regular1.263xmail.com ([211.150.99.133]:35830 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072AbaKQJwd (ORCPT
+	id S1752027AbaKQJ6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:58:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37789 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751540AbaKQJ6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:52:33 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: linus.walleij@linaro.org
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <cbf318017dc32fd956a4352ae5862ab2>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, fzf@rock-chips.com,
-        cf@rock-chips.com, caesar.wang@rock-chips.com,
-        chris.zhong@rock-chips.com, xxm@rock-chips.com, chm@rock-chips.com,
-        djkurtz@chromium.org, Jack Dai <jack.dai@rock-chips.com>,
-        "jinkun.hong" <jinkun.hong@rock-chips.com>
-Subject: [PATCH v12 3/3] ARM: dts: add rk3288 power-domain node
-Date: Mon, 17 Nov 2014 17:50:41 +0800
-Message-Id: <1416217842-4716-4-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416217842-4716-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1416217842-4716-1-git-send-email-caesar.wang@rock-chips.com>
+	Mon, 17 Nov 2014 04:58:07 -0500
+Date: Mon, 17 Nov 2014 09:58:01 +0000
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, "perex@perex.cz" <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 2/3] gpio: arizona: Add support for CS47L24
+Message-ID: <20141117095801.GA25618@opensource.wolfsonmicro.com>
+References: <20141111165227.GA24344@opensource.wolfsonmicro.com> <20141111170432.GB25738@opensource.wolfsonmicro.com> <CACRpkdazkS0M6G_gNvfKayZdrU+BMhSSF9iJp=fZEbc=+jDKsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdazkS0M6G_gNvfKayZdrU+BMhSSF9iJp=fZEbc=+jDKsA@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add the needed clocks into power-controller.
+On Mon, Nov 17, 2014 at 07:41:53AM +0100, Linus Walleij wrote:
+> On Tue, Nov 11, 2014 at 6:04 PM, Richard Fitzgerald
+> <rf@opensource.wolfsonmicro.com> wrote:
+> 
+> > Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+> 
+> Apart from the whitespace fix pointed out by Mark,
 
-why need we do so that?
+THe line Mark commented on isn't a whitespace error. It matches
+the copyright line style used by Cirrus in other files.
 
-Firstly, we always be needed turn off clocks to save power when
-the system enter suspend.So we need to enumerate the clocks are needed
-to switch power doamin no and off.
-
-Secondly, Rk3288 reset circuit should be syncchronous reset and
-then sync revoked.so we need to enable clocks of all devices.
-
-Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
-Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-
----
-
-Changes in v12:
-    - Remove essential clocks from rk3288 PD_VIO domain,
-      Some clocks are essential for the system health and should not be
-      turned down. However there is no owner for them so if they listed as
-      belonging to power domain we'll try toggling them up and down during
-      power domain transition. As a result we either fail to suspend or resume
-      the system.
-
-Changes in v11: None
-Changes in v10:
-    - fix missing the #include <dt-bindings/power-domain/rk3288.h>
-    - remove the notes
-
-Changes in v9:
-    - add decription for power-doamin node
-
-Changes in v8:
-    - DTS go back to v2
-
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3:
-    - Decomposition power-controller, changed to multiple controller
-    (gpu-power-controller, hevc-power-controller)
-
-Changes in v2:
-    - make pd_vio clocks all one entry per line and alphabetize.
-    - power: power-controller move back to pinctrl: pinctrl.
-
- arch/arm/boot/dts/rk3288.dtsi | 59 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 59 insertions(+)
-
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index cb18bb4..d9cd8c0 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -15,6 +15,7 @@
- #include <dt-bindings/interrupt-controller/arm-gic.h>
- #include <dt-bindings/pinctrl/rockchip.h>
- #include <dt-bindings/clock/rk3288-cru.h>
-+#include <dt-bindings/power-domain/rk3288.h>
- #include "skeleton.dtsi"
- 
- / {
-@@ -989,4 +990,62 @@
- 			};
- 		};
- 	};
-+
-+	power: power-controller {
-+		compatible = "rockchip,rk3288-power-controller";
-+		#power-domain-cells = <1>;
-+		rockchip,pmu = <&pmu>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		pd_gpu {
-+			reg = <RK3288_PD_GPU>;
-+			clocks = <&cru ACLK_GPU>;
-+		};
-+
-+		pd_hevc {
-+			reg = <RK3288_PD_HEVC>;
-+			clocks = <&cru ACLK_HEVC>,
-+				 <&cru SCLK_HEVC_CABAC>,
-+				 <&cru SCLK_HEVC_CORE>,
-+				 <&cru HCLK_HEVC>;
-+		};
-+
-+		pd_vio {
-+			reg = <RK3288_PD_VIO>;
-+			clocks = <&cru ACLK_IEP>,
-+				 <&cru ACLK_ISP>,
-+				 <&cru ACLK_RGA>,
-+				 <&cru ACLK_VIP>,
-+				 <&cru ACLK_VOP0>,
-+				 <&cru ACLK_VOP1>,
-+				 <&cru DCLK_VOP0>,
-+				 <&cru DCLK_VOP1>,
-+				 <&cru HCLK_IEP>,
-+				 <&cru HCLK_ISP>,
-+				 <&cru HCLK_RGA>,
-+				 <&cru HCLK_VIP>,
-+				 <&cru HCLK_VOP0>,
-+				 <&cru HCLK_VOP1>,
-+				 <&cru PCLK_EDP_CTRL>,
-+				 <&cru PCLK_HDMI_CTRL>,
-+				 <&cru PCLK_LVDS_PHY>,
-+				 <&cru PCLK_MIPI_CSI>,
-+				 <&cru PCLK_MIPI_DSI0>,
-+				 <&cru PCLK_MIPI_DSI1>,
-+				 <&cru SCLK_EDP_24M>,
-+				 <&cru SCLK_EDP>,
-+				 <&cru SCLK_HDMI_CEC>,
-+				 <&cru SCLK_HDMI_HDCP>,
-+				 <&cru SCLK_ISP_JPE>,
-+				 <&cru SCLK_ISP>,
-+				 <&cru SCLK_RGA>;
-+		};
-+
-+		pd_video {
-+			reg = <RK3288_PD_VIDEO>;
-+			clocks = <&cru ACLK_VCODEC>,
-+				 <&cru HCLK_VCODEC>;
-+		};
-+	};
- };
--- 
-1.9.1
-
-
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Yours,
+> Linus Walleij
