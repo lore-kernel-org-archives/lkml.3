@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaKQLs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:48:58 -0500
-Received: from mout.web.de ([212.227.17.12]:57153 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752266AbaKQLs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:48:56 -0500
-Message-ID: <5469E09C.6040808@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 12:48:44 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] ALSA: lola: Deletion of an unnecessary check before the
- function call "vfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:yKpGRLGtY0A7tVMG08tW4aPCxptTBvsfjv/vXnYmjGjsQ7R0RT9
- tx/lgccJRdr38DgkPKJC700yErf7VPNuP4f2V+4qfHa8MrKEmw6ko7C+mzuuremxxrfmG8F
- IGmb7e52c8dYkL1z1mCVx6GAab2QnTYuRKExVvAhFT9Xm/3A+nWHf5hcQ/0+HiTq4r2zJjM
- 4keN2EjKOsx8sJDfIYXyQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752489AbaKQLtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:49:08 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:46767 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380AbaKQLtE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 06:49:04 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-05-5469e0937003
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org, tony@atomide.com,
+        drake@endlessm.com, loeliger@gmail.com,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v9 0/7] Enable L2 cache support on Exynos4210/4x12 SoCs
+Date: Mon, 17 Nov 2014 12:48:22 +0100
+Message-id: <1416224909-4290-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t/xK7qTH2SGGCyexG7xd9IxdotH8x8z
+	W/QuuMpmcbbpDbvF9s4Z7BZT/ixnstj0+BqrxeVdc9gsZi/pZ7GYcX4fk8Xty7wW57ZvYbFY
+	e+Quu8XS6xeZLE5d/8xmsWrXH0aL/Ve8HAQ91sxbw+jR0tzD5vH71yRGj29fJ7F4XO7rZfJY
+	9D3LY+esu+wed67tYfPYvKTe48qJJlaPvi2rGD0+b5IL4InisklJzcksSy3St0vgyuif+JO9
+	YLJcxe0pNg2M18S7GDk5JARMJO5+Wc8GYYtJXLgHYnNxCAksZZT4+P4tK0hCSKCPSeJCAyeI
+	zSZgKNH1tgusQUTATeLfukNgDcwCn5klLj1aA9YgLOAuMa9hJ1gRi4CqxMIT78FsXqD49zMT
+	mSC2yUn8f7mCaQIj9wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIWH8ZQfj4mNWhxgF
+	OBiVeHglDmSGCLEmlhVX5h5ilOBgVhLhjbkIFOJNSaysSi3Kjy8qzUktPsTIxMEp1cA4fatz
+	95vMpIc1M96W/0pxYT3gWNFhtWD/fU2xh2UvpNl9xDfanl/CI7J7T27yweqVq1bd/61Qsy6l
+	v2masmzADO7Ic3yzGhYcvHtTWbm0+5e4bU5GzYeGosbejaGtbubh2jstLU832635bR6Rf+ud
+	o+urORdm/j0lkK0wMUPo1kzXewGr47YrsRRnJBpqMRcVJwIAs/lzT0ECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 12:42:16 +0100
+This is an updated patchset, which intends to add support for L2 cache
+on Exynos4 SoCs on boards running under secure firmware, which requires
+certain initialization steps to be done with help of firmware, as
+selected registers are writable only from secure mode.
 
-The vfree() function performs also input parameter validation. Thus the test
-around the call is not needed.
+First four patches extend existing support for secure write in L2C driver
+to account for design of secure firmware running on Exynos. Namely:
+ 1) direct read access to certain registers is needed on Exynos, because
+    secure firmware calls set several registers at once,
+ 2) not all boards are running secure firmware, so .write_sec callback
+    needs to be installed in Exynos firmware ops initialization code,
+ 3) write access to {DATA,TAG}_LATENCY_CTRL registers fron non-secure world
+    is not allowed and so must use l2c_write_sec as well,
+ 4) on certain boards, default value of prefetch register is incorrect
+    and must be overridden at L2C initialization.
+For boards running with firmware that provides access to individual
+L2C registers this series should introduce no functional changes. However
+since the driver is widely used on other platforms I'd like to kindly ask
+any interested people for testing.
 
-This issue was detected by using the Coccinelle software.
+Further three patches add implementation of .write_sec and .configure
+callbacks for Exynos secure firmware and necessary DT nodes to enable
+L2 cache.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- sound/pci/lola/lola_mixer.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Changes in this version tested on Exynos4412-based TRATS2 and OdroidU3+
+boards (both with secure firmware). There should be no functional change
+for Exynos boards running without secure firmware. I do not have access
+to affected non-Exynos boards, so I could not test on them.
 
-diff --git a/sound/pci/lola/lola_mixer.c b/sound/pci/lola/lola_mixer.c
-index 782f4d8..e7fe15d 100644
---- a/sound/pci/lola/lola_mixer.c
-+++ b/sound/pci/lola/lola_mixer.c
-@@ -108,8 +108,7 @@ int lola_init_pins(struct lola *chip, int dir, int *nidp)
- 
- void lola_free_mixer(struct lola *chip)
- {
--	if (chip->mixer.array_saved)
--		vfree(chip->mixer.array_saved);
-+	vfree(chip->mixer.array_saved);
- }
- 
- int lola_init_mixer_widget(struct lola *chip, int nid)
+Depends on:
+- v3.18-rc3
+
+Changelog:
+
+Changes since v8:
+(http://lkml.org/lkml/2014/11/13/263)
+- Rebased onto vanilla v3.18-rc3 and added required includes, which were
+  previously added by other patches
+- Added Acked-by tags for Exynos part
+
+Changes since v7:
+(https://lkml.org/lkml/2014/10/29/158)
+- rebased onto arm-soc/for-next kernel tree (depends on patches merged to
+  v3.18-rc3 and arm-soc/samsung/pm2 branch)
+- removed 'ARM: l2c: unify L2C-310 OF initialization error messages' patch
+  (no longer needed)
+
+Changes since v6:
+(https://lkml.org/lkml/2014/10/27/233)
+- changed PL310 to L2C-310 prefix in error messages
+- added patch shortening the error message about incorrect associativity
+
+Changes since v5:
+(https://lkml.org/lkml/2014/9/24/364)
+- rebased onto v3.18-rc2
+- added error message about missing properties values
+
+Changes since v4:
+(https://lkml.org/lkml/2014/8/26/461)
+ - rewrote the code accessing l2x0_saved_regs from assembly code
+ - added comment and reworked unconditional call to SMC_CMD_L2X0INVALL
+
+
+Patch summary:
+
+Tomasz Figa (7):
+  ARM: l2c: Refactor the driver to use commit-like interface
+  ARM: l2c: Add interface to ask hypervisor to configure L2C
+  ARM: l2c: Get outer cache .write_sec callback from mach_desc only if
+    not NULL
+  ARM: l2c: Add support for overriding prefetch settings
+  ARM: EXYNOS: Add .write_sec outer cache callback for L2C-310
+  ARM: EXYNOS: Add support for non-secure L2X0 resume
+  ARM: dts: exynos4: Add nodes for L2 cache controller
+
+ Documentation/devicetree/bindings/arm/l2cc.txt |  10 +
+ arch/arm/boot/dts/exynos4210.dtsi              |   9 +
+ arch/arm/boot/dts/exynos4x12.dtsi              |  14 ++
+ arch/arm/include/asm/outercache.h              |   3 +
+ arch/arm/kernel/irq.c                          |   3 +-
+ arch/arm/mach-exynos/Makefile                  |   1 +
+ arch/arm/mach-exynos/firmware.c                |  51 +++++
+ arch/arm/mach-exynos/sleep.S                   |  48 +++++
+ arch/arm/mach-exynos/smc.h                     |   4 +
+ arch/arm/mm/cache-l2x0.c                       | 270 ++++++++++++++++---------
+ 10 files changed, 317 insertions(+), 96 deletions(-)
+
 -- 
-2.1.3
-
+1.9.2
 
