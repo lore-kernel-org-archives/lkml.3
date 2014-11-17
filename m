@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaKQNzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:55:48 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49106 "EHLO
+	id S1753337AbaKQNpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:45:31 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48964 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752216AbaKQNpd (ORCPT
+	with ESMTP id S1753284AbaKQNpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:33 -0500
+	Mon, 17 Nov 2014 08:45:25 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 38/61] dmaengine: sa11x0: Split device_control
-Date: Mon, 17 Nov 2014 14:42:32 +0100
-Message-Id: <1416231775-31252-39-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 31/61] dmaengine: mpc512x: Split device_control
+Date: Mon, 17 Nov 2014 14:42:25 +0100
+Message-Id: <1416231775-31252-32-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,219 +24,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the SA-11x0 DMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+Split the device_control callback of the Freescale MPC512x DMA driver to make
+use of the newly introduced callbacks, that will eventually be used to retrieve
+slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/sa11x0-dma.c | 158 +++++++++++++++++++++++++----------------------
- 1 file changed, 84 insertions(+), 74 deletions(-)
+ drivers/dma/mpc512x_dma.c | 111 +++++++++++++++++++++-------------------------
+ 1 file changed, 51 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
-index 2329d295efb5..a2ee869865ec 100644
---- a/drivers/dma/sa11x0-dma.c
-+++ b/drivers/dma/sa11x0-dma.c
-@@ -669,8 +669,10 @@ static struct dma_async_tx_descriptor *sa11x0_dma_prep_dma_cyclic(
- 	return vchan_tx_prep(&c->vc, &txd->vd, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
+index 01bec4023de2..57d2457545f3 100644
+--- a/drivers/dma/mpc512x_dma.c
++++ b/drivers/dma/mpc512x_dma.c
+@@ -800,79 +800,69 @@ err_prep:
+ 	return NULL;
  }
  
--static int sa11x0_dma_slave_config(struct sa11x0_dma_chan *c, struct dma_slave_config *cfg)
-+static int sa11x0_dma_slave_config(struct dma_chan *chan,
-+				   struct dma_slave_config *cfg)
+-static int mpc_dma_device_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-							unsigned long arg)
++static int mpc_dma_device_config(struct dma_chan *chan,
++				 struct dma_slave_config *cfg)
  {
-+	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
- 	u32 ddar = c->ddar & ((0xf << 4) | DDAR_RW);
- 	dma_addr_t addr;
- 	enum dma_slave_buswidth width;
-@@ -704,8 +706,7 @@ static int sa11x0_dma_slave_config(struct sa11x0_dma_chan *c, struct dma_slave_c
- 	return 0;
- }
- 
--static int sa11x0_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
-+static int sa11x0_dma_pause(struct dma_chan *chan)
- {
- 	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
- 	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
-@@ -714,89 +715,95 @@ static int sa11x0_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	struct mpc_dma_chan *mchan;
+-	struct mpc_dma *mdma;
+-	struct dma_slave_config *cfg;
++	struct mpc_dma_chan *mchan = dma_chan_to_mpc_dma_chan(chan);
  	unsigned long flags;
- 	int ret;
  
+-	mchan = dma_chan_to_mpc_dma_chan(chan);
 -	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		return sa11x0_dma_slave_config(c, (struct dma_slave_config *)arg);
--
 -	case DMA_TERMINATE_ALL:
--		dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
--		/* Clear the tx descriptor lists */
--		spin_lock_irqsave(&c->vc.lock, flags);
--		vchan_get_all_descriptors(&c->vc, &head);
-+	dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	if (c->status == DMA_IN_PROGRESS) {
-+		c->status = DMA_PAUSED;
- 
- 		p = c->phy;
- 		if (p) {
--			dev_dbg(d->slave.dev, "pchan %u: terminating\n", p->num);
--			/* vchan is assigned to a pchan - stop the channel */
--			writel(DCSR_RUN | DCSR_IE |
--				DCSR_STRTA | DCSR_DONEA |
--				DCSR_STRTB | DCSR_DONEB,
--				p->base + DMA_DCSR_C);
+-		/* Disable channel requests */
+-		mdma = dma_chan_to_mpc_dma(chan);
 -
--			if (p->txd_load) {
--				if (p->txd_load != p->txd_done)
--					list_add_tail(&p->txd_load->vd.node, &head);
--				p->txd_load = NULL;
--			}
--			if (p->txd_done) {
--				list_add_tail(&p->txd_done->vd.node, &head);
--				p->txd_done = NULL;
--			}
--			c->phy = NULL;
-+			writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_C);
-+		} else {
- 			spin_lock(&d->lock);
--			p->vchan = NULL;
-+			list_del_init(&c->node);
- 			spin_unlock(&d->lock);
--			tasklet_schedule(&d->task);
- 		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
--		vchan_dma_desc_free_list(&c->vc, &head);
--		ret = 0;
--		break;
-+	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
+-		spin_lock_irqsave(&mchan->lock, flags);
+-
+-		out_8(&mdma->regs->dmacerq, chan->chan_id);
+-		list_splice_tail_init(&mchan->prepared, &mchan->free);
+-		list_splice_tail_init(&mchan->queued, &mchan->free);
+-		list_splice_tail_init(&mchan->active, &mchan->free);
+-
+-		spin_unlock_irqrestore(&mchan->lock, flags);
++	/*
++	 * Software constraints:
++	 *  - only transfers between a peripheral device and
++	 *     memory are supported;
++	 *  - only peripheral devices with 4-byte FIFO access register
++	 *     are supported;
++	 *  - minimal transfer chunk is 4 bytes and consequently
++	 *     source and destination addresses must be 4-byte aligned
++	 *     and transfer size must be aligned on (4 * maxburst)
++	 *     boundary;
++	 *  - during the transfer RAM address is being incremented by
++	 *     the size of minimal transfer chunk;
++	 *  - peripheral port's address is constant during the transfer.
++	 */
  
--	case DMA_PAUSE:
--		dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
--		spin_lock_irqsave(&c->vc.lock, flags);
--		if (c->status == DMA_IN_PROGRESS) {
--			c->status = DMA_PAUSED;
+-		return 0;
++	if (cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
++	    cfg->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
++	    !IS_ALIGNED(cfg->src_addr, 4) ||
++	    !IS_ALIGNED(cfg->dst_addr, 4)) {
++		return -EINVAL;
++	}
+ 
+-	case DMA_SLAVE_CONFIG:
+-		/*
+-		 * Software constraints:
+-		 *  - only transfers between a peripheral device and
+-		 *     memory are supported;
+-		 *  - only peripheral devices with 4-byte FIFO access register
+-		 *     are supported;
+-		 *  - minimal transfer chunk is 4 bytes and consequently
+-		 *     source and destination addresses must be 4-byte aligned
+-		 *     and transfer size must be aligned on (4 * maxburst)
+-		 *     boundary;
+-		 *  - during the transfer RAM address is being incremented by
+-		 *     the size of minimal transfer chunk;
+-		 *  - peripheral port's address is constant during the transfer.
+-		 */
++	spin_lock_irqsave(&mchan->lock, flags);
+ 
+-		cfg = (void *)arg;
++	mchan->src_per_paddr = cfg->src_addr;
++	mchan->src_tcd_nunits = cfg->src_maxburst;
++	mchan->dst_per_paddr = cfg->dst_addr;
++	mchan->dst_tcd_nunits = cfg->dst_maxburst;
+ 
+-		if (cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
+-		    cfg->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
+-		    !IS_ALIGNED(cfg->src_addr, 4) ||
+-		    !IS_ALIGNED(cfg->dst_addr, 4)) {
+-			return -EINVAL;
+-		}
++	/* Apply defaults */
++	if (mchan->src_tcd_nunits == 0)
++		mchan->src_tcd_nunits = 1;
++	if (mchan->dst_tcd_nunits == 0)
++		mchan->dst_tcd_nunits = 1;
+ 
+-		spin_lock_irqsave(&mchan->lock, flags);
++	spin_unlock_irqrestore(&mchan->lock, flags);
+ 
+-		mchan->src_per_paddr = cfg->src_addr;
+-		mchan->src_tcd_nunits = cfg->src_maxburst;
+-		mchan->dst_per_paddr = cfg->dst_addr;
+-		mchan->dst_tcd_nunits = cfg->dst_maxburst;
 +	return 0;
 +}
  
--			p = c->phy;
--			if (p) {
--				writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_C);
--			} else {
--				spin_lock(&d->lock);
--				list_del_init(&c->node);
--				spin_unlock(&d->lock);
--			}
--		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
--		ret = 0;
--		break;
-+static int sa11x0_dma_resume(struct dma_chan *chan)
+-		/* Apply defaults */
+-		if (mchan->src_tcd_nunits == 0)
+-			mchan->src_tcd_nunits = 1;
+-		if (mchan->dst_tcd_nunits == 0)
+-			mchan->dst_tcd_nunits = 1;
++static int mpc_dma_device_terminate_all(struct dma_chan *chan)
 +{
-+	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
-+	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
-+	struct sa11x0_dma_phy *p;
-+	LIST_HEAD(head);
++	struct mpc_dma_chan *mchan = dma_chan_to_mpc_dma_chan(chan);
++	struct mpc_dma *mdma = dma_chan_to_mpc_dma(chan);
 +	unsigned long flags;
-+	int ret;
  
--	case DMA_RESUME:
--		dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
--		spin_lock_irqsave(&c->vc.lock, flags);
--		if (c->status == DMA_PAUSED) {
--			c->status = DMA_IN_PROGRESS;
--
--			p = c->phy;
--			if (p) {
--				writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_S);
--			} else if (!list_empty(&c->vc.desc_issued)) {
--				spin_lock(&d->lock);
--				list_add_tail(&c->node, &d->chan_pending);
--				spin_unlock(&d->lock);
--			}
-+	dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	if (c->status == DMA_PAUSED) {
-+		c->status = DMA_IN_PROGRESS;
-+
-+		p = c->phy;
-+		if (p) {
-+			writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_S);
-+		} else if (!list_empty(&c->vc.desc_issued)) {
-+			spin_lock(&d->lock);
-+			list_add_tail(&c->node, &d->chan_pending);
-+			spin_unlock(&d->lock);
- 		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
--		ret = 0;
--		break;
-+	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
+-		spin_unlock_irqrestore(&mchan->lock, flags);
++	/* Disable channel requests */
++	spin_lock_irqsave(&mchan->lock, flags);
+ 
+-		return 0;
++	out_8(&mdma->regs->dmacerq, chan->chan_id);
++	list_splice_tail_init(&mchan->prepared, &mchan->free);
++	list_splice_tail_init(&mchan->queued, &mchan->free);
++	list_splice_tail_init(&mchan->active, &mchan->free);
  
 -	default:
--		ret = -ENXIO;
+-		/* Unknown command */
 -		break;
-+	return 0;
-+}
-+
-+static int sa11x0_dma_terminate_all(struct dma_chan *chan)
-+{
-+	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
-+	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
-+	struct sa11x0_dma_phy *p;
-+	LIST_HEAD(head);
-+	unsigned long flags;
-+	int ret;
-+
-+	dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
-+	/* Clear the tx descriptor lists */
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	vchan_get_all_descriptors(&c->vc, &head);
-+
-+	p = c->phy;
-+	if (p) {
-+		dev_dbg(d->slave.dev, "pchan %u: terminating\n", p->num);
-+		/* vchan is assigned to a pchan - stop the channel */
-+		writel(DCSR_RUN | DCSR_IE |
-+		       DCSR_STRTA | DCSR_DONEA |
-+		       DCSR_STRTB | DCSR_DONEB,
-+		       p->base + DMA_DCSR_C);
-+
-+		if (p->txd_load) {
-+			if (p->txd_load != p->txd_done)
-+				list_add_tail(&p->txd_load->vd.node, &head);
-+			p->txd_load = NULL;
-+		}
-+		if (p->txd_done) {
-+			list_add_tail(&p->txd_done->vd.node, &head);
-+			p->txd_done = NULL;
-+		}
-+		c->phy = NULL;
-+		spin_lock(&d->lock);
-+		p->vchan = NULL;
-+		spin_unlock(&d->lock);
-+		tasklet_schedule(&d->task);
- 	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
-+	vchan_dma_desc_free_list(&c->vc, &head);
+-	}
++	spin_unlock_irqrestore(&mchan->lock, flags);
  
--	return ret;
+-	return -ENXIO;
 +	return 0;
  }
  
- struct sa11x0_dma_channel_desc {
-@@ -833,7 +840,10 @@ static int sa11x0_dma_init_dmadev(struct dma_device *dmadev,
- 	dmadev->dev = dev;
- 	dmadev->device_alloc_chan_resources = sa11x0_dma_alloc_chan_resources;
- 	dmadev->device_free_chan_resources = sa11x0_dma_free_chan_resources;
--	dmadev->device_control = sa11x0_dma_control;
-+	dmadev->device_config = sa11x0_dma_slave_config;
-+	dmadev->device_pause = sa11x0_dma_pause;
-+	dmadev->device_resume = sa11x0_dma_resume;
-+	dmadev->device_terminate_all = sa11x0_dma_terminate_all;
- 	dmadev->device_tx_status = sa11x0_dma_tx_status;
- 	dmadev->device_issue_pending = sa11x0_dma_issue_pending;
+ static int mpc_dma_probe(struct platform_device *op)
+@@ -963,7 +953,8 @@ static int mpc_dma_probe(struct platform_device *op)
+ 	dma->device_tx_status = mpc_dma_tx_status;
+ 	dma->device_prep_dma_memcpy = mpc_dma_prep_memcpy;
+ 	dma->device_prep_slave_sg = mpc_dma_prep_slave_sg;
+-	dma->device_control = mpc_dma_device_control;
++	dma->device_config = mpc_dma_device_config;
++	dma->device_terminate_all = mpc_dma_device_terminate_all;
  
+ 	INIT_LIST_HEAD(&dma->channels);
+ 	dma_cap_set(DMA_MEMCPY, dma->cap_mask);
 -- 
 2.1.1
 
