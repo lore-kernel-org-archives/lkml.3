@@ -1,63 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaKQPki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:40:38 -0500
-Received: from mga01.intel.com ([192.55.52.88]:32135 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884AbaKQPkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:40:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,403,1413270000"; 
-   d="scan'208";a="623625567"
-Date: Mon, 17 Nov 2014 17:40:28 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        andrew.kim@intel.com
-Subject: Re: [PATCHv4 2/6] phy: improved lookup method
-Message-ID: <20141117154028.GD7512@kuha.fi.intel.com>
-References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com>
- <CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com>
- <5461AFD3.5020302@ti.com>
- <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com>
- <5461CDDF.4090209@ti.com>
- <CAFp+6iGAQMgX8S6dfPO44U=r6QJ4fT+1FX2uHNF9KK4sYs+=XA@mail.gmail.com>
- <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752075AbaKQPkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:40:47 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:61357 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaKQPkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 10:40:45 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-42-546a16fa4fe7
+Message-id: <546A16F8.4000604@samsung.com>
+Date: Mon, 17 Nov 2014 18:40:40 +0300
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Icedove/31.2.0
+MIME-version: 1.0
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Eric Biederman <ebiederm@xmission.com>, Michal Marek <mmarek@suse.cz>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, linux-crypto@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 1/2] scripts/coccinelle: catch freeing cryptographic
+ structures via kfree
+References: <20141117151420.10739.16342.stgit@buzz>
+ <alpine.DEB.2.10.1411171628230.2532@hadrien>
+In-reply-to: <alpine.DEB.2.10.1411171628230.2532@hadrien>
+Content-type: text/plain; charset=windows-1252; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xK7q/xLJCDBZcYbaYc76FxeL/thZ2
+	i9k/LzFZdL+SsVj24DSjxe7TX5ks7t/7yWRxedccNouWfReYLI69XM7kwOWxZeVNJo9tB1Q9
+	jh1rZfbYuyXLY/OSeo8zC46we3zeJOcx5VA7SwBHFJdNSmpOZllqkb5dAldG0+4NTAWPhCom
+	fp7O2MA4i7+LkZNDQsBE4sLtaewQtpjEhXvr2boYuTiEBJYySuzccpoRwvnEKPH1SgdrFyMH
+	B6+AlsTPRjOQBhYBVYlJ2/6CNbMJmEls23ebEcQWFQiRmPP0NhOIzSsgKPFj8j0WkFYRAXWJ
+	3g+5IGFmgZNMEleOCIPYwgLxEvO3HgYrFxJIklh94RcLiM0pYClx9eBNVoh6W4kF79exQNjy
+	EpvXvGWewCgwC8mGWUjKZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJC6+7GBc
+	fMzqEKMAB6MSD68AS1aIEGtiWXFl7iFGCQ5mJRHemIuZIUK8KYmVValF+fFFpTmpxYcYmTg4
+	pRoYJ/BLSXwIu7r4TW/PYsk334zKDrz8+Hxfz2Qxq4m6cgudT8rZfq3QnlP967yZIXdsei7n
+	9/8r0xv8pj+cFOiQF3SoJFRRZdPXzmbTJTejZrArMa0t+fecc9WE5yLWelaHz9//GLQmtd5+
+	qWCzR1aP7ealIrHntryo4tgz8cpRvkdTRC2i/jMbKbEUZyQaajEXFScCACcE8p5pAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 07:03:01PM +0530, Vivek Gautam wrote:
-> How about adding the change in attached patch [1] on top of this patch.
-> Just introduced the phy pointer in "phy_lookup" structure, and
-> modified phy_find() accordingly.
 
-I would be fine if we used the phy pointer to match, but if we have
-the pointer to the phy in the lookup, then I would say we need to
-remove the phy_name member.
+On 2014-11-17 18:30, Julia Lawall wrote:
+>
+> On Mon, 17 Nov 2014, Konstantin Khlebnikov wrote:
+>
+>> Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
+>>
+>> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+>> ---
+>>   scripts/coccinelle/free/crypto_free.cocci |   45 +++++++++++++++++++++++++++++
+>>   1 file changed, 45 insertions(+)
+>>   create mode 100644 scripts/coccinelle/free/crypto_free.cocci
+>>
+>> diff --git a/scripts/coccinelle/free/crypto_free.cocci b/scripts/coccinelle/free/crypto_free.cocci
+>> new file mode 100644
+>> index 0000000..0799b70
+>> --- /dev/null
+>> +++ b/scripts/coccinelle/free/crypto_free.cocci
+>> @@ -0,0 +1,45 @@
+>> +///
+>> +/// Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
+>> +/// This finds freeing them by kfree.
+>> +///
+>> +// Confidence: Moderate
+>> +// Copyright: (C) 2014 Konstantin Khlebnikov,  GPLv2.
+>> +// Comments: There are false positives in crypto/ where they are actually freed.
+>> +// Keywords: crypto, kfree
+>> +// Options: --no-includes --include-headers
+>> +
+>> +virtual org
+>> +virtual report
+>> +virtual context
+>> +
+>> +@r depends on context || org || report@
+>> +expression x;
+>> +identifier crypto_alloc =~ "^crypto_alloc_";
+>> +@@
+>> +
+>> +(
+>> + x = crypto_alloc(...)
+>> +)
+> You can drop the outer parentheses, in this case and in the kfree case.
+>
+> Are there many of these crypto_alloc_ functions?  It would be nicer to
+> avoid the regular expression.  For one thing, you don't have much control
+> over what it matches, and for another thing Coccinelle will not be able to
+> optimize the selection of files.  With the regular expression it will have
+> to parse every file and analyze every function, which will be slow.
 
-Otherwise we would have to support two ways of finding the lookups
-(one for the "static" lookups where we match to the phy_name and other
-where we match to the pointer). That means we will also not be able to
-create "static" lookups, but those would be only needed if we wanted to
-create them in board files. I don't think there will ever be need to
-create the lookups in board files, so I'm more then happy to remove
-the static way of creating the lookups.
+As I see here is eight .. ten candidates, maybe some of them are internal.
+Ok, I'll resend patch without regex.
 
-Kishon, if you are OK with this change, I'll prepare new version of
-this set and use the idea. Vivek, you'll get the credit for it.
+>
+> julia
+>
+>> +
+>> +@pb@
+>> +expression r.x;
+>> +position p;
+>> +@@
+>> +
+>> +(
+>> +* kfree@p(x)
+>> +)
+>> +
+>> +@script:python depends on org@
+>> +p << pb.p;
+>> +@@
+>> +
+>> +msg="WARNING: invalid free of crypto_alloc_* allocated data"
+>> +coccilib.org.print_todo(p[0], msg)
+>> +
+>> +@script:python depends on report@
+>> +p << pb.p;
+>> +@@
+>> +
+>> +msg="WARNING: invalid free of crypto_alloc_* allocated data"
+>> +coccilib.report.print_report(p[0], msg)
+>>
+>>
 
-
-Thanks!
-
--- 
-heikki
