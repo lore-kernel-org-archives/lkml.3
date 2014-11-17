@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaKQVpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 16:45:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:47172 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132AbaKQVpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 16:45:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,405,1413270000"; 
-   d="scan'208";a="633445357"
-Date: Mon, 17 Nov 2014 13:45:18 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, kan.liang@intel.com,
-        adrian.hunter@intel.com, markus.t.metzger@intel.com,
-        mathieu.poirier@linaro.org, acme@infradead.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Ellerman <michaele@au1.ibm.com>
-Subject: Re: [PATCH v8 02/14] perf: Add AUX area to ring buffer for raw data
- streams
-Message-ID: <20141117214518.GD10824@tassilo.jf.intel.com>
-References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1415972627-37514-3-git-send-email-alexander.shishkin@linux.intel.com>
- <20141117212400.GB13111@us.ibm.com>
+	id S1752545AbaKQVuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 16:50:19 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:41713 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaKQVuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 16:50:16 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>, ssantosh@kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
+	<1600093.60yAP0Qpua@wuerfel> <7h389h3aif.fsf@deeprootsystems.com>
+	<1618855.DXsjWXLqau@wuerfel>
+Date: Mon, 17 Nov 2014 13:50:13 -0800
+In-Reply-To: <1618855.DXsjWXLqau@wuerfel> (Arnd Bergmann's message of "Mon, 17
+	Nov 2014 21:37:37 +0100")
+Message-ID: <7hsihhzecq.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141117212400.GB13111@us.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 01:24:00PM -0800, Sukadev Bhattiprolu wrote:
-> Alexander Shishkin [alexander.shishkin@linux.intel.com] wrote:
-> | From: Peter Zijlstra <peterz@infradead.org>
-> | 
-> | This patch introduces "AUX space" in the perf mmap buffer, intended for
-> | exporting high bandwidth data streams to userspace, such as instruction
-> | flow traces.
-> | 
-> | AUX space is a ring buffer, defined by aux_{offset,size} fields in the
-> | user_page structure, and read/write pointers aux_{head,tail}, which abide
-> | by the same rules as data_* counterparts of the main perf buffer.
-> 
-> The "format" of this raw stream of data can differ across processors
-> (and architecutres) correct ? i.e the perf tool processing of this
-> aux data will also differ across processors ?
+Arnd Bergmann <arnd@arndb.de> writes:
 
-Yes.
+> On Monday 17 November 2014 11:14:16 Kevin Hilman wrote:
+>> >> 
+>> >> So, The Keystone 2 Generic PM Controller is just a proxy PM layer here between
+>> >> device and Generic clock manipulation PM callbacks.
+>> >> It fills per-device clock list when device is attached to GPD and
+>> >> ensures that all clocks from that list enabled/disabled when device is
+>> >> started/stopped.
+>> >
+>> > The idea of such a generic power domain implementation sounds useful, but
+>> > it has absolutely no business in platform specific code.
+>> 
+>> Yes it does.  This isn't a generic power domain implementation, but
+>> rather just the platform-specific glue that hooks up the clocks to the
+>> right devices and power-domains so that the generic power-domain and
+>> generic pm_clocks code does the right thing.
+>
+> How would you do this on an arm64 version of keystone then? With
+> the current approach, you'd need to add a machine specific directory,
+> and that seems completely pointless since this is not even about
+> a hardware requirement.
 
-The main caveat is that you need special handling code in perf.
+Yeah, you're right.  I misunderstood you're original comment.
 
-> 
-> Power8 processors support what we call 24x7 counters that collect info
-> on a large number of events. The current 24x7 support in
-> (arch/powerpc/perf/hv-24x7.c) currently uses reading one counter at a
-> time using the pmu->read() interface.
-> 
-> We are looking for ways to export much larger number of counters through
-> one pmu->read() or another call. I am trying to see if the hv-24x7 pmu
-> could use this aux interface and then have/implement a helper in perf
-> tool to extract the counter values.
+>> > I suggest you either remove the power domain proxy from your drivers
+>> > and use the clocks directly, 
+>> 
+>> No.  That's a step in the wrong direction.  This change isn't affecting
+>> drivers directly.  It's the runtime PM and generic power domain layers
+>> that handle this, and runtime PM adapted drivers don't need any changes.
+>>  
+>> > or come up with an implementation that can be used across other
+>> > platforms and CPU architectures.
+>> 
+>> We already have those in the generic power domain and the pm_clock
+>> layers.  This series is just hooking those up for Keystone.
+>
+> Then why not add the missing piece to the generic power domain
+> code to avoid having to add infrastructure to the platform
+> for it?
 
-It's probably only worth it if your amount of data is extremely
-high and has to be to compressed (like in PT -- no choice, cannot do it
-otherwise)
+Yes, good point.  There is nothing keystone-specific in this glue.
 
-If your data amounts are more reasonable it will be a lot
-simpler to stay with the current perf interfaces, even
-though they have a bit higher overhead.
+Grygorii, what about adding a feature to the generic domain parsing so
+that it can get clocks from device nodes that are part of the domain,
+and so it sets up pm_clk accordingly.
 
--Andi
+I've recently seen other SoCs doing very similar, so this really should
+be generalized.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+I've been looking at this primarily as a right incremental improvement
+from what is there for Keystone today, but Arnd is right.  This should
+be moved out of platform code.
+
+Kevin
