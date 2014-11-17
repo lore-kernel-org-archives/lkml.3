@@ -1,86 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaKQAPn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 19:15:43 -0500
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:54398 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaKQAPm convert rfc822-to-8bit (ORCPT
+	id S1752449AbaKQAQD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 19:16:03 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60451 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752193AbaKQAQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 19:15:42 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "davidlohr@hp.com" <davidlohr@hp.com>
-Subject: Re: [PATCH 1/3] hugetlb: fix hugepages= entry in
- kernel-parameters.txt
-Thread-Topic: [PATCH 1/3] hugetlb: fix hugepages= entry in
- kernel-parameters.txt
-Thread-Index: AQHQAfsCk6Srn4RM3k6u+8kNLRr+cA==
-Date: Mon, 17 Nov 2014 00:11:17 +0000
-Message-ID: <20141117001154.GA4667@hori1.linux.bs1.fc.nec.co.jp>
-References: <1415831593-9020-1-git-send-email-lcapitulino@redhat.com>
- <1415831593-9020-2-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1415831593-9020-2-git-send-email-lcapitulino@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.20]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-ID: <F0F1F8460A9A9F48AE17EA8680997B13@gisp.nec.co.jp>
-Content-Transfer-Encoding: 8BIT
+	Sun, 16 Nov 2014 19:16:00 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+Subject: Re: [PATCH] ACPI / WAKEUP : enable wakeup power for physical child devices
+Date: Mon, 17 Nov 2014 01:37:01 +0100
+Message-ID: <2396976.mWgWcINWd3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416139801-6537-1-git-send-email-Andrej.Skvortzov@gmail.com>
+References: <1416139801-6537-1-git-send-email-Andrej.Skvortzov@gmail.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 05:33:11PM -0500, Luiz Capitulino wrote:
-> The hugepages= entry in kernel-parameters.txt states that
-> 1GB pages can only be allocated at boot time and not
-> freed afterwards. This is not true since commit
-> 944d9fec8d7aee, at least for x86_64.
-> 
-> Instead of adding arch-specifc observations to the
-> hugepages= entry, this commit just drops the out of date
-> information. Further information about arch-specific
-> support and available features can be obtained in the
-> hugetlb documentation.
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+On Sunday, November 16, 2014 03:10:01 PM Andrey Skvortsov wrote:
+> commit f2b56bc808addb908a5bf435d9b942c02af9a7c4
+> ("ACPI / PM: Use device wakeup flags for handling ACPI wakeup devices")
 
-Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+That commit is from 2011.  Can you please tell me what makes you think
+that it is the source of the problem?
 
+> broke wake-on-lan for Broadcom BCM4401 Ethernet card (b44) on Dell Vostro 1500 laptop.
+> device_may_wakeup for main ACPI device (PCIE) returns false, because it has
+> can_wakeup = 0. Therefore any physical devices connected to this parent
+> were not prepared for wakeup/suspend. But physical device is capable to
+> wakeup the system.
+
+If that is the case, then ->
+
+> To fix this issue device_may_wakeup was replaced with acpi_device_may_wakeup.
+> acpi_device_may_wakeup was written based on function
+> acpi_system_wakeup_device_seq_show
+> 
+> Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
 > ---
->  Documentation/kernel-parameters.txt | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+>  drivers/acpi/wakeup.c |   45 +++++++++++++++++++++++++++++++++++++--------
+>  1 files changed, 37 insertions(+), 8 deletions(-)
 > 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 479f332..d919af0 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1228,9 +1228,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			multiple times interleaved with hugepages= to reserve
->  			huge pages of different sizes. Valid pages sizes on
->  			x86-64 are 2M (when the CPU supports "pse") and 1G
-> -			(when the CPU supports the "pdpe1gb" cpuinfo flag)
-> -			Note that 1GB pages can only be allocated at boot time
-> -			using hugepages= and not freed afterwards.
-> +			(when the CPU supports the "pdpe1gb" cpuinfo flag).
+> diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
+> index 1638401..0da7e70 100644
+> --- a/drivers/acpi/wakeup.c
+> +++ b/drivers/acpi/wakeup.c
+> @@ -19,6 +19,34 @@
+>  #define _COMPONENT		ACPI_SYSTEM_COMPONENT
+>  ACPI_MODULE_NAME("wakeup_devices")
 >  
->  	hvc_iucv=	[S390] Number of z/VM IUCV hypervisor console (HVC)
->  			       terminal devices. Valid values: 0..8
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> +
+> +bool acpi_device_may_wakeup(struct acpi_device *dev)
+> +{
+> +	struct acpi_device_physical_node *entry;
+> +	bool may_wakeup = false;
+> +
+> +	mutex_lock(&dev->physical_node_lock);
+> +	if (!dev->physical_node_count)
+> +		may_wakeup = device_may_wakeup(&dev->dev);
+> +	else {
+> +		struct device *ldev;
+> +
+> +		list_for_each_entry(entry, &dev->physical_node_list, node) {
+> +			ldev = get_device(entry->dev);
+> +			if (!ldev)
+> +				continue;
+> +
+> +			may_wakeup = device_may_wakeup(&dev->dev) ||
+> +				device_may_wakeup(ldev);
+> +
+> +			put_device(ldev);
+> +		}
+> +	}
+> +
+> +	mutex_unlock(&dev->physical_node_lock);
+> +	return may_wakeup;
+> +}
+> +
+>  /**
+>   * acpi_enable_wakeup_devices - Enable wake-up device GPEs.
+>   * @sleep_state: ACPI system sleep state.
+> @@ -35,13 +63,14 @@ void acpi_enable_wakeup_devices(u8 sleep_state)
+>  		struct acpi_device *dev =
+>  			container_of(node, struct acpi_device, wakeup_list);
+>  
+> +
+>  		if (!dev->wakeup.flags.valid
+> -		    || sleep_state > (u32) dev->wakeup.sleep_state
+> -		    || !(device_may_wakeup(&dev->dev)
+> -		        || dev->wakeup.prepare_count))
+> +			|| sleep_state > (u32) dev->wakeup.sleep_state
+> +			|| !(acpi_device_may_wakeup(dev)
+> +			    || dev->wakeup.prepare_count))
+
+-> dev->wakeup.prepare_count here shold be different from 0 at this point.
+
+>  			continue;
+>  
+> -		if (device_may_wakeup(&dev->dev))
+> +		if (acpi_device_may_wakeup(dev))
+>  			acpi_enable_wakeup_device_power(dev, sleep_state);
+>  
+>  		/* The wake-up power should have been enabled already. */
+> @@ -63,15 +92,15 @@ void acpi_disable_wakeup_devices(u8 sleep_state)
+>  			container_of(node, struct acpi_device, wakeup_list);
+>  
+>  		if (!dev->wakeup.flags.valid
+> -		    || sleep_state > (u32) dev->wakeup.sleep_state
+> -		    || !(device_may_wakeup(&dev->dev)
+> -		        || dev->wakeup.prepare_count))
+> +			|| sleep_state > (u32) dev->wakeup.sleep_state
+> +			|| !(acpi_device_may_wakeup(dev)
+> +				|| dev->wakeup.prepare_count))
+>  			continue;
+>  
+>  		acpi_set_gpe_wake_mask(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
+>  				ACPI_GPE_DISABLE);
+>  
+> -		if (device_may_wakeup(&dev->dev))
+> +		if (acpi_device_may_wakeup(dev))
+>  			acpi_disable_wakeup_device_power(dev);
+>  	}
+>  }
+
+This is not the right fix.  The device_may_wakeup(&dev->dev) check in the
+above code is specifically for ACPI device objects that do *not* have physical
+devices assiciated with them (buttons etc.).
+
+I'll have a look at the driver in question next week (please remind me in
+case I get distracted).
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
