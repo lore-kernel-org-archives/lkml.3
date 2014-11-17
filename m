@@ -1,185 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205AbaKQOza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:55:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961AbaKQOz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 09:55:27 -0500
-Date: Mon, 17 Nov 2014 08:54:50 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/3] Kernel Live Patching
-Message-ID: <20141117145450.GA2314@cerebellum.variantweb.net>
-References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
- <5469888E.3090501@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5469888E.3090501@hitachi.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753391AbaKQO4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 09:56:00 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:57167 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038AbaKQOz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 09:55:58 -0500
+From: Kever Yang <kever.yang@rock-chips.com>
+To: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, dkl@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org, tomeu.vizoso@collabora.com,
+        sboyd@codeaurora.org, Kever Yang <kever.yang@rock-chips.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, Dmitry Torokhov <dtor@chromium.org>,
+        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Jianqun <jay.xu@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Chris Zhong <zyw@rock-chips.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [RFC PATCH 0/2] clk: rockchip: leave npll for DCLK_VOP0(HDMI) only
+Date: Mon, 17 Nov 2014 22:55:36 +0800
+Message-Id: <1416236138-11010-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 02:33:02PM +0900, Masami Hiramatsu wrote:
-> Hi Seth,
-> 
-> (2014/11/17 10:29), Seth Jennings wrote:
-> > Changelog:
-> > 
-> > Thanks for all the feedback!
-> > 
-> > changes in v2:
-> > - rebase to next-20141113
-> > - add copyright/license block to livepatch.h
-> > - add _LINUX prefix to header defines
-> > - replace semaphore with mutex
-> > - add LPC_ prefix to state enum
-> > - convert BUGs to WARNs and handle properly
-> > - change Kconfig default to n
-> > - remove [old|new] attrs from function sysfs dir (KASLR leak, no use)
-> > - disregard user provided old_addr if kernel uses KASLR
-> > - s/out/err for error path labels
-> > - s/unregister/disable for uniform terminology
-> > - s/lp/lpc for module notifier elements
-> 
-> Hmm, btw, "LP" and "LPC" remind me line-printer and LPC bus :(
-> Can we use LKP (Live Kernel Patching) or KLP (Kernel Live Patching) instead ?
+To support all kinds of frequency requirement for HDMI on rk3288,
+we need a PLL that can change rate at run time.
 
-Jiri S also mentioned this so I guess it is a common sentiment :)  He
-suggested "lip" but I think I like "klp" better?  Jiri S sound good?
+There are some discussion before at [0], I think we can just leave
+the npll for HDMI(DCLK_VOP0) used to make it simple.
 
-> 
-> > - replace module ref'ing with unload notifier + mutex protection
-> > - adjust notifier priority to run before ftrace
-> > - make LIVE_PATCHING boolean (about to depend on arch stuff)
-> 
-> For better handling x86-32, we'd better introduce ARCH_HAVE_LIVE_PATCHING and
-> avoid enabling LIVE_PATCHING on x86_32, then we can simplify arch/x86/kernel/livepatch.c.
+Comments are welcome.
 
-Will do.
+[0] https://lkml.org/lkml/2014/11/4/58
 
-Thanks for the review!
 
-Seth
+Kever Yang (2):
+  clk: rockchip: leave npll for VOP0 only
+  arm: dts: rockchip: select npll as parent of DCLK_VOP0
 
-> 
-> Thank you,
-> 
-> > - move x86-specific reloc code to arch/x86
-> > - s/dynrela/reloc/
-> > - add live patching sysfs documentation
-> > - add API function kernel-doc
-> > - TODO: kernel-doc for API structs once agreed upon
-> > 
-> > Summary:
-> > 
-> > This patchset implements an ftrace-based mechanism and kernel interface for
-> > doing live patching of kernel and kernel module functions.  It represents the
-> > greatest common functionality set between kpatch [1] and kGraft [2] and can
-> > accept patches built using either method.  This solution was discussed in the
-> > Live Patching Mini-conference at LPC 2014 [3].
-> > 
-> > The model consists of a live patching "core" that provides an interface for
-> > other "patch" kernel modules to register patches with the core.
-> > 
-> > Patch modules contain the new function code and create an lp_patch structure
-> > containing the required data about what functions to patch, where the new code
-> > for each patched function resides, and in which kernel object (vmlinux or
-> > module) the function to be patch resides.  The patch module then invokes the
-> > lp_register_patch() function to register with the core, then lp_enable_patch()
-> > to have the core redirect the execution paths using ftrace.
-> > 
-> > An example patch module can be found here:
-> > https://github.com/spartacus06/livepatch/blob/master/patch/patch.c
-> > 
-> > The live patching core creates a sysfs hierarchy for user-level access to live
-> > patching information.  The hierarchy is structured like this:
-> > 
-> > /sys/kernel/livepatch
-> > /sys/kernel/livepatch/<patch>
-> > /sys/kernel/livepatch/<patch>/enabled
-> > /sys/kernel/livepatch/<patch>/<object>
-> > /sys/kernel/livepatch/<patch>/<object>/<func>
-> > 
-> > The old function is located using one of two methods: it is either provided by
-> > the patch module (only possible for a function in vmlinux) or kallsyms lookup.
-> > Symbol ambiguity results in a failure.
-> > 
-> > The core takes a reference on the patch module itself to keep it from
-> > unloading.  This is because, without a mechanism to ensure that no thread is
-> > currently executing in the patched function, we can not determine whether it is
-> > safe to unload the patch module.  For this reason, unloading patch modules is
-> > currently not allowed.
-> > 
-> > Disabling patches can be done using the "enabled" attribute of the patch:
-> > 
-> > echo 0 > /sys/kernel/livepatch/<patch>/enabled
-> > 
-> > If a patch module contains a patch for a module that is not currently loaded,
-> > there is nothing to patch so the core does nothing for that patch object.
-> > However, the core registers a module notifier that looks for COMING events so
-> > that if the module is ever loaded, it is immediately patched.  If a module with
-> > patch code is removed, the notifier looks for GOING events and disables any
-> > patched functions for that object before it unloads.  The notifier has a higher
-> > priority than that of the ftrace notifier so that it runs before the ftrace
-> > notifier for GOING events and we can cleanly unregister from ftrace.
-> > 
-> > kpatch and kGraft each have their own mechanisms for ensuring system
-> > consistency during the patching process. This first version does not implement
-> > any consistency mechanism that ensures that old and new code do not run
-> > together.  In practice, ~90% of CVEs are safe to apply in this way, since they
-> > simply add a conditional check.  However, any function change that can not
-> > execute safely with the old version of the function can _not_ be safely applied
-> > for now.
-> > 
-> > [1] https://github.com/dynup/kpatch
-> > [2] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/
-> > [3] https://etherpad.fr/p/LPC2014_LivePatching
-> > 
-> > Seth Jennings (3):
-> >   kernel: add TAINT_LIVEPATCH
-> >   kernel: add support for live patching
-> >   kernel: add sysfs documentation for live patching
-> > 
-> >  Documentation/ABI/testing/sysfs-kernel-livepatch |  44 +
-> >  Documentation/oops-tracing.txt                   |   2 +
-> >  Documentation/sysctl/kernel.txt                  |   1 +
-> >  MAINTAINERS                                      |  13 +
-> >  arch/x86/Kconfig                                 |   2 +
-> >  arch/x86/include/asm/livepatch.h                 |  38 +
-> >  arch/x86/kernel/Makefile                         |   1 +
-> >  arch/x86/kernel/livepatch.c                      |  83 ++
-> >  include/linux/kernel.h                           |   1 +
-> >  include/linux/livepatch.h                        |  68 ++
-> >  kernel/Makefile                                  |   1 +
-> >  kernel/livepatch/Kconfig                         |   9 +
-> >  kernel/livepatch/Makefile                        |   3 +
-> >  kernel/livepatch/core.c                          | 999 +++++++++++++++++++++++
-> >  kernel/panic.c                                   |   2 +
-> >  15 files changed, 1267 insertions(+)
-> >  create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
-> >  create mode 100644 arch/x86/include/asm/livepatch.h
-> >  create mode 100644 arch/x86/kernel/livepatch.c
-> >  create mode 100644 include/linux/livepatch.h
-> >  create mode 100644 kernel/livepatch/Kconfig
-> >  create mode 100644 kernel/livepatch/Makefile
-> >  create mode 100644 kernel/livepatch/core.c
-> > 
-> 
-> 
-> -- 
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Research Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
-> 
-> 
+ arch/arm/boot/dts/rk3288.dtsi     |  2 ++
+ drivers/clk/rockchip/clk-rk3288.c | 24 ++++++++++++------------
+ 2 files changed, 14 insertions(+), 12 deletions(-)
+
+-- 
+1.9.1
+
