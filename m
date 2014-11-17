@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaKQJmN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:42:13 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28887 "EHLO
+	id S1752328AbaKQJmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:42:15 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28888 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaKQJk5 (ORCPT
+	with ESMTP id S1752086AbaKQJk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Nov 2014 04:40:57 -0500
 From: Yijing Wang <wangyijing@huawei.com>
@@ -20,9 +20,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         Liviu Dudau <liviu@dudau.co.uk>, <Suravee.Suthikulpanit@amd.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 15/16] arm/PCI: Use pci_scan_host_bridge() instead of pci_scan_root_bus()
-Date: Mon, 17 Nov 2014 18:21:49 +0800
-Message-ID: <1416219710-26088-16-git-send-email-wangyijing@huawei.com>
+Subject: [RFC PATCH 16/16] powerpc/PCI: Use pci_scan_host_bridge() to scan PCI bus
+Date: Mon, 17 Nov 2014 18:21:50 +0800
+Message-ID: <1416219710-26088-17-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
 References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
@@ -36,133 +36,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/arm/include/asm/mach/pci.h |    1 +
- arch/arm/kernel/bios32.c        |   52 +++++++++++++++++++++++---------------
- 2 files changed, 32 insertions(+), 21 deletions(-)
+ arch/powerpc/kernel/pci-common.c |   81 ++++++++++++++++++++++---------------
+ 1 files changed, 48 insertions(+), 33 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
-index 370b3bd..a26eb3a 100644
---- a/arch/arm/include/asm/mach/pci.h
-+++ b/arch/arm/include/asm/mach/pci.h
-@@ -46,6 +46,7 @@ struct hw_pci {
- struct pci_sys_data {
- 	struct list_head node;
- 	int		busnr;		/* primary bus number			*/
-+	u8		nr;
- 	u64		mem_offset;	/* bus->cpu memory mapping offset	*/
- 	unsigned long	io_offset;	/* bus->cpu IO mapping offset		*/
- 	struct pci_bus	*bus;		/* PCI bus				*/
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 3fe56f1..535d7ec 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -426,33 +426,41 @@ static int pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
- 	return irq;
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index e5dad9a..5b0f078 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1578,54 +1578,69 @@ struct device_node *pcibios_get_phb_of_node(struct pci_bus *bus)
+ 	return of_node_get(hose->dn);
  }
  
--static int pcibios_init_resources(int busnr, struct pci_sys_data *sys)
-+static int pcibios_init_resources(struct pci_host_bridge *host,
+-/**
+- * pci_scan_phb - Given a pci_controller, setup and scan the PCI bus
+- * @hose: Pointer to the PCI host controller instance structure
+- */
+-void pcibios_scan_phb(struct pci_controller *hose)
++static int pcibios_host_init_res(struct pci_host_bridge *host,
 +		struct pci_host_info *info)
  {
- 	int ret;
--	struct pci_host_bridge_window *window;
-+	struct pci_sys_data *sys = info->arg;
-+	struct pci_host_bridge_window *window, *n;
+-	LIST_HEAD(resources);
+-	struct pci_bus *bus;
+-	struct device_node *node = hose->dn;
+-	int mode;
+-
+-	pr_debug("PCI: Scanning PHB %s\n", of_node_full_name(node));
++	struct pci_controller *hose = info->arg;
  
- 	if (list_empty(&sys->resources)) {
--		pci_add_resource_offset(&sys->resources,
-+		pci_add_resource_offset(&host->windows,
- 			 &iomem_resource, sys->mem_offset);
-+	} else {
-+		list_for_each_entry_safe(window, n,
-+				&sys->resources, list) {
-+			list_move_tail(&window->list,
-+					&host->windows);
-+		}
- 	}
+ 	/* Get some IO space for the new PHB */
+ 	pcibios_setup_phb_io_space(hose);
+-
+ 	/* Wire up PHB bus resources */
+-	pcibios_setup_phb_resources(hose, &resources);
++	pcibios_setup_phb_resources(hose, &host->windows);
  
--	list_for_each_entry(window, &sys->resources, list) {
-+	list_for_each_entry(window, &host->windows, list) {
- 		if (resource_type(window->res) == IORESOURCE_IO)
- 			return 0;
- 	}
+ 	hose->busn.start = hose->first_busno;
+ 	hose->busn.end	 = hose->last_busno;
+ 	hose->busn.flags = IORESOURCE_BUS;
+-	pci_add_resource(&resources, &hose->busn);
++	pci_add_resource(&host->windows, &hose->busn);
++	return 0;
++}
  
--	sys->io_res.start = (busnr * SZ_64K) ?  : pcibios_min_io;
--	sys->io_res.end = (busnr + 1) * SZ_64K - 1;
-+	sys->io_res.start = (sys->nr * SZ_64K) ?  : pcibios_min_io;
-+	sys->io_res.end = (sys->nr + 1) * SZ_64K - 1;
- 	sys->io_res.flags = IORESOURCE_IO;
- 	sys->io_res.name = sys->io_res_name;
--	sprintf(sys->io_res_name, "PCI%d I/O", busnr);
-+	sprintf(sys->io_res_name, "PCI%d I/O", sys->nr);
+-	/* Create an empty bus for the toplevel */
+-	bus = pci_create_root_bus(hose->parent, hose->first_busno,
+-				  hose->ops, hose, &resources);
+-	if (bus == NULL) {
+-		pr_err("Failed to create bus for PCI domain %04x\n",
+-			hose->global_number);
+-		pci_free_resource_list(&resources);
+-		return;
+-	}
+-	hose->bus = bus;
++static void pcibios_of_scan_bus(struct pci_host_bridge *host)
++{
++	int mode;
++	int max;
  
- 	ret = request_resource(&ioport_resource, &sys->io_res);
- 	if (ret) {
- 		pr_err("PCI: unable to allocate I/O port region (%d)\n", ret);
- 		return ret;
- 	}
--	pci_add_resource_offset(&sys->resources, &sys->io_res,
-+	pci_add_resource_offset(&host->windows, &sys->io_res,
- 				sys->io_offset);
- 
- 	return 0;
-@@ -462,8 +470,9 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
- 			    struct list_head *head)
- {
- 	struct pci_sys_data *sys = NULL;
--	int ret;
--	int nr, busnr;
-+	int ret, nr, busnr, domain;
+ 	/* Get probe mode and perform scan */
+ 	mode = PCI_PROBE_NORMAL;
+-	if (node && ppc_md.pci_probe_mode)
+-		mode = ppc_md.pci_probe_mode(bus);
++	if (host->node && ppc_md.pci_probe_mode)
++		mode = ppc_md.pci_probe_mode(host->bus);
+ 	pr_debug("    probe mode: %d\n", mode);
+ 	if (mode == PCI_PROBE_DEVTREE)
+-		of_scan_bus(node, bus);
+-
++		of_scan_bus(host->node, host->bus);
++	
+ 	if (mode == PCI_PROBE_NORMAL) {
+-		pci_bus_update_busn_res_end(bus, 255);
+-		hose->last_busno = pci_scan_child_bus(bus);
+-		pci_bus_update_busn_res_end(bus, hose->last_busno);
++		pci_bus_update_busn_res_end(host->bus, 255);
++		max = pci_scan_child_bus(host->bus);
++		pci_bus_update_busn_res_end(host->bus, max);
++	}
++}
++/**
++ * pci_scan_phb - Given a pci_controller, setup and scan the PCI bus
++ * @hose: Pointer to the PCI host controller instance structure
++ */
++void pcibios_scan_phb(struct pci_controller *hose)
++{
 +	struct pci_host_bridge *host;
 +	struct pci_host_info info;
++
++	pr_debug("PCI: Scanning PHB %s\n", of_node_full_name(hose->dn));
++
++	init_pci_host_info(&info);
++	info.arg = hose;
++	info.node = hose->dn;
++	info.init_res = pcibios_host_init_res;
++	info.of_scan_bus = pcibios_of_scan_bus;
++	/* Create an empty bus for the toplevel */
++	host = pci_scan_host_bridge(hose->parent, 
++			PCI_DOMBUS(hose->global_number,hose->first_busno),
++				  hose->ops, &info);
++	if (host == NULL) {
++		pr_err("Failed to create bus for PCI domain %04x\n",
++			hose->global_number);
++		return;
+ 	}
++	hose->bus = host->bus;
++	hose->last_busno = host->bus->busn_res.end;
  
- 	for (nr = busnr = 0; nr < hw->nr_controllers; nr++) {
- 		sys = kzalloc(sizeof(struct pci_sys_data), GFP_KERNEL);
-@@ -471,6 +480,7 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
- 			panic("PCI: unable to allocate sys data!");
+ 	/* Platform gets a chance to do some global fixups before
+ 	 * we proceed to resource allocation
+@@ -1634,9 +1649,9 @@ void pcibios_scan_phb(struct pci_controller *hose)
+ 		ppc_md.pcibios_fixup_phb(hose);
  
- 		sys->busnr   = busnr;
-+		sys->nr		 = nr;
- 		sys->swizzle = hw->swizzle;
- 		sys->map_irq = hw->map_irq;
- 		sys->align_resource = hw->align_resource;
-@@ -482,25 +492,25 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
- 			sys->private_data = hw->private_data[nr];
- 
- 		ret = hw->setup(nr, sys);
--
- 		if (ret > 0) {
--			ret = pcibios_init_resources(nr, sys);
--			if (ret)  {
--				kfree(sys);
--				break;
--			}
--
-+			init_pci_host_info(&info);
-+			info.arg = sys;
-+			info.init_res = pcibios_init_resources;
-+			domain = pci_get_domain_nr(parent);
- 			if (hw->scan)
- 				sys->bus = hw->scan(nr, sys);
--			else
--				sys->bus = pci_scan_root_bus(parent, sys->busnr,
--						hw->ops, sys, &sys->resources);
-+			else {
-+				host = pci_scan_host_bridge(parent, 
-+						PCI_DOMBUS(domain, sys->busnr),
-+						hw->ops, &info);
-+				if (host)
-+					sys->bus = host->bus;
-+			}
- 
- 			if (!sys->bus)
- 				panic("PCI: unable to scan bus!");
- 
- 			busnr = sys->bus->busn_res.end + 1;
--
- 			list_add(&sys->node, head);
- 		} else {
- 			kfree(sys);
+ 	/* Configure PCI Express settings */
+-	if (bus && !pci_has_flag(PCI_PROBE_ONLY)) {
++	if (!pci_has_flag(PCI_PROBE_ONLY)) {
+ 		struct pci_bus *child;
+-		list_for_each_entry(child, &bus->children, node)
++		list_for_each_entry(child, &host->bus->children, node)
+ 			pcie_bus_configure_settings(child);
+ 	}
+ }
 -- 
 1.7.1
 
