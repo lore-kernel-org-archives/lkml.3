@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843AbaKQNnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:43:12 -0500
-Received: from mout.web.de ([212.227.15.14]:52825 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558AbaKQNnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:43:08 -0500
-Message-ID: <5469FB58.4070205@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 14:42:48 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] tools lib traceevent: Deletion of an unnecessary check
- before the function call "free_arg"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:AD2GbVJvmOoOxIHrj4ey78bynPUxCB0ldkWhETX7eiYjmNOFw0o
- td+wqzVuBtFbhhFORpKMaLWCTxIIrYgYefgpQTKWjTrg3/+tmsF8oGFBtw4SH4XuQ2P3Vke
- +hQvvwAV4ue8KlYJWguiBg4ioBgza7Ysb09orEY6IaRKOLZ/hieR7Cm8vyStbHqtp8/KdCX
- Nn8MMzHACPA8hD/1XTygw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753076AbaKQNpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:45:15 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48985 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752956AbaKQNpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 08:45:10 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 17/61] dmaengine: jz4740: Split device_control
+Date: Mon, 17 Nov 2014 14:42:11 +0100
+Message-Id: <1416231775-31252-18-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 17 Nov 2014 14:38:14 +0100
+Split the device_control callback of the JZ4740 DMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
-The free_arg() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
-
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- tools/lib/traceevent/parse-filter.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/dma/dma-jz4740.c | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index b502344..78debaf 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -1237,8 +1237,7 @@ filter_event(struct event_filter *filter, struct event_format *event,
- 	if (filter_type == NULL)
- 		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
+diff --git a/drivers/dma/dma-jz4740.c b/drivers/dma/dma-jz4740.c
+index bdeafeefa5f6..4527a3ebeac4 100644
+--- a/drivers/dma/dma-jz4740.c
++++ b/drivers/dma/dma-jz4740.c
+@@ -210,7 +210,7 @@ static enum jz4740_dma_transfer_size jz4740_dma_maxburst(u32 maxburst)
+ }
  
--	if (filter_type->filter)
--		free_arg(filter_type->filter);
-+	free_arg(filter_type->filter);
- 	filter_type->filter = arg;
- 
+ static int jz4740_dma_slave_config(struct dma_chan *c,
+-	const struct dma_slave_config *config)
++				   struct dma_slave_config *config)
+ {
+ 	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
+ 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+@@ -290,21 +290,6 @@ static int jz4740_dma_terminate_all(struct dma_chan *c)
  	return 0;
+ }
+ 
+-static int jz4740_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	unsigned long arg)
+-{
+-	struct dma_slave_config *config = (struct dma_slave_config *)arg;
+-
+-	switch (cmd) {
+-	case DMA_SLAVE_CONFIG:
+-		return jz4740_dma_slave_config(chan, config);
+-	case DMA_TERMINATE_ALL:
+-		return jz4740_dma_terminate_all(chan);
+-	default:
+-		return -ENOSYS;
+-	}
+-}
+-
+ static int jz4740_dma_start_transfer(struct jz4740_dmaengine_chan *chan)
+ {
+ 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+@@ -561,7 +546,8 @@ static int jz4740_dma_probe(struct platform_device *pdev)
+ 	dd->device_issue_pending = jz4740_dma_issue_pending;
+ 	dd->device_prep_slave_sg = jz4740_dma_prep_slave_sg;
+ 	dd->device_prep_dma_cyclic = jz4740_dma_prep_dma_cyclic;
+-	dd->device_control = jz4740_dma_control;
++	dd->device_config = jz4740_dma_slave_config;
++	dd->device_terminate_all = jz4740_dma_terminate_all;
+ 	dd->dev = &pdev->dev;
+ 	INIT_LIST_HEAD(&dd->channels);
+ 
 -- 
-2.1.3
+2.1.1
 
