@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364AbaKQWms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:42:48 -0500
-Received: from mail-yh0-f73.google.com ([209.85.213.73]:36491 "EHLO
-	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaKQWlw (ORCPT
+	id S1753336AbaKQWmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:42:45 -0500
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:65244 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261AbaKQWlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:41:52 -0500
+	Mon, 17 Nov 2014 17:41:53 -0500
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>,
@@ -27,9 +27,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org
-Subject: [PATCH V5 11/12] ARM: tegra: jetson-tk1: Add xHCI support
-Date: Mon, 17 Nov 2014 14:41:41 -0800
-Message-Id: <1416264102-1323-12-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V5 12/12] ARM: tegra: venice2: Add xHCI support
+Date: Mon, 17 Nov 2014 14:41:42 -0800
+Message-Id: <1416264102-1323-13-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
 References: <1416264102-1323-1-git-send-email-abrestic@chromium.org>
@@ -37,40 +37,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assign USB ports previously owned by the EHCI controllers to the xHCI
-controller.  There is a mini-PCIe USB port (UTMI port 1) and a USB A
-connector (UTMI port 2, USB3 port 0).  PCIe lane 0 is used for USB3
-port 0.
+Assign ports previously owned by the EHCI controllers to the xHCI
+controller.  There are two external USB ports (UTMI ports 0/2 and
+USB3 ports 0/1) and an internal USB port (UTMI port 1).  PCIe lanes
+0 and 1 are used by the USB3 ports.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
 Changes from v4:
  - Updated regulator and pinconfig properties.
-Changes from v3:
- - Assigned otg-0 to XUSB to avoid USB2.0 flakiness.
+No changes from v3.
 Changes from v2:
  - Updated VBUS power supply names.
 Changes from v1:
  - Updated USB power supplies.
 ---
- arch/arm/boot/dts/tegra124-jetson-tk1.dts | 46 +++++++++++++++++--------------
- 1 file changed, 26 insertions(+), 20 deletions(-)
+ arch/arm/boot/dts/tegra124-venice2.dts | 79 ++++++++++++++++++++++------------
+ 1 file changed, 51 insertions(+), 28 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-index 029c9a02..672f4b8 100644
---- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-+++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-@@ -1686,15 +1686,40 @@
- 		target-12v-supply = <&vdd_12v0_sata>;
+diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
+index 1300885..24a8bb8 100644
+--- a/arch/arm/boot/dts/tegra124-venice2.dts
++++ b/arch/arm/boot/dts/tegra124-venice2.dts
+@@ -744,7 +744,7 @@
+ 					regulator-always-on;
+ 				};
+ 
+-				ldo0 {
++				avdd_1v05_run: ldo0 {
+ 					regulator-name = "+1.05V_RUN_AVDD";
+ 					regulator-min-microvolt = <1050000>;
+ 					regulator-max-microvolt = <1050000>;
+@@ -886,6 +886,56 @@
+ 		status = "okay";
  	};
  
 +	usb@0,70090000 {
 +		status = "okay";
-+		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* mini-PCIe USB */
-+		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* USB A */
-+		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>; /* USB A */
-+		phy-names = "utmi-1", "utmi-2", "usb3-0";
++		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P0>, /* 1st USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* Internal USB */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* 2nd USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>, /* 1st USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P1>; /* 2nd USB A */
++		phy-names = "utmi-0", "utmi-1", "utmi-2", "usb3-0", "usb3-1";
 +		avddio-pex-supply = <&vdd_1v05_run>;
 +		dvddio-pex-supply = <&vdd_1v05_run>;
 +		avdd-usb-supply = <&vdd_3v3_lp0>;
@@ -81,42 +91,63 @@ index 029c9a02..672f4b8 100644
 +		hvdd-usb-ss-pll-e-supply = <&vdd_3v3_lp0>;
 +	};
 +
- 	padctl@0,7009f000 {
- 		pinctrl-0 = <&padctl_default>;
- 		pinctrl-names = "default";
- 
++	padctl@0,7009f000 {
++		pinctrl-0 = <&padctl_default>;
++		pinctrl-names = "default";
++
++		vbus-0-supply = <&vdd_usb1_vbus>;
++		vbus-1-supply = <&vdd_run_cam>;
 +		vbus-2-supply = <&vdd_usb3_vbus>;
 +
- 		padctl_default: pinmux {
++		padctl_default: pinmux {
 +			otg {
 +				nvidia,lanes = "otg-0", "otg-1", "otg-2";
 +				nvidia,function = "xusb";
 +			};
 +
- 			usb3 {
--				nvidia,lanes = "pcie-0", "pcie-1";
++			usb3p0 {
 +				nvidia,lanes = "pcie-0";
- 				nvidia,function = "usb3";
- 				nvidia,iddq = <0>;
-+				nvidia,usb2-port = <2>;
++				nvidia,function = "usb3";
++				nvidia,iddq = <0>;
++				nvidia,usb2-port = <0>;
 +				nvidia,usb3-port = <0>;
- 			};
- 
- 			pcie {
-@@ -1735,25 +1760,6 @@
++			};
++
++			usb3p1 {
++				nvidia,lanes = "pcie-1";
++				nvidia,function = "usb3";
++				nvidia,iddq = <0>;
++				nvidia,usb2-port = <2>;
++				nvidia,usb3-port = <1>;
++			};
++		};
++	};
++
+ 	sdhci@0,700b0400 {
+ 		cd-gpios = <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_HIGH>;
+ 		power-gpios = <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_HIGH>;
+@@ -906,33 +956,6 @@
  		};
  	};
  
--	/* mini-PCIe USB */
+-	usb@0,7d000000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d000000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_usb1_vbus>;
+-	};
+-
 -	usb@0,7d004000 {
 -		status = "okay";
 -	};
 -
 -	usb-phy@0,7d004000 {
 -		status = "okay";
+-		vbus-supply = <&vdd_run_cam>;
 -	};
 -
--	/* USB A connector */
 -	usb@0,7d008000 {
 -		status = "okay";
 -	};
@@ -126,9 +157,9 @@ index 029c9a02..672f4b8 100644
 -		vbus-supply = <&vdd_usb3_vbus>;
 -	};
 -
- 	clocks {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
+ 	backlight: backlight {
+ 		compatible = "pwm-backlight";
+ 
 -- 
 2.1.0.rc2.206.gedb03e5
 
