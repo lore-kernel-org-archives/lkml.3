@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaKQSzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 13:55:52 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:58551 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaKQSzu (ORCPT
+	id S1752502AbaKQS5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 13:57:06 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:49253 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaKQS5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 13:55:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Jonas Gorski <jogo@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
-Date: Mon, 17 Nov 2014 19:55:15 +0100
-Message-ID: <14461008.6cZzGdpat2@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJiQ=7An5eZ3j2+Zkx1crV9pBSVodkEQ+6ESGcFk5z0tDV7cHA@mail.gmail.com>
-References: <1416097066-20452-1-git-send-email-cernekee@gmail.com> <2018325.yOrLZndTTm@wuerfel> <CAJiQ=7An5eZ3j2+Zkx1crV9pBSVodkEQ+6ESGcFk5z0tDV7cHA@mail.gmail.com>
+	Mon, 17 Nov 2014 13:57:04 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:421rEaFY5Yg1YBGWOhxVtojTlDLGGIEdfAI5x7x/YOB
- X2pIN5OencsOZN46tiNJIvDnsGix1xTt5VKUX80uhWcPspUHoz
- xKHzBylVrSGSgTyKR1hmDgbSKeVBXBhStFOSlOi/tWX/oosReF
- w36rd/FuzUffivJ9BZBX5iql0NnWvWhsueyfZ4RrFLny0+81S7
- opVhB+jmTt/vNc4uBSSDnNjmpsG0151TQEO5a2USgELhIu0fPu
- +ZMETO/t5VeX5eBiYb9/pzL3HlrU4uVD+hAVdyd0kGn9bo8X8z
- 5z06/Dkwj1/Ui3aFTUQ+W6yy5/xeoLvja7C4M4XUcby4PK8x+e
- CFFnsybqEKCBzp/CAywU=
-X-UI-Out-Filterresults: notjunk:1;
+Date: Mon, 17 Nov 2014 22:57:01 +0400
+Message-ID: <CANoib0GyS0oxAR-xQzuKdcFm9p=zt5=aSFXQivX9GzP_4wNXMw@mail.gmail.com>
+Subject: [PATCH 1/1] ath3k: Add support of MCI 13d3:3408 bt device
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+To: linux-wireless@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 November 2014 09:19:17 Kevin Cernekee wrote:
-> On Mon, Nov 17, 2014 at 8:13 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > This is not just DT, it's actually an implementation of a boot
-> > interface. The situation here seems much more to what we had on
-> > PowerPC a long time ago than what we had on ARM before the DT
-> > conversion. I think the best approach here would be to move the
-> > platform specific bits into the decompressor code, and allow
-> > multiple implementations of that. This way you can have the
-> > generic vmlinux file that has a common DT parser, and you wrap
-> > that into one decompressor per platform, some of which can have
-> > their own board detection logic or pre-boot setup where necessary.
-> >
-> > To be honest, I think having multiple DT files linked into the
-> > kernel is a really bad idea, because it doesn't solve the
-> > scalability problem at all. What we did on ARM was to force those
-> > hacks out into external projects such as the PXA impedence
-> > matcher [https://github.com/zonque/pxa-impedance-matcher]. This
-> > can handle all weird boot protocol and adapt them to the normal
-> > well-defined interfaces we have in the kernel.
-> 
-> To some extent this is how BCM3384 was done[1].
-> 
-> There is a tradeoff here: to add support for the older platforms it is
-> easy to build a new DTB file into the kernel image, but it is a lot of
-> trouble to write a new 3rd stage bootloader.  Do we want to maximize
-> our list of supported boards, or are we shooting for a super clean
-> kernel implementation right off the bat?
+Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
 
-Right, when the norm is that you can't detect the board, having
-the wrapper in the kernel is the better approach, as PowerPC, which
-has a few dozen ways of linking the compressed kernel, while the
-vmlinux file uses a common method and passes everything in DT.
+Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
 
-That way you can have the best of both.
+---
 
-> >> And unless there is one, having a
-> >> multiplatform kernel does not make much sense, as there is no sane way
-> >> to tell apart different platforms on boot.
-> >
-> > How do you normally tell boards apart on MIPS when you don't use DT?
-> 
-> On BCM7xxx (STB) kernels, we could assume the chip ID was in a known
-> register, and also we could call back into the bootloader to get a
-> somewhat-accurate board name.
-> 
-> On BCM63xx there is logic in arch/mips/bcm63xx/cpu.c to try to guess
-> the chip identity from the CPU type/revision (because the latter can
-> be read directly from CP0).
-> 
-> These systems were never really designed to support multiplatform
-> kernels.  The ARM BCM7xxx variants, by contrast, were.
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index d85ced2..086240c 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -105,6 +105,7 @@ static const struct usb_device_id ath3k_table[] = {
+  { USB_DEVICE(0x13d3, 0x3375) },
+  { USB_DEVICE(0x13d3, 0x3393) },
+  { USB_DEVICE(0x13d3, 0x3402) },
++ { USB_DEVICE(0x13d3, 0x3408) },
+  { USB_DEVICE(0x13d3, 0x3432) },
 
-Guessing the chip doesn't really help you all that much of course
-as long as you don't know the board, and once you know that,
-the chip is implied.
+  /* Atheros AR5BBU12 with sflash firmware */
+@@ -156,6 +157,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
+  { USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+  { USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  { USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++ { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+  { USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
 
-	Arnd
+  /* Atheros AR5BBU22 with sflash firmware */
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index edfc17b..091c813 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -182,6 +182,7 @@ static const struct usb_device_id blacklist_table[] = {
+  { USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+  { USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  { USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++ { USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+  { USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+
+  /* Atheros AR5BBU12 with sflash firmware */
+
+---
