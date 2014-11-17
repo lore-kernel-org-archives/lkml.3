@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaKQNpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:45:21 -0500
+	id S1754076AbaKQN6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:58:43 -0500
 Received: from down.free-electrons.com ([37.187.137.238]:48964 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753053AbaKQNpP (ORCPT
+	with ESMTP id S1753140AbaKQNpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:15 -0500
+	Mon, 17 Nov 2014 08:45:21 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 22/61] dmaengine: imx: Split device_control
-Date: Mon, 17 Nov 2014 14:42:16 +0100
-Message-Id: <1416231775-31252-23-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 27/61] dmaengine: mmp-pdma: Split device_control
+Date: Mon, 17 Nov 2014 14:42:21 +0100
+Message-Id: <1416231775-31252-28-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,148 +24,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Freescale IMX DMA driver to make use
+Split the device_control callback of the Marvell MMP PDMA driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/imx-dma.c | 103 +++++++++++++++++++++++++-------------------------
- 1 file changed, 51 insertions(+), 52 deletions(-)
+ drivers/dma/mmp_pdma.c | 109 +++++++++++++++++++++++++------------------------
+ 1 file changed, 56 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 9d2c9e7374dc..dfd1557384ca 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -669,69 +669,67 @@ out:
- 
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index 8b8952f35e6c..8926f271904e 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -683,68 +683,70 @@ fail:
+ 	return NULL;
  }
  
--static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		unsigned long arg)
-+static int imxdma_terminate_all(struct dma_chan *chan)
+-static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+-			    unsigned long arg)
++static int mmp_pdma_config(struct dma_chan *dchan,
++			   struct dma_slave_config *cfg)
  {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
--	struct dma_slave_config *dmaengine_cfg = (void *)arg;
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
- 	unsigned long flags;
--	unsigned int mode = 0;
--
+ 	struct mmp_pdma_chan *chan = to_mmp_pdma_chan(dchan);
+-	struct dma_slave_config *cfg = (void *)arg;
+-	unsigned long flags;
+ 	u32 maxburst = 0, addr = 0;
+ 	enum dma_slave_buswidth width = DMA_SLAVE_BUSWIDTH_UNDEFINED;
+ 
+ 	if (!dchan)
+ 		return -EINVAL;
+ 
 -	switch (cmd) {
 -	case DMA_TERMINATE_ALL:
--		imxdma_disable_hw(imxdmac);
- 
--		spin_lock_irqsave(&imxdma->lock, flags);
--		list_splice_tail_init(&imxdmac->ld_active, &imxdmac->ld_free);
--		list_splice_tail_init(&imxdmac->ld_queue, &imxdmac->ld_free);
--		spin_unlock_irqrestore(&imxdma->lock, flags);
--		return 0;
+-		disable_chan(chan->phy);
+-		mmp_pdma_free_phy(chan);
+-		spin_lock_irqsave(&chan->desc_lock, flags);
+-		mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+-		mmp_pdma_free_desc_list(chan, &chan->chain_running);
+-		spin_unlock_irqrestore(&chan->desc_lock, flags);
+-		chan->idle = true;
+-		break;
 -	case DMA_SLAVE_CONFIG:
--		if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
--			imxdmac->per_address = dmaengine_cfg->src_addr;
--			imxdmac->watermark_level = dmaengine_cfg->src_maxburst;
--			imxdmac->word_size = dmaengine_cfg->src_addr_width;
--		} else {
--			imxdmac->per_address = dmaengine_cfg->dst_addr;
--			imxdmac->watermark_level = dmaengine_cfg->dst_maxburst;
--			imxdmac->word_size = dmaengine_cfg->dst_addr_width;
+-		if (cfg->direction == DMA_DEV_TO_MEM) {
+-			chan->dcmd = DCMD_INCTRGADDR | DCMD_FLOWSRC;
+-			maxburst = cfg->src_maxburst;
+-			width = cfg->src_addr_width;
+-			addr = cfg->src_addr;
+-		} else if (cfg->direction == DMA_MEM_TO_DEV) {
+-			chan->dcmd = DCMD_INCSRCADDR | DCMD_FLOWTRG;
+-			maxburst = cfg->dst_maxburst;
+-			width = cfg->dst_addr_width;
+-			addr = cfg->dst_addr;
 -		}
 -
--		switch (imxdmac->word_size) {
--		case DMA_SLAVE_BUSWIDTH_1_BYTE:
--			mode = IMX_DMA_MEMSIZE_8;
--			break;
--		case DMA_SLAVE_BUSWIDTH_2_BYTES:
--			mode = IMX_DMA_MEMSIZE_16;
--			break;
--		default:
--		case DMA_SLAVE_BUSWIDTH_4_BYTES:
--			mode = IMX_DMA_MEMSIZE_32;
--			break;
--		}
-+	imxdma_disable_hw(imxdmac);
- 
--		imxdmac->hw_chaining = 0;
-+	spin_lock_irqsave(&imxdma->lock, flags);
-+	list_splice_tail_init(&imxdmac->ld_active, &imxdmac->ld_free);
-+	list_splice_tail_init(&imxdmac->ld_queue, &imxdmac->ld_free);
-+	spin_unlock_irqrestore(&imxdma->lock, flags);
-+	return 0;
-+}
- 
--		imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
--			((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
--			CCR_REN;
--		imxdmac->ccr_to_device =
--			(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
--			((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
--		imx_dmav1_writel(imxdma, imxdmac->dma_request,
--				 DMA_RSSR(imxdmac->channel));
-+static int imxdma_config(struct dma_chan *chan,
-+			 struct dma_slave_config *dmaengine_cfg)
-+{
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-+	struct imxdma_engine *imxdma = imxdmac->imxdma;
-+	unsigned int mode = 0;
- 
--		/* Set burst length */
--		imx_dmav1_writel(imxdma, imxdmac->watermark_level *
--				imxdmac->word_size, DMA_BLR(imxdmac->channel));
-+	if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
-+		imxdmac->per_address = dmaengine_cfg->src_addr;
-+		imxdmac->watermark_level = dmaengine_cfg->src_maxburst;
-+		imxdmac->word_size = dmaengine_cfg->src_addr_width;
-+	} else {
-+		imxdmac->per_address = dmaengine_cfg->dst_addr;
-+		imxdmac->watermark_level = dmaengine_cfg->dst_maxburst;
-+		imxdmac->word_size = dmaengine_cfg->dst_addr_width;
-+	}
- 
--		return 0;
-+	switch (imxdmac->word_size) {
-+	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+		mode = IMX_DMA_MEMSIZE_8;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+		mode = IMX_DMA_MEMSIZE_16;
-+		break;
- 	default:
+-		if (width == DMA_SLAVE_BUSWIDTH_1_BYTE)
+-			chan->dcmd |= DCMD_WIDTH1;
+-		else if (width == DMA_SLAVE_BUSWIDTH_2_BYTES)
+-			chan->dcmd |= DCMD_WIDTH2;
+-		else if (width == DMA_SLAVE_BUSWIDTH_4_BYTES)
+-			chan->dcmd |= DCMD_WIDTH4;
+-
+-		if (maxburst == 8)
+-			chan->dcmd |= DCMD_BURST8;
+-		else if (maxburst == 16)
+-			chan->dcmd |= DCMD_BURST16;
+-		else if (maxburst == 32)
+-			chan->dcmd |= DCMD_BURST32;
+-
+-		chan->dir = cfg->direction;
+-		chan->dev_addr = addr;
+-		/* FIXME: drivers should be ported over to use the filter
+-		 * function. Once that's done, the following two lines can
+-		 * be removed.
+-		 */
+-		if (cfg->slave_id)
+-			chan->drcmr = cfg->slave_id;
+-		break;
+-	default:
 -		return -ENOSYS;
-+	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-+		mode = IMX_DMA_MEMSIZE_32;
-+		break;
++	if (cfg->direction == DMA_DEV_TO_MEM) {
++		chan->dcmd = DCMD_INCTRGADDR | DCMD_FLOWSRC;
++		maxburst = cfg->src_maxburst;
++		width = cfg->src_addr_width;
++		addr = cfg->src_addr;
++	} else if (cfg->direction == DMA_MEM_TO_DEV) {
++		chan->dcmd = DCMD_INCSRCADDR | DCMD_FLOWTRG;
++		maxburst = cfg->dst_maxburst;
++		width = cfg->dst_addr_width;
++		addr = cfg->dst_addr;
  	}
  
--	return -EINVAL;
-+	imxdmac->hw_chaining = 0;
++	if (width == DMA_SLAVE_BUSWIDTH_1_BYTE)
++		chan->dcmd |= DCMD_WIDTH1;
++	else if (width == DMA_SLAVE_BUSWIDTH_2_BYTES)
++		chan->dcmd |= DCMD_WIDTH2;
++	else if (width == DMA_SLAVE_BUSWIDTH_4_BYTES)
++		chan->dcmd |= DCMD_WIDTH4;
 +
-+	imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
-+		((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
-+		CCR_REN;
-+	imxdmac->ccr_to_device =
-+		(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
-+		((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
-+	imx_dmav1_writel(imxdma, imxdmac->dma_request,
-+			 DMA_RSSR(imxdmac->channel));
++	if (maxburst == 8)
++		chan->dcmd |= DCMD_BURST8;
++	else if (maxburst == 16)
++		chan->dcmd |= DCMD_BURST16;
++	else if (maxburst == 32)
++		chan->dcmd |= DCMD_BURST32;
 +
-+	/* Set burst length */
-+	imx_dmav1_writel(imxdma, imxdmac->watermark_level *
-+			 imxdmac->word_size, DMA_BLR(imxdmac->channel));
++	chan->dir = cfg->direction;
++	chan->dev_addr = addr;
++	/* FIXME: drivers should be ported over to use the filter
++	 * function. Once that's done, the following two lines can
++	 * be removed.
++	 */
++	if (cfg->slave_id)
++		chan->drcmr = cfg->slave_id;
 +
 +	return 0;
++}
++
++static int mmp_pdma_terminate_all(struct dma_chan *dchan)
++{
++	struct mmp_pdma_chan *chan = to_mmp_pdma_chan(dchan);
++	unsigned long flags;
++
++	if (!dchan)
++		return -EINVAL;
++
++	disable_chan(chan->phy);
++	mmp_pdma_free_phy(chan);
++	spin_lock_irqsave(&chan->desc_lock, flags);
++	mmp_pdma_free_desc_list(chan, &chan->chain_pending);
++	mmp_pdma_free_desc_list(chan, &chan->chain_running);
++	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	chan->idle = true;
++
+ 	return 0;
  }
  
- static enum dma_status imxdma_tx_status(struct dma_chan *chan,
-@@ -1184,7 +1182,8 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
- 	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
- 	imxdma->dma_device.device_prep_interleaved_dma = imxdma_prep_dma_interleaved;
--	imxdma->dma_device.device_control = imxdma_control;
-+	imxdma->dma_device.device_config = imxdma_config;
-+	imxdma->dma_device.device_terminate_all = imxdma_terminate_all;
- 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
+@@ -1061,7 +1063,8 @@ static int mmp_pdma_probe(struct platform_device *op)
+ 	pdev->device.device_prep_slave_sg = mmp_pdma_prep_slave_sg;
+ 	pdev->device.device_prep_dma_cyclic = mmp_pdma_prep_dma_cyclic;
+ 	pdev->device.device_issue_pending = mmp_pdma_issue_pending;
+-	pdev->device.device_control = mmp_pdma_control;
++	pdev->device.device_config = mmp_pdma_config;
++	pdev->device.device_terminate_all = mmp_pdma_terminate_all;
+ 	pdev->device.copy_align = PDMA_ALIGNMENT;
  
- 	platform_set_drvdata(pdev, imxdma);
+ 	if (pdev->dev->coherent_dma_mask)
 -- 
 2.1.1
 
