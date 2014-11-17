@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaKQPJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:09:23 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:59512 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419AbaKQPJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:09:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <F244A294-8B78-4A9C-BB0B-268AFCC3EC5C@kernel.org>
-References: <1416230316-14511-1-git-send-email-daniel.baluta@intel.com>
-	<F244A294-8B78-4A9C-BB0B-268AFCC3EC5C@kernel.org>
-Date: Mon, 17 Nov 2014 17:09:16 +0200
-X-Google-Sender-Auth: HJj4eHJhkMMujPUoIuw9gzYqp-E
-Message-ID: <CAEnQRZCa07iOt5baDHaH4-wNNYsP7rOf5Sixs+yndNo5-OP4kQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] kmx61: Small cleanups
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Daniel Baluta <daniel.baluta@intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753427AbaKQPKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:10:19 -0500
+Received: from mga11.intel.com ([192.55.52.93]:11303 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753281AbaKQPIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 10:08:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="417616258"
+From: kan.liang@intel.com
+To: acme@kernel.org, jolsa@redhat.com, namhyung@kernel.org
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V3 1/3] perf tool: Fix perf diff symble sort issue
+Date: Mon, 17 Nov 2014 09:52:17 -0500
+Message-Id: <1416235939-29565-2-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1416235939-29565-1-git-send-email-kan.liang@intel.com>
+References: <1416235939-29565-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 4:59 PM, Jonathan Cameron <jic23@kernel.org> wrote:
->
->
-> On November 17, 2014 1:18:34 PM GMT+00:00, Daniel Baluta <daniel.baluta@intel.com> wrote:
->>This is a small cleanup patchset, that:
->>       * makes it clear that kmx61 uses only the micro part of scale
->>       * use macro instead of hardcoded value for driver name
->>
->>Jonathan, if you think it's worth it, these could be squased together
->>with
->>the initial patch submitted in testing:
->>       61ef04a496 (iio: imu: Add support for Kionix KMX61 sensor)
->>
->
-> Given the additional bits from Peter, I don't mind pulling the original and applying an updated patch.
+From: Kan Liang <kan.liang@intel.com>
 
-I prefer this :). I will send an updated patch with fixes reported by Peter.
+This patch fixes a bug for perf diff.
+Without mmap2, perf diff fails to find the symbol name. The default
+symbol sort key doesn't work well.
 
->
-> Additional changes like this are fine as well if you prefer.
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-diff.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-I am almost done with adding support for runtime PM. Let me know
-if you want this as a separate patch or just one big updated patch.
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 25114c9..1ce425d 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -357,6 +357,7 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ static struct perf_tool tool = {
+ 	.sample	= diff__process_sample_event,
+ 	.mmap	= perf_event__process_mmap,
++	.mmap2	= perf_event__process_mmap2,
+ 	.comm	= perf_event__process_comm,
+ 	.exit	= perf_event__process_exit,
+ 	.fork	= perf_event__process_fork,
+-- 
+1.8.3.2
 
-Daniel.
