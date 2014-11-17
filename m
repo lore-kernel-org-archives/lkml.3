@@ -1,117 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaKQJrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:47:35 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:6395 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbaKQJrd (ORCPT
+	id S1751547AbaKQJuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:50:40 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:60624 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653AbaKQJuj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:47:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 17 Nov 2014 01:47:21 -0800
-Date: Mon, 17 Nov 2014 10:47:15 +0100
-From: Thierry Reding <treding@nvidia.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Dave Airlie <airlied@linux.ie>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
-Message-ID: <20141117094714.GA20092@ulmo.nvidia.com>
-References: <20141117141158.438636fd@canb.auug.org.au>
+	Mon, 17 Nov 2014 04:50:39 -0500
+Message-ID: <5469C503.9010007@arm.com>
+Date: Mon, 17 Nov 2014 09:50:59 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141117141158.438636fd@canb.auug.org.au>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.2.69.37]
-X-ClientProxiedBy: UKMAIL102.nvidia.com (10.26.138.15) To
- UKMAIL101.nvidia.com (10.26.138.13)
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
-Content-Disposition: inline
+To: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: [PATCH 2/2] sched/deadline: fix start high-res preemption tick
+ for a non-running task
+References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com> <1415670747-58726-2-git-send-email-wanpeng.li@linux.intel.com> <54647BDC.6050804@arm.com> <5464882D.40504@gmail.com>
+In-Reply-To: <5464882D.40504@gmail.com>
+X-OriginalArrivalTime: 17 Nov 2014 09:50:36.0684 (UTC) FILETIME=[F00B9CC0:01D0024B]
+X-MC-Unique: 114111709503606901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---opJtzjQTFsWo+cga
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Mon, Nov 17, 2014 at 02:11:58PM +1100, Stephen Rothwell wrote:
-> * PGP Signed by an unknown key
->=20
-> Hi Dave,
->=20
-> Today's linux-next merge of the drm tree got a conflict in
-> drivers/gpu/drm/tegra/dc.c between commit 8ff64c17f3be ("drm/tegra: dc:
-> Add missing call to drm_vblank_on()") from Linus' tree and commits
-> 205d48edee84 ("drm/tegra: dc: Factor out DC, window and cursor commit")
-> and c7679306a923 ("drm/tegra: dc: Universal plane support") from the
-> drm tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->=20
-> diff --cc drivers/gpu/drm/tegra/dc.c
-> index 054a79f143ae,b957908aec73..000000000000
-> --- a/drivers/gpu/drm/tegra/dc.c
-> +++ b/drivers/gpu/drm/tegra/dc.c
-> @@@ -751,7 -906,8 +906,8 @@@ static void tegra_crtc_disable(struct d
->   		}
->   	}
->  =20
->  -	drm_vblank_off(drm, dc->pipe);
->  +	drm_crtc_vblank_off(crtc);
-> + 	tegra_dc_commit(dc);
->   }
->  =20
->   static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
-> @@@ -934,15 -1090,9 +1090,9 @@@ static void tegra_crtc_prepare(struct d
->   static void tegra_crtc_commit(struct drm_crtc *crtc)
->   {
->   	struct tegra_dc *dc =3D to_tegra_dc(crtc);
-> - 	unsigned long value;
-> -=20
-> - 	value =3D GENERAL_UPDATE | WIN_A_UPDATE;
-> - 	tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
-> -=20
-> - 	value =3D GENERAL_ACT_REQ | WIN_A_ACT_REQ;
-> - 	tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
->  =20
->  -	drm_vblank_post_modeset(crtc->dev, dc->pipe);
->  +	drm_crtc_vblank_on(crtc);
-> + 	tegra_dc_commit(dc);
->   }
->  =20
->   static void tegra_crtc_load_lut(struct drm_crtc *crtc)
+On 13/11/14 10:30, Wanpeng Li wrote:
+> Hi Juri,
+> On 11/13/14, 5:37 PM, Juri Lelli wrote:
+>> Hi,
+>>
+>> not sure I understand what the problem is here.
+>>
+>> On 11/11/14 01:52, Wanpeng Li wrote:
+>>> Queued ticks are scheduled to match the budget, which means the budget
+>>> is overall consumed and the dl task should be throttled.
+>> ... enforce the budget? It means that when the budget is consumed the
+>> task has to be throttled...
+> 
+> Agreed.
+> 
+>>
+>>> Dl task will
+>>> be replenished immediately if fail to start a dl timer.
+>>>
+>>> However, the curr maybe not the left most dl task in the rb tree any
+>>> more after this immediately replenished and reschedule is needed.
+>>> Start high-res preemption tick for this upcoming rescheduled dl task
+>>> is not correct.
+>>>
+>> So, the task that is going to preempt curr is picked by
+>> pick_next_task_dl(), that correctly starts the hrtick for this new task.
+>>
+>> Maybe you can add more information about what you are seeing? A callpath
+>> maybe?
+> 
+> The parameter of task_tick_dl() queued == 1 means that hrtick is fired. 
+> hrtick() => task_tick_dl( , ,1), so p->dl.runtime should be <= 0 if 
+> queued == 1. What I see is queued == 1 && p->dl.runtime > 0 && p is not 
+> the left most task and hrtick is start for this task.
+> 
 
-Looks good.
+Oh, right, now it makes sense. Good catch! :)
+
+Could you please post a second version with a more explanatory changelog
+and maybe a comment just above the check?
 
 Thanks,
-Thierry
 
---opJtzjQTFsWo+cga
-Content-Type: application/pgp-signature
+- Juri
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> Regards,
+> Wanpeng Li
+> 
+>>
+>> Thanks,
+>>
+>> - Juri
+>>
+>>> This patch fix it by not starting high-res preemption tick for a
+>>> non-running dl task.
+>>>
+>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>> ---
+>>>   kernel/sched/deadline.c | 3 ++-
+>>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>>> index 56674f6..2a6a5bb 100644
+>>> --- a/kernel/sched/deadline.c
+>>> +++ b/kernel/sched/deadline.c
+>>> @@ -1090,7 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
+>>>   {
+>>>   	update_curr_dl(rq);
+>>>   
+>>> -	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
+>>> +	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0 &&
+>>> +	    is_leftmost(p, &rq->dl))
+>>>   		start_hrtick_dl(rq, p);
+>>>   }
+>>>   
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-iQIcBAEBAgAGBQJUacQiAAoJEN0jrNd/PrOhdiAQALvIBlSEZplno1wHEP3XFcb8
-6BuOJyHkpZ9QgBACZmCGi8IiY/GfT++akl3YPyURlRVEd5zGBjV4HQ0Sx0+SPkYE
-qnKKQzTXTcK7Z7j7O25yyxfp2S793GZZm137jh4BdJ1WdqaaoI2bgrYS9rEPndpJ
-gndY6n7KI3Ih2/a8rB6x4yiQuMV/yODEgbkXaiSMOUyM+jL6DsR4H/xQ+w9ZCqie
-UJLjXOIXv3Dn5BCtWlhQGy07VPYluz+YFc9caI73/uZbhIcR0XfPad9fJp25xmH3
-5ZeqZq5xfcdvmZlXQ4tA/NMH1gb75v6TDzVr7bN3xcFlbs4I+2MmqyDlZEgd6D30
-Gk1WEpeBpOjn6acOvZYbUDB0NZ2hhhft63sXN60fJ5QKr56gRt8RdhegSXgmTV2g
-CaNjPr6Q/2kdoj2yt/TKWpFU0U5eOfV3n/LEbtkKQz2c6mOa1q/2llkJIQdiZGt9
-BdJCkAb9OVtmspDrVVrWrDVHAz3OOMLZRoCLkZKaymi14U/B+yWBdEddabaBru0e
-TUwG+QMU83ZLBfppWx4MLkeXQaF4IoMxK9W4G+KhmFXy+6tosxofkdZVzNfWEDNN
-Ev4ukZI1qfrgGni87jD65/HY63YqbTeSGtygnlKCLFQ8SaySFPTiXnsmnzU+StB3
-29oNWROkONgeq5FSJc9p
-=9drM
------END PGP SIGNATURE-----
-
---opJtzjQTFsWo+cga--
