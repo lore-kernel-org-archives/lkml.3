@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbaKQJ6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:58:09 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37789 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751540AbaKQJ6H (ORCPT
+	id S1752104AbaKQJ7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:59:55 -0500
+Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:38265 "EHLO
+	smtp113.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751814AbaKQJ7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:58:07 -0500
-Date: Mon, 17 Nov 2014 09:58:01 +0000
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, "perex@perex.cz" <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 2/3] gpio: arizona: Add support for CS47L24
-Message-ID: <20141117095801.GA25618@opensource.wolfsonmicro.com>
-References: <20141111165227.GA24344@opensource.wolfsonmicro.com> <20141111170432.GB25738@opensource.wolfsonmicro.com> <CACRpkdazkS0M6G_gNvfKayZdrU+BMhSSF9iJp=fZEbc=+jDKsA@mail.gmail.com>
+	Mon, 17 Nov 2014 04:59:54 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <5469C717.5030709@mev.co.uk>
+Date: Mon, 17 Nov 2014 09:59:51 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdazkS0M6G_gNvfKayZdrU+BMhSSF9iJp=fZEbc=+jDKsA@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Marcus Hufvudsson <marcushuf@gmail.com>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: me4000: Fixed code style issue
+References: <1416066920-10012-1-git-send-email-marcushuf@gmail.com>
+In-Reply-To: <1416066920-10012-1-git-send-email-marcushuf@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 07:41:53AM +0100, Linus Walleij wrote:
-> On Tue, Nov 11, 2014 at 6:04 PM, Richard Fitzgerald
-> <rf@opensource.wolfsonmicro.com> wrote:
-> 
-> > Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-> 
-> Apart from the whitespace fix pointed out by Mark,
+On 15/11/14 15:55, Marcus Hufvudsson wrote:
+> Fixed checkpatch.pl error message. Space prohibited before that ','
+>
+> Signed-off-by: Marcus Hufvudsson <marcushuf@gmail.com>
+> ---
+>   drivers/staging/comedi/drivers/me4000.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/me4000.c b/drivers/staging/comedi/drivers/me4000.c
+> index ae6ac49..fc67419 100644
+> --- a/drivers/staging/comedi/drivers/me4000.c
+> +++ b/drivers/staging/comedi/drivers/me4000.c
+> @@ -416,7 +416,7 @@ static void me4000_reset(struct comedi_device *dev)
+>   	val |= PLX9052_CNTRL_PCI_RESET;
+>   	outl(val, info->plx_regbase + PLX9052_CNTRL);
+>   	val &= ~PLX9052_CNTRL_PCI_RESET;
+> -	outl(val , info->plx_regbase + PLX9052_CNTRL);
+> +	outl(val, info->plx_regbase + PLX9052_CNTRL);
+>
+>   	/* 0x8000 to the DACs means an output voltage of 0V */
+>   	for (chan = 0; chan < 4; chan++)
 
-THe line Mark commented on isn't a whitespace error. It matches
-the copyright line style used by Cirrus in other files.
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Yours,
-> Linus Walleij
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
