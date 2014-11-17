@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970AbaKQWHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 17:07:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37560 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752025AbaKQWHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 17:07:22 -0500
-Date: Mon, 17 Nov 2014 17:07:06 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: Antonio Borneo <borneo.antonio@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] HID: i2c-hid: fix race condition reading reports
-Message-ID: <20141117220706.GD30324@mail.corp.redhat.com>
-References: <1416149064-25655-1-git-send-email-borneo.antonio@gmail.com>
- <20141117214305.GC30324@mail.corp.redhat.com>
- <20141117215111.GA19828@kroah.com>
+	id S1753068AbaKQWJM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 17:09:12 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:57989 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaKQWJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 17:09:10 -0500
+Message-ID: <546A71FE.5080500@hitachi.com>
+Date: Tue, 18 Nov 2014 07:09:02 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141117215111.GA19828@kroah.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
+        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
+        brendan.d.gregg@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: Re: [RFC] perf-cache command interface design
+References: <87lhnr5sbl.fsf@sejong.aot.lge.com> <54588905.7040002@linux.vnet.ibm.com> <5458CD15.4010101@hitachi.com> <874muew2hk.fsf@sejong.aot.lge.com> <5459E865.6050207@hitachi.com> <545B1DDE.9000202@linux.vnet.ibm.com> <545C80F4.4020905@hitachi.com> <54609A8C.4050308@hitachi.com> <20141110122321.GC4468@redhat.com> <5461B276.50004@hitachi.com> <20141111131030.GG4468@redhat.com> <54637C05.5090807@hitachi.com> <87oas6ttf8.fsf@sejong.aot.lge.com> <546968CB.1070802@hitachi.com>
+In-Reply-To: <546968CB.1070802@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 17 2014 or thereabouts, Greg KH wrote:
-> On Mon, Nov 17, 2014 at 04:43:05PM -0500, Benjamin Tissoires wrote:
-> > Hey Antonio,
-> > 
-> > On Nov 16 2014 or thereabouts, Antonio Borneo wrote:
-> > > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> > > 
-> > > From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> > > 
-> > > Current driver uses a common buffer for reading reports either
-> > > synchronously in i2c_hid_get_raw_report() and asynchronously in
-> > > the interrupt handler.
-> > > There is race condition if an interrupt arrives immediately after
-> > > the report is received in i2c_hid_get_raw_report(); the common
-> > > buffer is modified by the interrupt handler with the new report
-> > > and then i2c_hid_get_raw_report() proceed using wrong data.
-> > > 
-> > > Fix it by using a separate buffers for asynchronous reports.
-> > > 
-> > > Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> > > [Antonio Borneo: cleanup and rebase to v3.17]
-> > > Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-> > > Cc: stable@vger.kernel.org
-> > 
-> > For your next submission, when you want a patch to go in stable, put CC
-> > here, but please do not CC the actual mail to stable@. Stable should receive
-> > either mails which are already in Linus' tree, or which refer a commit
-> > in Linus' tree in case it does not applies smoothly.
-> > 
-> > [keeping stable@ here to show them that this one should not get picked
-> > right now]
+(2014/11/17 12:17), Masami Hiramatsu wrote:
+> (2014/11/17 12:08), Namhyung Kim wrote:
+>> Hi Masami,
+>>
+>> On Thu, 13 Nov 2014 00:25:57 +0900, Masami Hiramatsu wrote:
+>>> (2014/11/11 22:10), Arnaldo Carvalho de Melo wrote:
+>>>> What I meant was, what is wrong with replacing:
+>>>>
+>>>>  perf cache --probe <SPEC>  # for the current kernel
+>>>>
+>>>> With:
+>>>>
+>>>>  perf cache --add <PROBE-SPEC> # for the current kernel
+>>>>
+>>>> And have it figure out that what is being added is a probe and do the
+>>>> right thing?
+>>>
+>>> As I've said previously, PROBE-SPEC can be same as FILES (imagine that a binary
+>>> file which has same name function in the kernel.)
+>>> Moreover, PROBE-SPEC requires the target binary(or kernel module) except for
+>>> kernel probes. In that case, anyway we need -x or -m options with file-path
+>>> for --add, that is very strange.
+>>>
+>>> e.g.
+>>>
+>>> For me,
+>>>
+>>>  perf cache --add ./binary --probe '*'
+>>>
+>>> looks more natural than
+>>>
+>>>  perf cache --add '*' -exec ./binary
+>>>
+>>> since in other cases(sdt/elf), we'll just do
+>>>
+>>>  perf cache --add ./binary
+>>
+>> I prefer this too.  But I'd like make the 'add' part a subcommand rather
+>> than option like we do in perf kmem/kvm/list/lock/mem/sched ...  And it
+>> can handle multiple files at once.  What about this?
+>>
+>>   perf cache add [--elf|--sdt|--probe <spec>] <binary> [<binary>...]
 > 
-> stable@ is smarter than that, I don't mind seeing patches that are
-> coming in the future like this at all, it's not a problem.
-> 
+> OK, that's good to me. And I think --elf/--sdt is meaningless.
+> Only --probe option is required, since we can scan the elf file to
+> add sdt cache when adding elf binary :)
 
-OK. Sorry for the noise then. I assumed that if everybody starts sending
-potential patches to stable without them being the accepted ones, you
-will end up having to deal with a lot more workload that you already have.
+BTW, what should we do if we put the probe cache on current running kernel?
 
-And just to be sure that there is no misinterpretation, I did not wanted
-to imply that stable was not smart enough to deal with such patches... I
-really appreciate the work done and my concern was to not add workload.
+perf cache add --probe <probe-spec>
 
-Cheers,
-Benjamin
+and have no binary argument, is it OK?
 
-> thanks,
-> 
-> greg k-h
+Thanks,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
