@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaKQPIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 10:08:53 -0500
+	id S1753386AbaKQPI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:08:56 -0500
 Received: from mga11.intel.com ([192.55.52.93]:11303 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271AbaKQPIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 10:08:51 -0500
+	id S1753280AbaKQPIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 10:08:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="417616264"
+   d="scan'208";a="417616269"
 From: kan.liang@intel.com
 To: acme@kernel.org, jolsa@redhat.com, namhyung@kernel.org
 Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V3 2/3] perf tool:perf diff support for different binaries
-Date: Mon, 17 Nov 2014 09:52:18 -0500
-Message-Id: <1416235939-29565-3-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V3 3/3] perf tool: Add sort key symoff for perf diff
+Date: Mon, 17 Nov 2014 09:52:19 -0500
+Message-Id: <1416235939-29565-4-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1416235939-29565-1-git-send-email-kan.liang@intel.com>
 References: <1416235939-29565-1-git-send-email-kan.liang@intel.com>
@@ -25,36 +25,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-Currently, the perf diff only works with same binaries. That's because
-it compares the symbol start address. It doesn't work if the perf.data
-comes from different binaries. This patch matches the function names.
+Sometime, especially debugging scaling issue, the function level diff
+may be high granularity. The user may want to do deeper diff analysis
+for some cache or lock issue. The "symoff" key can let the user sort
+differential profile by ips. This feature should only work when the
+perf.data comes from same binary.
 
 Signed-off-by: Kan Liang <kan.liang@intel.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/sort.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/perf/Documentation/perf-diff.txt |  8 ++++++--
+ tools/perf/builtin-diff.c              |  2 +-
+ tools/perf/util/hist.c                 |  5 +++--
+ tools/perf/util/hist.h                 |  1 +
+ tools/perf/util/sort.c                 | 29 +++++++++++++++++++++++++++++
+ tools/perf/util/sort.h                 |  2 ++
+ 6 files changed, 42 insertions(+), 5 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index e463caa..9e13911 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -50,8 +50,12 @@ OPTIONS
+ 
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
+-	Please see description of --sort in the perf-report man page.
++	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline, symoff.
++
++	- symoff: exact symbol +  offset address executed at the time of sample.
++	(for same binary compare)
++
++	For other keys, please see description of --sort in the perf-report man page.
+ 
+ -t::
+ --field-separator=::
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 1ce425d..03a4001 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -744,7 +744,7 @@ static const struct option options[] = {
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, symoff, ..."
+ 		   " Please refer the man page for the complete list."),
+ 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+ 		   "separator for columns, no spaces will be added between "
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 6e88b9e..3d8a71b 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -67,13 +67,14 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+ 		symlen = h->ms.sym->namelen + 4;
+ 		if (verbose)
+ 			symlen += BITS_PER_LONG / 4 + 2 + 3;
+-		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+ 	} else {
+ 		symlen = unresolved_col_width + 4 + 2;
+-		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+ 		hists__set_unres_dso_col_len(hists, HISTC_DSO);
+ 	}
+ 
++	hists__new_col_len(hists, HISTC_SYMBOL, symlen);
++	hists__new_col_len(hists, HISTC_SYMOFF, symlen);
++
+ 	len = thread__comm_len(h->thread);
+ 	if (hists__new_col_len(hists, HISTC_COMM, len))
+ 		hists__set_col_len(hists, HISTC_THREAD, len + 6);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index d0ef9a1..874b203 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -24,6 +24,7 @@ enum hist_filter {
+ 
+ enum hist_column {
+ 	HISTC_SYMBOL,
++	HISTC_SYMOFF,
+ 	HISTC_DSO,
+ 	HISTC_THREAD,
+ 	HISTC_COMM,
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 9402885..5b6c57d 100644
+index 5b6c57d..370a799 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -1430,6 +1430,15 @@ int sort_dimension__add(const char *tok)
- 			sort__has_parent = 1;
- 		} else if (sd->entry == &sort_sym) {
- 			sort__has_sym = 1;
-+			/*
-+			 * perf diff displays the performance difference amongst
-+			 * two or more perf.data files. Those files could come
-+			 * from different binaries. So we should not compare
-+			 * their ips, but the name of symble.
-+			 */
-+			if (sort__mode == SORT_MODE__DIFF)
-+				sd->entry->se_collapse = sort__sym_sort;
+@@ -280,6 +280,34 @@ struct sort_entry sort_sym = {
+ 	.se_width_idx	= HISTC_SYMBOL,
+ };
+ 
++static int64_t
++sort__addr_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return _sort__addr_cmp(left->ip, right->ip);
++}
 +
- 		} else if (sd->entry == &sort_dso) {
- 			sort__has_dso = 1;
- 		}
++static int hist_entry__addr_snprintf(struct hist_entry *he, char *bf,
++				    size_t size, unsigned int width)
++{
++	struct map *map = he->ms.map;
++	u64 ip;
++
++	if (map)
++		ip = map->unmap_ip(map, he->ip);
++	else
++		ip = he->ip;
++
++	return _hist_entry__sym_snprintf(NULL, NULL, ip,
++					 he->level, bf, size, width);
++}
++
++struct sort_entry sort_symoff = {
++	.se_header	= "Symbol+Offset",
++	.se_cmp		= sort__addr_cmp,
++	.se_snprintf	= hist_entry__addr_snprintf,
++	.se_width_idx	= HISTC_SYMOFF,
++};
++
+ /* --sort srcline */
+ 
+ static int64_t
+@@ -1170,6 +1198,7 @@ static struct sort_dimension common_sort_dimensions[] = {
+ 	DIM(SORT_COMM, "comm", sort_comm),
+ 	DIM(SORT_DSO, "dso", sort_dso),
+ 	DIM(SORT_SYM, "symbol", sort_sym),
++	DIM(SORT_SYMOFF, "symoff", sort_symoff),
+ 	DIM(SORT_PARENT, "parent", sort_parent),
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index c03e4ff..ea0122f 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -38,6 +38,7 @@ extern enum sort_mode sort__mode;
+ extern struct sort_entry sort_comm;
+ extern struct sort_entry sort_dso;
+ extern struct sort_entry sort_sym;
++extern struct sort_entry sort_symoff;
+ extern struct sort_entry sort_parent;
+ extern struct sort_entry sort_dso_from;
+ extern struct sort_entry sort_dso_to;
+@@ -161,6 +162,7 @@ enum sort_type {
+ 	SORT_COMM,
+ 	SORT_DSO,
+ 	SORT_SYM,
++	SORT_SYMOFF,
+ 	SORT_PARENT,
+ 	SORT_CPU,
+ 	SORT_SRCLINE,
 -- 
 1.8.3.2
 
