@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaKQKFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:05:25 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60115 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaKQKFX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:05:23 -0500
-Date: Mon, 17 Nov 2014 11:05:19 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg, bcousson@baylibre.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sakari.ailus@iki.fi, devicetree@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
-Message-ID: <20141117100519.GA4353@amd>
-References: <20141116075928.GA9763@amd>
- <201411170943.20810@pali>
+	id S1752135AbaKQKH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:07:28 -0500
+Received: from mout.web.de ([212.227.15.4]:57367 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540AbaKQKH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 05:07:26 -0500
+Message-ID: <5469C8C8.8010306@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 11:07:04 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201411170943.20810@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] ALSA: hda: Deletion of unnecessary checks before two
+ function calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:zuhLQaIjuTUS852RB1tTTn3BBXEX1MuuO3xPIcpune8ta4vSTuJ
+ Rt6Bjb7nhU7GUPB6v+fSHb5uHwHnurV5ar9cf7HeGXWdUU6biHSQfaCKom2NGo0dzRIUoy2
+ i88oj2hpojz3NBax6QxyvD4Ntcx6vEJGCkO9NkW2Ve31RlIyOZ0bC4p1fC6qZ7pM/LeJKNs
+ odTWG+Zsfpr/Te/8Thm8A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 10:44:33 +0100
 
-On Mon 2014-11-17 09:43:19, Pali Rohár wrote:
-> On Sunday 16 November 2014 08:59:28 Pavel Machek wrote:
-> > For device tree people: Yes, I know I'll have to create file
-> > in documentation, but does the binding below look acceptable?
-> > 
-> > I'll clean up driver code a bit more, remove the printks.
-> > Anything else obviously wrong?
+The functions kfree() and release_firmware() test whether their argument
+is NULL and then return immediately. Thus the test around the call
+is not needed.
 
-> I think that this patch is probably not good and specially not 
-> for n900. adp1653 should be registered throw omap3 isp camera 
-> subsystem which does not have DT support yet.
+This issue was detected by using the Coccinelle software.
 
-Can you explain?
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ sound/pci/hda/hda_codec.c | 3 +--
+ sound/pci/hda/hda_intel.c | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-adp1653 is independend device on i2c bus, and we have kernel driver
-for it (unlike rest of n900 camera system). Just now it is unusable
-due to lack of DT binding. It has two functions, LED light and a
-camera flash; yes, the second one should be integrated to the rest of
-camera system, but that is not yet merged. That should not prevent us
-from merging DT support for the flash, so that this part can be
-tested/maintained.
-
-> See n900 legacy board camera code in file board-rx51-camera.c.
-
-I have seen that.
-									Pavel
+diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+index ec6a7d0..3fe8859 100644
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -827,8 +827,7 @@ static void snd_hda_bus_free(struct hda_bus *bus)
+ 	WARN_ON(!list_empty(&bus->codec_list));
+ 	if (bus->workq)
+ 		flush_workqueue(bus->workq);
+-	if (bus->unsol)
+-		kfree(bus->unsol);
++	kfree(bus->unsol);
+ 	if (bus->ops.private_free)
+ 		bus->ops.private_free(bus);
+ 	if (bus->workq)
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index 0a7f848..b4ec4e1 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -1129,8 +1129,7 @@ static int azx_free(struct azx *chip)
+ 	pci_disable_device(chip->pci);
+ 	kfree(chip->azx_dev);
+ #ifdef CONFIG_SND_HDA_PATCH_LOADER
+-	if (chip->fw)
+-		release_firmware(chip->fw);
++	release_firmware(chip->fw);
+ #endif
+ 	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
+ 		hda_display_power(false);
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+2.1.3
+
+
