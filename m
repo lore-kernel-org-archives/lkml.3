@@ -1,174 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283AbaKQFdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 00:33:12 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46911 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaKQFdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 00:33:10 -0500
-Message-ID: <5469888E.3090501@hitachi.com>
-Date: Mon, 17 Nov 2014 14:33:02 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751516AbaKQFfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 00:35:13 -0500
+Received: from ozlabs.org ([103.22.144.67]:58470 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108AbaKQFfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 00:35:11 -0500
+Date: Mon, 17 Nov 2014 16:35:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Josh Triplett <josh@joshtriplett.org>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Iulia Manda <iulia.manda21@gmail.com>,
+        Pravin B Shelar <pshelar@nicira.com>
+Subject: linux-next: manual merge of the tiny tree with the net-next tree
+Message-ID: <20141117163503.6543cd21@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/3] Kernel Live Patching
-References: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
-In-Reply-To: <1416187764-3341-1-git-send-email-sjenning@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/=opbwh43E4VXRfXcWrR.9.O"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+--Sig_/=opbwh43E4VXRfXcWrR.9.O
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-(2014/11/17 10:29), Seth Jennings wrote:
-> Changelog:
-> 
-> Thanks for all the feedback!
-> 
-> changes in v2:
-> - rebase to next-20141113
-> - add copyright/license block to livepatch.h
-> - add _LINUX prefix to header defines
-> - replace semaphore with mutex
-> - add LPC_ prefix to state enum
-> - convert BUGs to WARNs and handle properly
-> - change Kconfig default to n
-> - remove [old|new] attrs from function sysfs dir (KASLR leak, no use)
-> - disregard user provided old_addr if kernel uses KASLR
-> - s/out/err for error path labels
-> - s/unregister/disable for uniform terminology
-> - s/lp/lpc for module notifier elements
+Hi Josh,
 
-Hmm, btw, "LP" and "LPC" remind me line-printer and LPC bus :(
-Can we use LKP (Live Kernel Patching) or KLP (Kernel Live Patching) instead ?
+Today's linux-next merge of the tiny tree got a conflict in
+net/openvswitch/Kconfig between commit 8cd4313aa775 ("openvswitch: Fix
+build failure") from the net-next tree and commit b043d487e255 ("lib:
+Conditionally compile flex_array") from the tiny tree.
 
-> - replace module ref'ing with unload notifier + mutex protection
-> - adjust notifier priority to run before ftrace
-> - make LIVE_PATCHING boolean (about to depend on arch stuff)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-For better handling x86-32, we'd better introduce ARCH_HAVE_LIVE_PATCHING and
-avoid enabling LIVE_PATCHING on x86_32, then we can simplify arch/x86/kernel/livepatch.c.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thank you,
+diff --cc net/openvswitch/Kconfig
+index b7d818c59423,1d979cecd66e..000000000000
+--- a/net/openvswitch/Kconfig
++++ b/net/openvswitch/Kconfig
+@@@ -4,9 -4,8 +4,10 @@@
+ =20
+  config OPENVSWITCH
+  	tristate "Open vSwitch"
+ +	depends on INET
+  	select LIBCRC32C
+ +	select NET_MPLS_GSO
++ 	select FLEX_ARRAY
+  	---help---
+  	  Open vSwitch is a multilayer Ethernet switch targeted at virtualized
+  	  environments.  In addition to supporting a variety of features
 
-> - move x86-specific reloc code to arch/x86
-> - s/dynrela/reloc/
-> - add live patching sysfs documentation
-> - add API function kernel-doc
-> - TODO: kernel-doc for API structs once agreed upon
-> 
-> Summary:
-> 
-> This patchset implements an ftrace-based mechanism and kernel interface for
-> doing live patching of kernel and kernel module functions.  It represents the
-> greatest common functionality set between kpatch [1] and kGraft [2] and can
-> accept patches built using either method.  This solution was discussed in the
-> Live Patching Mini-conference at LPC 2014 [3].
-> 
-> The model consists of a live patching "core" that provides an interface for
-> other "patch" kernel modules to register patches with the core.
-> 
-> Patch modules contain the new function code and create an lp_patch structure
-> containing the required data about what functions to patch, where the new code
-> for each patched function resides, and in which kernel object (vmlinux or
-> module) the function to be patch resides.  The patch module then invokes the
-> lp_register_patch() function to register with the core, then lp_enable_patch()
-> to have the core redirect the execution paths using ftrace.
-> 
-> An example patch module can be found here:
-> https://github.com/spartacus06/livepatch/blob/master/patch/patch.c
-> 
-> The live patching core creates a sysfs hierarchy for user-level access to live
-> patching information.  The hierarchy is structured like this:
-> 
-> /sys/kernel/livepatch
-> /sys/kernel/livepatch/<patch>
-> /sys/kernel/livepatch/<patch>/enabled
-> /sys/kernel/livepatch/<patch>/<object>
-> /sys/kernel/livepatch/<patch>/<object>/<func>
-> 
-> The old function is located using one of two methods: it is either provided by
-> the patch module (only possible for a function in vmlinux) or kallsyms lookup.
-> Symbol ambiguity results in a failure.
-> 
-> The core takes a reference on the patch module itself to keep it from
-> unloading.  This is because, without a mechanism to ensure that no thread is
-> currently executing in the patched function, we can not determine whether it is
-> safe to unload the patch module.  For this reason, unloading patch modules is
-> currently not allowed.
-> 
-> Disabling patches can be done using the "enabled" attribute of the patch:
-> 
-> echo 0 > /sys/kernel/livepatch/<patch>/enabled
-> 
-> If a patch module contains a patch for a module that is not currently loaded,
-> there is nothing to patch so the core does nothing for that patch object.
-> However, the core registers a module notifier that looks for COMING events so
-> that if the module is ever loaded, it is immediately patched.  If a module with
-> patch code is removed, the notifier looks for GOING events and disables any
-> patched functions for that object before it unloads.  The notifier has a higher
-> priority than that of the ftrace notifier so that it runs before the ftrace
-> notifier for GOING events and we can cleanly unregister from ftrace.
-> 
-> kpatch and kGraft each have their own mechanisms for ensuring system
-> consistency during the patching process. This first version does not implement
-> any consistency mechanism that ensures that old and new code do not run
-> together.  In practice, ~90% of CVEs are safe to apply in this way, since they
-> simply add a conditional check.  However, any function change that can not
-> execute safely with the old version of the function can _not_ be safely applied
-> for now.
-> 
-> [1] https://github.com/dynup/kpatch
-> [2] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/
-> [3] https://etherpad.fr/p/LPC2014_LivePatching
-> 
-> Seth Jennings (3):
->   kernel: add TAINT_LIVEPATCH
->   kernel: add support for live patching
->   kernel: add sysfs documentation for live patching
-> 
->  Documentation/ABI/testing/sysfs-kernel-livepatch |  44 +
->  Documentation/oops-tracing.txt                   |   2 +
->  Documentation/sysctl/kernel.txt                  |   1 +
->  MAINTAINERS                                      |  13 +
->  arch/x86/Kconfig                                 |   2 +
->  arch/x86/include/asm/livepatch.h                 |  38 +
->  arch/x86/kernel/Makefile                         |   1 +
->  arch/x86/kernel/livepatch.c                      |  83 ++
->  include/linux/kernel.h                           |   1 +
->  include/linux/livepatch.h                        |  68 ++
->  kernel/Makefile                                  |   1 +
->  kernel/livepatch/Kconfig                         |   9 +
->  kernel/livepatch/Makefile                        |   3 +
->  kernel/livepatch/core.c                          | 999 +++++++++++++++++++++++
->  kernel/panic.c                                   |   2 +
->  15 files changed, 1267 insertions(+)
->  create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
->  create mode 100644 arch/x86/include/asm/livepatch.h
->  create mode 100644 arch/x86/kernel/livepatch.c
->  create mode 100644 include/linux/livepatch.h
->  create mode 100644 kernel/livepatch/Kconfig
->  create mode 100644 kernel/livepatch/Makefile
->  create mode 100644 kernel/livepatch/core.c
-> 
+--Sig_/=opbwh43E4VXRfXcWrR.9.O
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+iQIcBAEBCAAGBQJUaYkMAAoJEMDTa8Ir7ZwV3KsP+wfcHz8/VAXm2NvJOQWtueMF
+M816cN6KUtpXVGhYvr+ou/KS5nXpYARkshfmvKDI4X9Flq1EbkMtlltbqtCBUd6v
+4NvWrxjv0sCIyc3loCa26Du40Oft4QlpOTiu+AABspOSOk0sWf3gviK0cPajYSFV
+7NW0UEwmuCnkwz7WQTK2f1e9bUawI3lmXnT/wHPz9OV5vqIPbwmN5MinyI8lNOuW
+QMOqhCf3tQlbwniKCxnrwCSWij32SVSrl81stz4+9eZJIJ+v7DK5G3bB6Ol2eSQf
+HxmGNWqRHqGmzzxrfw5HaqJjheRJ9x0irGrUtCP1imFvBBGNyNP7NRiyUuB21X1J
+rNm9KXUERSfVLEBVAgJGPMsiHByn43RCMwIyqNApU4cw1V9r9bhNgMcUkzvAbaG0
+HMf7seuhlI9aQEQnXteivuRqizFPaEr6I4jktiOnvKzEV7Pix7Aijb6qAM5k7P1i
+S3wZjBFly+Cc41gBZDecrwFnBTOpl/SA+gb4bbG9JcOreFn3ehqltNXLhI3lt4vp
+asbjF1dO86poiGsQh+YkiRM0E0SunR2YF1PIxh8JmjpcUezU0fvFwmLawQqpDPn5
+AmM4diskEeR/0AGiz9N1uGaTBdIafgd1eF96n3O2+dLN+VBja0slh6uexM2CKgnX
+UwTBujbkcEErjzPo+Jx/
+=4LfU
+-----END PGP SIGNATURE-----
 
-
+--Sig_/=opbwh43E4VXRfXcWrR.9.O--
