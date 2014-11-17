@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaKQXCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 18:02:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:38219 "EHLO mail.skyhub.de"
+	id S1753324AbaKQXDD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 18:03:03 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:26975 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283AbaKQXCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 18:02:47 -0500
-Date: Tue, 18 Nov 2014 00:02:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Stephane Eranian <eranian@google.com>, x86-ml <x86@kernel.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, jolsa@redhat.com, kan.liang@intel.com,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH v3 13/13] perf/x86: add syfs entry to disable HT bug
- workaround
-Message-ID: <20141117230232.GC25157@pd.tnic>
-References: <1416251225-17721-1-git-send-email-eranian@google.com>
- <1416251225-17721-14-git-send-email-eranian@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1416251225-17721-14-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753108AbaKQXDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 18:03:00 -0500
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nico@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Dan McGee <dpmcgee@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH] arm64/mm: Remove hack in mmap randomize layout
+Date: Tue, 18 Nov 2014 00:02:19 +0100
+Message-Id: <1416265339-8138-1-git-send-email-ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 08:07:05PM +0100, Stephane Eranian wrote:
-> From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-> 
-> This patch adds a sysfs entry:
-> 
-> 	/sys/devices/cpu/ht_bug_workaround
-> 
-> to activate/deactivate the PMU HT bug workaround.
-> 
-> To activate (activated by default):
->  # echo 1 > /sys/devices/cpu/ht_bug_workaround
-> 
-> To deactivate:
->  # echo 0 > /sys/devices/cpu/ht_bug_workaround
+Since commit 8a0a9bd4db63 ('random: make get_random_int() more
+random'), get_random_int() returns a random value for each call,
+so comment and hack introduced in mmap_rnd() as part of commit
+1d18c47c735e ('arm64: MMU fault handling and page table management')
+are incorrects.
 
-If I put my simple-user hat and stare at this sysfs node, I'm not really
-becoming any smarter from looking at the name. HT bug? A hyper-threading
-bug?? I see the user forums going nuts already.
+Commit 1d18c47c735e seems to use the same hack introduced by
+commit a5adc91a4b44 ('powerpc: Ensure random space between stack
+and mmaps'), latter copied in commit 5a0efea09f42 ('sparc64: Sharpen
+address space randomization calculations.').
 
-Instead of adding a sysfs node per CPU bug, I'm wondering whether adding
-a
+But both architectures were cleaned up as part of commit
+fa8cbaaf5a68 ('powerpc+sparc64/mm: Remove hack in mmap randomize
+layout') as hack is no more needed since commit 8a0a9bd4db63.
 
-	/sys/devices/system/cpu/bugs
+So the present patch removes the comment and the hack around
+get_random_int() on AArch64's mmap_rnd().
 
-file which gets a mask of bits to enable and disable workarounds would
-be much cleaner.
+Cc: Dan McGee <dpmcgee@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Fixes: 1d18c47c735e ('arm64: MMU fault handling and page table management')
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+---
+ arch/arm64/mm/mmap.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-x86 guys, what do you guys think?
-
-Such a scheme should be much more easily extensible in the future in
-case we want to add another workaround toggle.
-
-The hierarchy is not optimal either as it should be under
-"perf"-something but I don't think we have a perf sysfs node...
-
-> Results effective only once there is no more active
-> events.
-> 
-> Reviewed-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-> ---
-
-...
-
->  static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-> +static DEVICE_ATTR(ht_bug_workaround, S_IRUSR | S_IWUSR, get_attr_xsu,
-> +		   set_attr_xsu);
->  
->  static struct attribute *x86_pmu_attrs[] = {
->  	&dev_attr_rdpmc.attr,
-> +	&dev_attr_ht_bug_workaround.attr,
-
-You should be adding this dynamically, only when running on Intel, i.e.
-
-	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
-		/* add bug_workaround attr */
-
-For an example, see amd_l3_attrs() in
-arch/x86/kernel/cpu/intel_cacheinfo.c
-
-Thanks.
-
+diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+index 1d73662f00ff..54922d1275b8 100644
+--- a/arch/arm64/mm/mmap.c
++++ b/arch/arm64/mm/mmap.c
+@@ -47,22 +47,14 @@ static int mmap_is_legacy(void)
+ 	return sysctl_legacy_va_layout;
+ }
+ 
+-/*
+- * Since get_random_int() returns the same value within a 1 jiffy window, we
+- * will almost always get the same randomisation for the stack and mmap
+- * region. This will mean the relative distance between stack and mmap will be
+- * the same.
+- *
+- * To avoid this we can shift the randomness by 1 bit.
+- */
+ static unsigned long mmap_rnd(void)
+ {
+ 	unsigned long rnd = 0;
+ 
+ 	if (current->flags & PF_RANDOMIZE)
+-		rnd = (long)get_random_int() & (STACK_RND_MASK >> 1);
++		rnd = (long)get_random_int() & STACK_RND_MASK;
+ 
+-	return rnd << (PAGE_SHIFT + 1);
++	return rnd << PAGE_SHIFT;
+ }
+ 
+ static unsigned long mmap_base(void)
 -- 
-Regards/Gruss,
-    Boris.
+1.9.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
