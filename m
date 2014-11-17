@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaKQN6l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:58:41 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48964 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753053AbaKQNpX (ORCPT
+	id S1754082AbaKQN7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:59:05 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46872 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140AbaKQN7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:23 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 29/61] dmaengine: moxart: Split device_control
-Date: Mon, 17 Nov 2014 14:42:23 +0100
-Message-Id: <1416231775-31252-30-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 17 Nov 2014 08:59:00 -0500
+Date: Mon, 17 Nov 2014 14:58:54 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>, eternal.n08@gmail.com,
+        Kees Cook <keescook@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Junjie Mao <eternal.n08@gmail.com>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20141117135854.GA15076@gmail.com>
+References: <20141116090743.GA19172@gmail.com>
+ <20141117074247.GB340@x4>
+ <20141117082724.GA344@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117082724.GA344@x4>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Moxart DMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/moxart-dma.c | 25 ++-----------------------
- 1 file changed, 2 insertions(+), 23 deletions(-)
+* Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
 
-diff --git a/drivers/dma/moxart-dma.c b/drivers/dma/moxart-dma.c
-index 3258e484e4f6..35e1a3ab5fb8 100644
---- a/drivers/dma/moxart-dma.c
-+++ b/drivers/dma/moxart-dma.c
-@@ -263,28 +263,6 @@ static int moxart_slave_config(struct dma_chan *chan,
- 	return 0;
- }
- 
--static int moxart_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			  unsigned long arg)
--{
--	int ret = 0;
--
--	switch (cmd) {
--	case DMA_PAUSE:
--	case DMA_RESUME:
--		return -EINVAL;
--	case DMA_TERMINATE_ALL:
--		moxart_terminate_all(chan);
--		break;
--	case DMA_SLAVE_CONFIG:
--		ret = moxart_slave_config(chan, (struct dma_slave_config *)arg);
--		break;
--	default:
--		ret = -ENOSYS;
--	}
--
--	return ret;
--}
--
- static struct dma_async_tx_descriptor *moxart_prep_slave_sg(
- 	struct dma_chan *chan, struct scatterlist *sgl,
- 	unsigned int sg_len, enum dma_transfer_direction dir,
-@@ -531,7 +509,8 @@ static void moxart_dma_init(struct dma_device *dma, struct device *dev)
- 	dma->device_free_chan_resources		= moxart_free_chan_resources;
- 	dma->device_issue_pending		= moxart_issue_pending;
- 	dma->device_tx_status			= moxart_tx_status;
--	dma->device_control			= moxart_control;
-+	dma->device_config			= moxart_slave_config;
-+	dma->device_terminate_all		= moxart_terminate_all;
- 	dma->dev				= dev;
- 
- 	INIT_LIST_HEAD(&dma->channels);
--- 
-2.1.1
+> On 2014.11.17 at 08:42 +0100, Markus Trippelsdorf wrote:
+> > On 2014.11.16 at 10:07 +0100, Ingo Molnar wrote:
+> > > 
+> > > Junjie Mao (1):
+> > >       x86, kaslr: Prevent .bss from overlaping initrd
+> > 
+> > This breaks the build for me:
+> > ...
+> >   OBJCOPY arch/x86/boot/compressed/vmlinux.bin
+> >   HOSTCC  arch/x86/boot/compressed/mkpiggy
+> >   CC      arch/x86/boot/compressed/cpuflags.o
+> >   CC      arch/x86/boot/version.o
+> >   CC      arch/x86/boot/video-vga.o
+> >   CC      arch/x86/boot/video-vesa.o
+> >   CC      arch/x86/boot/video-bios.o
+> >   LZ4     arch/x86/boot/compressed/vmlinux.bin.lz4
+> >   HOSTCC  arch/x86/boot/tools/build
+> >   CPUSTR  arch/x86/boot/cpustr.h
+> >   CC      arch/x86/boot/cpu.o
+> > .bss and .brk lack common file offset
+> > .bss and .brk lack common file offset
+> > .bss and .brk lack common file offset
+> > .bss and .brk lack common file offset
+> >   MKPIGGY arch/x86/boot/compressed/piggy.S
+> > Usage: arch/x86/boot/compressed/mkpiggy compressed_file run_size
+> > arch/x86/boot/compressed/Makefile:86: recipe for target 'arch/x86/boot/compressed/piggy.S' failed
 
+Oops ...
+
+> from my config: 
+> # CONFIG_BLK_DEV_INITRD is not set
+> 
+> So only running calc_run_size.pl when CONFIG_BLK_DEV_INITRD is set would
+> probably fix the issue.  
+
+I've Cc:-ed Junjie Mao and Kees Cook as well.
+
+Thanks,
+
+	Ingo
