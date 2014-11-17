@@ -1,82 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192AbaKQGTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 01:19:12 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:43728 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaKQGTI (ORCPT
+	id S1751112AbaKQGXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 01:23:17 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:32831 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbaKQGXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 01:19:08 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-22-54699359f618
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: rjw@rjwysocki.net, pavel@ucw.cz, len.brown@intel.com,
-        linux@arm.linux.org.uk, nico@linaro.org, ccross@android.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v2] cpu_pm: fix unmet dependency for CPU_PM
-Date: Mon, 17 Nov 2014 11:42:44 +0530
-Message-id: <1416204764-8912-1-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsWyRsSkVjdycmaIQcdubYvtG7+xWsyaspfJ
-	YtPja6wWl3fNYbP43HuE0eL2ZV6L6cf+slks2vqF3eLuqaNsFmdOX2J14PLYtnsbq0dLcw+b
-	x+I9L5k87lzbw+axeUm9x5ar7SwefVtWMXqsWP2d3ePzJrkAzigum5TUnMyy1CJ9uwSujGud
-	t9gLmtgr7s6Ra2B8yNrFyMkhIWAicWflKihbTOLCvfVsXYxcHEICSxklVj/eywZTtHrnElaI
-	xHRGidaZC5ghnAlMEt3/XzGBVLEJ6Eo8eT+XGcQWEUiSmLp6MlgHs8AiRolNi96DjRIWsJY4
-	tvA4I4jNIqAq8XDGTBYQm1fAXeJe4xf2LkYOoHUKEnMm2YD0SghsYpfo7NjDAlEvIPFt8iEW
-	iBpZiU0HmCGuk5Q4uOIGywRGwQWMDKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxAgP/9L9n
-	E3Yw3jtgfYhRgINRiYd3R3ZmiBBrYllxZe4hRlOgDROZpUST84HxlVcSb2hsZmRhamJqbGRu
-	aaYkzvta6mewkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsbYt+eqgr/GFCryqjxYnlv1KP5F
-	sJdMzJ4T5/dWyR2IbEu4tP/HoqvrpN5tCBXJmb+07Mbe4/9KY6+/Za3iZos/eX22o0F79LNl
-	uWkVnv1ia8V/ask8VJ+zsDD0v6J3b5F0FNfG+UaHj0bO7OF1Y/A/uyhP+7WnU36Dc8xpT86m
-	jRJdxo86NZVYijMSDbWYi4oTAZmz23R3AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t9jQd3IyZkhBp++K1ls3/iN1WLWlL1M
-	FpseX2O1uLxrDpvF594jjBa3L/NaTD/2l81i0dYv7BZ3Tx1lszhz+hKrA5fHtt3bWD1amnvY
-	PBbvecnkcefaHjaPzUvqPbZcbWfx6NuyitFjxerv7B6fN8kFcEY1MNpkpCampBYppOYl56dk
-	5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAB2qpFCWmFMKFApILC5W0rfDNCE0
-	xE3XAqYxQtc3JAiux8gADSSsYcy41nmLvaCJveLuHLkGxoesXYycHBICJhKrdy6BssUkLtxb
-	z9bFyMUhJDCdUaJ15gJmCGcCk0T3/1dMIFVsAroST97PZQaxRQSSJKaunswKUsQssIhRYtOi
-	92wgCWEBa4ljC48zgtgsAqoSD2fMZAGxeQXcJe41fmHvYuQAWqcgMWeSzQRG7gWMDKsYRVML
-	kguKk9JzDfWKE3OLS/PS9ZLzczcxguPqmdQOxpUNFocYBTgYlXh4d2RnhgixJpYVV+YeYpTg
-	YFYS4V2iAxTiTUmsrEotyo8vKs1JLT7EaAq0fCKzlGhyPjDm80riDY1NzE2NTS1NLEzMLJXE
-	eQ+0WgcKCaQnlqRmp6YWpBbB9DFxcEo1MJ5SV5j6KP9/UwXPUqPUZx61U4V73prdMat7si3+
-	HMvckx1br+nKqObndtTNmt37atszfpfJdd9Pq3c8e5DI1sQZbqRw/8D9r94ZPgwmNun5BS+Y
-	hJlKtqnV7vn4sDOo23XR/22xbRs3h33eKeBtfen6Svec/f6PDULP8jddVb4Wfv6vWt7XNCWW
-	4oxEQy3mouJEAK4bU0DBAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 17 Nov 2014 01:23:16 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, acme@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/8] perf, tools: Support handling complete branch stacks as histograms
+References: <1411774636-6870-1-git-send-email-andi@firstfloor.org>
+	<1411774636-6870-2-git-send-email-andi@firstfloor.org>
+	<87r3y0gbk8.fsf@sejong.aot.lge.com>
+	<20141111233153.GK12538@two.firstfloor.org>
+Date: Mon, 17 Nov 2014 15:23:13 +0900
+In-Reply-To: <20141111233153.GK12538@two.firstfloor.org> (Andi Kleen's message
+	of "Wed, 12 Nov 2014 00:31:53 +0100")
+Message-ID: <877fyutkfi.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If BL_SWITCHER is enabled but SUSPEND and CPU_IDLE is not enabled
-we are getting following config warning.
+Hi Andi,
 
-warning: (BL_SWITCHER) selects CPU_PM which has unmet direct
-dependencies (SUSPEND || CPU_IDLE)
+On Wed, 12 Nov 2014 00:31:53 +0100, Andi Kleen wrote:
+> Sorry for the long delay. Just revisiting that.
+>
+> On Wed, Oct 22, 2014 at 10:03:51AM +0900, Namhyung Kim wrote:
+>> >             |          |          f2 tcall.c:5
+>> >             |          |          f1 tcall.c:12
+>> >             |          |          f1 tcall.c:12
+>> >             |          |          f2 tcall.c:7
+>> >             |          |          f2 tcall.c:5
+>> >             |          |          f1 tcall.c:11
+>> 
+>> I think it'd be better if it just prints function names as normal
+>> callchain does (and optionally srcline with a switch) and duplicates
+>> removed like below:
+>> 
+>>      54.91%  tcall.c:6  [.] f2                      tcall
+>>              |
+>>              |--65.53%-- f2 tcall.c:5
+>>              |          |
+>>              |          |--70.83%-- f1
+>>              |          |          main
+>>              |          |          f1
+>>              |          |          f2
+>>              |          |          f1
+>>              |          |          f2
+>
+> I considered this. For this example it doesn't make much difference
+> because the functions are so small.
+>
+> But for anything larger I really need the line numbers to make
+> sense of it. 
+>
+> So I prefer to keep them. I'll look into some easy switch
+> to turn them off though.
 
-It has been noticed that CPU_PM dependencies in this file are not really
-required so let's remove these dependencies from CPU_PM.
+Oh, I'm not just removing line numbers - it also removed duplicates (f1
+and f2).  But having both from/to entries, I'm not sure it's worth tho..
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
-This patch is second attempt to fix this config issue. Patch v1 and related
-discussion can be found here [1]
-1: https://lkml.org/lkml/2014/11/14/673
 
- kernel/power/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+>
+>
+>> > +		if (sort__has_parent && !*parent &&
+>> > +		    symbol__match_regex(al.sym, &parent_regex))
+>> > +			*parent = al.sym;
+>> > +		else if (have_ignore_callees && root_al &&
+>> > +		  symbol__match_regex(al.sym, &ignore_callees_regex)) {
+>> > +			/* Treat this symbol as the root,
+>> > +			   forgetting its callees. */
+>> > +			*root_al = al;
+>> > +			callchain_cursor_reset(&callchain_cursor);
+>> > +		}
+>> > +		if (!symbol_conf.use_callchain)
+>> > +			return -EINVAL;
+>> 
+>> This check already went away.
+>> 
+>> And, to remove duplicates, I think we need to check last callchain
+>> cursor node wrt the callchain_param.key here.
+>
+> I don't understand the comment. I'm not modifying anything
+> that has been already added to the callchain. Just things
+> to be added in the future. So why would I need to check
+> or change the cursor?
 
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index bbef57f..1eb7da7 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -308,4 +308,3 @@ config PM_GENERIC_DOMAINS_OF
- 
- config CPU_PM
- 	bool
--	depends on SUSPEND || CPU_IDLE
--- 
-1.7.9.5
+But didn't you already do it (with ips[first_call]) to remove overlaps
+between LBR and normal callchain?
 
+
+>
+>> 
+>> Also, by comparing 'from' address, I'd expect you add the from address
+>> alone but you add both of 'from' and 'to'.  Do we really need to do
+>> that?
+>
+> Adding from and to makes it much clearer to the user what happens,
+> especially with conditional branches, so they can follow the 
+> control flow.
+
+But it could be confusing too - esp. when it moves from LBR to normal
+callchains?  Hmm.. maybe we can print them bit differently.
+
+
+>
+>
+>> And the first address saved in normal callchain is address of the
+>> function itself so it might be 'to' you need to check if sampled before
+>> any branch in a function.
+>
+> I'm checking against the CALL, not the target.
+
+Yeah, but I'm afraid that it'd always fail to find a match.
+
+
+>
+>> 
+>> > +			} else
+>> > +				be[i] = branch->entries[branch->nr - i - 1];
+>> > +		}
+>> > +
+>> > +		nr = remove_loops(be, nr);
+>> > +
+>> > +		for (i = 0; i < nr; i++) {
+>> > +			err = add_callchain_ip(machine, thread, parent,
+>> > +					       root_al,
+>> > +					       -1, be[i].to);
+>> > +			if (!err)
+>> > +				err = add_callchain_ip(machine, thread,
+>> > +						       parent, root_al,
+>> > +						       -1, be[i].from);
+>> > +			if (err == -EINVAL)
+>> > +				break;
+>> > +			if (err)
+>> > +				return err;
+>> > +		}
+>> > +		chain_nr -= nr;
+>> 
+>> I'm not sure this line is needed.
+>
+> Without that i could exceed the limit.
+
+What limit?
+
+Let's say there's a callchains and LBR records below..
+
+callchain:
+  f1 <- f2 <- f3 <- f4 <- f5
+
+LBR
+  (f1<-f1) <- (f1<-f2)
+
+So two entries are matched, we have nr = 2, first_call = 2 and chain_nr
+= 5 right?  So IIUC above code will print callchains like this:
+
+  - f1
+  - f1
+  - f1
+  - f2
+  - f3
+
+while I expect below (with duplicates for now):
+
+  - f1
+  - f1
+  - f1
+  - f2
+  - f3
+  - f4
+  - f5
+
+Do I miss something?
+
+Thanks,
+Namhyung
