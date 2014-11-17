@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804AbaKQNtH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 08:49:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49106 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753485AbaKQNpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753491AbaKQNpy (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 17 Nov 2014 08:45:54 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49102 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752596AbaKQNpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 08:45:45 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 55/61] dmaengine: omap: Declare slave capabilities for the generic code
-Date: Mon, 17 Nov 2014 14:42:49 +0100
-Message-Id: <1416231775-31252-56-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 52/61] dmaengine: fsl-edma: Declare slave capabilities for the generic code
+Date: Mon, 17 Nov 2014 14:42:46 +0100
+Message-Id: <1416231775-31252-53-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -31,45 +31,44 @@ Make use of this code.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/omap-dma.c | 18 ++++--------------
- 1 file changed, 4 insertions(+), 14 deletions(-)
+ drivers/dma/fsl-edma.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-index 1cadf812f3b3..76bb63d6b223 100644
---- a/drivers/dma/omap-dma.c
-+++ b/drivers/dma/omap-dma.c
-@@ -1070,19 +1070,6 @@ static void omap_dma_free(struct omap_dmadev *od)
- 				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
- 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
+diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
+index b5b7474f8859..1382332e7e49 100644
+--- a/drivers/dma/fsl-edma.c
++++ b/drivers/dma/fsl-edma.c
+@@ -784,18 +784,6 @@ static void fsl_edma_free_chan_resources(struct dma_chan *chan)
+ 	fsl_chan->tcd_pool = NULL;
+ }
  
--static int omap_dma_device_slave_caps(struct dma_chan *dchan,
--				      struct dma_slave_caps *caps)
+-static int fsl_dma_device_slave_caps(struct dma_chan *dchan,
+-		struct dma_slave_caps *caps)
 -{
--	caps->src_addr_widths = OMAP_DMA_BUSWIDTHS;
--	caps->dst_addr_widths = OMAP_DMA_BUSWIDTHS;
+-	caps->src_addr_widths = FSL_EDMA_BUSWIDTHS;
+-	caps->dst_addr_widths = FSL_EDMA_BUSWIDTHS;
 -	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
 -	caps->cmd_pause = true;
 -	caps->cmd_terminate = true;
--	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
 -
 -	return 0;
 -}
 -
- static int omap_dma_probe(struct platform_device *pdev)
+ static int
+ fsl_edma_irq_init(struct platform_device *pdev, struct fsl_edma_engine *fsl_edma)
  {
- 	struct omap_dmadev *od;
-@@ -1116,7 +1103,10 @@ static int omap_dma_probe(struct platform_device *pdev)
- 	od->ddev.device_pause = omap_dma_pause;
- 	od->ddev.device_resume = omap_dma_resume;
- 	od->ddev.device_terminate_all = omap_dma_terminate_all;
--	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
-+	od->ddev.src_addr_widths = OMAP_DMA_BUSWIDTHS;
-+	od->ddev.dst_addr_widths = OMAP_DMA_BUSWIDTHS;
-+	od->ddev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-+	od->ddev.residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
- 	od->ddev.dev = &pdev->dev;
- 	INIT_LIST_HEAD(&od->ddev.channels);
- 	INIT_LIST_HEAD(&od->pending);
+@@ -926,7 +914,10 @@ static int fsl_edma_probe(struct platform_device *pdev)
+ 	fsl_edma->dma_dev.device_resume = fsl_edma_resume;
+ 	fsl_edma->dma_dev.device_terminate_all = fsl_edma_terminate_all;
+ 	fsl_edma->dma_dev.device_issue_pending = fsl_edma_issue_pending;
+-	fsl_edma->dma_dev.device_slave_caps = fsl_dma_device_slave_caps;
++
++	fsl_edma->dma_dev.src_addr_widths = FSL_EDMA_BUSWIDTHS;
++	fsl_edma->dma_dev.dst_addr_widths = FSL_EDMA_BUSWIDTHS;
++	fsl_edma->dma_dev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+ 
+ 	platform_set_drvdata(pdev, fsl_edma);
+ 
 -- 
 2.1.1
 
