@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116AbaKQLCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:02:30 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46204 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720AbaKQLC0 (ORCPT
+	id S1752362AbaKQLHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:07:23 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:33704 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160AbaKQLHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:02:26 -0500
-Message-ID: <5469D5B2.8040009@gmail.com>
-Date: Mon, 17 Nov 2014 19:02:10 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 17 Nov 2014 06:07:21 -0500
+Date: Mon, 17 Nov 2014 12:07:16 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Dmitry Osipenko <digetx@gmail.com>
+Cc: swarren@wwwdotorg.org, josephl@nvidia.com, balbi@ti.com,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3] ARM: tegra: Re-add removed SoC id macro to
+ tegra_resume()
+Message-ID: <20141117110715.GB25699@ulmo>
+References: <1412947487-24287-1-git-send-email-digetx@gmail.com>
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: [PATCH 2/2] sched/deadline: fix start high-res preemption tick
- for a non-running task
-References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com> <1415670747-58726-2-git-send-email-wanpeng.li@linux.intel.com> <54647BDC.6050804@arm.com> <5464882D.40504@gmail.com> <5469C503.9010007@arm.com>
-In-Reply-To: <5469C503.9010007@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LpQ9ahxlCli8rRTG"
+Content-Disposition: inline
+In-Reply-To: <1412947487-24287-1-git-send-email-digetx@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-On 11/17/14, 5:50 PM, Juri Lelli wrote:
-> Hi,
->
-> On 13/11/14 10:30, Wanpeng Li wrote:
->> Hi Juri,
->> On 11/13/14, 5:37 PM, Juri Lelli wrote:
->>> Hi,
->>>
->>> not sure I understand what the problem is here.
->>>
->>> On 11/11/14 01:52, Wanpeng Li wrote:
->>>> Queued ticks are scheduled to match the budget, which means the budget
->>>> is overall consumed and the dl task should be throttled.
->>> ... enforce the budget? It means that when the budget is consumed the
->>> task has to be throttled...
->> Agreed.
->>
->>>> Dl task will
->>>> be replenished immediately if fail to start a dl timer.
->>>>
->>>> However, the curr maybe not the left most dl task in the rb tree any
->>>> more after this immediately replenished and reschedule is needed.
->>>> Start high-res preemption tick for this upcoming rescheduled dl task
->>>> is not correct.
->>>>
->>> So, the task that is going to preempt curr is picked by
->>> pick_next_task_dl(), that correctly starts the hrtick for this new task.
->>>
->>> Maybe you can add more information about what you are seeing? A callpath
->>> maybe?
->> The parameter of task_tick_dl() queued == 1 means that hrtick is fired.
->> hrtick() => task_tick_dl( , ,1), so p->dl.runtime should be <= 0 if
->> queued == 1. What I see is queued == 1 && p->dl.runtime > 0 && p is not
->> the left most task and hrtick is start for this task.
->>
-> Oh, right, now it makes sense. Good catch! :)
->
-> Could you please post a second version with a more explanatory changelog
-> and maybe a comment just above the check?
 
-Ok, I will do it and send out a new version tomorrow. ;-) Btw, could you 
-review this patch? https://lkml.org/lkml/2014/11/13/51 The bug is 
-introduced by deadline.
+--LpQ9ahxlCli8rRTG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Wanpeng Li
+On Fri, Oct 10, 2014 at 05:24:47PM +0400, Dmitry Osipenko wrote:
+> Commit d127e9c ("ARM: tegra: make tegra_resume can work with current and =
+later
+> chips") removed tegra_get_soc_id macro leaving used cpu register corrupte=
+d after
+> branching to v7_invalidate_l1() and as result causing execution of uninte=
+nded
+> code on tegra20. Possibly it was expected that r6 would be SoC id func ar=
+gument
+> since common cpu reset handler is setting r6 before branching to tegra_re=
+sume(),
+> but neither tegra20_lp1_reset() nor tegra30_lp1_reset() aren't setting r6
+> register before jumping to resume function. Fix it by re-adding macro.
+>=20
+> Fixes: d127e9c (ARM: tegra: make tegra_resume can work with current and l=
+ater chips)
+> Cc: <stable@vger.kernel.org> # v3.13+
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+> ---
+> V2: added Cc's for lakml and stable, added "Reviewed-by:" Felipe Balbi
+> V3: changed commit description, tested on real hw
+>=20
+> PS: It wasn't a bug in my emulator :)
+>=20
+>  arch/arm/mach-tegra/reset-handler.S | 1 +
+>  1 file changed, 1 insertion(+)
 
->   
-> Thanks,
->
-> - Juri
->
->> Regards,
->> Wanpeng Li
->>
->>> Thanks,
->>>
->>> - Juri
->>>
->>>> This patch fix it by not starting high-res preemption tick for a
->>>> non-running dl task.
->>>>
->>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>>> ---
->>>>    kernel/sched/deadline.c | 3 ++-
->>>>    1 file changed, 2 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->>>> index 56674f6..2a6a5bb 100644
->>>> --- a/kernel/sched/deadline.c
->>>> +++ b/kernel/sched/deadline.c
->>>> @@ -1090,7 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
->>>>    {
->>>>    	update_curr_dl(rq);
->>>>    
->>>> -	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
->>>> +	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0 &&
->>>> +	    is_leftmost(p, &rq->dl))
->>>>    		start_hrtick_dl(rq, p);
->>>>    }
->>>>    
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
+Applied, thanks.
 
+Thierry
+
+--LpQ9ahxlCli8rRTG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUadbjAAoJEN0jrNd/PrOhgvYP/0gMw+NlLHzSQa8IZ71mIFM3
+i+vvvprPeQuYUogtVduFyaL2zbcJndzxOGu2kc4JMm1fqnffRMj6b9Bn0o5fj4vO
+WZ3jvhtDG2ZPVS9WpKcCIzctgQ/zg6eBZdY3PA/aL8GiZY8H3EqdF5+/xym2fk+N
+IPi24x3TWo2oyD2w14568nDYrO5N53Q1e8AXkLh7zqQLWmO/VPz7PmgUJepbMyIt
+2/iesaOhLrUIYxBmcA7JWdaOJsgusvHu5JIEpPDij7aevJUUby0Pe2HNwQeY2BCb
+rSBLphMH04LLZVBcUUleLXUSgq8xzug5JF/j/UJsQ9fAuYWvHmIjygP3ggxLvANj
+gTQdGFbBadDfZBLbWCuGSH9J/7ZQ8zD9tjabwu164UhS6W5rZWmCDXx+JdIf9KeX
+Jt+zxJH6HL0Wcp7IeQBggkWabM/xXeEJ0ziDJYjjTgYRMg3Y1HSqWhONQk0HPluY
+7gsb+XCw8mfLJv18/a8yhr0sVs0ujY2soLEXVKOlpbEo9xZ97xBFPTTBnVSTr0gg
+OLuekBxQeVDOpgcmp/XFzSyFYgy65eZLmNYdnK02HfleiMqP78p0BBB1GytESVJ8
+X43uD4Df++zY+xYjTnVJtNWtPpANO4H4TGDvBao5E7GJF0yt+iMvzr9pQUB7lgiI
+VWC1RE1VWEFAhHeyhCOt
+=GAtz
+-----END PGP SIGNATURE-----
+
+--LpQ9ahxlCli8rRTG--
