@@ -1,145 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaKQTPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:15:21 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:52548 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaKQTPT convert rfc822-to-8bit (ORCPT
+	id S1752865AbaKQTQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:16:43 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:51793 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbaKQTQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:15:19 -0500
-Content-Type: text/plain; charset="utf-8"
+	Mon, 17 Nov 2014 14:16:42 -0500
+Date: Mon, 17 Nov 2014 11:16:35 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, cl@linux.com, bobby.prani@gmail.com,
+        oleg@redhat.com, stefan.hengelein@fau.d, clark.williams@gmail.com
+Subject: [GIT PULL rcu/next] RCU commits for 3.19
+Message-ID: <20141117191635.GA17648@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1415979129-21325-1-git-send-email-james.hogan@imgtec.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-rockchip@lists.infradead.org,
-        "James Hogan" <james.hogan@imgtec.com>,
-        "Heiko Stuebner" <heiko@sntech.de>,
-        "Thomas Abraham" <thomas.ab@samsung.com>,
-        "Tomasz Figa" <t.figa@samsung.com>,
-        "Max Schwarz" <max.schwarz@online.de>, stable@vger.kernel.org
-References: <1415979129-21325-1-git-send-email-james.hogan@imgtec.com>
-Message-ID: <20141117191515.25314.22524@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk-divider: Fix READ_ONLY when divider > 1
-Date: Mon, 17 Nov 2014 11:15:15 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111719-0005-0000-0000-0000066C6E56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting James Hogan (2014-11-14 07:32:09)
-> Commit 79c6ab509558 (clk: divider: add CLK_DIVIDER_READ_ONLY flag) in
-> v3.16 introduced the CLK_DIVIDER_READ_ONLY flag which caused the
-> recalc_rate() and round_rate() clock callbacks to be omitted.
-> 
-> However using this flag has the unfortunate side effect of causing the
-> clock recalculation code when a clock rate change is attempted to always
-> treat it as a pass-through clock, i.e. with a fixed divide of 1, which
-> may not be the case. Child clock rates are then recalculated using the
-> wrong parent rate.
-> 
-> Therefore instead of dropping the recalc_rate() and round_rate()
-> callbacks, alter clk_divider_bestdiv() to always report the current
-> divider as the best divider so that it is never altered.
-> 
-> For me the read only clock was the system clock, which divided the PLL
-> rate by 2, from which both the UART and the SPI clocks were divided.
-> Initial setting of the UART rate set it correctly, but when the SPI
-> clock was set, the other child clocks were miscalculated. The UART clock
-> was recalculated using the PLL rate as the parent rate, resulting in a
-> UART new_rate of double what it should be, and a UART which spewed forth
-> garbage when the rate changes were propagated.
+Hello, Ingo,
 
-Applied to clk-fixes towards -rc6.
+The changes in this series include:
 
-Thanks,
-Mike
+1.	Streamline RCU's use of per-CPU variables, shifting from "cpu"
+	arguments to functions to "this_"-style per-CPU variable accessors.
+	These were posted to LKML at https://lkml.org/lkml/2014/10/28/1130.
 
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Heiko Stuebner <heiko@sntech.de>
-> Cc: Thomas Abraham <thomas.ab@samsung.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Cc: Max Schwarz <max.schwarz@online.de>
-> Cc: <stable@vger.kernel.org> # v3.16+
-> ---
->  drivers/clk/clk-divider.c    | 18 +++++++++---------
->  drivers/clk/rockchip/clk.c   |  4 +---
->  include/linux/clk-provider.h |  1 -
->  3 files changed, 10 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-> index 18a9de29df0e..c0a842b335c5 100644
-> --- a/drivers/clk/clk-divider.c
-> +++ b/drivers/clk/clk-divider.c
-> @@ -263,6 +263,14 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
->         if (!rate)
->                 rate = 1;
->  
-> +       /* if read only, just return current value */
-> +       if (divider->flags & CLK_DIVIDER_READ_ONLY) {
-> +               bestdiv = readl(divider->reg) >> divider->shift;
-> +               bestdiv &= div_mask(divider);
-> +               bestdiv = _get_div(divider, bestdiv);
-> +               return bestdiv;
-> +       }
-> +
->         maxdiv = _get_maxdiv(divider);
->  
->         if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
-> @@ -361,11 +369,6 @@ const struct clk_ops clk_divider_ops = {
->  };
->  EXPORT_SYMBOL_GPL(clk_divider_ops);
->  
-> -const struct clk_ops clk_divider_ro_ops = {
-> -       .recalc_rate = clk_divider_recalc_rate,
-> -};
-> -EXPORT_SYMBOL_GPL(clk_divider_ro_ops);
-> -
->  static struct clk *_register_divider(struct device *dev, const char *name,
->                 const char *parent_name, unsigned long flags,
->                 void __iomem *reg, u8 shift, u8 width,
-> @@ -391,10 +394,7 @@ static struct clk *_register_divider(struct device *dev, const char *name,
->         }
->  
->         init.name = name;
-> -       if (clk_divider_flags & CLK_DIVIDER_READ_ONLY)
-> -               init.ops = &clk_divider_ro_ops;
-> -       else
-> -               init.ops = &clk_divider_ops;
-> +       init.ops = &clk_divider_ops;
->         init.flags = flags | CLK_IS_BASIC;
->         init.parent_names = (parent_name ? &parent_name: NULL);
->         init.num_parents = (parent_name ? 1 : 0);
-> diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
-> index 1e68bff481b8..880a266f0143 100644
-> --- a/drivers/clk/rockchip/clk.c
-> +++ b/drivers/clk/rockchip/clk.c
-> @@ -90,9 +90,7 @@ static struct clk *rockchip_clk_register_branch(const char *name,
->                 div->width = div_width;
->                 div->lock = lock;
->                 div->table = div_table;
-> -               div_ops = (div_flags & CLK_DIVIDER_READ_ONLY)
-> -                                               ? &clk_divider_ro_ops
-> -                                               : &clk_divider_ops;
-> +               div_ops = &clk_divider_ops;
->         }
->  
->         clk = clk_register_composite(NULL, name, parent_names, num_parents,
-> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> index be21af149f11..2839c639f092 100644
-> --- a/include/linux/clk-provider.h
-> +++ b/include/linux/clk-provider.h
-> @@ -352,7 +352,6 @@ struct clk_divider {
->  #define CLK_DIVIDER_READ_ONLY          BIT(5)
->  
->  extern const struct clk_ops clk_divider_ops;
-> -extern const struct clk_ops clk_divider_ro_ops;
->  struct clk *clk_register_divider(struct device *dev, const char *name,
->                 const char *parent_name, unsigned long flags,
->                 void __iomem *reg, u8 shift, u8 width,
-> -- 
-> 2.0.4
-> 
+2.	Documentation updates.  These were posted to LKML at
+	https://lkml.org/lkml/2014/10/28/1145.
+
+3.	Miscellaneous fixes.  These were posted to LKML at
+	https://lkml.org/lkml/2014/10/28/1161.
+
+4.	Signal-handling RCU updates.  These were posted to LKML at
+	https://lkml.org/lkml/2014/10/28/1172.
+
+5.	Real-time updates.  These were posted to LKML at
+	ttps://lkml.org/lkml/2014/10/28/1181.
+
+6.	Torture-test updates.  These were posted to LKML at
+	https://lkml.org/lkml/2014/10/28/1204.
+
+Note that a few commits posted to LKML have been deferred, in particular,
+there is some possibility that the DEC Alpha guys will make the compiler
+changes needed to allow pre-EV56 CPUs to safely access chars and shorts.
+
+All of these have been exposed to -next testing.
+These changes are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+
+for you to fetch changes up to 9ea6c5885681e3d9ce9844ba9dc57371a5cfc6d2:
+
+  Merge branches 'torture.2014.11.03a', 'cpu.2014.11.03a', 'doc.2014.11.13a', 'fixes.2014.11.13a', 'signal.2014.10.29a' and 'rt.2014.10.29a' into HEAD (2014-11-13 10:39:04 -0800)
+
+----------------------------------------------------------------
+
+Christoph Lameter (1):
+      rcu: Remove rcu_dynticks * parameters when they are always this_cpu_ptr(&rcu_dynticks)
+
+Clark Williams (1):
+      rcu: Unify boost and kthread priorities
+
+Oleg Nesterov (2):
+      signal: Document the RCU protection of ->sighand
+      rcu: More info about potential deadlocks with rcu_read_unlock()
+
+Paul E. McKenney (22):
+      rcu: Remove CONFIG_RCU_CPU_STALL_VERBOSE
+      rcu: Move RCU_BOOST variable declarations, eliminating #ifdef
+      rcu: Avoid IPIing idle CPUs from synchronize_sched_expedited()
+      signal: Exit RCU read-side critical section on each pass through loop
+      rcu: Kick rcuo kthreads after their CPU goes offline
+      rcu: Fix for rcuo online-time-creation reorganization bug
+      rcu: Use DEFINE_PER_CPU_SHARED_ALIGNED for rcu_data
+      rcu: Remove "cpu" argument to rcu_check_callbacks()
+      rcu: Remove "cpu" argument to rcu_pending()
+      rcu: Remove "cpu" argument to rcu_preempt_check_callbacks()
+      rcu: Remove "cpu" argument to rcu_note_context_switch()
+      rcu: Remove "cpu" argument to rcu_needs_cpu()
+      rcu: Remove "cpu" argument to rcu_prepare_for_idle()
+      rcu: Remove "cpu" argument to rcu_cleanup_after_idle()
+      cpu: Avoid puts_pending overflow
+      torture: Run Linux-kernel binary out of results directory
+      rcutorture: Fix rcu_torture_cbflood() memory leak
+      documentation: Additional restriction for control dependencies
+      documentation: Add atomic_long_t to atomic_ops.txt
+      rcu: Optimize cond_resched_rcu_qs()
+      rcu: Fix FIXME in rcu_tasks_kthread()
+      Merge branches 'torture.2014.11.03a', 'cpu.2014.11.03a', 'doc.2014.11.13a', 'fixes.2014.11.13a', 'signal.2014.10.29a' and 'rt.2014.10.29a' into HEAD
+
+Pranith Kumar (8):
+      rcu: Remove redundant TREE_PREEMPT_RCU config option
+      rcutorture: Add early boot self tests
+      rcutorture: Enable RCU self test in configs
+      rcutorture: Remove stale test configurations
+      rcutorture: Remove obsolete kversion param in kvm.sh
+      documentation: Document RCU self test boot params
+      documentation: memory-barriers.txt: Correct example for reorderings
+      rcu: Add sparse check for RCU_INIT_POINTER()
+
+Stefan Hengelein (1):
+      init/Kconfig: move RCU_NOCB_CPU dependencies to choice
+
+ Documentation/RCU/rcu.txt                          |   4 +-
+ Documentation/RCU/stallwarn.txt                    |  14 +--
+ Documentation/RCU/trace.txt                        |   4 +-
+ Documentation/RCU/whatisRCU.txt                    |   2 +-
+ Documentation/atomic_ops.txt                       |  12 ++-
+ Documentation/kernel-parameters.txt                |  16 +++
+ Documentation/memory-barriers.txt                  |  40 ++++++--
+ include/linux/init_task.h                          |   2 +-
+ include/linux/rcupdate.h                           |  19 ++--
+ include/linux/rcutiny.h                            |   2 +-
+ include/linux/rcutree.h                            |   6 +-
+ include/linux/sched.h                              |   4 +-
+ include/trace/events/rcu.h                         |   4 +-
+ init/Kconfig                                       |  49 ++++-----
+ kernel/cpu.c                                       |  19 ++--
+ kernel/fork.c                                      |   5 +-
+ kernel/rcu/Makefile                                |   2 +-
+ kernel/rcu/rcu.h                                   |   2 +
+ kernel/rcu/rcutorture.c                            |   1 +
+ kernel/rcu/tiny.c                                  |   6 +-
+ kernel/rcu/tree.c                                  |  97 ++++++++++--------
+ kernel/rcu/tree.h                                  |  22 ++--
+ kernel/rcu/tree_plugin.h                           | 111 +++++++++++----------
+ kernel/rcu/update.c                                |  89 ++++++++++++++++-
+ kernel/sched/core.c                                |   2 +-
+ kernel/signal.c                                    |  42 ++++----
+ kernel/softirq.c                                   |   2 +-
+ kernel/time/tick-sched.c                           |   2 +-
+ kernel/time/timer.c                                |   3 +-
+ lib/Kconfig.debug                                  |  14 +--
+ .../selftests/rcutorture/bin/kvm-test-1-run.sh     |   6 +-
+ tools/testing/selftests/rcutorture/bin/kvm.sh      |  19 +---
+ .../selftests/rcutorture/configs/rcu/TINY02        |   2 +
+ .../selftests/rcutorture/configs/rcu/TINY02.boot   |   2 +
+ .../selftests/rcutorture/configs/rcu/TREE01        |   3 +-
+ .../selftests/rcutorture/configs/rcu/TREE02        |   3 +-
+ .../selftests/rcutorture/configs/rcu/TREE02-T      |   3 +-
+ .../selftests/rcutorture/configs/rcu/TREE03        |   5 +-
+ .../selftests/rcutorture/configs/rcu/TREE04        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE05        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE05.boot   |   1 +
+ .../selftests/rcutorture/configs/rcu/TREE06        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE06.boot   |   3 +
+ .../selftests/rcutorture/configs/rcu/TREE07        |   1 -
+ .../selftests/rcutorture/configs/rcu/TREE08        |   5 +-
+ .../selftests/rcutorture/configs/rcu/TREE08-T      |   3 +-
+ .../selftests/rcutorture/configs/rcu/TREE08.boot   |   2 +
+ .../selftests/rcutorture/configs/rcu/TREE09        |   3 +-
+ .../selftests/rcutorture/configs/rcu/v0.0/CFLIST   |  14 ---
+ .../configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP           |  18 ----
+ .../configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp           |  20 ----
+ .../configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp           |  22 ----
+ .../configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP           |  18 ----
+ .../configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp           |  22 ----
+ .../selftests/rcutorture/configs/rcu/v0.0/NT1-nh   |  23 -----
+ .../selftests/rcutorture/configs/rcu/v0.0/NT3-NH   |  20 ----
+ .../configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP           |  19 ----
+ .../configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp           |  20 ----
+ .../configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp           |  20 ----
+ .../configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP           |  22 ----
+ .../configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp           |  27 -----
+ .../selftests/rcutorture/configs/rcu/v0.0/PT1-nh   |  23 -----
+ .../selftests/rcutorture/configs/rcu/v0.0/PT2-NH   |  22 ----
+ .../rcutorture/configs/rcu/v0.0/ver_functions.sh   |  33 ------
+ .../selftests/rcutorture/configs/rcu/v3.12/CFLIST  |  17 ----
+ .../configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP          |  19 ----
+ .../configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp          |  20 ----
+ .../configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp          |  22 ----
+ .../configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP          |  18 ----
+ .../configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp          |  22 ----
+ .../configs/rcu/v3.12/N6---t-nh-SD-smp-hp          |  19 ----
+ .../configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP          |  26 -----
+ .../configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP          |  22 ----
+ .../selftests/rcutorture/configs/rcu/v3.12/NT1-nh  |  23 -----
+ .../selftests/rcutorture/configs/rcu/v3.12/NT3-NH  |  20 ----
+ .../configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP          |  20 ----
+ .../configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp          |  20 ----
+ .../configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp          |  20 ----
+ .../configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP          |  22 ----
+ .../configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp          |  27 -----
+ .../configs/rcu/v3.12/P6---t-nh-SD-smp-hp          |  18 ----
+ .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP          |  30 ------
+ .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all      |  30 ------
+ .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none     |  30 ------
+ .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp          |  30 ------
+ .../selftests/rcutorture/configs/rcu/v3.12/PT1-nh  |  23 -----
+ .../selftests/rcutorture/configs/rcu/v3.12/PT2-NH  |  22 ----
+ .../selftests/rcutorture/configs/rcu/v3.3/CFLIST   |  14 ---
+ .../configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP           |  19 ----
+ .../configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp           |  20 ----
+ .../configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp           |  22 ----
+ .../configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP           |  18 ----
+ .../configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp           |  22 ----
+ .../selftests/rcutorture/configs/rcu/v3.3/NT1-nh   |  23 -----
+ .../selftests/rcutorture/configs/rcu/v3.3/NT3-NH   |  20 ----
+ .../configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP           |  20 ----
+ .../configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp           |  20 ----
+ .../configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp           |  20 ----
+ .../configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP           |  22 ----
+ .../configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp           |  27 -----
+ .../selftests/rcutorture/configs/rcu/v3.3/PT1-nh   |  23 -----
+ .../selftests/rcutorture/configs/rcu/v3.3/PT2-NH   |  22 ----
+ .../rcutorture/configs/rcu/v3.3/ver_functions.sh   |  44 --------
+ .../selftests/rcutorture/configs/rcu/v3.5/CFLIST   |  14 ---
+ .../configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP           |  19 ----
+ .../configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp           |  20 ----
+ .../configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp           |  22 ----
+ .../configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP           |  18 ----
+ .../configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp           |  22 ----
+ .../selftests/rcutorture/configs/rcu/v3.5/NT1-nh   |  23 -----
+ .../selftests/rcutorture/configs/rcu/v3.5/NT3-NH   |  20 ----
+ .../configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP           |  20 ----
+ .../configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp           |  20 ----
+ .../configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp           |  20 ----
+ .../configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP           |  22 ----
+ .../configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp           |  27 -----
+ .../selftests/rcutorture/configs/rcu/v3.5/PT1-nh   |  23 -----
+ .../selftests/rcutorture/configs/rcu/v3.5/PT2-NH   |  22 ----
+ .../rcutorture/configs/rcu/v3.5/ver_functions.sh   |  57 -----------
+ .../testing/selftests/rcutorture/doc/TINY_RCU.txt  |   2 +-
+ .../selftests/rcutorture/doc/TREE_RCU-kconfig.txt  |  15 ++-
+ 121 files changed, 408 insertions(+), 1858 deletions(-)
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/CFLIST
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT3-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT2-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/ver_functions.sh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/CFLIST
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N6---t-nh-SD-smp-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT3-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P6---t-nh-SD-smp-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT2-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/CFLIST
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT3-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT2-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/ver_functions.sh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/CFLIST
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT3-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT1-nh
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT2-NH
+ delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/ver_functions.sh
+
