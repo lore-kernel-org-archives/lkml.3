@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaKQCbN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 21:31:13 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36726 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaKQCbM (ORCPT
+	id S1753449AbaKQCdN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 21:33:13 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:55758 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967AbaKQCdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 21:31:12 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 2/3] perf symbol: Implement a very simple ELF symbol parser
-References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
-	<1415337606-2186-2-git-send-email-namhyung@kernel.org>
-	<20141107152618.GM18464@kernel.org>
-	<87ioinv9xb.fsf@sejong.aot.lge.com>
-	<20141110120904.GO18464@kernel.org>
-Date: Mon, 17 Nov 2014 11:31:10 +0900
-In-Reply-To: <20141110120904.GO18464@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Mon, 10 Nov 2014 09:09:04 -0300")
-Message-ID: <87sihitv69.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 16 Nov 2014 21:33:09 -0500
+Message-ID: <54695DE5.2080309@linaro.org>
+Date: Mon, 17 Nov 2014 10:31:01 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Jiang Liu <jiang.liu@linux.intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 3/3] ACPI / processor: Rename acpi_(un)map_lsapic() to
+ acpi_(un)map_cpu()
+References: <1414662780-2147-1-git-send-email-hanjun.guo@linaro.org> <5452CE9D.6000403@linaro.org> <10283319.F5QMI6fbWn@vostro.rjw.lan> <1820875.eppNBckBcQ@vostro.rjw.lan>
+In-Reply-To: <1820875.eppNBckBcQ@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014 09:09:04 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Nov 10, 2014 at 03:36:48PM +0900, Namhyung Kim escreveu:
->> Hi Arnaldo,
->> 
->> On Fri, 7 Nov 2014 12:26:18 -0300, Arnaldo Carvalho de Melo wrote:
->> > Em Fri, Nov 07, 2014 at 02:20:05PM +0900, Namhyung Kim escreveu:
->> >> It'll be used to show (userspace) symbol names when libelf isn't (or
->> >> cannot be) linked.
->> >
->> > Does this deals with prelink, etc?
->> 
->> I believe so. :)
->> 
->> >  
->> >>   # Overhead  Command     Shared Object      Symbol
->> >>   # ........  ..........  .................  .........................
->> >>   #
->> >>       37.01%  mem-memcpy  libc-2.17.so       [.] __memcpy_ssse3_back
->> 
->>   namhyung@sejong:linux$ readelf -WS /lib64/libc-2.17.so | grep prelink
->>     [41] .gnu.prelink_undo PROGBITS        0000000000000000 200368 000c30 01      0   0  8
->> 
->>   namhyung@sejong:linux$ nm /lib64/libc-2.17.so | grep __memcpy_ssse3_back
->>   0000003153f46f40 t __memcpy_ssse3_back
->
-> Right, in this case most of the samples seems to map to what is expected
-> for that workload, and the binary was prelinked. Good.
->
-> What about binaries that are not prelinked? IIRC there is code in the
-> full blown ELF symbol-elf.c file to detect that and act accordingly,
-> from a _very_ quick look I didn't saw it in this minimalistic ELF symtab
-> reader, hence my question.
+On 2014-11-15 7:35, Rafael J. Wysocki wrote:
+> On Friday, October 31, 2014 11:55:46 PM Rafael J. Wysocki wrote:
+>> On Friday, October 31, 2014 07:49:49 AM Hanjun Guo wrote:
+>>> On 2014年10月31日 04:12, Rafael J. Wysocki wrote:
+>>>> On Thursday, October 30, 2014 05:53:00 PM Hanjun Guo wrote:
+>>>>> acpi_map_lsapic() will allocate a logical CPU number and map it to
+>>>>> physical CPU id (such as APIC id) for the hot-added CPU, it will also
+>>>>> do some mapping for NUMA node id and etc, acpi_unmap_lsapic() will
+>>>>> do the reverse.
+>>>>>
+>>>>> We can see that the name of the function is a little bit confusing and
+>>>>> arch dependent so rename them as acpi_(un)map_map() to make arch
+>>>>
+>>>> That's acpi_(un)map_cpu() I guess?
+>>>
+>>> ah, yes, typos, it should be acpi_(un)map_cpu(), my fault.
+>>> should I send another version?
+>>
+>> No, I can fix this up.
+> 
+> I've queued up the series for 3.19, thanks!
 
-AFAIK we deal with prelink'ed binary and normal binary as same way - we
-only cares about the file offsets.
+Thanks!
 
+Hanjun
 
-  $ perf top --stdio
-     PerfTop:     110 irqs/sec  kernel:70.0%  exact:  0.0% [4000Hz cycles],  (all, 12 CPUs)
-  --------------------------------------------------------------------------------------------
-     9.42%  perf           [.] map__process_kallsym_symbol       
-     8.91%  [kernel]       [k] kallsyms_expand_symbol.constprop.1
-     6.80%  [kernel]       [k] memcpy                            
-     6.08%  [kernel]       [k] vsnprintf                         
-     ...
-
-
-Thanks,
-Namhyung
