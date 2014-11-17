@@ -1,100 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515AbaKQLUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:20:30 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:35377 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454AbaKQLU2 (ORCPT
+	id S1752557AbaKQLUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:20:44 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:59169 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaKQLUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:20:28 -0500
-Date: Mon, 17 Nov 2014 12:20:22 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH V3 1/2] virtio: introduce methods of sanitizing device
- features
-Message-ID: <20141117122022.15a4b6dd.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141117102848.GH20133@redhat.com>
-References: <1416215838-21700-1-git-send-email-jasowang@redhat.com>
-	<20141117093701.GC20133@redhat.com>
-	<20141117104430.54362e7d.cornelia.huck@de.ibm.com>
-	<20141117101139.GE20133@redhat.com>
-	<20141117112048.0b0480ff.cornelia.huck@de.ibm.com>
-	<20141117102848.GH20133@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111711-0017-0000-0000-000001DD3251
+	Mon, 17 Nov 2014 06:20:43 -0500
+Date: Mon, 17 Nov 2014 11:20:35 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/11] arm: perf: parse cpu affinity from dt
+Message-ID: <20141117112033.GF18061@arm.com>
+References: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
+ <1415377536-12841-10-git-send-email-mark.rutland@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415377536-12841-10-git-send-email-mark.rutland@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Nov 2014 12:28:49 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> On Mon, Nov 17, 2014 at 11:20:48AM +0100, Cornelia Huck wrote:
-> > On Mon, 17 Nov 2014 12:11:39 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > On Mon, Nov 17, 2014 at 10:44:30AM +0100, Cornelia Huck wrote:
-> > > > On Mon, 17 Nov 2014 11:37:01 +0200
-> > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > 
-> > > > > On Mon, Nov 17, 2014 at 05:17:17PM +0800, Jason Wang wrote:
-> > > > > > Buggy host may advertised buggy host features (a usual case is that host
-> > > > > > advertise a feature whose dependencies were missed). In this case, driver
-> > > > > > should detect and disable the buggy features by itself.
-> > > > > > 
-> > > > > > This patch introduces driver specific sanitize_features() method which is
-> > > > > > called just before features finalizing to detect and disable buggy features
-> > > > > > advertised by host.
-> > > > > > 
-> > > > > > Virtio-net will be the first user.
-> > > > > > 
-> > > > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > > > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > > > > Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > > > > > Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> > > > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > > > > 
-> > > > > Hmm this conflicts with virtio 1.0 work: we drop
-> > > > > features as bitmap there.
-> > > > 
-> > > > But that's an implementation detail, no? We'll still need a way for the
-> > > > driver to sanitize features, and I think this interface works just fine.
-> > > 
-> > > Now that you mention it, I don't think we do.
-> > > 
-> > > The spec is quite explicit that devices must not expose invalid
-> > > combinations of features.
-> > 
-> > Unfortunately, this does not ensure that there won't be buggy
-> > hypervisors out there, just as there's buggy hardware floating around.
-> > 
-> > > 
-> > > Admittedly, BUG_ON isn't very friendly to hypervisors.
-> > > 
-> > > But e.g. failing probe seems better than trying to work around
-> > > hypervisor bugs - otherwise we'll be stuck maintaining compatibility
-> > > with hypervisors forever.
-> > 
-> > Good point. Failing probe is still much better than hitting BUG_ONs.
-> > 
-> > We'll still need a driver callback, though, that can return an error on
-> > bogus feature bit combinations.
+On Fri, Nov 07, 2014 at 04:25:34PM +0000, Mark Rutland wrote:
+> The current way we read interrupts form devicetree assumes that
+> interrupts are in increasing order of logical cpu id (MPIDR.Aff{2,1,0}),
+> and that these logical ids are in a contiguous block. This may not be
+> the case in general - after a kexec cpu ids may be arbitrarily assigned,
+> and multi-cluster systems do not have a contiguous range of cpu ids.
 > 
-> Why bother?  Just check features at start of probe, and return an error.
+> This patch parses cpu affinity information for interrupts from an
+> optional "interrupts-affinity" devicetree property described in the
+> devicetree binding document. Support for existing dts and board files
+> remains.
+> 
+> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> ---
+>  arch/arm/include/asm/pmu.h       |  12 +++
+>  arch/arm/kernel/perf_event_cpu.c | 196 +++++++++++++++++++++++++++++----------
+>  2 files changed, 161 insertions(+), 47 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/pmu.h b/arch/arm/include/asm/pmu.h
+> index b630a44..92fc1da 100644
+> --- a/arch/arm/include/asm/pmu.h
+> +++ b/arch/arm/include/asm/pmu.h
+> @@ -12,6 +12,7 @@
+>  #ifndef __ARM_PMU_H__
+>  #define __ARM_PMU_H__
+>  
+> +#include <linux/cpumask.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/perf_event.h>
+>  
+> @@ -89,6 +90,15 @@ struct pmu_hw_events {
+>  	struct arm_pmu		*percpu_pmu;
+>  };
+>  
+> +/*
+> + * For systems with heterogeneous PMUs, we need to know which CPUs each
+> + * (possibly percpu) IRQ targets. Map between them with an array of these.
+> + */
+> +struct cpu_irq {
+> +	cpumask_t cpus;
+> +	int irq;
+> +};
+> +
+>  struct arm_pmu {
+>  	struct pmu	pmu;
+>  	cpumask_t	active_irqs;
+> @@ -118,6 +128,8 @@ struct arm_pmu {
+>  	struct platform_device	*plat_device;
+>  	struct pmu_hw_events	__percpu *hw_events;
+>  	struct notifier_block	hotplug_nb;
+> +	int		nr_irqs;
+> +	struct cpu_irq *irq_map;
+>  };
+>  
+>  #define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
+> diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+> index dfcaba5..f09c8a0 100644
+> --- a/arch/arm/kernel/perf_event_cpu.c
+> +++ b/arch/arm/kernel/perf_event_cpu.c
+> @@ -85,20 +85,27 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
+>  	struct platform_device *pmu_device = cpu_pmu->plat_device;
+>  	struct pmu_hw_events __percpu *hw_events = cpu_pmu->hw_events;
+>  
+> -	irqs = min(pmu_device->num_resources, num_possible_cpus());
+> +	irqs = cpu_pmu->nr_irqs;
+>  
+> -	irq = platform_get_irq(pmu_device, 0);
+> -	if (irq >= 0 && irq_is_percpu(irq)) {
+> -		on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
+> -		free_percpu_irq(irq, &hw_events->percpu_pmu);
+> -	} else {
+> -		for (i = 0; i < irqs; ++i) {
+> -			if (!cpumask_test_and_clear_cpu(i, &cpu_pmu->active_irqs))
+> -				continue;
+> -			irq = platform_get_irq(pmu_device, i);
+> -			if (irq >= 0)
+> -				free_irq(irq, per_cpu_ptr(&hw_events->percpu_pmu, i));
+> +	for (i = 0; i < irqs; i++) {
+> +		struct cpu_irq *map = &cpu_pmu->irq_map[i];
+> +		irq = map->irq;
+> +
+> +		if (irq <= 0)
+> +			continue;
+> +
+> +		if (irq_is_percpu(irq)) {
+> +			on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
 
-So we'd fail probing due to bogus features after setting FEATURES_OK in
-the virtio-1 case, won't we? Feels a bit weird, but seems to be covered
-by the spec.
+Hmm, ok, so we're assuming that all the PMUs will be wired with PPIs in this
+case. I have a patch allowing per-cpu interrupts to be requested for a
+cpumask, but I suppose that can wait until it's actually needed.
 
+Will
