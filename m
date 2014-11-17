@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaKQRTk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 12:19:40 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64114 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaKQRTi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 12:19:38 -0500
+	id S1751845AbaKQRVS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 12:21:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750946AbaKQRVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 12:21:16 -0500
+Subject: [PATCH 0/4] Add lightweight memory barriers fast_rmb() and
+ fast_wmb()
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
+        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
+        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
+        michael@ellerman.id.au, tony.luck@intel.com,
+        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
+        fweisbec@gmail.com, davem@davemloft.net
+Date: Mon, 17 Nov 2014 09:17:42 -0800
+Message-ID: <20141117171005.22333.96544.stgit@ahduyck-server>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <2018325.yOrLZndTTm@wuerfel>
-References: <1416097066-20452-1-git-send-email-cernekee@gmail.com>
- <3480616.V2TMJFc7uE@wuerfel> <CAOiHx=ky5T7z3T3gX382d=3sw+gGUEfnwXwpcLGa_Oi5YyBwgw@mail.gmail.com>
- <2018325.yOrLZndTTm@wuerfel>
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Mon, 17 Nov 2014 09:19:17 -0800
-Message-ID: <CAJiQ=7An5eZ3j2+Zkx1crV9pBSVodkEQ+6ESGcFk5z0tDV7cHA@mail.gmail.com>
-Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonas Gorski <jogo@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 8:13 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> This is not just DT, it's actually an implementation of a boot
-> interface. The situation here seems much more to what we had on
-> PowerPC a long time ago than what we had on ARM before the DT
-> conversion. I think the best approach here would be to move the
-> platform specific bits into the decompressor code, and allow
-> multiple implementations of that. This way you can have the
-> generic vmlinux file that has a common DT parser, and you wrap
-> that into one decompressor per platform, some of which can have
-> their own board detection logic or pre-boot setup where necessary.
->
-> To be honest, I think having multiple DT files linked into the
-> kernel is a really bad idea, because it doesn't solve the
-> scalability problem at all. What we did on ARM was to force those
-> hacks out into external projects such as the PXA impedence
-> matcher [https://github.com/zonque/pxa-impedance-matcher]. This
-> can handle all weird boot protocol and adapt them to the normal
-> well-defined interfaces we have in the kernel.
+These patches introduce two new primitives for synchronizing cache-enabled
+memory writes and reads.  These two new primitives are:
 
-To some extent this is how BCM3384 was done[1].
+	fast_rmb()
+	fast_wmb()
 
-There is a tradeoff here: to add support for the older platforms it is
-easy to build a new DTB file into the kernel image, but it is a lot of
-trouble to write a new 3rd stage bootloader.  Do we want to maximize
-our list of supported boards, or are we shooting for a super clean
-kernel implementation right off the bat?
+The first patch cleans up some unnecessary overhead related to the
+definition of read_barrier_depends, smp_read_barrier_depends, and comments
+related to read_barrier_depends.
 
->> And unless there is one, having a
->> multiplatform kernel does not make much sense, as there is no sane way
->> to tell apart different platforms on boot.
->
-> How do you normally tell boards apart on MIPS when you don't use DT?
+The second patch adds the primitives for the applicable architectures and
+asm-generic.  The names for the new primitives are based on the names of
+similar primitives that already exist in the mips and tile trees.
 
-On BCM7xxx (STB) kernels, we could assume the chip ID was in a known
-register, and also we could call back into the bootloader to get a
-somewhat-accurate board name.
+The third patch adds the barriers to r8169 which turns out to be a good
+example of where the new barriers might be useful as they have full
+rmb()/wmb() barriers ordering accesses to the descriptors and the DescOwn
+bit.
 
-On BCM63xx there is logic in arch/mips/bcm63xx/cpu.c to try to guess
-the chip identity from the CPU type/revision (because the latter can
-be read directly from CP0).
+The fourth patch adds support for fast_rmb() to the Intel fm10k, igb, and
+ixgbe drivers.  Testing with the ixgbe driver has shown a processing
+time reduction of at least 7ns per 64B frame on a Core i7-4930K.
 
-These systems were never really designed to support multiplatform
-kernels.  The ARM BCM7xxx variants, by contrast, were.
+This patch series is essentially the v3 for:
+	arch: Introduce load_acquire() and store_release()
+		or
+	arch: Introduce read_acquire()
+
+The key changes in this patch series versus the earlier patches are:
+v3:
+	- Added cleanup of read_barrier_depends
+	- Focus on rmb()/wmb() instead of acquire()/store()
+	- Added update to documentation with code example
+	- Added change in r8169 to fix cur_tx/DescOwn ordering
+	- Simplified changes to just replacing/moving barriers in r8169
+v2:
+	- Renamed read_acquire() to be consistent with smp_load_acquire()
+	- Changed barrier used to be consistent with smp_load_acquire()
+	- Updated PowerPC code to use __lwsync based on IBM article
+	- Added store_release() as this is a viable use case for drivers
+	- Added r8169 patch which is able to fully use primitives
+	- Added fm10k/igb/ixgbe patch which is able to test performance
+
+---
+
+Alexander Duyck (4):
+      arch: Cleanup read_barrier_depends() and comments
+      arch: Add lightweight memory barriers fast_rmb() and fast_wmb()
+      r8169: Use fast_rmb() and fast_wmb() for DescOwn checks
+      fm10k/igb/ixgbe: Use fast_rmb on Rx descriptor reads
 
 
-[1] https://github.com/Broadcom/aeolus
+ Documentation/memory-barriers.txt             |   41 +++++++++++++++
+ arch/alpha/include/asm/barrier.h              |   51 ++++++++++++++++++
+ arch/arm/include/asm/barrier.h                |    4 +
+ arch/arm64/include/asm/barrier.h              |    3 +
+ arch/blackfin/include/asm/barrier.h           |   51 ++++++++++++++++++
+ arch/ia64/include/asm/barrier.h               |   25 ++++-----
+ arch/metag/include/asm/barrier.h              |   19 ++++---
+ arch/mips/include/asm/barrier.h               |   52 -------------------
+ arch/powerpc/include/asm/barrier.h            |   28 ++++++----
+ arch/s390/include/asm/barrier.h               |    7 ++-
+ arch/sparc/include/asm/barrier_64.h           |    7 ++-
+ arch/x86/include/asm/barrier.h                |   70 ++++---------------------
+ arch/x86/um/asm/barrier.h                     |   20 ++++---
+ drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +-
+ drivers/net/ethernet/intel/igb/igb_main.c     |    6 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 +--
+ drivers/net/ethernet/realtek/r8169.c          |   29 ++++++++--
+ include/asm-generic/barrier.h                 |    8 +++
+ 18 files changed, 257 insertions(+), 179 deletions(-)
+
+--
