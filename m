@@ -1,167 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173AbaKQUP3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 15:15:29 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:58768 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751297AbaKQUP2 (ORCPT
+	id S1752529AbaKQUSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 15:18:51 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:56526 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045AbaKQUSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 15:15:28 -0500
-Date: Mon, 17 Nov 2014 15:15:15 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH 2/2] sched/deadline: Fix wrong cpudl_find() in
- check_preempt_equal_dl()
-Message-ID: <20141117151515.670e2cd2@gandalf.local.home>
-In-Reply-To: <1416240664-7200-2-git-send-email-pang.xunlei@linaro.org>
-References: <1416240664-7200-1-git-send-email-pang.xunlei@linaro.org>
-	<1416240664-7200-2-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 17 Nov 2014 15:18:49 -0500
+Date: Mon, 17 Nov 2014 12:18:23 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
+        peterz@infradead.org, benh@kernel.crashing.org,
+        heiko.carstens@de.ibm.com, mingo@kernel.org, mikey@neuling.org,
+        linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        nic_swsd@realtek.com, will.deacon@arm.com, michael@ellerman.id.au,
+        tony.luck@intel.com, torvalds@linux-foundation.org, oleg@redhat.com,
+        schwidefsky@de.ibm.com, fweisbec@gmail.com, davem@davemloft.net
+Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb() and
+ fast_wmb()
+Message-ID: <20141117201823.GD5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141117171005.22333.96544.stgit@ahduyck-server>
+ <20141117171812.22333.90395.stgit@ahduyck-server>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117171812.22333.90395.stgit@ahduyck-server>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111720-0033-0000-0000-000002B8535E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014 00:11:04 +0800
-"pang.xunlei" <pang.xunlei@linaro.org> wrote:
+On Mon, Nov 17, 2014 at 09:18:13AM -0800, Alexander Duyck wrote:
+> There are a number of situations where the mandatory barriers rmb() and
+> wmb() are used to order memory/memory operations in the device drivers
+> and those barriers are much heavier than they actually need to be.  For
+> example in the case of PowerPC wmb() calls the heavy-weight sync
+> instruction when for memory/memory operations all that is really needed is
+> an lsync or eieio instruction.
 
-> In check_preempt_equal_dl(), cpudl_find() is called with a NULL later_mask,
-> thus cpudl_find() here doesn't check cpudl.free_cpus at all.
+Is this still the case if one of the memory operations is MMIO?  Last
+I knew, it was not.
+
+> This commit adds a fast (and loose) version of the mandatory memory
+> barriers rmb() and wmb().  The prefix to the name is actually based on the
+> version of the functions that already exist in the mips and tile trees.
+> However I thought it applicable since it gets at what we are trying to
+> accomplish with these barriers and somethat implies their risky nature.
 > 
-> This patch takles this issue by always passing a non-NULL cpumask to cpudl_find(),
-> and assigns later_mask in this function.
+> These new barriers are not as safe as the standard rmb() and wmb().
+> Specifically they do not guarantee ordering between cache-enabled and
+> cache-inhibited memories.  The primary use case for these would be to
+> enforce ordering of memory reads/writes when accessing cache-enabled memory
+> that is shared between the CPU and a device.
 > 
-> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+> It may also be noted that there is no fast_mb().  This is due to the fact
+> that most architectures didn't seem to have a good way to do a full memory
+> barrier quickly and so they usually resorted to an mb() for their smp_mb
+> call.  As such there no point in adding a fast_mb() function if it is going
+> to map to mb() for all architectures anyway.
+
+I must confess that I still don't entirely understand the motivation.
+
+Some problems in PowerPC barrier.h called out below.
+
+							Thanx, Paul
+
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+> Cc: Michael Ellerman <michael@ellerman.id.au>
+> Cc: Michael Neuling <mikey@neuling.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: David Miller <davem@davemloft.net>
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
 > ---
->  kernel/sched/cpudeadline.c | 14 ++++++--------
->  kernel/sched/deadline.c    | 10 ++++++----
->  2 files changed, 12 insertions(+), 12 deletions(-)
+>  Documentation/memory-barriers.txt   |   41 +++++++++++++++++++++++++++++++++++
+>  arch/arm/include/asm/barrier.h      |    4 +++
+>  arch/arm64/include/asm/barrier.h    |    3 +++
+>  arch/ia64/include/asm/barrier.h     |    3 +++
+>  arch/metag/include/asm/barrier.h    |   14 ++++++------
+>  arch/powerpc/include/asm/barrier.h  |   22 +++++++++++--------
+>  arch/s390/include/asm/barrier.h     |    2 ++
+>  arch/sparc/include/asm/barrier_64.h |    3 +++
+>  arch/x86/include/asm/barrier.h      |   11 ++++++---
+>  arch/x86/um/asm/barrier.h           |   13 ++++++-----
+>  include/asm-generic/barrier.h       |    8 +++++++
+>  11 files changed, 98 insertions(+), 26 deletions(-)
 > 
-> diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-> index 9a69353..623f7b5 100755
-> --- a/kernel/sched/cpudeadline.c
-> +++ b/kernel/sched/cpudeadline.c
-> @@ -97,7 +97,7 @@ static inline int cpudl_maximum(struct cpudl *cp)
->   * cpudl_find - find the best (later-dl) CPU in the system
->   * @cp: the cpudl max-heap context
->   * @p: the task
-> - * @later_mask: a mask to fill in with the selected CPUs (or NULL)
-> + * @later_mask: a mask to fill in with the selected CPUs (not NULL)
->   *
->   * Returns: int - best CPU (heap maximum if suitable)
->   */
-> @@ -107,16 +107,14 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
->  	int best_cpu = -1;
->  	const struct sched_dl_entity *dl_se = &p->dl;
->  
-> -	if (later_mask && cpumask_and(later_mask, cp->free_cpus,
-> -			&p->cpus_allowed) && cpumask_and(later_mask,
-> -			later_mask, cpu_active_mask)) {
-> +	cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
-> +	if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
->  		best_cpu = cpumask_any(later_mask);
->  		goto out;
-> -	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
-> -			dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
-> +	} else if (cpumask_and(later_mask, cpumask_of(cpudl_maximum(cp)),
-> +			&p->cpus_allowed) && dl_time_before(dl_se->deadline,
-> +			cp->elements[0].dl)) {
->  		best_cpu = cpudl_maximum(cp);
-> -		if (later_mask)
-> -			cpumask_set_cpu(best_cpu, later_mask);
->  	}
->  
-
-OK, I need to make this a before/after, as patch format sucks in this
-case.
-
-before:
-
-	if (later_mask &&
-	    cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
-	    cpumask_and(later_mask, later_mask, cpu_active_mask)) {
-		best_cpu = cpumask_any(later_mask);
-		goto out;
-	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
-		dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
-		best_cpu = cpudl_maximum(cp);
-		if (later_mask)
-			cpumask_set_cpu(best_cpu, later_mask);
-	}
-
-after:
-
-	cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
-	if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
-		best_cpu = cpumask_any(later_mask);
-		goto out;
-	} else if (cpumask_and(later_mask, cpumask_of(cpudl_maximum(cp)),
-			&p->cpus_allowed) && dl_time_before(dl_se->deadline,
-			cp->elements[0].dl)) {
-		best_cpu = cpudl_maximum(cp);
-	}
-
-Again, the above else if is rather ugly. Note, if the first
-cpumask_and() is zero, there's no reason to call cpumask_and() (which
-could be expensive) the second time. Keep the two together with &&.
-
-Also, I wouldn't convert the cpumask_test_cpu() to a cpumask_and(), as
-I would think that would be more expensive to copy an entire mask
-(think what happens when we have a thousand CPUs). Just doing a test,
-and then if the test succeeds (remember, there's another test that
-might fail after it), then just set the one bit.
-
---- Steve
-
-
-
->  out:
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index bd83272..3ecf838 100755
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -965,14 +965,18 @@ out:
->  	return cpu;
->  }
->  
-> +static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
+> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> index 22a969c..fe55dea 100644
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -1615,6 +1615,47 @@ There are some more advanced barrier functions:
+>       operations" subsection for information on where to use these.
+> 
+> 
+> + (*) fast_wmb();
+> + (*) fast_rmb();
 > +
->  static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
->  {
-> +	struct cpumask *later_mask = this_cpu_cpumask_var_ptr(local_cpu_mask_dl);
+> +     These are for use with memory based device I/O to guarantee the ordering
+> +     of cache-enabled writes or reads with respect to other writes or reads
+> +     to cache-enabled memory.
 > +
->  	/*
->  	 * Current can't be migrated, useless to reschedule,
->  	 * let's hope p can move out.
->  	 */
->  	if (rq->curr->nr_cpus_allowed == 1 ||
-> -	    cpudl_find(&rq->rd->cpudl, rq->curr, NULL) == -1)
-> +	    cpudl_find(&rq->rd->cpudl, rq->curr, later_mask) == -1)
->  		return;
->  
->  	/*
-> @@ -980,7 +984,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
->  	 * see if it is pushed or pulled somewhere else.
->  	 */
->  	if (p->nr_cpus_allowed != 1 &&
-> -	    cpudl_find(&rq->rd->cpudl, p, NULL) != -1)
-> +	    cpudl_find(&rq->rd->cpudl, p, later_mask) != -1)
->  		return;
->  
->  	resched_curr(rq);
-> @@ -1167,8 +1171,6 @@ next_node:
->  	return NULL;
->  }
->  
-> -static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
+> +     For example, consider a device driver that shares memory with a device
+> +     and uses a descriptor status value to indicate if the descriptor belongs
+> +     to the device or the CPU, and a doorbell to notify it when new
+> +     descriptors are available:
+> +
+> +	if (desc->status != DEVICE_OWN) {
+> +		/* do not read data until we own descriptor */
+> +		fast_rmb();
+> +
+> +		/* read/modify data */
+> +		read_data = desc->data;
+> +		desc->data = write_data;
+> +
+> +		/* flush modifications before status update */
+> +		fast_wmb();
+> +
+> +		/* assign ownership */
+> +		desc->status = DEVICE_OWN;
+> +
+> +		/* force memory to sync before notifying device via MMIO */
+> +		wmb();
+> +
+> +		/* notify device of new descriptors */
+> +		writel(DESC_NOTIFY, doorbell);
+> +	}
+> +
+> +     The fast_rmb() allows us guarantee the device has released ownership
+> +     before we read the data from the descriptor, and he fast_wmb() allows
+> +     us to guarantee the data is written to the descriptor before the device
+> +     can see it now has ownership.  The wmb() is needed to guarantee that the
+> +     cache-enabled memory writes have completed before attempting a write to
+> +     the cache-inhibited MMIO region.
+> +
+> +
+>  MMIO WRITE BARRIER
+>  ------------------
+> 
+> diff --git a/arch/arm/include/asm/barrier.h b/arch/arm/include/asm/barrier.h
+> index c6a3e73..c57903c 100644
+> --- a/arch/arm/include/asm/barrier.h
+> +++ b/arch/arm/include/asm/barrier.h
+> @@ -43,10 +43,14 @@
+>  #define mb()		do { dsb(); outer_sync(); } while (0)
+>  #define rmb()		dsb()
+>  #define wmb()		do { dsb(st); outer_sync(); } while (0)
+> +#define fast_rmb()	dmb()
+> +#define fast_wmb()	dmb(st)
+>  #else
+>  #define mb()		barrier()
+>  #define rmb()		barrier()
+>  #define wmb()		barrier()
+> +#define fast_rmb()	barrier()
+> +#define fast_wmb()	barrier()
+>  #endif
+> 
+>  #ifndef CONFIG_SMP
+> diff --git a/arch/arm64/include/asm/barrier.h b/arch/arm64/include/asm/barrier.h
+> index 6389d60..3ca1a15 100644
+> --- a/arch/arm64/include/asm/barrier.h
+> +++ b/arch/arm64/include/asm/barrier.h
+> @@ -32,6 +32,9 @@
+>  #define rmb()		dsb(ld)
+>  #define wmb()		dsb(st)
+> 
+> +#define fast_rmb()	dmb(ld)
+> +#define fast_wmb()	dmb(st)
+> +
+>  #ifndef CONFIG_SMP
+>  #define smp_mb()	barrier()
+>  #define smp_rmb()	barrier()
+> diff --git a/arch/ia64/include/asm/barrier.h b/arch/ia64/include/asm/barrier.h
+> index e8fffb0..997f5b0 100644
+> --- a/arch/ia64/include/asm/barrier.h
+> +++ b/arch/ia64/include/asm/barrier.h
+> @@ -39,6 +39,9 @@
+>  #define rmb()		mb()
+>  #define wmb()		mb()
+> 
+> +#define fast_rmb()	mb()
+> +#define fast_wmb()	mb()
+> +
+>  #ifdef CONFIG_SMP
+>  # define smp_mb()	mb()
+>  #else
+> diff --git a/arch/metag/include/asm/barrier.h b/arch/metag/include/asm/barrier.h
+> index 6d8b8c9..edddb6d 100644
+> --- a/arch/metag/include/asm/barrier.h
+> +++ b/arch/metag/include/asm/barrier.h
+> @@ -4,8 +4,6 @@
+>  #include <asm/metag_mem.h>
+> 
+>  #define nop()		asm volatile ("NOP")
+> -#define mb()		wmb()
+> -#define rmb()		barrier()
+> 
+>  #ifdef CONFIG_METAG_META21
+> 
+> @@ -41,11 +39,13 @@ static inline void wr_fence(void)
+> 
+>  #endif /* !CONFIG_METAG_META21 */
+> 
+> -static inline void wmb(void)
+> -{
+> -	/* flush writes through the write combiner */
+> -	wr_fence();
+> -}
+> +/* flush writes through the write combiner */
+> +#define mb()		wr_fence()
+> +#define rmb()		barrier()
+> +#define wmb()		mb()
+> +
+> +#define fast_rmb()	rmb()
+> +#define fast_wmb()	wmb()
+> 
+>  #ifndef CONFIG_SMP
+>  #define fence()		do { } while (0)
+> diff --git a/arch/powerpc/include/asm/barrier.h b/arch/powerpc/include/asm/barrier.h
+> index cb6d66c..f480097 100644
+> --- a/arch/powerpc/include/asm/barrier.h
+> +++ b/arch/powerpc/include/asm/barrier.h
+> @@ -36,22 +36,20 @@
+> 
+>  #define set_mb(var, value)	do { var = value; mb(); } while (0)
+> 
+> -#ifdef CONFIG_SMP
 > -
->  static int find_later_rq(struct task_struct *task)
->  {
->  	struct sched_domain *sd;
+>  #ifdef __SUBARCH_HAS_LWSYNC
+>  #    define SMPWMB      LWSYNC
+>  #else
+>  #    define SMPWMB      eieio
+>  #endif
+> 
+> -#define __lwsync()	__asm__ __volatile__ (stringify_in_c(LWSYNC) : : :"memory")
+> +#define fast_rmb()	__asm__ __volatile__ (stringify_in_c(LWSYNC) : : :"memory")
+> +#define fast_wmb()	__asm__ __volatile__ (stringify_in_c(SMPWMB) : : :"memory")
+> 
+> +#ifdef CONFIG_SMP
+>  #define smp_mb()	mb()
+> -#define smp_rmb()	__lwsync()
+> -#define smp_wmb()	__asm__ __volatile__ (stringify_in_c(SMPWMB) : : :"memory")
+> +#define smp_rmb()	fast_rmb()
+> +#define smp_wmb()	fast_wmb()
+>  #else
+> -#define __lwsync()	barrier()
+> -
+>  #define smp_mb()	barrier()
+>  #define smp_rmb()	barrier()
+>  #define smp_wmb()	barrier()
+> @@ -69,10 +67,16 @@
+>  #define data_barrier(x)	\
+>  	asm volatile("twi 0,%0,0; isync" : : "r" (x) : "memory");
+> 
+> +/*
+> + * The use of smp_rmb() in these functions are actually meant to map from
+> + * smp_rmb()->fast_rmb()->LWSYNC.  This way if smp is disabled then
+> + * smp_rmb()->barrier(), or if the platform doesn't support lwsync it will
+> + * map to the more heavy-weight sync.
+> + */
+>  #define smp_store_release(p, v)						\
+>  do {									\
+>  	compiletime_assert_atomic_type(*p);				\
+> -	__lwsync();							\
+> +	smp_rmb();							\
+
+This is not good at all.  For smp_store_release(), we absolutely
+must order prior loads and stores against the assignment on the following
+line.  This is not something that smp_rmb() does, nor is it something
+that smp_wmb() does.  Yes, it might happen to now, but this could easily
+break in the future -- plus this change is extremely misleading.
+
+The original __lwsync() is much more clear.
+
+>  	ACCESS_ONCE(*p) = (v);						\
+>  } while (0)
+> 
+> @@ -80,7 +84,7 @@ do {									\
+>  ({									\
+>  	typeof(*p) ___p1 = ACCESS_ONCE(*p);				\
+>  	compiletime_assert_atomic_type(*p);				\
+> -	__lwsync();							\
+> +	smp_rmb();							\
+>  	___p1;								\
+>  })
+> 
+> diff --git a/arch/s390/include/asm/barrier.h b/arch/s390/include/asm/barrier.h
+> index 33d191d..9a31301 100644
+> --- a/arch/s390/include/asm/barrier.h
+> +++ b/arch/s390/include/asm/barrier.h
+> @@ -24,6 +24,8 @@
+> 
+>  #define rmb()				mb()
+>  #define wmb()				mb()
+> +#define fast_rmb()			rmb()
+> +#define fast_wmb()			wmb()
+>  #define smp_mb()			mb()
+>  #define smp_rmb()			rmb()
+>  #define smp_wmb()			wmb()
+> diff --git a/arch/sparc/include/asm/barrier_64.h b/arch/sparc/include/asm/barrier_64.h
+> index 6c974c0..eac2777 100644
+> --- a/arch/sparc/include/asm/barrier_64.h
+> +++ b/arch/sparc/include/asm/barrier_64.h
+> @@ -37,6 +37,9 @@ do {	__asm__ __volatile__("ba,pt	%%xcc, 1f\n\t" \
+>  #define rmb()	__asm__ __volatile__("":::"memory")
+>  #define wmb()	__asm__ __volatile__("":::"memory")
+> 
+> +#define fast_rmb()	rmb()
+> +#define fast_wmb()	wmb()
+> +
+>  #define set_mb(__var, __value) \
+>  	do { __var = __value; membar_safe("#StoreLoad"); } while(0)
+> 
+> diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
+> index 5238000..cf440e7 100644
+> --- a/arch/x86/include/asm/barrier.h
+> +++ b/arch/x86/include/asm/barrier.h
+> @@ -24,13 +24,16 @@
+>  #define wmb()	asm volatile("sfence" ::: "memory")
+>  #endif
+> 
+> -#ifdef CONFIG_SMP
+> -#define smp_mb()	mb()
+>  #ifdef CONFIG_X86_PPRO_FENCE
+> -# define smp_rmb()	rmb()
+> +#define fast_rmb()	rmb()
+>  #else
+> -# define smp_rmb()	barrier()
+> +#define fast_rmb()	barrier()
+>  #endif
+> +#define fast_wmb()	barrier()
+> +
+> +#ifdef CONFIG_SMP
+> +#define smp_mb()	mb()
+> +#define smp_rmb()	fast_rmb()
+>  #define smp_wmb()	barrier()
+>  #define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
+>  #else /* !SMP */
+> diff --git a/arch/x86/um/asm/barrier.h b/arch/x86/um/asm/barrier.h
+> index d6511d9..2c0405d 100644
+> --- a/arch/x86/um/asm/barrier.h
+> +++ b/arch/x86/um/asm/barrier.h
+> @@ -29,17 +29,18 @@
+> 
+>  #endif /* CONFIG_X86_32 */
+> 
+> -#ifdef CONFIG_SMP
+> -
+> -#define smp_mb()	mb()
+>  #ifdef CONFIG_X86_PPRO_FENCE
+> -#define smp_rmb()	rmb()
+> +#define fast_rmb()	rmb()
+>  #else /* CONFIG_X86_PPRO_FENCE */
+> -#define smp_rmb()	barrier()
+> +#define fast_rmb()	barrier()
+>  #endif /* CONFIG_X86_PPRO_FENCE */
+> +#define fast_wmb()	barrier()
+> 
+> -#define smp_wmb()	barrier()
+> +#ifdef CONFIG_SMP
+> 
+> +#define smp_mb()	mb()
+> +#define smp_rmb()	fast_rmb()
+> +#define smp_wmb()	fast_wmb()
+>  #define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
+> 
+>  #else /* CONFIG_SMP */
+> diff --git a/include/asm-generic/barrier.h b/include/asm-generic/barrier.h
+> index 1402fa8..c1d60b9 100644
+> --- a/include/asm-generic/barrier.h
+> +++ b/include/asm-generic/barrier.h
+> @@ -42,6 +42,14 @@
+>  #define wmb()	mb()
+>  #endif
+> 
+> +#ifndef fast_rmb
+> +#define fast_rmb()	rmb()
+> +#endif
+> +
+> +#ifndef fast_wmb
+> +#define fast_wmb()	wmb()
+> +#endif
+> +
+>  #ifndef read_barrier_depends
+>  #define read_barrier_depends()		do { } while (0)
+>  #endif
+> 
 
