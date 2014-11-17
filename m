@@ -1,272 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaKQO7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:59:36 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:40780 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753115AbaKQO7d (ORCPT
+	id S1752982AbaKQPBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 10:01:39 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:40898 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059AbaKQPBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 09:59:33 -0500
-Date: Mon, 17 Nov 2014 16:58:58 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg, bcousson@baylibre.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-media@vger.kernel.org,
-        j.anaszewski@samsung.com
+	Mon, 17 Nov 2014 10:01:37 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
 Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
-Message-ID: <20141117145857.GO8907@valkosipuli.retiisi.org.uk>
-References: <20141116075928.GA9763@amd>
+Date: Mon, 17 Nov 2014 16:01:31 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, khilman@kernel.org, aaro.koskinen@iki.fi,
+        freemangordon@abv.bg, bcousson@baylibre.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sakari.ailus@iki.fi, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <20141116075928.GA9763@amd> <20141117101553.GA21151@amd> <20141117145545.GC7046@atomide.com>
+In-Reply-To: <20141117145545.GC7046@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141116075928.GA9763@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart8237810.Y3XGAkWlkd";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411171601.32311@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+--nextPart8237810.Y3XGAkWlkd
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Nov 16, 2014 at 08:59:28AM +0100, Pavel Machek wrote:
-> For device tree people: Yes, I know I'll have to create file in
-> documentation, but does the binding below look acceptable?
-> 
-> I'll clean up driver code a bit more, remove the printks. Anything
-> else obviously wrong?
+On Monday 17 November 2014 15:55:46 Tony Lindgren wrote:
+> * Pavel Machek <pavel@ucw.cz> [141117 02:17]:
+> > On Mon 2014-11-17 11:09:45, Pali Roh=C3=A1r wrote:
+> > > On Monday 17 November 2014 11:05:19 Pavel Machek wrote:
+> > > > Hi!
+> > > >=20
+> > > > On Mon 2014-11-17 09:43:19, Pali Roh=C3=A1r wrote:
+> > > > > On Sunday 16 November 2014 08:59:28 Pavel Machek wrote:
+> > > > > > For device tree people: Yes, I know I'll have to
+> > > > > > create file in documentation, but does the binding
+> > > > > > below look acceptable?
+> > > > > >=20
+> > > > > > I'll clean up driver code a bit more, remove the
+> > > > > > printks. Anything else obviously wrong?
+> > > > >=20
+> > > > > I think that this patch is probably not good and
+> > > > > specially not for n900. adp1653 should be registered
+> > > > > throw omap3 isp camera subsystem which does not have
+> > > > > DT support yet.
+> > > >=20
+> > > > Can you explain?
+> > > >=20
+> > > > adp1653 is independend device on i2c bus, and we have
+> > > > kernel driver for it (unlike rest of n900 camera
+> > > > system). Just now it is unusable due to lack of DT
+> > > > binding. It has two functions, LED light and a camera
+> > > > flash; yes, the second one should be integrated to the
+> > > > rest of camera system, but that is not yet merged. That
+> > > > should not prevent us from merging DT support for the
+> > > > flash, so that this part can be tested/maintained.
+> > >=20
+> > > Ok. When ISP camera subsystem has DT support somebody will
+> > > modify n900 DT to add camera flash from adp1653 to ISP...
+> > > I believe it will not be hard.
+> >=20
+> > Exactly. And yes, I'd like to get complete camera support
+> > for n900 merged. But first step is "make sure existing
+> > support does not break".
+>=20
+> There's nothing stopping us from initializing the camera code
+> from pdata-quirks.c for now to keep it working. Certainly the
+> binding should be added to the driver, but that removes a
+> dependency to the legacy booting mode if things are otherwise
+> working.
+>=20
+> Regards,
+>=20
+> Tony
 
-Jacek Anaszewski is working on flash support for LED devices. I think it'd
-be good to sync the DT bindings for the two, as the types of devices
-supported by the LED API and the V4L2 flash API are quite similar.
+Tony, legacy board code for n900 is not in mainline tree. And=20
+that omap3 camera subsystem for n900 is broken since 3.5=20
+kernel... (both Front and Back camera on n900 show only green=20
+picture).
 
-Cc Jacek.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> 
-> Thanks,
-> 								Pavel
-> 
-> 
-> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-> index 739fcf2..ed0bfc1 100644
-> --- a/arch/arm/boot/dts/omap3-n900.dts
-> +++ b/arch/arm/boot/dts/omap3-n900.dts
-> @@ -553,6 +561,18 @@
->  
->  		ti,usb-charger-detection = <&isp1704>;
->  	};
-> +
-> +	adp1653: adp1653@30 {
-> +		compatible = "ad,adp1653";
-> +		reg = <0x30>;
-> +
-> +		max-flash-timeout-usec = <500000>;
-> +		max-flash-intensity-uA    = <320000>;
-> +		max-torch-intensity-uA     = <50000>;
-> +		max-indicator-intensity-uA = <17500>;
-> +
-> +		gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* Want 88 */
-> +	};
->  };
->  
->  &i2c3 {
-> diff --git a/drivers/media/i2c/adp1653.c b/drivers/media/i2c/adp1653.c
-> index 873fe19..e21ed02 100644
-> --- a/drivers/media/i2c/adp1653.c
-> +++ b/drivers/media/i2c/adp1653.c
-> @@ -8,6 +8,7 @@
->   * Contributors:
->   *	Sakari Ailus <sakari.ailus@iki.fi>
->   *	Tuukka Toivonen <tuukkat76@gmail.com>
-> + *      Pavel Machek <pavel@ucw.cz>
->   *
->   * This program is free software; you can redistribute it and/or
->   * modify it under the terms of the GNU General Public License
-> @@ -34,9 +35,12 @@
->  #include <linux/module.h>
->  #include <linux/i2c.h>
->  #include <linux/slab.h>
-> +#include <linux/of_gpio.h>
->  #include <media/adp1653.h>
->  #include <media/v4l2-device.h>
->  
-> +#include <linux/gpio.h>
-> +
->  #define TIMEOUT_MAX		820000
->  #define TIMEOUT_STEP		54600
->  #define TIMEOUT_MIN		(TIMEOUT_MAX - ADP1653_REG_CONFIG_TMR_SET_MAX \
-> @@ -308,7 +316,16 @@ __adp1653_set_power(struct adp1653_flash *flash, int on)
->  {
->  	int ret;
->  
-> -	ret = flash->platform_data->power(&flash->subdev, on);
-> +	if (flash->platform_data->power)
-> +		ret = flash->platform_data->power(&flash->subdev, on);
-> +	else {
-> +		gpio_set_value(flash->platform_data->power_gpio, on);
-> +		if (on) {
-> +			/* Some delay is apparently required. */
-> +			udelay(20);
-> +		}
-> +	}
-> +			
->  	if (ret < 0)
->  		return ret;
->  
-> @@ -316,8 +333,13 @@ __adp1653_set_power(struct adp1653_flash *flash, int on)
->  		return 0;
->  
->  	ret = adp1653_init_device(flash);
-> -	if (ret < 0)
-> +	if (ret >= 0)
-> +		return ret;
-> +
-> +	if (flash->platform_data->power)
->  		flash->platform_data->power(&flash->subdev, 0);
-> +	else
-> +		gpio_set_value(flash->platform_data->power_gpio, 0);
->  
->  	return ret;
->  }
-> @@ -407,21 +429,87 @@ static int adp1653_resume(struct device *dev)
->  
->  #endif /* CONFIG_PM */
->  
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +static int adp1653_of_init(struct i2c_client *client, struct adp1653_flash *flash, 
-> +			   struct device_node *node)
-> +{
-> +	u32 val;
-> +	struct adp1653_platform_data *pd;
-> +	enum of_gpio_flags flags;
-> +	int gpio;
-> +
-> +	if (!node)
-> +		return -EINVAL;
-> +
-> +	printk("adp1653: no platform data\n");
-> +	pd = devm_kzalloc(&client->dev, sizeof(*pd), GFP_KERNEL);
-> +	if (!pd)
-> +		return -ENOMEM;
-> +	flash->platform_data = pd;
-> +
-> +
-> +
-> +
-> +
-> +
-> +
-> +	if (of_property_read_u32(node, "max-flash-timeout-usec", &val)) return -EINVAL;
-> +	pd->max_flash_timeout = val;
-> +	if (of_property_read_u32(node, "max-flash-intensity-uA", &val)) return -EINVAL;
-> +	pd->max_flash_intensity = val/1000;
-> +	if (of_property_read_u32(node, "max-torch-intensity-uA", &val)) return -EINVAL;
-> +	pd->max_torch_intensity = val/1000;
-> +	if (of_property_read_u32(node, "max-indicator-intensity-uA", &val)) return -EINVAL;
-> +	pd->max_indicator_intensity = val;
-> +
-> +	if (!of_find_property(node, "gpios", NULL)) {
-> +		printk("No gpio node\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	gpio = of_get_gpio_flags(node, 0, &flags);
-> +	if (gpio < 0) {
-> +		printk("Error getting GPIO\n"); 
-> +		return -EINVAL;
-> +	}
-> +
-> +	pd->power_gpio = gpio;
-> +
-> +	return 0;
-> +}
-> +
-> +
->  static int adp1653_probe(struct i2c_client *client,
->  			 const struct i2c_device_id *devid)
->  {
->  	struct adp1653_flash *flash;
->  	int ret;
->  
-> -	/* we couldn't work without platform data */
-> -	if (client->dev.platform_data == NULL)
-> -		return -ENODEV;
-> +	printk("adp1653: probe\n");
->  
->  	flash = devm_kzalloc(&client->dev, sizeof(*flash), GFP_KERNEL);
->  	if (flash == NULL)
->  		return -ENOMEM;
->  
-> -	flash->platform_data = client->dev.platform_data;
-> +	/* we couldn't work without platform data */
-> +	if (client->dev.platform_data == NULL) {
-> +		ret = adp1653_of_init(client, flash, client->dev.of_node);
-> +		if (ret)
-> +			return ret;
-> +	} else
-> +		flash->platform_data = client->dev.platform_data;
->  
->  	mutex_init(&flash->power_lock);
->  
-> @@ -439,9 +527,15 @@ static int adp1653_probe(struct i2c_client *client,
->  
->  	flash->subdev.entity.type = MEDIA_ENT_T_V4L2_SUBDEV_FLASH;
->  
-> +	__adp1653_set_power(flash, 1);
-> +
-> +	__adp1653_set_power(flash, 0);
-> +	printk("Flash should have blinked\n");
-> +
->  	return 0;
->  
->  free_and_quit:
-> +	printk("adp1653: something failed registering\n");
->  	v4l2_ctrl_handler_free(&flash->ctrls);
->  	return ret;
->  }
-> diff --git a/include/media/adp1653.h b/include/media/adp1653.h
-> index 1d9b48a..b556580 100644
-> --- a/include/media/adp1653.h
-> +++ b/include/media/adp1653.h
-> @@ -100,9 +100,11 @@ struct adp1653_platform_data {
->  	int (*power)(struct v4l2_subdev *sd, int on);
->  
->  	u32 max_flash_timeout;		/* flash light timeout in us */
-> -	u32 max_flash_intensity;	/* led intensity, flash mode */
-> -	u32 max_torch_intensity;	/* led intensity, torch mode */
-> -	u32 max_indicator_intensity;	/* indicator led intensity */
-> +	u32 max_flash_intensity;	/* led intensity, flash mode, mA */
-> +	u32 max_torch_intensity;	/* led intensity, torch mode, mA */
-> +	u32 max_indicator_intensity;	/* indicator led intensity, uA */
-> +
-> +	int power_gpio;			/* for device-tree based boot */
->  };
->  
->  #define to_adp1653_flash(sd)	container_of(sd, struct adp1653_flash, subdev)
-> 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--nextPart8237810.Y3XGAkWlkd
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
--- 
-Kind regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+iEYEABECAAYFAlRqDcwACgkQi/DJPQPkQ1KKoQCgwQG6qZ6AnoH3oSTwVbrwqa6o
+BcAAn0kudF2gUH2gGE79y+X1d+p0T2Cz
+=8fDr
+-----END PGP SIGNATURE-----
+
+--nextPart8237810.Y3XGAkWlkd--
