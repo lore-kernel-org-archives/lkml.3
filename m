@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaKQIBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 03:01:40 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:46723 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbaKQIBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 03:01:38 -0500
+	id S1751544AbaKQIJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 03:09:20 -0500
+Received: from ozlabs.org ([103.22.144.67]:36435 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318AbaKQIJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 03:09:19 -0500
+Date: Mon, 17 Nov 2014 19:09:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Luc Verhaegen <libv@skynet.be>, Hans de Goede <hdegoede@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: linux-next: build failure after merge of the omap_dss2 tree
+Message-ID: <20141117190905.4e96294a@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <6465990.KKns6W8hQE@vostro.rjw.lan>
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-	<7ha93t8z1q.fsf@deeprootsystems.com>
-	<CAMuHMdVrpwg2pYxUhA5oRgd1g2DmLuSb2jR3ywz8hkjms7UBcw@mail.gmail.com>
-	<6465990.KKns6W8hQE@vostro.rjw.lan>
-Date: Mon, 17 Nov 2014 09:01:35 +0100
-X-Google-Sender-Auth: 90wkWNbqST71_of2uqhGYH5Lp9k
-Message-ID: <CAMuHMdUB_ESDe7xXn_-Zd--pKfOv31wwtj=whwDF5YrvQ98yig@mail.gmail.com>
-Subject: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when
- genpd enabled
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Kevin Hilman <khilman@kernel.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/epK8nW/5tACmWK7uTP44.BT"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 2:22 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Saturday, November 15, 2014 01:32:01 PM Geert Uytterhoeven wrote:
->> On Fri, Nov 14, 2014 at 6:36 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> >> On Thu, Nov 13, 2014 at 11:28 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> >>> It makes little sense to use generic power domains without runtime PM.
->> >>
->> >> Does it?
->> >> It still powers down the PM domains on system suspend (at least on my
->> >> boards ;-)
->> >
->> > Sure, but your devices are also using runtime PM, so I'm not sure how
->> > does that change my statement above?
->>
->> I do mean with CONFIG_PM_RUNTIME turned off.
->>
->> If PM domain support is disabled, s2ram will not power down the PM domains.
->
-> But if PM_RUNTIME is enabled along with it, I don't think it will make much
-> of a different, will it?
+--Sig_/epK8nW/5tACmWK7uTP44.BT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-That's true.
+Hi Tomi,
 
-> Building the kernel with genpd and without PM_RUNTIME is possible today,
-> but is it really useful?  To me, it only seems to make people try to
-> reinvent the wheel "because PM_RUNTIME may be unset".
->
-> I have to say I'm seriously considering to make PM_SLEEP select
-> PM_RUNTIME too as that would make quite a few things a *lot* simpler.
+After merging the omap_dss2 tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-I agree that it would simplify things, a reduce testing efforts.
+drivers/video/fbdev/simplefb.c: In function 'simplefb_clocks_init':
+drivers/video/fbdev/simplefb.c:207:2: error: implicit declaration of functi=
+on 'of_clk_get_parent_count' [-Werror=3Dimplicit-function-declaration]
+  par->clk_count =3D of_clk_get_parent_count(np);
+  ^
 
-Gr{oetje,eeting}s,
+Caused by commit fc219bfd5b2e ("simplefb: add clock handling code").
+This build does not have CONFIG_COMMON_CLK set.
 
-                        Geert
+I have added the following fix for today (there is probably a better
+one):
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 17 Nov 2014 19:05:42 +1100
+Subject: [PATCH] simplefb: make it depend on CONFIG_COMMON_CLK
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/video/fbdev/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
+index 025b439d4fe1..1f0298e166c3 100644
+--- a/drivers/video/fbdev/Kconfig
++++ b/drivers/video/fbdev/Kconfig
+@@ -2457,6 +2457,7 @@ config FB_HYPERV
+ config FB_SIMPLE
+ 	bool "Simple framebuffer support"
+ 	depends on (FB =3D y)
++	depends on COMMON_CLK
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
+--=20
+2.1.3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/epK8nW/5tACmWK7uTP44.BT
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUaa0sAAoJEMDTa8Ir7ZwVWGAP/i6B1Z51iBNzwZ0xBeOjFUyX
+loo3Giak4yubaTGDnp+42Yby46BuKTw/TCygkmQNmUB62h+XutjxvWnqxCdZAi0I
+/+/dMD0ZGhdGGu3aobXfnS0HXQ3ewwLjhd9u7qbni1vnpxqYJ1DU4NQ5kbeMmFDR
+7xl/Yfo+wjTvPZBaPi5OrzqnI2c9j9TQWVjPbOnl+R6mKlTeKZm7bhzC2loXGNCk
+M9gPkFBMyknortmA7cS4MDtvApYAGjP8Fj/e3BrL1GccXhNxRZ0xVs45SbZeL0Bv
+N1OuXERoahAfBGStheF/Jt9qFxhkgk8SjeoY0H+nHdT7KPHFIvRylGq2Ip77yG/R
+devbbVcDzfaAKJZ9Qrj/R0RLib6DE1UjBTeI3HsKLO08mb1c/CTS6KLtvQLXhcVw
+7KERSGb7iB1x7sbIRNhcSdBni8Hn7MWze729sUxZsGcgBVNSxxH/Uc08v1MkUTGP
+t1mQV2iUUp+C/sjYKdBV042Xb+IygbqaTxGseYHLeF+8B2xjJ7JdaTvqeBrzyszz
+YVpNeg8G8I4rD9fB1qGUfg6HliRziYzDY8aRXPkvn6u8V2abuUesP1mr/Uwz42AK
+UL5xIgcZPy4DRiEfMG60x2F2e9cryofHch/8Jazm3j+VcHepZmCc2kbPJnVwynvR
+tQ3ziif4CgYXciQUpNRy
+=3pno
+-----END PGP SIGNATURE-----
+
+--Sig_/epK8nW/5tACmWK7uTP44.BT--
