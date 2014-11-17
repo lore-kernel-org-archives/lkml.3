@@ -1,347 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbaKQLqm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 06:46:42 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:52432 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaKQLqk (ORCPT
+	id S1751900AbaKQLsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 06:48:12 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:46723 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712AbaKQLsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 06:46:40 -0500
-Date: Mon, 17 Nov 2014 19:46:34 +0800
-Subject: RE: [PATCH] drivers: scsi: megaraid: Add "megaraid_sas_internal.h"
- for internal shared functions using
-Message-ID: <lfdrro7paac7tbj4ofn0f3dk.1416224479458@email.android.com>
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-To: Sumit Saxena <sumit.saxena@avagotech.com>
-Cc: megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 17 Nov 2014 06:48:09 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-76-5469e076cf38
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org, tony@atomide.com,
+        drake@endlessm.com, loeliger@gmail.com,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v9 0/7] Enable L2 cache support on Exynos4210/4x12 SoCs
+Date: Mon, 17 Nov 2014 12:47:54 +0100
+Message-id: <1416224881-4227-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xa7plDzJDDB52y1r8nXSM3eLR/MfM
+	Fr0LrrJZnG16w26xvXMGu8WUP8uZLDY9vsZqcXnXHDaL2Uv6WSxmnN/HZHH7Mq/Fue1bWCzW
+	HrnLbrH0+kUmi1PXP7NZrNr1h9Fi/xUvB0GPNfPWMHq0NPewefz+NYnR49vXSSwel/t6mTwW
+	fc/y2DnrLrvHnWt72Dw2L6n3uHKiidWjb8sqRo/Pm+QCeKK4bFJSczLLUov07RK4Mvon/mQv
+	mCxXcXuKTQPjNfEuRk4OCQETiYbFB1khbDGJC/fWs3UxcnEICSxllNg85RsLhNPHJLH6WTc7
+	SBWbgKFE19suNhBbRMBN4t+6Q2AdzAKfmSUuPVoDNkpYwF1iXsNOsCIWAVWJuXOfMYLYvEDx
+	/f9OMkKsk5P4/3IF0wRG7gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQgL5yw7Gxces
+	DjEKcDAq8fBKHMgMEWJNLCuuzD3EKMHBrCTCG3MRKMSbklhZlVqUH19UmpNafIiRiYNTqoEx
+	UvTpbv5rd7g1Z/8LqSwvX3Fljx5/q0Xt+tbYiKMpt5/ON1Bs3cu4bEbkJg/3OTcKFp3MVWTi
+	WPWeQavA7MOq8mudXUsenstJWebs0bbLzeu/nLOArumTBV+/NZoYrSt+0FS2yPi+8ZEp+WmT
+	zW/whOWvvHVOWPKuccXKlf12N6umlD6+WBaixFKckWioxVxUnAgAQ2A0I0ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAHBkmNF012443
+
+This is an updated patchset, which intends to add support for L2 cache
+on Exynos4 SoCs on boards running under secure firmware, which requires
+certain initialization steps to be done with help of firmware, as
+selected registers are writable only from secure mode.
+
+First four patches extend existing support for secure write in L2C driver
+to account for design of secure firmware running on Exynos. Namely:
+ 1) direct read access to certain registers is needed on Exynos, because
+    secure firmware calls set several registers at once,
+ 2) not all boards are running secure firmware, so .write_sec callback
+    needs to be installed in Exynos firmware ops initialization code,
+ 3) write access to {DATA,TAG}_LATENCY_CTRL registers fron non-secure world
+    is not allowed and so must use l2c_write_sec as well,
+ 4) on certain boards, default value of prefetch register is incorrect
+    and must be overridden at L2C initialization.
+For boards running with firmware that provides access to individual
+L2C registers this series should introduce no functional changes. However
+since the driver is widely used on other platforms I'd like to kindly ask
+any interested people for testing.
+
+Further three patches add implementation of .write_sec and .configure
+callbacks for Exynos secure firmware and necessary DT nodes to enable
+L2 cache.
+
+Changes in this version tested on Exynos4412-based TRATS2 and OdroidU3+
+boards (both with secure firmware). There should be no functional change
+for Exynos boards running without secure firmware. I do not have access
+to affected non-Exynos boards, so I could not test on them.
+
+Depends on:
+- v3.18-rc3
+
+Changelog:
+
+Changes since v8:
+(http://lkml.org/lkml/2014/11/13/263)
+- Rebased onto vanilla v3.18-rc3 and added required includes, which were
+  previously added by other patches
+- Added Acked-by tags for Exynos part
+
+Changes since v7:
+(https://lkml.org/lkml/2014/10/29/158)
+- rebased onto arm-soc/for-next kernel tree (depends on patches merged to
+  v3.18-rc3 and arm-soc/samsung/pm2 branch)
+- removed 'ARM: l2c: unify L2C-310 OF initialization error messages' patch
+  (no longer needed)
+
+Changes since v6:
+(https://lkml.org/lkml/2014/10/27/233)
+- changed PL310 to L2C-310 prefix in error messages
+- added patch shortening the error message about incorrect associativity
+
+Changes since v5:
+(https://lkml.org/lkml/2014/9/24/364)
+- rebased onto v3.18-rc2
+- added error message about missing properties values
+
+Changes since v4:
+(https://lkml.org/lkml/2014/8/26/461)
+ - rewrote the code accessing l2x0_saved_regs from assembly code
+ - added comment and reworked unconditional call to SMC_CMD_L2X0INVALL
 
 
-OK, I will send patch v2 for it.
+Patch summary:
 
-I sent this patch based on Linux next tree, please tell me the tree
-location (git address) which I shall base on for sending patch v2.
+Tomasz Figa (7):
+  ARM: l2c: Refactor the driver to use commit-like interface
+  ARM: l2c: Add interface to ask hypervisor to configure L2C
+  ARM: l2c: Get outer cache .write_sec callback from mach_desc only if
+    not NULL
+  ARM: l2c: Add support for overriding prefetch settings
+  ARM: EXYNOS: Add .write_sec outer cache callback for L2C-310
+  ARM: EXYNOS: Add support for non-secure L2X0 resume
+  ARM: dts: exynos4: Add nodes for L2 cache controller
 
-Thanks.
+ Documentation/devicetree/bindings/arm/l2cc.txt |  10 +
+ arch/arm/boot/dts/exynos4210.dtsi              |   9 +
+ arch/arm/boot/dts/exynos4x12.dtsi              |  14 ++
+ arch/arm/include/asm/outercache.h              |   3 +
+ arch/arm/kernel/irq.c                          |   3 +-
+ arch/arm/mach-exynos/Makefile                  |   1 +
+ arch/arm/mach-exynos/firmware.c                |  51 +++++
+ arch/arm/mach-exynos/sleep.S                   |  48 +++++
+ arch/arm/mach-exynos/smc.h                     |   4 +
+ arch/arm/mm/cache-l2x0.c                       | 270 ++++++++++++++++---------
+ 10 files changed, 317 insertions(+), 96 deletions(-)
 
-Send from Lenovo A788t.
+-- 
+1.9.2
 
-Sumit Saxena <sumit.saxena@avagotech.com> wrote:
-
->>-----Original Message-----
->>From: Chen Gang [mailto:gang.chen.5i5j@gmail.com]
->>Sent: Sunday, November 09, 2014 3:47 PM
->>To: megaraidlinux@lsi.com; JBottomley@parallels.com
->>Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
->>Subject: [PATCH] drivers: scsi: megaraid: Add "megaraid_sas_internal.h"
->for
->>internal shared functions using
->>
->>For shared inline functions crossed source files, better to let it as
->"static inline"
->>in a header file. For extern functions, better to declare them in header
->file.
->>
->>For the latest upstream gcc/binutiles (gcc 5 with ld 2.25.51), it will
->cause
->>building break (although it might be the gcc's or ld's issue), the
->related error
->>(with allmodconfig under tile):
->>
->>    MODPOST 4002 modules
->>  ERROR: "megasas_return_cmd" [drivers/scsi/megaraid/megaraid_sas.ko]
->>undefined!
->>  ERROR: "megasas_is_ldio" [drivers/scsi/megaraid/megaraid_sas.ko]
->>undefined!
->>
->>
->>Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>---
->> drivers/scsi/megaraid/megaraid_sas_base.c     |  65 +----------------
->> drivers/scsi/megaraid/megaraid_sas_fusion.c   |  38 +---------
->> drivers/scsi/megaraid/megaraid_sas_internal.h | 100
->>++++++++++++++++++++++++++
->> 3 files changed, 102 insertions(+), 101 deletions(-)  create mode 100644
->>drivers/scsi/megaraid/megaraid_sas_internal.h
->>
->>diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c
->>b/drivers/scsi/megaraid/megaraid_sas_base.c
->>index f6a69a3..4a71c04 100644
->>--- a/drivers/scsi/megaraid/megaraid_sas_base.c
->>+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
->>@@ -57,6 +57,7 @@
->> #include <scsi/scsi_tcq.h>
->> #include "megaraid_sas_fusion.h"
->> #include "megaraid_sas.h"
->>+#include "megaraid_sas_internal.h"
->>
->> /*
->>  * Number of sectors per IO command
->>@@ -98,7 +99,6 @@ MODULE_VERSION(MEGASAS_VERSION);
->>MODULE_AUTHOR("megaraidlinux@lsi.com");
->> MODULE_DESCRIPTION("LSI MegaRAID SAS Driver");
->>
->>-int megasas_transition_to_ready(struct megasas_instance *instance, int
->>ocr);  static int megasas_get_pd_list(struct megasas_instance *instance);
->>static int megasas_ld_list_query(struct megasas_instance *instance,
->> 				 u8 query_type);
->>@@ -155,9 +155,6 @@ static u32 support_device_change;
->> /* define lock for aen poll */
->> spinlock_t poll_aen_lock;
->>
->>-void
->>-megasas_complete_cmd(struct megasas_instance *instance, struct
->>megasas_cmd *cmd,
->>-		     u8 alt_status);
->> static u32
->> megasas_read_fw_status_reg_gen2(struct megasas_register_set __iomem
->>*regs);  static int @@ -170,26 +167,8 @@ u32
->>megasas_build_and_issue_cmd(struct megasas_instance *instance,
->> 			    struct scsi_cmnd *scmd);
->> static void megasas_complete_cmd_dpc(unsigned long instance_addr); -void
->>-megasas_release_fusion(struct megasas_instance *instance); -int -
->>megasas_ioc_init_fusion(struct megasas_instance *instance); -void -
->>megasas_free_cmds_fusion(struct megasas_instance *instance);
->>-u8
->>-megasas_get_map_info(struct megasas_instance *instance); -int -
->>megasas_sync_map_info(struct megasas_instance *instance); -int -
->>wait_and_poll(struct megasas_instance *instance, struct megasas_cmd
->>*cmd,
->>-	int seconds);
->>-void megasas_reset_reply_desc(struct megasas_instance *instance); -int
->>megasas_reset_fusion(struct Scsi_Host *shost, int iotimeout); -void
->>megasas_fusion_ocr_wq(struct work_struct *work);  static int
->>megasas_get_ld_vf_affiliation(struct megasas_instance *instance,
->> 					 int initial);
->>-int megasas_check_mpio_paths(struct megasas_instance *instance,
->>-			     struct scsi_cmnd *scmd);
->>
->> void
->> megasas_issue_dcmd(struct megasas_instance *instance, struct
->>megasas_cmd *cmd) @@ -258,22 +237,6 @@ __megasas_return_cmd(struct
->>megasas_instance *instance, struct megasas_cmd *cmd)  }
->>
->> /**
->>- * megasas_return_cmd -	Return a cmd to free command pool
->>- * @instance:		Adapter soft state
->>- * @cmd:		Command packet to be returned to free command
->>pool
->>- */
->>-inline void
->>-megasas_return_cmd(struct megasas_instance *instance, struct
->>megasas_cmd *cmd) -{
->>-	unsigned long flags;
->>-
->>-	spin_lock_irqsave(&instance->mfi_pool_lock, flags);
->>-	__megasas_return_cmd(instance, cmd);
->>-	spin_unlock_irqrestore(&instance->mfi_pool_lock, flags);
->>-}
->>-
->>-
->>-/**
->> *	The following functions are defined for xscale
->> *	(deviceid : 1064R, PERC5) controllers
->> */
->>@@ -1417,32 +1380,6 @@ megasas_build_ldio(struct megasas_instance
->>*instance, struct scsi_cmnd *scp,
->> 	return cmd->frame_count;
->> }
->>
->>-/**
->>- * megasas_is_ldio -		Checks if the cmd is for logical drive
->>- * @scmd:			SCSI command
->>- *
->>- * Called by megasas_queue_command to find out if the command to be
->>queued
->>- * is a logical drive command
->>- */
->>-inline int megasas_is_ldio(struct scsi_cmnd *cmd) -{
->>-	if (!MEGASAS_IS_LOGICAL(cmd))
->>-		return 0;
->>-	switch (cmd->cmnd[0]) {
->>-	case READ_10:
->>-	case WRITE_10:
->>-	case READ_12:
->>-	case WRITE_12:
->>-	case READ_6:
->>-	case WRITE_6:
->>-	case READ_16:
->>-	case WRITE_16:
->>-		return 1;
->>-	default:
->>-		return 0;
->>-	}
->>-}
->>-
->>  /**
->>  * megasas_dump_pending_frames -	Dumps the frame address of all
->>pending cmds
->>  *                              	in FW
->>diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c
->>b/drivers/scsi/megaraid/megaraid_sas_fusion.c
->>index f37eed6..c2b8782 100644
->>--- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
->>+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
->>@@ -54,43 +54,7 @@
->>
->> #include "megaraid_sas_fusion.h"
->> #include "megaraid_sas.h"
->>-
->>-extern void megasas_free_cmds(struct megasas_instance *instance); -
->>extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
->>-					   *instance);
->>-extern void
->>-megasas_complete_cmd(struct megasas_instance *instance,
->>-		     struct megasas_cmd *cmd, u8 alt_status);
->>-int megasas_is_ldio(struct scsi_cmnd *cmd); -int -wait_and_poll(struct
->>megasas_instance *instance, struct megasas_cmd *cmd,
->>-	      int seconds);
->>-
->>-void
->>-megasas_return_cmd(struct megasas_instance *instance, struct
->>megasas_cmd *cmd); -int megasas_alloc_cmds(struct megasas_instance
->>*instance); -int -megasas_clear_intr_fusion(struct megasas_register_set
->>__iomem *regs); -int -megasas_issue_polled(struct megasas_instance
->>*instance,
->>-		     struct megasas_cmd *cmd);
->>-void
->>-megasas_check_and_restore_queue_depth(struct megasas_instance
->>*instance);
->>-
->>-int megasas_transition_to_ready(struct megasas_instance *instance, int
->>ocr); -void megaraid_sas_kill_hba(struct megasas_instance *instance);
->>-
->>-extern u32 megasas_dbg_lvl;
->>-void megasas_sriov_heartbeat_handler(unsigned long instance_addr); -int
->>megasas_sriov_start_heartbeat(struct megasas_instance *instance,
->>-				  int initial);
->>-void megasas_start_timer(struct megasas_instance *instance,
->>-			struct timer_list *timer,
->>-			 void *fn, unsigned long interval);
->>-extern struct megasas_mgmt_info megasas_mgmt_info; -extern int
->>resetwaittime;
->>-
->>-
->>+#include "megaraid_sas_internal.h"
->>
->> /**
->>  * megasas_enable_intr_fusion -	Enables interrupts
->>diff --git a/drivers/scsi/megaraid/megaraid_sas_internal.h
->>b/drivers/scsi/megaraid/megaraid_sas_internal.h
->>new file mode 100644
->>index 0000000..b2b0a55
->>--- /dev/null
->>+++ b/drivers/scsi/megaraid/megaraid_sas_internal.h
->>@@ -0,0 +1,100 @@
->>+#ifndef LSI_MEGARAID_SAS_INTERNAL_H
->>+#define LSI_MEGARAID_SAS_INTERNAL_H
->>+
->>+/*
->>+ * From base.
->>+ */
->>+
->>+extern void megasas_free_cmds(struct megasas_instance *instance);
->>+extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
->>+					   *instance);
->>+
->>+extern void
->>+megasas_complete_cmd(struct megasas_instance *instance,
->>+		     struct megasas_cmd *cmd, u8 alt_status);
->>+/**
->>+ * megasas_is_ldio -		Checks if the cmd is for logical drive
->>+ * @scmd:			SCSI command
->>+ *
->>+ * Called by megasas_queue_command to find out if the command to be
->>+queued
->>+ * is a logical drive command
->>+ */
->>+static inline int megasas_is_ldio(struct scsi_cmnd *cmd) {
->>+	if (!MEGASAS_IS_LOGICAL(cmd))
->>+		return 0;
->>+	switch (cmd->cmnd[0]) {
->>+	case READ_10:
->>+	case WRITE_10:
->>+	case READ_12:
->>+	case WRITE_12:
->>+	case READ_6:
->>+	case WRITE_6:
->>+	case READ_16:
->>+	case WRITE_16:
->>+		return 1;
->>+	default:
->>+		return 0;
->>+	}
->>+}
->>+
->>+/**
->>+ * megasas_return_cmd -	Return a cmd to free command pool
->>+ * @instance:		Adapter soft state
->>+ * @cmd:		Command packet to be returned to free command
->>pool
->>+ */
->>+static inline void
->>+megasas_return_cmd(struct megasas_instance *instance, struct
->>+megasas_cmd *cmd) {
->>+	unsigned long flags;
->>+
->>+	spin_lock_irqsave(&instance->mfi_pool_lock, flags);
->>+	__megasas_return_cmd(instance, cmd);
->>+	spin_unlock_irqrestore(&instance->mfi_pool_lock, flags); }
->>+
->>+int megasas_alloc_cmds(struct megasas_instance *instance);
->>+
->>+int
->>+megasas_issue_polled(struct megasas_instance *instance,
->>+		     struct megasas_cmd *cmd);
->>+void
->>+megasas_check_and_restore_queue_depth(struct megasas_instance
->>+*instance);
->>+
->>+int megasas_transition_to_ready(struct megasas_instance *instance, int
->>+ocr); void megaraid_sas_kill_hba(struct megasas_instance *instance);
->>+
->>+extern u32 megasas_dbg_lvl;
->>+void megasas_sriov_heartbeat_handler(unsigned long instance_addr); int
->>+megasas_sriov_start_heartbeat(struct megasas_instance *instance,
->>+				  int initial);
->>+void megasas_start_timer(struct megasas_instance *instance,
->>+			struct timer_list *timer,
->>+			 void *fn, unsigned long interval);
->>+extern struct megasas_mgmt_info megasas_mgmt_info; extern int
->>+resetwaittime;
->>+
->>+/*
->>+ * From fusion.
->>+ */
->>+
->>+int megasas_check_mpio_paths(struct megasas_instance *instance,
->>+			     struct scsi_cmnd *scmd);
->>+int
->>+wait_and_poll(struct megasas_instance *instance, struct megasas_cmd
->>*cmd,
->>+	      int seconds);
->>+void
->>+megasas_release_fusion(struct megasas_instance *instance); int
->>+megasas_ioc_init_fusion(struct megasas_instance *instance); void
->>+megasas_free_cmds_fusion(struct megasas_instance *instance);
->>+u8
->>+megasas_get_map_info(struct megasas_instance *instance); int
->>+megasas_sync_map_info(struct megasas_instance *instance); void
->>+megasas_reset_reply_desc(struct megasas_instance *instance); int
->>+megasas_reset_fusion(struct Scsi_Host *shost, int iotimeout); void
->>+megasas_fusion_ocr_wq(struct work_struct *work);
->>+
->>+#endif /* LSI_MEGARAID_SAS_INTERNAL_H */
->
->Patch looks good to me. Can you please rebase this patch on top of latest
->patch series sent by me?
->>--
->>1.9.3
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
