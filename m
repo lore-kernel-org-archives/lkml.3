@@ -1,62 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702AbaKQAmQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Nov 2014 19:42:16 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:46315 "EHLO
+	id S1751829AbaKQAm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Nov 2014 19:42:26 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:46434 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900AbaKQAmP (ORCPT
+	with ESMTP id S1751724AbaKQAmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Nov 2014 19:42:15 -0500
+	Sun, 16 Nov 2014 19:42:24 -0500
 X-Original-SENDERIP: 10.177.226.38
 X-Original-MAILFROM: byungchul.park@lge.com
 From: byungchul.park@lge.com
 To: rostedt@goodmis.org, mingo@redhat.com
 Cc: linux-kernel@vger.kernel.org, seungho1.park@lge.com, jolsa@redhat.com,
         Byungchul Park <byungchul.park@lge.com>
-Subject: [PATCH v3 0/3] tracing: signaling large duration and delay
-Date: Mon, 17 Nov 2014 09:41:55 +0900
-Message-Id: <1416184918-10471-1-git-send-email-byungchul.park@lge.com>
+Subject: [PATCH v3 2/3] tracing, function_graph: add additional marks to signal very large function execution time
+Date: Mon, 17 Nov 2014 09:41:57 +0900
+Message-Id: <1416184918-10471-3-git-send-email-byungchul.park@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1416184918-10471-1-git-send-email-byungchul.park@lge.com>
+References: <1416184918-10471-1-git-send-email-byungchul.park@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Byungchul Park <byungchul.park@lge.com>
 
-Changes from v2 to v3
-* use inline function instead of macro
-* enhance readablity
+Currently, function graph tracer prints "!" or "+" just before
+function execution time to signal a function overhead, depending
+on the time. Even it is usually enough to do that, we sometimes
+need to be signaled for bigger execution time than 100 micro seconds.
 
-Changes from v1 to v2
-* update Document/trace/ftrace.txt
-* seperate the implementation as a macro
-* apply the implementation to delay printing, too
+For example, I used function graph tracer to detect if there is
+any case that exit_mm() takes too much time. I did following steps
+in /sys/kernel/debug/tracing. It was easier to detect very big
+excution time with patched kernel than with original kernel.
 
-Hello.
+$ echo exit_mm > set_graph_function
+$ echo function_graph > current_tracer
+$ echo > trace
+$ cat trace_pipe > $LOGFILE
+ ... (do something and terminate logging)
+$ grep "\\$" $LOGFILE
+ 3) $ 22082032 us |                      } /* kernel_map_pages */
+ 3) $ 22082040 us |                    } /* free_pages_prepare */
+ 3) $ 22082113 us |                  } /* free_hot_cold_page */
+ 3) $ 22083455 us |                } /* free_hot_cold_page_list */
+ 3) $ 22083895 us |              } /* release_pages */
+ 3) $ 22177873 us |            } /* free_pages_and_swap_cache */
+ 3) $ 22178929 us |          } /* unmap_single_vma */
+ 3) $ 22198885 us |        } /* unmap_vmas */
+ 3) $ 22206949 us |      } /* exit_mmap */
+ 3) $ 22207659 us |    } /* mmput */
+ 3) $ 22207793 us |  } /* exit_mm */
 
-When I analysis the exit_mm() function to find out the reason why the
-function spends much time occasionally, this patch was very useful.
-I thought this patch cannot be useful only for me, but can be also
-useful for anybody who want to be signaled for very large function
-execution time, so I decided to submit this patchset.
+And then, it was easy to find out that a schedule-out occured by
+sub_preempt_count() within kernel_map_pages().
 
-Nobody who have such a demand? :)
+To detect very large function exection time caused by either problematic
+function implementation or scheduling issues, this patch can be useful.
 
-Thanks,
-Byungchul.
-
-Byungchul Park (3):
-  tracing, function_graph: fix micro seconds notation in comment
-  tracing, function_graph: add additional marks to signal very large
-    function execution time
-  tracing: add additional marks to signal very large delay
-
- Documentation/trace/ftrace.txt       |   10 +++++++---
+Signed-off-by: Byungchul Park <byungchul.park@lge.com>
+---
+ Documentation/trace/ftrace.txt       |    2 ++
  kernel/trace/trace.h                 |   19 +++++++++++++++++++
- kernel/trace/trace_functions_graph.c |   28 ++++++++++++++++++----------
- kernel/trace/trace_output.c          |   20 +++++++++++++++-----
- 4 files changed, 59 insertions(+), 18 deletions(-)
+ kernel/trace/trace_functions_graph.c |   20 ++++++++++++++------
+ 3 files changed, 35 insertions(+), 6 deletions(-)
 
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index 4da4261..f827e2f 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -1951,6 +1951,8 @@ want, depending on your needs.
+ 
+   + means that the function exceeded 10 usecs.
+   ! means that the function exceeded 100 usecs.
++  # means that the function exceeded 1000 usecs.
++  $ means that the function exceeded 1 sec.
+ 
+ 
+ - The task/pid field displays the thread cmdline and pid which
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 385391f..d89868a 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -331,6 +331,25 @@ struct tracer_flags {
+ /* Makes more easy to define a tracer opt */
+ #define TRACER_OPT(s, b)	.name = #s, .bit = b
+ 
++/* trace overhead mark */
++struct trace_mark {
++	unsigned long long	val; /* unit: nsec */
++	char			sym;
++};
++
++#define MARK(v, s) {.val = v, .sym = s}
++
++static inline char trace_duration_mark(unsigned long long d,
++				       const struct trace_mark m[],
++				       int size)
++{
++	int idx = size;
++
++	if (size <= 0) return ' ';
++	while (d <= m[--idx].val && idx > 0);
++
++	return m[idx].sym;
++}
+ 
+ /**
+  * struct tracer - a specific tracer and its callbacks to interact with debugfs
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index cb33f46..d9ac09f 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -797,6 +797,19 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
+ 	return TRACE_TYPE_HANDLED;
+ }
+ 
++static const struct trace_mark mark[] = {
++	MARK(0ULL		, ' '), /* 0 usecs */
++	MARK(10000ULL		, '+'), /* 10 usecs */
++	MARK(100000ULL		, '!'), /* 100 usecs */
++	MARK(1000000ULL		, '#'), /* 1000 usecs */
++	MARK(1000000000ULL	, '$'), /* 1 sec */
++};
++
++static inline char find_trace_mark(unsigned long long d)
++{
++	return trace_duration_mark(d, mark, ARRAY_SIZE(mark));
++}
++
+ static enum print_line_t
+ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+ 		     u32 flags)
+@@ -822,12 +835,7 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+ 
+ 	/* Signal a overhead of time execution to the output */
+ 	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+-		/* Duration exceeded 100 usecs */
+-		if (duration > 100000ULL)
+-			ret = trace_seq_puts(s, "! ");
+-		/* Duration exceeded 10 usecs */
+-		else if (duration > 10000ULL)
+-			ret = trace_seq_puts(s, "+ ");
++		ret = trace_seq_printf(s, "%c ", find_trace_mark(duration));
+ 	}
+ 
+ 	/*
 -- 
 1.7.9.5
 
