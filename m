@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaKQTLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:11:00 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:38156 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaKQTI3 (ORCPT
+	id S1753240AbaKQTLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:11:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:25801 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752446AbaKQTLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:08:29 -0500
-From: Stephane Eranian <eranian@google.com>
+	Mon, 17 Nov 2014 14:11:18 -0500
+Date: Mon, 17 Nov 2014 14:11:08 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v3 09/13] perf/x86: fix intel_get_event_constraints() for dynamic constraints
-Date: Mon, 17 Nov 2014 20:07:01 +0100
-Message-Id: <1416251225-17721-10-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416251225-17721-1-git-send-email-eranian@google.com>
-References: <1416251225-17721-1-git-send-email-eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH 1/2] tracing: Clean up tracing_fill_pipe_page()
+Message-ID: <20141117141108.347a30e5@gandalf.local.home>
+In-Reply-To: <20141117123250.10f6f57c@gandalf.local.home>
+References: <20141115045847.712848224@goodmis.org>
+	<20141115050603.904875201@goodmis.org>
+	<20141117123250.10f6f57c@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dynamic constraint, we need to restart from the static
-constraints each time the intel_get_event_constraints() is called.
+> 
+> I don't like the fact that I did a code structure change with this
+> patch. This patch should be just a simple conversion of len to
+> seq_buf_used(). I'm going to strip this change out and put it before
+> this patch.
 
-Reviewed-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
+
+The function tracing_fill_pipe_page() logic is a little confusing with the
+use of count saving the seq.len and reusing it.
+
+Instead of subtracting a number that is calculated from the saved
+value of the seq.len from seq.len, just save the seq.len at the start
+and if we need to reset it, just assign it again.
+
+When the seq_buf overflow is len == size + 1, the current logic will
+break. Changing it to use a saved length for resetting back to the
+original value is more robust and will work when we change the way
+seq_buf sets the overflow.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ kernel/trace/trace.c | 26 ++++++++++++++++++++------
+ 1 file changed, 20 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 1e01584..8ad25c4 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1860,20 +1860,25 @@ static struct event_constraint *
- intel_get_event_constraints(struct cpu_hw_events *cpuc, int idx,
- 			    struct perf_event *event)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 7d7a07e9b9e9..2dbc18e5f929 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4575,23 +4575,37 @@ static size_t
+ tracing_fill_pipe_page(size_t rem, struct trace_iterator *iter)
  {
--	struct event_constraint *c = event->hw.constraint;
-+	struct event_constraint *c1 = event->hw.constraint;
-+	struct event_constraint *c2;
+ 	size_t count;
++	int save_len;
+ 	int ret;
  
- 	/*
- 	 * first time only
- 	 * - static constraint: no change across incremental scheduling calls
- 	 * - dynamic constraint: handled by intel_get_excl_constraints()
- 	 */
--	if (!c)
--		c = __intel_get_event_constraints(cpuc, idx, event);
-+	c2 = __intel_get_event_constraints(cpuc, idx, event);
-+	if (c1 && (c1->flags & PERF_X86_EVENT_DYNAMIC)) {
-+		bitmap_copy(c1->idxmsk, c2->idxmsk, X86_PMC_IDX_MAX);
-+		c1->weight = c2->weight;
-+		c2 = c1;
-+	}
+ 	/* Seq buffer is page-sized, exactly what we need. */
+ 	for (;;) {
+-		count = iter->seq.seq.len;
++		save_len = iter->seq.seq.len;
+ 		ret = print_trace_line(iter);
+-		count = iter->seq.seq.len - count;
+-		if (rem < count) {
+-			rem = 0;
+-			iter->seq.seq.len -= count;
++
++		if (trace_seq_has_overflowed(&iter->seq)) {
++			iter->seq.seq.len = save_len;
+ 			break;
+ 		}
++
++		/*
++		 * This should not be hit, because it should only
++		 * be set if the iter->seq overflowed. But check it
++		 * anyway to be safe.
++		 */
+ 		if (ret == TRACE_TYPE_PARTIAL_LINE) {
+-			iter->seq.seq.len -= count;
++			iter->seq.seq.len = save_len;
+ 			break;
+ 		}
  
- 	if (cpuc->excl_cntrs)
--		return intel_get_excl_constraints(cpuc, event, idx, c);
-+		return intel_get_excl_constraints(cpuc, event, idx, c2);
- 
--	return c;
-+	return c2;
- }
- 
- static void intel_put_excl_constraints(struct cpu_hw_events *cpuc,
++		count = iter->seq.seq.len - save_len;
++		if (rem < count) {
++			rem = 0;
++			iter->seq.seq.len = save_len;
++			break;
++		}
++
++
+ 		if (ret != TRACE_TYPE_NO_CONSUME)
+ 			trace_consume(iter);
+ 		rem -= count;
 -- 
-1.9.1
+1.8.1.4
 
