@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaKQJHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 04:07:48 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:52023 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaKQJHq (ORCPT
+	id S1752043AbaKQJJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 04:09:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42003 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768AbaKQJJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 04:07:46 -0500
-Message-ID: <5469BAD8.3090006@linaro.org>
-Date: Mon, 17 Nov 2014 09:07:36 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 17 Nov 2014 04:09:19 -0500
+Date: Mon, 17 Nov 2014 10:09:15 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
+Message-ID: <20141117090915.GE27002@pengutronix.de>
+References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
+ <1360738983-22436-3-git-send-email-gnurou@gmail.com>
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH v12 11/15] arm: omap1: Migrate debug_ll macros to use
- 8250.S
-References: <1414148076-12685-1-git-send-email-daniel.thompson@linaro.org> <1414148076-12685-12-git-send-email-daniel.thompson@linaro.org> <20141116002956.GA13220@fuloong-minipc.musicnaut.iki.fi>
-In-Reply-To: <20141116002956.GA13220@fuloong-minipc.musicnaut.iki.fi>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1360738983-22436-3-git-send-email-gnurou@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/11/14 00:29, Aaro Koskinen wrote:
-> Hi,
+Hello,
+
+On Wed, Feb 13, 2013 at 04:03:00PM +0900, Alexandre Courbot wrote:
+> From: Alexandre Courbot <acourbot@nvidia.com>
 > 
-> On Fri, Oct 24, 2014 at 11:54:32AM +0100, Daniel Thompson wrote:
->> +	config DEBUG_OMAP1UART1
->> +		bool "Kernel low-level debugging via OMAP1 UART1"
->> +		depends on ARCH_OMAP1
->> +		select DEBUG_UART_8250
->> +		help
->> +		  Say Y here if you want kernel low-level debugging support
->> +		  on OMAP1 based platforms (expect OMAP730) on the UART1.
-> [...]
->> +		  on OMAP1 based platforms (expect OMAP730) on the UART2.
-> [...]
->> +		  on OMAP1 based platforms (expect OMAP730) on the UART3.
->                                             ^^^^^^
+> Constify descriptor parameter of gpiod_* functions for those that
+> should obviously not modify it. This includes value or direction get,
+> cansleep, and IRQ number query.
 > 
-> Spelling again wrong. I think it was already corrected in v11?
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+This patch is applied as def634338d3ffb32fbe9b0a2d70cc24ef909cd4f since
+v3.9-rc2.
 
-Sorry and, yes, you're right this was corrected in v11.
+>  drivers/gpio/gpiolib.c | 29 ++++++++++++++++-------------
+>  1 file changed, 16 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 8a2cf9c..ad6df6b 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -207,7 +208,7 @@ static int gpiochip_find_base(int ngpio)
+>  }
+>  
+>  /* caller ensures gpio is valid and requested, chip->get_direction may sleep  */
+> -static int gpiod_get_direction(struct gpio_desc *desc)
+> +static int gpiod_get_direction(const struct gpio_desc *desc)
+>  {
+>  	struct gpio_chip	*chip;
+>  	unsigned		offset;
+> @@ -223,11 +224,13 @@ static int gpiod_get_direction(struct gpio_desc *desc)
+>  	if (status > 0) {
+>  		/* GPIOF_DIR_IN, or other positive */
+>  		status = 1;
+> -		clear_bit(FLAG_IS_OUT, &desc->flags);
+> +		/* FLAG_IS_OUT is just a cache of the result of get_direction(),
+> +		 * so it does not affect constness per se */
+> +		clear_bit(FLAG_IS_OUT, &((struct gpio_desc *)desc)->flags);
+I think this is worse than not having gpiod_get_direction take a const
+descriptor.
+I don't know an example for this particular case where this could break,
+but usually casting away a const is bad and can break in various ways.
 
-I was travelling when I posted v11 so I guess I must have forgot to pull
-the right branches to my main machine. I will dig it and diff shortly to
-make sure I didn't miss anything else.
+Maybe even drop the public function gpiod_get_direction completely.
+As of next-20141114 there are only two users of this function (apart
+from drivers/gpio/gpiolib*) and both are wrong (as discussed in
+http://thread.gmane.org/gmane.linux.serial/16808/focus=4783).
 
+Best regards
+Uwe
 
-Daniel.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
