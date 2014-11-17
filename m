@@ -1,138 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaKQTIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 14:08:30 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:43871 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822AbaKQTI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 14:08:26 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v3 08/13] perf/x86: enforce HT bug workaround with PEBS for SNB/IVB/HSW
-Date: Mon, 17 Nov 2014 20:07:00 +0100
-Message-Id: <1416251225-17721-9-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416251225-17721-1-git-send-email-eranian@google.com>
-References: <1416251225-17721-1-git-send-email-eranian@google.com>
+	id S1753192AbaKQTKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 14:10:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36504 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752859AbaKQTKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 14:10:38 -0500
+Date: Mon, 17 Nov 2014 13:10:22 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: George McCollister <george.mccollister@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
+        Mark Brown <broonie@kernel.org>, Heiko Stuebner <heiko@sntech.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Hayato Suzuki <hytszk@gmail.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] of: Add vendor prefix for NovaTech LLC
+Message-ID: <20141117191022.GB4857@saruman>
+Reply-To: <balbi@ti.com>
+References: <1416250957-11065-1-git-send-email-george.mccollister@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qjNfmADvan18RZcF"
+Content-Disposition: inline
+In-Reply-To: <1416250957-11065-1-git-send-email-george.mccollister@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+--qjNfmADvan18RZcF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch modifies the PEBS constraint tables for SNB/IVB/HSW
-such that corrupting events supporting PEBS activate the HT
-workaround.
+On Mon, Nov 17, 2014 at 01:02:34PM -0600, George McCollister wrote:
+> For company details see:
+> http://www.novatechweb.com
+>=20
+> Signed-off-by: George McCollister <george.mccollister@gmail.com>
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.h          | 20 +++++++++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 28 ++++++++++++++++++----------
- 2 files changed, 37 insertions(+), 11 deletions(-)
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 964ded1..bbb7ffd3 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -324,22 +324,40 @@ struct cpu_hw_events {
- 
- /* Check flags and event code, and set the HSW load flag */
- #define INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(code, n) \
--	__EVENT_CONSTRAINT(code, n, 			\
-+	__EVENT_CONSTRAINT(code, n,			\
- 			  ARCH_PERFMON_EVENTSEL_EVENT|X86_ALL_EVENT_FLAGS, \
- 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LD_HSW)
- 
-+#define INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(code, n) \
-+	__EVENT_CONSTRAINT(code, n,			\
-+			  ARCH_PERFMON_EVENTSEL_EVENT|X86_ALL_EVENT_FLAGS, \
-+			  HWEIGHT(n), 0, \
-+			  PERF_X86_EVENT_PEBS_LD_HSW|PERF_X86_EVENT_EXCL)
-+
- /* Check flags and event code/umask, and set the HSW store flag */
- #define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(code, n) \
- 	__EVENT_CONSTRAINT(code, n, 			\
- 			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
- 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
- 
-+#define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(code, n) \
-+	__EVENT_CONSTRAINT(code, n,			\
-+			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
-+			  HWEIGHT(n), 0, \
-+			  PERF_X86_EVENT_PEBS_ST_HSW|PERF_X86_EVENT_EXCL)
-+
- /* Check flags and event code/umask, and set the HSW load flag */
- #define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(code, n) \
- 	__EVENT_CONSTRAINT(code, n, 			\
- 			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
- 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LD_HSW)
- 
-+#define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(code, n) \
-+	__EVENT_CONSTRAINT(code, n,			\
-+			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
-+			  HWEIGHT(n), 0, \
-+			  PERF_X86_EVENT_PEBS_LD_HSW|PERF_X86_EVENT_EXCL)
-+
- /* Check flags and event code/umask, and set the HSW N/A flag */
- #define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_NA(code, n) \
- 	__EVENT_CONSTRAINT(code, n, 			\
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 495ae97..d2f0214 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -611,6 +611,10 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
- 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
- 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
- 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-+        INTEL_EXCLEVT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-+        INTEL_EXCLEVT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-+        INTEL_EXCLEVT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-+        INTEL_EXCLEVT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
- 	/* Allow all events as PEBS with no flags */
- 	INTEL_ALL_EVENT_CONSTRAINT(0, 0xf),
- 	EVENT_CONSTRAINT_END
-@@ -622,6 +626,10 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
- 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
- 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
- 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-+	INTEL_EXCLEVT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-+	INTEL_EXCLEVT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-+	INTEL_EXCLEVT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-+	INTEL_EXCLEVT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
- 	/* Allow all events as PEBS with no flags */
- 	INTEL_ALL_EVENT_CONSTRAINT(0, 0xf),
-         EVENT_CONSTRAINT_END
-@@ -633,16 +641,16 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
- 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
- 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
- 	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_NA(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
--	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
--	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
--	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
--	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
--	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
--	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
--	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
--	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
--	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(0xd2, 0xf),    /* MEM_LOAD_UOPS_L3_HIT_RETIRED.* */
--	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(0xd3, 0xf),    /* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-+	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-+	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(0xd2, 0xf),    /* MEM_LOAD_UOPS_L3_HIT_RETIRED.* */
-+	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(0xd3, 0xf),    /* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
- 	/* Allow all events as PEBS with no flags */
- 	INTEL_ALL_EVENT_CONSTRAINT(0, 0xf),
- 	EVENT_CONSTRAINT_END
--- 
-1.9.1
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Docu=
+mentation/devicetree/bindings/vendor-prefixes.txt
+> index 723999d..8f1462e 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -105,6 +105,7 @@ netgear	NETGEAR
+>  newhaven	Newhaven Display International
+>  nintendo	Nintendo
+>  nokia	Nokia
+> +novatech	NovaTech LLC
+>  nvidia	NVIDIA
+>  nxp	NXP Semiconductors
+>  onnn	ON Semiconductor Corp.
+> --=20
+> 2.1.0
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+--=20
+balbi
+
+--qjNfmADvan18RZcF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUakgeAAoJEIaOsuA1yqREdpIQAJ99gXD/XaNemJk/4xguo390
+whajlEYUJ0NNODSDleEPElnmb3quxC7SAUaHlT8ajPh7Zl0NEZ3iUpU9MULQeCw5
+msZMRJwUnm0bey86Bb1FDEGxZjrfVi1/uXFOIxIIsnUr6JuAqvB/J53mfLgdruHi
+4tjzdrLMBOZ6YnnfwrXWMKIivUi6i3iUUwelCUWemIZB+wt2WC5SRor6WC0vOJHo
+v/HeG0vKRpVmG0/2dmhCfBzB02EAn1zv8qKzz7813Xsf0AmZ8aQZddEa5W/bn4gI
+F0g3nE58ShAGZ+9PZsd14k44PGRPlp6WUgMmXsanfM2Mx9N9vp5Wj0Y1vNTVvhyK
+0S7bZTYcTDx7ZsEA4E5UispXGHg9Hxaa0EQ+Zpf6utCQ6tAAptS8/beQIMwugyAd
+4UbrtDs3saIACHEVD8IjU8X18OPIrRi5gu3UalcU9ZlD7q40P3TRyea/y7tSgclU
+5yUAyM7qKiHZZMcQOKslzWV9MmImGx2bBqWt9MGhCtgnUrjn23PMdPXDHwwY6ekm
+NsYZnTu0t9sUB4T0bUnUR+c4DF7fVdc0KBrFytssaQNbOFCqt09UhwEj4d2qV71y
+XvKK2tMI83x40Nic5ChFurubjTiycodXQZW9H+5480lInWOWs7ulg6QTLRkIT7as
+KGonL3Da3iib/smNUUzA
+=DMSW
+-----END PGP SIGNATURE-----
+
+--qjNfmADvan18RZcF--
