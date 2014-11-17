@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaKQMlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 07:41:24 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:40502 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaKQMlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 07:41:23 -0500
-Date: Mon, 17 Nov 2014 13:41:20 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Scott Branden <sbranden@broadcom.com>
-Cc: Ray Jui <rjui@broadcom.com>, Arun Ramamurthy <arunrama@broadcom.com>,
-        bcm-kernel-feedback-list@broadcom.com, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] pwm: kona: Drivers fixes
-Message-ID: <20141117124119.GK25699@ulmo>
-References: <sbranden@broadcom.com>
- <1415989800-7515-1-git-send-email-sbranden@broadcom.com>
+	id S1752032AbaKQMle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 07:41:34 -0500
+Received: from mout.web.de ([212.227.17.12]:54531 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806AbaKQMlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 07:41:32 -0500
+Message-ID: <5469ECEF.7000408@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 13:41:19 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M9kwpIYUMbI/2cCx"
-Content-Disposition: inline
-In-Reply-To: <1415989800-7515-1-git-send-email-sbranden@broadcom.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] ALSA: powermac: Deletion of an unnecessary check before
+ the function call "pci_dev_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:lKIJpWzGEfItqw8CgVSKqxlX4hQFPaUC5ZNdUunUhAkf7x8kMyI
+ RuaUyT0JgnQJvi95TOvdoeS109mhHUL2/PGdTG7gvGaOR2399lRB8YrUrmpqUVj+qmsR5A1
+ mo86feeVM3xMpPFnwYZM2TAkDhT/gei7c8vGyi3WbJlPDJXFfBWHo7p0Ew9/so0FWl+WX9u
+ ep/cJOw1eqxdi15XT0New==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 17 Nov 2014 13:35:54 +0100
 
---M9kwpIYUMbI/2cCx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The pci_dev_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-On Fri, Nov 14, 2014 at 10:29:56AM -0800, Scott Branden wrote:
-> This patchset contains fixes for Broadcom's Kona PWM driver.
->=20
-> These changes fix glitch issues when changing settings on different chann=
-els.
-> Kconfig change made to allow the driver to work on any Broadcom SoC rather
-> than just mobile devices.
->=20
-> Arun Ramamurthy (4):
->   pwm: kona: Remove setting default smooth type and polarity for all
->     channels
->   pwm: kona: Fix incorrect enable after channel polarity change
->   pwm: kona: Fix enable, disable and config procedures
->   pwm: kona: Update dependency to ARCH_BCM
->=20
->  drivers/pwm/Kconfig        |   2 +-
->  drivers/pwm/pwm-bcm-kona.c | 112 ++++++++++++++++++++++++++++++++-------=
-------
->  2 files changed, 81 insertions(+), 33 deletions(-)
+This issue was detected by using the Coccinelle software.
 
-Can you please resend with Tim Kryger <tim.kryger@gmail.com> in Cc. He
-originally submitted the driver and I'd like him to at least have the
-opportunity of looking at the patches.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ sound/ppc/pmac.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Thierry
+diff --git a/sound/ppc/pmac.c b/sound/ppc/pmac.c
+index 8a431bc..5a13b22 100644
+--- a/sound/ppc/pmac.c
++++ b/sound/ppc/pmac.c
+@@ -887,8 +887,7 @@ static int snd_pmac_free(struct snd_pmac *chip)
+ 		}
+ 	}
+ 
+-	if (chip->pdev)
+-		pci_dev_put(chip->pdev);
++	pci_dev_put(chip->pdev);
+ 	of_node_put(chip->node);
+ 	kfree(chip);
+ 	return 0;
+-- 
+2.1.3
 
---M9kwpIYUMbI/2cCx
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUaezuAAoJEN0jrNd/PrOhpXcQAKHTzSes6/8SZ0CBSH6wj+XE
-zlfHVnUrJduwfLvUErOpW/S5SE82c4ocWvypQ6bgdAeeTicCXf8p2tXAYeK55xpG
-tYQJoC+k/3XwqOcQvd91m2eslRHdHsTnF5ch0QBjBxfTjwGEOW1RMA8C3MPf4Ea4
-GCRmFJh25VfoCn29lzIwKQ+qzXcqc0UaDrUdR6Gmf1iTrAu9DG+zwPsIJ6JjRhh0
-Ni+nWiyH7Wm5gABG8jWVlI3kH477mSafQpv1YoTQAYapVzWVumfmgC7ySol1ZNJF
-pwsIYK4wrokfyfjHOF5ynkAMlM7yua1DO2CJUe1AU0nlqZRf36k2c58GePsaW8nj
-gS4CIR/f/hbZDFD30GVc3d4h6Y+ecQL9BBnf1IF/5lOrSseKMZZOM/BaFHznG6q2
-sA9dIuXS9JeIkWAVIVXse7ED6GL3rHjTN1YAptXuAp23/RZuw1MoO75EP2EYVrbP
-1TDuALFMoh5ieOrO3SElpArHm22cDQX1c6r2v9NG7HH/pc1ni4F/o9lQAKShxy1M
-LNDb8m1tx4nC4mYopyASsclQNb1d/JHE+0GWs9klKV92h/Bf9Uo+gOQ7vw0IcdoK
-add2sys9LmuAEqFTiTBc9abfynoAkSY9v4yf7S3OeyeUxVsfooiOXDvhdLSaGnHl
-JLnIYLz1D9NIOT+U48CT
-=MnuZ
------END PGP SIGNATURE-----
-
---M9kwpIYUMbI/2cCx--
