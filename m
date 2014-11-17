@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaKQKvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:51:32 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:47581 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaKQKva (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:51:30 -0500
+	id S1752108AbaKQKxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:53:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19228 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905AbaKQKxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 05:53:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,402,1413270000"; 
+   d="scan'208";a="633114717"
+Message-ID: <5469D3B3.2050408@linux.intel.com>
+Date: Mon, 17 Nov 2014 12:53:39 +0200
+From: Sakari Ailus <sakari.ailus@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:33.0) Gecko/20100101 SeaMonkey/2.30
 MIME-Version: 1.0
-In-Reply-To: <CABgxDoL-N9bitxTU0=pD_69DLBovXPSKhHjmArVOHFdokvnEJA@mail.gmail.com>
-References: <1415885699-1465-1-git-send-email-user@radxa>
-	<1415885699-1465-2-git-send-email-user@radxa>
-	<20141113205528.77414C40BC2@trevor.secretlab.ca>
-	<CABgxDoL-N9bitxTU0=pD_69DLBovXPSKhHjmArVOHFdokvnEJA@mail.gmail.com>
-Date: Mon, 17 Nov 2014 11:51:29 +0100
-Message-ID: <CABgxDoK=Maxzw-=+pHZ4gdgBSJbdkgx_Q7rHNcwEBywBE3btCQ@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] of: Rename "poweroff-source" property to "system-power-controller"
-From: Romain Perier <romain.perier@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, robh <robh@kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Johan Hovold <johan@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>, linux-media@vger.kernel.org,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard
+ CONFIG_VIDEO_V4L2_SUBDEV_API for v4l2_subdev_get_try_*()
+References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@Most of the people who were ranting about this serie:  could you send
-feedbacks please ?
+Hi Prabhakar,
 
-2014-11-14 8:22 GMT+01:00 Romain Perier <romain.perier@gmail.com>:
-> Hi,
+Thank you for the patch.
+
+Lad, Prabhakar wrote:
+> this patch removes the guard CONFIG_VIDEO_V4L2_SUBDEV_API
+> for v4l2_subdev_get_try_*() functions.
+> In cases where a subdev using v4l2_subdev_get_try_*() calls
+> internally and the bridge using subdev pad ops which is
+> not MC aware forces to select MEDIA_CONTROLLER, as
+> VIDEO_V4L2_SUBDEV_API is dependent on it.
 >
-> Who should merge this serie ? as Mark merged the previous one it would
-> probably make sense to do the same here (at least, in my opinion)
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   include/media/v4l2-subdev.h | 2 --
+>   1 file changed, 2 deletions(-)
 >
-> Thanks for your feedbacks.
+> diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+> index 5860292..076ca11 100644
+> --- a/include/media/v4l2-subdev.h
+> +++ b/include/media/v4l2-subdev.h
+> @@ -642,7 +642,6 @@ struct v4l2_subdev_fh {
+>   #define to_v4l2_subdev_fh(fh)	\
+>   	container_of(fh, struct v4l2_subdev_fh, vfh)
 >
-> Have a nice day,
-> Romain
+> -#if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
+
+Wouldn't you need to drop these from struct v4l2_subdev_fh as well? The 
+code won't compile if the fields aren't there.
+
+>   #define __V4L2_SUBDEV_MK_GET_TRY(rtype, fun_name, field_name)		\
+>   	static inline struct rtype *					\
+>   	v4l2_subdev_get_try_##fun_name(struct v4l2_subdev_fh *fh,	\
+> @@ -656,7 +655,6 @@ struct v4l2_subdev_fh {
+>   __V4L2_SUBDEV_MK_GET_TRY(v4l2_mbus_framefmt, format, try_fmt)
+>   __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, crop, try_crop)
+>   __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, compose, try_compose)
+> -#endif
 >
-> 2014-11-13 21:55 GMT+01:00 Grant Likely <grant.likely@linaro.org>:
-> igned-off-by: Romain Perier <romain.perier@gmail.com>
->>
->> Acked-by: Grant Likely <grant.likely@linaro.org>
->>
->> Please merge via whichever tree needs this change.
->>
->> g.
+>   extern const struct v4l2_file_operations v4l2_subdev_fops;
+>
+>
+
+-- 
+Kind regards,
+
+Sakari Ailus
+sakari.ailus@linux.intel.com
