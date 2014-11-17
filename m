@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaKQKly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 05:41:54 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:44260 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaKQKlw (ORCPT
+	id S1752833AbaKQKmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 05:42:03 -0500
+Received: from mail-by2on0106.outbound.protection.outlook.com ([207.46.100.106]:37376
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751880AbaKQKl7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 05:41:52 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-b9-5469d0e01df9
-From: Weijie Yang <weijie.yang@samsung.com>
-To: iamjoonsoo.kim@lge.com
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
-        "'Rik van Riel'" <riel@redhat.com>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Minchan Kim'" <minchan@kernel.org>, mina86@mina86.com,
-        vbabka@suse.cz, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>
-Subject: [PATCH] mm: page_alloc: store updated page migratetype to avoid
- misusing stale value
-Date: Mon, 17 Nov 2014 18:40:10 +0800
-Message-id: <000301d00253$0fcd0560$2f671020$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdACUtw5/Dxrht8NQg6/lTkxp4983g==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jQd0HFzJDDLpPqVvMWb+GzWL1Jl+L
-	ld3NbBaXd81hs7i35j+rxeR3zxgtFhxvYbVY9vU9u8XfK+tZLGY39jFaPDnxn8WB2+Pwm/fM
-	Hjtn3WX32LSqk81j06dJ7B5db68weZyY8ZvFY92fV0we7/ddZfM4s+AIu8fm09UenzfJBXBH
-	cdmkpOZklqUW6dslcGU8fr6asWC7cMWvxmPMDYyX+bsYOTkkBEwklh76yAxhi0lcuLeerYuR
-	i0NIYDqjxM+z+6CcP4wSp3f8YQepYhPQlrjbv5EVxBYRkJI49f0EI0gRs8BWJoml278ygiSE
-	BeIlPn05BdTNwcEioCrR9RSsnlfATuL63e/MELagxI/J91hASpgF1CWmTMkFCTMLyEtsXvOW
-	GSQsARR+9FcXYpOexO+2+4wQJeISG4/cYpnAKDALyaBZCINmIRk0C0nHAkaWVYyiqQXJBcVJ
-	6blGesWJucWleel6yfm5mxjBkfVMegfjqgaLQ4wCHIxKPLw7sjNDhFgTy4orcw8xSnAwK4nw
-	rjgDFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cBYb20Z
-	fOXXiSmmJh4HIj7M/WZpcrm87TBXknRR/RdTda5PFbNZ32QyCv/Kd9i8Kb7V/pqixLz0wvWd
-	AjnHlj56HGlT0shz5+eCxdu8cz65+RzorT+1SzBqFmvu3Wlx0lfW5PVu/P30XeWyKbmb7xRW
-	R/Va1xjdnvG1dnq8scWCF16KDqfvFzYrsRRnJBpqMRcVJwIAMMRGKagCAAA=
+	Mon, 17 Nov 2014 05:41:59 -0500
+From: Yao Yuan <yao.yuan@freescale.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: "marex@denx.de" <marex@denx.de>,
+        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "fugang.duan@freescale.com" <fugang.duan@freescale.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: RE: [PATCH v9 3/3] i2c: imx: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH v9 3/3] i2c: imx: add DMA support for freescale i2c
+ driver
+Thread-Index: AQHP5UJmutB+SZP4EUmRPSL8mRUifZxXKi+AgA2c5sA=
+Date: Mon, 17 Nov 2014 10:41:56 +0000
+Message-ID: <BL2PR03MB33877C76779D5588D1B3E30838B0@BL2PR03MB338.namprd03.prod.outlook.com>
+References: <1413025032-14958-1-git-send-email-yao.yuan@freescale.com>
+ <1413025032-14958-4-git-send-email-yao.yuan@freescale.com>
+ <20141108173513.GA4900@katana>
+In-Reply-To: <20141108173513.GA4900@katana>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB370;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB370;
+x-forefront-prvs: 03982FDC1D
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(13464003)(164054003)(189002)(377454003)(51704005)(76576001)(99286002)(64706001)(31966008)(20776003)(74316001)(105586002)(54356999)(95666004)(106116001)(54606007)(107046002)(76176999)(110136001)(106356001)(46102003)(50986999)(66066001)(4396001)(92566001)(92726001)(77156002)(62966003)(122556002)(19580405001)(99396003)(120916001)(54206007)(101416001)(21056001)(19580395003)(86362001)(40100003)(97736003)(33656002)(87936001)(2656002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB370;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB131;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit ad53f92e(fix incorrect isolation behavior by rechecking migratetype)
-patch series describe the race between page isolation and free path, and try to
-fix the freepage account issues.
+Thanks for your review.
+Your suggestions is really helpful.
 
-However, there is still a little issue: freed page could have stale migratetype
-in the free_list. This would cause some bad behavior if we misuse this stale
-value later.
-Such as: in __test_page_isolated_in_pageblock() we check the buddy page, if the
-page's stale migratetype is not MIGRATE_ISOLATE, which will cause unnecessary
-page move action.
+I will correct them in v10.
 
-This patch store the page's updated migratetype after free the page to the
-free_list to avoid subsequent misusing stale value, and use a WARN_ON_ONCE
-to catch a potential undetected race between isolatation and free path.
+Best Regards,
+Yuan Yao
 
-
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- mm/page_alloc.c     |    1 +
- mm/page_isolation.c |   17 +++++------------
- 2 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 616a2c9..177fca0 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -622,6 +622,7 @@ static inline void __free_one_page(struct page *page,
- 	}
- 
- 	list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
-+	set_freepage_migratetype(page, migratetype);
- out:
- 	zone->free_area[order].nr_free++;
- }
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index c8778f7..0618071 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -223,19 +223,12 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
- 		page = pfn_to_page(pfn);
- 		if (PageBuddy(page)) {
- 			/*
--			 * If race between isolatation and allocation happens,
--			 * some free pages could be in MIGRATE_MOVABLE list
--			 * although pageblock's migratation type of the page
--			 * is MIGRATE_ISOLATE. Catch it and move the page into
--			 * MIGRATE_ISOLATE list.
-+			 * Use a WARN_ON_ONCE to catch a potential undetected
-+			 * race between isolatation and free pages, even if
-+			 * we try to avoid this issue.
- 			 */
--			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
--				struct page *end_page;
--
--				end_page = page + (1 << page_order(page)) - 1;
--				move_freepages(page_zone(page), page, end_page,
--						MIGRATE_ISOLATE);
--			}
-+			WARN_ON_ONCE(get_freepage_migratetype(page) !=
-+					MIGRATE_ISOLATE);
- 			pfn += 1 << page_order(page);
- 		}
- 		else if (page_count(page) == 0 &&
--- 
-1.7.0.4
-
+> -----Original Message-----
+> From: Wolfram Sang [mailto:wsa@the-dreams.de]
+> Sent: Sunday, November 09, 2014 1:35 AM
+> To: Yuan Yao-B46683
+> Cc: marex@denx.de; LW@KARO-electronics.de; mark.rutland@arm.com; Duan
+> Fugang-B38611; shawn.guo@linaro.org; linux-kernel@vger.kernel.org; linux-
+> arm-kernel@lists.infradead.org; linux-i2c@vger.kernel.org
+> Subject: Re: [PATCH v9 3/3] i2c: imx: add DMA support for freescale i2c
+> driver
+> 
+> Hi,
+> 
+> mostly looking good...
+> 
+> > +#define IMX_I2C_DMA_THRESHOLD	16
+> 
+> Have you guessed or measured this value? A comment about this value would
+> be nice.
+> 
+> >
+> > +struct imx_i2c_dma {
+> > +	struct dma_chan		*chan_tx;
+> > +	struct dma_chan		*chan_rx;
+> > +	struct dma_chan		*chan_using;
+> > +	struct completion	cmd_complete;
+> > +	dma_addr_t		dma_buf;
+> > +	unsigned int		dma_len;
+> > +	unsigned int		dma_transfer_dir;
+> > +	unsigned int		dma_data_dir;
+> 
+> Please use proper types as there are things like 'enum
+> dma_data_direction' and the likes...
+> 
+> > +	dmaengine_submit(txdesc);
+> 
+> This can fail, too. Use dma_submit_error() to check.
+> 
+> > +	result = wait_for_completion_interruptible_timeout(
+> > +				&i2c_imx->dma->cmd_complete,
+> > +				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
+> 
+> Have you tested signals extensively? I can't really recommend the
+> _intrruptible_ here. I don't see any cleaning up to get the bus to a
+> consistent state again. Most people drop the interruptible sooner or
+> later.
+> 
+> > +	/* Init DMA config if support*/
+> > +	i2c_imx_dma_request(i2c_imx, phy_addr);
+> 
+> Make this function void? DMA is optional anyhow.
+> 
+> Thanks,
+> 
+>    Wolfram
 
