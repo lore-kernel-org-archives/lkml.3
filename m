@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaKQOCO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 09:02:14 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48985 "EHLO
+	id S1752964AbaKQNpK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 08:45:10 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48947 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752970AbaKQNpM (ORCPT
+	with ESMTP id S1752477AbaKQNpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 08:45:12 -0500
+	Mon, 17 Nov 2014 08:45:04 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 19/61] dmaengine: edma: Split device_control
-Date: Mon, 17 Nov 2014 14:42:13 +0100
-Message-Id: <1416231775-31252-20-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 02/61] crypto: ux500: Use dmaengine_terminate_all API
+Date: Mon, 17 Nov 2014 14:41:56 +0100
+Message-Id: <1416231775-31252-3-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,116 +24,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the TI EDMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+We are removing the dmaengine_device_control API, that shouldn't even have been
+exposed in the first place. Change the callers to use the proper API.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/edma.c | 50 +++++++++++++++-----------------------------------
- 1 file changed, 15 insertions(+), 35 deletions(-)
+ drivers/crypto/ux500/cryp/cryp_core.c | 4 ++--
+ drivers/crypto/ux500/hash/hash_core.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 790054eef76c..56735a0aa3a8 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -244,8 +244,9 @@ static void edma_execute(struct edma_chan *echan)
- 	}
+diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
+index 92105f3dc8e0..75bd0f1e9a94 100644
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -606,12 +606,12 @@ static void cryp_dma_done(struct cryp_ctx *ctx)
+ 	dev_dbg(ctx->device->dev, "[%s]: ", __func__);
+ 
+ 	chan = ctx->device->dma.chan_mem2cryp;
+-	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(chan);
+ 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg_src,
+ 		     ctx->device->dma.sg_src_len, DMA_TO_DEVICE);
+ 
+ 	chan = ctx->device->dma.chan_cryp2mem;
+-	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(chan);
+ 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg_dst,
+ 		     ctx->device->dma.sg_dst_len, DMA_FROM_DEVICE);
  }
+diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+index 1c73f4fbc252..48bdc5df7b3b 100644
+--- a/drivers/crypto/ux500/hash/hash_core.c
++++ b/drivers/crypto/ux500/hash/hash_core.c
+@@ -202,7 +202,7 @@ static void hash_dma_done(struct hash_ctx *ctx)
+ 	struct dma_chan *chan;
  
--static int edma_terminate_all(struct edma_chan *echan)
-+static int edma_terminate_all(struct dma_chan *chan)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
- 	unsigned long flags;
- 	LIST_HEAD(head);
- 
-@@ -273,9 +274,11 @@ static int edma_terminate_all(struct edma_chan *echan)
- 	return 0;
+ 	chan = ctx->device->dma.chan_mem2hash;
+-	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(chan);
+ 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg,
+ 		     ctx->device->dma.sg_len, DMA_TO_DEVICE);
  }
- 
--static int edma_slave_config(struct edma_chan *echan,
-+static int edma_slave_config(struct dma_chan *chan,
- 	struct dma_slave_config *cfg)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
-+
- 	if (cfg->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES ||
- 	    cfg->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
- 		return -EINVAL;
-@@ -285,8 +288,10 @@ static int edma_slave_config(struct edma_chan *echan,
- 	return 0;
- }
- 
--static int edma_dma_pause(struct edma_chan *echan)
-+static int edma_dma_pause(struct dma_chan *chan)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
-+
- 	/* Pause/Resume only allowed with cyclic mode */
- 	if (!echan->edesc || !echan->edesc->cyclic)
- 		return -EINVAL;
-@@ -295,8 +300,10 @@ static int edma_dma_pause(struct edma_chan *echan)
- 	return 0;
- }
- 
--static int edma_dma_resume(struct edma_chan *echan)
-+static int edma_dma_resume(struct dma_chan *chan)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
-+
- 	/* Pause/Resume only allowed with cyclic mode */
- 	if (!echan->edesc->cyclic)
- 		return -EINVAL;
-@@ -305,36 +312,6 @@ static int edma_dma_resume(struct edma_chan *echan)
- 	return 0;
- }
- 
--static int edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			unsigned long arg)
--{
--	int ret = 0;
--	struct dma_slave_config *config;
--	struct edma_chan *echan = to_edma_chan(chan);
--
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		edma_terminate_all(echan);
--		break;
--	case DMA_SLAVE_CONFIG:
--		config = (struct dma_slave_config *)arg;
--		ret = edma_slave_config(echan, config);
--		break;
--	case DMA_PAUSE:
--		ret = edma_dma_pause(echan);
--		break;
--
--	case DMA_RESUME:
--		ret = edma_dma_resume(echan);
--		break;
--
--	default:
--		ret = -ENOSYS;
--	}
--
--	return ret;
--}
--
- /*
-  * A PaRAM set configuration abstraction used by other modes
-  * @chan: Channel who's PaRAM set we're configuring
-@@ -1017,7 +994,10 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
- 	dma->device_free_chan_resources = edma_free_chan_resources;
- 	dma->device_issue_pending = edma_issue_pending;
- 	dma->device_tx_status = edma_tx_status;
--	dma->device_control = edma_control;
-+	dma->device_config = edma_slave_config;
-+	dma->device_pause = edma_dma_pause;
-+	dma->device_resume = edma_dma_resume;
-+	dma->device_terminate_all = edma_terminate_all;
- 	dma->device_slave_caps = edma_dma_device_slave_caps;
- 	dma->dev = dev;
- 
 -- 
 2.1.1
 
