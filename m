@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241AbaKSPAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 10:00:15 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:63983 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755304AbaKSO7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:59:39 -0500
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-X-Google-Original-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Message-ID: <546CB057.7040902@intel.com>
-Date: Wed, 19 Nov 2014 06:59:35 -0800
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755113AbaKSPAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 10:00:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46298 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755718AbaKSO7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Nov 2014 09:59:12 -0500
+Date: Tue, 18 Nov 2014 18:20:02 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: kan.liang@intel.com
+Cc: jolsa@redhat.com, namhyung@kernel.org, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com
+Subject: Re: [PATCH V4 2/3] perf tool:perf diff support for different binaries
+Message-ID: <20141118212002.GE3790@kernel.org>
+References: <1416328700-1836-1-git-send-email-kan.liang@intel.com>
+ <1416328700-1836-3-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-To: Ethan Zhao <ethan.zhao@oracle.com>, viresh.kumar@linaro.org,
-        rjw@rjwysocki.net, corbet@lwn.net
-CC: dirk.j.brandewie@intel.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        ethan.kernel@gmail.com, joe.jin@oracle.com, brian.maly@oracle.com
-Subject: Re: [PATCH 1/3] intel_pstate: skip the driver if Sun server has ACPI
- _PPC method
-References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com> <1416299826-15813-6-git-send-email-ethan.zhao@oracle.com>
-In-Reply-To: <1416299826-15813-6-git-send-email-ethan.zhao@oracle.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416328700-1836-3-git-send-email-kan.liang@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 12:37 AM, Ethan Zhao wrote:
-> Oracle Sun X86 servers have dynamic power capping capability that works via
-> ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
-> enabled.
->
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+Em Tue, Nov 18, 2014 at 11:38:19AM -0500, kan.liang@intel.com escreveu:
+> From: Kan Liang <kan.liang@intel.com>
+> 
+> Currently, the perf diff only works with same binaries. That's because
+> it compares the symbol start address. It doesn't work if the perf.data
+> comes from different binaries. This patch matches the function names.
+> 
+> Signed-off-by: Kan Liang <kan.liang@intel.com>
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Can you provide an example of this?
+
+Also, can you add some note on the documentation? The example you use in
+the changelog may also be appropriate to have in the man page.
+
+Its been a looong while since I looked at the diff code, but yeah,
+comparing by symbol address makes no sense, it had to do a diff from
+file name!
+
+The canonical example is:
+
+  vim workload.c
+  make workload
+  perf record ./workload
+  vim workload.c # do some changes
+  perf record ./workload
+  perf diff
+
+And of course doing that would probably result in symbols moving around
+as functions grow in size and new ones are added...
+
+/me scratches head...
+
+- Arnaldo
+
 > ---
->   drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
->   1 file changed, 20 insertions(+)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 27bb6d3..5498eb0 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
->   	return true;
->   }
->
-> +static bool intel_pstate_has_acpi_ppc(void)
-> +{
-> +	int i;
+>  tools/perf/util/sort.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index 95efaaf..bea2e07 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -1432,6 +1432,15 @@ int sort_dimension__add(const char *tok)
+>  			sort__has_parent = 1;
+>  		} else if (sd->entry == &sort_sym) {
+>  			sort__has_sym = 1;
+> +			/*
+> +			 * perf diff displays the performance difference amongst
+> +			 * two or more perf.data files. Those files could come
+> +			 * from different binaries. So we should not compare
+> +			 * their ips, but the name of symble.
+
+					s/symble/symbol/g
+
+> +			 */
+> +			if (sort__mode == SORT_MODE__DIFF)
+> +				sd->entry->se_collapse = sort__sym_sort;
 > +
-> +	for_each_possible_cpu(i) {
-> +		struct acpi_processor *pr = per_cpu(processors, i);
-> +
-> +		if (!pr)
-> +			continue;
-> +		if (acpi_has_method(pr->handle, "_PPC"))
-> +			return true;
-> +	}
-> +	return false;
-> +}
-> +
->   struct hw_vendor_info {
->   	u16  valid;
->   	char oem_id[ACPI_OEM_ID_SIZE];
-> @@ -952,6 +967,7 @@ struct hw_vendor_info {
->   /* Hardware vendor-specific info that has its own power management modes */
->   static struct hw_vendor_info vendor_info[] = {
->   	{1, "HP    ", "ProLiant"},
-> +	{1, "ORACLE", ""},
->   	{0, "", ""},
->   };
->
-
-Does this apply to ALL oracle systems?
-
-Is the presence or absense of the _PPC method configurable in the oracle BIOS?
-
-> @@ -969,12 +985,16 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
->   		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
->   		    intel_pstate_no_acpi_pss())
->   			return true;
-> +		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
-> +			intel_pstate_has_acpi_ppc())
-> +			return true;
->   	}
->
->   	return false;
->   }
->   #else /* CONFIG_ACPI not enabled */
->   static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
->   #endif /* CONFIG_ACPI */
->
->   static int __init intel_pstate_init(void)
->
-
+>  		} else if (sd->entry == &sort_dso) {
+>  			sort__has_dso = 1;
+>  		}
+> -- 
+> 1.8.3.2
