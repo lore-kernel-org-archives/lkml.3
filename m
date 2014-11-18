@@ -1,117 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaKRRUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:20:06 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:34582 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755742AbaKRRUD (ORCPT
+	id S1755815AbaKRRUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:20:37 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:54850 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753AbaKRRUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:20:03 -0500
+	Tue, 18 Nov 2014 12:20:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141118171321.GB21726@ubuntu-mba51>
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
- <1414013060-137148-3-git-send-email-seth.forshee@canonical.com>
- <20141111140454.GD333@tucsk> <87mw7xd9zt.fsf@x220.int.ebiederm.org>
- <20141112130915.GG333@tucsk> <20141112162254.GB31775@ubuntu-hedt>
- <20141118152156.GA21726@ubuntu-mba51> <CALCETrVPJt6ahh5tQ+G68UgR_c62w65g4qN1=NGi13hyMjoQAA@mail.gmail.com>
- <20141118171321.GB21726@ubuntu-mba51>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 18 Nov 2014 09:19:41 -0800
-Message-ID: <CALCETrU6vAw68ruu+8E+C7Ji9ksRHyTM7yX3TLML227VD4P3Fg@mail.gmail.com>
-Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of init_user_ns
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        seth.forhsee@canonical.com
+In-Reply-To: <20141118145234.GA7487@redhat.com>
+References: <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+	<20141115213405.GA31971@redhat.com>
+	<20141116014006.GA5016@redhat.com>
+	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+	<20141117170359.GA1382@redhat.com>
+	<CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+	<20141118020959.GA2091@redhat.com>
+	<CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+	<20141118023930.GA2871@redhat.com>
+	<CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+	<20141118145234.GA7487@redhat.com>
+Date: Tue, 18 Nov 2014 09:20:02 -0800
+X-Google-Sender-Auth: cNCrY0HCedNm3SZBIUPEl5TaVGU
+Message-ID: <CA+55aFxttmjXJX4wtwSpTOdDCMwpSopAsL3MJ1n8mJSJOEpyhQ@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Don Zickus <dzickus@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 9:13 AM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> On Tue, Nov 18, 2014 at 09:09:34AM -0800, Andy Lutomirski wrote:
->> On Tue, Nov 18, 2014 at 7:21 AM, Seth Forshee
->> <seth.forshee@canonical.com> wrote:
->> > On Wed, Nov 12, 2014 at 10:22:54AM -0600, Seth Forshee wrote:
->> >> On Wed, Nov 12, 2014 at 02:09:15PM +0100, Miklos Szeredi wrote:
->> >> > On Tue, Nov 11, 2014 at 09:37:10AM -0600, Eric W. Biederman wrote:
->> >> >
->> >> > > > Maybe I'm being dense, but can someone give a concrete example of such an
->> >> > > > attack?
->> >> > >
->> >> > > There are two variants of things at play here.
->> >> > >
->> >> > > There is the classic if you don't freeze your context at open time when
->> >> > > you pass that file descriptor to another process unexpected things can
->> >> > > happen.
->> >> > >
->> >> > > An essentially harmless but extremely confusing example is what happens
->> >> > > to a partial read when it stops halfway through a uid value and the next
->> >> > > read on the same file descriptor is from a process in a different user
->> >> > > namespace.  Which uid value should be returned to userspace.
->> >> >
->> >> > Fuse device doesn't currently do partial reads, so that's a non-issue.
->> >> >
->> >> > > Now if I am in a nefarious mood I can create a unprivileged user
->> >> > > namespace, open /dev/fuse and mount a fuse filesystem.  Pass the file
->> >> > > descriptor to /dev/fuse to a processes that is in the default user
->> >> > > namespace (and thus can use any uid/gid).   With that file desctipor
->> >> > > report that there is a setuid 0 exectuable on that file system.
->> >> >
->> >> > Yes, and this would also be prevented by MNT_NOSUID, which would be a good idea
->> >> > anyway.  I just don't see the reason we'd want to allow clearing MNT_NOSUID in a
->> >> > private namespace.
->> >> >
->> >> > So we don't currently see a use case for relaxing either the MNT_NOSUID
->> >> > restriction or for relaxing the requirement on the user namespace the fuse
->> >> > server is in.  Is that correct?
->> >> >
->> >> > If so, we should leave both restrictions in place since that allows the greatest
->> >> > flexibility in the future, is either of those needs to be relaxed.
->> >>
->> >> I'm not aware of specific use cases for either at this point. However,
->> >> Andy's patch [1] will limit suid to the set of namespaces where the user
->> >> who mounted the filesystem already has privileges. Enforcing MNT_NOSUID
->> >> will require enforcement in the vfs, and in that case we definitely need
->> >> to decide whether the policy is to implicitly add the flag or fail the
->> >> mount attempt if the flag is not present [2].
->> >
->> > I asked around a bit, and it turns out there are use cases for nested
->> > containers (i.e. a container within a container) where the rootfs for
->> > the outer container mounts a filesystem containing the rootfs for the
->> > inner container. If that mount is nosuid then suid utilities like ping
->> > aren't going to work in the inner container.
->> >
->> > So since there's a use case for suid in a userns mount and we have what
->> > we belive are sufficient protections against using this as a vector to
->> > get privileges outside the container, I'm planning to move ahead without
->> > the MNT_NOSUID restriction. Any objections?
->>
->> Are you talking about MNT_NOSUID the flag or my ns-dependent thing?
+On Tue, Nov 18, 2014 at 6:52 AM, Dave Jones <davej@redhat.com> wrote:
 >
-> I'm talking about dropping the proposed requirement from Miklos that all
-> fuse userns mounts are required to have the MNT_NOSUID flag. I intend to
-> keep your ns-dependent thing.
->
+> Here's the first hit. Curiously, one cpu is missing.
 
-In that case, I agree completely.  There are certainly uses for
-non-nosuid mounts in containers, and I don't see why fuse should be
-any different.
+That might be the CPU3 that isn't responding to IPIs due to some bug..
 
---Andy
+> NMI watchdog: BUG: soft lockup - CPU#1 stuck for 23s! [trinity-c180:17837]
+> RIP: 0010:[<ffffffffa91a0db0>]  [<ffffffffa91a0db0>] bad_range+0x0/0x90
 
-> Thanks,
-> Seth
->
+Hmm. Something looping in the page allocator? Not waiting for a lock,
+but livelocked? I'm not seeing anything here that should trigger the
+NMI watchdog at all.
 
+Can the NMI watchdog get confused somehow?
 
+> Call Trace:
+>  [<ffffffffa91a6030>] __alloc_pages_nodemask+0x230/0xd20
+>  [<ffffffffa91f400e>] alloc_pages_vma+0xee/0x1b0
+>  [<ffffffffa91b643e>] shmem_alloc_page+0x6e/0xc0
+>  [<ffffffffa91b8ff0>] shmem_getpage_gfp+0x630/0xa40
+>  [<ffffffffa91b9442>] shmem_write_begin+0x42/0x70
+>  [<ffffffffa919a684>] generic_perform_write+0xd4/0x1f0
+>  [<ffffffffa919d5d2>] __generic_file_write_iter+0x162/0x350
+>  [<ffffffffa919d7ff>] generic_file_write_iter+0x3f/0xb0
+>  [<ffffffffa92155e8>] do_iter_readv_writev+0x78/0xc0
+>  [<ffffffffa9216e18>] do_readv_writev+0xd8/0x2a0
+>  [<ffffffffa90cf426>] ? lock_release_holdtime.part.28+0xe6/0x160
+>  [<ffffffffa921706c>] vfs_writev+0x3c/0x50
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+And CPU2 is in that TLB flusher again:
+
+> NMI backtrace for cpu 2
+> RIP: 0010:[<ffffffffa9116dbe>]  [<ffffffffa9116dbe>] generic_exec_single+0xee/0x1a0
+> Call Trace:
+>  [<ffffffffa9045bb0>] ? do_flush_tlb_all+0x60/0x60
+>  [<ffffffffa9116f3a>] smp_call_function_single+0x6a/0xe0
+>  [<ffffffffa9117679>] smp_call_function_many+0x2b9/0x320
+>  [<ffffffffa9046370>] flush_tlb_mm_range+0xe0/0x370
+>  [<ffffffffa91cc762>] tlb_flush_mmu_tlbonly+0x42/0x50
+>  [<ffffffffa91cdd28>] unmap_single_vma+0x6b8/0x900
+>  [<ffffffffa91ce06c>] zap_page_range_single+0xfc/0x160
+>  [<ffffffffa91ce254>] unmap_mapping_range+0x134/0x190
+
+.. and the code line implies that it's in that csd_lock_wait() loop,
+again consistent with waiting for some other CPU. Presumably the
+missing CPU3.
+
+> NMI backtrace for cpu 0
+> RIP: 0010:[<ffffffffa90ac450>]  [<ffffffffa90ac450>] preempt_count_add+0x0/0xc0
+> Call Trace:
+>  [<ffffffffa96bbb45>] cpuidle_enter_state+0x55/0x300
+>  [<ffffffffa96bbea7>] cpuidle_enter+0x17/0x20
+>  [<ffffffffa90c88f5>] cpu_startup_entry+0x4e5/0x630
+>  [<ffffffffa902d523>] start_secondary+0x1a3/0x220
+
+And CPU0 is just in the idle loop (that RIP is literally the
+instruction after the "mwait" according to the code line).
+
+> INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 125.739 msecs
+
+.. and that's us giving up on CPU3.
+
+So it does look like CPU3 is the problem, but sadly, CPU3 is
+apparently not listening, and doesn't even react to the NMI, much less
+a TLB flush IPI.
+
+Not reacting to NMI could be:
+ (a) some APIC state issue
+ (b) we're already stuck in a loop in the previous NMI handler
+ (c) what?
+
+Anybody?
+
+                     Linus
