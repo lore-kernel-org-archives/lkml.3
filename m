@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071AbaKROva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:51:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932179AbaKROJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:55 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 090/206] dm log userspace: fix memory leak in dm_ulog_tfr_init failure path
-Date: Tue, 18 Nov 2014 15:07:25 +0100
-Message-Id: <93232824e2c3aa8173a1060fbf9acea7f477d53c.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S1756083AbaKROwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:52:36 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60296 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755297AbaKROwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:52:33 -0500
+Date: Tue, 18 Nov 2014 14:52:29 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: David Long <dave.long@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 5/5] arm64: Add HAVE_REGS_AND_STACK_ACCESS_API feature
+Message-ID: <20141118145228.GN18842@arm.com>
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
+ <1416292375-29560-6-git-send-email-dave.long@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416292375-29560-6-git-send-email-dave.long@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Hi David,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Nov 18, 2014 at 06:32:55AM +0000, David Long wrote:
+> From: "David A. Long" <dave.long@linaro.org>
+> 
+> Add HAVE_REGS_AND_STACK_ACCESS_API feature for arm64.
 
-===============
+[...]
 
-commit 56ec16cb1e1ce46354de8511eef962a417c32c92 upstream.
+> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+> index d3e782a..24cc048 100644
+> --- a/arch/arm64/include/asm/ptrace.h
+> +++ b/arch/arm64/include/asm/ptrace.h
+> @@ -111,6 +111,8 @@ struct pt_regs {
+>  	u64 syscallno;
+>  };
+>  
+> +#define MAX_REG_OFFSET (offsetof(struct pt_regs, orig_x0))
 
-If cn_add_callback() fails in dm_ulog_tfr_init(), it does not
-deallocate prealloced memory but calls cn_del_callback().
+Is orig_x0 actually useful to this API? If not, we could instead operate on
+the user_pt_regs structure, and define the maximum offset in terms of sizeof
+that.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> +#define ARM_cpsr	pstate
+> +#define ARM_pc		pc
+> +#define ARM_sp		sp
+> +#define ARM_lr		regs[30]
+> +#define ARM_fp		regs[29]
+> +#define ARM_x28		regs[28]
+> +#define ARM_x27		regs[27]
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Reviewed-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/md/dm-log-userspace-transfer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+[...]
 
-diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
-index 08d9a207259a..c69d0b787746 100644
---- a/drivers/md/dm-log-userspace-transfer.c
-+++ b/drivers/md/dm-log-userspace-transfer.c
-@@ -272,7 +272,7 @@ int dm_ulog_tfr_init(void)
- 
- 	r = cn_add_callback(&ulog_cn_id, "dmlogusr", cn_ulog_callback);
- 	if (r) {
--		cn_del_callback(&ulog_cn_id);
-+		kfree(prealloced_cn_msg);
- 		return r;
- 	}
- 
--- 
-2.1.3
+I don't think we need these #defines.
 
+Will
