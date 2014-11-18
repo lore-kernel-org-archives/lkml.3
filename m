@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852AbaKRPQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:16:31 -0500
-Received: from mga03.intel.com ([134.134.136.65]:6197 "EHLO mga03.intel.com"
+	id S932711AbaKRPQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:16:43 -0500
+Received: from sauhun.de ([89.238.76.85]:45791 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756797AbaKRPPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:15:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,410,1413270000"; 
-   d="scan'208";a="609820422"
-Date: Tue, 18 Nov 2014 17:14:27 +0200
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] mfd: dln2: add support for USB-SPI module
-Message-ID: <20141118151418.GC2583@lpalcu-linux>
-References: <1415799490-27989-1-git-send-email-laurentiu.palcu@intel.com>
- <1415799490-27989-3-git-send-email-laurentiu.palcu@intel.com>
- <20141118142816.GE24004@x1>
+	id S1755009AbaKRPQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:16:40 -0500
+Date: Tue, 18 Nov 2014 16:17:52 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Carlo Caione <carlo@caione.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jerry Cao <jerry.cao@amlogic.com>, Victor Wan <victor.wan@amlogic.com>
+Subject: Re: [PATCH v3 1/3] i2c: meson: add device tree bindings documentation
+Message-ID: <20141118151752.GE30004@katana>
+References: <1415907123-4318-1-git-send-email-b.galvani@gmail.com>
+ <1415907123-4318-2-git-send-email-b.galvani@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3O1VwFp74L81IIeR"
 Content-Disposition: inline
-In-Reply-To: <20141118142816.GE24004@x1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415907123-4318-2-git-send-email-b.galvani@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
 
-On Tue, Nov 18, 2014 at 02:28:16PM +0000, Lee Jones wrote:
-> On Wed, 12 Nov 2014, Laurentiu Palcu wrote:
-> 
-> > Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
-> > Acked-by: Mark Brown <broonie@kernel.org>
-> > ---
-> >  drivers/mfd/dln2.c | 12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> 
-> For my own reference:
-> 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-> So what's the plan for this set?
+--3O1VwFp74L81IIeR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I sent a v3 a few hours ago that addresses Johan comments for the 1st
-patch. I also included this patch since I didn't find it in mfd next
-branches.
+On Thu, Nov 13, 2014 at 08:32:01PM +0100, Beniamino Galvani wrote:
+> This commit adds device tree bindings documentation for the I2C bus
+> controller found on Amlogic Meson SoCs.
+>=20
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 
-laurentiu
+Applied to for-next, thanks!
+
+
+--3O1VwFp74L81IIeR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUa2MgAAoJEBQN5MwUoCm2azEP/iVDcz0w8nUhJZnyOkffRqXJ
+RPmlYBsqkvneQGJzDrB6Tfg4OL+fgxdEpV7qcK8UzuTGhwToiw8qwRwqN6Oy329Q
+8ivIGKSCqQLRVOQtEHEd2E81h9unM5000iBQ6oeHl9b13pP7GaOYNzxc6X5po5Rd
+dnMoQ7YkMMHTRNCFSXoEDY5DuwYuugBhb66+ybi2eZCXDtIrRLO5EkJNybm5OaIR
+U+AF+0RJbZ44N9D+UUvsOVKxhxCqstuSMfEo1++4ZmQMBZYo2snlXIqPMJdNrnX9
+LDgBRSS0W5V07bJUy2tpTAJnq0DPps2Op19buVhHaZoby6yAM93A+r+/IwRTlWqJ
+tcvXBJ8em/8UdXT9OSgVUFXES+CSf9bS/8Jl3EBd1uxSn8DdE6yLzsNxfHqTfbcA
+yPircWWfSXuWIFYrxcM7FsXfevYGJjtrIBk0c4JEX7dJePyAs6K1vS6yfrDJfmDv
+IO2udIya9dY/ooZhbqbPbD4TY6vK7/j33dwmVYDrAAy45jXGQu9T7/rK6kR5bwL4
+VQ3uYwvGb0mix8pgUL19QzdNS3ACxHW8IUuwvbAnht3qMYI0pmXDLo6St1XA83f0
+8QNqJXQsOgoswTPNJ+ECaHRxXwhh503KOnxKhU3AzbnQ1+PMR15LW4mvtnGXt8nL
+pDqNBW+c/853UqZ6B+QZ
+=A4P0
+-----END PGP SIGNATURE-----
+
+--3O1VwFp74L81IIeR--
