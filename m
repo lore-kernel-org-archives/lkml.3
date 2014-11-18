@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577AbaKRPIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:08:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57177 "EHLO mx2.suse.de"
+	id S932530AbaKRPIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:08:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57040 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754959AbaKROJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754962AbaKROJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:09:38 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Ernst <eric.ernst@linux.intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Chris Ball <cjb@laptop.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 047/206] mmc: sdhci-pci: Add SDIO/MMC device ID support for Intel Clovertrail
-Date: Tue, 18 Nov 2014 15:06:42 +0100
-Message-Id: <5044d67c2ef5a035cf3eb9e7a6613f0cc80188ed.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ondrej Zary <linux@rainbow-software.org>,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 056/206] libata-sff: Fix controllers with no ctl port
+Date: Tue, 18 Nov 2014 15:06:51 +0100
+Message-Id: <d525cbdb3d29308d900b0417ca38e70fe6c4c25a.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,89 +22,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Ernst <eric.ernst@linux.intel.com>
+From: Ondrej Zary <linux@rainbow-software.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d052068a0ba43273eb9cfe32460e9445ef75fdc5 upstream.
+commit 6d8ca28fa688a9354bc9fbc935bdaeb3651b6677 upstream.
 
-This patch adds intel_mid clovertrail SDIO and eMMC device
-IDs to the sdhci-pci driver.
+Currently, ata_sff_softreset is skipped for controllers with no ctl port.
+But that also skips ata_sff_dev_classify required for device detection.
+This means that libata is currently broken on controllers with no ctl port.
 
-Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+No device connected:
+[    1.872480] pata_isapnp 01:01.02: activated
+[    1.889823] scsi2 : pata_isapnp
+[    1.890109] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    6.888110] ata3.01: qc timeout (cmd 0xec)
+[    6.888179] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   16.888085] ata3.01: qc timeout (cmd 0xec)
+[   16.888147] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.888086] ata3.01: qc timeout (cmd 0xec)
+[   46.888148] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   51.888100] ata3.00: qc timeout (cmd 0xec)
+[   51.888160] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   61.888079] ata3.00: qc timeout (cmd 0xec)
+[   61.888141] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   91.888089] ata3.00: qc timeout (cmd 0xec)
+[   91.888152] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+
+ATAPI device connected:
+[    1.882061] pata_isapnp 01:01.02: activated
+[    1.893430] scsi2 : pata_isapnp
+[    1.893719] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    6.892107] ata3.01: qc timeout (cmd 0xec)
+[    6.892171] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   16.892079] ata3.01: qc timeout (cmd 0xec)
+[   16.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.892079] ata3.01: qc timeout (cmd 0xec)
+[   46.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.908586] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
+[   46.924570] ata3.00: configured for PIO0 (device error ignored)
+[   46.926295] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
+[   46.984519] sr0: scsi3-mmc drive: 6x/6x xa/form2 tray
+[   46.984592] cdrom: Uniform CD-ROM driver Revision: 3.20
+
+So don't skip ata_sff_softreset, just skip the reset part of ata_bus_softreset
+if the ctl port is not available.
+
+This makes IDE port on ES968 behave correctly:
+
+No device connected:
+[    4.670888] pata_isapnp 01:01.02: activated
+[    4.673207] scsi host2: pata_isapnp
+[    4.673675] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    7.081840] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
+
+ATAPI device connected:
+[    4.704362] pata_isapnp 01:01.02: activated
+[    4.706620] scsi host2: pata_isapnp
+[    4.706877] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    4.872782] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
+[    4.888673] ata3.00: configured for PIO0 (device error ignored)
+[    4.893984] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
+[    7.015578] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mmc/host/sdhci-pci.c | 46 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ drivers/ata/libata-sff.c | 20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 689e655a122b..9995fad743a6 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -38,6 +38,11 @@
- #define PCI_DEVICE_ID_INTEL_BYT_SD	0x0f16
- #define PCI_DEVICE_ID_INTEL_BYT_EMMC2	0x0f50
- #define PCI_DEVICE_ID_INTEL_MRFL_MMC	0x1190
-+#define PCI_DEVICE_ID_INTEL_CLV_SDIO0	0x08f9
-+#define PCI_DEVICE_ID_INTEL_CLV_SDIO1	0x08fa
-+#define PCI_DEVICE_ID_INTEL_CLV_SDIO2	0x08fb
-+#define PCI_DEVICE_ID_INTEL_CLV_EMMC0	0x08e5
-+#define PCI_DEVICE_ID_INTEL_CLV_EMMC1	0x08e6
+diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
+index b603720b877d..37acda6fa7e4 100644
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -2008,13 +2008,15 @@ static int ata_bus_softreset(struct ata_port *ap, unsigned int devmask,
  
- /*
-  * PCI registers
-@@ -965,6 +970,47 @@ static const struct pci_device_id pci_ids[] = {
- 		.driver_data	= (kernel_ulong_t)&sdhci_intel_byt_emmc,
- 	},
+ 	DPRINTK("ata%u: bus reset via SRST\n", ap->print_id);
  
-+
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_CLV_SDIO0,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_intel_mfd_sd,
-+	},
-+
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_CLV_SDIO1,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_intel_mfd_sdio,
-+	},
-+
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_CLV_SDIO2,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_intel_mfd_sdio,
-+	},
-+
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_CLV_EMMC0,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_intel_mfd_emmc,
-+	},
-+
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_CLV_EMMC1,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_intel_mfd_emmc,
-+	},
-+
- 	{
- 		.vendor		= PCI_VENDOR_ID_INTEL,
- 		.device		= PCI_DEVICE_ID_INTEL_MRFL_MMC,
+-	/* software reset.  causes dev0 to be selected */
+-	iowrite8(ap->ctl, ioaddr->ctl_addr);
+-	udelay(20);	/* FIXME: flush */
+-	iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
+-	udelay(20);	/* FIXME: flush */
+-	iowrite8(ap->ctl, ioaddr->ctl_addr);
+-	ap->last_ctl = ap->ctl;
++	if (ap->ioaddr.ctl_addr) {
++		/* software reset.  causes dev0 to be selected */
++		iowrite8(ap->ctl, ioaddr->ctl_addr);
++		udelay(20);	/* FIXME: flush */
++		iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
++		udelay(20);	/* FIXME: flush */
++		iowrite8(ap->ctl, ioaddr->ctl_addr);
++		ap->last_ctl = ap->ctl;
++	}
+ 
+ 	/* wait the port to become ready */
+ 	return ata_sff_wait_after_reset(&ap->link, devmask, deadline);
+@@ -2215,10 +2217,6 @@ void ata_sff_error_handler(struct ata_port *ap)
+ 
+ 	spin_unlock_irqrestore(ap->lock, flags);
+ 
+-	/* ignore ata_sff_softreset if ctl isn't accessible */
+-	if (softreset == ata_sff_softreset && !ap->ioaddr.ctl_addr)
+-		softreset = NULL;
+-
+ 	/* ignore built-in hardresets if SCR access is not available */
+ 	if ((hardreset == sata_std_hardreset ||
+ 	     hardreset == sata_sff_hardreset) && !sata_scr_valid(&ap->link))
 -- 
 2.1.3
 
