@@ -1,237 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419AbaKROrC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:47:02 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:60998 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383AbaKROq4 (ORCPT
+	id S1756404AbaKROq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:46:59 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:24723 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360AbaKROq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:46:56 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] i8k: Ignore temperature sensors which report invalid values
-Date: Tue, 18 Nov 2014 15:46:51 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Steven Honeyman <stevenhoneyman@gmail.com>
-References: <1413730014-30945-1-git-send-email-pali.rohar@gmail.com> <201411170935.30987@pali> <546ADF7B.5020201@roeck-us.net>
-In-Reply-To: <546ADF7B.5020201@roeck-us.net>
+Message-ID: <546B5BAA.9090905@huawei.com>
+Date: Tue, 18 Nov 2014 22:46:02 +0800
+From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3483590.t1MHJRtOVM";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Jiang Liu <jiang.liu@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
+References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <546B51BA.6070806@linux.intel.com> <546B5635.6020806@huawei.com> <546B57E4.9040804@linux.intel.com>
+In-Reply-To: <546B57E4.9040804@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201411181546.51284@pali>
+X-Originating-IP: [10.177.24.136]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3483590.t1MHJRtOVM
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 2014/11/18 22:29, Jiang Liu wrote:
 
-On Tuesday 18 November 2014 06:56:11 Guenter Roeck wrote:
-> On 11/17/2014 12:35 AM, Pali Roh=C3=A1r wrote:
-> > On Thursday 23 October 2014 18:45:07 Guenter Roeck wrote:
-> >> On Thu, Oct 23, 2014 at 12:37:34PM +0200, Pali Roh=C3=A1r wrote:
-> >>> On Wednesday 22 October 2014 19:10:05 Guenter Roeck wrote:
-> >>>> On Wed, Oct 22, 2014 at 06:35:53PM +0200, Pali Roh=C3=A1r=20
-wrote:
-> >>>>> On Wednesday 22 October 2014 18:19:47 Guenter Roeck
-> >=20
-> > wrote:
-> >>>>>> On Wed, Oct 22, 2014 at 02:29:06PM +0200, Pali Roh=C3=A1r
-> >=20
-> > wrote:
-> >>>>>>> On Tuesday 21 October 2014 06:27:23 Guenter Roeck
-> >=20
-> > wrote:
-> >>>>>>>> On 10/20/2014 09:46 AM, Pali Roh=C3=A1r wrote:
-> >>>>>>>>> Ok, I will describe my problem. Guenter, maybe
-> >>>>>>>>> you can find another solution/fix for it.
-> >>>>>>>>>=20
-> >>>>>>>>> Calling i8k_get_temp(3) on my laptop without
-> >>>>>>>>> I8K_TEMPERATURE_BUG always returns value 193
-> >>>>>>>>> (which is above I8K_MAX_TEMP).
-> >>>>>>>>>=20
-> >>>>>>>>> When I8K_TEMPERATURE_BUG is enabled (by default)
-> >>>>>>>>> then i8k_get_temp(3) returns value from prev[3]
-> >>>>>>>>> and store new value I8K_TEMPERATURE_BUG to
-> >>>>>>>>> prev[3]. Value in prev[3] is initialized to 0.
-> >>>>>>>>>=20
-> >>>>>>>>> What I want to achieve is: when i8k_get_temp()
-> >>>>>>>>> for particular sensor id always returns invalid
-> >>>>>>>>> value (> I8K_MAX_TEMP) then we should totally
-> >>>>>>>>> ignore sensor with that id and do not export it
-> >>>>>>>>> via hwmon.
-> >>>>>>>>>=20
-> >>>>>>>>> My solution is: initialize prev[id] to
-> >>>>>>>>> I8K_MAX_TEMP, so on invalid data first call to
-> >>>>>>>>> i8k_get_temp(id) returns I8K_MAX_TEMP. Then in
-> >>>>>>>>> i8k_init_hwmon check if value is < I8K_MAX_TEMP
-> >>>>>>>>> and if not ignore sensor id.
-> >>>>>>>>>=20
-> >>>>>>>>> Guenter, it is clear now? Are you ok that we
-> >>>>>>>>> should ignore sensor if always report value
-> >>>>>>>>> above I8K_MAX_TEMP? If you do not like my
-> >>>>>>>>> solution/patch for it, can you specify how
-> >>>>>>>>> other can it be fixed?
-> >>>>>>>>=20
-> >>>>>>>> I still don't see the point in initializing
-> >>>>>>>> prev[].
-> >>>>>>>=20
-> >>>>>>> Now prev[] is initialized to 0. It means that first
-> >>>>>>> call i8k_get_temp() (with sensor id which return
-> >>>>>>> value > I8K_MAX_TEMP) returns 0. Second and other
-> >>>>>>> calls returns I8K_MAX_TEMP.
-> >>>>>>>=20
-> >>>>>>> So point is to return same value for first and other
-> >>>>>>> calls.
-> >>>>>>=20
-> >>>>>> Yes, I realized that after I sent my previous mail.
-> >>>>>>=20
-> >>>>>>>> Yes, I am ok with ignoring sensor values if the
-> >>>>>>>> reported temperature is above I8K_MAX_TEMP. I am
-> >>>>>>>> just not sure if we should check against
-> >>>>>>>> I8K_MAX_TEMP or against, say, 192. Reason is that
-> >>>>>>>> we do know that the sensor can erroneously return
-> >>>>>>>> 0x99 on some systems once in a while. We would
-> >>>>>>>> not want to ignore those sensors just because
-> >>>>>>>> they happen to report 0x99 during initialization.
-> >>>>>>>>=20
-> >>>>>>>> So maybe make it
-> >>>>>>>>=20
-> >>>>>>>> 	if (err >=3D 0 && err < 192)
-> >>>>>>>>=20
-> >>>>>>>> and add a note before the first if(), explaining
-> >>>>>>>> that higher values suggest that there is no
-> >>>>>>>> sensor attached.
-> >>>>>>>>=20
-> >>>>>>>> Thanks,
-> >>>>>>>> Guenter
-> >>>>>>>=20
-> >>>>>>> Right, now we need to decide which magic constant to
-> >>>>>>> use...
-> >>>>>>>=20
-> >>>>>>> And now I found another problem :-)
-> >>>>>>>=20
-> >>>>>>> On my laptop i8k_get_temp(3) not always return value
-> >>>>>>> 193. It is only when AMD graphics card is turned
-> >>>>>>> off. When card is on i8k_get_temp(3) returns same
-> >>>>>>> value as temperature hwmon part from radeon DRM
-> >>>>>>> driver.
-> >>>>>>=20
-> >>>>>> Can you turn the GPU on or off during runtime ?
-> >>>>>> That would make it really tricky to handle the
-> >>>>>> situation.
-> >>>>>=20
-> >>>>> Yes. New laptops with Nvidia Optimus or AMD PowerXpress
-> >>>>> or Enduro technology are designed to automatically turn
-> >>>>> off secondary GPU when is not in use. And
-> >>>>> nouveau/radeon drivers together with vga_switcheroo
-> >>>>> implements this dynamic power on/off.
-> >>>>>=20
-> >>>>>>> So it looks like that on my laptop i8k sensor with
-> >>>>>>> id 3 reports GPU temperature.
-> >>>>>>>=20
-> >>>>>>> When card is turned off radeon driver reports
-> >>>>>>> -EINVAL for temperature hwmon sysnode.
-> >>>>>>>=20
-> >>>>>>> So now I think i8k could not ignore sensor totally
-> >>>>>>> as it can be mapped to some HW which can be
-> >>>>>>> dynamically turned on/off (like my graphics card).
-> >>>>>>>=20
-> >>>>>>> So what do you think about reporting -EINVAL instead
-> >>>>>>> I8K_MAX_TEMP when dell SMM returns value above
-> >>>>>>> I8K_MAX_TEMP?
-> >>>>>>=20
-> >>>>>> -EINVAL is supposed to mean "Invalid Argument", so it
-> >>>>>> really has ia different semantics. We could use
-> >>>>>> -ENXIO, "No such device or address", which seems more
-> >>>>>> appropriate.
-> >>>>>=20
-> >>>>> I prefer to use -EINVAL because other driver (radeon) is
-> >>>>> using it and userspace "sensors" programs handle EINVAL
-> >>>>> and show "N/A" in output instead reporting some error
-> >>>>> about reading value. If nothing else consistency (with
-> >>>>> other drivers) is my argument.
-> >>>>=20
-> >>>> Ok, if sensors implements it that way then let's do it.
-> >>>>=20
-> >>>>>> Overall, I think the entire error handling is broken
-> >>>>>> and should be replaced. One option would be to
-> >>>>>> explicitly check for 0x99 and, if detected, go to
-> >>>>>> sleep for, say, 100ms and try again. If it still
-> >>>>>> fails, and for all other bad values, return -ENXIO.
-> >>>>>> Then the calling code can either return the error to
-> >>>>>> user space in the show function, or not install the
-> >>>>>> sensor in the probe function.
-> >>>>>>=20
-> >>>>>> Does that make sense ?
-> >>>>>=20
-> >>>>> Yes, replacing error handling with retry call (after
-> >>>>> some sleep) is better then current code (which returns
-> >>>>> previous value or returns I8K_MAX_TEMP).
-> >>>>>=20
-> >>>>> But your solution not install the sensor if probe fails
-> >>>>> on bad value does not solve problem that i8k.ko is
-> >>>>> loading at time when GPU card is turned off.
-> >>>>=20
-> >>>> Yes, the dynamics in that situation makes it a bit
-> >>>> difficult to handle the situation.
-> >>>>=20
-> >>>>> I think current check for installing sensor (err < 0) is
-> >>>>> enough and when invalid value (> I8K_MAX_TEMP) is
-> >>>>> returned just do not show this value for userspace in
-> >>>>> hwmon sysnode.
-> >>>>=20
-> >>>> Ok with me, and agreed.
-> >>>>=20
-> >>>> Thanks,
-> >>>> Guenter
-> >>>=20
-> >>> Ok, are you going to fix i8k_get_temp() function (with
-> >>> sleeping)?
-> >>=20
-> >> I had hoped you would find the time to do it ;-).
-> >>=20
-> >> Sure, I can do it, but I am kind of busy right now, so it
-> >> will take a while.
-> >>=20
-> >> Thanks,
-> >> Guenter
-> >=20
-> > Ok. Will you do that for 3.19 kernel? Meanwhile I can
-> > prepare patch for temperature labels. I looked into
-> > NBSVC.MDM and there is something related for type of
-> > temperature sensors...
->=20
-> Highly unlikely. I don't have the time right now.
->=20
-> Guenter
+> 
+> 
+> On 2014/11/18 22:22, Yun Wu (Abel) wrote:
+>> On 2014/11/18 22:03, Jiang Liu wrote:
+>>
+>>> On 2014/11/18 21:52, Yun Wu (Abel) wrote:
+>>>> On 2014/11/18 21:43, Jiang Liu wrote:
+>>>>
+>>>>> On 2014/11/18 21:33, Yun Wu (Abel) wrote:
+>>>>>> On 2014/11/18 18:19, Thomas Gleixner wrote:
+>>>>>>
+>>>>>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>>>>>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>>>>>>>>>  struct irq_chip {
+>>>>>>>>> @@ -359,6 +360,7 @@ struct irq_chip {
+>>>>>>>>>  	void		(*irq_release_resources)(struct irq_data *data);
+>>>>>>>>>  
+>>>>>>>>>  	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>>>>>> +	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>>>>>
+>>>>>>>> Hmm... It's really weird.
+>>>>>>>> I don't think it's the interrupt controllers' responsibility to write messages
+>>>>>>>> for all the endpoint devices since the methods of configuring message registers
+>>>>>>>> may different between these devices. And theoretically, the endpoint devices
+>>>>>>>> themselves should take the responsibility to configure their message registers.
+>>>>>>>> To say the least, the write_msg callback here still need to call some certain
+>>>>>>>> interfaces provided by the corresponding device.
+>>>>>>>>
+>>>>>>>> There would be lots of ARM new devices capable of sending message
+>>>>>>>> based interrupts to interrupt controllers, does all the drivers of
+>>>>>>>> the devices need to expose a write_msg callback to interrupt
+>>>>>>>> controllers?
+>>>>>>>
+>>>>>>> Well, writing the message _IS_ part of the interrupt controller.
+>>>>>>>
+>>>>>>> So in order to enable non PCI based MSI we want to have generic
+>>>>>>> infrastructure with minimal per device/device class callbacks and of
+>>>>>>> course you need to provide that callback for your special device.
+>>>>>>>
+>>>>>>> We already have non PCI based MSI controllers in x86 today and we need
+>>>>>>> to handle the whole stuff with tons of copied coded extra for each of
+>>>>>>> those. So consolidating it into common infrastructure allows us to get
+>>>>>>> rid of the pointless copied code and reduce the per device effort to
+>>>>>>> the relevant hardware specific callbacks. irq_write_msi_msg being one
+>>>>>>> of those.
+>>>>>>>
+>>>>>>
+>>>>>> At least, we have the same goal.
+>>>>>> I will illustrate my thoughts by an example.
+>>>>>> The current code is something like:
+>>>>>>
+>>>>>> Device A
+>>>>>> ========
+>>>>>> void A_write_msg() { ... }
+>>>>>>
+>>>>>> Group B
+>>>>>> (a group of devices behave same on writing messages, i.e. PCI)
+>>>>>> =======
+>>>>>> void B_write_msg() { ... }
+>>>>>>
+>>>>>> Controller
+>>>>>> ==========
+>>>>>> irq_chip.irq_write_msi_msg () {
+>>>>>> 	if (A)
+>>>>>> 		A_write_msg();
+>>>>>> 	if (B)
+>>>>>> 		B_write_msg();
+>>>>>> }
+>>>>>>
+>>>>>> It's horrible when new devices come out, since we need to modify the
+>>>>>> controller part for each new device.
+>>>>>> What I suggested is:
+>>>>>>
+>>>>>> MSI Core
+>>>>>> ========
+>>>>>> struct msi_ops { .write_msg, };
+>>>>>> struct msi_desc { .msi_ops, };
+>>>>>>
+>>>>>> write_msg() {
+>>>>>> 	X = get_dev();
+>>>>>> 	irq_chip.compose_msg(X);	// IRQ chips' responsibility
+>>>>>> 	X_msi_ops.write_msg();		// nothing to do with IRQ chips
+>>>>>> }
+>>>>>>
+>>>>>> Device A
+>>>>>> ========
+>>>>>> void A_write_msg() { ... }
+>>>>>> A_msi_ops.write_msg = A_write_msg;
+>>>>>>
+>>>>>> Group B
+>>>>>> =======
+>>>>>> void B_write_msg() { ... }
+>>>>>> B_msi_ops.write_msg = B_write_msg;
+>>>>>>
+>>>>>> Please correct me if I misunderstood anything.
+>>>>> Hi Yun,
+>>>>> 	We provide an irq_chip for each type of interrupt controller
+>>>>> instead of devices. For the example mentioned above, if device A
+>>>>> and Group B has different interrupt controllers, we just need to
+>>>>> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
+>>>>> to suitable callbacks.
+>>>>> 	The framework already achieves what you you want:)
+>>>>
+>>>> What if device A and group B have the same interrupt controller?
+>>> Device doesn't care about interrupt controllers, it just cares about
+>>> interrupts used by itself. It's the interrupt source (controller)
+>>> enumerators' responsibility to discover interrupt source, associate
+>>> methods to control the interrupt source and assign irq numbers for
+>>> interrupt sources.
+>>
+>> Yes, indeed.
+>>
+>>> There are two ways to associate irq numbers with device:
+>>> 1) arch code/bus drivers statically assigns irq number for devices
+>>>    when creating device objects, such as PCI legacy interrupt
+>>>    (INTA-INTD), IOAPIC interrupts.
+>>
+>> And OF interfaces.
+>>
+>>> 2) device drivers ask interrupt source enumerators to dynamically
+>>>    create irq numbers, such pci_enable_msix_range() and friends.
+>>> So device driver definitely doesn't need to known about irq_chip
+>>> methods to control interrupt sources.
+>>>
+>>
+>> The above you described is absolutely right, but not the things I want
+>> to know. :)
+>> Take GICv3 ITS for example, it deals with both PCI and non PCI message
+>> interrupts. IIUC, several irq_chips need to be implemented in the ITS
+>> driver (i.e. pci_msi_chip, A_msi_chip and B_msi_chip). What should we
+>> do to the ITS driver if new MSI-capable devices come out?
+> Marc has posted a patchset to enable ITS based on the hierarchy
+> irqdomain framework, please refer to "[PATCH 00/15] arm64: PCI/MSI:
+> GICv3 ITS support (stacked domain edition)" at
+> https://lkml.org/lkml/2014/11/11/620
+> 
 
-Ok. I will try to at least fix patch from first post in this=20
-thread, so i8k_get_temp() does not return totally invalid value=20
-to userspace (or at first call).
+IIUC, Marc's patch now only supports PCI MSI/MSI-X...
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Thanks,
+	Abel
 
---nextPart3483590.t1MHJRtOVM
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlRrW9sACgkQi/DJPQPkQ1JKHACfa/6um8k4p7roaocDTr0h0lBt
-T2wAoMuTy9beWPr5r+VmUH+tf7o7kiRn
-=Mz3l
------END PGP SIGNATURE-----
-
---nextPart3483590.t1MHJRtOVM--
