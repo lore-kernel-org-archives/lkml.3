@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaKRSO2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:14:28 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60592 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263AbaKRSO0 (ORCPT
+	id S1754247AbaKRSTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:19:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25997 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683AbaKRSTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:14:26 -0500
-Date: Tue, 18 Nov 2014 18:14:12 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC 3/3] ARM: reduce size of page table directory for
- short mode
-Message-ID: <20141118181412.GO28279@e104818-lin.cambridge.arm.com>
-References: <20141118165313.9958.1242.stgit@buzz>
- <20141118165325.9958.84370.stgit@buzz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141118165325.9958.84370.stgit@buzz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Nov 2014 13:19:04 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2] PCI: Don't reject 64bit mmio on 32bit/PAE mode
+Date: Tue, 18 Nov 2014 10:19:04 -0800
+Message-Id: <1416334744-16817-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 03:53:25PM +0000, Konstantin Khlebnikov wrote:
-> Virtual memory above PAGE_OFFSET is covered by TTBR1 which always points
-> to swapper_pg_dir, thus size of the rest pgd tables might be reduced.
-> Of course idmap_pgd must be full 16k because it's used without split.
-> It seems nobody accesses pgd entries above PAGE_OFFSET via pgd_offset(),
-> all access is done via pgd_offset_k() which refers directly to init_mm.
+Aaron reported 32bit/PAE mode, has problem with 64bit resource.
 
-We did a similar trick on arm64 with swapper_pg_dir only containing the
-kernel mappings while pgd_alloc() only allocates enough for the user
-memory map. We just need to sort out the potential A9 issue (I'll do
-some digging tomorrow).
+[    6.610012] pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
+[    6.622195] pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
+[    6.656112] pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
+[    6.668293] pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
+[    6.702055] pci 0000:00:02.2: PCI bridge to [bus 03-04]
+[    6.706434] pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
+[    6.711783] pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
+[    6.717906] pci 0000:00:02.2: can't handle 64-bit address space for bridge
 
-> This patch saves 8k per process for 2G/2G split (12k for 1G/3G split)
-> and kills source of frequent order-2 allocations. Unfortunately most
-> commonly used 3G/1G mode isn't supported, because first part must be
-> power of two. LPAE supports this mode, but it's pgd is already tiny.
+So the kernel reject 64bit mmio on pci pref bridge that is assigned by
+firmware.
 
-Actually, with LPAE you can save a pmd and pte allocated for the vectors
-page at 0xffff0000. So you can save 8K per task here. Similarly with the
-classic MMU, you can save another 4K for the vectors page pte.
+When 32bit PAE is enabled, we could support 64bit mmio.
+but BITS_PER_LONG==64 checking could reject firmware assigned mmio that
+is above 4G. On x86 32bit always has BITS_PER_LONG equal to 32.
 
--- 
-Catalin
+We could use CONFIG_ARCH_DMA_ADDR_T_64BIT or dma_addr_t size checking instead.
+Use dma_addr_t size checking to avoid using MARCO.
+
+Also need to change to use dma_addr_t instead of unsigned long
+for base/limit to avoid overflow.
+
+-v2: add u64 cast to avoid compiler warning.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
+Reported-by: Aaron Ma <mapengyu@gmail.com>
+Tested-by: Aaron Ma <mapengyu@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/probe.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -406,15 +406,15 @@ static void pci_read_bridge_mmio_pref(st
+ {
+ 	struct pci_dev *dev = child->self;
+ 	u16 mem_base_lo, mem_limit_lo;
+-	unsigned long base, limit;
++	dma_addr_t base, limit;
+ 	struct pci_bus_region region;
+ 	struct resource *res;
+ 
+ 	res = child->resource[2];
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
+-	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
+-	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
++	base = ((dma_addr_t) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
++	limit = ((dma_addr_t) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
+ 
+ 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
+ 		u32 mem_base_hi, mem_limit_hi;
+@@ -428,15 +428,15 @@ static void pci_read_bridge_mmio_pref(st
+ 		 * this, just assume they are not being used.
+ 		 */
+ 		if (mem_base_hi <= mem_limit_hi) {
+-#if BITS_PER_LONG == 64
+-			base |= ((unsigned long) mem_base_hi) << 32;
+-			limit |= ((unsigned long) mem_limit_hi) << 32;
+-#else
+-			if (mem_base_hi || mem_limit_hi) {
+-				dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
+-				return;
++			if (sizeof(dma_addr_t) < 8) {
++				if (mem_base_hi || mem_limit_hi) {
++					dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
++					return;
++				}
++			} else  {
++				base |= (dma_addr_t)(((u64)mem_base_hi)<<32);
++				limit |= (dma_addr_t)(((u64)mem_limit_hi)<<32);
+ 			}
+-#endif
+ 		}
+ 	}
+ 	if (base <= limit) {
