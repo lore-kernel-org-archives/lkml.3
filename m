@@ -1,169 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733AbaKRNw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:52:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36602 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754146AbaKRNwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:52:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,410,1413270000"; 
-   d="scan'208";a="609776257"
-From: lukasz.anaczkowski@intel.com
-To: m.chehab@samsung.com, dougthompson@xmission.com
-Cc: bp@alien8.de, linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jim Snow <jim.m.snow@intel.com>, Jim Snow <jim.snow@intel.com>,
-        Lukasz Anaczkowski <lukasz.anaczkowski@intel.com>
-Subject: [PATCH 2/2] sb_edac: Fix erroneous bytes->gigabytes conversion
-Date: Tue, 18 Nov 2014 14:51:09 +0100
-Message-Id: <1416318669-96322-3-git-send-email-lukasz.anaczkowski@intel.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1416318669-96322-1-git-send-email-lukasz.anaczkowski@intel.com>
-References: <1416318669-96322-1-git-send-email-lukasz.anaczkowski@intel.com>
+	id S1754744AbaKRNxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:53:11 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44481 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833AbaKRNxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 08:53:09 -0500
+Message-ID: <546B4F18.5060705@huawei.com>
+Date: Tue, 18 Nov 2014 21:52:24 +0800
+From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Jiang Liu <jiang.liu@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
+References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com>
+In-Reply-To: <546B4D0D.9050601@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.136]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Snow <jim.m.snow@intel.com>
+On 2014/11/18 21:43, Jiang Liu wrote:
 
-Signed-off-by: Jim Snow <jim.snow@intel.com>
-Signed-off-by: Lukasz Anaczkowski <lukasz.anaczkowski@intel.com>
----
- drivers/edac/sb_edac.c | 38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+> On 2014/11/18 21:33, Yun Wu (Abel) wrote:
+>> On 2014/11/18 18:19, Thomas Gleixner wrote:
+>>
+>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>>>>>  struct irq_chip {
+>>>>> @@ -359,6 +360,7 @@ struct irq_chip {
+>>>>>  	void		(*irq_release_resources)(struct irq_data *data);
+>>>>>  
+>>>>>  	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>> +	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>
+>>>> Hmm... It's really weird.
+>>>> I don't think it's the interrupt controllers' responsibility to write messages
+>>>> for all the endpoint devices since the methods of configuring message registers
+>>>> may different between these devices. And theoretically, the endpoint devices
+>>>> themselves should take the responsibility to configure their message registers.
+>>>> To say the least, the write_msg callback here still need to call some certain
+>>>> interfaces provided by the corresponding device.
+>>>>
+>>>> There would be lots of ARM new devices capable of sending message
+>>>> based interrupts to interrupt controllers, does all the drivers of
+>>>> the devices need to expose a write_msg callback to interrupt
+>>>> controllers?
+>>>
+>>> Well, writing the message _IS_ part of the interrupt controller.
+>>>
+>>> So in order to enable non PCI based MSI we want to have generic
+>>> infrastructure with minimal per device/device class callbacks and of
+>>> course you need to provide that callback for your special device.
+>>>
+>>> We already have non PCI based MSI controllers in x86 today and we need
+>>> to handle the whole stuff with tons of copied coded extra for each of
+>>> those. So consolidating it into common infrastructure allows us to get
+>>> rid of the pointless copied code and reduce the per device effort to
+>>> the relevant hardware specific callbacks. irq_write_msi_msg being one
+>>> of those.
+>>>
+>>
+>> At least, we have the same goal.
+>> I will illustrate my thoughts by an example.
+>> The current code is something like:
+>>
+>> Device A
+>> ========
+>> void A_write_msg() { ... }
+>>
+>> Group B
+>> (a group of devices behave same on writing messages, i.e. PCI)
+>> =======
+>> void B_write_msg() { ... }
+>>
+>> Controller
+>> ==========
+>> irq_chip.irq_write_msi_msg () {
+>> 	if (A)
+>> 		A_write_msg();
+>> 	if (B)
+>> 		B_write_msg();
+>> }
+>>
+>> It's horrible when new devices come out, since we need to modify the
+>> controller part for each new device.
+>> What I suggested is:
+>>
+>> MSI Core
+>> ========
+>> struct msi_ops { .write_msg, };
+>> struct msi_desc { .msi_ops, };
+>>
+>> write_msg() {
+>> 	X = get_dev();
+>> 	irq_chip.compose_msg(X);	// IRQ chips' responsibility
+>> 	X_msi_ops.write_msg();		// nothing to do with IRQ chips
+>> }
+>>
+>> Device A
+>> ========
+>> void A_write_msg() { ... }
+>> A_msi_ops.write_msg = A_write_msg;
+>>
+>> Group B
+>> =======
+>> void B_write_msg() { ... }
+>> B_msi_ops.write_msg = B_write_msg;
+>>
+>> Please correct me if I misunderstood anything.
+> Hi Yun,
+> 	We provide an irq_chip for each type of interrupt controller
+> instead of devices. For the example mentioned above, if device A
+> and Group B has different interrupt controllers, we just need to
+> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
+> to suitable callbacks.
+> 	The framework already achieves what you you want:)
 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index e9bb1af..f37d01f 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -909,7 +909,7 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 	u32 reg;
- 	u64 limit, prv = 0;
- 	u64 tmp_mb;
--	u32 mb, kb;
-+	u32 gb, mb;
- 	u32 rir_way;
- 
- 	/*
-@@ -919,15 +919,17 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 	pvt->tolm = pvt->info.get_tolm(pvt);
- 	tmp_mb = (1 + pvt->tolm) >> 20;
- 
--	mb = div_u64_rem(tmp_mb, 1000, &kb);
--	edac_dbg(0, "TOLM: %u.%03u GB (0x%016Lx)\n", mb, kb, (u64)pvt->tolm);
-+	gb = div_u64_rem(tmp_mb, 1024, &mb);
-+	edac_dbg(0, "TOLM: %u.%03u GB (0x%016Lx)\n",
-+		gb, (mb*1000)/1024, (u64)pvt->tolm);
- 
- 	/* Address range is already 45:25 */
- 	pvt->tohm = pvt->info.get_tohm(pvt);
- 	tmp_mb = (1 + pvt->tohm) >> 20;
- 
--	mb = div_u64_rem(tmp_mb, 1000, &kb);
--	edac_dbg(0, "TOHM: %u.%03u GB (0x%016Lx)\n", mb, kb, (u64)pvt->tohm);
-+	gb = div_u64_rem(tmp_mb, 1024, &mb);
-+	edac_dbg(0, "TOHM: %u.%03u GB (0x%016Lx)\n",
-+		gb, (mb*1000)/1024, (u64)pvt->tohm);
- 
- 	/*
- 	 * Step 2) Get SAD range and SAD Interleave list
-@@ -949,11 +951,11 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 			break;
- 
- 		tmp_mb = (limit + 1) >> 20;
--		mb = div_u64_rem(tmp_mb, 1000, &kb);
-+		gb = div_u64_rem(tmp_mb, 1024, &mb);
- 		edac_dbg(0, "SAD#%d %s up to %u.%03u GB (0x%016Lx) Interleave: %s reg=0x%08x\n",
- 			 n_sads,
- 			 get_dram_attr(reg),
--			 mb, kb,
-+			 gb, (mb*1000)/1024,
- 			 ((u64)tmp_mb) << 20L,
- 			 INTERLEAVE_MODE(reg) ? "8:6" : "[8:6]XOR[18:16]",
- 			 reg);
-@@ -984,9 +986,9 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 			break;
- 		tmp_mb = (limit + 1) >> 20;
- 
--		mb = div_u64_rem(tmp_mb, 1000, &kb);
-+		gb = div_u64_rem(tmp_mb, 1024, &mb);
- 		edac_dbg(0, "TAD#%d: up to %u.%03u GB (0x%016Lx), socket interleave %d, memory interleave %d, TGT: %d, %d, %d, %d, reg=0x%08x\n",
--			 n_tads, mb, kb,
-+			 n_tads, gb, (mb*1000)/1024,
- 			 ((u64)tmp_mb) << 20L,
- 			 (u32)TAD_SOCK(reg),
- 			 (u32)TAD_CH(reg),
-@@ -1009,10 +1011,10 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 					      tad_ch_nilv_offset[j],
- 					      &reg);
- 			tmp_mb = TAD_OFFSET(reg) >> 20;
--			mb = div_u64_rem(tmp_mb, 1000, &kb);
-+			gb = div_u64_rem(tmp_mb, 1024, &mb);
- 			edac_dbg(0, "TAD CH#%d, offset #%d: %u.%03u GB (0x%016Lx), reg=0x%08x\n",
- 				 i, j,
--				 mb, kb,
-+				 gb, (mb*1000)/1024,
- 				 ((u64)tmp_mb) << 20L,
- 				 reg);
- 		}
-@@ -1034,10 +1036,10 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 
- 			tmp_mb = pvt->info.rir_limit(reg) >> 20;
- 			rir_way = 1 << RIR_WAY(reg);
--			mb = div_u64_rem(tmp_mb, 1000, &kb);
-+			gb = div_u64_rem(tmp_mb, 1024, &mb);
- 			edac_dbg(0, "CH#%d RIR#%d, limit: %u.%03u GB (0x%016Lx), way: %d, reg=0x%08x\n",
- 				 i, j,
--				 mb, kb,
-+				 gb, (mb*1000)/1024,
- 				 ((u64)tmp_mb) << 20L,
- 				 rir_way,
- 				 reg);
-@@ -1048,10 +1050,10 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 						      &reg);
- 				tmp_mb = RIR_OFFSET(reg) << 6;
- 
--				mb = div_u64_rem(tmp_mb, 1000, &kb);
-+				gb = div_u64_rem(tmp_mb, 1024, &mb);
- 				edac_dbg(0, "CH#%d RIR#%d INTL#%d, offset %u.%03u GB (0x%016Lx), tgt: %d, reg=0x%08x\n",
- 					 i, j, k,
--					 mb, kb,
-+					 gb, (mb*1000)/1024,
- 					 ((u64)tmp_mb) << 20L,
- 					 (u32)RIR_RNK_TGT(reg),
- 					 reg);
-@@ -1089,7 +1091,7 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
- 	u8			ch_way, sck_way, pkg, sad_ha = 0;
- 	u32			tad_offset;
- 	u32			rir_way;
--	u32			mb, kb;
-+	u32			mb, gb;
- 	u64			ch_addr, offset, limit = 0, prv = 0;
- 
- 
-@@ -1358,10 +1360,10 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
- 			continue;
- 
- 		limit = pvt->info.rir_limit(reg);
--		mb = div_u64_rem(limit >> 20, 1000, &kb);
-+		gb = div_u64_rem(limit >> 20, 1024, &mb);
- 		edac_dbg(0, "RIR#%d, limit: %u.%03u GB (0x%016Lx), way: %d\n",
- 			 n_rir,
--			 mb, kb,
-+			 gb, (mb*1000)/1024,
- 			 limit,
- 			 1 << RIR_WAY(reg));
- 		if  (ch_addr <= limit)
--- 
-2.0.4
+What if device A and group B have the same interrupt controller?
 
---------------------------------------------------------------------
-
-Intel Technology Poland sp. z o.o.
-ul. Slowackiego 173 | 80-298 Gdansk | Sad Rejonowy Gdansk Polnoc | VII Wydzial Gospodarczy Krajowego Rejestru Sadowego - KRS 101882 | NIP 957-07-52-316 | Kapital zakladowy 200.000 PLN.
-
-Ta wiadomosc wraz z zalacznikami jest przeznaczona dla okreslonego adresata i moze zawierac informacje poufne. W razie przypadkowego otrzymania tej wiadomosci, prosimy o powiadomienie nadawcy oraz trwale jej usuniecie; jakiekolwiek
-przegladanie lub rozpowszechnianie jest zabronione.
-This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). If you are not the intended recipient, please contact the sender and delete all copies; any review or distribution by
-others is strictly prohibited.
+Regards,
+	Abel
 
