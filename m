@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107AbaKRKVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:21:30 -0500
-Received: from mail.zhinst.com ([212.126.164.98]:45711 "EHLO mail.zhinst.com"
+	id S1753803AbaKRKZn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:25:43 -0500
+Received: from 8bytes.org ([81.169.241.247]:58867 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266AbaKRKV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:21:28 -0500
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sandeep Nair <sandeep_n@ti.com>
-Subject: [PATCH] drivers: Remove duplicate include of SOC driver configuration
-Date: Tue, 18 Nov 2014 11:21:23 +0100
-Message-Id: <1416306083-18460-1-git-send-email-tklauser@distanz.ch>
-X-Mailer: git-send-email 2.0.1
+	id S1752917AbaKRKZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 05:25:41 -0500
+Date: Tue, 18 Nov 2014 11:25:38 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
+        Tony Luck <tony.luck@intel.com>, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [Patch Part3 V7 0/8] Enable support of Intel DMAR device hotplug
+Message-ID: <20141118102537.GB3762@8bytes.org>
+References: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SOC driver configuration entry was added to drivers/Kconfig twice,
-by commits 3a6e08218f36 ("soc: Introduce drivers/soc place-holder for
-SOC specific drivers") and 41f93af900a2 ("soc: ti: add Keystone
-Navigator QMSS driver"), respectively. Remove one of them.
+Hi Jiang,
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Sandeep Nair <sandeep_n@ti.com>
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- drivers/Kconfig | 2 --
- 1 file changed, 2 deletions(-)
+On Sun, Nov 09, 2014 at 10:47:55PM +0800, Jiang Liu wrote:
+> Jiang Liu (8):
+>   iommu/vt-d: Introduce helper function dmar_walk_resources()
+>   iommu/vt-d: Dynamically allocate and free seq_id for DMAR units
+>   iommu/vt-d: Implement DMAR unit hotplug framework
+>   iommu/vt-d: Search for ACPI _DSM method for DMAR hotplug
+>   iommu/vt-d: Enhance intel_irq_remapping driver to support DMAR unit
+>     hotplug
+>   iommu/vt-d: Enhance error recovery in function
+>     intel_enable_irq_remapping()
+>   iommu/vt-d: Enhance intel-iommu driver to support DMAR unit hotplug
+>   pci, ACPI, iommu: Enhance pci_root to support DMAR device hotplug
+> 
+>  drivers/acpi/pci_root.c             |   16 +-
+>  drivers/iommu/dmar.c                |  532 ++++++++++++++++++++++++++++-------
+>  drivers/iommu/intel-iommu.c         |  297 ++++++++++++++-----
+>  drivers/iommu/intel_irq_remapping.c |  249 ++++++++++++----
+>  include/linux/dmar.h                |   50 +++-
+>  5 files changed, 897 insertions(+), 247 deletions(-)
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 1a693d3..622fa26 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -148,8 +148,6 @@ source "drivers/remoteproc/Kconfig"
- 
- source "drivers/rpmsg/Kconfig"
- 
--source "drivers/soc/Kconfig"
--
- source "drivers/devfreq/Kconfig"
- 
- source "drivers/extcon/Kconfig"
--- 
-2.0.1
+The patches look good, but I need an ack from PCI/ACPI for patch 8
+before I can merge it. Patches 1-7 are applied.
 
+Thanks,
+
+	Joerg
 
