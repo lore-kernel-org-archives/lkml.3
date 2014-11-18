@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101AbaKRLeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:34:11 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:54529 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897AbaKRLeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:34:08 -0500
-Date: Tue, 18 Nov 2014 11:34:01 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        linus.walleij@linaro.org, gnurou@gmail.com,
-        alsa-devel@alsa-project.org, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: arizona: Add support for CS47L24
-Message-ID: <20141118113401.GW24004@x1>
-References: <20141111165227.GA24344@opensource.wolfsonmicro.com>
- <20141111171532.GA26106@opensource.wolfsonmicro.com>
- <20141113101228.GE24004@x1>
- <20141113164017.GA12443@opensource.wolfsonmicro.com>
- <20141117121648.GP24004@x1>
- <20141117125433.GA29518@opensource.wolfsonmicro.com>
- <20141117150107.GF2722@sirena.org.uk>
+	id S1754153AbaKRLfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:35:14 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33564 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753276AbaKRLfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 06:35:12 -0500
+Date: Tue, 18 Nov 2014 12:35:09 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Rogelio Serrano <rogelio.serrano@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: mysterious udev segfault
+Message-ID: <20141118113509.GA5346@pd.tnic>
+References: <CANszf4jKHq-WY=+W=D3mFEnhL9=aZJ+-Mx7yp9kw=hYTi+gGFA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141117150107.GF2722@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANszf4jKHq-WY=+W=D3mFEnhL9=aZJ+-Mx7yp9kw=hYTi+gGFA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Nov 2014, Mark Brown wrote:
+On Tue, Nov 18, 2014 at 11:05:32AM +0000, Rogelio Serrano wrote:
+> on boot i get this half of the time:
+> 
+> [    6.349867] general protection fault: 0000 [#1] SMP
+> [    6.352177] Modules linked in: zram lz4_decompress lz4_compress unix
+> [    6.354483] CPU: 1 PID: 112 Comm: udevd Not tainted 3.16.3-grsec-26 #2
+								^^^^^
 
-> On Mon, Nov 17, 2014 at 12:54:33PM +0000, Richard Fitzgerald wrote:
-> > On Mon, Nov 17, 2014 at 12:16:48PM +0000, Lee Jones wrote:
+> [    6.356583] Hardware name: Matsushita Electric Industrial Co.,Ltd. CF-W7DWM0$
+> [    6.356583] task: ffff8800ba589e00 ti: ffff8800ba58a5d8 task.ti: ffff8800ba5$
+> [    6.356583] RIP: 0010:[<ffffffff812f9a2c>]  [<ffffffff812f9a2c>] ffffffff812$
+> [    6.356583] RSP: 0018:ffffc9001555b9c8  EFLAGS: 00010246
+> [    6.356583] RAX: 0000000000000000 RBX: fefefefefefefefe RCX: ffff8800bb6d0a68
+> [    6.356583] RDX: ffffc9001555ba18 RSI: 0000000000000036 RDI: fefefefefefefefe
+> [    6.356583] RBP: ffffc9001555b9f8 R08: 0000000000015660 R09: ffff8800bb71d890
+> [    6.356583] R10: ffff8800b9087000 R11: 000000000000000a R12: 0000000000000036
+> [    6.356583] R13: ffffc9001555ba18 R14: ffff8800bb145b58 R15: ffff8800bab10000
+> [    6.356583] FS:  000002c2ecf717c0(0000) GS:ffff8800bf500000(0000) knlGS:0000$
+> [    6.356583] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [    6.356583] CR2: 000006c2ecf7b000 CR3: 000000000194d000 CR4: 00000000000007f0
+> [    6.356583] Stack:
+> [    6.356583]  ffffc9001555b9f8 f4b9ed2e7f08ef51 000000000003602f ffff8800bb71$
+> [    6.356583]  ffff8800bb6d0c70 0000000000000036 ffffc9001555ba58 ffffffff812f$
+> [    6.356583]  ffff8800bb6d0a68 ffff8800bb71d680 ffffc9001555ba58 f4b9ed2e7f08$
+> [    6.356583] Call Trace:
+> [    6.356583]  [<ffffffff812fa70e>] diRead+0x7e/0x250
+> [    6.356583]  [<ffffffff812f06c0>] jfs_iget+0x70/0x190
+> [    6.356583]  [<ffffffff812f1034>] jfs_lookup+0xd4/0xe0
+> [    6.356583]  [<ffffffff8119e8dc>] ? kmem_cache_alloc+0x3c/0x160
+> [    6.356583]  [<ffffffff811cf315>] ? __d_alloc+0x35/0x1d0
+> [    6.356583]  [<ffffffff813b643a>] ? __list_add+0x3a/0x80
+> [    6.356583]  [<ffffffff811cf7ec>] ? d_alloc+0x6c/0xa0
+> [    6.356583]  [<ffffffff811bbe28>] lookup_real+0x58/0xb0
+> [    6.356583]  [<ffffffff811c2f33>] do_last.isra.58+0x7a3/0xf70
+> [    6.356583]  [<ffffffff811c37d1>] path_openat+0xd1/0x690
+> [    6.356583]  [<ffffffff811c4188>] do_filp_open+0x58/0xd0
+> [    6.356583]  [<ffffffff811aca43>] do_sys_open+0x143/0x2d0
+> [    6.356583]  [<ffffffff811acc13>] SyS_open+0x43/0x70
+> [    6.356583]  [<ffffffff8193e3b8>] system_call_fastpath+0x16/0x1b
+> [    6.356583] Code: 48 89 e5 48 83 ec 30 65 48 8b 04 25 28 00 00 00 48 89 45 d$
+> [    6.356583] RIP  [<ffffffff812f9a2c>] ffffffff812f9a2c
+> [    6.356583]  RSP <ffffc9001555b9c8>
+> [    6.380024] general protection fault: 0000 [#2]
+> [    6.443540] ---[ end trace 32a35fdec5a04e9e ]---
 > 
-> > > Looks like I was a little hasty with my comments.  However 8000 lines
-> > > over 4 platforms just to describe which registers are readable is all
-> > > a little bit grim.  Is there any way you can use ranges instead of
-> > > listing every single register on the chip?  How many gaps are there? 
-> 
-> > It's debatable. Ranges would be possible but there are a lot of gaps.
-> > Personally, speaking as someone who has to maintain these drivers, I
-> > like that fact that I can look at this file and see exactly which registers
-> > are readable and volatile because they are all explicitly listed. It's also
-> > useful that the files are searchable for specific registers.
-> 
-> > I'll point Charles at this to get his opinion.
-> 
-> It's probably also worth pointing out that while ranges do compress the
-> data a bit they make it harder to answer questions like "is this
-> register mapped properly" since the question becomes "is the numeric
-> value of this symbol between the numeric values of any of these other
-> pairs of symbols we have listed here".  I generally find it harder to
-> review drivers using ranges since when checking that things are mapped
-> voatile or whatever you have to do lookups like that.
+> what are we seeing here? a jfs bug?
 
-Very well, thanks Mark and Charles.
+Can you trigger with the upstream kernel too? i.e. remove the grsec
+stuff and retry.
 
-How about we go back to my original idea then and chucking all of
-these massive tables into a nice header file in include?
+Btw, your mail is somehow cutoff on the right-hand side with those '$'
+chars...
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
