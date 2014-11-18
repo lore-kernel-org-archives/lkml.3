@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaKRCts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 21:49:48 -0500
-Received: from mga11.intel.com ([192.55.52.93]:55639 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359AbaKRCtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 21:49:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,407,1413270000"; 
-   d="scan'208";a="633577475"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v6] sched/deadline: support dl task migration during cpu hotplug
-Date: Tue, 18 Nov 2014 10:49:36 +0800
-Message-Id: <1416278976-15565-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753240AbaKRCu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 21:50:57 -0500
+Received: from smtprelay0100.hostedemail.com ([216.40.44.100]:58990 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752045AbaKRCu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 21:50:56 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:2840:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6261:7903:10004:10400:10848:10967:11232:11658:11914:12296:12517:12519:12663:12679:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: juice96_7c97fd5d7337
+X-Filterd-Recvd-Size: 2571
+Message-ID: <1416279052.6651.1.camel@perches.com>
+Subject: Re: [PATCH 20/26 v5] seq_buf: Add seq_buf_can_fit() helper function
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Date: Mon, 17 Nov 2014 18:50:52 -0800
+In-Reply-To: <20141117213755.09285299@gandalf.local.home>
+References: <20141115045847.712848224@goodmis.org>
+	 <20141115050604.073390701@goodmis.org>
+	 <20141117123642.1de9252e@gandalf.local.home>
+	 <1416269253.29010.4.camel@perches.com>
+	 <20141117192733.0ab1ba2e@gandalf.local.home>
+	 <1416270932.29010.6.camel@perches.com>
+	 <20141117195651.27c79369@gandalf.local.home>
+	 <1416272878.29010.8.camel@perches.com>
+	 <20141117202432.0376417f@gandalf.local.home>
+	 <1416275317.29010.10.camel@perches.com>
+	 <20141117213755.09285299@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I observe that dl task can't be migrated to other cpus during cpu hotplug,
-in addition, task may/may not be running again if cpu is added back. The
-root cause which I found is that dl task will be throtted and removed from
-dl rq after comsuming all budget, which leads to stop task can't pick it up
-from dl rq and migrate to other cpus during hotplug.
+On Mon, 2014-11-17 at 21:37 -0500, Steven Rostedt wrote:
+> On Mon, 17 Nov 2014 17:48:37 -0800
+> Joe Perches <joe@perches.com> wrote:
+> > On Mon, 2014-11-17 at 20:24 -0500, Steven Rostedt wrote:
+> > > On Mon, 17 Nov 2014 17:07:58 -0800
+> > > Joe Perches <joe@perches.com> wrote:
+> > > > > Look at the next patch.
+> > > > I don't have it and you are not cc'ing me.
+> > > It's on LKML.
+> > 
+> > And?  There's no convenient way to retrieve it.
+> 
+> You're not subscribed?
 
-The method to reproduce:
-schedtool -E -t 50000:100000 -e ./test
-Actually test is just a simple for loop. Then observe which cpu the test
-task is on.
-echo 0 > /sys/devices/system/cpu/cpuN/online
+I am subscribed and I delete stuff, don't you?
 
-This patch adds the dl task migration during cpu hotplug by finding a most
-suitable later deadline rq after dl timer fire if current rq is offline,
-if fail to find a suitable later deadline rq then fallback to any eligible
-online cpu in order that the deadline task will come back to us, and the
-push/pull mechanism should then move it around properly.
+> > > Um, that may be the case for seq_file, but it is not the case for
+> > > trace_seq. seq_buf is influenced by seq_file because I have a patch to
+> > > make seq_file use it, but it's also the guts of trace_seq that has some
+> > > different requirements. And it's also not the case with the users of
+> > > seq_buf in the last patch.
+> > 
+> > I think your patch subject description needs expanding.
+> > It says seq_buf, nothing about trace.
+> 
+> It doesn't need to. This helps out the code. seq_buf has nothing to do
+> with seq_file (yet).
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
-v5 -> v6:
- * add double_lock_balance in the fallback path
-v4 -> v5:
- * remove raw_spin_unlock(&rq->lock)
- * cleanup codes, spotted by Peterz
- * cleanup patch description
-v3 -> v4:
- * use tsk_cpus_allowed wrapper
- * fix compile error
-v2 -> v3:
- * don't get_task_struct
- * if cannot preempt any rq, fallback to pick any online cpus
- * use cpu_active_mask as original later_mask if cpu is offline
-v1 -> v2:
- * push the task to another cpu in dl_task_timer() if rq is offline.
+No, I don't think it does help seq_buf.  It only helps trace.
 
- kernel/sched/deadline.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 42 insertions(+), 2 deletions(-)
+btw:
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index abfaf3d..8e9c238 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
- 	return hrtimer_active(&dl_se->dl_timer);
- }
- 
-+static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
- /*
-  * This is the bandwidth enforcement timer callback. If here, we know
-  * a task is not on its dl_rq, since the fact that the timer was running
-@@ -530,6 +531,44 @@ again:
- 	update_rq_clock(rq);
- 	dl_se->dl_throttled = 0;
- 	dl_se->dl_yielded = 0;
-+
-+	/*
-+	 * So if we find that the rq the task was on is no longer
-+	 * available, we need to select a new rq.
-+	 */
-+	if (unlikely(!rq->online)) {
-+		struct rq *later_rq = NULL;
-+
-+		later_rq = find_lock_later_rq(p, rq);
-+
-+		if (!later_rq) {
-+			int cpu;
-+
-+			/*
-+			 * If cannot preempt any rq, fallback to pick any
-+			 * online cpu.
-+			 */
-+			cpu = cpumask_any_and(cpu_active_mask,
-+					tsk_cpus_allowed(p));
-+			if (cpu >= nr_cpu_ids) {
-+				pr_warn("fail to find any online cpu and task will never come back\n");
-+				goto unlock;
-+			}
-+			later_rq = cpu_rq(cpu);
-+			double_lock_balance(rq, later_rq);
-+		}
-+
-+		deactivate_task(rq, p, 0);
-+		set_task_cpu(p, later_rq->cpu);
-+		activate_task(later_rq, p, 0);
-+
-+		resched_curr(later_rq);
-+
-+		double_unlock_balance(rq, later_rq);
-+
-+		goto unlock;
-+	}
-+
- 	if (task_on_rq_queued(p)) {
- 		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
- 		if (task_has_dl_policy(rq->curr))
-@@ -1168,8 +1207,9 @@ static int find_later_rq(struct task_struct *task)
- 	 * We have to consider system topology and task affinity
- 	 * first, then we can look for a suitable cpu.
- 	 */
--	cpumask_copy(later_mask, task_rq(task)->rd->span);
--	cpumask_and(later_mask, later_mask, cpu_active_mask);
-+	cpumask_copy(later_mask, cpu_active_mask);
-+	if (likely(task_rq(task)->online))
-+		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
- 	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
- 	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
- 			task, later_mask);
--- 
-1.7.1
+I think you should cc Al Viro on the entire patch set.
+
 
