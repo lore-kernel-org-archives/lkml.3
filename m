@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaKRPIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:08:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57040 "EHLO mx2.suse.de"
+	id S1756668AbaKRPIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:08:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754962AbaKROJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754960AbaKROJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:09:38 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ondrej Zary <linux@rainbow-software.org>,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 056/206] libata-sff: Fix controllers with no ctl port
-Date: Tue, 18 Nov 2014 15:06:51 +0100
-Message-Id: <d525cbdb3d29308d900b0417ca38e70fe6c4c25a.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 077/206] random: add and use memzero_explicit() for clearing data
+Date: Tue, 18 Nov 2014 15:07:12 +0100
+Message-Id: <3b29acb38f39aea8cf7675eadd5214300149bb9e.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,116 +23,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6d8ca28fa688a9354bc9fbc935bdaeb3651b6677 upstream.
+commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
 
-Currently, ata_sff_softreset is skipped for controllers with no ctl port.
-But that also skips ata_sff_dev_classify required for device detection.
-This means that libata is currently broken on controllers with no ctl port.
+zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
+memset() calls which clear out sensitive data in extract_{buf,entropy,
+entropy_user}() in random driver are being optimized away by gcc.
 
-No device connected:
-[    1.872480] pata_isapnp 01:01.02: activated
-[    1.889823] scsi2 : pata_isapnp
-[    1.890109] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    6.888110] ata3.01: qc timeout (cmd 0xec)
-[    6.888179] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   16.888085] ata3.01: qc timeout (cmd 0xec)
-[   16.888147] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.888086] ata3.01: qc timeout (cmd 0xec)
-[   46.888148] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   51.888100] ata3.00: qc timeout (cmd 0xec)
-[   51.888160] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   61.888079] ata3.00: qc timeout (cmd 0xec)
-[   61.888141] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   91.888089] ata3.00: qc timeout (cmd 0xec)
-[   91.888152] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
+that can be used in such cases where a variable with sensitive data is
+being cleared out in the end. Other use cases might also be in crypto
+code. [ I have put this into lib/string.c though, as it's always built-in
+and doesn't need any dependencies then. ]
 
-ATAPI device connected:
-[    1.882061] pata_isapnp 01:01.02: activated
-[    1.893430] scsi2 : pata_isapnp
-[    1.893719] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    6.892107] ata3.01: qc timeout (cmd 0xec)
-[    6.892171] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   16.892079] ata3.01: qc timeout (cmd 0xec)
-[   16.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.892079] ata3.01: qc timeout (cmd 0xec)
-[   46.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   46.908586] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
-[   46.924570] ata3.00: configured for PIO0 (device error ignored)
-[   46.926295] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
-[   46.984519] sr0: scsi3-mmc drive: 6x/6x xa/form2 tray
-[   46.984592] cdrom: Uniform CD-ROM driver Revision: 3.20
+Fixes kernel bugzilla: 82041
 
-So don't skip ata_sff_softreset, just skip the reset part of ata_bus_softreset
-if the ctl port is not available.
-
-This makes IDE port on ES968 behave correctly:
-
-No device connected:
-[    4.670888] pata_isapnp 01:01.02: activated
-[    4.673207] scsi host2: pata_isapnp
-[    4.673675] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    7.081840] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
-
-ATAPI device connected:
-[    4.704362] pata_isapnp 01:01.02: activated
-[    4.706620] scsi host2: pata_isapnp
-[    4.706877] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
-[    4.872782] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
-[    4.888673] ata3.00: configured for PIO0 (device error ignored)
-[    4.893984] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
-[    7.015578] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: zatimend@hotmail.co.uk
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/ata/libata-sff.c | 20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ drivers/char/random.c  | 10 +++++-----
+ include/linux/string.h |  5 +++--
+ lib/string.c           | 16 ++++++++++++++++
+ 3 files changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
-index b603720b877d..37acda6fa7e4 100644
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2008,13 +2008,15 @@ static int ata_bus_softreset(struct ata_port *ap, unsigned int devmask,
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 7a744d391756..f6b25db16791 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -930,8 +930,8 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+ 	 * pool while mixing, and hash one final time.
+ 	 */
+ 	sha_transform(hash.w, extract, workspace);
+-	memset(extract, 0, sizeof(extract));
+-	memset(workspace, 0, sizeof(workspace));
++	memzero_explicit(extract, sizeof(extract));
++	memzero_explicit(workspace, sizeof(workspace));
  
- 	DPRINTK("ata%u: bus reset via SRST\n", ap->print_id);
+ 	/*
+ 	 * In case the hash function has some recognizable output
+@@ -954,7 +954,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+ 	}
  
--	/* software reset.  causes dev0 to be selected */
--	iowrite8(ap->ctl, ioaddr->ctl_addr);
--	udelay(20);	/* FIXME: flush */
--	iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
--	udelay(20);	/* FIXME: flush */
--	iowrite8(ap->ctl, ioaddr->ctl_addr);
--	ap->last_ctl = ap->ctl;
-+	if (ap->ioaddr.ctl_addr) {
-+		/* software reset.  causes dev0 to be selected */
-+		iowrite8(ap->ctl, ioaddr->ctl_addr);
-+		udelay(20);	/* FIXME: flush */
-+		iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
-+		udelay(20);	/* FIXME: flush */
-+		iowrite8(ap->ctl, ioaddr->ctl_addr);
-+		ap->last_ctl = ap->ctl;
-+	}
+ 	memcpy(out, &hash, EXTRACT_SIZE);
+-	memset(&hash, 0, sizeof(hash));
++	memzero_explicit(&hash, sizeof(hash));
+ }
  
- 	/* wait the port to become ready */
- 	return ata_sff_wait_after_reset(&ap->link, devmask, deadline);
-@@ -2215,10 +2217,6 @@ void ata_sff_error_handler(struct ata_port *ap)
+ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+@@ -1002,7 +1002,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 	}
  
- 	spin_unlock_irqrestore(ap->lock, flags);
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
  
--	/* ignore ata_sff_softreset if ctl isn't accessible */
--	if (softreset == ata_sff_softreset && !ap->ioaddr.ctl_addr)
--		softreset = NULL;
--
- 	/* ignore built-in hardresets if SCR access is not available */
- 	if ((hardreset == sata_std_hardreset ||
- 	     hardreset == sata_sff_hardreset) && !sata_scr_valid(&ap->link))
+ 	return ret;
+ }
+@@ -1040,7 +1040,7 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+ 	}
+ 
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
+ 
+ 	return ret;
+ }
+diff --git a/include/linux/string.h b/include/linux/string.h
+index ac889c5ea11b..0ed878d0465c 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -129,7 +129,7 @@ int bprintf(u32 *bin_buf, size_t size, const char *fmt, ...) __printf(3, 4);
+ #endif
+ 
+ extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
+-			const void *from, size_t available);
++				       const void *from, size_t available);
+ 
+ /**
+  * strstarts - does @str start with @prefix?
+@@ -141,7 +141,8 @@ static inline bool strstarts(const char *str, const char *prefix)
+ 	return strncmp(str, prefix, strlen(prefix)) == 0;
+ }
+ 
+-extern size_t memweight(const void *ptr, size_t bytes);
++size_t memweight(const void *ptr, size_t bytes);
++void memzero_explicit(void *s, size_t count);
+ 
+ /**
+  * kbasename - return the last part of a pathname.
+diff --git a/lib/string.c b/lib/string.c
+index e5878de4f101..43d0781daf47 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -586,6 +586,22 @@ void *memset(void *s, int c, size_t count)
+ EXPORT_SYMBOL(memset);
+ #endif
+ 
++/**
++ * memzero_explicit - Fill a region of memory (e.g. sensitive
++ *		      keying data) with 0s.
++ * @s: Pointer to the start of the area.
++ * @count: The size of the area.
++ *
++ * memzero_explicit() doesn't need an arch-specific version as
++ * it just invokes the one of memset() implicitly.
++ */
++void memzero_explicit(void *s, size_t count)
++{
++	memset(s, 0, count);
++	OPTIMIZER_HIDE_VAR(s);
++}
++EXPORT_SYMBOL(memzero_explicit);
++
+ #ifndef __HAVE_ARCH_MEMCPY
+ /**
+  * memcpy - Copy one area of memory to another
 -- 
 2.1.3
 
