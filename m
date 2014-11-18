@@ -1,145 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413AbaKRWQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 17:16:35 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62575 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254AbaKRWQd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 17:16:33 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] OF: Add support for built in FDT blob
-To: Alban Bedel <albeu@free.fr>, devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>
-In-Reply-To: <1415358849-25879-1-git-send-email-albeu@free.fr>
-References: <1415358849-25879-1-git-send-email-albeu@free.fr>
-Date: Tue, 18 Nov 2014 22:16:28 +0000
-Message-Id: <20141118221628.2526EC40966@trevor.secretlab.ca>
+	id S932509AbaKRWRQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 17:17:16 -0500
+Received: from mga14.intel.com ([192.55.52.115]:19797 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932430AbaKRWRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 17:17:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,412,1413270000"; 
+   d="scan'208";a="624500410"
+Subject: [PATCH] shmdt: use i_size_read() instead of ->i_size
+To: linux-kernel@vger.kernel.org
+Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
+        akpm@linux-foundation.org, manfred@colorfullife.com, davidlohr@hp.com
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 18 Nov 2014 14:17:12 -0800
+Message-Id: <20141118221712.E0062E98@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  7 Nov 2014 12:14:09 +0100
-, Alban Bedel <albeu@free.fr>
- wrote:
-> Allow embedding an FDT blob in the kernel image, this is mostly
-> useful to run new kernels on boards with old bootloaders.
-> 
-> Signed-off-by: Alban Bedel <albeu@free.fr>
 
-The kernel already supports linking in .dtb files. All you need to do is
-add <filename>.dtb.o in the build objects.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-> ---
->  drivers/of/Kconfig    | 16 ++++++++++++++++
->  drivers/of/Makefile   |  8 ++++++++
->  drivers/of/fdt.c      |  8 ++++++++
->  drivers/of/fdt_blob.S | 17 +++++++++++++++++
->  4 files changed, 49 insertions(+)
->  create mode 100644 drivers/of/fdt_blob.S
-> 
-> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-> index 1a13f5b..97c5d18 100644
-> --- a/drivers/of/Kconfig
-> +++ b/drivers/of/Kconfig
-> @@ -83,4 +83,20 @@ config OF_RESERVED_MEM
->  config OF_RESOLVE
->  	bool
->  
-> +config OF_BUILTIN_FDT
-> +	bool "Include a FDT blob in the kernel"
-> +	help
-> +	  Include a FDT blob in the kernel to use as default when
-> +	  no blob has been passed by the bootloader. This is useful
-> +	  to use devicetree on boards with old bootloaders.
-> +
-> +	  If unsure, say N.
-> +
-> +config OF_BUILTIN_FDT_BLOB
-> +	string "FDT Blob name"
-> +	depends on OF_BUILTIN_FDT
-> +	help
-> +	  Name of the FDT blob to build in the kernel, from one of the
-> +	  dtbs available for the current platform.
-> +
+Andrew Morton noted
 
-I'm not keen on making this a generic option. ARM and PowerPC already
-have the mechanism for attaching a dtb, and they do not build it into
-the kernel. Each architecture that wants to use this needs to enable it
-separately.
+	http://lkml.kernel.org/r/20141104142027.a7a0d010772d84560b445f59@linux-foundation.org
 
-g.
+that the shmdt uses inode->i_size outside of i_mutex being held.
+There is one more case in shm.c in shm_destroy().  This converts
+both users over to use i_size_read().
 
->  endmenu # OF
-> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-> index ca9209c..b96c6e9 100644
-> --- a/drivers/of/Makefile
-> +++ b/drivers/of/Makefile
-> @@ -14,6 +14,14 @@ obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
->  obj-$(CONFIG_OF_MTD)	+= of_mtd.o
->  obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
->  obj-$(CONFIG_OF_RESOLVE)  += resolver.o
-> +obj-$(CONFIG_OF_BUILTIN_FDT) += fdt_blob.o
->  
->  CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
->  CFLAGS_fdt_address.o = -I$(src)/../../scripts/dtc/libfdt
-> +
-> +# The FDT blob to include
-> +FDT_BLOB := arch/$(ARCH)/boot/dts/$(CONFIG_OF_BUILTIN_FDT_BLOB:"%"=%).dtb
-> +# Undefine ARCH to avoid breaking the FDT path
-> +AFLAGS_fdt_blob.o += -U$(ARCH) -DFDT_BLOB=$(FDT_BLOB)
-> +# This dependency can't be automatically tracked
-> +$(obj)/fdt_blob.o: $(obj)/../../$(FDT_BLOB)
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index d1ffca8..ffb86a7 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -26,6 +26,9 @@
->  #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
->  #include <asm/page.h>
->  
-> +extern char __fdt_blob_start[];
-> +extern unsigned long __fdt_blob_size;
-> +
->  /*
->   * of_fdt_limit_memory - limit the number of regions in the /memory node
->   * @limit: maximum entries
-> @@ -1064,6 +1067,11 @@ void __init unflatten_and_copy_device_tree(void)
->  	int size;
->  	void *dt;
->  
-> +#ifdef CONFIG_OF_BUILTIN_FDT
-> +	if (!initial_boot_params && __fdt_blob_size > 0)
-> +		initial_boot_params = __fdt_blob_start;
-> +#endif
-> +
->  	if (!initial_boot_params) {
->  		pr_warn("No valid device tree found, continuing without\n");
->  		return;
-> diff --git a/drivers/of/fdt_blob.S b/drivers/of/fdt_blob.S
-> new file mode 100644
-> index 0000000..fcaa2aa
-> --- /dev/null
-> +++ b/drivers/of/fdt_blob.S
-> @@ -0,0 +1,17 @@
-> +#include <linux/stringify.h>
-> +#include <asm-generic/vmlinux.lds.h>
-> +
-> +.align 4
-> +.section .init.fdt_blob,"a"
-> +.globl VMLINUX_SYMBOL(__fdt_blob_start)
-> +VMLINUX_SYMBOL(__fdt_blob_start):
-> +.incbin __stringify(FDT_BLOB)
-> +__fdt_blob_end:
-> +.section .init.fdt_blob.info,"a"
-> +.globl VMLINUX_SYMBOL(__fdt_blob_size)
-> +VMLINUX_SYMBOL(__fdt_blob_size):
-> +#ifdef CONFIG_64BIT
-> +        .quad __fdt_blob_end - __fdt_blob_start
-> +#else
-> +        .long __fdt_blob_end - __fdt_blob_start
-> +#endif
-> -- 
-> 2.0.0
-> 
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+---
 
+ b/ipc/shm.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff -puN ipc/shm.c~shmdt-use-i_isize_read ipc/shm.c
+--- a/ipc/shm.c~shmdt-use-i_isize_read	2014-11-18 11:13:52.293599642 -0800
++++ b/ipc/shm.c	2014-11-18 11:16:47.354495228 -0800
+@@ -219,7 +219,8 @@ static void shm_destroy(struct ipc_names
+ 	if (!is_file_hugepages(shm_file))
+ 		shmem_lock(shm_file, 0, shp->mlock_user);
+ 	else if (shp->mlock_user)
+-		user_shm_unlock(file_inode(shm_file)->i_size, shp->mlock_user);
++		user_shm_unlock(i_size_read(file_inode(shm_file)),
++				shp->mlock_user);
+ 	fput(shm_file);
+ 	ipc_rcu_putref(shp, shm_rcu_free);
+ }
+@@ -1272,7 +1273,7 @@ SYSCALL_DEFINE1(shmdt, char __user *, sh
+ 			(vma->vm_start - addr)/PAGE_SIZE == vma->vm_pgoff) {
+ 
+ 
+-			size = file_inode(vma->vm_file)->i_size;
++			size = i_size_read(file_inode(vma->vm_file));
+ 			do_munmap(mm, vma->vm_start, vma->vm_end - vma->vm_start);
+ 			/*
+ 			 * We discovered the size of the shm segment, so
+_
