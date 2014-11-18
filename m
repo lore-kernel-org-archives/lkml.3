@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaKRAXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:23:13 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58720 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbaKRAXM (ORCPT
+	id S1753261AbaKRAZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:25:15 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:53450 "HELO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752964AbaKRAZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:23:12 -0500
-Message-ID: <1416270188.18197.16.camel@gmail.com>
-Subject: Re: [PATCH] staging: lustre: mdc: use __FMODE_EXEC macro
-From: Juston <juston.h.li@gmail.com>
-Reply-To: 20141117224616.GI4905@mwanda
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: oleg.drokin@intel.com, devel@driverdev.osuosl.org,
-        andreas.dilger@intel.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, HPDD-discuss@ml01.01.org
-Date: Mon, 17 Nov 2014 16:23:08 -0800
-In-Reply-To: <20141117224616.GI4905@mwanda>
-References: <1416263028-16026-1-git-send-email-juston.h.li@gmail.com>
-	 <20141117224616.GI4905@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.8 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Nov 2014 19:25:13 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: netdev@vger.kernel.org
+Cc: ogerlitz@mellanox.com, linux-kernel@vger.kernel.org
+Subject: [PATCH net] vxlan: Inline vxlan_gso_check().
+Date: Mon, 17 Nov 2014 16:24:54 -0800
+Message-Id: <1416270294-21516-1-git-send-email-joestringer@nicira.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-18 at 01:46 +0300, Dan Carpenter wrote:
-> On Mon, Nov 17, 2014 at 02:23:48PM -0800, Juston Li wrote:
-> > FMODE_EXEC is type fmode_t but is used in operations
-> > with integers which leads to sparse warnings:
-> > drivers/staging/lustre/lustre/mdc/mdc_lib.c:198:21: warning: restricted fmode_t degrades to integer
-> > drivers/staging/lustre/lustre/mdc/mdc_locks.c:300:49: warning: restricted fmode_t degrades to integer
-> > 
-> > Fix by using __FMODE_EXEC macro defined in fs.h.
-> > 
-> > Note the same warnings occurs with other fmode flags
-> > here but they don't have a corresponding int macro.
-> > 
-> 
-> When are FMODE_EXEC and __FMODE_EXEC not defined?  I think they're
-> always defined.  I don't understand the point of these ifdefs.  I guess
-> maybe they are for compatability with obsolete kernels?
-> 
-> regards,
-> dan carpenter
-> 
-Seems to be the case. Looked at some old commits (2.6.17) and found
-FMODE_EXEC was mainlined to allow lustre to be installed on a vanilla
-kernel.
-Since you pointed it out, if we are dealing with compatability with 
-obselete kernels, __FMODE_EXEC was added later in 2.6.38. Wondering
-if I should address the case where FMODE_EXEC is defined but 
-__FMODE_EXEC isn't since I currently only check __FMODE_EXEC.
+Suggested-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Joe Stringer <joestringer@nicira.com>
+---
+ drivers/net/vxlan.c |   19 -------------------
+ include/net/vxlan.h |   18 +++++++++++++++++-
+ 2 files changed, 17 insertions(+), 20 deletions(-)
 
-Regards,
-Juston Li
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 6b65863..e1e335c 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -67,12 +67,6 @@
+ 
+ #define VXLAN_FLAGS 0x08000000	/* struct vxlanhdr.vx_flags required value. */
+ 
+-/* VXLAN protocol header */
+-struct vxlanhdr {
+-	__be32 vx_flags;
+-	__be32 vx_vni;
+-};
+-
+ /* UDP port for VXLAN traffic.
+  * The IANA assigned port is 4789, but the Linux default is 8472
+  * for compatibility with early adopters.
+@@ -1571,19 +1565,6 @@ static bool route_shortcircuit(struct net_device *dev, struct sk_buff *skb)
+ 	return false;
+ }
+ 
+-bool vxlan_gso_check(struct sk_buff *skb)
+-{
+-	if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
+-	    (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
+-	     skb->inner_protocol != htons(ETH_P_TEB) ||
+-	     (skb_inner_mac_header(skb) - skb_transport_header(skb) !=
+-	      sizeof(struct udphdr) + sizeof(struct vxlanhdr))))
+-		return false;
+-
+-	return true;
+-}
+-EXPORT_SYMBOL_GPL(vxlan_gso_check);
+-
+ #if IS_ENABLED(CONFIG_IPV6)
+ static int vxlan6_xmit_skb(struct vxlan_sock *vs,
+ 			   struct dst_entry *dst, struct sk_buff *skb,
+diff --git a/include/net/vxlan.h b/include/net/vxlan.h
+index afadf8e..57cccd0 100644
+--- a/include/net/vxlan.h
++++ b/include/net/vxlan.h
+@@ -8,6 +8,12 @@
+ #define VNI_HASH_BITS	10
+ #define VNI_HASH_SIZE	(1<<VNI_HASH_BITS)
+ 
++/* VXLAN protocol header */
++struct vxlanhdr {
++	__be32 vx_flags;
++	__be32 vx_vni;
++};
++
+ struct vxlan_sock;
+ typedef void (vxlan_rcv_t)(struct vxlan_sock *vh, struct sk_buff *skb, __be32 key);
+ 
+@@ -45,7 +51,17 @@ int vxlan_xmit_skb(struct vxlan_sock *vs,
+ 		   __be32 src, __be32 dst, __u8 tos, __u8 ttl, __be16 df,
+ 		   __be16 src_port, __be16 dst_port, __be32 vni, bool xnet);
+ 
+-bool vxlan_gso_check(struct sk_buff *skb);
++static inline bool vxlan_gso_check(struct sk_buff *skb)
++{
++	if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
++	    (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
++	     skb->inner_protocol != htons(ETH_P_TEB) ||
++	     (skb_inner_mac_header(skb) - skb_transport_header(skb) !=
++	      sizeof(struct udphdr) + sizeof(struct vxlanhdr))))
++		return false;
++
++	return true;
++}
+ 
+ /* IP header + UDP + VXLAN + Ethernet header */
+ #define VXLAN_HEADROOM (20 + 8 + 8 + 14)
+-- 
+1.7.10.4
 
