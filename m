@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327AbaKRUPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:15:25 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54651 "HELO
+	id S1754890AbaKRUTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:19:38 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59565 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932124AbaKRUPV (ORCPT
+	with SMTP id S1753829AbaKRUTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:15:21 -0500
+	Tue, 18 Nov 2014 15:19:37 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ethan Zhao <ethan.zhao@oracle.com>
-Cc: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, corbet@lwn.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
-        brian.maly@oracle.com
-Subject: Re: [PATCH 2/3] intel_pstate: allow driver to be built as a module
-Date: Tue, 18 Nov 2014 21:36:25 +0100
-Message-ID: <3721430.SO6bjE873e@vostro.rjw.lan>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Kevin Hilman <khilman@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is selected (was: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd enabled)
+Date: Tue, 18 Nov 2014 21:40:41 +0100
+Message-ID: <3083002.vigHFXKN0z@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1416299826-15813-3-git-send-email-ethan.zhao@oracle.com>
-References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com> <1416299826-15813-3-git-send-email-ethan.zhao@oracle.com>
+In-Reply-To: <20141118083411.GB4059@amd>
+References: <1415917702-6742-1-git-send-email-khilman@kernel.org> <1452958.d0yJE5gVgq@vostro.rjw.lan> <20141118083411.GB4059@amd>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,82 +31,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 18, 2014 05:37:01 PM Ethan Zhao wrote:
-> From: Brian Maly <brian.maly@oracle.com>
+On Tuesday, November 18, 2014 09:34:11 AM Pavel Machek wrote:
+> On Tue 2014-11-18 01:39:06, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > The number of and dependencies between high-level power management
+> > Kconfig options make life much harder than necessary.  Several
+> > conbinations of them have to be tested and supported, even though
+> > some of those combinations are very rarely used in practice (it
+> > they are used in practice at all).  Moreover, the fact that we
+> > have separate independent Kconfig options for runtime PM and
+> > system suspend is a serious obscacle for integration between
+> > the two frameworks.
+> > 
+> > To overcome these difficulties, always select PM_RUNTIME if PM_SLEEP
+> > is set.  Among other things, this will allow system suspend callbacks
+> > provided by bus types and device drivers to rely on the runtime PM
+> > framework regardless of the kernel configuration.
 > 
-> To provide the flexibility of module, allow this driver to
-> be configured and built as a module.
+> 3.18-rc5 still has:
 > 
-> Signed-off-by: Brian Maly <brian.maly@oracle.com>
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-> ---
->  drivers/cpufreq/Kconfig.x86    | 2 +-
->  drivers/cpufreq/intel_pstate.c | 6 ++++++
->  2 files changed, 7 insertions(+), 1 deletion(-)
+> config PM_RUNTIME
+>         bool "Run-time PM core functionality"
+>         depends on !IA64_HP_SIM
+>         ---help---
 > 
-> diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-> index 89ae88f..94c9e6b 100644
-> --- a/drivers/cpufreq/Kconfig.x86
-> +++ b/drivers/cpufreq/Kconfig.x86
-> @@ -3,7 +3,7 @@
->  #
->  
->  config X86_INTEL_PSTATE
-> -       bool "Intel P state control"
-> +       tristate "Intel P state control"
->         depends on X86
->         help
->            This driver provides a P state for Intel core processors.
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 5498eb0..7c5faea 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -590,7 +590,9 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
->  	if (pstate == cpu->pstate.current_pstate)
->  		return;
->  
-> +#ifndef MODULE
+> So I assume this patch is against tree where PM_RUNTIME does not
+> depend on anything?
 
-This is not acceptable in any code that I maintain, sorry.
+Yes.
 
->  	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
-> +#endif
->  
->  	cpu->pstate.current_pstate = pstate;
->  
-> @@ -705,12 +707,14 @@ static void intel_pstate_timer_func(unsigned long __data)
->  
->  	intel_pstate_adjust_busy_pstate(cpu);
->  
-> +#ifndef MODULE
->  	trace_pstate_sample(fp_toint(sample->core_pct_busy),
->  			fp_toint(intel_pstate_get_scaled_busy(cpu)),
->  			cpu->pstate.current_pstate,
->  			sample->mperf,
->  			sample->aperf,
->  			sample->freq);
-> +#endif
->  
->  	intel_pstate_set_sample_time(cpu);
->  }
-> @@ -1054,6 +1058,7 @@ out:
->  }
->  device_initcall(intel_pstate_init);
->  
-> +#ifndef MODULE
->  static int __init intel_pstate_setup(char *str)
->  {
->  	if (!str)
-> @@ -1064,6 +1069,7 @@ static int __init intel_pstate_setup(char *str)
->  	return 0;
->  }
->  early_param("intel_pstate", intel_pstate_setup);
-> +#endif
->  
->  MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
->  MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> > 
+> > As a follow up.
+> > 
+> > Note that we won't need the patch making genpd select PM_RUNTIME with this,
+> > because genpd already depends on PM.
 > 
+> Looking through the config file, there are more config options that
+> should be stripped.
+> 
+> config SUSPEND_FREEZER
+>         bool "Enable freezer for suspend to RAM/standby" \
+> "Turning OFF this setting is NOT recommended! If in doubt, say Y."
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yeah, I'll gladly apply a patch removing this one. :-)
+
+> config HIBERNATE_CALLBACKS
+>        bool
+> 
+> ...can we just use CONFIG_HIBERNATE, instead?
+
+We do, but in addition.
+
+HIBERNATE_CALLBACKS is used by Xen IIRC and they don't want to build in the
+whole hibernation image creation etc code (which they never use anyway).
+
+Rafael
+
