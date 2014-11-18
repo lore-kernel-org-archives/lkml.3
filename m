@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597AbaKRQ5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:57:20 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60467 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577AbaKRQ5S (ORCPT
+	id S932629AbaKRQ5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:57:45 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:39275 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754295AbaKRQ5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:57:18 -0500
-Date: Tue, 18 Nov 2014 16:57:13 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v5 01/18] ARM64: Move the init of cpu_logical_map(0)
- before unflatten_device_tree()
-Message-ID: <20141118165713.GT18842@arm.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <1413553034-20956-2-git-send-email-hanjun.guo@linaro.org>
- <546B4D8D.2020605@linaro.org>
- <20141118164312.GL28279@e104818-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141118164312.GL28279@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Nov 2014 11:57:43 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of/address: Don't throw errors on absent ranges
+ properties
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1415948303.666.50.camel@kernel.crashing.org>
+References: <1415948303.666.50.camel@kernel.crashing.org>
+Date: Tue, 18 Nov 2014 16:57:39 +0000
+Message-Id: <20141118165739.7382AC40966@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 04:43:13PM +0000, Catalin Marinas wrote:
-> On Tue, Nov 18, 2014 at 01:45:49PM +0000, Hanjun Guo wrote:
-> > On 2014年10月17日 21:36, Hanjun Guo wrote:
-> > > It always make sense to initialize CPU0's logical map entry from the
-> > > hardware values, so move the initialization of cpu_logical_map(0)
-> > > before unflatten_device_tree() which is needed by ACPI code later.
-> > >
-> > > Acked-by: Olof Johansson <olof@lixom.net>
-> > > Acked-by: Mark Rutland <mark.rutland@arm.com>
-> > > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > 
-> > Could you merge this patch first in 3.19? It was acked by Olof and
-> > Mark, and it will make sense without ACPI too.
+On Fri, 14 Nov 2014 17:58:23 +1100
+, Benjamin Herrenschmidt <benh@kernel.crashing.org>
+ wrote:
+> The core always tries to translate any "reg" property to construct the platform
+> device names. This results in a pile of "OF: no ranges; cannot translate" errors
+> in dmesg whenever we expose things like i2c devices that cannot directly translate
+> to the MMIO space.
+
+I don't have a problem with the change, but it seems to be catching an
+odd usage of of_device_make_bus_id(). Why is of_device_make_bus_id()
+being called on i2c devices? Those shouldn't be modelled as
+platform_devices.
+
+g.
+
 > 
-> I think it can go in for 3.19 (it's Will's turn this time ;)).
+> Turn this into a pr_debug instead
+> 
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index f0541fd..bf1f79d 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -444,7 +444,7 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+>  	 */
+>  	ranges = of_get_property(parent, rprop, &rlen);
+>  	if (ranges == NULL && !of_empty_ranges_quirk()) {
+> -		pr_err("OF: no ranges; cannot translate\n");
+> +		pr_debug("OF: no ranges; cannot translate\n");
+>  		return 1;
+>  	}
+>  	if (ranges == NULL || rlen == 0) {
+> 
+> 
 
-This patch doesn't apply on for-next/core, as it conflicts with some of
-Rutland's rework ("arm64: log physical ID of boot CPU").
-
-Will
