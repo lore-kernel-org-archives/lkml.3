@@ -1,75 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415AbaKROMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:12:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57159 "EHLO mx2.suse.de"
+	id S1755387AbaKROMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:12:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932266AbaKROKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:30 -0500
+	id S1755145AbaKROKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:31 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
+        Eric Sandeen <sandeen@redhat.com>,
+        =?UTF-8?q?Arkadiusz=20Mi=C5=9Bkiewicz?= <arekm@maven.pl>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 187/206] posix-timers: Fix stack info leak in timer_create()
-Date: Tue, 18 Nov 2014 15:09:02 +0100
-Message-Id: <5bc8c3bd8e5784110da1e8c8aaff086672107a1d.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 183/206] xfs: avoid false quotacheck after unclean shutdown
+Date: Tue, 18 Nov 2014 15:08:58 +0100
+Message-Id: <0277558a6cc692295cb568b22970c12db2587f9a.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
 References: <cover.1416319692.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Sandeen <sandeen@sandeen.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
+commit 5ef828c4152726f56751c78ea844f08d2b2a4fa3 upstream.
 
-If userland creates a timer without specifying a sigevent info, we'll
-create one ourself, using a stack local variable. Particularly will we
-use the timer ID as sival_int. But as sigev_value is a union containing
-a pointer and an int, that assignment will only partially initialize
-sigev_value on systems where the size of a pointer is bigger than the
-size of an int. On such systems we'll copy the uninitialized stack bytes
-from the timer_create() call to userland when the timer actually fires
-and we're going to deliver the signal.
+The commit
 
-Initialize sigev_value with 0 to plug the stack info leak.
+83e782e xfs: Remove incore use of XFS_OQUOTA_ENFD and XFS_OQUOTA_CHKD
 
-Found in the PaX patch, written by the PaX Team.
+added a new function xfs_sb_quota_from_disk() which swaps
+on-disk XFS_OQUOTA_* flags for in-core XFS_GQUOTA_* and XFS_PQUOTA_*
+flags after the superblock is read.
 
-Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+However, if log recovery is required, the superblock is read again,
+and the modified in-core flags are re-read from disk, so we have
+XFS_OQUOTA_* flags in memory again.  This causes the
+XFS_QM_NEED_QUOTACHECK() test to be true, because the XFS_OQUOTA_CHKD
+is still set, and not XFS_GQUOTA_CHKD or XFS_PQUOTA_CHKD.
+
+Change xfs_sb_from_disk to call xfs_sb_quota_from disk and always
+convert the disk flags to in-memory flags.
+
+Add a lower-level function which can be called with "false" to
+not convert the flags, so that the sb verifier can verify
+exactly what was on disk, per Brian Foster's suggestion.
+
+Reported-by: Cyril B. <cbay@excellency.fr>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Cc: Arkadiusz Miśkiewicz <arekm@maven.pl>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/posix-timers.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/xfs/xfs_mount.c |  1 -
+ fs/xfs/xfs_sb.c    | 24 ++++++++++++++++++++----
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 424c2d4265c9..77e6b83c0431 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -634,6 +634,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 			goto out;
- 		}
- 	} else {
-+		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
- 		event.sigev_notify = SIGEV_SIGNAL;
- 		event.sigev_signo = SIGALRM;
- 		event.sigev_value.sival_int = new_timer->it_id;
+diff --git a/fs/xfs/xfs_mount.c b/fs/xfs/xfs_mount.c
+index 5dcc68019d1b..dc602b564255 100644
+--- a/fs/xfs/xfs_mount.c
++++ b/fs/xfs/xfs_mount.c
+@@ -318,7 +318,6 @@ reread:
+ 	 * Initialize the mount structure from the superblock.
+ 	 */
+ 	xfs_sb_from_disk(&mp->m_sb, XFS_BUF_TO_SBP(bp));
+-	xfs_sb_quota_from_disk(&mp->m_sb);
+ 
+ 	/*
+ 	 * We must be able to do sector-sized and sector-aligned IO.
+diff --git a/fs/xfs/xfs_sb.c b/fs/xfs/xfs_sb.c
+index 38b7df67ba7c..1351ff0d77ab 100644
+--- a/fs/xfs/xfs_sb.c
++++ b/fs/xfs/xfs_sb.c
+@@ -406,10 +406,11 @@ xfs_sb_quota_from_disk(struct xfs_sb *sbp)
+ 	}
+ }
+ 
+-void
+-xfs_sb_from_disk(
++static void
++__xfs_sb_from_disk(
+ 	struct xfs_sb	*to,
+-	xfs_dsb_t	*from)
++	xfs_dsb_t	*from,
++	bool		convert_xquota)
+ {
+ 	to->sb_magicnum = be32_to_cpu(from->sb_magicnum);
+ 	to->sb_blocksize = be32_to_cpu(from->sb_blocksize);
+@@ -465,6 +466,17 @@ xfs_sb_from_disk(
+ 	to->sb_pad = 0;
+ 	to->sb_pquotino = be64_to_cpu(from->sb_pquotino);
+ 	to->sb_lsn = be64_to_cpu(from->sb_lsn);
++	/* Convert on-disk flags to in-memory flags? */
++	if (convert_xquota)
++		xfs_sb_quota_from_disk(to);
++}
++
++void
++xfs_sb_from_disk(
++	struct xfs_sb	*to,
++	xfs_dsb_t	*from)
++{
++	__xfs_sb_from_disk(to, from, true);
+ }
+ 
+ static inline void
+@@ -580,7 +592,11 @@ xfs_sb_verify(
+ 	struct xfs_mount *mp = bp->b_target->bt_mount;
+ 	struct xfs_sb	sb;
+ 
+-	xfs_sb_from_disk(&sb, XFS_BUF_TO_SBP(bp));
++	/*
++	 * Use call variant which doesn't convert quota flags from disk
++	 * format, because xfs_mount_validate_sb checks the on-disk flags.
++	 */
++	__xfs_sb_from_disk(&sb, XFS_BUF_TO_SBP(bp), false);
+ 
+ 	/*
+ 	 * Only check the in progress field for the primary superblock as
 -- 
 2.1.3
 
