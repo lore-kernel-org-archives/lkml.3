@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaKRRD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:03:56 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60483 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291AbaKRRDy (ORCPT
+	id S1754460AbaKRRGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:06:34 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:35069 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754413AbaKRRGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:03:54 -0500
-Date: Tue, 18 Nov 2014 17:03:50 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Sudeep Holla <Sudeep.Holla@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, "jcm@redhat.com" <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v5 01/18] ARM64: Move the init of cpu_logical_map(0)
- before unflatten_device_tree()
-Message-ID: <20141118170349.GU18842@arm.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <1413553034-20956-2-git-send-email-hanjun.guo@linaro.org>
- <546B4D8D.2020605@linaro.org>
- <20141118164312.GL28279@e104818-lin.cambridge.arm.com>
- <20141118165713.GT18842@arm.com>
- <546B7B8D.1070201@arm.com>
+	Tue, 18 Nov 2014 12:06:33 -0500
+Date: Tue, 18 Nov 2014 18:06:27 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Laurentiu Palcu <laurentiu.palcu@intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Johan Havold <johan@kernel.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] spi: add support for DLN-2 USB-SPI adapter
+Message-ID: <20141118170627.GB22786@localhost>
+References: <1416312599-5176-1-git-send-email-laurentiu.palcu@intel.com>
+ <1416312599-5176-2-git-send-email-laurentiu.palcu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <546B7B8D.1070201@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416312599-5176-2-git-send-email-laurentiu.palcu@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 05:02:05PM +0000, Sudeep Holla wrote:
-> On 18/11/14 16:57, Will Deacon wrote:
-> > On Tue, Nov 18, 2014 at 04:43:13PM +0000, Catalin Marinas wrote:
-> >> On Tue, Nov 18, 2014 at 01:45:49PM +0000, Hanjun Guo wrote:
-> >>> On 2014年10月17日 21:36, Hanjun Guo wrote:
-> >>>> It always make sense to initialize CPU0's logical map entry from the
-> >>>> hardware values, so move the initialization of cpu_logical_map(0)
-> >>>> before unflatten_device_tree() which is needed by ACPI code later.
-> >>>>
-> >>>> Acked-by: Olof Johansson <olof@lixom.net>
-> >>>> Acked-by: Mark Rutland <mark.rutland@arm.com>
-> >>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> >>>
-> >>> Could you merge this patch first in 3.19? It was acked by Olof and
-> >>> Mark, and it will make sense without ACPI too.
-> >>
-> >> I think it can go in for 3.19 (it's Will's turn this time ;)).
-> >
-> > This patch doesn't apply on for-next/core, as it conflicts with some of
-> > Rutland's rework ("arm64: log physical ID of boot CPU").
-> >
-> 
-> It's actually not required anymore, as "arm64: log physical ID of boot
-> CPU" move it quite early in the sequence from setup_arch to
-> smp_setup_processor_id while this patch just moves it up in setup_arch.
+On Tue, Nov 18, 2014 at 02:09:58PM +0200, Laurentiu Palcu wrote:
 
-Thanks Sudeep, I'd guessed as much :)
+> +/*
+> + * Copy the data to DLN2 buffer and change the byte order to LE, requested by
+> + * DLN2 module. SPI core makes sure that the data length is a multiple of word
+> + * size.
+> + */
+> +static int dln2_spi_copy_to_buf(u8 *dln2_buf, const u8 *src, u16 len, u8 bpw)
+> +{
+> +#ifdef __LITTLE_ENDIAN
+> +	memcpy(dln2_buf, src, len);
+> +#else
+> +	if (bpw <= 8) {
+> +		memcpy(dln2_buf, src, len);
+> +	} else if (bpw <= 16) {
+> +		__le16 *d = (__le16 *)dln2_buf;
+> +		u16 *s = (u16 *)src;
+> +
+> +		len = len / 2;
+> +		while (len--)
+> +			put_unaligned_le16(get_unaligned(s++), d++);
 
-Will
+You said the dln2 buffer was properly aligned, right? Then you don't
+need to use put_unaligned_lexx here...
+
+> +	} else {
+> +		__le32 *d = (__le32 *)dln2_buf;
+> +		u32 *s = (u32 *)src;
+> +
+> +		len = len / 4;
+> +		while (len--)
+> +			put_unaligned_le32(get_unaligned(s++), d++);
+> +	}
+> +#endif
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Copy the data from DLN2 buffer and convert to CPU byte order since the DLN2
+> + * buffer is LE ordered. SPI core makes sure that the data length is a multiple
+> + * of word size.
+> + */
+> +static int dln2_spi_copy_from_buf(u8 *dest, const u8 *dln2_buf, u16 len, u8 bpw)
+> +{
+> +#ifdef __LITTLE_ENDIAN
+> +	memcpy(dest, dln2_buf, len);
+> +#else
+> +	if (bpw <= 8) {
+> +		memcpy(dest, dln2_buf, len);
+> +	} else if (bpw <= 16) {
+> +		u16 *d = (u16 *)dest;
+> +		__le16 *s = (__le16 *)dln2_buf;
+> +
+> +		len = len / 2;
+> +		while (len--)
+> +			put_unaligned(get_unaligned_le16(s++), d++)
+
+...or get_unaligned_lexx here.
+
+> +	} else {
+> +		u32 *d = (u32 *)dest;
+> +		__le32 *s = (__le32 *)dln2_buf;
+> +
+> +		len = len / 4;
+> +		while (len--)
+> +			put_unaligned(get_unaligned_le32(s++), d++)
+> +	}
+> +#endif
+> +
+> +	return 0;
+> +}
+
+Did you check the alignment of the SPI buffers as well? I'd assume they
+were DMA-able and thus properly aligned, and then you do not need to use
+any unaligned helpers above at all.
+
+Johan
