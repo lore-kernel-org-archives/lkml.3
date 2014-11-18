@@ -1,162 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107AbaKRMSb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:18:31 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:38275 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520AbaKRMS1 (ORCPT
+	id S1754130AbaKRMUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:20:22 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:44568 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020AbaKRMUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:18:27 -0500
-Message-ID: <546B38F5.6050708@huawei.com>
-Date: Tue, 18 Nov 2014 20:17:57 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 18 Nov 2014 07:20:20 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Liviu Dudau <liviu@dudau.co.uk>,
-        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        <linux-pci@vger.kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        "Thierry Reding" <thierry.reding@gmail.com>,
-        <Suravee.Suthikulpanit@amd.com>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        <linux-ia64@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Wuyun <wuyun.wu@huawei.com>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1463511.o4kE8TX3Bd@wuerfel> <546B2ACC.90304@huawei.com> <20535707.3sA6NjSINh@wuerfel>
-In-Reply-To: <20535707.3sA6NjSINh@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+In-Reply-To: <546A1F64.7000209@cogentembedded.com>
+References: <1414761989-21088-1-git-send-email-gautam.vivek@samsung.com>
+	<1414761989-21088-2-git-send-email-gautam.vivek@samsung.com>
+	<545393CE.8070102@cogentembedded.com>
+	<CAFp+6iG37uE1uB5Z8B-hM3nKyBeR6Vxb-YKegd7MrRB3wuA9xw@mail.gmail.com>
+	<546A1F64.7000209@cogentembedded.com>
+Date: Tue, 18 Nov 2014 17:50:19 +0530
+Message-ID: <CAFp+6iHVWuiTfc4n8LeYkYhmMXA76kEs3xcH1WbrAr468MFe2A@mail.gmail.com>
+Subject: Re: [PATCH v7 1/2] usb: host: xhci-plat: Get PHYs for xhci's hcds
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Julius Werner <jwerner@google.com>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 19:30, Arnd Bergmann wrote:
-> On Tuesday 18 November 2014 19:17:32 Yijing Wang wrote:
->> On 2014/11/17 22:13, Arnd Bergmann wrote:
->>> On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
->>>> This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
->>>> arm PCI domain cleanup patches, link: 
->>>> https://patchwork.ozlabs.org/patch/407585/
+On Mon, Nov 17, 2014 at 9:46 PM, Sergei Shtylyov
+<sergei.shtylyov@cogentembedded.com> wrote:
+> Hello.
+>
+> On 11/17/2014 9:36 AM, Vivek Gautam wrote:
+>
+>>>> The host controller by itself may sometimes need to handle PHY
+>>>> and re-initialize it to re-configure some of the PHY parameters
+>>>> to get full support out of the PHY controller.
+>>>> Therefore, facilitate getting the two possible PHYs, viz.
+>>>> USB 2.0 type (UTMI+) and USB 3.0 type (PIPE3), and initialize them.
+>
+>
+>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>> ---
+>>>>    drivers/usb/host/xhci-plat.c |   74
+>>>> ++++++++++++++++++++++++++++++++++++++++++
+>>>>    1 file changed, 74 insertions(+)
+>
+>
+>>>> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+>>>> index 3d78b0c..5207d5b 100644
+>>>> --- a/drivers/usb/host/xhci-plat.c
+>>>> +++ b/drivers/usb/host/xhci-plat.c
+>
+> [...]
 >>>>
->>>> Current pci scan interfaces like pci_scan_root_bus() and directly
->>>> call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
->>>> Some platform infos like PCI domain and msi_chip have to be
->>>> associated to PCI bus by some arch specific function.
->>>> We want to make a generic pci_host_bridge, and make it hold
->>>> the platform infos or hook. Then we could eliminate the lots
->>>> of arch pci_domain_nr, also we could associate some platform 
->>>> ops something like pci_get_msi_chip(struct pci_dev *dev)
->>>> with pci_host_bridge to avoid introduce arch weak functions.
+>>>> @@ -204,6 +271,8 @@ static int xhci_plat_suspend(struct device *dev)
+>>>>          struct usb_hcd  *hcd = dev_get_drvdata(dev);
+>>>>          struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 >>>>
->>>> This RFC version not for all platforms, just applied the new
->>>> scan interface in x86/arm/powerpc/ia64, I will refresh other
->>>> platforms after the core pci scan interfaces are ok.
->>>
->>> I think overall this is a good direction to take, in particular
->>> moving more things into struct pci_host_bridge so we can
->>> slim down the architecture specific code.
->>
->> Hi Arnd, thanks very much for your review and comments!
->>
->>>
->>> I don't particularly like the way you use the 'pci_host_info'
->>> to pass callback pointers and some of the generic information.
->>> This duplicates some of the issues we are currently trying
->>> to untangle in the arm32 code to make drivers easier to share
->>> between architectures.
->>
->> What arm32 code you are trying to untangle for example ?
-> 
-> We have a few problems that currently prevent us from using shared
-> drivers across arm32 and arm64:
-> 
-> - arm32 has an architecture-defined pci_sys_data structure, but
->   we really want to have one that is defined by the host bridge driver
->   and that is architecture independent. Some core functions depend
->   on this structure at the moment, which Lorenzo is trying to
->   undo
-> 
-> - The pci_common_init interface on arm32 doesn't work well on
->   loadable drivers, it does not return an error, and it is built
->   around the assumption that you probe all pci host bridges at
->   the same time, while the standard Linux driver model assumes
->   that you probe one at a time.
-> 
-> - The way we pass a temporary structure (hw_pci) with function pointers
->   into the architecture code makes it relatively hard to follow
->   how the initialization sequence works.
->  
->> Introduce pci_host_info here because I want to make the PCI scan interfaces
->> simple to host drviers, host drivers only need to call one scan
->> interface(pci_scan_host_bridge), but from your comments,
->> The combination pci_create_host_bridge() + pci_scan_xx()
->> seems to be more popular.
-> 
-> Yes, I think a simpler interface structure would be better than trying
-> to minimize the amount of code needed in drivers at the expense of
-> interface complexity.
-> 
->>> As a general approach, I'd rather see generic helper functions
->>> being exported by the PCI core that a driver may or may not
->>> call. 
->>> The way you split the interface between things that happen
->>> before scanning the buses (pci_create_host_bridge) and
->>> the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
->>> seems very helpful and I think we can expand that concept further:
->>>
->>> - The normal pci_create_host_bridge() function can contain
->>>   all of the DT scanning functions (finding bus/mem/io resources, 
->>>   finding the msi-parent), while drivers that don't depend on DT
->>>   for this information can call the same function and fill the
->>>   same things after they have the pci_host_bridge pointer.
->>>
->>> - If a driver needs to set up mapping windows, it can do that after
->>>   calling pci_create_host_bridge(). E.g. all the dw_pcie glue drivers
->>>   can call a dw_pcie_setup_windows() function that takes the resources
->>>   out of the pci_host_bridge pointer before the bus is scanned.
->>>
->>> - The ACPI code can have a completely different way of creating
->>>   a struct pci_host_bridge, which is also passed into the same
->>>   bus scanning functions, but doesn't have to come from
->>>   pci_create_host_bridge.
+>>>> +       phy_exit(hcd->phy);
+>
+>
+>>>     Hm, in the suspend() method?
+>
+>
+>> phy_exit() should eventually be suspending the PHY and put it to
+>> low power state.
+>
+>
+>    I thought it's a role that the power_off() mothod should play,
+> considering that the power_on() method gets called after the init()
+> method....
 
-Thanks for your explanation, I will consider these problems when I refactor the
-core generic interfaces.
+phy_power_off() should be cutting the clocks and power from PHY
+completely, no ?
+In that case one may not be able to wakeup the system from USB.
 
->>
->> I hope platforms with ACPI or DT could both use pci_create_host_bridge().
->> Why we need to use two different ways to process it ?
-> 
-> These are completely different use cases:
-> 
-> a) For DT, we want loadable device drivers that start by probing a host
->    bridge device which was added through the DT platform code. The
->    driver is self-contained, and eventually we want to be able to unload
->    it. We have lots of different per-soc drivers that require different
->    quirks
-> 
-> b) For ACPI, the interface is defined in the ACPI spec across architectures
->    and SoCs, we don't have host bridge drivers and the code that initializes
->    the PCI is required early during boot and called from architecture
->    code. There is no parent device, as ACPI sees PCI as a fundamental building
->    block by itself, and there are no drivers because the firmware does
->    the initial hardware setup, so we only have to access the config space.
+So phy_exit() gets the responsibility to put the PHY into low power state.
 
-Hmmm, I'm a little confused, so why you think ACPI host driver should not use
-pci_create_host_bridge(), because ACPI PCI driver has no parent device ?
+Ccing Kishon also to get his opinion on actual role of the two callbacks -
+phy_init/exit() and phy_power_on/off().
 
-> 
-> 	Arnd
-> 
-> .
-> 
+>
+>> phy_init() in resume() will then take up the task of activating the
+>> PHY again.
+>
+>
+>> phy_power_on() and phy_power_off() are called at xhci_probe() and remove()
+>> time.
+>
+>
+>    Of course.
+>
+>> Does this makes sense ?
+>
+>
+>    Not much, really.
+>
+> WBR, Sergei
+>
+
 
 
 -- 
-Thanks!
-Yijing
-
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
