@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668AbaKRPIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:08:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
+	id S1756634AbaKRPIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:08:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960AbaKROJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:38 -0500
+	id S1754965AbaKROJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:39 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: linux-kernel@vger.kernel.org,
+        Richard Leitner <richard.leitner@skidata.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 077/206] random: add and use memzero_explicit() for clearing data
-Date: Tue, 18 Nov 2014 15:07:12 +0100
-Message-Id: <3b29acb38f39aea8cf7675eadd5214300149bb9e.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 044/206] Input: serio - avoid negative serio device numbers
+Date: Tue, 18 Nov 2014 15:06:39 +0100
+Message-Id: <336cc76cb08dd42fa6afc3e1d92b9bd547cc6aa9.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,130 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Richard Leitner <richard.leitner@skidata.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
+commit 0224ec9e9f111b1c39ec00a10de4858061b4afea upstream.
 
-zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
-memset() calls which clear out sensitive data in extract_{buf,entropy,
-entropy_user}() in random driver are being optimized away by gcc.
+Fix the format string for serio device name generation to avoid negative
+device numbers when the id exceeds the maximum signed integer value.
 
-Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
-that can be used in such cases where a variable with sensitive data is
-being cleared out in the end. Other use cases might also be in crypto
-code. [ I have put this into lib/string.c though, as it's always built-in
-and doesn't need any dependencies then. ]
-
-Fixes kernel bugzilla: 82041
-
-Reported-by: zatimend@hotmail.co.uk
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/char/random.c  | 10 +++++-----
- include/linux/string.h |  5 +++--
- lib/string.c           | 16 ++++++++++++++++
- 3 files changed, 24 insertions(+), 7 deletions(-)
+ drivers/input/serio/serio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 7a744d391756..f6b25db16791 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -930,8 +930,8 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	 * pool while mixing, and hash one final time.
- 	 */
- 	sha_transform(hash.w, extract, workspace);
--	memset(extract, 0, sizeof(extract));
--	memset(workspace, 0, sizeof(workspace));
-+	memzero_explicit(extract, sizeof(extract));
-+	memzero_explicit(workspace, sizeof(workspace));
- 
- 	/*
- 	 * In case the hash function has some recognizable output
-@@ -954,7 +954,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	}
- 
- 	memcpy(out, &hash, EXTRACT_SIZE);
--	memset(&hash, 0, sizeof(hash));
-+	memzero_explicit(&hash, sizeof(hash));
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
-@@ -1002,7 +1002,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-@@ -1040,7 +1040,7 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-diff --git a/include/linux/string.h b/include/linux/string.h
-index ac889c5ea11b..0ed878d0465c 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -129,7 +129,7 @@ int bprintf(u32 *bin_buf, size_t size, const char *fmt, ...) __printf(3, 4);
- #endif
- 
- extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
--			const void *from, size_t available);
-+				       const void *from, size_t available);
- 
- /**
-  * strstarts - does @str start with @prefix?
-@@ -141,7 +141,8 @@ static inline bool strstarts(const char *str, const char *prefix)
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
- 
--extern size_t memweight(const void *ptr, size_t bytes);
-+size_t memweight(const void *ptr, size_t bytes);
-+void memzero_explicit(void *s, size_t count);
- 
- /**
-  * kbasename - return the last part of a pathname.
-diff --git a/lib/string.c b/lib/string.c
-index e5878de4f101..43d0781daf47 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -586,6 +586,22 @@ void *memset(void *s, int c, size_t count)
- EXPORT_SYMBOL(memset);
- #endif
- 
-+/**
-+ * memzero_explicit - Fill a region of memory (e.g. sensitive
-+ *		      keying data) with 0s.
-+ * @s: Pointer to the start of the area.
-+ * @count: The size of the area.
-+ *
-+ * memzero_explicit() doesn't need an arch-specific version as
-+ * it just invokes the one of memset() implicitly.
-+ */
-+void memzero_explicit(void *s, size_t count)
-+{
-+	memset(s, 0, count);
-+	OPTIMIZER_HIDE_VAR(s);
-+}
-+EXPORT_SYMBOL(memzero_explicit);
-+
- #ifndef __HAVE_ARCH_MEMCPY
- /**
-  * memcpy - Copy one area of memory to another
+diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
+index 2b56855c2c77..de019ebb7e29 100644
+--- a/drivers/input/serio/serio.c
++++ b/drivers/input/serio/serio.c
+@@ -506,8 +506,8 @@ static void serio_init_port(struct serio *serio)
+ 	spin_lock_init(&serio->lock);
+ 	mutex_init(&serio->drv_mutex);
+ 	device_initialize(&serio->dev);
+-	dev_set_name(&serio->dev, "serio%ld",
+-			(long)atomic_inc_return(&serio_no) - 1);
++	dev_set_name(&serio->dev, "serio%lu",
++		     (unsigned long)atomic_inc_return(&serio_no) - 1);
+ 	serio->dev.bus = &serio_bus;
+ 	serio->dev.release = serio_release_port;
+ 	serio->dev.groups = serio_device_attr_groups;
 -- 
 2.1.3
 
