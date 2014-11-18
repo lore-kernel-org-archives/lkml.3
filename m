@@ -1,256 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaKRENK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 23:13:10 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:42346 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432AbaKRENJ (ORCPT
+	id S1752849AbaKRESx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 23:18:53 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:45280 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaKRESw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 23:13:09 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: kan.liang@intel.com
-Cc: acme@kernel.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH V3 3/3] perf tool: Add sort key symoff for perf diff
-References: <1416235939-29565-1-git-send-email-kan.liang@intel.com>
-	<1416235939-29565-4-git-send-email-kan.liang@intel.com>
-Date: Tue, 18 Nov 2014 13:13:01 +0900
-In-Reply-To: <1416235939-29565-4-git-send-email-kan.liang@intel.com> (kan
-	liang's message of "Mon, 17 Nov 2014 09:52:19 -0500")
-Message-ID: <877fytrvsi.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 17 Nov 2014 23:18:52 -0500
+Message-ID: <546AC8A4.4030705@roeck-us.net>
+Date: Mon, 17 Nov 2014 20:18:44 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Alan Tull <atull@opensource.altera.com>
+Subject: Re: [PATCH] regulator: Ensure unique regulator debugfs directory
+ names
+References: <1413559023-18293-1-git-send-email-linux@roeck-us.net> <20141117210009.GA28122@roeck-us.net> <20141117232620.GA22111@sirena.org.uk>
+In-Reply-To: <20141117232620.GA22111@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.546AC8AB.0148,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi kan,
-
-On Mon, 17 Nov 2014 09:52:19 -0500, kan liang wrote:
-> From: Kan Liang <kan.liang@intel.com>
+On 11/17/2014 03:26 PM, Mark Brown wrote:
+> On Mon, Nov 17, 2014 at 01:00:09PM -0800, Guenter Roeck wrote:
+>> On Fri, Oct 17, 2014 at 08:17:03AM -0700, Guenter Roeck wrote:
 >
-> Sometime, especially debugging scaling issue, the function level diff
-> may be high granularity. The user may want to do deeper diff analysis
-> for some cache or lock issue. The "symoff" key can let the user sort
-> differential profile by ips. This feature should only work when the
-> perf.data comes from same binary.
-
-It'd be better to include output of symoff here IMHO.
-
+>>> To avoid the problem, prepend the debugfs directory name for a regulator
+>>> with its parent device name if available, but only if no explicit
+>>> regulator name was provided.
 >
-> Signed-off-by: Kan Liang <kan.liang@intel.com>
-> ---
->  tools/perf/Documentation/perf-diff.txt |  8 ++++++--
->  tools/perf/builtin-diff.c              |  2 +-
->  tools/perf/util/hist.c                 |  5 +++--
->  tools/perf/util/hist.h                 |  1 +
->  tools/perf/util/sort.c                 | 29 +++++++++++++++++++++++++++++
->  tools/perf/util/sort.h                 |  2 ++
->  6 files changed, 42 insertions(+), 5 deletions(-)
+>> Hi Mark,
+>>
+>> did you have time to look into this patch ?
 >
-> diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-> index e463caa..9e13911 100644
-> --- a/tools/perf/Documentation/perf-diff.txt
-> +++ b/tools/perf/Documentation/perf-diff.txt
-> @@ -50,8 +50,12 @@ OPTIONS
->  
->  -s::
->  --sort=::
-> -	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
-> -	Please see description of --sort in the perf-report man page.
-> +	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline, symoff.
-> +
-> +	- symoff: exact symbol +  offset address executed at the time of sample.
-> +	(for same binary compare)
-> +
-> +	For other keys, please see description of --sort in the perf-report man page.
->  
->  -t::
->  --field-separator=::
-> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-> index 1ce425d..03a4001 100644
-> --- a/tools/perf/builtin-diff.c
-> +++ b/tools/perf/builtin-diff.c
-> @@ -744,7 +744,7 @@ static const struct option options[] = {
->  	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
->  		   "only consider these symbols"),
->  	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
-> -		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
-> +		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, symoff, ..."
->  		   " Please refer the man page for the complete list."),
->  	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
->  		   "separator for columns, no spaces will be added between "
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index 6e88b9e..3d8a71b 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -67,13 +67,14 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
->  		symlen = h->ms.sym->namelen + 4;
->  		if (verbose)
->  			symlen += BITS_PER_LONG / 4 + 2 + 3;
-> -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
->  	} else {
->  		symlen = unresolved_col_width + 4 + 2;
-> -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
->  		hists__set_unres_dso_col_len(hists, HISTC_DSO);
->  	}
->  
-> +	hists__new_col_len(hists, HISTC_SYMBOL, symlen);
-> +	hists__new_col_len(hists, HISTC_SYMOFF, symlen);
-> +
->  	len = thread__comm_len(h->thread);
->  	if (hists__new_col_len(hists, HISTC_COMM, len))
->  		hists__set_col_len(hists, HISTC_THREAD, len + 6);
-> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> index d0ef9a1..874b203 100644
-> --- a/tools/perf/util/hist.h
-> +++ b/tools/perf/util/hist.h
-> @@ -24,6 +24,7 @@ enum hist_filter {
->  
->  enum hist_column {
->  	HISTC_SYMBOL,
-> +	HISTC_SYMOFF,
->  	HISTC_DSO,
->  	HISTC_THREAD,
->  	HISTC_COMM,
-> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> index 5b6c57d..370a799 100644
-> --- a/tools/perf/util/sort.c
-> +++ b/tools/perf/util/sort.c
-> @@ -280,6 +280,34 @@ struct sort_entry sort_sym = {
->  	.se_width_idx	= HISTC_SYMBOL,
->  };
->  
-> +static int64_t
-> +sort__addr_cmp(struct hist_entry *left, struct hist_entry *right)
-> +{
-> +	return _sort__addr_cmp(left->ip, right->ip);
-> +}
-> +
-> +static int hist_entry__addr_snprintf(struct hist_entry *he, char *bf,
-> +				    size_t size, unsigned int width)
-> +{
-> +	struct map *map = he->ms.map;
-> +	u64 ip;
-> +
-> +	if (map)
-> +		ip = map->unmap_ip(map, he->ip);
-> +	else
-> +		ip = he->ip;
-> +
-> +	return _hist_entry__sym_snprintf(NULL, NULL, ip,
-> +					 he->level, bf, size, width);
-> +}
-> +
-> +struct sort_entry sort_symoff = {
-> +	.se_header	= "Symbol+Offset",
-> +	.se_cmp		= sort__addr_cmp,
-> +	.se_snprintf	= hist_entry__addr_snprintf,
-> +	.se_width_idx	= HISTC_SYMOFF,
-> +};
+> Please don't send contentless, quoted pings.  One of two things will be
+> true: either your patch got lost in which case a quoted copy is of no
+> use in getting the patch applied or the patch is buried under other mail
+> in which case you are at best adding to the email volume and at worst
+> your mail will never be seen as it's threaded in with the original send.
+>
 
-I meant something like below (not tested):
+Hi Mark,
 
+Sorry, I have no idea how you expect me (and others) to handle situations
+like this, much less with this patch. Please keep in mind that this is
+a per-maintainer process, and each maintainer handles things differently.
+Individual maintainers may expect me to send a ping like I did, or to
+resend the patch, or they may not reply because they dislike the patch
+and they don't want to be bothered with a discussion. Some even go
+ballistic if they get an e-mail with more than 80 columns of text.
 
-sort__symoff_cmp(left, right)
-{
-	return _sort__addr_cmp(left->ip, right->ip);
-}
+Negotiating a minefield sometimes seems easier than submitting kernel
+patches :-(.
 
-sort__symoff_collapse(left, right)
-{
-	int64_t ret;
-	u64 symoff_l, symoff_r;
+I can't even find out by browsing the regulator mailing list since it
+appears that there is no such list.
 
-	if (!left->ms.sym || right->ms.sym)
-		return cmp_null(...);
+Guenter
 
-	ret = strcmp(left->ms.sym, right->ms.sym);
-	if (ret)
-		return ret;
-
-	symoff_l = left->ip - left->ms.sym->start;
-	symoff_r = right->ip - right->ms.sym->start;
-
-        return (int64_t)(symoff_r - symoff_l);
-}
-
-hist_entry__symoff_snprintf(he, bf, size, width)
-{
-	size_t ret;
-
-	if (he->ms.sym)
-		ret = repsep_snprintf(bf, size, "%s+0x%llx", he->ms.sym->name,
-				he->ip - he->ms.sym->start);
-	else
-		ret = repsep_snprintf(bf, size, "%-#*llx",
-				BITS_PER_LONG / 4 + 2, he->ip); // unmap?
-
-	ret += repsep_snprintf(bf + ret, size - ret, "%-*s",
-			       width - ret, "");
-
-	if (ret > width)
-		bf[width] = '\0';
-
-	return width;
-}
-
-struct sort_entry sort_symoff = {
-	.se_header	= "Symbol+Offset",
-	.se_cmp		= sort__symoff_cmp,
-	.se_snprintf	= hist_entry__symoff_snprintf,
-	.se_width_idx	= HISTC_SYMOFF,
-
-
-...
-
-int sort_dimension__add()
-{
-	...
-	else if (sd->entry == &sort_symoff) {
-		if (sort__mode == SORT_MODE__DIFF)
-			se->entry->se_collapse = sort__symoff_collapse;
-	}
-	...
-}
-
-
-Thanks,
-Namhyung
-
-
-> +
->  /* --sort srcline */
->  
->  static int64_t
-> @@ -1170,6 +1198,7 @@ static struct sort_dimension common_sort_dimensions[] = {
->  	DIM(SORT_COMM, "comm", sort_comm),
->  	DIM(SORT_DSO, "dso", sort_dso),
->  	DIM(SORT_SYM, "symbol", sort_sym),
-> +	DIM(SORT_SYMOFF, "symoff", sort_symoff),
->  	DIM(SORT_PARENT, "parent", sort_parent),
->  	DIM(SORT_CPU, "cpu", sort_cpu),
->  	DIM(SORT_SRCLINE, "srcline", sort_srcline),
-> diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-> index c03e4ff..ea0122f 100644
-> --- a/tools/perf/util/sort.h
-> +++ b/tools/perf/util/sort.h
-> @@ -38,6 +38,7 @@ extern enum sort_mode sort__mode;
->  extern struct sort_entry sort_comm;
->  extern struct sort_entry sort_dso;
->  extern struct sort_entry sort_sym;
-> +extern struct sort_entry sort_symoff;
->  extern struct sort_entry sort_parent;
->  extern struct sort_entry sort_dso_from;
->  extern struct sort_entry sort_dso_to;
-> @@ -161,6 +162,7 @@ enum sort_type {
->  	SORT_COMM,
->  	SORT_DSO,
->  	SORT_SYM,
-> +	SORT_SYMOFF,
->  	SORT_PARENT,
->  	SORT_CPU,
->  	SORT_SRCLINE,
