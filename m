@@ -1,106 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247AbaKRSTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:19:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25997 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683AbaKRSTE (ORCPT
+	id S1754580AbaKRSVc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:21:32 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:41332 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848AbaKRSV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:19:04 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2] PCI: Don't reject 64bit mmio on 32bit/PAE mode
-Date: Tue, 18 Nov 2014 10:19:04 -0800
-Message-Id: <1416334744-16817-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 18 Nov 2014 13:21:29 -0500
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 18 Nov 2014 10:21:05 -0800
+X-Google-Sender-Auth: O464qhe2r-55XrWWvqjBXPr15tw
+Message-ID: <CAB=NE6Wwec_sq4muj7kshhyLJttcf1CytTPWkjc_+Ub3dqn0tw@mail.gmail.com>
+Subject: [ANN] Kernel integration now merged on backports
+To: "backports@vger.kernel.org" <backports@vger.kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-media@vger.kernel.org,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-wpan@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aaron reported 32bit/PAE mode, has problem with 64bit resource.
+Full kernel integration is now merged as part of Linux
+backports-20141114. I've written a bit about it [0] [1], what we need
+now are users and developer to give this a good spin as we wind down
+for the v3.19 release, which will be the first release that will
+support kernel integration down to any kernel >= 3.0 -- for now you
+can use the backports-20141114 tag which uses as base supported
+drivers from next-20141114. What this will mean is that you can opt in
+to integrate any device driver we support from any future backports
+release into any of >= 3.0 kernel with full kconfig support, enabling
+you to build everything as built-in. For all this you won't be using
+the packaged releases [2], instead you'll use the git tree directly as
+documented.
 
-[    6.610012] pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
-[    6.622195] pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
-[    6.656112] pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
-[    6.668293] pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
-[    6.702055] pci 0000:00:02.2: PCI bridge to [bus 03-04]
-[    6.706434] pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
-[    6.711783] pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
-[    6.717906] pci 0000:00:02.2: can't handle 64-bit address space for bridge
+[0] http://www.do-not-panic.com/2014/11/automating-backport-kernel-integration.html
+[1] https://backports.wiki.kernel.org/index.php/Documentation/integration
+[2] https://backports.wiki.kernel.org/index.php/Documentation/packaging
 
-So the kernel reject 64bit mmio on pci pref bridge that is assigned by
-firmware.
-
-When 32bit PAE is enabled, we could support 64bit mmio.
-but BITS_PER_LONG==64 checking could reject firmware assigned mmio that
-is above 4G. On x86 32bit always has BITS_PER_LONG equal to 32.
-
-We could use CONFIG_ARCH_DMA_ADDR_T_64BIT or dma_addr_t size checking instead.
-Use dma_addr_t size checking to avoid using MARCO.
-
-Also need to change to use dma_addr_t instead of unsigned long
-for base/limit to avoid overflow.
-
--v2: add u64 cast to avoid compiler warning.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
-Reported-by: Aaron Ma <mapengyu@gmail.com>
-Tested-by: Aaron Ma <mapengyu@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- drivers/pci/probe.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
-
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -406,15 +406,15 @@ static void pci_read_bridge_mmio_pref(st
- {
- 	struct pci_dev *dev = child->self;
- 	u16 mem_base_lo, mem_limit_lo;
--	unsigned long base, limit;
-+	dma_addr_t base, limit;
- 	struct pci_bus_region region;
- 	struct resource *res;
- 
- 	res = child->resource[2];
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
--	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
--	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
-+	base = ((dma_addr_t) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
-+	limit = ((dma_addr_t) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
- 
- 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
- 		u32 mem_base_hi, mem_limit_hi;
-@@ -428,15 +428,15 @@ static void pci_read_bridge_mmio_pref(st
- 		 * this, just assume they are not being used.
- 		 */
- 		if (mem_base_hi <= mem_limit_hi) {
--#if BITS_PER_LONG == 64
--			base |= ((unsigned long) mem_base_hi) << 32;
--			limit |= ((unsigned long) mem_limit_hi) << 32;
--#else
--			if (mem_base_hi || mem_limit_hi) {
--				dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
--				return;
-+			if (sizeof(dma_addr_t) < 8) {
-+				if (mem_base_hi || mem_limit_hi) {
-+					dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
-+					return;
-+				}
-+			} else  {
-+				base |= (dma_addr_t)(((u64)mem_base_hi)<<32);
-+				limit |= (dma_addr_t)(((u64)mem_limit_hi)<<32);
- 			}
--#endif
- 		}
- 	}
- 	if (base <= limit) {
+  Luis
