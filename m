@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaKREva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 23:51:30 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46102 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaKREv3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 23:51:29 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        brendan.d.gregg@gmail.com,
-        "yrl.pp-manager.tt\@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC] perf-cache command interface design
-References: <87lhnr5sbl.fsf@sejong.aot.lge.com>
-	<54588905.7040002@linux.vnet.ibm.com> <5458CD15.4010101@hitachi.com>
-	<874muew2hk.fsf@sejong.aot.lge.com> <5459E865.6050207@hitachi.com>
-	<545B1DDE.9000202@linux.vnet.ibm.com> <545C80F4.4020905@hitachi.com>
-	<54609A8C.4050308@hitachi.com> <20141110122321.GC4468@redhat.com>
-	<5461B276.50004@hitachi.com> <20141111131030.GG4468@redhat.com>
-	<54637C05.5090807@hitachi.com> <87oas6ttf8.fsf@sejong.aot.lge.com>
-	<546968CB.1070802@hitachi.com> <546A71FE.5080500@hitachi.com>
-Date: Tue, 18 Nov 2014 13:51:26 +0900
-In-Reply-To: <546A71FE.5080500@hitachi.com> (Masami Hiramatsu's message of
-	"Tue, 18 Nov 2014 07:09:02 +0900")
-Message-ID: <87tx1xqfg1.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751304AbaKRFCn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 00:02:43 -0500
+Received: from new1-smtp.messagingengine.com ([66.111.4.221]:53270 "EHLO
+	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750708AbaKRFCm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 00:02:42 -0500
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 00:02:41 EST
+Message-Id: <1416286960.151058.192270061.1EE682B5@webmail.messagingengine.com>
+X-Sasl-Enc: Pod9WZO70Xwd/WVBQH493ICPhI7Ae0knvdO/q8RclPtm 1416286960
+From: SystemBlues <sdblues@fastmail.com>
+To: "" <linux-kernel@vger.kernel.org>, debian-user@lists.debian.org,
+        debian-vote@lists.debian.org, ubuntu-users@lists.ubuntu.com,
+        ubuntu-devel-discuss@lists.ubuntu.com
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-9183bd94
+Subject: Response to Erich Schubert's false statement. (ES is a male-feminist and
+ systemd fan, the first colours his judgement)
+Date: Mon, 17 Nov 2014 21:02:40 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014 07:09:02 +0900, Masami Hiramatsu wrote:
-> (2014/11/17 12:17), Masami Hiramatsu wrote:
->> (2014/11/17 12:08), Namhyung Kim wrote:
->>> I prefer this too.  But I'd like make the 'add' part a subcommand rather
->>> than option like we do in perf kmem/kvm/list/lock/mem/sched ...  And it
->>> can handle multiple files at once.  What about this?
->>>
->>>   perf cache add [--elf|--sdt|--probe <spec>] <binary> [<binary>...]
->> 
->> OK, that's good to me. And I think --elf/--sdt is meaningless.
->> Only --probe option is required, since we can scan the elf file to
->> add sdt cache when adding elf binary :)
->
-> BTW, what should we do if we put the probe cache on current running kernel?
->
-> perf cache add --probe <probe-spec>
->
-> and have no binary argument, is it OK?
+Dear Mr Schubert;
 
-Hmm.. what about passing /proc/kallsyms and/or /boot/vmlinux for that?
-Now I found that we need to special-case the kallsyms non-ELF file :)
+"He has not contributed anything to the open source community."
+This is a complete lie. I've contributed gigabytes of media alone.
+I've done years and years of programming work.
+I have done far more than you ever will.
 
-Thanks,
-Namhyung
+"His songs and "games" are not worth looking at,"
+Your subjective view. Coloured by your social views and your
+disdain for those who oppose you in that.
+
+"and I'm not aware of any project that has accepted any of his
+"contributions"."
+The only objectively true thing you've said: you're not aware.
+I'm glad you're unaware, I hope that trend continues.
+
+I expect this post to be censored, it is par for the course for people
+like you.
+
+Sincerely;
+--MikeeUSA--
+
+---------------------
+(Erich Schubert put forth false claims about lack of involvement of mine
+in free/opensource software)
+(When corrected he first engaged, then deleted all the posts, keeping
+only his false statements visible)
+http://www.vitavonni.de/blog/201411/2014110901-gr-vote-on-init-coupling.html
+About Erich_Schubert:
+
+http://www.dbs.ifi.lmu.de/cms/Erich_Schubert
+
+Ludwig-Maximilians-Universität München
+Lehr- und Forschungseinheit für Datenbanksysteme
+Oettingenstraße 67
+80538 München
+Germany
+Room:   F 109
+Phone:  +49-89-2180-9325
+Fax:    +49-89-2180-9192
+Email:  schube@dbs.ifi.lmu.de
+
+Sprechstunde: jeden Donnerstag 15-16 Uhr, Zimmer F 109 
+
+What is he all about? Data-Mining an der Hochschule Rosenheim
+(also seen on his most recent projects)
+
