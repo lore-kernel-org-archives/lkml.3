@@ -1,32 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaKRR77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:59:59 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:56647 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaKRR75 convert rfc822-to-8bit (ORCPT
+	id S1754490AbaKRSAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:00:04 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52401 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865AbaKRSAA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:59:57 -0500
+	Tue, 18 Nov 2014 13:00:00 -0500
+Message-ID: <546B8934.5040100@arm.com>
+Date: Tue, 18 Nov 2014 18:00:20 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141117211410.25314.99324@quantum>
-References: <1415884826-7877-1-git-send-email-kever.yang@rock-chips.com>
-	<CAD=FV=WSDtxjtGD3c22OqXsSqaphKcmup9rAfonbeC-bUWHmSQ@mail.gmail.com>
-	<20141114014102.25314.77218@quantum>
-	<6053586.L6Ix8HgKpA@diego>
-	<20141117211410.25314.99324@quantum>
-Date: Tue, 18 Nov 2014 09:59:56 -0800
-X-Google-Sender-Auth: R9gQkxZCERyt4f7rsj6hOc-pgPI
-Message-ID: <CAD=FV=VZ+qPRdeTaAXxBU0aSObBRdY5TDmREYviuh8h3dUs5fQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] clk: add property for force to update clock setting
-From: Doug Anderson <dianders@chromium.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] sched/rt: fix rt runtime corrupt when dl refuse a smaller
+ bandwidth
+References: <1415868459-7043-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1415868459-7043-1-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 18 Nov 2014 17:59:56.0114 (UTC) FILETIME=[760ADB20:01D00359]
+X-MC-Unique: 114111817595803601
+Content-Type: text/plain; charset=WINDOWS-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,62 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Mon, Nov 17, 2014 at 1:14 PM, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Heiko Stübner (2014-11-14 10:06:47)
->> Hi Mike,
->>
->> Am Donnerstag, 13. November 2014, 17:41:02 schrieb Mike Turquette:
->> > Quoting Doug Anderson (2014-11-13 15:27:32)
->>
->> [...]
->>
->> > All of the above is to say that perhaps the solution to this problem
->> > belongs in the driver. In the end we're talking about details for
->> > correctly programming hardware, which sounds an awful lot like what
->> > drivers are supposed to do.
->> >
->> > Let me know if the ->init() callback holds any promise for you. If not
->> > we can figure something out.
->>
->> From my theoretical musings, ->init() sounds like a nice idea - but of
->> course it comes with a "but".
->>
->> I guess the general idea would be to have the pll clk-type simply reset
->> to the same rate but forcing it to use the parameters from its parameter
->> table - when the rate params differ [0].
->>
->> The only problem would be the apll supplying the cpu cores. After all clocks
->> are registered, our armclk makes sure that the core clock gets reparented
->> before changing the underlying apll [dpll is safe, as it is read-only currently].
+On 13/11/14 08:47, Wanpeng Li wrote:
+> Dl class will refuse the bandwidth being set to some value smaller 
+> than the currently allocated bandwidth in any of the root_domains 
+> through sched_rt_runtime_us and sched_rt_period_us. RT runtime will 
+> be set according to sched_rt_runtime_us before dl class verify if 
+> the new bandwidth is suitable in the case of !CONFIG_RT_GROUP_SCHED.
+> 
+> However, rt runtime will be corrupt if dl refuse the new bandwidth 
+> since there is no undo to reset the rt runtime to the old value. 
+> 
 
-DPLL probably won't be read only forever...
+Can't we just move sched_dl_global_constraints() before
+sched_rt_global_constraints(), and change the name of the
+former to sched_dl_global_validate() ?
 
+Thanks,
 
->> At the moment the order would be
->> clk_register(apll)
->> apll->init()
->> clk_register(armclk);
->
-> Sorry, but I don't understand the problem. The at registration-time,
-> apll is re-programmed to a correct value for its current rate. Then
-> armclk is registered which might change apll's rate. Any change to the
-> apll which is issued from armclk should insure that apll is programmed
-> correctly.
+- Juri
 
-I think Heiko is worried that until the "armclk" is registered that
-nobody is there to reparent the ARM core to GPLL while APLL changes
-(that's armclk's job).  This is potentially unsafe.
+> This patch fix it by setting rt runtime after all kinds of rational 
+> checking in the case of !CONFIG_RT_GROUP_SCHED.
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+>  kernel/sched/core.c | 30 ++++++++++++++++--------------
+>  1 file changed, 16 insertions(+), 14 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 2e7578a..355dde3 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -7795,20 +7795,7 @@ static int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
+>  #else /* !CONFIG_RT_GROUP_SCHED */
+>  static int sched_rt_global_constraints(void)
+>  {
+> -	unsigned long flags;
+> -	int i, ret = 0;
+> -
+> -	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+> -	for_each_possible_cpu(i) {
+> -		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+> -
+> -		raw_spin_lock(&rt_rq->rt_runtime_lock);
+> -		rt_rq->rt_runtime = global_rt_runtime();
+> -		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+> -	}
+> -	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+> -
+> -	return ret;
+> +	return 0;
+>  }
+>  #endif /* CONFIG_RT_GROUP_SCHED */
+>  
+> @@ -7890,6 +7877,21 @@ static int sched_rt_global_validate(void)
+>  
+>  static void sched_rt_do_global(void)
+>  {
+> +#ifndef CONFIG_RT_GROUP_SCHED
+> +	unsigned long flags;
+> +	int i;
+> +
+> +	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+> +	for_each_possible_cpu(i) {
+> +		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+> +
+> +		raw_spin_lock(&rt_rq->rt_runtime_lock);
+> +		rt_rq->rt_runtime = global_rt_runtime();
+> +		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+> +	}
+> +	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+> +#endif
+> +
+>  	def_rt_bandwidth.rt_runtime = global_rt_runtime();
+>  	def_rt_bandwidth.rt_period = ns_to_ktime(global_rt_period());
+>  }
+> 
 
-NOTE: it actually might not be unsafe, just slow.  I think we'll
-actually swap the PLL into "slow" mode before changing it (24MHz) so
-we won't die we'll just run at 24MHz at boot time while we wait for
-APLL to re-lock.
-
-
-One option would be to just add yet another per-pll parameter.  We'll
-only cleanup CPLL, GPLL, and NPLL.  If APLL (ARM clock) and DPLL
-(memory clock) are set differently by firmware then we're just SOL.
-Of course if firmware boots us on GPLL then I guess we're back to
-square one (would firmware really be that malicious?)
-
--Doug
