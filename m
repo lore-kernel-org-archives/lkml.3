@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066AbaKRK0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:26:25 -0500
-Received: from ozlabs.org ([103.22.144.67]:47781 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396AbaKRK0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:26:23 -0500
-Message-ID: <1416306379.28359.0.camel@concordia>
-Subject: Re: [PATCH] [powerpc] Fix Text randomization
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Vineeth Vijayan <vvijayan@mvista.com>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
-Date: Tue, 18 Nov 2014 21:26:19 +1100
-In-Reply-To: <CAOpNGcuL-0SDSwDbExLWqWxwp=0zRtRnx_MUnNEb9ywSFrhh8A@mail.gmail.com>
-References: <1415956325-10124-1-git-send-email-vvijayan@mvista.com>
-	 <1416207214.2826.3.camel@concordia>
-	 <CAOpNGcuL-0SDSwDbExLWqWxwp=0zRtRnx_MUnNEb9ywSFrhh8A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754146AbaKRK0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:26:03 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:46881 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954AbaKRKZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 05:25:58 -0500
+From: Johan Hovold <johan@kernel.org>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Johan Hovold <johan@kernel.org>, stable <stable@vger.kernel.org>
+Subject: [PATCH 2/3] USB: keyspan: fix overrun-error reporting
+Date: Tue, 18 Nov 2014 11:25:20 +0100
+Message-Id: <1416306321-22613-2-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1416306321-22613-1-git-send-email-johan@kernel.org>
+References: <1416306321-22613-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-18 at 12:50 +0530, Vineeth Vijayan wrote:
-> On Mon, Nov 17, 2014 at 12:23 PM, Michael Ellerman <mpe@ellerman.id.au> wrote:
-> > On Fri, 2014-11-14 at 14:42 +0530, Vineeth Vijayan wrote:
-> >> Now there is no way to disable TEXT randomization on a PPC32/PPC64
-> >> machine. Text randomization happens even in the case of "echo 0 >
-> >> /proc/sys/kernel/randomize_va_space"
-> >>
-> >> This happens due to the incorrect definition of ELF_ET_DYN_BASE
-> >> at arch/powerpc/include/asm/elf.h
-> >>
-> >> The function randomize_et_dyn is redundant and is removed.
-> >
-> > The patch looks OK, but for the change log I was thinking something more like
-> > this:
-> >
-> >
-> > powerpc: Use generic PIE randomization
-> >
-> Ok. Thats better.
-> Do you want me to send a new patch with updated change log as mentioned ?
- 
-No that's OK, I've already merged it.
+Fix reporting of overrun errors, which are not associated with a
+character. Instead insert a null character and report only once.
 
-cheers
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+---
+ drivers/usb/serial/keyspan.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index 7799d8bc4a63..077c714f1285 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -311,12 +311,13 @@ static void	usa26_indat_callback(struct urb *urb)
+ 		if ((data[0] & 0x80) == 0) {
+ 			/* no errors on individual bytes, only
+ 			   possible overrun err */
+-			if (data[0] & RXERROR_OVERRUN)
+-				err = TTY_OVERRUN;
+-			else
+-				err = 0;
++			if (data[0] & RXERROR_OVERRUN) {
++				tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++			}
+ 			for (i = 1; i < urb->actual_length ; ++i)
+-				tty_insert_flip_char(&port->port, data[i], err);
++				tty_insert_flip_char(&port->port, data[i],
++								TTY_NORMAL);
+ 		} else {
+ 			/* some bytes had errors, every byte has status */
+ 			dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+@@ -787,13 +788,13 @@ static void usa90_indat_callback(struct urb *urb)
+ 			if ((data[0] & 0x80) == 0) {
+ 				/* no errors on individual bytes, only
+ 				   possible overrun err*/
+-				if (data[0] & RXERROR_OVERRUN)
+-					err = TTY_OVERRUN;
+-				else
+-					err = 0;
++				if (data[0] & RXERROR_OVERRUN) {
++					tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++				}
+ 				for (i = 1; i < urb->actual_length ; ++i)
+ 					tty_insert_flip_char(&port->port,
+-							data[i], err);
++							data[i], TTY_NORMAL);
+ 			}  else {
+ 			/* some bytes had errors, every byte has status */
+ 				dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+-- 
+2.0.4
 
