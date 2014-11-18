@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349AbaKRWfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 17:35:44 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:63244 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaKRWfm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 17:35:42 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Zhen Lei <thunder.leizhen@huawei.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1415931040-9868-1-git-send-email-thunder.leizhen@huawei.com>
-Cc: "Zefan Li" <lizefan@huawei.com>, "Xinwei Hu" <huxinwei@huawei.com>,
-        "Tianhong Ding" <dingtianhong@huawei.com>,
-        "Kefeng Wang" <wangkefeng.wang@huawei.com>,
-        "Zhen Lei" <thunder.leizhen@huawei.com>
-References: <1415931040-9868-1-git-send-email-thunder.leizhen@huawei.com>
-Message-ID: <20141118223538.25314.21064@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 1/1] clk: delete a local variable's repeated assignment
-Date: Tue, 18 Nov 2014 14:35:38 -0800
+	id S932519AbaKRWfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 17:35:55 -0500
+Received: from gate.crashing.org ([63.228.1.57]:36402 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932098AbaKRWfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 17:35:52 -0500
+Message-ID: <1416344873.5704.12.camel@kernel.crashing.org>
+Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb()
+ and fast_wmb()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: Alexander Duyck <alexander.duyck@gmail.com>, linux-arch@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
+        heiko.carstens@de.ibm.com, mingo@kernel.org, mikey@neuling.org,
+        linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
+        michael@ellerman.id.au, tony.luck@intel.com,
+        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
+        fweisbec@gmail.com, davem@davemloft.net
+Date: Wed, 19 Nov 2014 08:07:53 +1100
+In-Reply-To: <546AB959.1020602@redhat.com>
+References: <20141117171005.22333.96544.stgit@ahduyck-server>
+	 <20141117171812.22333.90395.stgit@ahduyck-server>
+	 <1416254687.18381.3.camel@kernel.crashing.org> <546A5968.1090201@gmail.com>
+	 <1416271167.18381.16.camel@kernel.crashing.org>
+	 <546AB959.1020602@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Zhen Lei (2014-11-13 18:10:40)
-> It's the same to the next statement, "ret = clk->parent". I think compiler will
-> optimize it, it's just not looking well.
+On Mon, 2014-11-17 at 19:13 -0800, Alexander Duyck wrote:
 > 
-> Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
+> ARM adds some funky things.  They have two different types of 
+> primitives, a dmb() which is a data memory barrier, and a dsb() which is 
+> a data synchronization barrier.  Then with each of those they have the 
+> "domains" the barriers are effective within.
+> 
+> So for example on ARM a rmb() is dsb(sy) which means it is a system wide 
+> synchronization barrier which stops execution on the CPU core until the 
+> read completes.  
 
-Applied.
+That's amazingly heavy handed ... I can see that being useful for MMIO,
+we do something similar in our MMIO accessors by using a special variant
+of trap instruction that never traps to make the core thing the load
+value has been consumed. But that's typically only needed to guarantee
+MMIO timings.
 
-Thanks,
-Mike
+> However the smp_rmb() is a dmb(ish) which means it is 
+> only a barrier as far as the inner shareable domain which I believe only 
+> goes as far as the local shared cache hierarchy and only guarantees read 
+> ordering without necessarily halting the CPU or stopping in-order 
+> speculative reads.  So what a coherent_rmb() would be in my setup is 
+> dmb(sy) which means the barrier runs all the way out to memory, and it 
+> is allowed to speculative read as long as it does it in order.
 
-> ---
->  drivers/clk/clk.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 4896ae9..5307225 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1614,7 +1614,7 @@ static struct clk *__clk_init_parent(struct clk *clk)
-> 
->         if (clk->num_parents == 1) {
->                 if (IS_ERR_OR_NULL(clk->parent))
-> -                       ret = clk->parent = __clk_lookup(clk->parent_names[0]);
-> +                       clk->parent = __clk_lookup(clk->parent_names[0]);
->                 ret = clk->parent;
->                 goto out;
->         }
-> --
-> 1.8.0
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Correct, which is thus the same as smp_rmb() ... which was my original
+point, or am I missing something else ?
+
+> If it is still unclear you might check out Will Deacon's talk on the 
+> topic at https://www.youtube.com/watch?v=6ORn6_35kKo, at about 7:00 in 
+> he explains the whole domains thing, and at 13:30 he explains dmb()/dsb().
+
+Ok, I'll try to watch that when I get a chance.
+
+Cheers,
+Ben.
+
+
