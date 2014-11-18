@@ -1,263 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490AbaKRTmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 14:42:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53966 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230AbaKRTmI (ORCPT
+	id S1755604AbaKRTml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 14:42:41 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:43555 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230AbaKRTmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 14:42:08 -0500
-Date: Tue, 18 Nov 2014 19:42:06 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: netdev@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] {compat_,}verify_iovec(): switch to generic copying of
- iovecs
-Message-ID: <20141118194206.GC14641@ZenIV.linux.org.uk>
-References: <20141118084745.GT7996@ZenIV.linux.org.uk>
- <20141118194053.GA14641@ZenIV.linux.org.uk>
+	Tue, 18 Nov 2014 14:42:35 -0500
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: hch@infradead.org, axboe@fb.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: thornber@redhat.com, bvanassche@acm.org, jmad@itu.dk,
+        =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [RPC PATCH 0/5] Support for Open-Channel SSDs
+Date: Tue, 18 Nov 2014 20:41:54 +0100
+Message-Id: <1416339719-8488-1-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141118194053.GA14641@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use {compat_,}rw_copy_check_uvector().  As the result, we are
-guaranteed that all iovecs seen in ->msg_iov by ->sendmsg()
-and ->recvmsg() will pass access_ok().  The next commit removes
-now redundant checks in callees...
+Hi,
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- net/compat.c     |   51 +++++++++++++++------------------------------------
- net/core/iovec.c |   37 ++++++++++++++-----------------------
- net/socket.c     |   38 ++++++++------------------------------
- 3 files changed, 37 insertions(+), 89 deletions(-)
+Here is an updated patchset of LightNVM. It is now integrated directly into the
+block layer when using blk-mq. I'll like to get some feedback on how it is
+plugged in.
 
-diff --git a/net/compat.c b/net/compat.c
-index 562e920..7b4b6ad 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -31,33 +31,6 @@
- #include <asm/uaccess.h>
- #include <net/compat.h>
- 
--static inline int iov_from_user_compat_to_kern(struct iovec *kiov,
--					  struct compat_iovec __user *uiov32,
--					  int niov)
--{
--	int tot_len = 0;
--
--	while (niov > 0) {
--		compat_uptr_t buf;
--		compat_size_t len;
--
--		if (get_user(len, &uiov32->iov_len) ||
--		    get_user(buf, &uiov32->iov_base))
--			return -EFAULT;
--
--		if (len > INT_MAX - tot_len)
--			len = INT_MAX - tot_len;
--
--		tot_len += len;
--		kiov->iov_base = compat_ptr(buf);
--		kiov->iov_len = (__kernel_size_t) len;
--		uiov32++;
--		kiov++;
--		niov--;
--	}
--	return tot_len;
--}
--
- int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
- {
- 	compat_uptr_t tmp1, tmp2, tmp3;
-@@ -80,13 +53,15 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
- }
- 
- /* I've named the args so it is easy to tell whose space the pointers are in. */
--int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
-+int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *iov,
- 		   struct sockaddr_storage *kern_address, int mode)
- {
--	int tot_len;
-+	struct compat_iovec __user *p;
-+	struct iovec *res;
-+	int err;
- 
- 	if (kern_msg->msg_name && kern_msg->msg_namelen) {
--		if (mode == VERIFY_READ) {
-+		if (mode == WRITE) {
- 			int err = move_addr_to_kernel(kern_msg->msg_name,
- 						      kern_msg->msg_namelen,
- 						      kern_address);
-@@ -99,13 +74,17 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
- 		kern_msg->msg_namelen = 0;
- 	}
- 
--	tot_len = iov_from_user_compat_to_kern(kern_iov,
--					  (struct compat_iovec __user *)kern_msg->msg_iov,
--					  kern_msg->msg_iovlen);
--	if (tot_len >= 0)
--		kern_msg->msg_iov = kern_iov;
-+	if (kern_msg->msg_iovlen > UIO_MAXIOV)
-+		return -EMSGSIZE;
- 
--	return tot_len;
-+	p = (struct compat_iovec __user *)kern_msg->msg_iov;
-+	err = compat_rw_copy_check_uvector(mode, p, kern_msg->msg_iovlen,
-+					   UIO_FASTIOV, iov, &res);
-+	if (err >= 0)
-+		kern_msg->msg_iov = res;
-+	else if (res != iov)
-+		kfree(res);
-+	return err;
- }
- 
- /* Bleech... */
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index e1ec45a..86beeea 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -37,13 +37,13 @@
- 
- int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *address, int mode)
- {
--	int size, ct, err;
-+	struct iovec *res;
-+	int err;
- 
- 	if (m->msg_name && m->msg_namelen) {
--		if (mode == VERIFY_READ) {
--			void __user *namep;
--			namep = (void __user __force *) m->msg_name;
--			err = move_addr_to_kernel(namep, m->msg_namelen,
-+		if (mode == WRITE) {
-+			void __user *namep = (void __user __force *)m->msg_name;
-+			int err = move_addr_to_kernel(namep, m->msg_namelen,
- 						  address);
- 			if (err < 0)
- 				return err;
-@@ -53,24 +53,15 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
- 		m->msg_name = NULL;
- 		m->msg_namelen = 0;
- 	}
--
--	size = m->msg_iovlen * sizeof(struct iovec);
--	if (copy_from_user(iov, (void __user __force *) m->msg_iov, size))
--		return -EFAULT;
--
--	m->msg_iov = iov;
--	err = 0;
--
--	for (ct = 0; ct < m->msg_iovlen; ct++) {
--		size_t len = iov[ct].iov_len;
--
--		if (len > INT_MAX - err) {
--			len = INT_MAX - err;
--			iov[ct].iov_len = len;
--		}
--		err += len;
--	}
--
-+	if (m->msg_iovlen > UIO_MAXIOV)
-+		return -EMSGSIZE;
-+
-+	err = rw_copy_check_uvector(mode, (void __user __force *)m->msg_iov,
-+				    m->msg_iovlen, UIO_FASTIOV, iov, &res);
-+	if (err >= 0)
-+		m->msg_iov = res;
-+	else if (res != iov)
-+		kfree(res);
- 	return err;
- }
- 
-diff --git a/net/socket.c b/net/socket.c
-index 0ae8147..59020f0 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2032,24 +2032,14 @@ static int ___sys_sendmsg(struct socket *sock, struct user_msghdr __user *msg,
- 			return err;
- 	}
- 
--	if (msg_sys->msg_iovlen > UIO_FASTIOV) {
--		err = -EMSGSIZE;
--		if (msg_sys->msg_iovlen > UIO_MAXIOV)
--			goto out;
--		err = -ENOMEM;
--		iov = kmalloc(msg_sys->msg_iovlen * sizeof(struct iovec),
--			      GFP_KERNEL);
--		if (!iov)
--			goto out;
--	}
--
- 	/* This will also move the address data into kernel space */
--	if (MSG_CMSG_COMPAT & flags) {
--		err = verify_compat_iovec(msg_sys, iov, &address, VERIFY_READ);
--	} else
--		err = verify_iovec(msg_sys, iov, &address, VERIFY_READ);
-+	if (MSG_CMSG_COMPAT & flags)
-+		err = verify_compat_iovec(msg_sys, iovstack, &address, WRITE);
-+	else
-+		err = verify_iovec(msg_sys, iovstack, &address, WRITE);
- 	if (err < 0)
- 		goto out_freeiov;
-+	iov = msg_sys->msg_iov;
- 	total_len = err;
- 
- 	err = -ENOBUFS;
-@@ -2118,7 +2108,6 @@ out_freectl:
- out_freeiov:
- 	if (iov != iovstack)
- 		kfree(iov);
--out:
- 	return err;
- }
- 
-@@ -2244,28 +2233,18 @@ static int ___sys_recvmsg(struct socket *sock, struct user_msghdr __user *msg,
- 			return err;
- 	}
- 
--	if (msg_sys->msg_iovlen > UIO_FASTIOV) {
--		err = -EMSGSIZE;
--		if (msg_sys->msg_iovlen > UIO_MAXIOV)
--			goto out;
--		err = -ENOMEM;
--		iov = kmalloc(msg_sys->msg_iovlen * sizeof(struct iovec),
--			      GFP_KERNEL);
--		if (!iov)
--			goto out;
--	}
--
- 	/* Save the user-mode address (verify_iovec will change the
- 	 * kernel msghdr to use the kernel address space)
- 	 */
- 	uaddr = (__force void __user *)msg_sys->msg_name;
- 	uaddr_len = COMPAT_NAMELEN(msg);
- 	if (MSG_CMSG_COMPAT & flags)
--		err = verify_compat_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
-+		err = verify_compat_iovec(msg_sys, iovstack, &addr, READ);
- 	else
--		err = verify_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
-+		err = verify_iovec(msg_sys, iovstack, &addr, READ);
- 	if (err < 0)
- 		goto out_freeiov;
-+	iov = msg_sys->msg_iov;
- 	total_len = err;
- 
- 	cmsg_ptr = (unsigned long)msg_sys->msg_control;
-@@ -2306,7 +2285,6 @@ static int ___sys_recvmsg(struct socket *sock, struct user_msghdr __user *msg,
- out_freeiov:
- 	if (iov != iovstack)
- 		kfree(iov);
--out:
- 	return err;
- }
- 
+The block layer integration is as follows:
+
+  block/blk-lightnvm.c holds the setup/teardown functions and calls
+  in to the lightnvm code.
+
+  Extendied the request queue flags with QUEUE_FLAG_LIGHTNVM when the queue is a
+  LightNVM queue.
+
+  The struct request structure is extended with a ->phys_sector, that holds the
+  physical address that a logical address is mapped to. The ->phys_sector is set
+  by blk_lightnvm_map, that calls into lightnvm and allocate new address on
+  writes, and similarly look up an address on reads.
+
+  A request has a NVM_MAP flag set when it has been mapped. This is used to know
+  if completion logic should be run on blk-mq completion. It might now be for
+  some targets.
+
+  The request cmd_size field is extended to hold any per-request information
+  that lightnvm requires for its bookkeeping.
+
+A branch with the patches can be found here:
+
+  https://github.com/OpenChannelSSD/linux.git lkml_v1
+
+It is currently based on 3.17 on top of the NVMe blk-mq conversion.
+
+For testing, the null_blk driver can be instantiated with:
+
+  lightnvm_enable=1 gb=4 bs=4096 nr_devices=1
+
+or by using the qemu branch at:
+
+  https://github.com/OpenChannelSSD/qemu-nvme.git master
+
+and booting qemu with:
+
+  -drive file=filepath,if=none,id=mynvme \
+  -device nvme,drive=mynvme,serial=deadbeef,namespaces=1,lver=1,lchannels=1, \
+    nlbaf=5,lba_index=3
+
+Todo:
+
+  Multi-page accesses. Currently limited to sector size IO accesses.
+  Retrieval of mapping table from device. Mapping table is forgot on module
+  unload.
+  Bad block handling. No method to handle flash blocks there are marked bad.
+
+Thanks,
+Matias
+
+Jesper Madsen (1):
+  block: extend rq_flag_bits
+
+Matias Bjørling (4):
+  block: expose init_request_from_bio
+  lightnvm: Support for Open-Channel SSDs
+  nvme: LightNVM integration
+  null_blk: LightNVM integration
+
+ Documentation/block/null_blk.txt |   8 +
+ block/Makefile                   |   1 +
+ block/blk-core.c                 |   6 +
+ block/blk-lightnvm.c             |  81 ++++++
+ block/blk-mq.c                   |  35 ++-
+ block/blk-sysfs.c                |  13 +
+ block/blk.h                      |  14 +
+ block/ioctl.c                    |   1 +
+ drivers/Kconfig                  |   2 +
+ drivers/Makefile                 |   1 +
+ drivers/block/null_blk.c         |  89 +++++-
+ drivers/block/nvme-core.c        | 187 ++++++++++++-
+ drivers/lightnvm/Kconfig         |  20 ++
+ drivers/lightnvm/Makefile        |   5 +
+ drivers/lightnvm/core.c          | 208 ++++++++++++++
+ drivers/lightnvm/gc.c            | 370 ++++++++++++++++++++++++
+ drivers/lightnvm/nvm.c           | 460 ++++++++++++++++++++++++++++++
+ drivers/lightnvm/nvm.h           | 588 +++++++++++++++++++++++++++++++++++++++
+ drivers/lightnvm/sysfs.c         |  68 +++++
+ drivers/lightnvm/targets.c       | 244 ++++++++++++++++
+ include/linux/blk-mq.h           |   1 +
+ include/linux/blk_types.h        |   4 +
+ include/linux/blkdev.h           |  24 ++
+ include/linux/lightnvm.h         | 112 ++++++++
+ include/linux/nvme.h             |   1 +
+ include/trace/events/nvm.h       |  70 +++++
+ include/uapi/linux/nvme.h        |  74 +++++
+ 27 files changed, 2677 insertions(+), 10 deletions(-)
+ create mode 100644 block/blk-lightnvm.c
+ create mode 100644 drivers/lightnvm/Kconfig
+ create mode 100644 drivers/lightnvm/Makefile
+ create mode 100644 drivers/lightnvm/core.c
+ create mode 100644 drivers/lightnvm/gc.c
+ create mode 100644 drivers/lightnvm/nvm.c
+ create mode 100644 drivers/lightnvm/nvm.h
+ create mode 100644 drivers/lightnvm/sysfs.c
+ create mode 100644 drivers/lightnvm/targets.c
+ create mode 100644 include/linux/lightnvm.h
+ create mode 100644 include/trace/events/nvm.h
+
 -- 
-1.7.10.4
+1.9.1
 
