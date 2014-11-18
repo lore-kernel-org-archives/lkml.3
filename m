@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaKRMJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:09:33 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39822 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791AbaKRMJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:09:32 -0500
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC] debug: add parameters to prevent entering debug mode on errors
-Date: Tue, 18 Nov 2014 17:38:36 +0530
-Message-Id: <1416312516-4551-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	id S1754137AbaKRMKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:10:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:58094 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753266AbaKRMKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 07:10:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,409,1413270000"; 
+   d="scan'208";a="638919901"
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+To: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Johan Havold <johan@kernel.org>
+Cc: Octavian Purdila <octavian.purdila@intel.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Subject: [PATCH v3 0/2] Add SPI support for Diolan DLN2
+Date: Tue, 18 Nov 2014 14:09:57 +0200
+Message-Id: <1416312599-5176-1-git-send-email-laurentiu.palcu@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+Short note: I couldn't see the 2nd patch applied in any mfd tree, so I
+included it again.
 
-debug: add parameters to prevent entering debug mode on errors
+Changes in v3:
+ * fixed some coding style problems;
+ * do not use dln2->buf for small commands, use the stack;
+ * removed a bunch of __packed attributes that were not really needed;
+ * change the copy from/to buffer routines to use put/get_unaligned
+   macros to avoid potential buffer alignment issues;
 
-On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
-device after a panic. Add module parameters debug_core.break_on_exception and
-debug_core.break_on_panic to allow skipping debug on panics and exceptions
-respectively.  Both default to true to preserve existing behavior.
+Changes in v2:
+ * fixed an indentation issue;
+ * removed redundant call to spi_master_put() in _remove();
 
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: kgdb-bugreport@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Signed-off-by: Colin Cross <ccross@android.com>
-[Kiran: Added context to commit message]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
-This is one of the number of patches from the Android AOSP common.git tree,
-which is used on almost all Android devices.  I wanted to submit it for review
-to see if it should go upstream.
+Hi,
 
- kernel/debug/debug_core.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+This patchset adds support for the SPI module of the Diolan DLN2 USB to
+I2C/SPI/GPIO bridge [1].
 
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 1adf62b..af06122 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -87,6 +87,10 @@ static int kgdb_use_con;
- bool dbg_is_early = true;
- /* Next cpu to become the master debug core */
- int dbg_switch_cpu;
-+/* Flag for entering kdb when a panic occurs */
-+static bool break_on_panic = true;
-+/* Flag for entering kdb when an exception occurs */
-+static bool break_on_exception = true;
- 
- /* Use kdb or gdbserver mode */
- int dbg_kdb_mode = 1;
-@@ -101,6 +105,8 @@ early_param("kgdbcon", opt_kgdb_con);
- 
- module_param(kgdb_use_con, int, 0644);
- module_param(kgdbreboot, int, 0644);
-+module_param(break_on_panic, bool, 0644);
-+module_param(break_on_exception, bool, 0644);
- 
- /*
-  * Holds information about breakpoints in a kernel. These breakpoints are
-@@ -690,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- 	if (arch_kgdb_ops.enable_nmi)
- 		arch_kgdb_ops.enable_nmi(0);
- 
-+	if (unlikely(signo != SIGTRAP && !break_on_exception))
-+		return 1;
-+
- 	memset(ks, 0, sizeof(struct kgdb_state));
- 	ks->cpu			= raw_smp_processor_id();
- 	ks->ex_vector		= evector;
-@@ -821,6 +830,9 @@ static int kgdb_panic_event(struct notifier_block *self,
- 			    unsigned long val,
- 			    void *data)
- {
-+	if (!break_on_panic)
-+		return NOTIFY_DONE;
-+
- 	if (dbg_kdb_mode)
- 		kdb_printf("PANIC: %s\n", (char *)data);
- 	kgdb_breakpoint();
+This patch depends on another patchset, [1], not yet merged, which adds support
+for the other two modules: I2C and GPIO.
+
+[1] http://www.diolan.com/products/dln2/features.html
+[2] http://marc.info/?l=linux-kernel&m=141528172903850&w=2
+
+laurentiu
+
+Laurentiu Palcu (2):
+  spi: add support for DLN-2 USB-SPI adapter
+  mfd: dln2: add support for USB-SPI module
+
+ drivers/mfd/dln2.c     |  12 +
+ drivers/spi/Kconfig    |  10 +
+ drivers/spi/Makefile   |   1 +
+ drivers/spi/spi-dln2.c | 818 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 841 insertions(+)
+ create mode 100644 drivers/spi/spi-dln2.c
+
 -- 
-1.8.2.1
+1.9.1
 
