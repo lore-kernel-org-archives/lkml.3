@@ -1,70 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaKRCKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 21:10:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917AbaKRCKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 21:10:09 -0500
-Date: Mon, 17 Nov 2014 21:09:59 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141118020959.GA2091@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>
-References: <20141114213124.GB3344@redhat.com>
- <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
- <20141115213405.GA31971@redhat.com>
- <20141116014006.GA5016@redhat.com>
- <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
- <20141117170359.GA1382@redhat.com>
- <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753198AbaKRCKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 21:10:20 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:55615 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917AbaKRCKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 21:10:17 -0500
+From: Chen Yucong <slaoub@gmail.com>
+To: bp@alien8.de, tony.luck@intel.com
+Cc: ak@linux.intel.com, aravind.gopalakrishnan@amd.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chen Yucong <slaoub@gmail.com>
+Subject: [PATCH v4 2/2] x86, mce: support memory error recovery for both UCNA and Deferred error in machine_check_poll
+Date: Tue, 18 Nov 2014 10:09:20 +0800
+Message-Id: <1416276560-3363-3-git-send-email-slaoub@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1416276560-3363-1-git-send-email-slaoub@gmail.com>
+References: <1416276560-3363-1-git-send-email-slaoub@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 11:59:34AM -0800, Linus Torvalds wrote:
- > On Mon, Nov 17, 2014 at 9:03 AM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > It could a completely different cause for lockup, but seeing this now
- > > has me wondering if perhaps it's something unrelated to the kernel.
- > > I have recollection of running late .17rc's for days without incident,
- > > and I'm pretty sure .17 was ok too.  But a few weeks ago I did upgrade
- > > that test box to the Fedora 21 beta.  Which means I have a new gcc.
- > > I'm not sure I really trust 4.9.1 yet, so maybe I'll see if I can
- > > get 4.8 back on there and see if that's any better.
- > 
- > I'm not sure if I should be relieved or horrified.
- > 
- > Horrified, I think.
- > 
- > It really would be a wonderful thing to have some kind of "compiler
- > bisection" with mixed object files to see exactly which file it
- > miscompiles (and by "miscompiles" it might just be a kernel bug where
- > we are missing a barrier or something, and older gcc's just happened
- > to not show it - so it could still easily be a kernel problem).
+Uncorrected no action required (UCNA) - is a uncorrected recoverable
+machine check error that is not signaled via a machine check exception
+and, instead, is reported to system software as a corrected machine
+check error. UCNA errors indicate that some data in the system is
+corrupted, but the data has not been consumed and the processor state
+is valid and you may continue execution on this processor. UCNA errors
+require no action from system software to continue execution. Note that
+UCNA errors are supported by the processor only when IA32_MCG_CAP[24]
+(MCG_SER_P) is set.
+                                               -- Intel SDM Volume 3B
 
-After wasting countless hours rolling back to Fedora 20 and gcc 4.8.1,
-I saw the exact same trace on 3.17, so now I don't know what to think.
+Deferred errors are errors that cannot be corrected by hardware, but
+do not cause an immediate interruption in program flow, loss of data
+integrity, or corruption of processor state. These errors indicate
+that data has been corrupted but not consumed. Hardware writes information
+to the status and address registers in the corresponding bank that
+identifies the source of the error if deferred errors are enabled for
+logging. Deferred errors are not reported via machine check exceptions;
+they can be seen by polling the MCi_STATUS registers.
+                                                -- AMD64 APM Volume 2
 
-So it's great that it's not a regression vs .17, but otoh, who knows
-how far back this goes. This looks like a nightmarish bisect case, and
-I've no idea why it's now happening so often.
+Above two items, both UCNA and Deferred errors belong to detected
+errors, but they can't be corrected by hardware, and this is very
+similar to Software Recoverable Action Optional (SRAO) errors.
+Therefore, we can take some actions that have been used for handling
+SRAO errors to handle UCNA and Deferred errors.
 
-I'll give Don's softlockup_all_cpu_backtrace=1 idea a try on 3.18rc5
-and see if that shines any more light on this.
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |   46 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-Deeply puzzling.
-
-	Dave
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 453e9bf..cfb16f6 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -575,6 +575,37 @@ static void mce_read_aux(struct mce *m, int i)
+ 	}
+ }
+ 
++static bool memory_error(struct mce *m)
++{
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	if (c->x86_vendor == X86_VENDOR_AMD) {
++		/*
++		 * coming soon
++		 */
++		return false;
++	} else if (c->x86_vendor == X86_VENDOR_INTEL) {
++		/*
++		 * Intel SDM Volume 3B - 15.9.2 Compound Error Codes
++		 *
++		 * Bit 7 of the MCACOD field of IA32_MCi_STATUS is used for
++		 * indicating a memory error. Bit 8 is used for indicating a
++		 * cache hierarchy error. The combination of bit 2 and bit 3
++		 * is used for indicating a `generic' cache hierarchy error
++		 * But we can't just blindly check the above bits, because if
++		 * bit 11 is set, then it is a bus/interconnect error - and
++		 * either way the above bits just gives more detail on what
++		 * bus/interconnect error happened. Note that bit 12 can be
++		 * ignored, as it's the "filter" bit.
++		 */
++		return (m->status & 0xef80) == BIT(7) ||
++		       (m->status & 0xef00) == BIT(8) ||
++		       (m->status & 0xeffc) == 0xc;
++	}
++
++	return false;
++}
++
+ DEFINE_PER_CPU(unsigned, mce_poll_count);
+ 
+ /*
+@@ -595,6 +626,7 @@ DEFINE_PER_CPU(unsigned, mce_poll_count);
+ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ {
+ 	struct mce m;
++	int severity;
+ 	int i;
+ 
+ 	this_cpu_inc(mce_poll_count);
+@@ -630,6 +662,20 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 
+ 		if (!(flags & MCP_TIMESTAMP))
+ 			m.tsc = 0;
++
++		severity = mce_severity(&m, mca_cfg.tolerant, NULL, false);
++
++		/*
++		 * In the cases where we don't have a valid address after all,
++		 * do not add it into the ring buffer.
++		 */
++		if (severity == MCE_DEFERRED_SEVERITY && memory_error(&m)) {
++			if (m.status & MCI_STATUS_ADDRV) {
++				mce_ring_add(m.addr >> PAGE_SHIFT);
++				mce_schedule_work();
++			}
++		}
++
+ 		/*
+ 		 * Don't get the IP here because it's unlikely to
+ 		 * have anything to do with the actual error location.
+-- 
+1.7.10.4
 
