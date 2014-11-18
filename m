@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402AbaKRCXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 21:23:48 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19817 "EHLO mga02.intel.com"
+	id S1752873AbaKRCeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 21:34:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:63116 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116AbaKRCXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 21:23:46 -0500
+	id S1751464AbaKRCeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 21:34:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,407,1413270000"; 
-   d="asc'?scan'208";a="638672221"
-Message-ID: <1416277424.2295.1.camel@jtkirshe-mobl>
-Subject: Re: [PATCH (sent originally to netdev)] device: Add
- dev_<level>_once variants
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
-        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 17 Nov 2014 18:23:44 -0800
-In-Reply-To: <1416277102.29010.14.camel@perches.com>
-References: <1416031715-32498-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <1416031715-32498-2-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <5467C3BA.6090003@gmail.com> <1416277102.29010.14.camel@perches.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-nuj0z72yUvFcRP5VA+FK"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+   d="scan'208";a="633570815"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v2] sched/deadline: fix start high-res preemption tick for a non-leftmost task
+Date: Tue, 18 Nov 2014 10:32:54 +0800
+Message-Id: <1416277974-11962-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Queued ticks are scheduled to match the budget, which means the budget
+is overall consumed and the dl task should be throttled. 
 
---=-nuj0z72yUvFcRP5VA+FK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Dl task will be replenished immediately if fail to start a dl timer.
+So the curr maybe not the left most dl task in the rb tree any more 
+after this immediately replenished since reschedule is needed.
 
-On Mon, 2014-11-17 at 18:18 -0800, Joe Perches wrote:
-> Add the equivalents to pr_<level>_once.
->=20
-> Suggested-by: Florian Fainelli <f.fainelli@gmail.com>
-> Signed-off-by: Joe Perches <joe@perches.com>
+The parameter of task_tick_dl() queued == 1 means that hrtick is fired.
+hrtick() => task_tick_dl( , ,1), so p->dl.runtime should be <= 0 if
+queued == 1. If replenished immediately(fail to start dl timer),
+hrtick is start for task w/ queued == 1 && p->dl.runtime > 0 && p is 
+not the left most task.
 
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Start high-res preemption tick for this upcoming rescheduled dl task
+is not correct. This patch fix it by not starting high-res preemption 
+tick for a non-leftmost dl task.
 
-> ---
->  include/linux/device.h | 35 +++++++++++++++++++++++++++++++++++
->  1 file changed, 35 insertions(+)
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v1 -> v2:
+ * add a more explanatory changelog 
+ * add a comment just above the check
 
+ kernel/sched/deadline.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-
---=-nuj0z72yUvFcRP5VA+FK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUaq2wAAoJEOVv75VaS+3ODrYP/1nksBh55gk473t8nrZaUxYh
-ENxbIQudN3Fj4uwM0sA2aErLlbebHADwWf4YeNT6dkx/xZOElpIi1DrHTB4gVXko
-ii9a6w9/4Q/E86pQBZJ0rF3qr7GrvZZv8ZHbk1IPEpLbdIsUrfVnREkAIwzVqb1g
-b/kaWEl/I7XFnn0SoKdTB+0KmDNGyzAWdo1kqF78z05k1m4Icyf1JpaYUIx4y/ct
-cIe0IbSeBs89vS3mi7hykhPAr8pH0hCsaJ/3e7EgID8t5DUCND/T6LHNhAK3h9M/
-QHswGg0OCocimGBG+yHAXQIz6uKQKdUN2KW165OnBhpMhoSiTzzF/1akhwrCDrGk
-oTGhzzb4X/pGc31JRkzzFPiSoCnm5BowG4AzH67gVuahoinyya3qMQajy8cyoHwh
-Xvx5w36ZZxI6mLnkwfHchM3XT1qvO0Rg6EdwyFuGc8dobgzHZ6gBteCREhPoPmr8
-Y6BKT0aNzkkYYY41VT+IArZYUUB1WiNyIH80tsuFX7rT/yUOvpc2+Z+ENLR8TwKA
-Yj5xccbu+B1nuSMjeinSxQX/by05WUZu82gxyVmswfNx+8ioQTEs/3+UCgpbVRq/
-dsLj88P0I8CQAwNpMHc3fJsSHg52KkGbUjY6imF7N48ucmpooiCggl96o3iVt3+W
-x0tBSVyKhSpDdQlkcTyw
-=LTym
------END PGP SIGNATURE-----
-
---=-nuj0z72yUvFcRP5VA+FK--
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index e5db8c6..981479a 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1090,7 +1090,18 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
+ {
+ 	update_curr_dl(rq);
+ 
+-	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
++	/*
++	 * Queued tick means that hrtick is fired, when the budget is
++	 * consumed the task has to be throttled. However, task will
++	 * be replenished immediately if fail to start a dl timer, in
++	 * addition, the task maybe not the left most any more. Don't
++	 * start high-res preemption tick for the task who is not the
++	 * left most. The high-res preemption tick will be started for
++	 * this task just when it can be picked in pick_next_task_dl()
++	 * again.
++	 */
++	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0 &&
++	    is_leftmost(p, &rq->dl))
+ 		start_hrtick_dl(rq, p);
+ }
+ 
+-- 
+1.9.1
 
