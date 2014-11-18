@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875AbaKROqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:46:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
+	id S933216AbaKROs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:48:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57226 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754995AbaKROKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:02 -0500
+	id S1754984AbaKROJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:59 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 130/206] cpufreq: intel_pstate: Fix setting max_perf_pct in performance policy
-Date: Tue, 18 Nov 2014 15:08:05 +0100
-Message-Id: <0d29536419e8608288753527f09c2e27ce03b7a3.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 114/206] MIPS: ftrace: Fix a microMIPS build problem
+Date: Tue, 18 Nov 2014 15:07:49 +0100
+Message-Id: <84e435ce293dde3b27fb40a64b02d476bd2a6d1c.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
 References: <cover.1416319692.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pali Rohár <pali.rohar@gmail.com>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 36b4bed5cd8f6e17019fa7d380e0836872c7b367 upstream.
+commit aedd153f5bb5b1f1d6d9142014f521ae2ec294cc upstream.
 
-Code which changes policy to powersave changes also max_policy_pct based on
-max_freq. Code which change max_perf_pct has upper limit base on value
-max_policy_pct. When policy is changing from powersave back to performance
-then max_policy_pct is not changed. Which means that changing max_perf_pct is
-not possible to high values if max_freq was too low in powersave policy.
+Code before the .fixup section needs to have the .insn directive.
+This has no side effects on MIPS32/64 but it affects the way microMIPS
+loads the address for the return label.
 
-Test case:
+Fixes the following build problem:
+mips-linux-gnu-ld: arch/mips/built-in.o: .fixup+0x4a0: Unsupported jump between
+ISA modes; consider recompiling with interlinking enabled.
+mips-linux-gnu-ld: final link failed: Bad value
+Makefile:819: recipe for target 'vmlinux' failed
 
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-800000
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-3300000
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-performance
-$ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
-100
+The fix is similar to 1658f914ff91c3bf ("MIPS: microMIPS:
+Disable LL/SC and fix linker bug.")
 
-$ echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-$ echo 800000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-$ echo 20 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
-
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-powersave
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-800000
-$ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
-20
-
-$ echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-$ echo 3300000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-$ echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
-
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-performance
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-3300000
-$ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
-24
-
-And now intel_pstate driver allows to set maximal value for max_perf_pct based
-on max_policy_pct which is 24 for previous powersave max_freq 800000.
-
-This patch will set default value for max_policy_pct when setting policy to
-performance so it will allow to set also max value for max_perf_pct.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/8117/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/cpufreq/intel_pstate.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/mips/include/asm/ftrace.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index f033fadb58e6..132a9139c19f 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -600,6 +600,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
- 	if (policy->policy == CPUFREQ_POLICY_PERFORMANCE) {
- 		limits.min_perf_pct = 100;
- 		limits.min_perf = int_tofp(1);
-+		limits.max_policy_pct = 100;
- 		limits.max_perf_pct = 100;
- 		limits.max_perf = int_tofp(1);
- 		limits.no_turbo = 0;
+diff --git a/arch/mips/include/asm/ftrace.h b/arch/mips/include/asm/ftrace.h
+index ce35c9af0c28..370ae7cc588a 100644
+--- a/arch/mips/include/asm/ftrace.h
++++ b/arch/mips/include/asm/ftrace.h
+@@ -24,7 +24,7 @@ do {							\
+ 	asm volatile (					\
+ 		"1: " load " %[" STR(dst) "], 0(%[" STR(src) "])\n"\
+ 		"   li %[" STR(error) "], 0\n"		\
+-		"2:\n"					\
++		"2: .insn\n"				\
+ 							\
+ 		".section .fixup, \"ax\"\n"		\
+ 		"3: li %[" STR(error) "], 1\n"		\
+@@ -46,7 +46,7 @@ do {						\
+ 	asm volatile (				\
+ 		"1: " store " %[" STR(src) "], 0(%[" STR(dst) "])\n"\
+ 		"   li %[" STR(error) "], 0\n"	\
+-		"2:\n"				\
++		"2: .insn\n"			\
+ 						\
+ 		".section .fixup, \"ax\"\n"	\
+ 		"3: li %[" STR(error) "], 1\n"	\
 -- 
 2.1.3
 
