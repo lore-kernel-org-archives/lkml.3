@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaKRIuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:50:19 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44178 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbaKRIuP (ORCPT
+	id S1753693AbaKRIwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:52:49 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:34124 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815AbaKRIws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:50:15 -0500
-Date: Tue, 18 Nov 2014 09:50:13 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>, pali.rohar@gmail.com, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg, bcousson@baylibre.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
-Message-ID: <20141118085013.GD4059@amd>
-References: <20141116075928.GA9763@amd>
- <20141117145857.GO8907@valkosipuli.retiisi.org.uk>
- <546AFEA5.9020000@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546AFEA5.9020000@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Nov 2014 03:52:48 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-fc-546b08dcea97
+From: Weijie Yang <weijie.yang@samsung.com>
+To: konrad.wilk@oracle.com
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Seth Jennings'" <sjennings@variantweb.net>,
+        "'Dan Streetman'" <ddstreet@ieee.org>,
+        "'Minchan Kim'" <minchan@kernel.org>, "'Bob Liu'" <bob.liu@oracle.com>,
+        xfishcoder@gmail.com, "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: frontswap: invalidate expired data on a dup-store failure
+Date: Tue, 18 Nov 2014 16:51:36 +0800
+Message-id: <000001d0030d$0505aaa0$0f10ffe0$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AdADDNv43mHoldOFQiKfJi5nsexPFQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e+xgO4djuwQg8tfTSzmrF/DZtF1aiqL
+	xYW23SwWyxY/ZbS4vGsOm8W9Nf9ZLZZ9fc9u8enoIzaLJyf+s1jMeHGA2YHLY+esu+weTycc
+	ZPLYtKqTzWPTp0nsHidm/Gbx+Pj0FovH9W9FHp83yQVwRHHZpKTmZJalFunbJXBl9LyYyVzw
+	jbPi2c8z7A2MjRxdjJwcEgImEmsWdjNC2GISF+6tZ+ti5OIQEljEKHH94Tt2COcPo8TBW4dY
+	QKrYBLQl7vZvZAWxRQSkJFZvvMcKUsQscIBJ4sG9RWAJYQE/iZ62y8xdjBwcLAKqEkuP6oKE
+	eQXsJP4vmMgGYQtK/Jh8jwWkhFlAXWLKlFyQMLOAvMTmNW/BOiWAwo/+6kJs0pN4c+MiG0SJ
+	uMTGI7dYJjAKzEIyaBbCoFlIBs1C0rGAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnDM
+	PJPewbiqweIQowAHoxIPb+LUrBAh1sSy4srcQ4wSHMxKIrznuoFCvCmJlVWpRfnxRaU5qcWH
+	GKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGKcz7V/h/+CX1C3+57kZWpl/D8n4blv0
+	x3w587NVdbfiF/6UW2SXzOf5ROXlujev3ZjKZZPMvrxRPL/sYf5bh5K5nq/sr5+eI79yh8Kl
+	Dx/+8T9MXpX8rv6jcaR9ZMSsJ9cKRGY2BX/ItJ7M7sbya6XW/fywhuZ7XyYeTDbeOnfL9XNS
+	DrFqGwSVWIozEg21mIuKEwH3xORklQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-11-18 09:09:09, Jacek Anaszewski wrote:
-> Hi Pavel, Sakari,
-> 
-> On 11/17/2014 03:58 PM, Sakari Ailus wrote:
-> >Hi Pavel,
-> >
-> >On Sun, Nov 16, 2014 at 08:59:28AM +0100, Pavel Machek wrote:
-> >>For device tree people: Yes, I know I'll have to create file in
-> >>documentation, but does the binding below look acceptable?
-> >>
-> >>I'll clean up driver code a bit more, remove the printks. Anything
-> >>else obviously wrong?
-> >
-> >Jacek Anaszewski is working on flash support for LED devices. I think it'd
-> >be good to sync the DT bindings for the two, as the types of devices
-> >supported by the LED API and the V4L2 flash API are quite similar.
-> >
-> >Cc Jacek.
-> 
-> I've already submitted a patch [1] that updates leds common bindings.
-> I hasn't been merged yet, as the related LED Flash class patch [2]
-> still needs some indicator leds related discussion [3].
-> 
-> I think this is a good moment to discuss the flash related led common
-> bindings.
-> 
-> [2] http://www.spinics.net/lists/linux-media/msg83100.html
+If a frontswap dup-store failed, it should invalidate the expired page
+in the backend, or it could trigger some data corruption issue.
+Such as:
+1. use zswap as the frontswap backend with writeback feature
+2. store a swap page(version_1) to entry A, success
+3. dup-store a newer page(version_2) to the same entry A, fail
+4. use __swap_writepage() write version_2 page to swapfile, success
+5. zswap do shrink, writeback version_1 page to swapfile
+6. version_2 page is overwrited by version_1, data corrupt.
 
-Actually, would it be possible to do the patches the other way around?
+This patch fixes this issue by invalidating expired data immediately
+when meet a dup-store failure.
 
-V4L2 api already knows about flash, torch and indicators. Provide
-glue, so that V4L2 torch automatically appears as two leds in the led
-subystem? (white and red in my case?)
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+---
+ mm/frontswap.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-[Well, I kind of like the LED class API more, but it appears both you
-and me really have two LEDs in one package, and V4L2 already knows
-about that so it is better match....?]
-
-									Pavel
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index c30eec5..f2a3571 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
+ 		  the (older) page from frontswap
+ 		 */
+ 		inc_frontswap_failed_stores();
+-		if (dup)
++		if (dup) {
+ 			__frontswap_clear(sis, offset);
++			frontswap_ops->invalidate_page(type, offset);
++		}
+ 	}
+ 	if (frontswap_writethrough_enabled)
+ 		/* report failure so swap also writes to swap device */
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.0.4
+
+
