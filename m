@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693AbaKRQFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:05:35 -0500
-Received: from lan.nucleusys.com ([92.247.61.126]:48767 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755650AbaKRQFc (ORCPT
+	id S1755804AbaKRQHh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:07:37 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34826 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755773AbaKRQHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:05:32 -0500
-X-Greylist: delayed 2070 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 11:05:31 EST
-Date: Tue, 18 Nov 2014 17:30:42 +0200
-From: Petko Manolov <petkan@nucleusys.com>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbnet: rtl8150: remove unused variable
-Message-ID: <20141118153042.GB18659@vm-taos-petkan.jnpr.net>
-References: <1416315599-16939-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Tue, 18 Nov 2014 11:07:35 -0500
+Date: Tue, 18 Nov 2014 11:07:34 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Kever Yang <kever.yang@rock-chips.com>
+cc: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        <romain.perier@gmail.com>, Heiko Stuebner <heiko@sntech.de>,
+        <dianders@chromium.org>, <sonnyrao@chromium.org>,
+        <addy.ke@rock-chips.com>, <cf@rock-chips.com>, <wulf@rock-chips.com>,
+        <huangtao@rock-chips.com>, <linux-rockchip@lists.infradead.org>,
+        Roy Li <roy.li@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
+ suspend state
+In-Reply-To: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
+Message-ID: <Pine.LNX.4.44L0.1411181104280.1500-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416315599-16939-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: Spam detection software, running on the system "zztop.nucleusys.com", has
- identified this incoming email as possible spam.  The original message
- has been attached to this so you can view it (if it isn't spam) or label
- similar future email.  If you have any questions, see
- the administrator of that system for details.
- Content preview:  On 14-11-18 18:29:59, Sudip Mukherjee wrote: > we were just
-    returning the initial value of res, instead now > we are returning the value
-    directly. Looks OK, but could you please fix the wording of the commit message
-    to something like: [...] 
- Content analysis details:   (-1.0 points, 5.0 required)
-  pts rule name              description
- ---- ---------------------- --------------------------------------------------
- -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-11-18 18:29:59, Sudip Mukherjee wrote:
-> we were just returning the initial value of res, instead now
-> we are returning the value directly.
+On Tue, 18 Nov 2014, Kever Yang wrote:
 
-Looks OK, but could you please fix the wording of the commit message to something like:
-
-	Remove unused variable.
-
-This is a tiny patch and the code speaks for itself.
-
-
-		Petko
-
-
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> After we implement the bus_suspend/resume, auto suspend id enabled.
+> The root hub will be auto suspend if there is no device connected,
+> we need to resume the root hub when a device connect detect.
+> 
+> This patch tested on rk3288.
+> 
+> Signed-off-by: Roy Li <roy.li@rock-chips.com>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 > ---
->  drivers/net/usb/rtl8150.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/drivers/net/usb/rtl8150.c b/drivers/net/usb/rtl8150.c
-> index 6e87e57..d37b7dc 100644
-> --- a/drivers/net/usb/rtl8150.c
-> +++ b/drivers/net/usb/rtl8150.c
-> @@ -753,14 +753,13 @@ static int rtl8150_open(struct net_device *netdev)
->  static int rtl8150_close(struct net_device *netdev)
+> Changes in v2:
+> - add definition for hcd structure
+> - remove check for bus->root_hub
+> 
+>  drivers/usb/dwc2/hcd_intr.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/usb/dwc2/hcd_intr.c b/drivers/usb/dwc2/hcd_intr.c
+> index 551ba87..680206f 100644
+> --- a/drivers/usb/dwc2/hcd_intr.c
+> +++ b/drivers/usb/dwc2/hcd_intr.c
+> @@ -329,6 +329,7 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
 >  {
->  	rtl8150_t *dev = netdev_priv(netdev);
-> -	int res = 0;
+>  	u32 hprt0;
+>  	u32 hprt0_modify;
+> +	struct usb_hcd *hcd = (struct usb_hcd *)hsotg->priv;
 >  
->  	netif_stop_queue(netdev);
->  	if (!test_bit(RTL8150_UNPLUG, &dev->flags))
->  		disable_net_traffic(dev);
->  	unlink_all_urbs(dev);
+>  	dev_vdbg(hsotg->dev, "--Port Interrupt--\n");
 >  
-> -	return res;
-> +	return 0;
->  }
+> @@ -354,6 +355,10 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
+>  		hsotg->flags.b.port_connect_status = 1;
+>  		hprt0_modify |= HPRT0_CONNDET;
 >  
->  static void rtl8150_get_drvinfo(struct net_device *netdev, struct ethtool_drvinfo *info)
-> -- 
-> 1.8.1.2
-> 
+> +		/* resume root hub? */
+> +		if (hcd->state == HC_STATE_SUSPENDED)
+> +			usb_hcd_resume_root_hub(hcd);
+
+You should be aware that it's not safe to use hcd->state for anything 
+in a host controller driver.  That field is owned by usbcore, not by 
+the HCD, and it is not protected by any locks.
+
+Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
+until some time after the bus_suspend routine has returned.  A
+port-change interrupt might occur during that time interval.
+
+Alan Stern
+
