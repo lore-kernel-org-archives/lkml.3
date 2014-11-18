@@ -1,61 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328AbaKROwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:52:53 -0500
-Received: from mga09.intel.com ([134.134.136.24]:6439 "EHLO mga09.intel.com"
+	id S933359AbaKROxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:53:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755297AbaKROwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:52:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="488413187"
-Message-ID: <546B5D2B.7000206@linux.intel.com>
-Date: Tue, 18 Nov 2014 22:52:27 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <alpine.DEB.2.11.1411181518310.3909@nanos> <546B5904.6020200@huawei.com>
-In-Reply-To: <546B5904.6020200@huawei.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S932162AbaKROJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:54 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 108/206] KVM: x86: Emulator fixes for eip canonical checks on near branches
+Date: Tue, 18 Nov 2014 15:07:43 +0100
+Message-Id: <a20e81cb2b2b8aebdca9d11b6fa2133f1b97251d.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 22:34, Yun Wu (Abel) wrote:
-> On 2014/11/18 22:19, Thomas Gleixner wrote:
-> 
->> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>> On 2014/11/18 21:43, Jiang Liu wrote:
->>>> 	We provide an irq_chip for each type of interrupt controller
->>>> instead of devices. For the example mentioned above, if device A
->>>> and Group B has different interrupt controllers, we just need to
->>>> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
->>>> to suitable callbacks.
->>>> 	The framework already achieves what you you want:)
->>>
->>> What if device A and group B have the same interrupt controller?
->>
->> Well, if write_msg() is different they are hardly the same.
->>
-> 
-> The GICv3 ITS now deals with both PCI and non PCI message interrupts.
-> We can't require the new devices behave writing message in a same way.
-> What we can do is to abstract all the endpoints' behavior, and I
-> provided one abstraction in an earlier reply.
-It should be easy to extend:)
-Actually, x86 interrupt remapping drivers already support two types of
-MSIs, one is PCI MSI/MSIX, another is HPET interrupt.
-> 
-> Thanks,
-> 	Abel
-> 
+From: Nadav Amit <namit@cs.technion.ac.il>
+
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit 234f3ce485d54017f15cf5e0699cff4100121601 upstream.
+
+Before changing rip (during jmp, call, ret, etc.) the target should be asserted
+to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
+should be canonical. If any of these values is noncanonical, a #GP exception
+should occur.  The exception to this rule are syscall and sysenter instructions
+in which the assigned rip is checked during the assignment to the relevant
+MSRs.
+
+This patch fixes the emulator to behave as real CPUs do for near branches.
+Far branches are handled by the next patch.
+
+This fixes CVE-2014-3647.
+
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/x86/kvm/emulate.c | 78 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 54 insertions(+), 24 deletions(-)
+
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 981ba30e00e5..ab1d45928ce7 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -571,7 +571,8 @@ static int emulate_nm(struct x86_emulate_ctxt *ctxt)
+ 	return emulate_exception(ctxt, NM_VECTOR, 0, false);
+ }
+ 
+-static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
++static inline int assign_eip_far(struct x86_emulate_ctxt *ctxt, ulong dst,
++			       int cs_l)
+ {
+ 	switch (ctxt->op_bytes) {
+ 	case 2:
+@@ -581,16 +582,25 @@ static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
+ 		ctxt->_eip = (u32)dst;
+ 		break;
+ 	case 8:
++		if ((cs_l && is_noncanonical_address(dst)) ||
++		    (!cs_l && (dst & ~(u32)-1)))
++			return emulate_gp(ctxt, 0);
+ 		ctxt->_eip = dst;
+ 		break;
+ 	default:
+ 		WARN(1, "unsupported eip assignment size\n");
+ 	}
++	return X86EMUL_CONTINUE;
++}
++
++static inline int assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
++{
++	return assign_eip_far(ctxt, dst, ctxt->mode == X86EMUL_MODE_PROT64);
+ }
+ 
+-static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
++static inline int jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
+ {
+-	assign_eip_near(ctxt, ctxt->_eip + rel);
++	return assign_eip_near(ctxt, ctxt->_eip + rel);
+ }
+ 
+ static u16 get_segment_selector(struct x86_emulate_ctxt *ctxt, unsigned seg)
+@@ -1981,13 +1991,15 @@ static int em_grp45(struct x86_emulate_ctxt *ctxt)
+ 	case 2: /* call near abs */ {
+ 		long int old_eip;
+ 		old_eip = ctxt->_eip;
+-		ctxt->_eip = ctxt->src.val;
++		rc = assign_eip_near(ctxt, ctxt->src.val);
++		if (rc != X86EMUL_CONTINUE)
++			break;
+ 		ctxt->src.val = old_eip;
+ 		rc = em_push(ctxt);
+ 		break;
+ 	}
+ 	case 4: /* jmp abs */
+-		ctxt->_eip = ctxt->src.val;
++		rc = assign_eip_near(ctxt, ctxt->src.val);
+ 		break;
+ 	case 5: /* jmp far */
+ 		rc = em_jmp_far(ctxt);
+@@ -2019,10 +2031,14 @@ static int em_cmpxchg8b(struct x86_emulate_ctxt *ctxt)
+ 
+ static int em_ret(struct x86_emulate_ctxt *ctxt)
+ {
+-	ctxt->dst.type = OP_REG;
+-	ctxt->dst.addr.reg = &ctxt->_eip;
+-	ctxt->dst.bytes = ctxt->op_bytes;
+-	return em_pop(ctxt);
++	int rc;
++	unsigned long eip;
++
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++
++	return assign_eip_near(ctxt, eip);
+ }
+ 
+ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+@@ -2300,7 +2316,7 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ {
+ 	const struct x86_emulate_ops *ops = ctxt->ops;
+ 	struct desc_struct cs, ss;
+-	u64 msr_data;
++	u64 msr_data, rcx, rdx;
+ 	int usermode;
+ 	u16 cs_sel = 0, ss_sel = 0;
+ 
+@@ -2316,6 +2332,9 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ 	else
+ 		usermode = X86EMUL_MODE_PROT32;
+ 
++	rcx = reg_read(ctxt, VCPU_REGS_RCX);
++	rdx = reg_read(ctxt, VCPU_REGS_RDX);
++
+ 	cs.dpl = 3;
+ 	ss.dpl = 3;
+ 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_CS, &msr_data);
+@@ -2333,6 +2352,9 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ 		ss_sel = cs_sel + 8;
+ 		cs.d = 0;
+ 		cs.l = 1;
++		if (is_noncanonical_address(rcx) ||
++		    is_noncanonical_address(rdx))
++			return emulate_gp(ctxt, 0);
+ 		break;
+ 	}
+ 	cs_sel |= SELECTOR_RPL_MASK;
+@@ -2341,8 +2363,8 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ 	ops->set_segment(ctxt, cs_sel, &cs, 0, VCPU_SREG_CS);
+ 	ops->set_segment(ctxt, ss_sel, &ss, 0, VCPU_SREG_SS);
+ 
+-	ctxt->_eip = reg_read(ctxt, VCPU_REGS_RDX);
+-	*reg_write(ctxt, VCPU_REGS_RSP) = reg_read(ctxt, VCPU_REGS_RCX);
++	ctxt->_eip = rdx;
++	*reg_write(ctxt, VCPU_REGS_RSP) = rcx;
+ 
+ 	return X86EMUL_CONTINUE;
+ }
+@@ -2881,10 +2903,13 @@ static int em_aad(struct x86_emulate_ctxt *ctxt)
+ 
+ static int em_call(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc;
+ 	long rel = ctxt->src.val;
+ 
+ 	ctxt->src.val = (unsigned long)ctxt->_eip;
+-	jmp_rel(ctxt, rel);
++	rc = jmp_rel(ctxt, rel);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
+ 	return em_push(ctxt);
+ }
+ 
+@@ -2916,11 +2941,12 @@ static int em_call_far(struct x86_emulate_ctxt *ctxt)
+ static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
++	unsigned long eip;
+ 
+-	ctxt->dst.type = OP_REG;
+-	ctxt->dst.addr.reg = &ctxt->_eip;
+-	ctxt->dst.bytes = ctxt->op_bytes;
+-	rc = emulate_pop(ctxt, &ctxt->dst.val, ctxt->op_bytes);
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++	rc = assign_eip_near(ctxt, eip);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	rsp_increment(ctxt, ctxt->src.val);
+@@ -3210,20 +3236,24 @@ static int em_lmsw(struct x86_emulate_ctxt *ctxt)
+ 
+ static int em_loop(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc = X86EMUL_CONTINUE;
++
+ 	register_address_increment(ctxt, reg_rmw(ctxt, VCPU_REGS_RCX), -1);
+ 	if ((address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) != 0) &&
+ 	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 
+-	return X86EMUL_CONTINUE;
++	return rc;
+ }
+ 
+ static int em_jcxz(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc = X86EMUL_CONTINUE;
++
+ 	if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0)
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 
+-	return X86EMUL_CONTINUE;
++	return rc;
+ }
+ 
+ static int em_in(struct x86_emulate_ctxt *ctxt)
+@@ -4575,7 +4605,7 @@ special_insn:
+ 		break;
+ 	case 0x70 ... 0x7f: /* jcc (short) */
+ 		if (test_cc(ctxt->b, ctxt->eflags))
+-			jmp_rel(ctxt, ctxt->src.val);
++			rc = jmp_rel(ctxt, ctxt->src.val);
+ 		break;
+ 	case 0x8d: /* lea r16/r32, m */
+ 		ctxt->dst.val = ctxt->src.addr.mem.ea;
+@@ -4604,7 +4634,7 @@ special_insn:
+ 		break;
+ 	case 0xe9: /* jmp rel */
+ 	case 0xeb: /* jmp rel short */
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 		ctxt->dst.type = OP_NONE; /* Disable writeback. */
+ 		break;
+ 	case 0xf4:              /* hlt */
+@@ -4724,7 +4754,7 @@ twobyte_insn:
+ 		break;
+ 	case 0x80 ... 0x8f: /* jnz rel, etc*/
+ 		if (test_cc(ctxt->b, ctxt->eflags))
+-			jmp_rel(ctxt, ctxt->src.val);
++			rc = jmp_rel(ctxt, ctxt->src.val);
+ 		break;
+ 	case 0x90 ... 0x9f:     /* setcc r/m8 */
+ 		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
+-- 
+2.1.3
+
