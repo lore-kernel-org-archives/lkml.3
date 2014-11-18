@@ -1,84 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaKRRoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:44:25 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:54811 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaKRRoX (ORCPT
+	id S1753903AbaKRRtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:49:52 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:44085 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258AbaKRRtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:44:23 -0500
+	Tue, 18 Nov 2014 12:49:50 -0500
+Date: Tue, 18 Nov 2014 12:49:46 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Azat Khuzhin <a3at.mail@gmail.com>
+Subject: [PATCH vfs v2 1/2] lib: implement ptrset
+Message-ID: <20141118174946.GA10040@htj.dyndns.org>
+References: <20141113220927.GF2598@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1416005574-7756-2-git-send-email-amstan@chromium.org>
-References: <1416005574-7756-1-git-send-email-amstan@chromium.org>
-	<1416005574-7756-2-git-send-email-amstan@chromium.org>
-Date: Tue, 18 Nov 2014 09:44:22 -0800
-X-Google-Sender-Auth: makKsVI3JZWLAwUW5LDEXeEx3cw
-Message-ID: <CAD=FV=XL7hht32hu5zxXAJ+8BKbQp7aQOP68cCjKtrytGGs8iA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: rockchip: add bindings for the mmc clock phases
-From: Doug Anderson <dianders@chromium.org>
-To: Alexandru M Stan <amstan@chromium.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, addy ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Mark yao <mark.yao@rock-chips.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113220927.GF2598@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Implement set of pointers.  Pointers can be added, deleted and
+iterated.  It's currently implemented as a thin rbtree wrapper making
+addition and removal O(log N).  A drawback is that iteration isn't RCU
+safe, which is okay for now.  This will be used to remove
+inode->i_devices.
 
-On Fri, Nov 14, 2014 at 2:52 PM, Alexandru M Stan <amstan@chromium.org> wrote:
-> This will be used in a later patch for clock phase tuning.
->
-> Suggested-by: Heiko Stuebner <heiko@sntech.de>
-> Signed-off-by: Alexandru M Stan <amstan@chromium.org>
-> ---
->  include/dt-bindings/clock/rk3288-cru.h | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->
-> diff --git a/include/dt-bindings/clock/rk3288-cru.h b/include/dt-bindings/clock/rk3288-cru.h
-> index 100a08c..465d0f6 100644
-> --- a/include/dt-bindings/clock/rk3288-cru.h
-> +++ b/include/dt-bindings/clock/rk3288-cru.h
-> @@ -72,6 +72,16 @@
->  #define SCLK_HEVC_CABAC                111
->  #define SCLK_HEVC_CORE         112
->
-> +#define SCLK_SDMMC_DRV_PHASE   113
-> +#define SCLK_SDIO0_DRV_PHASE   114
-> +#define SCLK_SDIO1_DRV_PHASE   115
-> +#define SCLK_EMMC_DRV_PHASE    116
-> +
-> +#define SCLK_SDMMC_SAMPLE_PHASE        117
-> +#define SCLK_SDIO0_SAMPLE_PHASE        118
-> +#define SCLK_SDIO1_SAMPLE_PHASE        119
-> +#define SCLK_EMMC_SAMPLE_PHASE 120
-> +
+v2: In ptrset_add(), ptrset_find_slot() moved before new elem
+    allocation to avoid unnecessary alloc/free and -ENOMEM reporting
+    on -EEXIST cases.  Suggested by Azat Khuzhin.
 
-Thinking about Mike T's comment, we might want to actually rename
-these defines and just remove the "_PHASE".  These clocks _are_ the
-drive and sample clocks.  Sure, they happen to have phases as one of
-the attributes, but they aren't "phase clocks".
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Azat Khuzhin <a3at.mail@gmail.com>
+---
+ include/linux/ptrset.h |   74 ++++++++++++++++++++++++++++
+ lib/Makefile           |    2 
+ lib/ptrset.c           |  129 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 204 insertions(+), 1 deletion(-)
 
-FYI, the TRM shows these clocks as:
-
-- Into "clkgen" you see cclkin (the *2 clock)
-- Out of "clkgen" you see:
-  --> "cclk_in" (the non *2 clock)
-  --> "cclk_in_drv" (the drive clock, which might be shifted)
-  --> "cclk_in_sample" (the sample clock, which might be shifted)
-
-Right now we're not modeling the non-shifted, non *2 clock.  I think
-that's OK (otherwise we've got a bunch of old device trees to change,
-since the old DTS files passed in the *2 clock as the card clock).
-
-
--Doug
+--- /dev/null
++++ b/include/linux/ptrset.h
+@@ -0,0 +1,74 @@
++/*
++ * include/linux/ptrset.h - set of pointers
++ *
++ * Copyright (C) 2014		Tejun Heo, Red Hat Inc.
++ *
++ * A ptrset contains an unordered set of pointers.  Pointers can be added,
++ * deleted and iterated.  Addition and removal complexities are O(log N)
++ * where N is the total number of elements in the ptrset.
++ */
++
++#ifndef __PTRSET_H
++#define __PTRSET_H
++
++#include <linux/preempt.h>
++#include <linux/rbtree.h>
++
++struct ptrset {
++	struct rb_root		root;
++};
++
++struct ptrset_elem {
++	void			*ptr;
++	struct rb_node		node;
++};
++
++struct ptrset_iter {
++	struct ptrset_elem	*pos;
++	struct ptrset_elem	*next;
++};
++
++#define PTRSET_INITIALIZER	{ .root = RB_ROOT, }
++#define DEFINE_PTRSET(set)	struct ptrset set = PTRSET_INITIALIZER
++
++static inline void ptrset_init(struct ptrset *set)
++{
++	*set = (struct ptrset)PTRSET_INITIALIZER;
++}
++
++void ptrset_preload(gfp_t gfp);
++int __must_check ptrset_add(void *ptr, struct ptrset *set, gfp_t gfp);
++int ptrset_del(void *ptr, struct ptrset *set);
++
++/**
++ * ptrset_preload_end - end preload section started with ptrset_preload()
++ *
++ * Each ptrset_preload() should be matched with an invocation of this
++ * function.  See ptrset_preload() for details.
++ */
++static inline void ptrset_preload_end(void)
++{
++	preempt_enable();
++}
++
++/**
++ * ptrset_for_each - iterate pointers in a ptrset
++ * @ptr_cur: the cursor pointer variable (can be a pointer to any type)
++ * @set: the target ptrset
++ * @iter: pointer to struct ptrset_iter used to store iteration state
++ *
++ * Iterate @ptr_cur over all pointers in @set using @iter as the temp
++ * storage.  The order of iteration is undefined and the iterated pointers
++ * may be deleted during iteration.
++ *
++ * The caller is responsible for synchronization.  This is not RCU safe.
++ */
++#define ptrset_for_each(ptr_cur, set, iter)				\
++	rbtree_postorder_for_each_entry_safe((iter)->pos, (iter)->next,	\
++					     &(set)->root, node)	\
++		if (({	(ptr_cur) = (iter)->pos->ptr;			\
++			false; }))					\
++			;						\
++		else
++
++#endif	/* __PTRSET_H */
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -8,7 +8,7 @@ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLA
+ endif
+ 
+ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+-	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
++	 rbtree.o radix-tree.o dump_stack.o timerqueue.o ptrset.o \
+ 	 idr.o int_sqrt.o extable.o \
+ 	 sha1.o md5.o irq_regs.o argv_split.o \
+ 	 proportions.o flex_proportions.o ratelimit.o show_mem.o \
+--- /dev/null
++++ b/lib/ptrset.c
+@@ -0,0 +1,129 @@
++/*
++ * lib/ptrset.c - set of pointers
++ *
++ * Copyright (C) 2014		Tejun Heo, Red Hat Inc.
++ */
++
++#include <linux/ptrset.h>
++#include <linux/slab.h>
++#include <linux/percpu.h>
++
++static DEFINE_PER_CPU(struct ptrset_elem *, ptrset_preload_elem);
++
++/**
++ * ptrset_preload - preload for ptrset_add()
++ * @gfp: allocation mask to use for preloading
++ *
++ * Preload per-cpu ptrset_elem buffer for ptrset_add().  Can only be used
++ * from process context and each ptrset_preload() invocation should be
++ * matched with ptrset_preload_end().  Note that preemption is disabled
++ * while preloaded.
++ *
++ * The first ptrset_add() in the preloaded section can be treated as if it
++ * were invoked with @gfp used for preloading.  This allows using more
++ * permissive allocation masks for ptrsets protected by spinlocks.
++ */
++void ptrset_preload(gfp_t gfp)
++{
++	/*
++	 * Consuming preload buffer from non-process context breaks preload
++	 * allocation guarantee.  Disallow usage from those contexts.
++	 */
++	WARN_ON_ONCE(in_interrupt());
++	might_sleep_if(gfp & __GFP_WAIT);
++
++	preempt_disable();
++
++	if (!__this_cpu_read(ptrset_preload_elem)) {
++		struct ptrset_elem *new;
++
++		preempt_enable();
++		new = kmalloc(sizeof(*new), gfp);
++		preempt_disable();
++
++		new = __this_cpu_xchg(ptrset_preload_elem, new);
++		kfree(new);
++	}
++}
++
++static __always_inline bool ptrset_find_slot(void *ptr, struct ptrset *set,
++					     struct rb_node ***slotp,
++					     struct rb_node **parentp)
++{
++	struct rb_node **slot = &set->root.rb_node, *parent = NULL;
++
++	while (*slot) {
++		struct ptrset_elem *elem =
++			container_of(*slot, struct ptrset_elem, node);
++
++		parent = *slot;
++		if (ptr < elem->ptr) {
++			slot = &(*slot)->rb_left;
++		} else if (ptr > elem->ptr) {
++			slot = &(*slot)->rb_right;
++		} else {
++			*slotp = slot;
++			return true;
++		}
++	}
++
++	*slotp = slot;
++	if (parentp)
++		*parentp = parent;
++	return false;
++}
++
++/**
++ * ptrset_add - add a pointer to a ptrset
++ * @ptr: the pointer to add
++ * @set: the target ptrset
++ * @gfp: the allocation mask to use
++ *
++ * Allocate a ptrset_elem using @gfp, init with @ptr and add to @set.
++ * Returns 0 on success, -ENOMEM if allocation failed and -EEXIST if @ptr
++ * already exists in @set.
++ *
++ * The caller is responsible for synchronization.
++ */
++int ptrset_add(void *ptr, struct ptrset *set, gfp_t gfp)
++{
++	struct ptrset_elem *elem;
++	struct rb_node *parent, **slot;
++
++	if (ptrset_find_slot(ptr, set, &slot, &parent))
++		return -EEXIST;
++
++	elem = kmalloc(sizeof(*elem), gfp);
++	if (!elem && !in_interrupt())	/* see ptrset_preload() */
++		elem = this_cpu_xchg(ptrset_preload_elem, NULL);
++	if (!elem)
++		return -ENOMEM;
++	elem->ptr = ptr;
++
++	rb_link_node(&elem->node, parent, slot);
++	rb_insert_color(&elem->node, &set->root);
++	return 0;
++}
++
++/**
++ * ptrset_del - delete a pointer from a ptrset
++ * @ptr: the pointer to delete
++ * @set: the target ptrset
++ *
++ * Delete @ptr from @set.  Returns 0 on success, -ENOENT if @ptr is not in
++ * @set.
++ *
++ * The caller is responsible for synchronization.
++ */
++int ptrset_del(void *ptr, struct ptrset *set)
++{
++	struct rb_node **slot, *node;
++
++	if (!ptrset_find_slot(ptr, set, &slot, NULL))
++		return -ENOENT;
++
++	node = *slot;
++	rb_erase(node, &set->root);
++	kfree(container_of(node, struct ptrset_elem, node));
++	return 0;
++}
