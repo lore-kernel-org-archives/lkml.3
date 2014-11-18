@@ -1,34 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066AbaKRDHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:07:16 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:59911 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaKRDHO (ORCPT
+	id S1753425AbaKRDIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:08:54 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:58013 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaKRDIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:07:14 -0500
+	Mon, 17 Nov 2014 22:08:52 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 18 Nov 2014 12:11:26 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Weijie Yang <weijie.yang.kh@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v5 1/4] mm/page_alloc: fix incorrect isolation behavior
+ by rechecking migratetype
+Message-ID: <20141118031125.GA12197@js1304-P5Q-DELUXE>
+References: <1414740330-4086-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1414740330-4086-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <CAL1ERfMxR0BPQ-1hsD+Z-Oizkt4WHzL_rwYmKd2n70R=H0X22Q@mail.gmail.com>
+ <20141114103301.GD21422@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <1416234719-16310-1-git-send-email-geert+renesas@glider.be>
-References: <1416234719-16310-1-git-send-email-geert+renesas@glider.be>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 18 Nov 2014 12:06:53 +0900
-Message-ID: <CAAVeFuJ_QQLue7Xo8jyG+wyQJD5JCxzJBC39SiK+t0HJu5b13A@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Check if base is positive before calling gpio_is_valid()
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114103301.GD21422@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 11:31 PM, Geert Uytterhoeven
-<geert+renesas@glider.be> wrote:
-> It doesn't make much sense to make some (possible expensive) calls to
-> gpio_is_valid() first, and to ignore the result if the base number is
-> negative. Check for a positive base number first.
+On Fri, Nov 14, 2014 at 10:33:01AM +0000, Mel Gorman wrote:
+> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > > index 4593567..3d090af 100644
+> > > --- a/include/linux/mmzone.h
+> > > +++ b/include/linux/mmzone.h
+> > > @@ -431,6 +431,15 @@ struct zone {
+> > >          */
+> > >         int                     nr_migrate_reserve_block;
+> > >
+> > > +#ifdef CONFIG_MEMORY_ISOLATION
+> > > +       /*
+> > > +        * Number of isolated pageblock. It is used to solve incorrect
+> > > +        * freepage counting problem due to racy retrieving migratetype
+> > > +        * of pageblock. Protected by zone->lock.
+> > > +        */
+> > > +       unsigned long           nr_isolate_pageblock;
+> > > +#endif
+> > > +
+> > 
+> > First sorry for this deferred reply, I see these patches have been merged
+> > into the mainline.
+> > However, I still have a tiny question:
+> > Why use ZONE_PADDING(_pad1_)  seperate it and zone->lock?
+> > How about move it to the same cacheline with zone->lock, because it is
+> > accessed under zone->lock?
+> > 
+> 
+> zone->lock is currently sharing lines with the data that is frequently
+> updated under zone lock and some of the dirty data cache line bouncing has
+> completed when the lock is acquired. nr_isolate_pageblock is a read-mostly
+> field and in some cases will never be used. It's fine where it is beside
+> other read-mostly fields.
+> 
 
-Sure.
+My bad...
+I don't remember why I decide that place. :/
 
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+It seems better to move nr_isolate_pageblock to the same cacheline with
+zone->lock, but, as Mel said, it is rarely used field so improvement would
+be marginal.
+
+Thanks.
