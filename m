@@ -1,193 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258AbaKROtZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:49:25 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:58323 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985AbaKROsY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:48:24 -0500
-Date: Tue, 18 Nov 2014 14:48:19 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Liviu Dudau <liviu@dudau.co.uk>,
-        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "huxinwei@huawei.com" <huxinwei@huawei.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 07/16] PCI: Separate pci_host_bridge creation out of
- pci_create_root_bus()
-Message-ID: <20141118144819.GK12037@e106497-lin.cambridge.arm.com>
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
- <1416219710-26088-8-git-send-email-wangyijing@huawei.com>
- <2507218.mHliopJb05@wuerfel>
- <546B041A.4060403@huawei.com>
-MIME-Version: 1.0
-In-Reply-To: <546B041A.4060403@huawei.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 18 Nov 2014 14:48:21.0067 (UTC) FILETIME=[B275E1B0:01D0033E]
-X-MC-Unique: 114111814482207501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S933205AbaKROsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:48:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57148 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754985AbaKROKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:00 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 122/206] ext4: add ext4_iget_normal() which is to be used for dir tree lookups
+Date: Tue, 18 Nov 2014 15:07:57 +0100
+Message-Id: <bead15b503cf4007a0383f6e8a7409569c41a546.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 08:32:26AM +0000, Yijing Wang wrote:
-> 
-> >> +LIST_HEAD(pci_host_bridge_list);
-> >> +DECLARE_RWSEM(pci_host_bridge_sem);
-> > 
-> > Unless the pci_host_bridge_sem is accessed thousands of times per second,
-> > it's normally better to use a simple mutex instead.
-> 
-> OK, I will use simple mutex instead.
-> 
-> > 
-> >> +static struct resource busn_resource = {
-> >> +	.name	= "PCI busn",
-> >> +	.start	= 0,
-> >> +	.end	= 255,
-> >> +	.flags	= IORESOURCE_BUS,
-> >> +};
-> > 
-> > I think it would be better to require callers to pass the bus resource
-> > down to the function.
-> 
-> Hmm, I think most of caller will provide the bus resource, but some others
-> will not give any bus resource, extremely, no any resources :(. But we still
-> need properly configure their resources for compatibility.
-> 
-> > 
-> >> +struct pci_host_bridge *pci_create_host_bridge(
-> >> +		struct device *parent, u32 db, 
-> >> +		struct pci_ops *ops, void *sysdata, 
-> >> +		struct list_head *resources)
-> >> +{
-> > 
-> > Do we still need to pass the 'sysdata' in here? If we are guaranteed to
-> > have a device pointer, we should always be able to get the driver
-> > private data from dev_get_drvdata(host->dev->parent).
-> 
-> We need, some platforms pass NULL pointer as host bridge parent.
+From: Theodore Ts'o <tytso@mit.edu>
 
-Yijing,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-May I suggest a different approach here? Rather than having to pass an opaque
-pointer that gets converted by the host bridge driver back to the private
-structure, what about promoting a new style of usage, that is similar to the
-way device drivers work? Lets try to promote the embedding of the generic
-pci_host_bridge structure in the host bridge specific structure! Then we can
-access the private data doing container_of().
+===============
 
-Something like this:
+commit f4bb2981024fc91b23b4d09a8817c415396dbabb upstream.
 
-struct pci_controller {
-	struct pci_host_bridge bridge;
-	/* private host bridge data here */
-	.....
-};
+If there is a corrupted file system which has directory entries that
+point at reserved, metadata inodes, prohibit them from being used by
+treating them the same way we treat Boot Loader inodes --- that is,
+mark them to be bad inodes.  This prohibits them from being opened,
+deleted, or modified via chmod, chown, utimes, etc.
 
-#define PCI_CONTROLLER(bus)	({
-	struct pci_host_bridge *hb = to_pci_host_bridge(bus->bridge); \
-	container_of(hb, struct pci_controller, bridge); })
+In particular, this prevents a corrupted file system which has a
+directory entry which points at the journal inode from being deleted
+and its blocks released, after which point Much Hilarity Ensues.
 
+Reported-by: Sami Liedes <sami.liedes@iki.fi>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/ext4/ext4.h  | 1 +
+ fs/ext4/inode.c | 7 +++++++
+ fs/ext4/namei.c | 4 ++--
+ fs/ext4/super.c | 2 +-
+ 4 files changed, 11 insertions(+), 3 deletions(-)
 
-Then we can retrieve the host bridge structure from everywhere we have a device.
-
-Best regards,
-Liviu
-
-> 
-> > 
-> >> +	host = kzalloc(sizeof(*host), GFP_KERNEL);
-> >> +	if (!host)
-> >> +		return NULL;
-> > 
-> > devm_kzalloc maybe?
-> 
-> I don't know much detail about devm_kzalloc(), but we have no pci host driver
-> here, and I found no devm_kzalloc() uses in core PCI code before.
-> 
-> > 
-> >> +	if (!resources) {
-> >> +		/* Use default IO/MEM/BUS resources*/
-> >> +		pci_add_resource(&host->windows, &ioport_resource);
-> >> +		pci_add_resource(&host->windows, &iomem_resource);
-> >> +		pci_add_resource(&host->windows, &busn_resource);
-> >> +	} else {
-> >> +		list_for_each_entry_safe(window, n, resources, list)
-> >> +			list_move_tail(&window->list, &host->windows);
-> >> +	}
-> > 
-> > I think we should assume that the correct resources are passed. You
-> > could add a wrapper around this function to convert old platforms
-> > though.
-> 
-> OK, I will move these code out of pci_create_host_bridge, and add a wrapper
-> to setup the default resources.
-> 
-> > 
-> >> +EXPORT_SYMBOL(pci_create_host_bridge);
-> > 
-> > EXPORT_SYMBOL_GPL() maybe?
-> 
-> OK, will update it.
-> 
-> > 
-> >> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> >> index 8b11b38..daa7f40 100644
-> >> --- a/include/linux/pci.h
-> >> +++ b/include/linux/pci.h
-> >> @@ -402,7 +402,12 @@ struct pci_host_bridge_window {
-> >>  struct pci_host_bridge {
-> >>  	struct device dev;
-> >>  	struct pci_bus *bus;		/* root bus */
-> >> +	struct list_head list;
-> >>  	struct list_head windows;	/* pci_host_bridge_windows */
-> >> +	int busnum;
-> > 
-> > The busnum should already be implied through the bus resource.
-> 
-> Yes, I will consider remove it and introduce a helper function to get the root bus number, thanks!
-> 
-> Thanks!
-> Yijing.
-> 
-> > 
-> > 	Arnd
-> > 
-> > .
-> > 
-> 
-> 
-> -- 
-> Thanks!
-> Yijing
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 54d94db2cf03..4eca63f8314a 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2093,6 +2093,7 @@ int do_journal_get_write_access(handle_t *handle,
+ #define CONVERT_INLINE_DATA	 2
+ 
+ extern struct inode *ext4_iget(struct super_block *, unsigned long);
++extern struct inode *ext4_iget_normal(struct super_block *, unsigned long);
+ extern int  ext4_write_inode(struct inode *, struct writeback_control *);
+ extern int  ext4_setattr(struct dentry *, struct iattr *);
+ extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 474b9eafee43..a43859ca3184 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4251,6 +4251,13 @@ bad_inode:
+ 	return ERR_PTR(ret);
+ }
+ 
++struct inode *ext4_iget_normal(struct super_block *sb, unsigned long ino)
++{
++	if (ino < EXT4_FIRST_INO(sb) && ino != EXT4_ROOT_INO)
++		return ERR_PTR(-EIO);
++	return ext4_iget(sb, ino);
++}
++
+ static int ext4_inode_blocks_set(handle_t *handle,
+ 				struct ext4_inode *raw_inode,
+ 				struct ext4_inode_info *ei)
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 5a0408d7b114..8e000a058958 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1430,7 +1430,7 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, unsi
+ 					 dentry->d_name.name);
+ 			return ERR_PTR(-EIO);
+ 		}
+-		inode = ext4_iget(dir->i_sb, ino);
++		inode = ext4_iget_normal(dir->i_sb, ino);
+ 		if (inode == ERR_PTR(-ESTALE)) {
+ 			EXT4_ERROR_INODE(dir,
+ 					 "deleted inode referenced: %u",
+@@ -1461,7 +1461,7 @@ struct dentry *ext4_get_parent(struct dentry *child)
+ 		return ERR_PTR(-EIO);
+ 	}
+ 
+-	return d_obtain_alias(ext4_iget(child->d_inode->i_sb, ino));
++	return d_obtain_alias(ext4_iget_normal(child->d_inode->i_sb, ino));
+ }
+ 
+ /*
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index cf3068a50b48..2914dc7ce9e8 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -977,7 +977,7 @@ static struct inode *ext4_nfs_get_inode(struct super_block *sb,
+ 	 * Currently we don't know the generation for parent directory, so
+ 	 * a generation of 0 means "accept any"
+ 	 */
+-	inode = ext4_iget(sb, ino);
++	inode = ext4_iget_normal(sb, ino);
+ 	if (IS_ERR(inode))
+ 		return ERR_CAST(inode);
+ 	if (generation && inode->i_generation != generation) {
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+2.1.3
 
