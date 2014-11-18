@@ -1,493 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907AbaKRGgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 01:36:13 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:15949 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaKRGfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 01:35:53 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>,
-        <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        <dave.long@linaro.org>, <taras.kondratiuk@linaro.org>,
-        <ben.dooks@codethink.co.uk>, <cl@linux.com>, <rabin@rab.in>,
-        <davem@davemloft.net>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v8 2/2] ARM: kprobes: enable OPTPROBES for ARM 32
-Date: Tue, 18 Nov 2014 14:32:39 +0800
-Message-ID: <1416292359-75893-3-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1416292359-75893-1-git-send-email-wangnan0@huawei.com>
-References: <1416292359-75893-1-git-send-email-wangnan0@huawei.com>
+	id S1752976AbaKRGmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:42:14 -0500
+Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:56775
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751038AbaKRGmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 01:42:11 -0500
+X-Greylist: delayed 1028 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 01:42:11 EST
+X-WSS-ID: 0NF812Y-07-ALW-02
+X-M-MSG: 
+From: Ken Xue <Ken.Xue@amd.com>
+To: <rjw@rjwysocki.net>, <lenb@kernel.org>
+CC: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Ken Xue <Ken.Xue@amd.com>, Jeff Wu <Jeff.Wu@amd.com>
+Subject: [PATCH] acpi:apd:add AMD ACPI2Platform device support for x86 system.
+Date: Tue, 18 Nov 2014 13:58:11 +0800
+Message-ID: <1416290291-5802-1-git-send-email-Ken.Xue@amd.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ken.Xue@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(97736003)(87936001)(106466001)(19580395003)(44976005)(19580405001)(50986999)(68736004)(229853001)(77096003)(62966003)(77156002)(92566001)(93916002)(50466002)(92726001)(575784001)(36756003)(86362001)(95666004)(107046002)(48376002)(88136002)(105586002)(89996001)(101416001)(104166001)(21056001)(102836001)(4396001)(120916001)(84676001)(99396003)(46102003)(50226001)(64706001)(87286001)(31966008)(20776003)(47776003)(53416004);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB204;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
+X-Forefront-PRVS: 039975700A
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce kprobeopt for ARM 32.
+This new feature is to interpret AMD specific ACPI device to platform device
+such as I2C, UART found on AMD CZ and later chipsets. It is based on example
+INTEL LPSS. Now, it can support AMD I2C & UART.
 
-Limitations:
- - Currently only kernel compiled with ARM ISA is supported.
-
- - Offset between probe point and optinsn slot must not larger than
-   32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
-   things complex. Futher patch can make such optimization.
-
-Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
-ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
-replace probed instruction by a 'b', branch to trampoline code and then
-calls optimized_callback(). optimized_callback() calls opt_pre_handler()
-to execute kprobe handler. It also emulate/simulate replaced instruction.
-
-When unregistering kprobe, the deferred manner of unoptimizer may leave
-branch instruction before optimizer is called. Different from x86_64,
-which only copy the probed insn after optprobe_template_end and
-reexecute them, this patch call singlestep to emulate/simulate the insn
-directly. Futher patch can optimize this behavior.
-
-v1 -> v2:
-
- - Improvement: if replaced instruction is conditional, generate a
-   conditional branch instruction for it;
-
- - Introduces RELATIVEJUMP_OPCODES due to ARM kprobe_opcode_t is 4
-   bytes;
-
- - Removes size field in struct arch_optimized_insn;
-
- - Use arm_gen_branch() to generate branch instruction;
-
- - Remove all recover logic: ARM doesn't use tail buffer, no need
-   recover replaced instructions like x86;
-
- - Remove incorrect CONFIG_THUMB checking;
-
- - can_optimize() always returns true if address is well aligned;
-
- - Improve optimized_callback: using opt_pre_handler();
-
- - Bugfix: correct range checking code and improve comments;
-
- - Fix commit message.
-
-v2 -> v3:
-
- - Rename RELATIVEJUMP_OPCODES to MAX_COPIED_INSNS;
-
- - Remove unneeded checking:
-      arch_check_optimized_kprobe(), can_optimize();
-
- - Add missing flush_icache_range() in arch_prepare_optimized_kprobe();
-
- - Remove unneeded 'return;'.
-
-v3 -> v4:
-
- - Use __mem_to_opcode_arm() to translate copied_insn to ensure it
-   works in big endian kernel;
-
- - Replace 'nop' placeholder in trampoline code template with
-   '.long 0' to avoid confusion: reader may regard 'nop' as an
-   instruction, but it is value in fact.
-
-v4 -> v5:
-
- - Don't optimize stack store operations.
-
- - Introduce prepared field to arch_optimized_insn to indicate whether
-   it is prepared. Similar to size field with x86. See v1 -> v2.
-
-v5 -> v6:
-
- - Dynamically reserve stack according to instruction.
-
- - Rename: kprobes-opt.c -> kprobes-opt-arm.c.
-
- - Set op->optinsn.insn after all works are done.
-
-v6 -> v7:
-
- - Using checker to check stack consumption.
-
-v7 -> v8:
-
- - Small code adjustments.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Ken Xue <Ken.Xue@amd.com>
+Signed-off-by: Jeff Wu <Jeff.Wu@amd.com>
 ---
- arch/arm/Kconfig                  |   1 +
- arch/arm/include/asm/kprobes.h    |  26 ++++
- arch/arm/kernel/Makefile          |   3 +-
- arch/arm/kernel/kprobes-opt-arm.c | 285 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 314 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/kernel/kprobes-opt-arm.c
+ arch/x86/Kconfig        |  11 +++
+ drivers/acpi/Makefile   |   1 +
+ drivers/acpi/acpi_apd.c | 245 ++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/internal.h |   6 ++
+ drivers/acpi/scan.c     |   1 +
+ 5 files changed, 264 insertions(+)
+ create mode 100644 drivers/acpi/acpi_apd.c
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 89c4b5c..8281cea 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -59,6 +59,7 @@ config ARM
- 	select HAVE_MEMBLOCK
- 	select HAVE_MOD_ARCH_SPECIFIC if ARM_UNWIND
- 	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
-+	select HAVE_OPTPROBES if (!THUMB2_KERNEL)
- 	select HAVE_PERF_EVENTS
- 	select HAVE_PERF_REGS
- 	select HAVE_PERF_USER_STACK_DUMP
-diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-index 56f9ac6..c1016cb 100644
---- a/arch/arm/include/asm/kprobes.h
-+++ b/arch/arm/include/asm/kprobes.h
-@@ -50,5 +50,31 @@ int kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr);
- int kprobe_exceptions_notify(struct notifier_block *self,
- 			     unsigned long val, void *data);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ded8a67..6402c79f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -495,6 +495,17 @@ config X86_INTEL_LPSS
+ 	  things like clock tree (common clock framework) and pincontrol
+ 	  which are needed by the LPSS peripheral drivers.
  
-+/* optinsn template addresses */
-+extern __visible kprobe_opcode_t optprobe_template_entry;
-+extern __visible kprobe_opcode_t optprobe_template_val;
-+extern __visible kprobe_opcode_t optprobe_template_call;
-+extern __visible kprobe_opcode_t optprobe_template_end;
++config X86_AMD_PLATFORM_DEVICE
++	bool "AMD ACPI2Platform devices support"
++	depends on ACPI
++	select COMMON_CLK
++	select PINCTRL
++	---help---
++	  Select to interpret AMD specific ACPI device to platform device
++	  such as I2C, UART found on AMD CARRIZO and later chipset. Selecting
++	  this option enables things like clock tree (common clock framework)
++	  and pinctrl.
 +
-+#define MAX_OPTIMIZED_LENGTH	(4)
-+#define MAX_OPTINSN_SIZE				\
-+	(((unsigned long)&optprobe_template_end -	\
-+	  (unsigned long)&optprobe_template_entry))
-+#define RELATIVEJUMP_SIZE	(4)
-+
-+struct arch_optimized_insn {
-+	/*
-+	 * copy of the original instructions.
-+	 * Different from x86, ARM kprobe_opcode_t is u32.
-+	 */
-+#define MAX_COPIED_INSN	((RELATIVEJUMP_SIZE) / sizeof(kprobe_opcode_t))
-+	kprobe_opcode_t copied_insn[MAX_COPIED_INSN];
-+	/* detour code buffer */
-+	kprobe_opcode_t *insn;
-+	/*
-+	 *  we always copies one instruction on arm32,
-+	 *  size always be 4, so no size field.
-+	 */
-+};
- 
- #endif /* _ARM_KPROBES_H */
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 45aed4b..8a16fcf 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -52,11 +52,12 @@ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
- obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
- obj-$(CONFIG_UPROBES)		+= probes.o probes-arm.o uprobes.o uprobes-arm.o
--obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o probes-checkers-common.o
-+obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o probes-checkers-common.o insn.o
- ifdef CONFIG_THUMB2_KERNEL
- obj-$(CONFIG_KPROBES)		+= kprobes-thumb.o probes-thumb.o probes-checkers-thumb.o
- else
- obj-$(CONFIG_KPROBES)		+= kprobes-arm.o probes-arm.o probes-checkers-arm.o
-+obj-$(CONFIG_OPTPROBES)		+= kprobes-opt-arm.o
- endif
- obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
- test-kprobes-objs		:= kprobes-test.o
-diff --git a/arch/arm/kernel/kprobes-opt-arm.c b/arch/arm/kernel/kprobes-opt-arm.c
+ config IOSF_MBI
+ 	tristate "Intel SoC IOSF Sideband support for SoC platforms"
+ 	depends on PCI
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index c3b2fcb..91fc1c2 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -41,6 +41,7 @@ acpi-y				+= ec.o
+ acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+ acpi-y				+= pci_root.o pci_link.o pci_irq.o
+ acpi-y				+= acpi_lpss.o
++acpi-$(CONFIG_X86_AMD_PLATFORM_DEVICE)	+= acpi_apd.o
+ acpi-y				+= acpi_platform.o
+ acpi-y				+= acpi_pnp.o
+ acpi-y				+= int340x_thermal.o
+diff --git a/drivers/acpi/acpi_apd.c b/drivers/acpi/acpi_apd.c
 new file mode 100644
-index 0000000..55eb3ea
+index 0000000..994b7db
 --- /dev/null
-+++ b/arch/arm/kernel/kprobes-opt-arm.c
-@@ -0,0 +1,285 @@
++++ b/drivers/acpi/acpi_apd.c
+@@ -0,0 +1,245 @@
 +/*
-+ *  Kernel Probes Jump Optimization (Optprobes)
++ * AMD ACPI support for ACPI2platform device.
++ *
++ * Copyright (c) 2014, AMD Corporation.
++ * Authors: Ken Xue <Ken.Xue@amd.com>
++ *	Jeff Wu <Jeff.Wu@amd.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2002, 2004
-+ * Copyright (C) Hitachi Ltd., 2012
-+ * Copyright (C) Huawei Inc., 2014
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
 +
-+#include <linux/kprobes.h>
-+#include <linux/jump_label.h>
-+#include <asm/kprobes.h>
-+#include <asm/cacheflush.h>
-+/* for arm_gen_branch */
-+#include "insn.h"
-+/* for patch_text */
-+#include "patch.h"
++#include <linux/acpi.h>
++#include <linux/clk.h>
++#include <linux/clkdev.h>
++#include <linux/clk-provider.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
 +
-+/*
-+ * NOTE: the first sub and add instruction will be modified according
-+ * to the stack cost of the instruction.
-+ */
-+asm (
-+			".global optprobe_template_entry\n"
-+			"optprobe_template_entry:\n"
-+			"	sub	sp, sp, #0xff\n"
-+			"	stmia	sp, {r0 - r14} \n"
-+			"	add	r3, sp, #0xff\n"
-+			"	str	r3, [sp, #52]\n"
-+			"	mrs	r4, cpsr\n"
-+			"	str	r4, [sp, #64]\n"
-+			"	mov	r1, sp\n"
-+			"	ldr	r0, 1f\n"
-+			"	ldr	r2, 2f\n"
-+			"	blx	r2\n"
-+			"	ldr	r1, [sp, #64]\n"
-+			"	msr	cpsr_fs, r1\n"
-+			"	ldmia	sp, {r0 - r15}\n"
-+			".global optprobe_template_val\n"
-+			"optprobe_template_val:\n"
-+			"1:	.long 0\n"
-+			".global optprobe_template_call\n"
-+			"optprobe_template_call:\n"
-+			"2:	.long 0\n"
-+			".global optprobe_template_end\n"
-+			"optprobe_template_end:\n");
++#include "internal.h"
 +
-+#define TMPL_VAL_IDX \
-+	((long)&optprobe_template_val - (long)&optprobe_template_entry)
-+#define TMPL_CALL_IDX \
-+	((long)&optprobe_template_call - (long)&optprobe_template_entry)
-+#define TMPL_END_IDX \
-+	((long)&optprobe_template_end - (long)&optprobe_template_entry)
++ACPI_MODULE_NAME("acpi_apd");
++struct apd_private_data;
 +
-+/*
-+ * ARM can always optimize an instruction when using ARM ISA, except
-+ * instructions like 'str r0, [sp, r1]' which store to stack and unable
-+ * to determine stack space consumption statically.
-+ */
-+int arch_prepared_optinsn(struct arch_optimized_insn *optinsn)
++struct apd_device_desc {
++	bool clk_required;
++	bool fixed_root_clock;
++	const char *clk_name;
++	unsigned long	rate;
++	size_t prv_size_override;
++	void (*setup)(struct apd_private_data *pdata);
++};
++
++struct apd_private_data {
++	void __iomem *mmio_base;
++	resource_size_t mmio_size;
++	struct clk *clk;
++	const struct apd_device_desc *dev_desc;
++};
++
++static struct apd_device_desc amd_i2c_desc = {
++	.clk_required = true,
++	.fixed_root_clock = true,
++	.clk_name = "i2c_clk",
++	.rate = 133000000, /*(133 * 1000 * 1000)*/
++};
++
++static struct apd_device_desc amd_uart_desc = {
++	.clk_required = true,
++	.fixed_root_clock = true,
++	.clk_name = "uart_clk",
++	.rate = 48000000,
++};
++
++static const struct acpi_device_id acpi_apd_device_ids[] = {
++	/* Generic apd devices */
++	{ "AMD0010", (unsigned long)&amd_i2c_desc },
++	{ "AMD0020", (unsigned long)&amd_uart_desc },
++	{ }
++};
++
++static int is_memory(struct acpi_resource *res, void *not_used)
 +{
-+	return optinsn->insn != NULL;
++	struct resource r;
++
++	return !acpi_dev_resource_memory(res, &r);
 +}
 +
-+/*
-+ * In ARM ISA, kprobe opt always replace one instruction (4 bytes
-+ * aligned and 4 bytes long). It is impossiable to encounter another
-+ * kprobe in the address range. So always return 0.
-+ */
-+int arch_check_optimized_kprobe(struct optimized_kprobe *op)
++static int register_device_clock(struct acpi_device *adev,
++				 struct apd_private_data *pdata)
 +{
++	const struct apd_device_desc *dev_desc = pdata->dev_desc;
++	struct clk *clk = ERR_PTR(-ENODEV);
++
++	clk = pdata->clk;
++	if (!clk && dev_desc->fixed_root_clock) {
++		clk = clk_register_fixed_rate(&adev->dev, dev_name(&adev->dev),
++				      NULL, CLK_IS_ROOT, dev_desc->rate);
++		pdata->clk = clk;
++		clk_register_clkdev(clk, NULL, dev_name(&adev->dev));
++	}
++
 +	return 0;
 +}
 +
-+/* Caller must ensure addr & 3 == 0 */
-+static int can_optimize(struct optimized_kprobe *op)
++static int acpi_apd_create_device(struct acpi_device *adev,
++				   const struct acpi_device_id *id)
 +{
-+	if (op->kp.ainsn.stack_space < 0)
-+		return 0;
-+	/*
-+	 * 255 is the biggest imm can be used in 'sub r0, r0, #<imm>'.
-+	 * Number larger than 255 needs special encoding.
-+	 */
-+	if (op->kp.ainsn.stack_space > 255 - sizeof(struct pt_regs))
-+		return 0;
-+	return 1;
-+}
++	struct apd_device_desc *dev_desc;
++	struct apd_private_data *pdata;
++	struct resource_list_entry *rentry;
++	struct list_head resource_list;
++	struct platform_device *pdev;
++	int ret;
 +
-+/* Free optimized instruction slot */
-+static void
-+__arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
-+{
-+	if (op->optinsn.insn) {
-+		free_optinsn_slot(op->optinsn.insn, dirty);
-+		op->optinsn.insn = NULL;
-+	}
-+}
-+
-+extern void kprobe_handler(struct pt_regs *regs);
-+
-+static void
-+optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
-+{
-+	unsigned long flags;
-+	struct kprobe *p = &op->kp;
-+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+
-+	/* Save skipped registers */
-+	regs->ARM_pc = (unsigned long)op->kp.addr;
-+	regs->ARM_ORIG_r0 = ~0UL;
-+
-+	local_irq_save(flags);
-+
-+	if (kprobe_running()) {
-+		kprobes_inc_nmissed_count(&op->kp);
-+	} else {
-+		__this_cpu_write(current_kprobe, &op->kp);
-+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-+		opt_pre_handler(&op->kp, regs);
-+		__this_cpu_write(current_kprobe, NULL);
++	dev_desc = (struct apd_device_desc *)id->driver_data;
++	if (!dev_desc) {
++		pdev = acpi_create_platform_device(adev);
++		return IS_ERR_OR_NULL(pdev) ? PTR_ERR(pdev) : 1;
 +	}
 +
-+	/* In each case, we must singlestep the replaced instruction. */
-+	op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
-+
-+	local_irq_restore(flags);
-+}
-+
-+int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-+{
-+	u8 *buf;
-+	unsigned long *code;
-+	unsigned long rel_chk;
-+	unsigned long val;
-+	unsigned long stack_protect = sizeof(struct pt_regs);
-+
-+	if (!can_optimize(op))
-+		return -EILSEQ;
-+
-+	buf = (u8 *)get_optinsn_slot();
-+	if (!buf)
++	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
 +		return -ENOMEM;
 +
++	INIT_LIST_HEAD(&resource_list);
++	ret = acpi_dev_get_resources(adev, &resource_list, is_memory, NULL);
++	if (ret < 0)
++		goto err_out;
++
++	list_for_each_entry(rentry, &resource_list, node)
++		if (resource_type(&rentry->res) == IORESOURCE_MEM) {
++			if (dev_desc->prv_size_override)
++				pdata->mmio_size = dev_desc->prv_size_override;
++			else
++				pdata->mmio_size = resource_size(&rentry->res);
++			pdata->mmio_base = ioremap(rentry->res.start,
++						   pdata->mmio_size);
++			break;
++		}
++
++	acpi_dev_free_resource_list(&resource_list);
++
++	pdata->dev_desc = dev_desc;
++
++	if (dev_desc->clk_required) {
++		ret = register_device_clock(adev, pdata);
++		if (ret) {
++			/* Skip the device, but continue the namespace scan. */
++			ret = 0;
++			goto err_out;
++		}
++	}
++
 +	/*
-+	 * Verify if the address gap is in 32MiB range, because this uses
-+	 * a relative jump.
-+	 *
-+	 * kprobe opt use a 'b' instruction to branch to optinsn.insn.
-+	 * According to ARM manual, branch instruction is:
-+	 *
-+	 *   31  28 27           24 23             0
-+	 *  +------+---+---+---+---+----------------+
-+	 *  | cond | 1 | 0 | 1 | 0 |      imm24     |
-+	 *  +------+---+---+---+---+----------------+
-+	 *
-+	 * imm24 is a signed 24 bits integer. The real branch offset is computed
-+	 * by: imm32 = SignExtend(imm24:'00', 32);
-+	 *
-+	 * So the maximum forward branch should be:
-+	 *   (0x007fffff << 2) = 0x01fffffc =  0x1fffffc
-+	 * The maximum backword branch should be:
-+	 *   (0xff800000 << 2) = 0xfe000000 = -0x2000000
-+	 *
-+	 * We can simply check (rel & 0xfe000003):
-+	 *  if rel is positive, (rel & 0xfe000000) shoule be 0
-+	 *  if rel is negitive, (rel & 0xfe000000) should be 0xfe000000
-+	 *  the last '3' is used for alignment checking.
++	 * This works around a known issue in ACPI tables where apd devices
++	 * have _PS0 and _PS3 without _PSC (and no power resources), so
++	 * acpi_bus_init_power() will assume that the BIOS has put them into D0.
 +	 */
-+	rel_chk = (unsigned long)((long)buf -
-+			(long)op->kp.addr + 8) & 0xfe000003;
-+
-+	if ((rel_chk != 0) && (rel_chk != 0xfe000000)) {
-+		__arch_remove_optimized_kprobe(op, 0);
-+		return -ERANGE;
++	ret = acpi_device_fix_up_power(adev);
++	if (ret) {
++		/* Skip the device, but continue the namespace scan. */
++		ret = 0;
++		goto err_out;
 +	}
 +
-+	/* Copy arch-dep-instance from template. */
-+	memcpy(buf, &optprobe_template_entry, TMPL_END_IDX);
++	if (dev_desc->setup)
++		dev_desc->setup(pdata);
 +
-+	/* Adjust buffer according to instruction. */
-+	BUG_ON(op->kp.ainsn.stack_space < 0);
-+	stack_protect += op->kp.ainsn.stack_space;
-+
-+	/* Should have been filtered by can_optimize(). */
-+	BUG_ON(stack_protect > 255);
-+
-+	/* Create a 'sub sp, sp, #<stack_protect>' */
-+	code = (unsigned long *)(buf);
-+	code[0] = __opcode_to_mem_arm(0xe24dd000 | stack_protect);
-+	/* Create a 'add r3, sp, #<stack_protect>' */
-+	code[2] = __opcode_to_mem_arm(0xe28d3000 | stack_protect);
-+
-+	/* Set probe information */
-+	val = (unsigned long)op;
-+	memcpy(buf + TMPL_VAL_IDX, &val, sizeof(val));
-+
-+	/* Set probe function call */
-+	val = (unsigned long)optimized_callback;
-+	memcpy(buf + TMPL_CALL_IDX, &val, sizeof(val));
-+
-+	flush_icache_range((unsigned long)buf,
-+			   (unsigned long)buf + TMPL_END_IDX);
-+
-+	/* Set op->optinsn.insn means prepared */
-+	op->optinsn.insn = (kprobe_opcode_t *)buf;
-+	return 0;
-+}
-+
-+void arch_optimize_kprobes(struct list_head *oplist)
-+{
-+	struct optimized_kprobe *op, *tmp;
-+
-+	list_for_each_entry_safe(op, tmp, oplist, list) {
-+		unsigned long insn;
-+		WARN_ON(kprobe_disabled(&op->kp));
-+
-+		/*
-+		 * Backup instructions which will be replaced
-+		 * by jump address
-+		 */
-+		memcpy(op->optinsn.copied_insn, op->kp.addr,
-+				RELATIVEJUMP_SIZE);
-+
-+		insn = arm_gen_branch((unsigned long)op->kp.addr,
-+				(unsigned long)op->optinsn.insn);
-+		BUG_ON(insn == 0);
-+
-+		/*
-+		 * Make it a conditional branch if replaced insn
-+		 * is consitional
-+		 */
-+		insn = (__mem_to_opcode_arm(
-+			  op->optinsn.copied_insn[0]) & 0xf0000000) |
-+			(insn & 0x0fffffff);
-+
-+		patch_text(op->kp.addr, insn);
-+
-+		list_del_init(&op->list);
++	adev->driver_data = pdata;
++	pdev = acpi_create_platform_device(adev);
++	if (!IS_ERR_OR_NULL(pdev)) {
++		device_enable_async_suspend(&pdev->dev);
++		return ret;
 +	}
++
++	ret = PTR_ERR(pdev);
++	adev->driver_data = NULL;
++
++ err_out:
++	kfree(pdata);
++	return ret;
 +}
 +
-+void arch_unoptimize_kprobe(struct optimized_kprobe *op)
++static ssize_t apd_device_desc_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
 +{
-+	arch_arm_kprobe(&op->kp);
++	int ret;
++	struct acpi_device *adev;
++	struct apd_private_data *pdata;
++
++	ret = acpi_bus_get_device(ACPI_HANDLE(dev), &adev);
++	if (WARN_ON(ret))
++		return ret;
++
++	pdata = acpi_driver_data(adev);
++	if (WARN_ON(!pdata || !pdata->dev_desc))
++		return -ENODEV;
++
++	if (pdata->dev_desc->clk_required)
++		return sprintf(buf, "Required clk: %s %s %ld\n",
++			pdata->dev_desc->clk_name,
++			pdata->dev_desc->fixed_root_clock ?
++			"fix rate" : "no fix rate",
++			pdata->dev_desc->rate);
++	else
++		return sprintf(buf, "No need clk\n");
 +}
 +
-+/*
-+ * Recover original instructions and breakpoints from relative jumps.
-+ * Caller must call with locking kprobe_mutex.
-+ */
-+void arch_unoptimize_kprobes(struct list_head *oplist,
-+ 			    struct list_head *done_list)
++static DEVICE_ATTR(device_desc, S_IRUSR, apd_device_desc_show, NULL);
++
++static struct attribute *apd_attrs[] = {
++	&dev_attr_device_desc.attr,
++	NULL,
++};
++
++static struct attribute_group apd_attr_group = {
++	.attrs = apd_attrs,
++	.name = "apd_ltr",
++};
++
++static int acpi_apd_platform_notify(struct notifier_block *nb,
++				     unsigned long action, void *data)
 +{
-+	struct optimized_kprobe *op, *tmp;
++	struct platform_device *pdev = to_platform_device(data);
++	struct apd_private_data *pdata;
++	struct acpi_device *adev;
++	const struct acpi_device_id *id;
++	int ret = 0;
 +
-+	list_for_each_entry_safe(op, tmp, oplist, list) {
-+		arch_unoptimize_kprobe(op);
-+		list_move(&op->list, done_list);
-+	}
++	id = acpi_match_device(acpi_apd_device_ids, &pdev->dev);
++	if (!id || !id->driver_data)
++		return 0;
++
++	if (acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
++		return 0;
++
++	pdata = acpi_driver_data(adev);
++	if (!pdata || !pdata->mmio_base)
++		return 0;
++
++	if (action == BUS_NOTIFY_ADD_DEVICE)
++		ret = sysfs_create_group(&pdev->dev.kobj, &apd_attr_group);
++	else if (action == BUS_NOTIFY_DEL_DEVICE)
++		sysfs_remove_group(&pdev->dev.kobj, &apd_attr_group);
++
++	return ret;
 +}
 +
-+int arch_within_optimized_kprobe(struct optimized_kprobe *op,
-+ 				unsigned long addr)
++static struct notifier_block acpi_apd_nb = {
++	.notifier_call = acpi_apd_platform_notify,
++};
++
++static struct acpi_scan_handler apd_handler = {
++	.ids = acpi_apd_device_ids,
++	.attach = acpi_apd_create_device,
++};
++
++void __init acpi_apd_init(void)
 +{
-+	return ((unsigned long)op->kp.addr <= addr &&
-+		(unsigned long)op->kp.addr + RELATIVEJUMP_SIZE > addr);
++	bus_register_notifier(&platform_bus_type, &acpi_apd_nb);
++	acpi_scan_add_handler(&apd_handler);
 +}
+diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+index 447f6d6..c8a0e8e 100644
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -68,6 +68,12 @@ static inline void acpi_debugfs_init(void) { return; }
+ #endif
+ void acpi_lpss_init(void);
+ 
++#ifdef CONFIG_X86_AMD_PLATFORM_DEVICE
++void acpi_apd_init(void);
++#else
++static inline void acpi_apd_init(void) {}
++#endif
 +
-+void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-+{
-+	__arch_remove_optimized_kprobe(op, 1);
-+}
+ acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src);
+ bool acpi_queue_hotplug_work(struct work_struct *work);
+ void acpi_device_hotplug(struct acpi_device *adev, u32 src);
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 0476e90..24fef2b 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -2349,6 +2349,7 @@ int __init acpi_scan_init(void)
+ 	acpi_pci_link_init();
+ 	acpi_processor_init();
+ 	acpi_lpss_init();
++	acpi_apd_init();
+ 	acpi_cmos_rtc_init();
+ 	acpi_container_init();
+ 	acpi_memory_hotplug_init();
 -- 
-1.8.4
+1.9.1
 
