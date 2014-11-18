@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299AbaKRO0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:26:33 -0500
-Received: from [140.232.255.14] ([140.232.255.14]:56477 "EHLO mail.abrij.org"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560AbaKRO0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:26:31 -0500
-Date: Tue, 18 Nov 2014 09:26:29 -0500
-From: bri <bri@abrij.org>
-To: Frank Praznik <frank.praznik@gmail.com>
-Cc: Antonio Ospite <ao2@ao2.it>, Jiri Kosina <jkosina@suse.cz>,
-        Henrik Rydberg <rydberg@euromail.se>, open@abrij.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 001/001] hid-sony.c: add sysfs provisioning
-Message-ID: <20141118142629.GA343@abrij.org>
-References: <20141116181846.GA31516@abrij.org>
- <20141117133518.ee306b3b35a0e0566a255b14@ao2.it>
- <546A4EF7.903@gmail.com>
- <20141118000005.GA32256@abrij.org>
- <546ABB51.4010905@gmail.com>
+	id S1755961AbaKROXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:23:14 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:34139 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130AbaKROKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:19 -0500
+Date: Tue, 18 Nov 2014 22:10:13 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Daniel Borkmann <dborkman@redhat.com>, quentin.gouchet@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v2 06/10] crypto: AF_ALG: make setkey optional
+Message-ID: <20141118141013.GC12100@gondor.apana.org.au>
+References: <5365136.g8vbXlhRyC@tachyon.chronox.de>
+ <2196615.OgfUNzPKdf@tachyon.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <546ABB51.4010905@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <2196615.OgfUNzPKdf@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 10:21:53PM -0500, Frank Praznik wrote:
-> Hi Brian,
+On Sun, Nov 16, 2014 at 03:26:58AM +0100, Stephan Mueller wrote:
+> The current AF_ALG implementation requires that a userspace interface
+> implementation must provide a callback for setkey. Such a call is not
+> appliable to random number generators.
 > 
-> On 11/17/2014 19:00, bri wrote:
-> >
-> >>Yeah, the device ID in the driver is only for tracking devices internally
-> >>and setting sane default LED values.  It has no meaning outside of the
-> >>module.  Like Antonio said, if you want the system number for a controller
-> >>you are better off just getting it from the joystick device.
-> >Would you be amenable to a patch that removes the IDA entirely and just sets
-> >the LEDs to all solid-on?  Since the LEDs are available through sysfs,
-> >udev rule could probably be made to set the LEDs in the absence of bluez
-> >or a higher level controller manager, and then it becomes the distro's
-> >responsibility.
-> >
+> To prepare AF_ALG for the addition of a random number generator user
+> space interface, this function callback invocation is made optional.
 > 
-> What would be the benefit of doing this?  Nothing is stopping higher level
-> services from setting the LEDs right now.  The driver just sets sane
-> defaults for systems that don't have anything else to set the 'real' values.
-> Other controllers like Wiimotes and Xbox gamepads do the same thing.  It
-> doesn't get in the way of services like BlueZ setting them once
-> initialization is complete.
-> 
-> Leaving it completely up to the distro just means that there will be
-> situations where there is nothing to set the default values which makes for
-> a bad user experience.
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
 
-It would eliminate 50 to 100 lines of code just for that tiny purpose,
-which userspace can and probably should take care of, given the disparity
-with the eventual values.  I'm honestly a bit confused of the criteria in use
-here, as I thought it was mostly deciding between the usefulness of features
-versus maintainability.  In my mind if I weight a master_bdaddr sysfs file
-and the code to support it versus this feature, I don't see where this one
-wins out.
+Did you actually try this? AFAICS setkey is already optional.
 
-But whatever.  I made this for my own use, and offered it up, and if the
-community does not want it I am free to keep using what I made, so I'm happy
-either way.
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
