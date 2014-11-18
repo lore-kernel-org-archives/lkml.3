@@ -1,151 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaKRLbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:31:40 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:55932 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbaKRLbi (ORCPT
+	id S1754020AbaKRLdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:33:03 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50015 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933AbaKRLdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:31:38 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: linux-arm-kernel@lists.infradead.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Suravee.Suthikulpanit@amd.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Wuyun <wuyun.wu@huawei.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
-Date: Tue, 18 Nov 2014 12:30:11 +0100
-Message-ID: <20535707.3sA6NjSINh@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <546B2ACC.90304@huawei.com>
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1463511.o4kE8TX3Bd@wuerfel> <546B2ACC.90304@huawei.com>
+	Tue, 18 Nov 2014 06:33:00 -0500
+Date: Tue, 18 Nov 2014 12:32:56 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>, pali.rohar@gmail.com, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg, bcousson@baylibre.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
+Message-ID: <20141118113256.GA10022@amd>
+References: <20141116075928.GA9763@amd>
+ <20141117145857.GO8907@valkosipuli.retiisi.org.uk>
+ <546AFEA5.9020000@samsung.com>
+ <20141118084603.GC4059@amd>
+ <546B19C8.2090008@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Ru8u+VvW5cWakMbDe8agPHA46l4Qq+IPcnS60eQuZtL
- vb8x+csdhGFOP+IKhOXMtreqKa1AXjsPhIPAvChXnBr9DJUeEH
- y9zEsCTTDFQ4Lwlu3SP0NCtdDumGGwHj5k9rc7x0WvbBiOdi4U
- +IfJa+mTx28XOA/bDdmT1D77O/nN0g4LiCWoc7MkPnoXaUFnU8
- tlWT3e30CG9ovJdf8uuDWD3+YEeQWYaQE1Hv2OxjkqXHEK6lnb
- sLUJwBKMmgIUJrb/JT5P6lzGuNeu/r+PrqC1goqoSO0QAuFEtY
- Ac36ypP023MABZLiYKV3Qt/rn8+rt2zSU1Gz+Lprlv7ZFWCWU1
- VLA7XN4eSdO9m0Ffgrf4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546B19C8.2090008@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 November 2014 19:17:32 Yijing Wang wrote:
-> On 2014/11/17 22:13, Arnd Bergmann wrote:
-> > On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
-> >> This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
-> >> arm PCI domain cleanup patches, link: 
-> >> https://patchwork.ozlabs.org/patch/407585/
+
+> >>I've already submitted a patch [1] that updates leds common bindings.
+> >>I hasn't been merged yet, as the related LED Flash class patch [2]
+> >>still needs some indicator leds related discussion [3].
 > >>
-> >> Current pci scan interfaces like pci_scan_root_bus() and directly
-> >> call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
-> >> Some platform infos like PCI domain and msi_chip have to be
-> >> associated to PCI bus by some arch specific function.
-> >> We want to make a generic pci_host_bridge, and make it hold
-> >> the platform infos or hook. Then we could eliminate the lots
-> >> of arch pci_domain_nr, also we could associate some platform 
-> >> ops something like pci_get_msi_chip(struct pci_dev *dev)
-> >> with pci_host_bridge to avoid introduce arch weak functions.
-> >>
-> >> This RFC version not for all platforms, just applied the new
-> >> scan interface in x86/arm/powerpc/ia64, I will refresh other
-> >> platforms after the core pci scan interfaces are ok.
-> > 
-> > I think overall this is a good direction to take, in particular
-> > moving more things into struct pci_host_bridge so we can
-> > slim down the architecture specific code.
+> >>I think this is a good moment to discuss the flash related led common
+> >>bindings.
+> >
+> >Part of problem is that adp1653 is not regarded as "LED" device by
+> >current kernel driver.
 > 
-> Hi Arnd, thanks very much for your review and comments!
+> It doesn't prevent us from keeping the flash devices related
+> DT bindings unified across kernel subsystems. The DT bindings
+> docs for the adp1653 could just provide a reference to the
+> led/common.txt bindings. In the future, when LED Flash
+> class will be merged, all the V4L2 Flash drivers might be
+> moved to the LED subsystem to gain the LED subsystem support.
+
+Yeah, that makses sense.
+
+> >@@ -19,5 +30,10 @@ Examples:
+> >  system-status {
+> >  	       label = "Status";
+> >  	       linux,default-trigger = "heartbeat";
+> >+	       iout-torch = <500 500>;
+> >+	       iout-flash = <1000 1000>;
+> >+	       iout-indicator = <100 100>;
+> >+	       flash-timeout = <1000>;
+> >+
+> >	...
+> >  };
+> >
+> >I don't get it; system-status describes single LED, why are iout-torch
+> >(and friends) arrays of two?
 > 
-> > 
-> > I don't particularly like the way you use the 'pci_host_info'
-> > to pass callback pointers and some of the generic information.
-> > This duplicates some of the issues we are currently trying
-> > to untangle in the arm32 code to make drivers easier to share
-> > between architectures.
+> Some devices can control more than one led. The array is for such
+> purposes. The system-status should be probably renamed to
+> something more generic for both common leds and flash leds,
+> e.g. system-led.
+
+No, sorry. The Documentation/devicetree/bindings/leds/common.txt
+describes binding for _one LED_. Yes, your device can have two leds,
+so your devices should have two such blocks in the device tree... Each
+led should have its own label and default trigger, for example. And I
+guess flash-timeout be per-LED, too.
+
+Would it make sense to include "-uA" and "-usec" suffixes in the dt
+property names?
+
+> >Also, at least on adp1653, these are actually two leds -- white and
+> >red. Torch and flash is white led, indicator is red led.
 > 
-> What arm32 code you are trying to untangle for example ?
-
-We have a few problems that currently prevent us from using shared
-drivers across arm32 and arm64:
-
-- arm32 has an architecture-defined pci_sys_data structure, but
-  we really want to have one that is defined by the host bridge driver
-  and that is architecture independent. Some core functions depend
-  on this structure at the moment, which Lorenzo is trying to
-  undo
-
-- The pci_common_init interface on arm32 doesn't work well on
-  loadable drivers, it does not return an error, and it is built
-  around the assumption that you probe all pci host bridges at
-  the same time, while the standard Linux driver model assumes
-  that you probe one at a time.
-
-- The way we pass a temporary structure (hw_pci) with function pointers
-  into the architecture code makes it relatively hard to follow
-  how the initialization sequence works.
- 
-> Introduce pci_host_info here because I want to make the PCI scan interfaces
-> simple to host drviers, host drivers only need to call one scan
-> interface(pci_scan_host_bridge), but from your comments,
-> The combination pci_create_host_bridge() + pci_scan_xx()
-> seems to be more popular.
-
-Yes, I think a simpler interface structure would be better than trying
-to minimize the amount of code needed in drivers at the expense of
-interface complexity.
-
-> > As a general approach, I'd rather see generic helper functions
-> > being exported by the PCI core that a driver may or may not
-> > call. 
-> > The way you split the interface between things that happen
-> > before scanning the buses (pci_create_host_bridge) and
-> > the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
-> > seems very helpful and I think we can expand that concept further:
-> > 
-> > - The normal pci_create_host_bridge() function can contain
-> >   all of the DT scanning functions (finding bus/mem/io resources, 
-> >   finding the msi-parent), while drivers that don't depend on DT
-> >   for this information can call the same function and fill the
-> >   same things after they have the pci_host_bridge pointer.
-> > 
-> > - If a driver needs to set up mapping windows, it can do that after
-> >   calling pci_create_host_bridge(). E.g. all the dw_pcie glue drivers
-> >   can call a dw_pcie_setup_windows() function that takes the resources
-> >   out of the pci_host_bridge pointer before the bus is scanned.
-> > 
-> > - The ACPI code can have a completely different way of creating
-> >   a struct pci_host_bridge, which is also passed into the same
-> >   bus scanning functions, but doesn't have to come from
-> >   pci_create_host_bridge.
+> Then you should define three properties:
 > 
-> I hope platforms with ACPI or DT could both use pci_create_host_bridge().
-> Why we need to use two different ways to process it ?
+> iout-torch = <[uA]>;
+> iout-flash = <[uA]>;
+> iout-indicator = <[uA]>;
+> 
+> iout-torch and iout-flash properties would determine the current
+> for the white led in the torch and flash modes respectively and
+> the iout-indicator property would determine the current for
+> the indicator led.
 
-These are completely different use cases:
+Yes, that would work. I have used
 
-a) For DT, we want loadable device drivers that start by probing a host
-   bridge device which was added through the DT platform code. The
-   driver is self-contained, and eventually we want to be able to unload
-   it. We have lots of different per-soc drivers that require different
-   quirks
++               max-flash-timeout-usec = <500000>;
++               max-flash-intensity-uA     = <320000>;
++               max-torch-intensity-uA     =  <50000>;
++               max-indicator-intensity-uA =  <17500>;
 
-b) For ACPI, the interface is defined in the ACPI spec across architectures
-   and SoCs, we don't have host bridge drivers and the code that initializes
-   the PCI is required early during boot and called from architecture
-   code. There is no parent device, as ACPI sees PCI as a fundamental building
-   block by itself, and there are no drivers because the firmware does
-   the initial hardware setup, so we only have to access the config space.
+. Which is pretty similar. (Actually, maybe the longer property names
+are easier to understand for more people?) (And yes, I should probably
+separate red and white led into separate groups).
 
-	Arnd
+> >>[2] http://www.spinics.net/lists/linux-media/msg83100.html
+> >>[3] http://www.spinics.net/lists/linux-leds/msg02472.html
+> >
+> >What device are you using for testing? Can you cc me on future
+> >patches?
+> 
+> I am using max77693 [1] and aat1290 [2]. OK, I will add you on cc.
+
+Thanks for cc and thanks for links!
+
+I see max77693 has two different "white" leds, aat1290 has one "white"
+led, and neither of them has secondary red led for indication?
+
+> The v4l2-flash sub-device registers with v4l2-async API
+> in a media device. Exemplary support for v4l2-flash
+> sub-devices is added to the exynos4-is driver in the patch [5].
+
+Thanks for the links. It seems that aside from moving adp1653 driver
+to device tree, it should be moved to the LED framework, but that's a
+topic for another patch.
+
+Best regards,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
