@@ -1,108 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462AbaKRO43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:56:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57219 "EHLO mx2.suse.de"
+	id S933448AbaKRO40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:56:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57226 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932141AbaKROJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:50 -0500
+	id S932142AbaKROJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:51 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Quentin Casasnovas <quentin.casasnovas@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        Jamie Iles <jamie.iles@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 102/206] kvm: fix excessive pages un-pinning in kvm_iommu_map error path.
-Date: Tue, 18 Nov 2014 15:07:37 +0100
-Message-Id: <248541357433e3035d954435dafcdb9e70afee4e.1416319692.git.jslaby@suse.cz>
+        Frank Schaefer <fschaefer.oss@googlemail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 099/206] media: em28xx-v4l: give back all active video buffers to the vb2 core properly on streaming stop
+Date: Tue, 18 Nov 2014 15:07:34 +0100
+Message-Id: <e59ec6fb45becf48c400c84124df2ff55c38b930.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
 References: <cover.1416319692.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+From: Frank Schaefer <fschaefer.oss@googlemail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3d32e4dbe71374a6780eaf51d719d76f9a9bf22f upstream.
+commit 627530c32a43283474e9dd3e954519410ffa033a upstream.
 
-The third parameter of kvm_unpin_pages() when called from
-kvm_iommu_map_pages() is wrong, it should be the number of pages to un-pin
-and not the page size.
+When a new video frame is started, the driver takes the next video buffer from
+the list of active buffers and moves it to dev->usb_ctl.vid_buf / dev->usb_ctl.vbi_buf
+for further processing.
 
-This error was facilitated with an inconsistent API: kvm_pin_pages() takes
-a size, but kvn_unpin_pages() takes a number of pages, so fix the problem
-by matching the two.
+On streaming stop we currently only give back the pending buffers from the list
+but not the ones which are currently processed.
 
-This was introduced by commit 350b8bd ("kvm: iommu: fix the third parameter
-of kvm_iommu_put_pages (CVE-2014-3601)"), which fixes the lack of
-un-pinning for pages intended to be un-pinned (i.e. memory leak) but
-unfortunately potentially aggravated the number of pages we un-pin that
-should have stayed pinned. As far as I understand though, the same
-practical mitigations apply.
+This causes the following warning from the vb2 core since kernel 3.15:
 
-This issue was found during review of Red Hat 6.6 patches to prepare
-Ksplice rebootless updates.
+...
+ ------------[ cut here ]------------
+ WARNING: CPU: 1 PID: 2284 at drivers/media/v4l2-core/videobuf2-core.c:2115 __vb2_queue_cancel+0xed/0x150 [videobuf2_core]()
+ [...]
+ Call Trace:
+  [<c0769c46>] dump_stack+0x48/0x69
+  [<c0245b69>] warn_slowpath_common+0x79/0x90
+  [<f925e4ad>] ? __vb2_queue_cancel+0xed/0x150 [videobuf2_core]
+  [<f925e4ad>] ? __vb2_queue_cancel+0xed/0x150 [videobuf2_core]
+  [<c0245bfd>] warn_slowpath_null+0x1d/0x20
+  [<f925e4ad>] __vb2_queue_cancel+0xed/0x150 [videobuf2_core]
+  [<f925fa35>] vb2_internal_streamoff+0x35/0x90 [videobuf2_core]
+  [<f925fac5>] vb2_streamoff+0x35/0x60 [videobuf2_core]
+  [<f925fb27>] vb2_ioctl_streamoff+0x37/0x40 [videobuf2_core]
+  [<f8e45895>] v4l_streamoff+0x15/0x20 [videodev]
+  [<f8e4925d>] __video_do_ioctl+0x23d/0x2d0 [videodev]
+  [<f8e49020>] ? video_ioctl2+0x20/0x20 [videodev]
+  [<f8e48c63>] video_usercopy+0x203/0x5a0 [videodev]
+  [<f8e49020>] ? video_ioctl2+0x20/0x20 [videodev]
+  [<c039d0e7>] ? fsnotify+0x1e7/0x2b0
+  [<f8e49012>] video_ioctl2+0x12/0x20 [videodev]
+  [<f8e49020>] ? video_ioctl2+0x20/0x20 [videodev]
+  [<f8e4461e>] v4l2_ioctl+0xee/0x130 [videodev]
+  [<f8e44530>] ? v4l2_open+0xf0/0xf0 [videodev]
+  [<c0378de2>] do_vfs_ioctl+0x2e2/0x4d0
+  [<c0368eec>] ? vfs_write+0x13c/0x1c0
+  [<c0369a8f>] ? vfs_writev+0x2f/0x50
+  [<c0379028>] SyS_ioctl+0x58/0x80
+  [<c076fff3>] sysenter_do_call+0x12/0x12
+ ---[ end trace 5545f934409f13f4 ]---
+...
 
-Thanks to Vegard for his time on a late Friday evening to help me in
-understanding this code.
+Many thanks to Hans Verkuil, whose recently added check in the vb2 core unveiled
+this long standing issue and who has investigated it further.
 
-Fixes: 350b8bd ("kvm: iommu: fix the third parameter of... (CVE-2014-3601)")
-Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
-Reviewed-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- virt/kvm/iommu.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/media/usb/em28xx/em28xx-video.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index dec997188dfb..a650aa48c786 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -43,13 +43,13 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
- 				gfn_t base_gfn, unsigned long npages);
+diff --git a/drivers/media/usb/em28xx/em28xx-video.c b/drivers/media/usb/em28xx/em28xx-video.c
+index 9d103344f34a..81b21d937201 100644
+--- a/drivers/media/usb/em28xx/em28xx-video.c
++++ b/drivers/media/usb/em28xx/em28xx-video.c
+@@ -695,13 +695,16 @@ static int em28xx_stop_streaming(struct vb2_queue *vq)
+ 	}
  
- static pfn_t kvm_pin_pages(struct kvm_memory_slot *slot, gfn_t gfn,
--			   unsigned long size)
-+			   unsigned long npages)
- {
- 	gfn_t end_gfn;
- 	pfn_t pfn;
+ 	spin_lock_irqsave(&dev->slock, flags);
++	if (dev->usb_ctl.vid_buf != NULL) {
++		vb2_buffer_done(&dev->usb_ctl.vid_buf->vb, VB2_BUF_STATE_ERROR);
++		dev->usb_ctl.vid_buf = NULL;
++	}
+ 	while (!list_empty(&vidq->active)) {
+ 		struct em28xx_buffer *buf;
+ 		buf = list_entry(vidq->active.next, struct em28xx_buffer, list);
+ 		list_del(&buf->list);
+ 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+ 	}
+-	dev->usb_ctl.vid_buf = NULL;
+ 	spin_unlock_irqrestore(&dev->slock, flags);
  
- 	pfn     = gfn_to_pfn_memslot(slot, gfn);
--	end_gfn = gfn + (size >> PAGE_SHIFT);
-+	end_gfn = gfn + npages;
- 	gfn    += 1;
+ 	return 0;
+@@ -723,13 +726,16 @@ int em28xx_stop_vbi_streaming(struct vb2_queue *vq)
+ 	}
  
- 	if (is_error_noslot_pfn(pfn))
-@@ -119,7 +119,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		 * Pin all pages we are about to map in memory. This is
- 		 * important because we unmap and unpin in 4kb steps later.
- 		 */
--		pfn = kvm_pin_pages(slot, gfn, page_size);
-+		pfn = kvm_pin_pages(slot, gfn, page_size >> PAGE_SHIFT);
- 		if (is_error_noslot_pfn(pfn)) {
- 			gfn += 1;
- 			continue;
-@@ -131,7 +131,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		if (r) {
- 			printk(KERN_ERR "kvm_iommu_map_address:"
- 			       "iommu failed to map pfn=%llx\n", pfn);
--			kvm_unpin_pages(kvm, pfn, page_size);
-+			kvm_unpin_pages(kvm, pfn, page_size >> PAGE_SHIFT);
- 			goto unmap_pages;
- 		}
+ 	spin_lock_irqsave(&dev->slock, flags);
++	if (dev->usb_ctl.vbi_buf != NULL) {
++		vb2_buffer_done(&dev->usb_ctl.vbi_buf->vb, VB2_BUF_STATE_ERROR);
++		dev->usb_ctl.vbi_buf = NULL;
++	}
+ 	while (!list_empty(&vbiq->active)) {
+ 		struct em28xx_buffer *buf;
+ 		buf = list_entry(vbiq->active.next, struct em28xx_buffer, list);
+ 		list_del(&buf->list);
+ 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+ 	}
+-	dev->usb_ctl.vbi_buf = NULL;
+ 	spin_unlock_irqrestore(&dev->slock, flags);
  
+ 	return 0;
 -- 
 2.1.3
 
