@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaKRR0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:26:01 -0500
-Received: from mail-by2on0098.outbound.protection.outlook.com ([207.46.100.98]:3205
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753677AbaKRRZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:25:59 -0500
-Date: Tue, 18 Nov 2014 09:25:47 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-rockchip@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH 3/7] pinctrl: pinconf-generic: Allow driver to specify DT
- params
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
- <1415041531-15520-4-git-send-email-soren.brinkmann@xilinx.com>
- <CACRpkdYfj2ydLQ4q_FKwXo73jzNsvj9u2Aem9EiuEw-OCvurrg@mail.gmail.com>
- <1416300621.30131.6.camel@mm-sol.com>
+	id S1754319AbaKRR2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:28:04 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:65110 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079AbaKRR2C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 12:28:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416300621.30131.6.camel@mm-sol.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21114.001
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <995406b8e0244c63a3ef8e58314e81f6@BL2FFO11FD037.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377424004)(24454002)(199003)(164054003)(51704005)(377454003)(189002)(6806004)(95666004)(110136001)(44976005)(99396003)(19580405001)(74316001)(85182001)(50466002)(53416004)(83506001)(93886004)(46102003)(120916001)(104016003)(19580395003)(21056001)(107046002)(4396001)(92566001)(76176999)(54356999)(50986999)(86362001)(20776003)(62966003)(87936001)(77156002)(108616004)(47776003)(102836001)(31966008)(77096003)(106466001)(85202003)(64706001)(23676002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB027;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB027;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB027;
-X-Forefront-PRVS: 039975700A
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB027;
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <1415904621-26800-1-git-send-email-abrestic@chromium.org>
+References: <1415904621-26800-1-git-send-email-abrestic@chromium.org>
+Date: Tue, 18 Nov 2014 09:28:00 -0800
+X-Google-Sender-Auth: NTm13cuPVUBOCvJTn_JAGRMuPRs
+Message-ID: <CAD=FV=WZx6r5L76Bfn2L8WeSU4hKwNJ=tZq_FoT3ot1Hd2ToeQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Add support for IMG Pistachio
+From: Doug Anderson <dianders@chromium.org>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        James Hartley <James.Hartley@imgtec.com>,
+        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-18 at 10:50AM +0200, Ivan T. Ivanov wrote:
-> 
-> On Tue, 2014-11-11 at 15:53 +0100, Linus Walleij wrote:
-> > On Mon, Nov 3, 2014 at 8:05 PM, Soren Brinkmann
-> > brinkmann@xilinx.com> wrote:
-> > 
-> > > Additionally to the generic DT parameters, allow drivers to provide
-> > > driver-specific DT parameters to be used with the generic parser
-> > > infrastructure.
-> > > 
-> > > Signed-off-by: Soren Brinkmann brinkmann@xilinx.com>
-> > 
-> > I like the looks of this, but the patch description is a bit terse.
-> > I'd like it to describe some of the refactorings being done
-> > to the intrinsics, because I have a hard time following the patch.
-> > 
-> > First please rebase onto the "devel" branch in the pin control
-> > tree, and notice that drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-> > which is merged there is actually doing this already:
-> > 
-> > 
-> >         for_each_child_of_node(np_config, np) {
-> >                 ret = pinconf_generic_dt_subnode_to_map(pctldev, np, map,
-> >                                                         &reserv, nmaps, type);
-> >                 if (ret)
-> >                         break;
-> > 
-> >                 ret = pmic_gpio_dt_subnode_to_map(pctldev, np, map, &reserv,
-> >                                                   nmaps, type);
-> >                 if (ret)
-> >                         break;
-> >         }
-> > 
-> > So it should be patched to illustrate the point of this code.
-> > 
-> 
-> I like the idea, but have issues with implementations :-). 
->  
-> It is supposed that additional parameters are not generic, 
-> otherwise they will be part of enum pin_config_param, right?
-> 
-> Probably it will be better if clients could pass array with
-> driver specific dt bindings to pinconf_generic_dt_node_to_map()?
+Andrew,
 
-My idea was to hide that API from the driver. You just pass those
-parameters as part of the struct pctldev and the parser - whether this
-generic one or anything else - would do the right thing. I don't think
-calling the parser from the driver is the right approach.
+On Thu, Nov 13, 2014 at 10:50 AM, Andrew Bresticker
+<abrestic@chromium.org> wrote:
+> Add support for the DW MMC host found on the Imagination Pistachio SoC.
+> Like the DW MMC hosts found on SOCFPGA and Rockchip SoCs, the DW MMC
+> host on Pistachio requires the use of SDMMC_CMD_USE_HOLD_REG.
+>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+>  .../devicetree/bindings/mmc/img-dw-mshc.txt        | 29 ++++++++++++++++++++++
+>  drivers/mmc/host/dw_mmc-pltfm.c                    |  6 +++++
+>  2 files changed, 35 insertions(+)
 
-	Thanks,
-	Sören
+This seems quite sane to me.
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
