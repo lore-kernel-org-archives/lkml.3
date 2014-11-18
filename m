@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230AbaKRTyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 14:54:40 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59669 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753829AbaKRTyi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 14:54:38 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v5 03/18] ACPI / table: Count matched and successfully parsed entries without specifying max entries
-Date: Tue, 18 Nov 2014 21:15:43 +0100
-Message-ID: <7743567.TJcygJtKD3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <546B4EDD.9050804@linaro.org>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-4-git-send-email-hanjun.guo@linaro.org> <546B4EDD.9050804@linaro.org>
+	id S932123AbaKRUHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:07:20 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:51320 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753829AbaKRUHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 15:07:19 -0500
+Message-ID: <546BA6F3.2070106@c-s.fr>
+Date: Tue, 18 Nov 2014 21:07:15 +0100
+From: christophe leroy <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Scott Wood <scottwood@freescale.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v4,17/21] powerpc/8xx: set PTE bit 22 off TLBmiss
+References: <20140919083609.A92871AB040@localhost.localdomain>	 <20141107033745.GA23796@home.buserror.net> <545C7C2E.3060109@c-s.fr> <1415405305.3805.45.camel@snotra.buserror.net>
+In-Reply-To: <1415405305.3805.45.camel@snotra.buserror.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Antivirus: avast! (VPS 141118-2, 18/11/2014), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 18, 2014 09:51:25 PM Hanjun Guo wrote:
-> Hi Rafael,
-> 
-> On 2014年10月17日 21:36, Hanjun Guo wrote:
-> > From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> >
-> > It is very useful to traverse all available table entries without max
-> > number of expected entries type. Current acpi_parse_entries()
-> > implementation gives that feature but it does not count those entries,
-> > it returns 0 instead, so fix it to count matched and successfully
-> > entries and return it.
-> >
-> > NOTE: This change has no impact to x86 and ia64 archs since existing code
-> > checks for error occurrence only (acpi_parse_entries(...,0) < 0).
-> >
-> > Acked-by: Grant Likely <grant.likely@linaro.org>
-> > Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> 
-> Patch 2 and patch 3 are only for ACPI cores, and have no harm to x86
-> and IA64, could you merge first in 3.19?
 
-I can do that if that helps.
+Le 08/11/2014 01:08, Scott Wood a écrit :
+>
+> OK, so the _PAGE_KERNEL_RO(X) stuff is because initially setting the PTE
+> doesn't go through pte_update().
+>
+> I'll apply this, though it'd be cleaner to just have 8xx versions of the
+> relevant PTE accessor functions to maintain the PTE the way the hardware
+> wants (this would also eliminate the _PAGE_RW inversion that's still in
+> the TLB miss handler).
+>
+>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yes, I've been looking at a simple way to also eliminate the _PAGE_RW 
+inversion, but i've not been able to find an easy solution up to now.
+
+It seems that we have two functions that set PTE: set_pte_at() and 
+pte_update()
+I could perform the bit 22 (0x200) stuff and the _PAGE_RW invertion in 
+both functions, but then there are functions that read the PTE to make 
+decision based on PAGE_RW for instance. Most (but not all it seems) do 
+it through pte_val()
+But pte_val() is defined in page.h and doesn't seem to be intended to be 
+family specific. Should I change this ? if so, what is it cleanest way 
+to do so ?
+Should I also change __pgprot() and __pte() to do the bit 22 and PAGE_RW 
+inversion stuffs ? But not all functions use those accessors.
+
+So for the time being I don't see the best way to progress on this. Any 
+suggestion ?
+
+Christophe
+
+---
+Ce courrier électronique ne contient aucun virus ou logiciel malveillant parce que la protection avast! Antivirus est active.
+http://www.avast.com
+
