@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749AbaKRIWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:22:03 -0500
-Received: from ozlabs.org ([103.22.144.67]:36431 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045AbaKRIWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:22:00 -0500
-Date: Tue, 18 Nov 2014 19:21:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>
-Subject: linux-next: build warning after merge of the scsi tree
-Message-ID: <20141118192148.1c77179c@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753803AbaKRIWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:22:18 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:52636 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767AbaKRIWO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 03:22:14 -0500
+Date: Tue, 18 Nov 2014 08:22:07 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: broonie@kernel.org, mturquette@linaro.org, a.zummo@towertech.it,
+        lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
+        geunsik.lim@samsung.com, inki.dae@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/5] mfd: sec-core: Add support for S2MPS13 device
+Message-ID: <20141118082207.GU24004@x1>
+References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
+ <1416184980-532-2-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/GQfrx+RN=pKpBd0idFwR6Fl"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416184980-532-2-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GQfrx+RN=pKpBd0idFwR6Fl
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, 17 Nov 2014, Chanwoo Choi wrote:
 
-Hi James,
+> This patch adds the support for Samsung S2MPS13 PMIC device to the sec-core MFD
+> driver. The S2MPS13 is very similar with existing S2MPS14 and includes PMIC/
+> RTC/CLOCK devices.
+> 
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/mfd/sec-core.c           | 18 ++++++++++++++++++
+>  drivers/mfd/sec-irq.c            | 23 +++++++++++++++++------
+>  include/linux/mfd/samsung/core.h |  1 +
+>  3 files changed, 36 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+> index 5993608..48c0d4a 100644
+> --- a/drivers/mfd/sec-core.c
+> +++ b/drivers/mfd/sec-core.c
+> @@ -73,6 +73,17 @@ static const struct mfd_cell s2mps11_devs[] = {
+>  	}
+>  };
+>  
+> +static const struct mfd_cell s2mps13_devs[] = {
+> +	{
+> +		.name = "s2mps13-pmic",
+> +	}, {
+> +		.name = "s2mps13-rtc",
+> +	}, {
+> +		.name = "s2mps13-clk",
+> +		.of_compatible = "samsung,s2mps13-clk",
+> +	}
+> +};
 
-After merging the scsi tree, today's linux-next build (powerpc
-allyesconfig) produced this warning:
+If you have to resubmit this for any reason, I'd like the one liners
+on one single line (curly braces and all).
 
-drivers/scsi/ibmvscsi/ibmvfc.c: In function 'ibmvfc_queuecommand_lck':
-drivers/scsi/ibmvscsi/ibmvfc.c:1618:5: warning: unused variable 'tag' [-Wun=
-used-variable]
-  u8 tag[2];
-     ^
+But for now, for my reference:
 
-Introduced by commit 5066863337af ("scsi: remove abuses of
-scsi_populate_tag").
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+[...]
 
---Sig_/GQfrx+RN=pKpBd0idFwR6Fl
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUawGlAAoJEMDTa8Ir7ZwVRbcP/1Wxq69z14jsH/wxFUgS3W03
-dEMKhE8G27V4Y5DDGi6ZMyJpkc56Sr1RMxZXLOZgkOTgxLODoDlH5O1pzOzKA9f5
-gpD1lBezYbvTorjGIU80GmyMGFQ2mtCz6V7y4qzj1T2eYs4ojsA69g5AohR7C5nM
-pyVp/T+XU5tJo+r0k/xjPPi+v6lEIxZR4GpQE2r4vLWOcTEOd/DplnOGHDdeODo0
-8DxoIF9gdGdYf8s/M0nhaX1uBZEbNVgzlaSiAHVII7axPQl2sad3Y756NOO1Mtpd
-z73ryMGu5nT2fPQLkcZk8sutfKQ4JMG5rMuU+tUtl6KuM//ceX8v8WQM+Z/YvCs9
-63hrhSMXFjVKJJlHsZYH+VCxAXrxvZeHOXXWYHYUqnUQHCpAhJMoeI5x3y/w4M9e
-SiO0rTN28nN4gzzm5M0hmQjd/KHhEWcVvgURAT5n/KW6s+XIb/0QCnwZxvhoTtGy
-BHf0DPASYbMbh8SwzzPA6FGaR5TBQfHDNUD7R0NhLKdGYDcJGvG7fOT7HvhUIXrS
-XJuQNC7gR0Qtsq6IDe35fgZ/SFIZobr4/3nYCSaBjQlmkIMra2qBrSal48uCP2uc
-TvVNo8byv433RjPapV2Y+RV4sl/sUGBNzumCAJ6d7EiKTCevg5JunpmALE0VL2Z8
-nig2k9wFyey4eKVuWmsY
-=blrP
------END PGP SIGNATURE-----
-
---Sig_/GQfrx+RN=pKpBd0idFwR6Fl--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
