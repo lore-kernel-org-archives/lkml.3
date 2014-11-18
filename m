@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbaKRDUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:20:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447AbaKRDUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:20:10 -0500
-Message-ID: <546AB959.1020602@redhat.com>
-Date: Mon, 17 Nov 2014 19:13:29 -0800
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753585AbaKRDVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:21:50 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:10359 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751547AbaKRDVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 22:21:49 -0500
+Date: Mon, 17 Nov 2014 22:21:45 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 00/26 v5] trace-seq/seq-buf/x86/printk: Print all stacks
+ from NMI safely
+Message-ID: <20141117222145.5c55a0f3@gandalf.local.home>
+In-Reply-To: <20141115045847.712848224@goodmis.org>
+References: <20141115045847.712848224@goodmis.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Duyck <alexander.duyck@gmail.com>
-CC: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
-        peterz@infradead.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
-        michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb()
- and fast_wmb()
-References: <20141117171005.22333.96544.stgit@ahduyck-server>	 <20141117171812.22333.90395.stgit@ahduyck-server>	 <1416254687.18381.3.camel@kernel.crashing.org> <546A5968.1090201@gmail.com> <1416271167.18381.16.camel@kernel.crashing.org>
-In-Reply-To: <1416271167.18381.16.camel@kernel.crashing.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+So far the only difference between v5 I have is that I split the update
+of tracing_fill_pipe_page() out of "tracing: Use trace_seq_used() and
+seq_buf_used() instead of len", and this:
 
-On 11/17/2014 04:39 PM, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-11-17 at 12:24 -0800, Alexander Duyck wrote:
->> Yes and no.  So for example on ARM I used the dmb() operation, however
->> I
->> have to use the barrier at the system level instead of just the inner
->> shared domain.  However on many other architectures they are just the
->> same as the smp_* variants.
->>
->> Basically the resultant code is somewhere between the smp and non-smp
->> barriers in terms of what they cover.
-> There I don't quite follow you. You need to explain better especially in
-> the documentation because otherwise people will get it wrong...
->
-> If it's ordering in the coherent domain, I fail to see how a DMA agent
-> is different than another processor when it comes to barriers, so I fail
-> to see the difference with smp_*
->
-> I understand the MMIO vs. memory issue, we do have the same on powerpc,
-> but that other aspect eludes me.
->
-> Ben.
+-- Steve
 
-ARM adds some funky things.  They have two different types of 
-primitives, a dmb() which is a data memory barrier, and a dsb() which is 
-a data synchronization barrier.  Then with each of those they have the 
-"domains" the barriers are effective within.
-
-So for example on ARM a rmb() is dsb(sy) which means it is a system wide 
-synchronization barrier which stops execution on the CPU core until the 
-read completes.  However the smp_rmb() is a dmb(ish) which means it is 
-only a barrier as far as the inner shareable domain which I believe only 
-goes as far as the local shared cache hierarchy and only guarantees read 
-ordering without necessarily halting the CPU or stopping in-order 
-speculative reads.  So what a coherent_rmb() would be in my setup is 
-dmb(sy) which means the barrier runs all the way out to memory, and it 
-is allowed to speculative read as long as it does it in order.
-
-If it is still unclear you might check out Will Deacon's talk on the 
-topic at https://www.youtube.com/watch?v=6ORn6_35kKo, at about 7:00 in 
-he explains the whole domains thing, and at 13:30 he explains dmb()/dsb().
-
-- Alex
-
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9f1ffc707f3b..9023446b2c2b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4601,7 +4601,7 @@ tracing_fill_pipe_page(size_t rem, struct trace_iterator *iter)
+ 		count = trace_seq_used(&iter->seq) - save_len;
+ 		if (rem < count) {
+ 			rem = 0;
+-			iter->seq.seq.len = save_len;;
++			iter->seq.seq.len = save_len;
+ 			break;
+ 		}
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 2193e8038681..a72f3d8d813e 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -131,6 +131,10 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+ 	trace_seq_printf(s, "%s(", entry->name);
+ 
+ 	for (i = 0; i < entry->nb_args; i++) {
++
++		if (trace_seq_has_overflowed(s))
++			goto end;
++
+ 		/* parameter types */
+ 		if (trace_flags & TRACE_ITER_VERBOSE)
+ 			trace_seq_printf(s, "%s ", entry->types[i]);
+diff --git a/lib/seq_buf.c b/lib/seq_buf.c
+index a2288ca567a3..4eedfedb9e31 100644
+--- a/lib/seq_buf.c
++++ b/lib/seq_buf.c
+@@ -16,6 +16,14 @@
+ #include <linux/seq_file.h>
+ #include <linux/seq_buf.h>
+ 
++/**
++ * seq_buf_can_fit - can the new data fit in the current buffer?
++ * @s: the seq_buf descriptor
++ * @len: The length to see if it can fit in the current buffer
++ *
++ * Returns true if there's enough unused space in the seq_buf buffer
++ * to fit the amount of new data according to @len.
++ */
+ static bool seq_buf_can_fit(struct seq_buf *s, size_t len)
+ {
+ 	return s->len + len <= s->size;
