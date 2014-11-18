@@ -1,99 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaKRIdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:33:17 -0500
-Received: from mail-am1hn0254.outbound.protection.outlook.com ([157.56.112.254]:28928
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753512AbaKRIdO convert rfc822-to-8bit (ORCPT
+	id S1754099AbaKRId2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:33:28 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33057 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512AbaKRIdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:33:14 -0500
-X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 03:33:13 EST
-Reply-To: <privateidentityonly@hotmail.com>
-From: WEBMASTER HELP DESK <sfranke6@uwo.ca>
-Subject: Help Desk
-Date: Tue, 18 Nov 2014 09:17:47 +0100
-MIME-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 141117-1, 11/17/2014), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <XFE0101ZrAEXCUOGqca0005f03b@xfe0101.intranet.mango.es>
-X-OriginalArrivalTime: 18 Nov 2014 08:17:49.0171 (UTC) FILETIME=[23F64C30:01D00308]
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130607722804150740;(ab4adfae-475f-40be-88db-08d0a446e814);()
-X-Forefront-Antispam-Report: CIP:195.57.226.4;CTRY:ES;IPV:CAL;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10009020)(6009001)(199003)(189002)(325944007)(87936001)(15975445006)(566704002)(107886001)(107046002)(105606002)(16601075003)(81816999)(229853001)(106466001)(86362001)(99396003)(16796002)(61296003)(68736004)(88136002)(46102003)(92726001)(74482002)(87286001)(566174002)(110136001)(19580395003)(102836001)(84676001)(81686999)(19580405001)(50986999)(93916002)(89996001)(44976005)(120916001)(15202345003)(104166001)(21056001)(20776003)(551544002)(221733001)(1671002)(97736003)(44716002)(62966003)(23686002)(26826002)(53806999)(47776003)(95666004)(62236002)(50466002)(64706001)(43066003)(77156002)(50226001)(4396001)(1676001);DIR:OUT;SFP:1501;SCL:5;SRVR:DB3PR02MB0588;H:xgw0101.intranet.mango.es;FPR:;MLV:ovrspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0588;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(7)(6);SRVR:DB3PR02MB0588;
-X-Forefront-PRVS: 039975700A
-Authentication-Results: spf=fail (sender IP is 195.57.226.4)
- smtp.mailfrom=sfranke6@uwo.ca; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(402001)(401002)(400003);SRVR:DB3PR02MB0588;
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 18 Nov 2014 03:33:23 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-4a-546b043e2c3b
+Message-id: <546B043E.5040000@samsung.com>
+Date: Tue, 18 Nov 2014 17:33:02 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: broonie@kernel.org, mturquette@linaro.org, a.zummo@towertech.it,
+        lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
+        geunsik.lim@samsung.com, inki.dae@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/5] mfd: sec-core: Add support for S2MPS13 device
+References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
+ <1416184980-532-2-git-send-email-cw00.choi@samsung.com>
+ <20141118082207.GU24004@x1>
+In-reply-to: <20141118082207.GU24004@x1>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsWyRsSkUNeOJTvE4P0Ka4slF6+yW0x9+ITN
+	Yv6Rc6wWfya0sllMuj+BxeJs0xt2i/tfjzJafLvSwWRxedccNounEy6yWZzuZrW4uOILkwOP
+	x85Zd9k9Nq3qZPO4c20Pm8e8k4EefVtWMXpMn/eTyePzJrkA9igum5TUnMyy1CJ9uwSujCk3
+	XzEWnOSpmP+gh7GB8RlnFyMnh4SAicS0W89ZIWwxiQv31rN1MXJxCAksZZSYtuAnG0zRnK0L
+	mSASixglrly7zQzhvGaU+DHtK1gVr4CWROvbc4xdjBwcLAKqEnv7dUHCbEDh/S9ugJWICoRJ
+	rJx+hQWiXFDix+R7LCDlIgIqEufemIOMZBboY5L43fOAHaRGWMBNYu6Li1C7ZjNKPHz7GuxU
+	TgENiTftB5lAbGYBdYlJ8xYxQ9jyEpvXvAVrkBBo5JDY1HmXESTBIiAg8W3yIbBtEgKyEpsO
+	MEN8JilxcMUNlgmMYrOQ3DQLydhZSMYuYGRexSiaWpBcUJyUXmSqV5yYW1yal66XnJ+7iREY
+	u6f/PZu4g/H+AetDjAIcjEo8vAlTs0KEWBPLiitzDzGaAl0xkVlKNDkfmCDySuINjc2MLExN
+	TI2NzC3NlMR5daR/BgsJpCeWpGanphakFsUXleakFh9iZOLglGpg7P+2492O+tsF/hZmh/gs
+	DTtZk8rXvbD/ErRsipvpJZGMuVfVjJ4F/gheHx27ou23jcyWwNLMwlff+9oWNGZGdsry/HOf
+	JfY+fbYn4wp9fgmJ9TUbe0L/PNpzeIdXrcYJv08FD5pqL29ty64+OE/9/JFXFtPjD3/eHvPo
+	o2656zmhR/y1ZudklFiKMxINtZiLihMBo+wmvtgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgK4dS3aIwd43JhZLLl5lt5j68Amb
+	xfwj51gt/kxoZbOYdH8Ci8XZpjfsFve/HmW0+Halg8ni8q45bBZPJ1xkszjdzWpxccUXJgce
+	j52z7rJ7bFrVyeZx59oeNo95JwM9+rasYvSYPu8nk8fnTXIB7FENjDYZqYkpqUUKqXnJ+SmZ
+	eem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QIcqKZQl5pQChQISi4uV9O0wTQgN
+	cdO1gGmM0PUNCYLrMTJAAwlrGDOm3HzFWHCSp2L+gx7GBsZnnF2MnBwSAiYSc7YuZIKwxSQu
+	3FvP1sXIxSEksIhR4sq128wQzmtGiR/TvrKBVPEKaEm0vj3H2MXIwcEioCqxt18XJMwGFN7/
+	4gZYiahAmMTK6VdYIMoFJX5MvscCUi4ioCJx7o05yEhmgT4mid89D9hBaoQF3CTmvrgItWs2
+	o8TDt69ZQRKcAhoSb9oPgl3HLKAuMWneImYIW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqm
+	FiQXFCel5xrqFSfmFpfmpesl5+duYgQnhmdSOxhXNlgcYhTgYFTi4U2YmhUixJpYVlyZe4hR
+	goNZSYT3XDdQiDclsbIqtSg/vqg0J7X4EKMpMAQmMkuJJucDk1ZeSbyhsYmZkaWRuaGFkbG5
+	kjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQZG2wa/c+YLWy/1HGQ9+eTUfo2sT9Z9i8/HTdk4
+	K2GFXr3ka87HrL0VNz8uUD7LvaD+bbJy0yM2rc0x88TyjZ8kzpv/6/sZi2MN9fEn98yavHZK
+	uMmzV6xZX06t/fwv/VabV6ELA5+nb4zDh975SQGcx0qCD7IGrv938scHF1/VRbGbGi3tO/UL
+	lViKMxINtZiLihMB7QHMtCIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to notify all STAFF/WEBMAIL users who have not upgraded their emails are advised to upgrade their email accounts to secure it immediately, in order to avoid loosing their email accounts.Please fill in the space details below and send to our HelpDesk care centre E-mail address: helpdeskcare@qq.com to begin the upgrade. This updating is compulsory as a result of our recent server changes.
+Dear Lee,
 
-E-MAIL IN FULL:..............................................
+On 11/18/2014 05:22 PM, Lee Jones wrote:
+> On Mon, 17 Nov 2014, Chanwoo Choi wrote:
+> 
+>> This patch adds the support for Samsung S2MPS13 PMIC device to the sec-core MFD
+>> driver. The S2MPS13 is very similar with existing S2MPS14 and includes PMIC/
+>> RTC/CLOCK devices.
+>>
+>> Cc: Lee Jones <lee.jones@linaro.org>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> ---
+>>  drivers/mfd/sec-core.c           | 18 ++++++++++++++++++
+>>  drivers/mfd/sec-irq.c            | 23 +++++++++++++++++------
+>>  include/linux/mfd/samsung/core.h |  1 +
+>>  3 files changed, 36 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+>> index 5993608..48c0d4a 100644
+>> --- a/drivers/mfd/sec-core.c
+>> +++ b/drivers/mfd/sec-core.c
+>> @@ -73,6 +73,17 @@ static const struct mfd_cell s2mps11_devs[] = {
+>>  	}
+>>  };
+>>  
+>> +static const struct mfd_cell s2mps13_devs[] = {
+>> +	{
+>> +		.name = "s2mps13-pmic",
+>> +	}, {
+>> +		.name = "s2mps13-rtc",
+>> +	}, {
+>> +		.name = "s2mps13-clk",
+>> +		.of_compatible = "samsung,s2mps13-clk",
+>> +	}
+>> +};
+> 
+> If you have to resubmit this for any reason, I'd like the one liners
+> on one single line (curly braces and all).
 
-PASSWORD:...................................................
+OK, I'll modify it as following:
 
-RE-TYPE PASSWORD:..........................................
+static const struct mfd_cell s2mps13_devs[] = {
+	{ .name = "s2mps13-pmic", },
+	{ .name = "s2mps13-rtc", },
+	{
+		.name = "s2mps13-clk",
+		.of_compatible = "samsung,s2mps13-clk",
+	},
+};
 
-DATE OF BIRTH:..............................................
+Best Regards,
+Chanwoo Choi
 
-Alternate E-mail:...........................................
-
-HelpDesk Team
-© Copyright 2014.
-
----
-This email is free from viruses and malware because avast! Antivirus protection is active.
-http://www.avast.com
-
-
-
- 
-
-                                                             
-
- 
-
-                                                             Para el medioambiente cada gesto cuenta: por favor, no imprimas este e-mail si no es realmente necesario
-
- 
-
- 
-
- 
-
-                                                             
+> 
+> But for now, for my reference:
+> 
+> Acked-by: Lee Jones <lee.jones@linaro.org>
 
 
-							     Este correo y sus archivos asociados son privados y confidenciales. La difusión por cualquier medio del contenido de este correo 
-							     
-							     
-						             podría ser sancionada conforme a lo previsto en las leyes españolas.
 
- 
 
- 
-
-                                                             Each one of us can do our bit for the environment: please, do not print this e-mail unless it is absolutely essential.
-
- 
-							     This e-mail and its attached files are confidential. The diffusion of the contents of this e-mail by whatever 
-								
-							     
-							     means may be penalised in accordance with Spanish law.
- 
- 
-
-                                                           
