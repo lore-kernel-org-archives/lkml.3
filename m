@@ -1,81 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaKRCoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 21:44:14 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:28740 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751499AbaKRCoN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 21:44:13 -0500
-Date: Mon, 17 Nov 2014 21:44:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [RFC][PATCH 11/23 v4] tracing: Do not use return values of
- trace_seq_printf() in syscall tracing
-Message-ID: <20141117214411.73a12be4@gandalf.local.home>
-In-Reply-To: <87ioids587.fsf@sejong.aot.lge.com>
-References: <20141114011244.256115061@goodmis.org>
-	<20141114011411.842421346@goodmis.org>
-	<87ioids587.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1753130AbaKRCts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 21:49:48 -0500
+Received: from mga11.intel.com ([192.55.52.93]:55639 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaKRCtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 21:49:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,407,1413270000"; 
+   d="scan'208";a="633577475"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v6] sched/deadline: support dl task migration during cpu hotplug
+Date: Tue, 18 Nov 2014 10:49:36 +0800
+Message-Id: <1416278976-15565-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014 09:49:12 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+I observe that dl task can't be migrated to other cpus during cpu hotplug,
+in addition, task may/may not be running again if cpu is added back. The
+root cause which I found is that dl task will be throtted and removed from
+dl rq after comsuming all budget, which leads to stop task can't pick it up
+from dl rq and migrate to other cpus during hotplug.
 
-> On Thu, 13 Nov 2014 20:12:55 -0500, Steven Rostedt wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> >
-> > The functions trace_seq_printf() and friends will not be returning values
-> > soon and will be void functions. To know if they succeeded or not, the
-> > functions trace_seq_has_overflowed() and trace_handle_return() should be
-> > used instead.
-> >
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  kernel/trace/trace_syscalls.c | 43 +++++++++++++++----------------------------
-> >  1 file changed, 15 insertions(+), 28 deletions(-)
-> >
-> > diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> > index 4dc8b79c5f75..2193e8038681 100644
-> > --- a/kernel/trace/trace_syscalls.c
-> > +++ b/kernel/trace/trace_syscalls.c
-> > @@ -114,7 +114,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
-> >  	struct trace_entry *ent = iter->ent;
-> >  	struct syscall_trace_enter *trace;
-> >  	struct syscall_metadata *entry;
-> > -	int i, ret, syscall;
-> > +	int i, syscall;
-> >  
-> >  	trace = (typeof(trace))ent;
-> >  	syscall = trace->nr;
-> > @@ -128,35 +128,24 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
-> >  		goto end;
-> >  	}
-> >  
-> > -	ret = trace_seq_printf(s, "%s(", entry->name);
-> > -	if (!ret)
-> > -		return TRACE_TYPE_PARTIAL_LINE;
-> > +	trace_seq_printf(s, "%s(", entry->name);
-> >  
-> >  	for (i = 0; i < entry->nb_args; i++) {
-> 
-> 		if (trace_seq_has_overflowed())
-> 			goto end;
-> ?
+The method to reproduce:
+schedtool -E -t 50000:100000 -e ./test
+Actually test is just a simple for loop. Then observe which cpu the test
+task is on.
+echo 0 > /sys/devices/system/cpu/cpuN/online
 
-Yeah, I guess I can do that.
+This patch adds the dl task migration during cpu hotplug by finding a most
+suitable later deadline rq after dl timer fire if current rq is offline,
+if fail to find a suitable later deadline rq then fallback to any eligible
+online cpu in order that the deadline task will come back to us, and the
+push/pull mechanism should then move it around properly.
 
-Oh well, so much for not needing to post the first 13 patches again ;-)
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v5 -> v6:
+ * add double_lock_balance in the fallback path
+v4 -> v5:
+ * remove raw_spin_unlock(&rq->lock)
+ * cleanup codes, spotted by Peterz
+ * cleanup patch description
+v3 -> v4:
+ * use tsk_cpus_allowed wrapper
+ * fix compile error
+v2 -> v3:
+ * don't get_task_struct
+ * if cannot preempt any rq, fallback to pick any online cpus
+ * use cpu_active_mask as original later_mask if cpu is offline
+v1 -> v2:
+ * push the task to another cpu in dl_task_timer() if rq is offline.
 
--- Steve
+ kernel/sched/deadline.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 42 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index abfaf3d..8e9c238 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+ 	return hrtimer_active(&dl_se->dl_timer);
+ }
+ 
++static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+ /*
+  * This is the bandwidth enforcement timer callback. If here, we know
+  * a task is not on its dl_rq, since the fact that the timer was running
+@@ -530,6 +531,44 @@ again:
+ 	update_rq_clock(rq);
+ 	dl_se->dl_throttled = 0;
+ 	dl_se->dl_yielded = 0;
++
++	/*
++	 * So if we find that the rq the task was on is no longer
++	 * available, we need to select a new rq.
++	 */
++	if (unlikely(!rq->online)) {
++		struct rq *later_rq = NULL;
++
++		later_rq = find_lock_later_rq(p, rq);
++
++		if (!later_rq) {
++			int cpu;
++
++			/*
++			 * If cannot preempt any rq, fallback to pick any
++			 * online cpu.
++			 */
++			cpu = cpumask_any_and(cpu_active_mask,
++					tsk_cpus_allowed(p));
++			if (cpu >= nr_cpu_ids) {
++				pr_warn("fail to find any online cpu and task will never come back\n");
++				goto unlock;
++			}
++			later_rq = cpu_rq(cpu);
++			double_lock_balance(rq, later_rq);
++		}
++
++		deactivate_task(rq, p, 0);
++		set_task_cpu(p, later_rq->cpu);
++		activate_task(later_rq, p, 0);
++
++		resched_curr(later_rq);
++
++		double_unlock_balance(rq, later_rq);
++
++		goto unlock;
++	}
++
+ 	if (task_on_rq_queued(p)) {
+ 		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+ 		if (task_has_dl_policy(rq->curr))
+@@ -1168,8 +1207,9 @@ static int find_later_rq(struct task_struct *task)
+ 	 * We have to consider system topology and task affinity
+ 	 * first, then we can look for a suitable cpu.
+ 	 */
+-	cpumask_copy(later_mask, task_rq(task)->rd->span);
+-	cpumask_and(later_mask, later_mask, cpu_active_mask);
++	cpumask_copy(later_mask, cpu_active_mask);
++	if (likely(task_rq(task)->online))
++		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
+ 	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+ 	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+ 			task, later_mask);
+-- 
+1.7.1
+
