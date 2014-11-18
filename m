@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322AbaKRMXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:23:01 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:53806 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754256AbaKRMW5 (ORCPT
+	id S1754368AbaKRMXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:23:11 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39635 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328AbaKRMXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:22:57 -0500
+	Tue, 18 Nov 2014 07:23:07 -0500
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-tegra@vger.kernel.org
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
@@ -18,12 +18,11 @@ Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 04/14] of: document new emc-timings subnode in nvidia,tegra124-car
-Date: Tue, 18 Nov 2014 13:13:06 +0100
-Message-Id: <1416312860-4446-5-git-send-email-tomeu.vizoso@collabora.com>
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 05/14] of: Document timings subnode of nvidia,tegra-mc
+Date: Tue, 18 Nov 2014 13:13:07 +0100
+Message-Id: <1416312860-4446-6-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416312860-4446-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1416312860-4446-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -31,81 +30,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EMC clock needs some extra information for changing its rate.
+The MC driver needs some timing-specific information to program the EMEM during
+a rate change of the EMC clock.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
 ---
 
-v5:	* Remove constraint on the unit-address of the timings and timing subnodes
-
-v4:	* Remove comma from unit-address of CAR node in the example
-	* Simplify reg property value in the example
+v4:	* Add more information about nvidia,emem-configuration
+	* Remove mandatory naming of the timings subnode
+	* Remove constraint on the unit-address of the timings and timing subnodes
 ---
- .../bindings/clock/nvidia,tegra124-car.txt         | 42 +++++++++++++++++++++-
- 1 file changed, 41 insertions(+), 1 deletion(-)
+ .../memory-controllers/nvidia,tegra-mc.txt         | 84 +++++++++++++++++++++-
+ 1 file changed, 82 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
-index ded5d62..2197ffd 100644
---- a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
-+++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
-@@ -19,10 +19,31 @@ Required properties :
-   In clock consumers, this cell represents the bit number in the CAR's
-   array of CLK_RST_CONTROLLER_RST_DEVICES_* registers.
+diff --git a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
+index f3db93c..3338a28 100644
+--- a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
++++ b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
+@@ -1,6 +1,9 @@
+ NVIDIA Tegra Memory Controller device tree bindings
+ ===================================================
  
-+The node should contain a "emc-timings" subnode for each supported RAM type (see
-+field RAM_CODE in register PMC_STRAPPING_OPT_A).
++memory-controller node
++----------------------
++
+ Required properties:
+ - compatible: Should be "nvidia,tegra<chip>-mc"
+ - reg: Physical base address and length of the controller's registers.
+@@ -15,9 +18,49 @@ Required properties:
+ This device implements an IOMMU that complies with the generic IOMMU binding.
+ See ../iommu/iommu.txt for details.
+ 
+-Example:
+---------
++emc-timings subnode
++-------------------
++
++The node should contain a "emc-timings" subnode for each supported RAM type (see field RAM_CODE in
++register PMC_STRAPPING_OPT_A).
 +
 +Required properties for "emc-timings" nodes :
-+- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
-+  is used for.
++- nvidia,ram-code : Should contain the value of RAM_CODE this timing set is used for.
 +
-+Each "emc-timings" node should contain a "timing" subnode for every supported
-+EMC clock rate.
++timing subnode
++--------------
 +
-+Required properties for "timing" nodes :
-+- clock-frequency : Should contain the memory clock rate to which this timing
-+relates.
-+- nvidia,parent-clock-frequency : Should contain the rate at which the current
-+parent of the EMC clock should be running at this timing.
-+- clocks : Must contain an entry for each entry in clock-names.
-+  See ../clocks/clock-bindings.txt for details.
-+- clock-names : Must include the following entries:
-+  - emc-parent : the clock that should be the parent of the EMC clock at this
-+timing.
++Each "emc-timings" node should contain a subnode for every supported EMC clock rate.
 +
- Example SoC include file:
++Required properties for timing nodes :
++- clock-frequency : Should contain the memory clock rate in Hz.
++- nvidia,emem-configuration : Values to be written to the EMEM register block. For the Tegra124 SoC
++(see section "15.6.1 MC Registers" in the TRM), these are the registers whose values need to be
++specified, according to the board documentation:
++
++	MC_EMEM_ARB_CFG
++	MC_EMEM_ARB_OUTSTANDING_REQ
++	MC_EMEM_ARB_TIMING_RCD
++	MC_EMEM_ARB_TIMING_RP
++	MC_EMEM_ARB_TIMING_RC
++	MC_EMEM_ARB_TIMING_RAS
++	MC_EMEM_ARB_TIMING_FAW
++	MC_EMEM_ARB_TIMING_RRD
++	MC_EMEM_ARB_TIMING_RAP2PRE
++	MC_EMEM_ARB_TIMING_WAP2PRE
++	MC_EMEM_ARB_TIMING_R2R
++	MC_EMEM_ARB_TIMING_W2W
++	MC_EMEM_ARB_TIMING_R2W
++	MC_EMEM_ARB_TIMING_W2R
++	MC_EMEM_ARB_DA_TURNS
++	MC_EMEM_ARB_DA_COVERS
++	MC_EMEM_ARB_MISC0
++	MC_EMEM_ARB_MISC1
++	MC_EMEM_ARB_RING1_THROTTLE
  
- / {
--	tegra_car: clock {
-+	tegra_car: clock@60006000 {
- 		compatible = "nvidia,tegra124-car";
- 		reg = <0x60006000 0x1000>;
- 		#clock-cells = <1>;
-@@ -60,4 +81,23 @@ Example board file:
- 	&tegra_car {
- 		clocks = <&clk_32k> <&osc>;
- 	};
++Example SoC include file:
 +
-+	clock@60006000 {
++/ {
+ 	mc: memory-controller@0,70019000 {
+ 		compatible = "nvidia,tegra124-mc";
+ 		reg = <0x0 0x70019000 0x0 0x1000>;
+@@ -34,3 +77,40 @@ Example:
+ 		...
+ 		iommus = <&mc TEGRA_SWGROUP_SDMMC1A>;
+ 	};
++};
++
++Example board file:
++
++/ {
++	memory-controller@0,70019000 {
 +		emc-timings-3 {
 +			nvidia,ram-code = <3>;
 +
 +			timing-12750000 {
 +				clock-frequency = <12750000>;
-+				nvidia,parent-clock-frequency = <408000000>;
-+				clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
-+				clock-names = "emc-parent";
-+			};
-+			timing-20400000 {
-+				clock-frequency = <20400000>;
-+				nvidia,parent-clock-frequency = <408000000>;
-+				clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
-+				clock-names = "emc-parent";
++
++				nvidia,emem-configuration = <
++					0x40040001 /* MC_EMEM_ARB_CFG */
++					0x8000000a /* MC_EMEM_ARB_OUTSTANDING_REQ */
++					0x00000001 /* MC_EMEM_ARB_TIMING_RCD */
++					0x00000001 /* MC_EMEM_ARB_TIMING_RP */
++					0x00000002 /* MC_EMEM_ARB_TIMING_RC */
++					0x00000000 /* MC_EMEM_ARB_TIMING_RAS */
++					0x00000002 /* MC_EMEM_ARB_TIMING_FAW */
++					0x00000001 /* MC_EMEM_ARB_TIMING_RRD */
++					0x00000002 /* MC_EMEM_ARB_TIMING_RAP2PRE */
++					0x00000008 /* MC_EMEM_ARB_TIMING_WAP2PRE */
++					0x00000003 /* MC_EMEM_ARB_TIMING_R2R */
++					0x00000002 /* MC_EMEM_ARB_TIMING_W2W */
++					0x00000003 /* MC_EMEM_ARB_TIMING_R2W */
++					0x00000006 /* MC_EMEM_ARB_TIMING_W2R */
++					0x06030203 /* MC_EMEM_ARB_DA_TURNS */
++					0x000a0402 /* MC_EMEM_ARB_DA_COVERS */
++					0x77e30303 /* MC_EMEM_ARB_MISC0 */
++					0x70000f03 /* MC_EMEM_ARB_MISC1 */
++					0x001f0000 /* MC_EMEM_ARB_RING1_THROTTLE */
++				>;
 +			};
 +		};
 +	};
- };
++};
 -- 
 1.9.3
 
