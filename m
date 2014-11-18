@@ -1,347 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365AbaKRPmt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:42:49 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:34526 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398AbaKRPmr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:42:47 -0500
-Date: Tue, 18 Nov 2014 15:42:43 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "huxinwei@huawei.com" <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Liviu Dudau <liviu@dudau.co.uk>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Yijing Wang <wangyijing0307@gmail.com>
-Subject: Re: [RFC PATCH 08/16] PCI: Introduce pci_scan_host_bridge() and
- pci_host_info
-Message-ID: <20141118154243.GM12037@e106497-lin.cambridge.arm.com>
-References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
- <1416219710-26088-9-git-send-email-wangyijing@huawei.com>
+	id S1756439AbaKRPmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:42:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59901 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756376AbaKRPmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:42:53 -0500
+Date: Tue, 18 Nov 2014 15:42:46 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH 0/7] Replace _PAGE_NUMA with PAGE_NONE protections
+Message-ID: <20141118154246.GB2725@suse.de>
+References: <1415971986-16143-1-git-send-email-mgorman@suse.de>
+ <5466C8A5.3000402@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <1416219710-26088-9-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 18 Nov 2014 15:42:44.0489 (UTC) FILETIME=[4B9C8F90:01D00346]
-X-MC-Unique: 114111815424505701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <5466C8A5.3000402@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 10:21:42AM +0000, Yijing Wang wrote:
-> From: Yijing Wang <wangyijing0307@gmail.com>
+On Fri, Nov 14, 2014 at 10:29:41PM -0500, Sasha Levin wrote:
+> On 11/14/2014 08:32 AM, Mel Gorman wrote:> This is follow up from the "pipe/page fault oddness" thread.
 > 
-> Now pci_host_bridge has been ripped out from pci root
-> bus creation. Currently pci_scan_root_bus() lacks
-> scalability, so platform host drivers have no proper
-> way to configure pci_host_bridge. E.g we should assign
-> msi_controller to pci_host_bridge, add argument for
-> pci_scan_root_bus() is not a good idea, it has already
-> five, so introudce struct pci_host_info to make
-> pci scan interfaces more scalable. Because almost
-> all host drivers need to configure host resources,
-> so we put .init_res() in it first, and add other
-> hooks when need.
+> Hi Mel,
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/pci/host-bridge.c |   27 +++++++++-------
->  drivers/pci/probe.c       |   73 ++++++++++++++++++++++++++++++++++++++++++--
->  include/linux/pci.h       |   20 ++++++++++++-
->  3 files changed, 103 insertions(+), 17 deletions(-)
+> Applying this patch series I've started seeing the following straight away:
 > 
-> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-> index e31604f..49b6c21 100644
-> --- a/drivers/pci/host-bridge.c
-> +++ b/drivers/pci/host-bridge.c
-> @@ -8,9 +8,6 @@
->  
->  #include "pci.h"
->  
-> -LIST_HEAD(pci_host_bridge_list);
-> -DECLARE_RWSEM(pci_host_bridge_sem);
-> -
->  static struct resource busn_resource = {
->  	.name	= "PCI busn",
->  	.start	= 0,
-> @@ -18,6 +15,9 @@ static struct resource busn_resource = {
->  	.flags	= IORESOURCE_BUS,
->  };
->  
-> +LIST_HEAD(pci_host_bridge_list);
-> +DECLARE_RWSEM(pci_host_bridge_sem);
-> +
->  static void pci_release_host_bridge_dev(struct device *dev)
->  {
->  	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
-> @@ -29,14 +29,12 @@ static void pci_release_host_bridge_dev(struct device *dev)
->  }
->  
->  struct pci_host_bridge *pci_create_host_bridge(
-> -		struct device *parent, u32 db, 
-> -		struct pci_ops *ops, void *sysdata, 
-> -		struct list_head *resources)
-> +		struct device *parent, u32 db, struct pci_ops *ops, 
-> +		struct pci_host_info *info)
->  {
->  	int error;
->  	struct pci_bus *b;
->  	struct pci_host_bridge *host, *h;
-> -	struct pci_host_bridge_window *window, *n;
->  
->  	down_read(&pci_host_bridge_sem);
->  	list_for_each_entry(h, &pci_host_bridge_list, list) {
-> @@ -53,7 +51,7 @@ struct pci_host_bridge *pci_create_host_bridge(
->  	if (!host)
->  		return NULL;
->  
-> -	host->sysdata = sysdata;
-> +	host->sysdata = info->arg;
->  	host->busnum = PCI_BUSNUM(db);
->  	host->domain = PCI_DOMAIN(db);
->  	host->ops = ops;
-> @@ -63,18 +61,23 @@ struct pci_host_bridge *pci_create_host_bridge(
->  
->  	/* this is hack, just for build, will be removed later*/
+> [  367.547848] page:ffffea0003fb7db0 count:1007 mapcount:1005 mapping:ffff8800691f2f58 index:0x37
+> [  367.551481] flags: 0x5001aa8030202d(locked|referenced|uptodate|lru|writeback|unevictable|mlocked)
+> [  367.555382] page dumped because: VM_BUG_ON_PAGE(!v9inode->writeback_fid)
+> [  367.558262] page->mem_cgroup:ffff88006d8a1bd8
+> [  367.560403] ------------[ cut here ]------------
+> [  367.562343] kernel BUG at fs/9p/vfs_addr.c:190!
+> [  367.564239] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC KASAN
+> [  367.566991] Dumping ftrace buffer:
+> [  367.568481]    (ftrace buffer empty)
+> [  367.569914] Modules linked in:
+> [  367.570254] CPU: 3 PID: 8234 Comm: kworker/u52:1 Not tainted 3.18.0-rc4-next-20141114-sasha-00054-ga9ff95e-dirty #1459
 
-Why do you need this hack? Just for calling pci_domain_nr() ?
+Thanks Sasha. I don't see a next-20141114 so I looked at next-20141113 and
+assuming they are similar. It does not appear that writeback_fid is a struct
+page so it's not clear what VM_BUG_ON_PAGE means in this context. Certainly
+the fields look screwy but I think it's just accessing garbage.
 
->  	b = kzalloc(sizeof(*b), GFP_KERNEL);
-> -	b->sysdata = sysdata;
-> +	b->sysdata = host->sysdata;
->  	pci_bus_assign_domain_nr(b, parent);
->  	host->domain = pci_domain_nr(b);
-> +	kfree(b);
->  
-> -	if (!resources) {
-> +	if (info->res_type == PCI_HOST_RES_DEFAULT) {
->  		/* Use default IO/MEM/BUS resources*/
->  		pci_add_resource(&host->windows, &ioport_resource);
->  		pci_add_resource(&host->windows, &iomem_resource);
->  		pci_add_resource(&host->windows, &busn_resource);
->  	} else {
-> -		list_for_each_entry_safe(window, n, resources, list)
-> -			list_move_tail(&window->list, &host->windows);
-> +		if (!info->init_res || info->init_res(host, info)) {
-> +			pr_err("pci host %04x:%02x init resources fail\n",
-> +					host->domain, host->busnum);
-> +			kfree(host);
-> +			return NULL;
-> +		}
->  	}
->  
->  	dev_set_name(&host->dev, "pci%04x:%02x", host->domain, 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index d472da4..42158fd 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1863,6 +1863,21 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
->  {
->  }
->  
-> +static int pci_default_init_res(struct pci_host_bridge *host,
-> +		struct pci_host_info *info)
-> +{
-> +	struct pci_host_bridge_window *window, *n;
-> +
-> +	if (info->res_type != PCI_HOST_RES_DEFAULT) 
-> +		list_for_each_entry_safe(window, n, info->resources,
-> +				list)
-> +			list_move_tail(&window->list, &host->windows);
-> +	else
-> +		info->res_type = PCI_HOST_RES_DEFAULT;
+I tried reproducing this but my KVM setup appears to be broken after an
+update and not even able to boot 3.17 properly let alone with the patches. I
+still have a few questions though.
 
-I'm confused about this assignment. Isn't this a nop as the else part
-means info->res_type *is* PCI_HOST_RES_DEFAULT?
+1. I'm assuming this is a KVM setup but can you confirm?
+2. Are you using numa=fake=N?
+3. If you are using fake NUMA, what happens if you boot without it as
+   that should make the patches a no-op?
+4. Similarly, does the kernel boot properly without without patches?
+5. Are any other patches applied because the line numbers are not lining
+   up exactly?
+6. As my own KVM setup appears broken, can you tell me if the host
+   kernel has changed recently? If so, does using an older host kernel
+   make a difference?
 
-> +
-> +	return 0;
-> +}
-> +
->  struct pci_bus *__pci_create_root_bus(struct pci_host_bridge *bridge)
->  {
->  	int error;
-> @@ -1949,13 +1964,17 @@ err_out:
->  	return NULL;
->  }
->  
-> -struct pci_bus *pci_create_root_bus(struct device *parent, u32 bus,
-> +struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
->  		struct pci_ops *ops, void *sysdata, struct list_head *resources)
->  {
->  	struct pci_host_bridge *host;
-> +	struct pci_host_info info;
-> +	
-> +	info.arg= sysdata;
-> +	info.resources = resources;
-> +	info.init_res = pci_default_init_res;
->  
-> -	host = pci_create_host_bridge(parent, bus, ops, 
-> -			sysdata ,resources);
-> +	host = pci_create_host_bridge(parent, db, ops, &info);
->  	if (!host)
->  		return NULL;
->  
-> @@ -2038,8 +2057,13 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
->  	bool found = false;
->  	struct pci_host_bridge *host;
->  	int max;
-> +	struct pci_host_info info;
-> +	
-> +	info.arg = sysdata;
-> +	info.resources = resources;
-> +	info.init_res = pci_default_init_res;
-
-I have mixed feelings about this patch. While it is heading in the right direction
-of moving pci_host_bridge relevant information towards the right user, I don't think
-you picked up the right set to move. The resource list is going to be copied into
-internal pci_host_bridge list anyway, keeping another copy is not helpful *and*
-you have increased the code size.
-
-I think for now we should aim to get the *missing* data into pci_host_bridge: MSI
-controllers and PCI domain/segment. Then we can do more cleanup.
-
->  
-> -	host = pci_create_host_bridge(parent, db, ops, sysdata, resources);
-> +	host = pci_create_host_bridge(parent, db, ops, &info);
->  	if (!host)
->  		return NULL;
->  
-> @@ -2070,6 +2094,47 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
->  }
->  EXPORT_SYMBOL(pci_scan_root_bus);
->  
-> +struct pci_host_bridge *pci_scan_host_bridge(
-> +		struct device *parent, u32 db, struct pci_ops *ops,
-> +		struct pci_host_info *info)
-> +{
-> +	struct pci_host_bridge_window *window;
-> +	bool found = false;
-> +	struct pci_host_bridge *host;
-> +	int max;
-> +
-> +	host = pci_create_host_bridge(parent, db, ops, info);
-> +	if (!host)
-> +		return NULL;
-> +
-> +	list_for_each_entry(window, &host->windows, list)
-> +		if (window->res->flags & IORESOURCE_BUS) {
-> +			found = true;
-> +			break;
-> +		}
-> +
-> +	host->bus = __pci_create_root_bus(host);
-> +	if (!host->bus) {
-> +		pci_free_host_bridge(host);
-> +		return NULL;
-> +	}
-> +
-> +	if (!found) {
-> +		dev_info(&host->bus->dev,
-> +		 "No busn resource found for root bus, will use [bus %02x-ff]\n",
-> +			host->busnum);
-> +		pci_bus_insert_busn_res(host->bus, host->busnum, 255);
-> +	}
-> +
-> +	max = pci_scan_child_bus(host->bus);
-> +	if (!found)
-> +		pci_bus_update_busn_res_end(host->bus, max);
-> +
-> +	return host;
-> +
-> +}
-> +EXPORT_SYMBOL(pci_scan_host_bridge);
-> +
->  /**
->   * pci_rescan_bus_bridge_resize - scan a PCI bus for devices.
->   * @bridge: PCI bridge for the bus to scan
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index daa7f40..a51f5f5 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -412,6 +412,21 @@ struct pci_host_bridge {
->  	void *release_data;
->  };
->  
-> +struct pci_host_info {
-> +	u8 res_type;
-> +	void *arg;
-> +	struct list_head *resources; /*just for build, will clean up later */
-> +	int (*init_res)(struct pci_host_bridge *host, 
-> +			struct pci_host_info *info);
-> +};
-> +
-> +static inline void init_pci_host_info(struct pci_host_info *info)
-> +{
-> +	memset(info, 0 , sizeof(*info));
-> +}
-
-Where is this used?
-
-> +
-> +#define PCI_HOST_RES_DEFAULT	0x2
-> +
-
-Magic number?
-
-Best regards,
-Liviu
-
->  #define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
->  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
->  		     void (*release_fn)(struct pci_host_bridge *),
-> @@ -420,7 +435,7 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
->  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
->  struct pci_host_bridge *pci_create_host_bridge(
->  		struct device *parent, u32 db, struct pci_ops *ops, 
-> -		void *sys, struct list_head *resources);
-> +		struct pci_host_info *info);
->  /*
->   * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
->   * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
-> @@ -785,6 +800,9 @@ void pci_bus_release_busn_res(struct pci_bus *b);
->  struct pci_bus *pci_scan_root_bus(struct device *parent, u32 bus,
->  					     struct pci_ops *ops, void *sysdata,
->  					     struct list_head *resources);
-> +struct pci_host_bridge *pci_scan_host_bridge(struct device *parent,
-> +		u32 db, struct pci_ops *ops,
-> +		struct pci_host_info *info);
->  struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
->  				int busnr);
->  void pcie_update_link_speed(struct pci_bus *bus, u16 link_status);
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+At the moment I'm scratching my head trying to figure out how the
+patches could break 9p like this as I don't believe KVM is doing any
+tricks with the same bits that could result in loss.
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Mel Gorman
+SUSE Labs
