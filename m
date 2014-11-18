@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaKRJAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 04:00:04 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:36025 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324AbaKRI76 (ORCPT
+	id S1753946AbaKRJAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 04:00:18 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:39426 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324AbaKRJAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:59:58 -0500
-X-AuditID: cbfee68f-f791c6d000004834-f2-546b0a8026b6
+	Tue, 18 Nov 2014 04:00:11 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-71-546b0a80fe01
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: lee.jones@linaro.org, broonie@kernel.org, mturquette@linaro.org,
         a.zummo@towertech.it
@@ -16,37 +16,37 @@ Cc: lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
         kyungmin.park@samsung.com, k.kozlowski@samsung.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv2 1/5] mfd: sec-core: Add support for S2MPS13 device
-Date: Tue, 18 Nov 2014 17:59:39 +0900
-Message-id: <1416301183-10478-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv2 4/5] rtc: s5m: Add the support for S2MPS13 RTC
+Date: Tue, 18 Nov 2014 17:59:42 +0900
+Message-id: <1416301183-10478-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
 References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42JZI2JSotvAlR1i8PWbrMWSi1fZLaY+fMJm
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSqNvAlR1icP+socWSi1fZLaY+fMJm
 	cf3Lc1aL+UfOsVr8mdDKZjHp/gQWi9cvDC3ONr1ht7j/9SijxbcrHUwWl3fNYbN4OuEim8Xp
 	blaLiyu+MDnweeycdZfdY9OqTjaPO9f2sHnMOxno0bdlFaPH9Hk/mTw+b5ILYI/isklJzcks
-	Sy3St0vgyjjxZzdTwXapiquPT7I1MB4S7WLk5JAQMJE4/+IRO4QtJnHh3no2EFtIYCmjxPNJ
-	6jA1N6f9AIpzAcWnM0ocevCeEcJpYpLY2PSFEaSKTUBLYv+LG2DdIgLREsefHgcrYhboYZJ4
-	37sRrEhYwEXi5NtlYDaLgKrE3M6PzCA2r4CrxNnzj9kg1ilILFs+kxXE5hRwkzhwfDHUSa4S
-	pzsPMoMMlRC4xC6xZPY0qEECEt8mH2LpYuQASshKbDrADDFHUuLgihssExiFFzAyrGIUTS1I
-	LihOSi8y1itOzC0uzUvXS87P3cQIjJ7T/57172C8e8D6EKMAB6MSD2/C1KwQIdbEsuLK3EOM
-	pkAbJjJLiSbnA2M0ryTe0NjMyMLUxNTYyNzSTEmcd6HUz2AhgfTEktTs1NSC1KL4otKc1OJD
-	jEwcnFINjCzT2uTibKosv5u/bBFSr517KmZKicC0y77PZ8aqidU27f14Zs+PH28O/joeW7FX
-	3qXZ81ffbt/oez5fW2f57vsQ+1/2ppZ56qachutNJes9Zyz1c1UqMY843fO12D+nvip9umfg
-	lZlCe5kzhb3aru+OPM6dmL4+KydwXoDDZMmdd+wTz7mXKrEUZyQaajEXFScCAEsvm92ZAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jQd0GruwQgwunRCyWXLzKbjH14RM2
+	Sy3St0vgypi64SlTwQKZiiOfrjA3ML4V62Lk5JAQMJG4ceUNG4QtJnHh3nowW0hgKaPE4rt8
+	MDUbJ61mhohPZ5RYMEOmi5ELyG5iktjY9IURJMEmoCWx/8UNsGYRgWiJ40+PM4IUMQv0MEm8
+	790I5HBwCAs4SFz+6AVSwyKgKvH/zmJWEJtXwFXi1LJWJohlChLLls8Ei3MKuEkcOL4Y6iBX
+	idOdB5lBZkoIXGOXuDz1JiPEIAGJb5MPsYDMlxCQldh0gBlijqTEwRU3WCYwCi9gZFjFKJpa
+	kFxQnJReZKJXnJhbXJqXrpecn7uJERg5p/89m7CD8d4B60OMAhyMSjy8iVOzQoRYE8uKK3MP
+	MZoCbZjILCWanA+Mz7ySeENjMyMLUxNTYyNzSzMlcd7XUj+DhQTSE0tSs1NTC1KL4otKc1KL
+	DzEycXBKNTB2aa5ava1326Ii6QB7XvZ56ZKybSwrD664IO9yVfrWs0lWrV3+DzaaFGl6Lji9
+	M+TnkwsZ2WfMuqU2THF6071axn9W2MEzN1ZN9533XeVFlXjnmYyL6bscl+Twab+dGD9JxD7A
+	It/87ePLZ5a592jan/r/I0HbemHVLfX/TF47+YP/7zi8QL5eiaU4I9FQi7moOBEAlPRGZpcC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t9jQd0GruwQgw87NCyWXLzKbjH14RM2
 	i+tfnrNazD9yjtXiz4RWNotJ9yewWLx+YWhxtukNu8X9r0cZLb5d6WCyuLxrDpvF0wkX2SxO
 	d7NaXFzxhcmBz2PnrLvsHptWdbJ53Lm2h81j3slAj74tqxg9ps/7yeTxeZNcAHtUA6NNRmpi
 	SmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtDFSgpliTmlQKGA
-	xOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaME392MxVsl6q4+vgkWwPjIdEuRk4OCQET
-	iZvTfrBB2GISF+6tB7K5OIQEpjNKHHrwnhHCaWKS2Nj0hRGkik1AS2L/ixtgHSIC0RLHnx4H
-	K2IW6GGSeN+7EaxIWMBF4uTbZWA2i4CqxNzOj8wgNq+Aq8TZ84+h1ilILFs+kxXE5hRwkzhw
-	fDFYXAio5nTnQeYJjLwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH5zPpHYyrGiwO
-	MQpwMCrx8CZOzQoRYk0sK67MPcQowcGsJMJ7rhsoxJuSWFmVWpQfX1Sak1p8iNEU6KqJzFKi
-	yfnAxJFXEm9obGJmZGlkbmhhZGyuJM57sNU6UEggPbEkNTs1tSC1CKaPiYNTqoGxLTJg+/IF
-	Pz6GhlUH1l3bYh/ygvHnbIG0BXzb95VXbYt8rK9Zq/P89YugS40f98YElQTdE636ErDs8F/m
-	f96Cb6qXHP+dx2Yi3rEx5MEXJ12BUp/178qnXXu0L6E4Lrhs9T13u1il2tN8E5dteHas9G/s
-	tbOPG3Z/em+weY5Pd9eN6csU21MMlViKMxINtZiLihMBQquA5eQCAAA=
+	xOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMqRueMhUskKk48ukKcwPjW7EuRk4OCQET
+	iY2TVjND2GISF+6tZwOxhQSmM0osmCHTxcgFZDcxSWxs+sIIkmAT0JLY/+IGWJGIQLTE8afH
+	GUGKmAV6mCTe924Ecjg4hAUcJC5/9AKpYRFQlfh/ZzEriM0r4CpxalkrE8QyBYlly2eCxTkF
+	3CQOHF8MtdhV4nTnQeYJjLwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH5jPpHYyr
+	GiwOMQpwMCrx8CZOzQoRYk0sK67MPcQowcGsJMJ7rhsoxJuSWFmVWpQfX1Sak1p8iNEU6KqJ
+	zFKiyfnApJFXEm9obGJmZGlkbmhhZGyuJM57sNU6UEggPbEkNTs1tSC1CKaPiYNTqoExUHy7
+	wZEbJuWSTT4pjQ1V+Vp912e+7bE8XMjMnfpkubD4qyma+1PlyoRz9J4XTY9sqbeantV69GDw
+	3wDdqLpHTQxaQpsXbb7qc3j9ui9y6TnWu/TMagOyV3RU+ap42TyaE6+tn5ScrGduvYnt7eRJ
+	exbs6FfgE3PnZLactiL2eFvsni1XrimxFGckGmoxFxUnAgDHS0Gp4gIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,116 +54,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the support for Samsung S2MPS13 PMIC device to the sec-core MFD
-driver. The S2MPS13 is very similar with existing S2MPS14 and includes PMIC/
-RTC/CLOCK devices.
+This patch adds only the compatible string for S2MPS13 RTC which is identical
+with S2MPS14 RTC driver.
 
-Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Sangbeom Kim <sbkim73@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/sec-core.c           | 16 ++++++++++++++++
- drivers/mfd/sec-irq.c            | 23 +++++++++++++++++------
- include/linux/mfd/samsung/core.h |  1 +
- 3 files changed, 34 insertions(+), 6 deletions(-)
+ drivers/rtc/rtc-s5m.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 5993608..868f03d 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -73,6 +73,15 @@ static const struct mfd_cell s2mps11_devs[] = {
- 	}
- };
- 
-+static const struct mfd_cell s2mps13_devs[] = {
-+	{ .name = "s2mps13-pmic", },
-+	{ .name = "s2mps13-rtc", },
-+	{
-+		.name = "s2mps13-clk",
-+		.of_compatible = "samsung,s2mps13-clk",
-+	},
-+};
-+
- static const struct mfd_cell s2mps14_devs[] = {
- 	{
- 		.name = "s2mps14-pmic",
-@@ -107,6 +116,9 @@ static const struct of_device_id sec_dt_match[] = {
- 		.compatible = "samsung,s2mps11-pmic",
- 		.data = (void *)S2MPS11X,
- 	}, {
-+		.compatible = "samsung,s2mps13-pmic",
-+		.data = (void *)S2MPS13X,
-+	}, {
- 		.compatible = "samsung,s2mps14-pmic",
- 		.data = (void *)S2MPS14X,
- 	}, {
-@@ -377,6 +389,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 		sec_devs = s2mps11_devs;
- 		num_sec_devs = ARRAY_SIZE(s2mps11_devs);
+diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+index 8754c33..e5fdfd3 100644
+--- a/drivers/rtc/rtc-s5m.c
++++ b/drivers/rtc/rtc-s5m.c
+@@ -191,6 +191,7 @@ static inline int s5m_check_peding_alarm_interrupt(struct s5m_rtc_info *info,
+ 		ret = regmap_read(info->regmap, S5M_RTC_STATUS, &val);
+ 		val &= S5M_ALARM0_STATUS;
  		break;
 +	case S2MPS13X:
-+		sec_devs = s2mps13_devs;
-+		num_sec_devs = ARRAY_SIZE(s2mps13_devs);
-+		break;
  	case S2MPS14X:
- 		sec_devs = s2mps14_devs;
- 		num_sec_devs = ARRAY_SIZE(s2mps14_devs);
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index f9a5786..ba86a91 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -389,14 +389,22 @@ static const struct regmap_irq_chip s2mps11_irq_chip = {
- 	.ack_base = S2MPS11_REG_INT1,
- };
- 
-+#define S2MPS1X_IRQ_CHIP_COMMON_DATA		\
-+	.irqs = s2mps14_irqs,			\
-+	.num_irqs = ARRAY_SIZE(s2mps14_irqs),	\
-+	.num_regs = 3,				\
-+	.status_base = S2MPS14_REG_INT1,	\
-+	.mask_base = S2MPS14_REG_INT1M,		\
-+	.ack_base = S2MPS14_REG_INT1		\
-+
-+static const struct regmap_irq_chip s2mps13_irq_chip = {
-+	.name = "s2mps13",
-+	S2MPS1X_IRQ_CHIP_COMMON_DATA,
-+};
-+
- static const struct regmap_irq_chip s2mps14_irq_chip = {
- 	.name = "s2mps14",
--	.irqs = s2mps14_irqs,
--	.num_irqs = ARRAY_SIZE(s2mps14_irqs),
--	.num_regs = 3,
--	.status_base = S2MPS14_REG_INT1,
--	.mask_base = S2MPS14_REG_INT1M,
--	.ack_base = S2MPS14_REG_INT1,
-+	S2MPS1X_IRQ_CHIP_COMMON_DATA,
- };
- 
- static const struct regmap_irq_chip s2mpu02_irq_chip = {
-@@ -452,6 +460,9 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
- 	case S2MPS11X:
- 		sec_irq_chip = &s2mps11_irq_chip;
+ 		ret = regmap_read(info->s5m87xx->regmap_pmic, S2MPS14_REG_ST2,
+ 				&val);
+@@ -254,6 +255,7 @@ static inline int s5m8767_rtc_set_alarm_reg(struct s5m_rtc_info *info)
+ 	case S5M8767X:
+ 		data &= ~S5M_RTC_TIME_EN_MASK;
  		break;
 +	case S2MPS13X:
-+		sec_irq_chip = &s2mps13_irq_chip;
-+		break;
  	case S2MPS14X:
- 		sec_irq_chip = &s2mps14_irq_chip;
+ 		data |= S2MPS_RTC_RUDR_MASK;
  		break;
-diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index 1825eda..0c0343e 100644
---- a/include/linux/mfd/samsung/core.h
-+++ b/include/linux/mfd/samsung/core.h
-@@ -41,6 +41,7 @@ enum sec_device_type {
- 	S5M8767X,
- 	S2MPA01,
- 	S2MPS11X,
-+	S2MPS13X,
- 	S2MPS14X,
- 	S2MPU02,
+@@ -311,7 +313,9 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	u8 data[info->regs->regs_count];
+ 	int ret;
+ 
+-	if (info->device_type == S2MPS14X) {
++	switch (info->device_type) {
++	case S2MPS13X:
++	case S2MPS14X:
+ 		ret = regmap_update_bits(info->regmap,
+ 				info->regs->rtc_udr_update,
+ 				S2MPS_RTC_RUDR_MASK, S2MPS_RTC_RUDR_MASK);
+@@ -333,6 +337,7 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		s5m8767_data_to_tm(data, tm, info->rtc_24hr_mode);
+ 		break;
+@@ -359,6 +364,7 @@ static int s5m_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 		s5m8763_tm_to_data(tm, data);
+ 		break;
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		ret = s5m8767_tm_to_data(tm, data);
+ 		break;
+@@ -406,6 +412,7 @@ static int s5m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		s5m8767_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
+ 		alrm->enabled = 0;
+@@ -454,6 +461,7 @@ static int s5m_rtc_stop_alarm(struct s5m_rtc_info *info)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		for (i = 0; i < info->regs->regs_count; i++)
+ 			data[i] &= ~ALARM_ENABLE_MASK;
+@@ -498,6 +506,7 @@ static int s5m_rtc_start_alarm(struct s5m_rtc_info *info)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		data[RTC_SEC] |= ALARM_ENABLE_MASK;
+ 		data[RTC_MIN] |= ALARM_ENABLE_MASK;
+@@ -537,6 +546,7 @@ static int s5m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		s5m8767_tm_to_data(&alrm->time, data);
+ 		break;
+@@ -641,6 +651,7 @@ static int s5m8767_rtc_init_reg(struct s5m_rtc_info *info)
+ 		ret = regmap_raw_write(info->regmap, S5M_ALARM0_CONF, data, 2);
+ 		break;
+ 
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		data[0] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
+ 		ret = regmap_write(info->regmap, info->regs->ctrl, data[0]);
+@@ -678,6 +689,7 @@ static int s5m_rtc_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	switch (pdata->device_type) {
++	case S2MPS13X:
+ 	case S2MPS14X:
+ 		regmap_cfg = &s2mps14_rtc_regmap_config;
+ 		info->regs = &s2mps_rtc_regs;
+@@ -831,6 +843,7 @@ static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
+ 
+ static const struct platform_device_id s5m_rtc_id[] = {
+ 	{ "s5m-rtc",		S5M8767X },
++	{ "s2mps13-rtc",	S2MPS13X },
+ 	{ "s2mps14-rtc",	S2MPS14X },
  };
+ 
 -- 
 1.8.5.5
 
