@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaKRNq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:46:58 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47169 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457AbaKRNqz (ORCPT
+	id S1754569AbaKRNrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:47:21 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51945 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508AbaKRNrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:46:55 -0500
-Date: Tue, 18 Nov 2014 14:46:18 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Flora Fu <flora.fu@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Dongdong Cheng <dongdong.cheng@mediatek.com>
-Subject: Re: [PATCH 2/7] mfd: MT6397: Add regmap for MT8135 and MT6397 SoC
-Message-ID: <20141118134618.GF30369@pengutronix.de>
-References: <1416210027-5562-1-git-send-email-flora.fu@mediatek.com>
- <1416210027-5562-3-git-send-email-flora.fu@mediatek.com>
- <20141118114645.GX24004@x1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141118114645.GX24004@x1>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:44:07 up 34 days, 57 min, 86 users,  load average: 0.14, 0.10,
- 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 18 Nov 2014 08:47:17 -0500
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] net: can: remove unused variable
+Date: Tue, 18 Nov 2014 19:17:06 +0530
+Message-Id: <1416318427-28676-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 11:46:45AM +0000, Lee Jones wrote:
-> On Mon, 17 Nov 2014, Flora Fu wrote:
-> 
-> > Add PMIC wrapper of MT8135 to access MFD MT6397.
-> > This is regmap of MT6397 MFD.
-> > 
-> > Signed-off-by: Flora Fu <flora.fu@mediatek.com>
-> > ---
-> >  drivers/mfd/Kconfig            |   8 +
-> >  drivers/mfd/Makefile           |   1 +
-> >  drivers/mfd/mt8135-pmic-wrap.c | 847 +++++++++++++++++++++++++++++++++++++++++
-> 
-> All of the PMIC functionality needs removing from MFD and placed
-> somewhere else.  I suggest either drivers/power or drivers/regulator.
+these variable were only assigned some values, but then never
+reused again.
+so they are safe to be removed.
 
-This is no PMIC functionality. The MT8135 has a unit which is is used to
-access the PMIC (which is not only a PMIC, but also Touchscreen
-interface and other stuff). This unit is called pmic-wrapper in the
-docs. See the introductory mail for a nice picture.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ drivers/net/can/sja1000/kvaser_pci.c | 5 +----
+ drivers/net/can/usb/ems_usb.c        | 3 +--
+ drivers/net/can/usb/esd_usb2.c       | 2 --
+ 3 files changed, 2 insertions(+), 8 deletions(-)
 
-Sascha
-
+diff --git a/drivers/net/can/sja1000/kvaser_pci.c b/drivers/net/can/sja1000/kvaser_pci.c
+index 8ff3424..15c00fa 100644
+--- a/drivers/net/can/sja1000/kvaser_pci.c
++++ b/drivers/net/can/sja1000/kvaser_pci.c
+@@ -214,7 +214,7 @@ static int kvaser_pci_add_chan(struct pci_dev *pdev, int channel,
+ 	struct net_device *dev;
+ 	struct sja1000_priv *priv;
+ 	struct kvaser_pci *board;
+-	int err, init_step;
++	int err;
+ 
+ 	dev = alloc_sja1000dev(sizeof(struct kvaser_pci));
+ 	if (dev == NULL)
+@@ -235,7 +235,6 @@ static int kvaser_pci_add_chan(struct pci_dev *pdev, int channel,
+ 	if (channel == 0) {
+ 		board->xilinx_ver =
+ 			ioread8(board->res_addr + XILINX_VERINT) >> 4;
+-		init_step = 2;
+ 
+ 		/* Assert PTADR# - we're in passive mode so the other bits are
+ 		   not important */
+@@ -264,8 +263,6 @@ static int kvaser_pci_add_chan(struct pci_dev *pdev, int channel,
+ 	priv->irq_flags = IRQF_SHARED;
+ 	dev->irq = pdev->irq;
+ 
+-	init_step = 4;
+-
+ 	dev_info(&pdev->dev, "reg_base=%p conf_addr=%p irq=%d\n",
+ 		 priv->reg_base, board->conf_addr, dev->irq);
+ 
+diff --git a/drivers/net/can/usb/ems_usb.c b/drivers/net/can/usb/ems_usb.c
+index 00f2534..29d3f09 100644
+--- a/drivers/net/can/usb/ems_usb.c
++++ b/drivers/net/can/usb/ems_usb.c
+@@ -434,10 +434,9 @@ static void ems_usb_read_bulk_callback(struct urb *urb)
+ 	if (urb->actual_length > CPC_HEADER_SIZE) {
+ 		struct ems_cpc_msg *msg;
+ 		u8 *ibuf = urb->transfer_buffer;
+-		u8 msg_count, again, start;
++		u8 msg_count, start;
+ 
+ 		msg_count = ibuf[0] & ~0x80;
+-		again = ibuf[0] & 0x80;
+ 
+ 		start = CPC_HEADER_SIZE;
+ 
+diff --git a/drivers/net/can/usb/esd_usb2.c b/drivers/net/can/usb/esd_usb2.c
+index b7c9e8b..d25e88f 100644
+--- a/drivers/net/can/usb/esd_usb2.c
++++ b/drivers/net/can/usb/esd_usb2.c
+@@ -464,7 +464,6 @@ static void esd_usb2_write_bulk_callback(struct urb *urb)
+ {
+ 	struct esd_tx_urb_context *context = urb->context;
+ 	struct esd_usb2_net_priv *priv;
+-	struct esd_usb2 *dev;
+ 	struct net_device *netdev;
+ 	size_t size = sizeof(struct esd_usb2_msg);
+ 
+@@ -472,7 +471,6 @@ static void esd_usb2_write_bulk_callback(struct urb *urb)
+ 
+ 	priv = context->priv;
+ 	netdev = priv->netdev;
+-	dev = priv->usb2;
+ 
+ 	/* free up our allocated buffer */
+ 	usb_free_coherent(urb->dev, size,
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.8.1.2
+
