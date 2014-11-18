@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135AbaKRLsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:48:54 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:22124 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305AbaKRLsx (ORCPT
+	id S1753736AbaKRLuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:50:09 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:16287 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaKRLuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:48:53 -0500
-Message-ID: <546B320A.4060202@huawei.com>
-Date: Tue, 18 Nov 2014 19:48:26 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 01/16] irqdomain: Introduce new interfaces to support
- hierarchy irqdomains
-References: <20141112133941.647950773@linutronix.de> <20141112134119.881823615@linutronix.de> <546B1067.2020403@huawei.com> <alpine.DEB.2.11.1411181048110.3909@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411181048110.3909@nanos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.546B3216.00D3,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7e1ae2310568d419ea66557ddbfd4639
+	Tue, 18 Nov 2014 06:50:07 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-71-546b326b2fbd
+Subject: [PATCH 1/2 v2] scripts/coccinelle: catch freeing cryptographic
+ structures via kfree
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Eric Biederman <ebiederm@xmission.com>
+Cc: Michal Marek <mmarek@suse.cz>, Herbert Xu <herbert@gondor.apana.org.au>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, linux-crypto@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Date: Tue, 18 Nov 2014 14:50:03 +0400
+Message-id: <20141118114920.13498.73584.stgit@buzz>
+In-reply-to: <20141117151420.10739.16342.stgit@buzz>
+References: <20141117151420.10739.16342.stgit@buzz>
+User-Agent: StGit/0.17.1-dirty
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/xy7rZRtkhBvu+W1jMOd/CYvF/Wwu7
+	xeyfl5gsul/JWCx7cJrR4sfOXlaL3ae/Mlncv/eTyeLyrjlsFi37LjBZHHu5nMmB22PLyptM
+	HtsOqHocO9bK7LF3S5bH5iX1Hn1bVjF6nFlwhN3j8yY5jymH2lkCOKO4bFJSczLLUov07RK4
+	Mub8PcFacJavYsbc54wNjFN5uhg5OSQETCTuL1jGCmGLSVy4t54NxBYSWMoo0bbHvIuRC8hu
+	ZJL4fO43WJGwQJxE25eDYDabgJnEtn23GUFsEYFUiQWLjjCDNDALdDNJrHr1ggkkwSKgKjHr
+	3WT2LkYODl4BY4n252C9nECLu2dtZYVYZiyxp2sLmC0qICex8nILmM0rICjxY/I9FpBWZgF1
+	iSlTckHCzALyEpvXvGWewCgwC0nVLISqWUiqFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P
+	3cQIiZQvOxgXH7M6xCjAwajEw9uwMStEiDWxrLgy9xCjBAezkgjvuW6gEG9KYmVValF+fFFp
+	TmrxIUYmDk6pBsbmW963ty1/WWs8i32zrnzdlqub16xTu1Um88rlguK9Kw2BVV8D9hSHzf00
+	209CnNH1jOl3RS/f5lVHMiM/msjY/9BbH/CLLU2mtqu+uepnwnazVWpBt37N+HY4VcKmf69X
+	vA1vpOaTvXrv097+fWzwYarC+ucbJtUt/6Q9q1Xg6/qAm8nXT89QYinOSDTUYi4qTgQAmP5p
+	SXICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 17:54, Thomas Gleixner wrote:
+Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
 
-> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->> Hi Thomas, Jiang,
->> On 2014/11/12 21:42, Thomas Gleixner wrote:
->>
->>> From: Jiang Liu <jiang.liu@linux.intel.com>
->>> Index: tip/kernel/irq/chip.c
->>> ===================================================================
->>> --- tip.orig/kernel/irq/chip.c
->>> +++ tip/kernel/irq/chip.c
->>> @@ -15,6 +15,7 @@
->>>  #include <linux/module.h>
->>>  #include <linux/interrupt.h>
->>>  #include <linux/kernel_stat.h>
->>> +#include <linux/irqdomain.h>
->>>  
->>>  #include <trace/events/irq.h>
->>>  
->>> @@ -178,6 +179,7 @@ int irq_startup(struct irq_desc *desc, b
->>>  	irq_state_clr_disabled(desc);
->>>  	desc->depth = 0;
->>>  
->>> +	irq_domain_activate_irq(&desc->irq_data);
->>
->> I'm not sure why this is needed, please help me out.. :)
-> 
-> Because it makes the whole error handling in stacked allocations way
-> simpler.
-> 
-> We allocate and reserve resources, but do not program the hardware up
-> to the point where request_irq and therefor irq_startup() is invoked.
-> 
-> So when in the allocation/reservation phase any of the stack level
-> fails we just have to undo the allocations/reservations and not any
-> hardware settings.
-> 
-> That also solves the issue that depending on the stacking we might not
-> be able to program the hardware during the allocation because all
-> stack levels need to be allocated/reserved before we can figure out
-> which hardware configuration we need for the various levels.
-> 
-> So we decided to postpone the actual hardware programming to the point
-> where the interrupt actually gets used.
-> 
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+---
+ scripts/coccinelle/free/crypto_free.cocci |   64 +++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
+ create mode 100644 scripts/coccinelle/free/crypto_free.cocci
 
-OK, I got it.
-
-Thanks,
-	Abel
+diff --git a/scripts/coccinelle/free/crypto_free.cocci b/scripts/coccinelle/free/crypto_free.cocci
+new file mode 100644
+index 0000000..a717070
+--- /dev/null
++++ b/scripts/coccinelle/free/crypto_free.cocci
+@@ -0,0 +1,64 @@
++///
++/// Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
++/// This finds freeing them by kfree.
++///
++// Confidence: Moderate
++// Copyright: (C) 2014 Konstantin Khlebnikov,  GPLv2.
++// Comments: There are false positives in crypto/ where they are actually freed.
++// Keywords: crypto, kfree
++// Options: --no-includes --include-headers
++
++virtual org
++virtual report
++virtual context
++
++@r depends on context || org || report@
++expression x;
++@@
++
++(
++ x = crypto_alloc_base(...)
++|
++ x = crypto_alloc_cipher(...)
++|
++ x = crypto_alloc_ablkcipher(...)
++|
++ x = crypto_alloc_aead(...)
++|
++ x = crypto_alloc_instance(...)
++|
++ x = crypto_alloc_instance2(...)
++|
++ x = crypto_alloc_comp(...)
++|
++ x = crypto_alloc_pcomp(...)
++|
++ x = crypto_alloc_hash(...)
++|
++ x = crypto_alloc_ahash(...)
++|
++ x = crypto_alloc_shash(...)
++|
++ x = crypto_alloc_rng(...)
++)
++
++@pb@
++expression r.x;
++position p;
++@@
++
++* kfree@p(x)
++
++@script:python depends on org@
++p << pb.p;
++@@
++
++msg="WARNING: invalid free of crypto_alloc_* allocated data"
++coccilib.org.print_todo(p[0], msg)
++
++@script:python depends on report@
++p << pb.p;
++@@
++
++msg="WARNING: invalid free of crypto_alloc_* allocated data"
++coccilib.report.print_report(p[0], msg)
 
