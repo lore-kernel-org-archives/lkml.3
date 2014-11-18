@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741AbaKROhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:37:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57191 "EHLO mx2.suse.de"
+	id S932875AbaKROj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:39:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57148 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055AbaKROKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:09 -0500
+	id S1755046AbaKROKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:08 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jack Pham <jackp@codeaurora.org>,
-        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 154/206] usb: dwc3: gadget: Properly initialize LINK TRB
-Date: Tue, 18 Nov 2014 15:08:29 +0100
-Message-Id: <37529c7250788fde7107b6ad11ec779aa53b8711.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
+        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 150/206] USB: option: add Haier CE81B CDMA modem
+Date: Tue, 18 Nov 2014 15:08:25 +0100
+Message-Id: <ced7ff3a7674c5127555ba3328edc636cda3c017.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,48 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Dan Williams <dcbw@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
+commit 012eee1522318b5ccd64d277d50ac32f7e9974fe upstream.
 
-On ISOC endpoints the last trb_pool entry used as a
-LINK TRB is not getting zeroed out correctly due to
-memset being called incorrectly and in the wrong place.
-If pool allocated from DMA was not zero-initialized
-to begin with this will result in the size and ctrl
-values being random garbage. Call memset correctly after
-assignment of the trb_link pointer.
+Port layout:
 
-Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+0: QCDM/DIAG
+1: NMEA
+2: AT
+3: AT/PPP
+
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/dwc3/gadget.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/option.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index c37da0c9a076..2cdf69962e31 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -532,12 +532,11 @@ static int __dwc3_gadget_ep_enable(struct dwc3_ep *dep,
- 		if (!usb_endpoint_xfer_isoc(desc))
- 			return 0;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 900e3ad541e3..8b3484134ab0 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -362,6 +362,7 @@ static void option_instat_callback(struct urb *urb);
  
--		memset(&trb_link, 0, sizeof(trb_link));
--
- 		/* Link TRB for ISOC. The HWO bit is never reset */
- 		trb_st_hw = &dep->trb_pool[0];
+ /* Haier products */
+ #define HAIER_VENDOR_ID				0x201e
++#define HAIER_PRODUCT_CE81B			0x10f8
+ #define HAIER_PRODUCT_CE100			0x2009
  
- 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
-+		memset(trb_link, 0, sizeof(*trb_link));
- 
- 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
- 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
+ /* Cinterion (formerly Siemens) products */
+@@ -1620,6 +1621,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
+ 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HAIER_VENDOR_ID, HAIER_PRODUCT_CE81B, 0xff, 0xff, 0xff) },
+ 	/* Pirelli  */
+ 	{ USB_DEVICE_INTERFACE_CLASS(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_C100_1, 0xff) },
+ 	{ USB_DEVICE_INTERFACE_CLASS(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_C100_2, 0xff) },
 -- 
 2.1.3
 
