@@ -1,124 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152AbaKRSzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:55:25 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55866 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097AbaKRSzW (ORCPT
+	id S1755197AbaKRSz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:55:58 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60691 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079AbaKRSxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:55:22 -0500
-Message-ID: <546B95EC.5000705@ti.com>
-Date: Tue, 18 Nov 2014 20:54:36 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Kevin Hilman <khilman@kernel.org>, Arnd Bergmann <arnd@arndb.de>
-CC: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>	<1600093.60yAP0Qpua@wuerfel> <7h389h3aif.fsf@deeprootsystems.com>	<1618855.DXsjWXLqau@wuerfel> <7hsihhzecq.fsf@deeprootsystems.com>
-In-Reply-To: <7hsihhzecq.fsf@deeprootsystems.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Nov 2014 13:53:35 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Robert Richter <robert.richter@caviumnetworks.com>,
+        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+Subject: [PATCH v2 05/13] irqchip: GICv3: ITS: irqchip implementation
+Date: Tue, 18 Nov 2014 18:53:00 +0000
+Message-Id: <1416336788-22634-6-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com>
+References: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+The usual methods that are used to present an irqchip to the rest
+of the kernel
 
-Thank you for your comments.
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic-v3-its.c | 77 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
 
-On 11/17/2014 11:50 PM, Kevin Hilman wrote:
-> Arnd Bergmann <arnd@arndb.de> writes:
-> 
->> On Monday 17 November 2014 11:14:16 Kevin Hilman wrote:
->>>>>
->>>>> So, The Keystone 2 Generic PM Controller is just a proxy PM layer here between
->>>>> device and Generic clock manipulation PM callbacks.
->>>>> It fills per-device clock list when device is attached to GPD and
->>>>> ensures that all clocks from that list enabled/disabled when device is
->>>>> started/stopped.
->>>>
->>>> The idea of such a generic power domain implementation sounds useful, but
->>>> it has absolutely no business in platform specific code.
->>>
->>> Yes it does.  This isn't a generic power domain implementation, but
->>> rather just the platform-specific glue that hooks up the clocks to the
->>> right devices and power-domains so that the generic power-domain and
->>> generic pm_clocks code does the right thing.
->>
->> How would you do this on an arm64 version of keystone then? With
->> the current approach, you'd need to add a machine specific directory,
->> and that seems completely pointless since this is not even about
->> a hardware requirement.
-> 
-> Yeah, you're right.  I misunderstood you're original comment.
-> 
->>>> I suggest you either remove the power domain proxy from your drivers
->>>> and use the clocks directly,
+diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
+index a5ab12c..d24bebd 100644
+--- a/drivers/irqchip/irq-gic-v3-its.c
++++ b/drivers/irqchip/irq-gic-v3-its.c
+@@ -40,6 +40,8 @@
+ 
+ #define ITS_FLAGS_CMDQ_NEEDS_FLUSHING		(1 << 0)
+ 
++#define RDIST_FLAGS_PROPBASE_NEEDS_FLUSHING	(1 << 0)
++
+ /*
+  * Collection structure - just an ID, and a redistributor address to
+  * ping. We use one per CPU as a bag of interrupts assigned to this
+@@ -509,3 +511,78 @@ static void its_send_invall(struct its_node *its, struct its_collection *col)
+ 
+ 	its_send_single_command(its, its_build_invall_cmd, &desc);
+ }
++
++/*
++ * irqchip functions - assumes MSI, mostly.
++ */
++
++static inline u32 its_get_event_id(struct irq_data *d)
++{
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	return d->hwirq - its_dev->lpi_base;
++}
++
++static void lpi_set_config(struct irq_data *d, bool enable)
++{
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	irq_hw_number_t hwirq = d->hwirq;
++	u32 id = its_get_event_id(d);
++	u8 *cfg = page_address(gic_rdists->prop_page) + hwirq - 8192;
++
++	if (enable)
++		*cfg |= LPI_PROP_ENABLED;
++	else
++		*cfg &= ~LPI_PROP_ENABLED;
++
++	/*
++	 * Make the above write visible to the redistributors.
++	 * And yes, we're flushing exactly: One. Single. Byte.
++	 * Humpf...
++	 */
++	if (gic_rdists->flags & RDIST_FLAGS_PROPBASE_NEEDS_FLUSHING)
++		__flush_dcache_area(cfg, sizeof(*cfg));
++	else
++		dsb(ishst);
++	its_send_inv(its_dev, id);
++}
++
++static void its_mask_irq(struct irq_data *d)
++{
++	lpi_set_config(d, false);
++}
++
++static void its_unmask_irq(struct irq_data *d)
++{
++	lpi_set_config(d, true);
++}
++
++static void its_eoi_irq(struct irq_data *d)
++{
++	gic_write_eoir(d->hwirq);
++}
++
++static int its_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
++			    bool force)
++{
++	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	struct its_collection *target_col;
++	u32 id = its_get_event_id(d);
++
++	if (cpu >= nr_cpu_ids)
++		return -EINVAL;
++
++	target_col = &its_dev->its->collections[cpu];
++	its_send_movi(its_dev, target_col, id);
++	its_dev->collection = target_col;
++
++	return IRQ_SET_MASK_OK_DONE;
++}
++
++static struct irq_chip its_irq_chip = {
++	.name			= "ITS",
++	.irq_mask		= its_mask_irq,
++	.irq_unmask		= its_unmask_irq,
++	.irq_eoi		= its_eoi_irq,
++	.irq_set_affinity	= its_set_affinity,
++};
+-- 
+2.1.3
 
-Hm. I've been thinking about this, but the problem is that Keystone 2
-reuses a lot of IPs from Davinci and PM for Davinci is based on Generic clock
-manipulation PM callbacks framework, but for non-DT case. So, I can't simply
-use clocks directly.
-
->>>
->>> No.  That's a step in the wrong direction.  This change isn't affecting
->>> drivers directly.  It's the runtime PM and generic power domain layers
->>> that handle this, and runtime PM adapted drivers don't need any changes.
->>>   
->>>> or come up with an implementation that can be used across other
->>>> platforms and CPU architectures.
->>>
->>> We already have those in the generic power domain and the pm_clock
->>> layers.  This series is just hooking those up for Keystone.
->>
->> Then why not add the missing piece to the generic power domain
->> code to avoid having to add infrastructure to the platform
->> for it?
-> 
-> Yes, good point.  There is nothing keystone-specific in this glue.
-> 
-> Grygorii, what about adding a feature to the generic domain parsing so
-> that it can get clocks from device nodes that are part of the domain,
-> and so it sets up pm_clk accordingly.
-
-I'd like to mention few points here:
-1)  not all platforms may need this
-
-2)  not all platforms may allow to add ALL clocks from "clocks" property
-   to pm_clk as some of them can be optional or have to be controlled by drivers only
-   (for example, initially, it was the case for SH-mobile https://lkml.org/lkml/2014/4/24/197
-    also now, last implementation for shmobile add only first clock from "clocks" property
-    to pm_clk https://lkml.org/lkml/2014/11/17/272).
-
-3)  such functionality have to be enabled for devices selectively, for example
-   now we are going to enable it for devices which a ready for runtime PM.
-
-Current implementation cover 1 & 3, but also it allows to cover 2 too, because
-it's platform specific implementation and .attach_dev() can be updated to skip some 
-clocks or devices if needed.
-
-> 
-> I've recently seen other SoCs doing very similar, so this really should
-> be generalized.
-> 
-> I've been looking at this primarily as a right incremental improvement
-> from what is there for Keystone today, but Arnd is right.  This should
-> be moved out of platform code.
-
-I'm ready to do what ever you want, but I don't fully understand what exactly to do :(
-Should I create some generic_pm_clk_domain.c?
-- or - Do you mean to integrate it in domain.c (see no way to do it:()?
-- or - smth. else
-
-What about introduced DT bindings? For example, How will devices be selected for attachment 
-to Generic pm_clk domain if I'll introduce generic_pm_clk_domain.c?
-
-Regards,
--grygorii
