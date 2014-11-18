@@ -1,172 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaKRIrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:47:23 -0500
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:56561 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaKRIrW convert rfc822-to-8bit (ORCPT
+	id S1753907AbaKRIru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:47:50 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52800 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632AbaKRIrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:47:22 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
-Thread-Topic: [PATCH 06/19] mm: store mapcount for compound page separate
-Thread-Index: AQHP+QfhC/Yx8W8vu0evpav335us2Zxljo2A
-Date: Tue, 18 Nov 2014 08:43:00 +0000
-Message-ID: <20141118084337.GA16714@hori1.linux.bs1.fc.nec.co.jp>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.25]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-ID: <55EA7FAC64A2D24D80368801FDB9F162@gisp.nec.co.jp>
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Nov 2014 03:47:48 -0500
+Date: Tue, 18 Nov 2014 08:47:45 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: netdev@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141118084745.GT7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 04:49:41PM +0200, Kirill A. Shutemov wrote:
-> We're going to allow mapping of individual 4k pages of THP compound and
-> we need a cheap way to find out how many time the compound page is
-> mapped with PMD -- compound_mapcount() does this.
-> 
-> page_mapcount() counts both: PTE and PMD mappings of the page.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
+I've spent the last weekend crawling through the copy-and-calculate-csum
+primitives on all architectures.  It came up during iov_iter work; below
+are the results of that review and, in the end, several questions about
+the short-term tactics of a change that needs to be done for iov_iter-net.
 
-...
+The API apparently consists of 3 functions - present and exported on all
+architectures:
+	1) csum_and_copy_from_user()
+	2) csum_and_copy_to_user()
+	3) csum_partial_copy_nocheck().
+There are very few places _using_ those, all but one in net stack (the only
+exception is in drivers/net).
+The minimal implementations would be
 
-> @@ -1837,6 +1839,9 @@ static void __split_huge_page_refcount(struct page *page,
->  	atomic_sub(tail_count, &page->_count);
->  	BUG_ON(atomic_read(&page->_count) <= 0);
->  
-> +	page->_mapcount = *compound_mapcount_ptr(page);
+__wsum csum_and_copy_from_user(const void __user *src, void *dst, int len,
+			       __wsum sum, int *err_ptr)
+{
+	if (unlikely(copy_from_user(dst, src, len) < 0)) {
+		*err_ptr = -EFAULT;
+		return <whatever>;
+	}
+	return csum_partial(dst, len, sum);
+}
 
-Is atomic_set() necessary?
+__wsum csum_and_copy_to_user(const void *src, void __user *dst, int len,
+			     __wsum sum, int *err_ptr)
+{
+	sum = csum_partial(src, len, sum);
+	if (unlikely(copy_to_user(dst, src, len) < 0)) {
+		*err_ptr = -EFAULT;
+		return <whatever>;
+	}
+	return sum;
+}
 
-> +	page[1].mapping = page->mapping;
-> +
->  	__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
->  
->  	ClearPageCompound(page);
+__wsum csum_partial_copy_nocheck(const void *src, void *dst, int len,
+				 __wsum sum)
+{
+	memcpy(dst, src, len);
+	return csum_partial(dst, len, sum);
+}
 
-...
+Note that we are *not* guaranteed that *err_ptr is touched in case of success
+- not all architectures zero it in that case.  Callers must (and do) zero it
+before the call of csum_and_copy_{from,to}_user().  Furthermore, return value
+in case of error is undefined.  On the "from" side result is really "anything
+whatsoever", on the "to" side most of the architectures end up returning ~0U.
+However, even that is not guaranteed - e.g. avr32 and xtensa might return 0
+in that case.  All existing callers discard the return value in case of error -
+most of them by jumping out of the scope of variable it's assigned to.  The
+only exception is skb_copy_and_csum_datagram(); in that case return value is
+discarded by caller of skb_copy_and_csum_datagram() itself (also by jumping
+out of scope of the variable it had been put into).
 
-> @@ -760,6 +763,8 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
->  		bad += free_pages_check(page + i);
->  	if (bad)
->  		return false;
-> +	if (order)
-> +		page[1].mapping = NULL;
->  
->  	if (!PageHighMem(page)) {
->  		debug_check_no_locks_freed(page_address(page),
-> @@ -6632,10 +6637,12 @@ static void dump_page_flags(unsigned long flags)
->  void dump_page_badflags(struct page *page, const char *reason,
->  		unsigned long badflags)
->  {
-> -	printk(KERN_ALERT
-> -	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
-> +	pr_alert("page:%p count:%d mapcount:%d mapping:%p index:%#lx",
->  		page, atomic_read(&page->_count), page_mapcount(page),
->  		page->mapping, page->index);
-> +	if (PageCompound(page))
+Generally, error in copying from userland ends up zeroing the rest of
+destination.  However, there are exceptions (which might be considered bugs)
+*and* callers discard all the copied data in case of error anyway.  There
+are several call chains:
+	1) from skb_add_data(): calls skb_trim() immediately after the failure.
+	2) from skb_do_copy_data_nocache() called from skb_add_data_nocache():
+__skb_trim() in skb_add_data_nocache()
+	3) from skb_do_copy_data_nocache() called from
+skb_copy_to_page_nocache(): we do not increase skb->len until after successful
+copying.
+	4) from skb_copy_to_page(): we do not increase skb->len until after
+successful copying.
+	5) from csum_partial_copy_fromiovecend() from ip_generic_getfrag()
+or ping_getfrag(): those are passed as getfrag callback to ip_make_skb(),
+ip_append_data() or ip6_append_data().  ip_make_skb() and ip_append_data()
+just pass it to __ip_append_data(), so we are left with two fairly similar
+functions to analyse.
+	* __ip_append_data() has 3 places where getfrag() is called directly and
+one where it's passed to ip_ufo_append_data().  Direct ones either free skb, or
+do __skb_trim() or do not increment skb->len on error.  ip_ufo_append_data()
+passes it further to skb_append_datato_frags(), where we do not increment skb->len
+and friends in case of getfrag() failure.
+	* ip6_append_data() the situation is identical, with ip6_ufo_append_data()
+in place of ip_ufo_append_data().
 
-> +		printk(" compound_mapcount: %d", compound_mapcount(page));
-> +	printk("\n");
+So for all in-tree users of that sucker we are guaranteed to discard the whole
+thing in case of error and this zeroing the tail is pointless.
 
-These two printk() should be pr_alert(), too?
+Note also that the order of src and dest is opposite to normal for memcpy-like
+functions.  Compared to the rest of the ugliness it's trivial, but it's still
+not nice.
 
->  	dump_page_flags(page->flags);
->  	if (reason)
->  		pr_alert("page dumped because: %s\n", reason);
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index f706a6af1801..eecc9301847d 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -986,9 +986,30 @@ void page_add_anon_rmap(struct page *page,
->  void do_page_add_anon_rmap(struct page *page,
->  	struct vm_area_struct *vma, unsigned long address, int flags)
->  {
-> -	int first = atomic_inc_and_test(&page->_mapcount);
-> +	bool compound = flags & RMAP_COMPOUND;
-> +	bool first;
-> +
-> +	VM_BUG_ON_PAGE(!PageLocked(compound_head(page)), page);
-> +
-> +	if (PageTransCompound(page)) {
-> +		struct page *head_page = compound_head(page);
-> +
-> +		if (compound) {
-> +			VM_BUG_ON_PAGE(!PageTransHuge(page), page);
-> +			first = atomic_inc_and_test(compound_mapcount_ptr(page));
+IMO the calling conventions are atrocious.
 
-Is compound_mapcount_ptr() well-defined for tail pages?
-This function seems to access struct page of the page next to a given page,
-so if the given page is the last tail page of a thp, page outside the thp
-will be accessed. Do you have a prevention from this?
-atomic_inc_and_test(compound_mapcount_ptr(head_page)) is what you intended?
+And then there are architecture-specific warts.  A relatively minor one is that
+csum_partial_copy_nocheck() has a slightly saner name on some architectures -
+there it's called csum_partial_copy().  Of course, those architectures have
+#define csum_partial_copy_nocheck csum_partial_copy...  Worse ones are related
+to csum_and_copy_from_user() - on everything other than ppc64 it is an
+inlined wrapper around csum_partial_copy_from_user(), which is what's actually
+exported.  On ppc64 csum_partial_copy_from_user() simply doesn't exist.
+The _only_ difference between it and csum_and_copy_from_user() is that the
+wrapper does access_ok() check.  However, some architectures repeat that
+access_ok() in csum_partial_copy_from_user() (and on x86 we have
+#define csum_and_copy_from_user csum_partial_copy_from_user, with no
+access_ok() in the wrapper).  As it is, it's architecture-dependent whether
+csum_partial_copy_from_user() does or does not access_ok(); on
+alpha, frv, m32r, mn10300, parisc, s390, score and x86 it does, on the
+rest it doesn't.
 
-> +		} else {
-> +			/* Anon THP always mapped first with PMD */
-> +			first = 0;
-> +			VM_BUG_ON_PAGE(!compound_mapcount(head_page),
-> +					head_page);
-> +			atomic_inc(&page->_mapcount);
-> +		}
-> +	} else {
-> +		VM_BUG_ON_PAGE(compound, page);
-> +		first = atomic_inc_and_test(&page->_mapcount);
-> +	}
-> +
->  	if (first) {
-> -		bool compound = flags & RMAP_COMPOUND;
->  		int nr = compound ? hpage_nr_pages(page) : 1;
->  		/*
->  		 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
+To make it even more fun, converting verify_iovec() and its compat equivalent
+to use of {,compat_}rw_copy_check_uvector() would guarantee that all those
+access_ok() are redundant to start with, both on send and receive side of
+things.  Note, BTW, that for read()/write()/readv()/writev() it's already
+redundant.  Moreover, we have a very good reason to do that anyway - conversion
+of sendmsg/recvmsg to iov_iter primitives would pretty much require that,
+since copy_{to,from}_iter() assume that iovec behind the iov_iter has been
+validated wrt access_ok().
 
-...
+I do have a patch doing just that; the question is what to do with csum-and-copy
+primitives.  Originally I planned to simply strip those access_ok() from those
+(both the explicit calls and use of copy_from_user() where we ought to use
+__copy_from_user(), etc.), but that's not nice to potential out-of-tree callers
+of those suckers.  If any of those exist and manage to cope with the wonderful
+calling conventions, that is.  As it is, we have the total of 4 callers of
+csum_and_copy_from_user() and 2 callers of csum_and_copy_to_user(), all in
+networking code.  Do we care about potential out-of-tree users existing and
+getting screwed by such change?  Davem, Linus?
 
-> @@ -1032,10 +1052,19 @@ void page_add_new_anon_rmap(struct page *page,
->  
->  	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
->  	SetPageSwapBacked(page);
-> -	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
->  	if (compound) {
-> +		atomic_t *compound_mapcount;
-> +
->  		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
-> +		compound_mapcount = (atomic_t *)&page[1].mapping;
+Alternatively, we could introduce __csum_and_copy_{from,to}_user() that would
+_not_ do access_ok() (and wouldn't be required to do zeroing the tail, etc.),
+convert the existing callers to that and leave csum_and_copy_{to,from}_user()
+as architecture-independent wrappers around those - "do access_ok(),
+then try to call __csum_and... variant, then fall back to dumb implementation
+if that fails".  For almost all architectures csum_and_partial_copy_from_user()
+would get stripped of access_ok() and renamed to __csum_and_copy_from_user();
+for ppc64 we'd define __csum_and_copy_from_user(src,dst,len,sum,errp) as
+csum_and_partial_copy_generic(src,dst,len,sum,errp,NULL) - they already
+have that kind of code structure.  This variant still buggers the out-of-tree
+code using csum_and_partial_copy_from_user() directly, but users of
+csum_and_copy_{from,to}_user() are left intact, such modules were already
+broken on ppc64 *and* breakage is of obvious "it won't link" kind.
 
-You can use compound_mapcount_ptr() here.
+Comments, suggestions?
 
-Thanks,
-Naoya Horiguchi
-
-> +		/* increment count (starts at -1) */
-> +		atomic_set(compound_mapcount, 0);
->  		__inc_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
-> +	} else {
-> +		/* Anon THP always mapped first with PMD */
-> +		VM_BUG_ON_PAGE(PageTransCompound(page), page);
-> +		/* increment count (starts at -1) */
-> +		atomic_set(&page->_mapcount, 0);
->  	}
->  	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES, nr);
->  	__page_set_anon_rmap(page, vma, address, 1);
+PS: there are some really amusing brainos - e.g. mn10300 csum_and_copy_to_user()
+starts with this:
+	missing = copy_to_user(dst, src, len);
+	if (missing) {
+		memset(dst + len - missing, 0, missing);
+		*err_ptr = -EFAULT;
+	}
+that's right, if copy_to_user() has returned non-zero, try to do
+memset() on userland addresses it has failed to write into...
