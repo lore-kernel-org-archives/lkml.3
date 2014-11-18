@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaKRIhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:37:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42788 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870AbaKRIhj (ORCPT
+	id S1753796AbaKRIim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:38:42 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:46247 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753995AbaKRIhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:37:39 -0500
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
-        corbet@lwn.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
-        brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH 3/3] intel_pstate: add module and kernel command line parameter to ignore ACPI _PPC
-Date: Tue, 18 Nov 2014 17:37:02 +0900
-Message-Id: <1416299826-15813-4-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
-References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 18 Nov 2014 03:37:47 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 10/10] writeback: move inode_to_bdi() to include/linux/backing-dev.h
+Date: Tue, 18 Nov 2014 03:37:28 -0500
+Message-Id: <1416299848-22112-11-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1416299848-22112-1-git-send-email-tj@kernel.org>
+References: <1416299848-22112-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kernel command line parameter
- intel_pstate = ignore_acpi_ppc
-and module parameter
- ignore_acpi_ppc = 1
-to allow driver to ignore the ACPI _PPC existence even for Sun x86 servers.
-These parameter could be used for debug\test\workaround etc purpose.
+inode_to_bdi() will be used by inline functions for the planned cgroup
+writeback support.  Move it to include/linux/backing-dev.h.
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+This patch doesn't introduce any behavior changes.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Jan Kara <jack@suse.cz>
 ---
- Documentation/kernel-parameters.txt | 3 +++
- drivers/cpufreq/intel_pstate.c      | 8 +++++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ fs/fs-writeback.c           | 10 ----------
+ include/linux/backing-dev.h | 10 ++++++++++
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4c81a86..f502b85 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		       disable
- 		         Do not enable intel_pstate as the default
- 		         scaling driver for the supported processors
-+		       ignore_acpi_ppc
-+			 Ignore the existence of ACPI method _PPC for Sun x86 servers
-+			 and load the driver.
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 41c9f1e..5130895 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -66,16 +66,6 @@ int writeback_in_progress(struct backing_dev_info *bdi)
+ }
+ EXPORT_SYMBOL(writeback_in_progress);
  
- 	intremap=	[X86-64, Intel-IOMMU]
- 			on	enable Interrupt Remapping (default)
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 7c5faea..388387b 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -870,6 +870,7 @@ static struct cpufreq_driver intel_pstate_driver = {
- };
- 
- static int __initdata no_load;
-+static unsigned int  ignore_acpi_ppc;
- 
- static int intel_pstate_msrs_not_valid(void)
+-static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
+-{
+-	struct super_block *sb = inode->i_sb;
+-
+-	if (sb_is_blkdev_sb(sb))
+-		return inode->i_mapping->backing_dev_info;
+-
+-	return sb->s_bdi;
+-}
+-
+ static inline struct inode *wb_inode(struct list_head *head)
  {
-@@ -990,7 +991,7 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- 		    intel_pstate_no_acpi_pss())
- 			return true;
- 		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
--			intel_pstate_has_acpi_ppc())
-+			intel_pstate_has_acpi_ppc() && !ignore_acpi_ppc)
- 			return true;
- 	}
- 
-@@ -1066,11 +1067,16 @@ static int __init intel_pstate_setup(char *str)
- 
- 	if (!strcmp(str, "disable"))
- 		no_load = 1;
-+	if (!strcmp(str, "ignore_acpi_ppc"))
-+		ignore_acpi_ppc = 1;
+ 	return list_entry(head, struct inode, i_wb_list);
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 918f5c9..3c6fd34 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -253,4 +253,14 @@ static inline int bdi_sched_wait(void *word)
  	return 0;
  }
- early_param("intel_pstate", intel_pstate_setup);
- #endif
  
-+module_param(ignore_acpi_ppc, uint, 0644);
-+MODULE_PARM_DESC(ignore_acpi_ppc,
-+	"value 0 or non-zero. non-zero -> ignore ACPI _PPC and load this driver");
- MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
- MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
- MODULE_LICENSE("GPL");
++static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++
++	if (sb_is_blkdev_sb(sb))
++		return inode->i_mapping->backing_dev_info;
++
++	return sb->s_bdi;
++}
++
+ #endif		/* _LINUX_BACKING_DEV_H */
 -- 
-1.8.3.1
+1.9.3
 
