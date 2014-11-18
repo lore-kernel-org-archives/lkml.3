@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaKRSJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:09:49 -0500
-Received: from [114.143.50.60] ([114.143.50.60]:19052 "EHLO
-	dhcp223-82.pnq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754390AbaKRSJr (ORCPT
+	id S1754799AbaKRSKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:10:51 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40990 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708AbaKRSKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:09:47 -0500
-From: Pankaj Gupta <pagupta@redhat.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com.pnq.redhat.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org, jiri@resnulli.us,
-        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
-Subject: [PATCH net-next 1/4] net: allow large number of rx queues
-Date: Tue, 18 Nov 2014 21:52:55 +0530
-Message-Id: <1416327778-17716-2-git-send-email-pagupta@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
-References: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
+	Tue, 18 Nov 2014 13:10:49 -0500
+Date: Tue, 18 Nov 2014 10:09:37 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michael Thalmeier <michael.thalmeier@hale.at>
+Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hwmon: (lm75) Add support for the NXP LM75B
+Message-ID: <20141118180937.GA12854@roeck-us.net>
+References: <1416326884-22623-1-git-send-email-michael.thalmeier@hale.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416326884-22623-1-git-send-email-michael.thalmeier@hale.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.546B8BA9.0278,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netif_alloc_rx_queues() uses kcalloc() to allocate memory
-for "struct netdev_queue *_rx" array.
-If we are doing large rx queue allocation kcalloc() might
-fail, so this patch does a fallback to vzalloc().
-Similar implementation is done for tx queue allocation in
-netif_alloc_netdev_queues().
+On Tue, Nov 18, 2014 at 05:08:04PM +0100, Michael Thalmeier wrote:
+> It is basically a faster lm75 with improved (11 bit) resolution.
+> 
+> Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
 
-We avoid failure of high order memory allocation
-with the help of vzalloc(), this allows us to do large
-rx and tx queue allocation which in turn helps us to
-increase the number of queues in tun.
+Applied to -next.
 
-As vmalloc() adds overhead on a critical network path,
-__GFP_REPEAT flag is used with kzalloc() to do this fallback
-only when really needed.
-
-Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: David Gibson <dgibson@redhat.com>
----
- net/core/dev.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index e916ba8..abe9560 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6059,17 +6059,25 @@ void netif_stacked_transfer_operstate(const struct net_device *rootdev,
- EXPORT_SYMBOL(netif_stacked_transfer_operstate);
- 
- #ifdef CONFIG_SYSFS
-+static void netif_free_rx_queues(struct net_device *dev)
-+{
-+	kvfree(dev->_rx);
-+}
-+
- static int netif_alloc_rx_queues(struct net_device *dev)
- {
- 	unsigned int i, count = dev->num_rx_queues;
- 	struct netdev_rx_queue *rx;
-+	size_t sz = count * sizeof(*rx);
- 
- 	BUG_ON(count < 1);
- 
--	rx = kcalloc(count, sizeof(struct netdev_rx_queue), GFP_KERNEL);
--	if (!rx)
--		return -ENOMEM;
--
-+	rx = kzalloc(sz, GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
-+	if (!rx) {
-+		rx = vzalloc(sz);
-+		if (!rx)
-+			return -ENOMEM;
-+	}
- 	dev->_rx = rx;
- 
- 	for (i = 0; i < count; i++)
-@@ -6698,9 +6706,8 @@ void free_netdev(struct net_device *dev)
- 
- 	netif_free_tx_queues(dev);
- #ifdef CONFIG_SYSFS
--	kfree(dev->_rx);
-+	netif_free_rx_queues(dev);
- #endif
--
- 	kfree(rcu_dereference_protected(dev->ingress_queue, 1));
- 
- 	/* Flush device addresses */
--- 
-1.8.3.1
-
+Thanks,
+Guenter
