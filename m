@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913AbaKRXJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:09:28 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52533 "HELO
+	id S932928AbaKRXLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:11:05 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55499 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932472AbaKRXJ1 (ORCPT
+	with SMTP id S932746AbaKRXLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:09:27 -0500
+	Tue, 18 Nov 2014 18:11:03 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lenny Szubowicz <lszubowi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-pm@vger.kernel.org, Joseph.Szczypek@hp.com
-Subject: Re: [PATCH] cpufreq: pcc: Enable autoload of pcc-cpufreq for ACPI processors
-Date: Wed, 19 Nov 2014 00:30:32 +0100
-Message-ID: <2494503.pmLurATttt@vostro.rjw.lan>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] kernel-power: Deletion of an unnecessary check before the function call "vfree"
+Date: Wed, 19 Nov 2014 00:32:07 +0100
+Message-ID: <3338798.z9fqSjyBWX@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415904712-12521-1-git-send-email-lszubowi@redhat.com>
-References: <1415904712-12521-1-git-send-email-lszubowi@redhat.com>
+In-Reply-To: <5468A677.1030004@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net> <5317A59D.4@users.sourceforge.net> <5468A677.1030004@users.sourceforge.net>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,59 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 13, 2014 01:51:52 PM Lenny Szubowicz wrote:
-> The pcc-cpufreq driver is not automatically loaded on systems where
-> the platform's power management setting requires this driver.
-> Instead, on those systems no CPU frequency driver is registered and
-> active.
+On Sunday, November 16, 2014 02:28:23 PM SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sun, 16 Nov 2014 14:18:28 +0100
 > 
-> Make the autoloading matching criteria for loading the pcc-cpufreq
-> driver the same as done in acpi-cpufreq by commit c655affbd524d01
-> ("ACPI / cpufreq: Add ACPI processor device IDs to acpi-cpufreq").
+> The vfree() function performs also input parameter validation. Thus the test
+> around the call is not needed.
 > 
-> x86 CPU frequency drivers are now typically autoloaded by specifying
-> MODULE_DEVICE_TABLE entries and x86cpu model specific matching.
-> But pcc-cpufreq was omitted when acpi-cpufreq and other drivers were
-> changed to use this approach.
+> This issue was detected by using the Coccinelle software.
 > 
-> Both acpi-cpufreq and pcc-cpufreq depend on a distinct and mutually
-> exclusive set of ACPI methods which are not directly tied to specific
-> processor model numbers. Both of these drivers have init routines
-> which look for their required ACPI methods. As a result, only the
-> appropriate driver registers as the cpu frequency driver and the other
-> one ends up being unloaded.
-> 
-> Tested on various systems where acpi-cpufreq, intel_pstate, and
-> pcc-cpufreq are the expected cpu frequency drivers.
-> 
-> Signed-off-by: Lenny Szubowicz <lszubowi@redhat.com>
-> Signed-off-by: Joseph Szczypek <joseph.szczypek@hp.com>
-> Reported-by: Trinh Dao <trinh.dao@hp.com>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 
 Queued up for 3.19-rc1, thanks!
 
 > ---
->  drivers/cpufreq/pcc-cpufreq.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+>  kernel/power/swap.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
-> index 4d2c8e8..2a0d589 100644
-> --- a/drivers/cpufreq/pcc-cpufreq.c
-> +++ b/drivers/cpufreq/pcc-cpufreq.c
-> @@ -603,6 +603,13 @@ static void __exit pcc_cpufreq_exit(void)
->  	free_percpu(pcc_cpu_info);
->  }
+> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+> index aaa3261..337c7a9 100644
+> --- a/kernel/power/swap.c
+> +++ b/kernel/power/swap.c
+> @@ -1374,7 +1374,7 @@ out_clean:
+>  				kthread_stop(data[thr].thr);
+>  		vfree(data);
+>  	}
+> -	if (page) vfree(page);
+> +	vfree(page);
 >  
-> +static const struct acpi_device_id processor_device_ids[] = {
-> +	{ACPI_PROCESSOR_OBJECT_HID, },
-> +	{ACPI_PROCESSOR_DEVICE_HID, },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(acpi, processor_device_ids);
-> +
->  MODULE_AUTHOR("Matthew Garrett, Naga Chumbalkar");
->  MODULE_VERSION(PCC_VERSION);
->  MODULE_DESCRIPTION("Processor Clocking Control interface driver");
+>  	return ret;
+>  }
 > 
 
 -- 
