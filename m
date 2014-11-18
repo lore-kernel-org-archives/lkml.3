@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaKRLzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:55:36 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:61099 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212AbaKRLze (ORCPT
+	id S1753903AbaKRL6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:58:43 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60131 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaKRL6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:55:34 -0500
-Date: Tue, 18 Nov 2014 06:55:30 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH vfs 1/2] lib: implement ptrset
-Message-ID: <20141118115530.GC7809@htj.dyndns.org>
-References: <20141113220927.GF2598@htj.dyndns.org>
- <546B0F16.90901@cn.fujitsu.com>
+	Tue, 18 Nov 2014 06:58:40 -0500
+Date: Tue, 18 Nov 2014 11:58:36 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Duyck <alexander.duyck@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "mikey@neuling.org" <mikey@neuling.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "matthew.vick@intel.com" <matthew.vick@intel.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb() and
+ fast_wmb()
+Message-ID: <20141118115836.GL18842@arm.com>
+References: <20141117171005.22333.96544.stgit@ahduyck-server>
+ <20141117171812.22333.90395.stgit@ahduyck-server>
+ <1416254687.18381.3.camel@kernel.crashing.org>
+ <546A5968.1090201@gmail.com>
+ <1416271167.18381.16.camel@kernel.crashing.org>
+ <546AB959.1020602@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <546B0F16.90901@cn.fujitsu.com>
+In-Reply-To: <546AB959.1020602@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Nov 18, 2014 at 03:13:29AM +0000, Alexander Duyck wrote:
+> On 11/17/2014 04:39 PM, Benjamin Herrenschmidt wrote:
+> > On Mon, 2014-11-17 at 12:24 -0800, Alexander Duyck wrote:
+> >> Yes and no.  So for example on ARM I used the dmb() operation, however
+> >> I
+> >> have to use the barrier at the system level instead of just the inner
+> >> shared domain.  However on many other architectures they are just the
+> >> same as the smp_* variants.
+> >>
+> >> Basically the resultant code is somewhere between the smp and non-smp
+> >> barriers in terms of what they cover.
+> > There I don't quite follow you. You need to explain better especially in
+> > the documentation because otherwise people will get it wrong...
+> >
+> > If it's ordering in the coherent domain, I fail to see how a DMA agent
+> > is different than another processor when it comes to barriers, so I fail
+> > to see the difference with smp_*
+> >
+> > I understand the MMIO vs. memory issue, we do have the same on powerpc,
+> > but that other aspect eludes me.
+> >
+> 
+> ARM adds some funky things.  They have two different types of 
+> primitives, a dmb() which is a data memory barrier, and a dsb() which is 
+> a data synchronization barrier.  Then with each of those they have the 
+> "domains" the barriers are effective within.
+> 
+> So for example on ARM a rmb() is dsb(sy) which means it is a system wide 
+> synchronization barrier which stops execution on the CPU core until the 
+> read completes.  However the smp_rmb() is a dmb(ish) which means it is 
+> only a barrier as far as the inner shareable domain which I believe only 
+> goes as far as the local shared cache hierarchy and only guarantees read 
+> ordering without necessarily halting the CPU or stopping in-order 
+> speculative reads.  So what a coherent_rmb() would be in my setup is 
+> dmb(sy) which means the barrier runs all the way out to memory, and it 
+> is allowed to speculative read as long as it does it in order.
+> 
+> If it is still unclear you might check out Will Deacon's talk on the 
+> topic at https://www.youtube.com/watch?v=6ORn6_35kKo, at about 7:00 in 
+> he explains the whole domains thing, and at 13:30 he explains dmb()/dsb().
 
-On Tue, Nov 18, 2014 at 05:19:18PM +0800, Lai Jiangshan wrote:
-> Is it too ugly?
+So actually, this is an interesting case where the barrier would like to
+know whether the memory returned by dma_alloc_coherent is h/w coherent
+(normal, cacheable) or s/w coherent (normal, non-cacheable). I think Ben
+is thinking of the h/w coherent case (i.e. actual snooping into the CPU
+caches by the DMA master).
 
-What is "it"?  The whole thing?  percpu preloading?  I'm just gonna
-continue assuming that you're talking about preloading.  If you think
-it's ugly, please go ahead and explain why you think it is.
+For the former, we could use inner-shareable barriers. For the latter, we'd
+need to use outer-shareable barriers.
 
-It's almost impossible to respond to your "review".  It's not clear
-what your subject matter or opinion on it is.  Might as well just bang
-on the keyboard randomly.  When reviewing (or communicating in
-general), please try to properly form and elaborate your points.
-Other people can't know what's going on in your brain and have to
-speculate what you could have meant.
+If we can't tell, then these should be dmb(osh), which will work for both.
 
-This implementation of preloading an evolution of a design pattern
-which, IIRC, first started with the radix tree.  The non-failing
-aspect was introduced while the pattern was being applied to idr.  I
-think it's one of the better ways to implement preloading.
-
-> What will be the most important result it achieve?
-
-This is the same as other preloading.  It allows pulling allocation
-out of critical section so that it can be done with more generous
-allocation mask (ie. GFP_KERNEL instead of GPF_NOWAIT).  It's a common
-pattern found in data structures which may allocate memory internally
-such as radix tree or idr.
-
-Thanks.
-
--- 
-tejun
+Will
