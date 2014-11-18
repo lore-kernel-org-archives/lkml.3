@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaKRIZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:25:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56339 "EHLO mx1.redhat.com"
+	id S1753665AbaKRIZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:25:21 -0500
+Received: from ozlabs.org ([103.22.144.67]:41319 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699AbaKRIZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:25:11 -0500
-Date: Tue, 18 Nov 2014 09:24:55 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: kan.liang@intel.com
-Cc: acme@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH V3 2/3] perf tool: Move cpumode resolve code to
- add_callchain_ip
-Message-ID: <20141118082454.GB27645@krava.brq.redhat.com>
-References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
- <1415972652-17310-3-git-send-email-kan.liang@intel.com>
+	id S1751699AbaKRIZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 03:25:15 -0500
+Date: Tue, 18 Nov 2014 19:25:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        Rob Clark <robdclark@gmail.com>
+Subject: linux-next: build warning after merge of the arm tree
+Message-ID: <20141118192507.39f68bb7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415972652-17310-3-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/z250Xhh0deuc.=t_UBpq/42"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 08:44:11AM -0500, kan.liang@intel.com wrote:
-> From: Kan Liang <kan.liang@intel.com>
-> 
-> Move the cpumode resolve code to add_callchain_ip function.
-> No change in behavior.
-> 
-> Signed-off-by: Kan Liang <kan.liang@intel.com>
-> ---
->  tools/perf/util/machine.c | 62 ++++++++++++++++++++++-------------------------
->  1 file changed, 29 insertions(+), 33 deletions(-)
-> 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index d97309c..dd8496a 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -1384,11 +1384,35 @@ struct mem_info *sample__resolve_mem(struct perf_sample *sample,
->  static int add_callchain_ip(struct thread *thread,
->  			    struct symbol **parent,
->  			    struct addr_location *root_al,
-> -			    int cpumode,
-> +			    u8 cpumode,
+--Sig_/z250Xhh0deuc.=t_UBpq/42
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Andi's patch got in:
-b3340a5 perf callchain: Support handling complete branch stacks as histograms
+Hi Russell,
 
-and it uses the cpumode check for -1, so it needs to stay int, otherwise
-there's a compilation failure:
+After merging the arm tree, today's linux-next build (arm defconfig)
+produced this warning:
 
-  CC       util/machine.o
-util/machine.c: In function ‘add_callchain_ip’:
-util/machine.c:1419:14: error: comparison is always false due to limited range of data type [-Werror=type-limits]
-  if (cpumode == -1)
-              ^
+arch/arm/vfp/vfpmodule.c: In function 'vfp_init':
+arch/arm/vfp/vfpmodule.c:725:6: warning: unused variable 'mvfr0' [-Wunused-=
+variable]
+  u32 mvfr0;
+      ^
 
+Introduced by commit 3f4c9f8f0a20 ("ARM: 8197/1: vfp: Fix VFPv3 hwcap
+detection on CPUID based cpus").
 
-jirka
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/z250Xhh0deuc.=t_UBpq/42
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUawJoAAoJEMDTa8Ir7ZwVPBwP/iWkP/dJ/nyl5QDAXP1IsXha
+I0WHOHU37sCIOUc9n1p9j3V+OPAc4uZWe5x3Y2N2HzUkjrSlYNFwQut7l5Io+tWW
+SW08zNZPX0KKlh4nhvzxKJNDLQF3KQ4+SY6RzNfo7j4HPSo4RNhX6fSDONruOPuU
+aNnTAUZmt7Rf+mBmkZZhkDG8MlOL0+Ps+CN9STBwXuP94l2YXpy7sZ59MYMawJLe
+NOOOapSffPh5/cpY2xfPqggSF37JPSDiQ0xLl7NzEHzK7B4MzzpWGvRJ7jk65CDs
+yztWwHK3tktzpuUjAISO5qjx+XtvFYuKGaLWJOScvQVoTxo2mLIpYuXnh5kFtuEH
+jYiTro/aYMx0bwVYYM6MpROMXwPqKqw203A7uwsWtdrehuiVuDxvol9sGtzlMAIq
+A/TVzMKWuGLQW3E6SN6nMkJD+O16eQ5+Or15Js9oaWcufdov7HnaBDooTjKimIDd
+xtTk3NfASQWW+z9rYDlhTB26CPJbVm4Fy6F16DObohWX4lf4INnm4DJNLFeYdS0N
+2pDLAQwGY3WasZHaOoAghKHjj/fEC/GnCf5YIzsBC/SXZglJawlZlMNx2inV0Jfj
+qW6TV8kSblz0R2UiXoh5NwdIkqw3ct0bizoanJsZYODXqEksw0c4CqK9PFYiXOPj
+fFAB8M8qPBjJl1too4ci
+=ydeL
+-----END PGP SIGNATURE-----
+
+--Sig_/z250Xhh0deuc.=t_UBpq/42--
