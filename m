@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaKRLAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:00:04 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38181 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265AbaKRLAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:00:01 -0500
-Date: Tue, 18 Nov 2014 11:59:39 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Jiang Liu <jiang.liu@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] asm-generic: Add msi.h
-In-Reply-To: <1703620.E5bhVDQPHc@wuerfel>
-Message-ID: <alpine.DEB.2.11.1411181149350.3909@nanos>
-References: <alpine.DEB.2.11.1411181133080.3909@nanos> <1703620.E5bhVDQPHc@wuerfel>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1754046AbaKRLAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:00:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754005AbaKRLAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 06:00:34 -0500
+Date: Tue, 18 Nov 2014 12:00:07 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        "Liang, Kan" <kan.liang@intel.com>
+Subject: Re: Implement lbr-as-callgraph v10
+Message-ID: <20141118110007.GF27645@krava.brq.redhat.com>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <20141117213457.GE4163@kernel.org>
+ <20141118104416.GE27645@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141118104416.GE27645@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Arnd Bergmann wrote:
-
-> On Tuesday 18 November 2014 11:34:37 Thomas Gleixner wrote:
-> > To support MSI irq domains we want a generic data structure for
-> > allocation, but we need the option to provide an architecture specific
-> > version of it. So instead of playing #ifdef games in linux/msi.h we
-> > add a generic header file and let architectures decide whether to
-> > include it or to provide their own implementation and provide the
-> > required typedef.
+On Tue, Nov 18, 2014 at 11:44:16AM +0100, Jiri Olsa wrote:
+> On Mon, Nov 17, 2014 at 06:34:57PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Nov 12, 2014 at 06:05:18PM -0800, Andi Kleen escreveu:
+> > > [Reworks to address all the review feedback. Rebased to latest tree]
+> > > [Just a repost after a rebase]
+> > > [Even more review feedback and some bugs addressed.]
+> > > [Only port to changes in perf/core. No other changes.]
+> > > [Rebase to latest perf/core]
+> > > [Another rebase. No changes]
+> > > 
+> > > This patchkit implements lbr-as-callgraphs in per freport,
+> > > as an alternative way to present LBR information.
+> > 
+> > Ok, I have this in my perf/core branch, but I need to test it further,
+> > as I couldn't get the output that appears on some of the changelogs.
+> > 
+> > If you could take a look at
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+> > 
+> > To see if I made some mistake, that would be of help,
+> > 
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> I'm getting compile error for DEBUG=1
+
+looks like the BUILD_BUG_ON_MSG does not work correctly with -O6 we use
+
+jirka
+
 > 
-> for merging the asm-generic file
+> jirka
 > 
-> > I know that typedefs are not really nice, but in this case there are no
-> > forward declarations required and it's the simplest solution.
 > 
-> I must be missing the obvious: what problem does the typedef solve
-> that you would have with just a struct?
-
-It's not obvious. :)
-
-The irqdomain stuff is pretty device tree centric, but the new stacked
-irqdomains are to be used by x86 as well. So we made some of the
-interfaces opaque, i.e. void *allocation_arg.
-
-Now MSI is a bit differnet as it cannot be decribed by DT, so we want
-a proper generic data structure for it and of course we want to have a
-type for it.
-
-Now x86 has a bit more convoluted requirements where we prefer for
-simplicity reasons to reuse the allocation data structure which we
-have alredy for the non MSI cases, so it can be handed down to the
-opaque interfaces as well.
-
-So we have the generic:
- 
-struct msi_alloc_info {
-       ....
-};
-
-and 
-
-struct x86_alloc_info {
-       ...
-};
-
-So we either can do in x86:
-
-struct msi_alloc_info {
-       struct x86_alloc_info info;
-};
-
-or use a typedef which maps x86_alloc_info to msi_alloc_info_t.
-
-I think the typedef is more sane in that case.
-
-Thanks,
-
-	tglx
-
-
-
-
+> [jolsa@krava perf]$ make DEBUG=1 JOBS=1
+>   BUILD:   Doing 'make -j1' parallel build
+>   CC       util/machine.o
+> In file included from /home/jolsa/kernel.org/linux-perf/tools/perf/util/include/../../../../include/uapi/linux/swab.h:5:0,
+>                  from /home/jolsa/kernel.org/linux-perf/tools/perf/util/include/asm/byteorder.h:2,
+>                  from /home/jolsa/kernel.org/linux-perf/include/uapi/linux/perf_event.h:19,
+>                  from util/../perf.h:7,
+>                  from util/callchain.h:4,
+>                  from util/machine.c:1:
+> util/machine.c: In function ‘remove_loops’:
+> /home/jolsa/kernel.org/linux-perf/tools/include/linux/compiler.h:64:20: error: call to ‘__compiletime_assert_1450’ declared with attribute error: Please upgrade the type of the hash table from unsigned char
+>     prefix ## suffix();    \
+>                     ^
+> /home/jolsa/kernel.org/linux-perf/tools/include/linux/compiler.h:69:2: note: in expansion of macro ‘__compiletime_assert’
+>   __compiletime_assert(condition, msg, prefix, suffix)
+>   ^
+> /home/jolsa/kernel.org/linux-perf/tools/include/linux/compiler.h:81:2: note: in expansion of macro ‘_compiletime_assert’
+>   _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
+>   ^
+> /home/jolsa/kernel.org/linux-perf/tools/include/linux/bug.h:13:37: note: in expansion of macro ‘compiletime_assert’
+>  #define BUILD_BUG_ON_MSG(cond, msg) compiletime_assert(!(cond), msg)
+>                                      ^
+> util/machine.c:1449:2: note: in expansion of macro ‘BUILD_BUG_ON_MSG’
+>   BUILD_BUG_ON_MSG(PERF_MAX_BRANCH_DEPTH > 127,
+>   ^
+> make[1]: *** [util/machine.o] Error 1
+> make: *** [all] Error 2
