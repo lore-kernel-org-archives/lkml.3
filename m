@@ -1,57 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995AbaKRXjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:39:52 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:33583 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713AbaKRXjt (ORCPT
+	id S932999AbaKRXn7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:43:59 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:46044 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235AbaKRXn6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:39:49 -0500
-Message-ID: <546BD8BD.2010605@au1.ibm.com>
-Date: Wed, 19 Nov 2014 10:39:41 +1100
-From: Jeremy Kerr <jeremy.kerr@au1.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Tue, 18 Nov 2014 18:43:58 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Dave Hansen" <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] drivers/core/of: Add symlink to device-tree from devices
- with an OF node
-References: <1415342031.4925.27.camel@kernel.crashing.org> <1415342117.4925.29.camel@kernel.crashing.org> <1415596626.5769.14.camel@kernel.crashing.org> <CAL_JsqKG=vpeGKj3v-2VW9oGQsnmuYMHRfy6LuXDXE=ROjHT4w@mail.gmail.com> <1415841047.5124.62.camel@kernel.crashing.org> <CAL_Jsq+YyfMWxiOFv4x3g5hZJH0XRqCKj2He1XO9eyXWjHTMrg@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+YyfMWxiOFv4x3g5hZJH0XRqCKj2He1XO9eyXWjHTMrg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111823-0029-0000-0000-0000009FBAA0
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
+Thread-Topic: [PATCH 06/19] mm: store mapcount for compound page separate
+Thread-Index: AQHP+QfhC/Yx8W8vu0evpav335us2Zxljo2AgAAU1YCAAOYbgA==
+Date: Tue, 18 Nov 2014 23:41:08 +0000
+Message-ID: <20141118234145.GA4116@hori1.linux.bs1.fc.nec.co.jp>
+References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
+ <20141118084337.GA16714@hori1.linux.bs1.fc.nec.co.jp>
+ <20141118095811.GA21774@node.dhcp.inet.fi>
+In-Reply-To: <20141118095811.GA21774@node.dhcp.inet.fi>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.11]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-ID: <0ACED6FBA3CFB049B5DB2D7AC4EB0B4F@gisp.nec.co.jp>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
->> diff --git a/drivers/base/core.c b/drivers/base/core.c
->> index 20da3ad..8c7b607 100644
->> --- a/drivers/base/core.c
->> +++ b/drivers/base/core.c
->> @@ -493,6 +493,15 @@ static int device_add_attrs(struct device *dev)
->>                         goto err_remove_dev_groups;
->>         }
->>
->> +#ifdef CONFIG_OF
->> +       if (dev->of_node) {
+On Tue, Nov 18, 2014 at 11:58:11AM +0200, Kirill A. Shutemov wrote:
+> On Tue, Nov 18, 2014 at 08:43:00AM +0000, Naoya Horiguchi wrote:
+> > > @@ -1837,6 +1839,9 @@ static void __split_huge_page_refcount(struct page *page,
+> > >  	atomic_sub(tail_count, &page->_count);
+> > >  	BUG_ON(atomic_read(&page->_count) <= 0);
+> > >  
+> > > +	page->_mapcount = *compound_mapcount_ptr(page);
+> > 
+> > Is atomic_set() necessary?
 > 
-> if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> Do you mean
+> 	atomic_set(&page->_mapcount, atomic_read(compound_mapcount_ptr(page)));
+> ?
+> 
+> I don't see why we would need this. Simple assignment should work just
+> fine. Or we have archs which will break?
 
-struct device doesn't have an of_node member if !CONFIG_OF, so we'll
-need to disable this block in the preprocessor.
+Sorry, I was wrong, please ignore this comment.
 
-Cheers,
+> > > @@ -6632,10 +6637,12 @@ static void dump_page_flags(unsigned long flags)
+> > >  void dump_page_badflags(struct page *page, const char *reason,
+> > >  		unsigned long badflags)
+> > >  {
+> > > -	printk(KERN_ALERT
+> > > -	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
+> > > +	pr_alert("page:%p count:%d mapcount:%d mapping:%p index:%#lx",
+> > >  		page, atomic_read(&page->_count), page_mapcount(page),
+> > >  		page->mapping, page->index);
+> > > +	if (PageCompound(page))
+> > 
+> > > +		printk(" compound_mapcount: %d", compound_mapcount(page));
+> > > +	printk("\n");
+> > 
+> > These two printk() should be pr_alert(), too?
+> 
+> No. It will split the line into several messages in dmesg.
 
+This splitting is fine. I meant that these printk()s are for one series
+of message, so setting the same log level looks reasonable to me.
 
-Jeremy
+> > > @@ -986,9 +986,30 @@ void page_add_anon_rmap(struct page *page,
+> > >  void do_page_add_anon_rmap(struct page *page,
+> > >  	struct vm_area_struct *vma, unsigned long address, int flags)
+> > >  {
+> > > -	int first = atomic_inc_and_test(&page->_mapcount);
+> > > +	bool compound = flags & RMAP_COMPOUND;
+> > > +	bool first;
+> > > +
+> > > +	VM_BUG_ON_PAGE(!PageLocked(compound_head(page)), page);
+> > > +
+> > > +	if (PageTransCompound(page)) {
+> > > +		struct page *head_page = compound_head(page);
+> > > +
+> > > +		if (compound) {
+> > > +			VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+> > > +			first = atomic_inc_and_test(compound_mapcount_ptr(page));
+> > 
+> > Is compound_mapcount_ptr() well-defined for tail pages?
+> 
+> The page is head page, otherwise VM_BUG_ON on the line above would trigger.
 
+Ah, OK.
+
+Thanks,
+Naoya Horiguchi
+
+> > > @@ -1032,10 +1052,19 @@ void page_add_new_anon_rmap(struct page *page,
+> > >  
+> > >  	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+> > >  	SetPageSwapBacked(page);
+> > > -	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
+> > >  	if (compound) {
+> > > +		atomic_t *compound_mapcount;
+> > > +
+> > >  		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+> > > +		compound_mapcount = (atomic_t *)&page[1].mapping;
+> > 
+> > You can use compound_mapcount_ptr() here.
+> 
+> Right, thanks.
+> 
+> -- 
+>  Kirill A. Shutemov
+> 
