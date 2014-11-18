@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702AbaKRNwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:52:08 -0500
-Received: from mga03.intel.com ([134.134.136.65]:33559 "EHLO mga03.intel.com"
+	id S1754724AbaKRNwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:52:22 -0500
+Received: from mga02.intel.com ([134.134.136.20]:36602 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439AbaKRNwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:52:04 -0500
+	id S1754439AbaKRNwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 08:52:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,410,1413270000"; 
-   d="scan'208";a="609776091"
+   d="scan'208";a="609776216"
 From: lukasz.anaczkowski@intel.com
 To: m.chehab@samsung.com, dougthompson@xmission.com
-Cc: bp@alien8.de, linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] sb_edac: two bugfixes
-Date: Tue, 18 Nov 2014 14:51:07 +0100
-Message-Id: <1416318669-96322-1-git-send-email-lukasz.anaczkowski@intel.com>
+Cc: bp@alien8.de, linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jim Snow <jim.m.snow@intel.com>, Jim Snow <jim.snow@intel.com>,
+        Lukasz Anaczkowski <lukasz.anaczkowski@intel.com>
+Subject: [PATCH 1/2] sb_edac: Fix off-by-one error in number of channels
+Date: Tue, 18 Nov 2014 14:51:08 +0100
+Message-Id: <1416318669-96322-2-git-send-email-lukasz.anaczkowski@intel.com>
 X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1416318669-96322-1-git-send-email-lukasz.anaczkowski@intel.com>
+References: <1416318669-96322-1-git-send-email-lukasz.anaczkowski@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello there,
+From: Jim Snow <jim.m.snow@intel.com>
 
-These are two bugfixes for sb_edac.
-This is my first time sending patches, so appologies for any process
-errors I may did. Let me know if this suffice to get these patches
-merged (unless there are comments to the code itself).
+This prevented edac sysfs code from properly handling 6 channels
+per memory controller.
 
-Cheers,
-Lukasz
+Signed-off-by: Jim Snow <jim.snow@intel.com>
+Signed-off-by: Lukasz Anaczkowski <lukasz.anaczkowski@intel.com>
+---
+ drivers/edac/edac_mc_sysfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index a6cd361..670d282 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -372,7 +372,7 @@ static int edac_create_csrow_object(struct mem_ctl_info *mci,
+ {
+ 	int err, chan;
+ 
+-	if (csrow->nr_channels >= EDAC_NR_CHANNELS)
++	if (csrow->nr_channels > EDAC_NR_CHANNELS)
+ 		return -ENODEV;
+ 
+ 	csrow->dev.type = &csrow_attr_type;
+-- 
+2.0.4
 
 --------------------------------------------------------------------
 
