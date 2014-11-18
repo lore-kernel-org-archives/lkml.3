@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbaKRVIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:08:38 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:51583 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaKRVIg (ORCPT
+	id S932519AbaKRVIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:08:52 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:49027 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175AbaKRVIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:08:36 -0500
-Date: Tue, 18 Nov 2014 22:08:33 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-pm@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
-        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: Re: [RFC 0/4] OOM vs PM freezer fixes
-Message-ID: <20141118210833.GE23640@dhcp22.suse.cz>
-References: <20141110163055.GC18373@dhcp22.suse.cz>
- <1415818732-27712-1-git-send-email-mhocko@suse.cz>
- <20141114201419.GI25889@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141114201419.GI25889@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Nov 2014 16:08:50 -0500
+From: Alexandru M Stan <amstan@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>,
+        addy ke <addy.ke@rock-chips.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>, Kever Yang <kever.yang@rock-chips.com>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Alexandru M Stan <amstan@chromium.org>, mark.rutland@arm.com,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org, galak@codeaurora.org,
+        mark.yao@rock-chips.com
+Subject: [PATCH v3 0/2] Add support for the rockchip mmc clock phases using the framework
+Date: Tue, 18 Nov 2014 13:08:26 -0800
+Message-Id: <1416344908-5975-1-git-send-email-amstan@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-11-14 15:14:19, Tejun Heo wrote:
-> On Wed, Nov 12, 2014 at 07:58:48PM +0100, Michal Hocko wrote:
-> > Hi,
-> > here is another take at OOM vs. PM freezer interaction fixes/cleanups.
-> > First three patches are fixes for an unlikely cases when OOM races with
-> > the PM freezer which should be closed completely finally. The last patch
-> > is a simple code enhancement which is not needed strictly speaking but
-> > it is nice to have IMO.
-> > 
-> > Both OOM killer and PM freezer are quite subtle so I hope I haven't
-> > missing anything. Any feedback is highly appreciated. I am also
-> > interested about feedback for the used approach. To be honest I am not
-> > really happy about spreading TIF_MEMDIE checks into freezer (patch 1)
-> > but I didn't find any other way for detecting OOM killed tasks.
-> 
-> I really don't get why this is structured this way.  Can't you just do
-> the following?
+For now all I have is the getter and setter for the phase, nothing that uses it
+(that is ready). You can test the getter like this:
+localhost ~ # cat /sys/kernel/debug/clk/clk_summary|grep sample -C 1
+    sclk_sdio1                            0            0    24000000          0 0
+       sdio1_sample                       0            0    12000000          0 0
+       sdio1_drv                          0            0    12000000          0 90
+--
+          sclk_sdmmc                      1            1   297000000          0 0
+             sdmmc_sample                 0            0   148500000          0 134
+             sdmmc_drv                    0            0   148500000          0 90
+--
+          sclk_sdio0                      1            1   100000000          0 0
+             sdio0_sample                 0            0    50000000          0 0
+             sdio0_drv                    0            0    50000000          0 90
+          sclk_emmc                       1            1   100000000          0 0
+             emmc_sample                  0            0    50000000          0 0
+             emmc_drv                     0            0    50000000          0 180
 
-Well, I liked how simple this was and localized at the only place which
-matters. When I was thinking about a solution which you are describing
-below it was more complicated and more subtle (e.g. waiting for an OOM
-victim might be tricky if it stumbles over a lock which is held by a
-frozen thread which uses try_to_freeze_unsafe). Anyway I gave it another
-try and will post the two patches as a reply to this email. I hope the
-both interface and implementation is cleaner.
+Next thing that will come is some dts changes that will make use of these new
+clocks, and eventually mmc code will be changed to tune with these clocks.
 
-> 1. Freeze all freezables.  Don't worry about PF_MEMDIE.
-> 
-> 2. Disable OOM killer.  This should be contained in the OOM killer
->    proper.  Lock out the OOM killer and disable it.
-> 
-> 3. At this point, we know that no one will create more freezable
->    threads and no new process will be OOM kliled.  Wait till there's
->    no process w/ PF_MEMDIE set.
-> 
-> There's no reason to lock out or disable OOM killer while the system
-> is not in the quiescent state, which is a big can of worms.  Bring
-> down the system to the quiescent state, disable the OOM killer and
-> then drain PF_MEMDIEs.
+Changes in v3:
+- renamed everything internal from phase to just mmc_clock or mmc
+- added RK3288_MMC_CLKGEN_DIV instead of the magic number
+- added new paragraph to commit message
+
+Changes in v2:
+- fixed my cc/to list
+- removed dangling #DEFINE DEBUG
+
+Alexandru M Stan (2):
+  clk: rockchip: add bindings for the mmc clocks
+  clk: rockchip: Add support for the mmc clock phases using the
+    framework
+
+ drivers/clk/rockchip/Makefile          |   1 +
+ drivers/clk/rockchip/clk-mmc-phase.c   | 151 +++++++++++++++++++++++++++++++++
+ drivers/clk/rockchip/clk-rk3288.c      |  12 +++
+ drivers/clk/rockchip/clk.c             |   8 ++
+ drivers/clk/rockchip/clk.h             |  23 +++++
+ include/dt-bindings/clock/rk3288-cru.h |  10 +++
+ 6 files changed, 205 insertions(+)
+ create mode 100644 drivers/clk/rockchip/clk-mmc-phase.c
 
 -- 
-Michal Hocko
-SUSE Labs
+2.1.0.rc2.206.gedb03e5
+
