@@ -1,132 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369AbaKRRNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:13:17 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:57868 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749AbaKRRNO (ORCPT
+	id S1755404AbaKRRN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:13:27 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:44420 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464AbaKRRNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:13:14 -0500
-Message-ID: <546B7E21.4000602@linaro.org>
-Date: Tue, 18 Nov 2014 17:13:05 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 18 Nov 2014 12:13:23 -0500
+Date: Tue, 18 Nov 2014 11:13:21 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        seth.forhsee@canonical.com
+Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of
+ init_user_ns
+Message-ID: <20141118171321.GB21726@ubuntu-mba51>
+References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+ <1414013060-137148-3-git-send-email-seth.forshee@canonical.com>
+ <20141111140454.GD333@tucsk>
+ <87mw7xd9zt.fsf@x220.int.ebiederm.org>
+ <20141112130915.GG333@tucsk>
+ <20141112162254.GB31775@ubuntu-hedt>
+ <20141118152156.GA21726@ubuntu-mba51>
+ <CALCETrVPJt6ahh5tQ+G68UgR_c62w65g4qN1=NGi13hyMjoQAA@mail.gmail.com>
 MIME-Version: 1.0
-To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>,
-        linux-kernel@vger.kernel.org
-CC: Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [RFC] debug: add parameters to prevent entering debug mode on
- errors
-References: <1416312516-4551-1-git-send-email-kiran.kumar@linaro.org>
-In-Reply-To: <1416312516-4551-1-git-send-email-kiran.kumar@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVPJt6ahh5tQ+G68UgR_c62w65g4qN1=NGi13hyMjoQAA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/11/14 12:08, Kiran Kumar Raparthy wrote:
-> From: Colin Cross <ccross@android.com>
+On Tue, Nov 18, 2014 at 09:09:34AM -0800, Andy Lutomirski wrote:
+> On Tue, Nov 18, 2014 at 7:21 AM, Seth Forshee
+> <seth.forshee@canonical.com> wrote:
+> > On Wed, Nov 12, 2014 at 10:22:54AM -0600, Seth Forshee wrote:
+> >> On Wed, Nov 12, 2014 at 02:09:15PM +0100, Miklos Szeredi wrote:
+> >> > On Tue, Nov 11, 2014 at 09:37:10AM -0600, Eric W. Biederman wrote:
+> >> >
+> >> > > > Maybe I'm being dense, but can someone give a concrete example of such an
+> >> > > > attack?
+> >> > >
+> >> > > There are two variants of things at play here.
+> >> > >
+> >> > > There is the classic if you don't freeze your context at open time when
+> >> > > you pass that file descriptor to another process unexpected things can
+> >> > > happen.
+> >> > >
+> >> > > An essentially harmless but extremely confusing example is what happens
+> >> > > to a partial read when it stops halfway through a uid value and the next
+> >> > > read on the same file descriptor is from a process in a different user
+> >> > > namespace.  Which uid value should be returned to userspace.
+> >> >
+> >> > Fuse device doesn't currently do partial reads, so that's a non-issue.
+> >> >
+> >> > > Now if I am in a nefarious mood I can create a unprivileged user
+> >> > > namespace, open /dev/fuse and mount a fuse filesystem.  Pass the file
+> >> > > descriptor to /dev/fuse to a processes that is in the default user
+> >> > > namespace (and thus can use any uid/gid).   With that file desctipor
+> >> > > report that there is a setuid 0 exectuable on that file system.
+> >> >
+> >> > Yes, and this would also be prevented by MNT_NOSUID, which would be a good idea
+> >> > anyway.  I just don't see the reason we'd want to allow clearing MNT_NOSUID in a
+> >> > private namespace.
+> >> >
+> >> > So we don't currently see a use case for relaxing either the MNT_NOSUID
+> >> > restriction or for relaxing the requirement on the user namespace the fuse
+> >> > server is in.  Is that correct?
+> >> >
+> >> > If so, we should leave both restrictions in place since that allows the greatest
+> >> > flexibility in the future, is either of those needs to be relaxed.
+> >>
+> >> I'm not aware of specific use cases for either at this point. However,
+> >> Andy's patch [1] will limit suid to the set of namespaces where the user
+> >> who mounted the filesystem already has privileges. Enforcing MNT_NOSUID
+> >> will require enforcement in the vfs, and in that case we definitely need
+> >> to decide whether the policy is to implicitly add the flag or fail the
+> >> mount attempt if the flag is not present [2].
+> >
+> > I asked around a bit, and it turns out there are use cases for nested
+> > containers (i.e. a container within a container) where the rootfs for
+> > the outer container mounts a filesystem containing the rootfs for the
+> > inner container. If that mount is nosuid then suid utilities like ping
+> > aren't going to work in the inner container.
+> >
+> > So since there's a use case for suid in a userns mount and we have what
+> > we belive are sufficient protections against using this as a vector to
+> > get privileges outside the container, I'm planning to move ahead without
+> > the MNT_NOSUID restriction. Any objections?
 > 
-> debug: add parameters to prevent entering debug mode on errors
-> 
-> On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
-> device after a panic. Add module parameters debug_core.break_on_exception and
-> debug_core.break_on_panic to allow skipping debug on panics and exceptions
-> respectively.  Both default to true to preserve existing behavior.
+> Are you talking about MNT_NOSUID the flag or my ns-dependent thing?
 
-I am a little unsure about break_on_panic.
+I'm talking about dropping the proposed requirement from Miklos that all
+fuse userns mounts are required to have the MNT_NOSUID flag. I intend to
+keep your ns-dependent thing.
 
-It ought to be possible for kgdb/kdb to honour CONFIG_PANIC_TIMEOUT by
-tracking how long it takes for the user to attach a debugger (or to run
-the first kdb command after the panic). As it happens the timeout value
-is already an exported kernel symbol so all the info it there for us to
-use...
-
-Doing so would save us imposing further configuration burden on the user
-(although it would be a good deal more code).
-
-Note that I can't think of an automatic way to handle break_on_exception
-so I'm less worried about that one.
-
-
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Cc: kgdb-bugreport@lists.sourceforge.net
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Sumit Semwal <sumit.semwal@linaro.org>
-> Signed-off-by: Colin Cross <ccross@android.com>
-> [Kiran: Added context to commit message]
-> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
-> ---
-> This is one of the number of patches from the Android AOSP common.git tree,
-> which is used on almost all Android devices.  I wanted to submit it for review
-> to see if it should go upstream.
-> 
->  kernel/debug/debug_core.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-> index 1adf62b..af06122 100644
-> --- a/kernel/debug/debug_core.c
-> +++ b/kernel/debug/debug_core.c
-> @@ -87,6 +87,10 @@ static int kgdb_use_con;
->  bool dbg_is_early = true;
->  /* Next cpu to become the master debug core */
->  int dbg_switch_cpu;
-> +/* Flag for entering kdb when a panic occurs */
-> +static bool break_on_panic = true;
-> +/* Flag for entering kdb when an exception occurs */
-> +static bool break_on_exception = true;
->  
->  /* Use kdb or gdbserver mode */
->  int dbg_kdb_mode = 1;
-> @@ -101,6 +105,8 @@ early_param("kgdbcon", opt_kgdb_con);
->  
->  module_param(kgdb_use_con, int, 0644);
->  module_param(kgdbreboot, int, 0644);
-> +module_param(break_on_panic, bool, 0644);
-> +module_param(break_on_exception, bool, 0644);
-
-kgdbreboot, which controls whether or not to trap into kgdb during
-reboot, has a similar purpose to these new parameters. Perhaps any new
-symbols should follow a similar naming scheme.
-
->  /*
->   * Holds information about breakpoints in a kernel. These breakpoints are
-> @@ -690,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
->  	if (arch_kgdb_ops.enable_nmi)
->  		arch_kgdb_ops.enable_nmi(0);
->  
-> +	if (unlikely(signo != SIGTRAP && !break_on_exception))
-
-This is nit picking but...
-
-There should be no need to predict branch results here. Its not
-performance critical and anyway the "fast" path implied by the
-unlikely() results in all CPUs screaming to a halt and burning up
-millions of cycles waiting for user input.
-
-> +		return 1;
-> +
->  	memset(ks, 0, sizeof(struct kgdb_state));
->  	ks->cpu			= raw_smp_processor_id();
->  	ks->ex_vector		= evector;
-> @@ -821,6 +830,9 @@ static int kgdb_panic_event(struct notifier_block *self,
->  			    unsigned long val,
->  			    void *data)
->  {
-> +	if (!break_on_panic)
-> +		return NOTIFY_DONE;
-> +
->  	if (dbg_kdb_mode)
->  		kdb_printf("PANIC: %s\n", (char *)data);
->  	kgdb_breakpoint();
-> 
+Thanks,
+Seth
 
