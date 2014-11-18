@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaKRI2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:28:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32937 "EHLO
+	id S1753854AbaKRIa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:30:26 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32893 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaKRI2o (ORCPT
+	with ESMTP id S1753794AbaKRI2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:28:44 -0500
+	Tue, 18 Nov 2014 03:28:39 -0500
 From: Ethan Zhao <ethan.zhao@oracle.com>
 To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
         corbet@lwn.net
 Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
         brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH] intel_pstate: add module and kernel command line parameter to ignore ACPI _PPC
-Date: Tue, 18 Nov 2014 17:27:29 +0900
-Message-Id: <1416299253-14912-4-git-send-email-ethan.zhao@oracle.com>
+Subject: [PATCH] intel_pstate: skip the driver if Sun server has ACPI _PPC method
+Date: Tue, 18 Nov 2014 17:27:27 +0900
+Message-Id: <1416299253-14912-2-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
 References: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kernel command line parameter
- intel_pstate = ignore_acpi_ppc
-and module parameter
- ignore_acpi_ppc = 1
-to allow driver to ignore the ACPI _PPC existence even for Sun x86 servers.
-These parameter could be used for debug\test\workaround etc purpose.
+Oracle Sun X86 servers have dynamic power capping capability that works via
+ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
+enabled.
 
 Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 ---
- Documentation/kernel-parameters.txt | 3 +++
- drivers/cpufreq/intel_pstate.c      | 8 +++++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4c81a86..f502b85 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		       disable
- 		         Do not enable intel_pstate as the default
- 		         scaling driver for the supported processors
-+		       ignore_acpi_ppc
-+			 Ignore the existence of ACPI method _PPC for Sun x86 servers
-+			 and load the driver.
- 
- 	intremap=	[X86-64, Intel-IOMMU]
- 			on	enable Interrupt Remapping (default)
 diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 7c5faea..388387b 100644
+index 27bb6d3..5498eb0 100644
 --- a/drivers/cpufreq/intel_pstate.c
 +++ b/drivers/cpufreq/intel_pstate.c
-@@ -870,6 +870,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+@@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
+ 	return true;
+ }
+ 
++static bool intel_pstate_has_acpi_ppc(void)
++{
++	int i;
++
++	for_each_possible_cpu(i) {
++		struct acpi_processor *pr = per_cpu(processors, i);
++
++		if (!pr)
++			continue;
++		if (acpi_has_method(pr->handle, "_PPC"))
++			return true;
++	}
++	return false;
++}
++
+ struct hw_vendor_info {
+ 	u16  valid;
+ 	char oem_id[ACPI_OEM_ID_SIZE];
+@@ -952,6 +967,7 @@ struct hw_vendor_info {
+ /* Hardware vendor-specific info that has its own power management modes */
+ static struct hw_vendor_info vendor_info[] = {
+ 	{1, "HP    ", "ProLiant"},
++	{1, "ORACLE", ""},
+ 	{0, "", ""},
  };
  
- static int __initdata no_load;
-+static unsigned int  ignore_acpi_ppc;
- 
- static int intel_pstate_msrs_not_valid(void)
- {
-@@ -990,7 +991,7 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+@@ -969,12 +985,16 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+ 		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
  		    intel_pstate_no_acpi_pss())
  			return true;
- 		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
--			intel_pstate_has_acpi_ppc())
-+			intel_pstate_has_acpi_ppc() && !ignore_acpi_ppc)
- 			return true;
++		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
++			intel_pstate_has_acpi_ppc())
++			return true;
  	}
  
-@@ -1066,11 +1067,16 @@ static int __init intel_pstate_setup(char *str)
- 
- 	if (!strcmp(str, "disable"))
- 		no_load = 1;
-+	if (!strcmp(str, "ignore_acpi_ppc"))
-+		ignore_acpi_ppc = 1;
- 	return 0;
+ 	return false;
  }
- early_param("intel_pstate", intel_pstate_setup);
- #endif
+ #else /* CONFIG_ACPI not enabled */
+ static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
++static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+ #endif /* CONFIG_ACPI */
  
-+module_param(ignore_acpi_ppc, uint, 0644);
-+MODULE_PARM_DESC(ignore_acpi_ppc,
-+	"value 0 or non-zero. non-zero -> ignore ACPI _PPC and load this driver");
- MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
- MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
- MODULE_LICENSE("GPL");
+ static int __init intel_pstate_init(void)
 -- 
 1.8.3.1
 
