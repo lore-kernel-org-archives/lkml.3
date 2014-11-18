@@ -1,61 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065AbaKRTQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 14:16:22 -0500
-Received: from mout.web.de ([212.227.17.12]:64067 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753952AbaKRTQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 14:16:20 -0500
-Message-ID: <546B9AF5.9050809@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 20:16:05 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754901AbaKRTVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 14:21:15 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:54183 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126AbaKRTVN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 14:21:13 -0500
+Date: Tue, 18 Nov 2014 19:21:03 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Rob Clark <robdclark@gmail.com>
+Subject: Re: linux-next: build warning after merge of the arm tree
+Message-ID: <20141118192103.GF4042@n2100.arm.linux.org.uk>
+References: <20141118192507.39f68bb7@canb.auug.org.au>
+ <546B9696.4030703@codeaurora.org>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] net: pktgen: Deletion of an unnecessary check before
- the function call "proc_remove"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:4v714hb1jK7Voo2zm/jIb5oMHtAcQ8M1SWqE4hQh1qvEF9ZDtJU
- gXYX0wiUKGaX44Z6ZmbBHkS/9A4vVypM/snvbDTWxdiG6MzYsYTBRt4/Uc8m8fGBpZBdSwk
- Z9oyLCudzC4WD+AYBIpde/v47oiDASlRObN9rn8HH3DRjppvRUI1jxC8IIc1ts1JztNmhbx
- S0PG2NQBoAh8tEvWSBPsg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546B9696.4030703@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 20:10:34 +0100
+On Tue, Nov 18, 2014 at 10:57:26AM -0800, Stephen Boyd wrote:
+> Urgh, I thought I fixed that but I guess I only took care of not
+> assigning it unless we actually need it. Well we can do the #ifdef
+> thing, or move to IS_ENABLED. Here's both options.
 
-The proc_remove() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+I'd prefer the first as it increases compiler coverage.
 
-This issue was detected by using the Coccinelle software.
+Thanks.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- net/core/pktgen.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 8b849dd..35046a8 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -3698,8 +3698,7 @@ static int pktgen_remove_device(struct pktgen_thread *t,
- 	/* Remove proc before if_list entry, because add_device uses
- 	 * list to determine if interface already exist, avoid race
- 	 * with proc_create_data() */
--	if (pkt_dev->entry)
--		proc_remove(pkt_dev->entry);
-+	proc_remove(pkt_dev->entry);
- 
- 	/* And update the thread if_list */
- 	_rem_dev_from_if_list(t, pkt_dev);
 -- 
-2.1.3
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
