@@ -1,127 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804AbaKRGd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 01:33:56 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27041 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753773AbaKRGdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 01:33:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,408,1413270000"; 
-   d="scan'208";a="633665283"
-Date: Tue, 18 Nov 2014 08:33:15 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [PATCH v7 00/10] TPM 2.0 support
-Message-ID: <20141118063314.GA5847@intel.com>
-References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753631AbaKRGe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:34:27 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:40485 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaKRGdE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 01:33:04 -0500
+From: David Long <dave.long@linaro.org>
+To: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 5/5] arm64: Add HAVE_REGS_AND_STACK_ACCESS_API feature
+Date: Tue, 18 Nov 2014 01:32:55 -0500
+Message-Id: <1416292375-29560-6-git-send-email-dave.long@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any feedback?
+From: "David A. Long" <dave.long@linaro.org>
 
-/Jarkko
+Add HAVE_REGS_AND_STACK_ACCESS_API feature for arm64.
 
-On Tue, Nov 11, 2014 at 03:45:03PM +0200, Jarkko Sakkinen wrote:
-> This patch set enables TPM2 protocol and provides drivers for FIFO and
-> CRB interfaces.
-> 
-> v2:
-> - Improved struct tpm_chip life-cycle by taking advantage of devres
->   API.
-> - Refined sysfs attributes as simple key-values thereby not repeating
->   mistakes in TPM1 sysfs attributes.
-> - Documented functions in tpm-chip.c and tpm2-cmd.c.
-> - Documented sysfs attributes.
-> 
-> v3:
-> - Lots of fixes in calling order in device drivers (thanks to Jason
->   Gunthorpe for pointing these out!).
-> - Attach sysfs attributes to the misc device because it represents
->   TPM device to the user space.
-> 
-> v4:
-> - Disable sysfs attibutes for TPM 2.0 for until we can sort out the 
->   best approach for them.
-> - Fixed all the style issues found with checkpatch.pl.
-> 
-> v5:
-> - missing EXPORT_SYMBOL_GPL()
-> - own class for TPM devices used for TPM 2.0 devices and onwards.
-> 
-> v6:
-> - Non-racy initialization for sysfs attributes using struct device's
->   groups field.
-> - The class 'tpm' is used now for all TPM devices. For the first device
->   node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
->   backwards compatability.
-> 
-> v7:
-> - Release device number and free struct tpm_chip memory inside
->   tpm_dev_release callback.
-> - Moved code from tpm-interface.c and tpm_dev.c to tpm-chip.c.
-> 
-> Opens:
-> - What we should do with PPI and BIOS log sysfs attributes?
->   Can we associate them with the character device without
->   breaking anything? Can we postpone this issue after
->   this patch set has been pulled?
-> 
-> Jarkko Sakkinen (9):
->   tpm: merge duplicate transmit_cmd() functions
->   tpm: two-phase chip management functions
->   tpm: fix multiple race conditions in tpm_ppi.c
->   tpm: rename chip->dev to chip->pdev
->   tpm: device class for tpm
->   tpm: fix: move sysfs attributes to the correct place.
->   tpm: TPM 2.0 baseline support
->   tpm: TPM 2.0 CRB Interface
->   tpm: TPM 2.0 sysfs attributes
-> 
-> Will Arthur (1):
->   tpm: TPM 2.0 FIFO Interface
-> 
->  Documentation/ABI/stable/sysfs-class-tpm2 |  57 +++
->  drivers/char/tpm/Kconfig                  |   9 +
->  drivers/char/tpm/Makefile                 |   3 +-
->  drivers/char/tpm/tpm-chip.c               | 266 ++++++++++++++
->  drivers/char/tpm/tpm-dev.c                |  44 +--
->  drivers/char/tpm/tpm-interface.c          | 261 +++++---------
->  drivers/char/tpm/tpm-sysfs.c              |  46 +--
->  drivers/char/tpm/tpm.h                    | 134 ++++++-
->  drivers/char/tpm/tpm2-cmd.c               | 566 ++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm2-sysfs.c             | 152 ++++++++
->  drivers/char/tpm/tpm_atmel.c              |  25 +-
->  drivers/char/tpm/tpm_crb.c                | 323 +++++++++++++++++
->  drivers/char/tpm/tpm_i2c_atmel.c          |  49 +--
->  drivers/char/tpm/tpm_i2c_infineon.c       |  43 +--
->  drivers/char/tpm/tpm_i2c_nuvoton.c        |  68 ++--
->  drivers/char/tpm/tpm_i2c_stm_st33.c       |  44 +--
->  drivers/char/tpm/tpm_ibmvtpm.c            |  17 +-
->  drivers/char/tpm/tpm_infineon.c           |  51 +--
->  drivers/char/tpm/tpm_nsc.c                |  34 +-
->  drivers/char/tpm/tpm_ppi.c                | 136 ++++---
->  drivers/char/tpm/tpm_tis.c                | 180 ++++++----
->  drivers/char/tpm/xen-tpmfront.c           |  14 +-
->  22 files changed, 1920 insertions(+), 602 deletions(-)
->  create mode 100644 Documentation/ABI/stable/sysfs-class-tpm2
->  create mode 100644 drivers/char/tpm/tpm-chip.c
->  create mode 100644 drivers/char/tpm/tpm2-cmd.c
->  create mode 100644 drivers/char/tpm/tpm2-sysfs.c
->  create mode 100644 drivers/char/tpm/tpm_crb.c
-> 
-> -- 
-> 2.1.0
-> 
+Signed-off-by: David A. Long <dave.long@linaro.org>
+---
+ arch/arm64/Kconfig                   |   1 +
+ arch/arm64/include/asm/ptrace.h      |  29 +++++++++
+ arch/arm64/include/uapi/asm/ptrace.h |  36 +++++++++++
+ arch/arm64/kernel/ptrace.c           | 119 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 185 insertions(+)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 02f31b7..bc9b516 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -58,6 +58,7 @@ config ARM64
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_PERF_REGS
+ 	select HAVE_PERF_USER_STACK_DUMP
++	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_RCU_TABLE_FREE
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select HAVE_KPROBES if !XIP_KERNEL
+diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+index d3e782a..24cc048 100644
+--- a/arch/arm64/include/asm/ptrace.h
++++ b/arch/arm64/include/asm/ptrace.h
+@@ -111,6 +111,8 @@ struct pt_regs {
+ 	u64 syscallno;
+ };
+ 
++#define MAX_REG_OFFSET (offsetof(struct pt_regs, orig_x0))
++
+ #define arch_has_single_step()	(1)
+ 
+ #ifdef CONFIG_COMPAT
+@@ -139,11 +141,38 @@ struct pt_regs {
+ #define user_stack_pointer(regs) \
+ 	(!compat_user_mode(regs) ? (regs)->sp : (regs)->compat_sp)
+ 
++/**
++ * regs_get_register() - get register value from its offset
++ * @regs:	   pt_regs from which register value is gotten
++ * @offset:    offset number of the register.
++ *
++ * regs_get_register returns the value of a register whose offset from @regs.
++ * The @offset is the offset of the register in struct pt_regs.
++ * If @offset is bigger than MAX_REG_OFFSET, this returns 0.
++ */
++static inline u64 regs_get_register(struct pt_regs *regs,
++					      unsigned int offset)
++{
++	if (unlikely(offset > MAX_REG_OFFSET))
++		return 0;
++	return *(u64 *)((u64)regs + offset);
++}
++
++/* Valid only for Kernel mode traps. */
++static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
++{
++	return regs->ARM_sp;
++}
++
+ static inline unsigned long regs_return_value(struct pt_regs *regs)
+ {
+ 	return regs->regs[0];
+ }
+ 
++extern int regs_query_register_offset(const char *name);
++extern unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
++					       unsigned int n);
++
+ /*
+  * Are the current registers suitable for user mode? (used to maintain
+  * security in signal handlers)
+diff --git a/arch/arm64/include/uapi/asm/ptrace.h b/arch/arm64/include/uapi/asm/ptrace.h
+index 6913643..700d28b 100644
+--- a/arch/arm64/include/uapi/asm/ptrace.h
++++ b/arch/arm64/include/uapi/asm/ptrace.h
+@@ -61,6 +61,42 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
++#define ARM_cpsr	pstate
++#define ARM_pc		pc
++#define ARM_sp		sp
++#define ARM_lr		regs[30]
++#define ARM_fp		regs[29]
++#define ARM_x28		regs[28]
++#define ARM_x27		regs[27]
++#define ARM_x26		regs[26]
++#define ARM_x25		regs[25]
++#define ARM_x24		regs[24]
++#define ARM_x23		regs[23]
++#define ARM_x22		regs[22]
++#define ARM_x21		regs[21]
++#define ARM_x20		regs[20]
++#define ARM_x19		regs[19]
++#define ARM_x18		regs[18]
++#define ARM_ip1		regs[17]
++#define ARM_ip0		regs[16]
++#define ARM_x15		regs[15]
++#define ARM_x14		regs[14]
++#define ARM_x13		regs[13]
++#define ARM_x12		regs[12]
++#define ARM_x11		regs[11]
++#define ARM_x10		regs[10]
++#define ARM_x9		regs[9]
++#define ARM_x8		regs[8]
++#define ARM_x7		regs[7]
++#define ARM_x6		regs[6]
++#define ARM_x5		regs[5]
++#define ARM_x4		regs[4]
++#define ARM_x3		regs[3]
++#define ARM_x2		regs[2]
++#define ARM_x1		regs[1]
++#define ARM_x0		regs[0]
++#define ARM_ORIG_x0	orig_x0
++
+ /*
+  * User structures for general purpose, floating point and debug registers.
+  */
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index 8a4ae8e..36a94c8 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -47,6 +47,125 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/syscalls.h>
+ 
++struct pt_regs_offset {
++	const char *name;
++	int offset;
++};
++
++#define REG_OFFSET_NAME(r) \
++	{.name = #r, .offset = offsetof(struct pt_regs, ARM_##r)}
++#define REG_OFFSET_END {.name = NULL, .offset = 0}
++
++static const struct pt_regs_offset regoffset_table[] = {
++	REG_OFFSET_NAME(x0),
++	REG_OFFSET_NAME(x1),
++	REG_OFFSET_NAME(x2),
++	REG_OFFSET_NAME(x3),
++	REG_OFFSET_NAME(x4),
++	REG_OFFSET_NAME(x5),
++	REG_OFFSET_NAME(x6),
++	REG_OFFSET_NAME(x7),
++	REG_OFFSET_NAME(x8),
++	REG_OFFSET_NAME(x9),
++	REG_OFFSET_NAME(x10),
++	REG_OFFSET_NAME(x11),
++	REG_OFFSET_NAME(x12),
++	REG_OFFSET_NAME(x13),
++	REG_OFFSET_NAME(x14),
++	REG_OFFSET_NAME(x15),
++	REG_OFFSET_NAME(ip0),
++	REG_OFFSET_NAME(ip1),
++	REG_OFFSET_NAME(x18),
++	REG_OFFSET_NAME(x19),
++	REG_OFFSET_NAME(x20),
++	REG_OFFSET_NAME(x21),
++	REG_OFFSET_NAME(x22),
++	REG_OFFSET_NAME(x23),
++	REG_OFFSET_NAME(x24),
++	REG_OFFSET_NAME(x25),
++	REG_OFFSET_NAME(x26),
++	REG_OFFSET_NAME(x27),
++	REG_OFFSET_NAME(x28),
++	REG_OFFSET_NAME(fp),
++	REG_OFFSET_NAME(lr),
++/*
++	REG_OFFSET_NAME(ip),
++*/
++	REG_OFFSET_NAME(sp),
++	REG_OFFSET_NAME(pc),
++	REG_OFFSET_NAME(cpsr),
++	REG_OFFSET_NAME(ORIG_x0),
++	REG_OFFSET_END,
++};
++
++/**
++ * regs_query_register_offset() - query register offset from its name
++ * @name:	the name of a register
++ *
++ * regs_query_register_offset() returns the offset of a register in struct
++ * pt_regs from its name. If the name is invalid, this returns -EINVAL;
++ */
++int regs_query_register_offset(const char *name)
++{
++	const struct pt_regs_offset *roff;
++
++	for (roff = regoffset_table; roff->name != NULL; roff++)
++		if (!strcmp(roff->name, name))
++			return roff->offset;
++	return -EINVAL;
++}
++
++/**
++ * regs_query_register_name() - query register name from its offset
++ * @offset:	the offset of a register in struct pt_regs.
++ *
++ * regs_query_register_name() returns the name of a register from its
++ * offset in struct pt_regs. If the @offset is invalid, this returns NULL;
++ */
++const char *regs_query_register_name(unsigned int offset)
++{
++	const struct pt_regs_offset *roff;
++
++	for (roff = regoffset_table; roff->name != NULL; roff++)
++		if (roff->offset == offset)
++			return roff->name;
++	return NULL;
++}
++
++/**
++ * regs_within_kernel_stack() - check the address in the stack
++ * @regs:      pt_regs which contains kernel stack pointer.
++ * @addr:      address which is checked.
++ *
++ * regs_within_kernel_stack() checks @addr is within the kernel stack page(s).
++ * If @addr is within the kernel stack, it returns true. If not, returns false.
++ */
++bool regs_within_kernel_stack(struct pt_regs *regs, unsigned long addr)
++{
++	return ((addr & ~(THREAD_SIZE - 1))  ==
++		(kernel_stack_pointer(regs) & ~(THREAD_SIZE - 1)));
++}
++
++/**
++ * regs_get_kernel_stack_nth() - get Nth entry of the stack
++ * @regs:	pt_regs which contains kernel stack pointer.
++ * @n:		stack entry number.
++ *
++ * regs_get_kernel_stack_nth() returns @n th entry of the kernel stack which
++ * is specified by @regs. If the @n th entry is NOT in the kernel stack,
++ * this returns 0.
++ */
++unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs, unsigned int n)
++{
++	unsigned long *addr = (unsigned long *)kernel_stack_pointer(regs);
++
++	addr += n;
++	if (regs_within_kernel_stack(regs, (unsigned long)addr))
++		return *addr;
++	else
++		return 0;
++}
++
+ /*
+  * TODO: does not yet catch signals sent when the child dies.
+  * in exit.c or in signal.c.
+-- 
+1.8.1.2
+
