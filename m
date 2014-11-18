@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaKRAfg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:35:36 -0500
-Received: from smtprelay0012.hostedemail.com ([216.40.44.12]:54158 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752545AbaKRAff (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:35:35 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:6261:7576:8603:10004:10400:10848:10967:11026:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: burn60_87cb55a9a511f
-X-Filterd-Recvd-Size: 2188
-Message-ID: <1416270932.29010.6.camel@perches.com>
-Subject: Re: [PATCH 20/26 v5] seq_buf: Add seq_buf_can_fit() helper function
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Date: Mon, 17 Nov 2014 16:35:32 -0800
-In-Reply-To: <20141117192733.0ab1ba2e@gandalf.local.home>
-References: <20141115045847.712848224@goodmis.org>
-	 <20141115050604.073390701@goodmis.org>
-	 <20141117123642.1de9252e@gandalf.local.home>
-	 <1416269253.29010.4.camel@perches.com>
-	 <20141117192733.0ab1ba2e@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753381AbaKRAgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:36:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42547 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433AbaKRAgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 19:36:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,406,1413270000"; 
+   d="scan'208";a="623906435"
+Subject: [PATCH] do not include mpx.h in exec.c
+To: tglx@linutronix.de
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>,
+        dave.hansen@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 17 Nov 2014 16:36:08 -0800
+Message-Id: <20141118003608.837015B3@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-17 at 19:27 -0500, Steven Rostedt wrote:
-> On Mon, 17 Nov 2014 16:07:33 -0800
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > On Mon, 2014-11-17 at 12:36 -0500, Steven Rostedt wrote:
-> > > On Fri, 14 Nov 2014 23:59:07 -0500
-> > > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > 
-> > > > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > > > 
-> > > > Add a seq_buf_can_fit() helper function that removes the possible mistakes
-> > > > of comparing the seq_buf length plus added data compared to the size of
-> > > > the buffer.
-> > []
-> > > > +static bool seq_buf_can_fit(struct seq_buf *s, size_t len)
-> > > > +{
-> > > > +	return s->len + len < s->size;
-> > > > +}
-> > > > +
-> > 
-> > Why is this useful?
-> 
-> Places the logic in one place and makes the next patch much shorter.
 
-What "logic" does it place in one place and
-how does it matter?
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-I don't see it making mistakes more or less
-likely, I just see it being used to avoid
-setting the overflow state which seems like
-more of an error than anything else.
+We no longer need mpx.h in exec.c.  This will obviously also
+break the build for non-x86 builds.  We get the MPX includes that
+we need from mmu_context.h now.
 
-Why avoid setting overflow at all?
+This applies on top of the MPX patches currently in the -tip
+branch.
 
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
+ b/fs/exec.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff -puN fs/exec.c~no-mpx-in fs/exec.c
+--- a/fs/exec.c~no-mpx-in	2014-11-17 16:22:33.935154876 -0800
++++ b/fs/exec.c	2014-11-17 16:22:39.466404410 -0800
+@@ -60,7 +60,6 @@
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+ #include <asm/tlb.h>
+-#include <asm/mpx.h>
+ 
+ #include <trace/events/task.h>
+ #include "internal.h"
+_
