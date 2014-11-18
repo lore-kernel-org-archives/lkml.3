@@ -1,233 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574AbaKROC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:02:57 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:51618 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505AbaKROCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:02:54 -0500
+	id S1754670AbaKROEM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:04:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33982 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753808AbaKROEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:04:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,410,1413270000"; 
+   d="scan'208";a="638982255"
+Message-ID: <546B51BA.6070806@linux.intel.com>
+Date: Tue, 18 Nov 2014 22:03:38 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141117151515.670e2cd2@gandalf.local.home>
-References: <1416240664-7200-1-git-send-email-pang.xunlei@linaro.org>
-	<1416240664-7200-2-git-send-email-pang.xunlei@linaro.org>
-	<20141117151515.670e2cd2@gandalf.local.home>
-Date: Tue, 18 Nov 2014 22:02:53 +0800
-Message-ID: <CADcy93VyhFOeanJqmEcB1NN=TddjMEdfx5Ndd2aiCrGCwUfGwA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] sched/deadline: Fix wrong cpudl_find() in check_preempt_equal_dl()
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
+References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com>
+In-Reply-To: <546B4F18.5060705@huawei.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 November 2014 04:15, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 18 Nov 2014 00:11:04 +0800
-> "pang.xunlei" <pang.xunlei@linaro.org> wrote:
->
->> In check_preempt_equal_dl(), cpudl_find() is called with a NULL later_mask,
->> thus cpudl_find() here doesn't check cpudl.free_cpus at all.
->>
->> This patch takles this issue by always passing a non-NULL cpumask to cpudl_find(),
->> and assigns later_mask in this function.
->>
->> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
->> ---
->>  kernel/sched/cpudeadline.c | 14 ++++++--------
->>  kernel/sched/deadline.c    | 10 ++++++----
->>  2 files changed, 12 insertions(+), 12 deletions(-)
->>
->> diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
->> index 9a69353..623f7b5 100755
->> --- a/kernel/sched/cpudeadline.c
->> +++ b/kernel/sched/cpudeadline.c
->> @@ -97,7 +97,7 @@ static inline int cpudl_maximum(struct cpudl *cp)
->>   * cpudl_find - find the best (later-dl) CPU in the system
->>   * @cp: the cpudl max-heap context
->>   * @p: the task
->> - * @later_mask: a mask to fill in with the selected CPUs (or NULL)
->> + * @later_mask: a mask to fill in with the selected CPUs (not NULL)
->>   *
->>   * Returns: int - best CPU (heap maximum if suitable)
->>   */
->> @@ -107,16 +107,14 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
->>       int best_cpu = -1;
->>       const struct sched_dl_entity *dl_se = &p->dl;
->>
->> -     if (later_mask && cpumask_and(later_mask, cp->free_cpus,
->> -                     &p->cpus_allowed) && cpumask_and(later_mask,
->> -                     later_mask, cpu_active_mask)) {
->> +     cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
->> +     if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
->>               best_cpu = cpumask_any(later_mask);
->>               goto out;
->> -     } else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
->> -                     dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
->> +     } else if (cpumask_and(later_mask, cpumask_of(cpudl_maximum(cp)),
->> +                     &p->cpus_allowed) && dl_time_before(dl_se->deadline,
->> +                     cp->elements[0].dl)) {
->>               best_cpu = cpudl_maximum(cp);
->> -             if (later_mask)
->> -                     cpumask_set_cpu(best_cpu, later_mask);
->>       }
->>
->
-> OK, I need to make this a before/after, as patch format sucks in this
-> case.
->
-> before:
->
->         if (later_mask &&
->             cpumask_and(later_mask, cp->free_cpus, &p->cpus_allowed) &&
->             cpumask_and(later_mask, later_mask, cpu_active_mask)) {
->                 best_cpu = cpumask_any(later_mask);
->                 goto out;
->         } else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
->                 dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
->                 best_cpu = cpudl_maximum(cp);
->                 if (later_mask)
->                         cpumask_set_cpu(best_cpu, later_mask);
->         }
->
-> after:
->
->         cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
->         if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
->                 best_cpu = cpumask_any(later_mask);
->                 goto out;
->         } else if (cpumask_and(later_mask, cpumask_of(cpudl_maximum(cp)),
->                         &p->cpus_allowed) && dl_time_before(dl_se->deadline,
->                         cp->elements[0].dl)) {
->                 best_cpu = cpudl_maximum(cp);
->         }
->
-> Again, the above else if is rather ugly. Note, if the first
-> cpumask_and() is zero, there's no reason to call cpumask_and() (which
-> could be expensive) the second time. Keep the two together with &&.
->
-> Also, I wouldn't convert the cpumask_test_cpu() to a cpumask_and(), as
-> I would think that would be more expensive to copy an entire mask
-> (think what happens when we have a thousand CPUs). Just doing a test,
-> and then if the test succeeds (remember, there's another test that
-> might fail after it), then just set the one bit.
-
-Hi Steve,
-
-Thanks for pointing me out, it does make sense. I'll fix it and send
-out another version.
-
-But one more thing:
-I made this change just want to avoid setting later_mask
-conditionally, since the call site of check_preempt_equal_dl() doesn't
-need the result of later_mask.
-
-So, I wonder if it's reasonable to deal with this function further:
-1) to introduce the 4th parameter to cpudl_find() like "int
-set_flag"(in the hopes that it can gain some performance?), then the
-code will be like this:
- int cpudl_find(struct cpudl *cp, struct task_struct *p,
-            struct cpumask *later_mask, int set_flag)
- {
-        int best_cpu = -1;
-        const struct sched_dl_entity *dl_se = &p->dl;
-
-         cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
-         if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
-                 best_cpu = cpumask_any(later_mask);
-                 goto out;
-         } else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
-                     dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
-             best_cpu = cpudl_maximum(cp);
-             if (set_flag)
-                  cpumask_set_cpu(best_cpu, later_mask); // does this
-have some performance gain?
-        }
-
-out:
-    WARN_ON(best_cpu != -1 && !cpu_present(best_cpu));
-
-    return best_cpu;
-}
-
-2) also, may put the best_cpu selecting back into find_later_rq()
-where we can select additionally according to the sd topology,
-obviously the cpumask_any() in cpudl_find() isn't the best one. Then
-the code will be like this (change its return type to bool):
-
-int cpudl_find(struct cpudl *cp, struct task_struct *p,
-            struct cpumask *later_mask, int set_flag)
- {
-        const struct sched_dl_entity *dl_se = &p->dl;
-
-         cpumask_and(later_mask, cpu_active_mask, &p->cpus_allowed);
-         if (cpumask_and(later_mask, later_mask, cp->free_cpus)) {
-                return 1;
-         } else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
-                     dl_time_before(dl_se->deadline,
-cp->elements[0].dl)) {
-             if (set_flag)
-                  cpumask_set_cpu(cpudl_maximum(cp), later_mask);
-
-              return 1;
-        }
-
-        return 0;
-}
-
-Are these two changes acceptable? Thanks!
-
-Regards,
-Xunlei
-
->
-> --- Steve
->
->
->
->>  out:
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index bd83272..3ecf838 100755
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -965,14 +965,18 @@ out:
->>       return cpu;
->>  }
->>
->> +static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
->> +
->>  static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
->>  {
->> +     struct cpumask *later_mask = this_cpu_cpumask_var_ptr(local_cpu_mask_dl);
->> +
->>       /*
->>        * Current can't be migrated, useless to reschedule,
->>        * let's hope p can move out.
->>        */
->>       if (rq->curr->nr_cpus_allowed == 1 ||
->> -         cpudl_find(&rq->rd->cpudl, rq->curr, NULL) == -1)
->> +         cpudl_find(&rq->rd->cpudl, rq->curr, later_mask) == -1)
->>               return;
->>
->>       /*
->> @@ -980,7 +984,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
->>        * see if it is pushed or pulled somewhere else.
->>        */
->>       if (p->nr_cpus_allowed != 1 &&
->> -         cpudl_find(&rq->rd->cpudl, p, NULL) != -1)
->> +         cpudl_find(&rq->rd->cpudl, p, later_mask) != -1)
->>               return;
->>
->>       resched_curr(rq);
->> @@ -1167,8 +1171,6 @@ next_node:
->>       return NULL;
->>  }
->>
->> -static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
->> -
->>  static int find_later_rq(struct task_struct *task)
->>  {
->>       struct sched_domain *sd;
->
+On 2014/11/18 21:52, Yun Wu (Abel) wrote:
+> On 2014/11/18 21:43, Jiang Liu wrote:
+> 
+>> On 2014/11/18 21:33, Yun Wu (Abel) wrote:
+>>> On 2014/11/18 18:19, Thomas Gleixner wrote:
+>>>
+>>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>>>>>>  struct irq_chip {
+>>>>>> @@ -359,6 +360,7 @@ struct irq_chip {
+>>>>>>  	void		(*irq_release_resources)(struct irq_data *data);
+>>>>>>  
+>>>>>>  	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>>> +	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>>
+>>>>> Hmm... It's really weird.
+>>>>> I don't think it's the interrupt controllers' responsibility to write messages
+>>>>> for all the endpoint devices since the methods of configuring message registers
+>>>>> may different between these devices. And theoretically, the endpoint devices
+>>>>> themselves should take the responsibility to configure their message registers.
+>>>>> To say the least, the write_msg callback here still need to call some certain
+>>>>> interfaces provided by the corresponding device.
+>>>>>
+>>>>> There would be lots of ARM new devices capable of sending message
+>>>>> based interrupts to interrupt controllers, does all the drivers of
+>>>>> the devices need to expose a write_msg callback to interrupt
+>>>>> controllers?
+>>>>
+>>>> Well, writing the message _IS_ part of the interrupt controller.
+>>>>
+>>>> So in order to enable non PCI based MSI we want to have generic
+>>>> infrastructure with minimal per device/device class callbacks and of
+>>>> course you need to provide that callback for your special device.
+>>>>
+>>>> We already have non PCI based MSI controllers in x86 today and we need
+>>>> to handle the whole stuff with tons of copied coded extra for each of
+>>>> those. So consolidating it into common infrastructure allows us to get
+>>>> rid of the pointless copied code and reduce the per device effort to
+>>>> the relevant hardware specific callbacks. irq_write_msi_msg being one
+>>>> of those.
+>>>>
+>>>
+>>> At least, we have the same goal.
+>>> I will illustrate my thoughts by an example.
+>>> The current code is something like:
+>>>
+>>> Device A
+>>> ========
+>>> void A_write_msg() { ... }
+>>>
+>>> Group B
+>>> (a group of devices behave same on writing messages, i.e. PCI)
+>>> =======
+>>> void B_write_msg() { ... }
+>>>
+>>> Controller
+>>> ==========
+>>> irq_chip.irq_write_msi_msg () {
+>>> 	if (A)
+>>> 		A_write_msg();
+>>> 	if (B)
+>>> 		B_write_msg();
+>>> }
+>>>
+>>> It's horrible when new devices come out, since we need to modify the
+>>> controller part for each new device.
+>>> What I suggested is:
+>>>
+>>> MSI Core
+>>> ========
+>>> struct msi_ops { .write_msg, };
+>>> struct msi_desc { .msi_ops, };
+>>>
+>>> write_msg() {
+>>> 	X = get_dev();
+>>> 	irq_chip.compose_msg(X);	// IRQ chips' responsibility
+>>> 	X_msi_ops.write_msg();		// nothing to do with IRQ chips
+>>> }
+>>>
+>>> Device A
+>>> ========
+>>> void A_write_msg() { ... }
+>>> A_msi_ops.write_msg = A_write_msg;
+>>>
+>>> Group B
+>>> =======
+>>> void B_write_msg() { ... }
+>>> B_msi_ops.write_msg = B_write_msg;
+>>>
+>>> Please correct me if I misunderstood anything.
+>> Hi Yun,
+>> 	We provide an irq_chip for each type of interrupt controller
+>> instead of devices. For the example mentioned above, if device A
+>> and Group B has different interrupt controllers, we just need to
+>> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
+>> to suitable callbacks.
+>> 	The framework already achieves what you you want:)
+> 
+> What if device A and group B have the same interrupt controller?
+Device doesn't care about interrupt controllers, it just cares about
+interrupts used by itself. It's the interrupt source (controller)
+enumerators' responsibility to discover interrupt source, associate
+methods to control the interrupt source and assign irq numbers for
+interrupt sources.
+There are two ways to associate irq numbers with device:
+1) arch code/bus drivers statically assigns irq number for devices
+   when creating device objects, such as PCI legacy interrupt
+   (INTA-INTD), IOAPIC interrupts.
+2) device drivers ask interrupt source enumerators to dynamically
+   create irq numbers, such pci_enable_msix_range() and friends.
+So device driver definitely doesn't need to known about irq_chip
+methods to control interrupt sources.
+Regards!
+Gerry
