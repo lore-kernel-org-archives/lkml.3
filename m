@@ -1,345 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761AbaKRVPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:15:22 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:55552 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932074AbaKRVPR (ORCPT
+	id S932777AbaKRVPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:15:39 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:51770 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074AbaKRVPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:15:17 -0500
-Date: Tue, 18 Nov 2014 23:15:12 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Takashi Iwai <tiwai@suse.de>,
-        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Sander Eikelenboom <linux@eikelenboom.it>, prabhakar.csengg@gmail.com,
-        Antti Palosaari <crope@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "olebowle@gmx.com" <olebowle@gmx.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFCv2] Media Token API Spec.
-Message-ID: <20141118211512.GV8907@valkosipuli.retiisi.org.uk>
-References: <CAGoCfixD-zv1MMHUXLnjGV5KVB-DGdp2ZqZ0hUTR14UvLh-Gvw@mail.gmail.com>
- <544804F1.7090606@linux.intel.com>
- <20141025114115.292ff5d2@recife.lan>
- <s5hk33n8ccj.wl-tiwai@suse.de>
- <20141027105237.5f5ec7fd@recife.lan>
- <5450077F.70101@osg.samsung.com>
- <20141028214250.27f0c869@recife.lan>
- <5451109B.3000604@osg.samsung.com>
- <20141029155639.5529bf70@recife.lan>
- <54595C82.10404@osg.samsung.com>
+	Tue, 18 Nov 2014 16:15:34 -0500
+Date: Tue, 18 Nov 2014 22:15:31 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
+ debugger.
+Message-ID: <20141118211531.GH12538@two.firstfloor.org>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+ <5461B906.1040803@samsung.com>
+ <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54595C82.10404@osg.samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shuah,
+> It's a huge pile of tricky code we'll need to maintain.  To justify its
+> inclusion I think we need to be confident that kasan will find a
+> significant number of significant bugs that
+> kmemcheck/debug_pagealloc/slub_debug failed to detect.
 
-Many thanks for the RFC, for and being so patient with my terrible review
-schedule. My comments below.
+I would put it differently. kmemcheck is effectively too slow to run
+regularly. kasan is much faster and covers most of kmemcheck.
 
-On Tue, Nov 04, 2014 at 04:08:50PM -0700, Shuah Khan wrote:
-> Hi Mauro,
-> 
-> Here is the RFC as promised. I also included the Media controller
-> as a an alternative and captured the discussion in the thread on
-> that topic. Please review.
-> 
-> -- Shuah
-> 
-> -----------------------------------------------------------------
-> RFC Media Token API Specification
-> 
-> Let's start with a diagram of a media device (without IR, eeprom
-> and others):
-> 
-> http://linuxtv.org/downloads/presentations/typical_hybrid_hardware.png
-> 
-> The dot lines represent the parts of the graph that are switched by
-> the tuner, DMA or input select.
-> 
-> Please notice that the DMA engines, together with the stuff needed to
-> control A/V switches is at one single chip. Changing the registers there
-> can affect the other streams, specially on most sophisticated devices
-> like cx231xx, where it even has a power management IP block that
-> validates if a device to be turned on/off won't exceed the maximum
-> drain current of 500mA. That's basically why we need to do a temporary
-> lock alsa, dvb, v4l and IR drivers when doing certain changes.
-> 
-> Also, please notice that I2C buses that can be as slow as 10kbps
-> are used to control for several devices, like:
->         - the tuner
->         - the Digital TV (DTV) demod
->         - Analog and/or Video demod (sometimes embedded at the main
->           chip)
->         - DTV demux (sometimes embedded at the main chip)
->         - The remote controller (sometimes embedded at the main chip)
-> 
-> For some devices, after powered on, or when certain parameters change, a
-> new firmware (and sometimes a hardware reset) is required. The firmware
-> size can be about 64KB or even bigger.
-> 
-> Also, the A/V switch it is actually two independent switches (or one
-> switch for video and one audio mux for audio) that needs to be changed
-> together when the source changes.
-> 
-> There are two components that are shared there between analog and
-> digital: the tuner (where the signal is captured) and the DMA engine
-> used to stream analog and Digital TV (dvb).
-> 
-> PS.: the diagram is over-simplified, as the tuner is just one of the
-> possible inputs for the analog part of the device. Other possible
-> inputs are S-Video, composite, HDMI, etc.
-> 
-> Sometimes, the audio DMA is also shared, e. g. just one stream comes
-> from the hardware. It is up to the driver to split audio and video and
-> send them to the V4L2 and ALSA APIs. This is the case of tm6000 driver.
-> 
-> Those shared components can be used either at analog or digital mode,
-> but not at the same time.
-> 
-> Also, programming the V4L2 analog and audio DMA and demods should be
-> done via V4L2 API, as this API allows the selection of the proper
-> audio/video input (almost all devices have multiple analog inputs).
-> 
-> Please notice that, if the tuner is on digital mode, the entire analog
-> path is disabled, including ALSA output.
-> 
-> If the tuner is on analog mode, both ALSA and V4L2 can work at the
-> same time. However, during the period where the tuner firmware is
-> loaded, and during the DMA configuration and input selection time,
-> neither ALSA or V4L2 can stream. Such configuration/firmware load
-> is commanded via V4L2 API, as ALSA knows nothing about tuner or
-> input selection.
-> 
-> At a higher level the problem description is:
-> 
-> There are 3 different device files that get created to control
-> tuner and audio functions on a media device. 4 drivers (dvb,
-> v4l2, alsa, and the main usb driver for the usb device), and
-> 3 core APIs (dvb-core, v4l-core, audio) that control the tuner
-> and audio hardware and provide user API to these 3 device files.
-> 
-> The above driver model is simplified, there's 4th component for
-> some drivers: the mceusb driver, that handles remote controllers.
-> The mceusb handles the Microsoft Media Center Remote Control
-> protocol. It supports stand alone remote controller devices, but
-> it also supports a few USB devices that use a separate interface
-> for IR.
-> 
-> There are currently some issues on cx231xx and mceusb, as both drivers
-> can be used at the same time, but, when cx231xx sends certain commands,
-> the mceusb IR polls fail. This is out of the scope of the audio lock,
-> but it also needs to be addressed some day.
-> 
-> Most media user applications, drivers and the core have no knowledge
-> of each other. The only thing that is common across all these drivers
-> is the parent device for the main usb device which is controlled by
-> the usb driver.
-> 
-> Some media user applications like MythTV can handle all 3 APIs,
-> however, MythTV doesn't know how to associate ALSA, V4L2 and DVB
-> devnodes that belong to the same device. If MythTV finds, 3 V4L2
-> nodes, 3 ALSA nodes, and 1 DVB node, it doesn't know which device
-> is associated with the DVB node.
-> 
-> Almost all applications that are aware of V4L2 API are also aware of
-> ALSA API and may associate audio and video, as there is a way to
-> associate it using sysfs. However, several applications don't use it.
-> 
-> The premise for the main design idea in this series is creating
-> a common construct at the parent device structure that is visible
-> to all drivers to act as a master access control (lock). Let's call
-> this media token object with two sub-tokens one for tuner and another
-> for audio.
-> 
-> Each of the APIS evolved separately, hence have their own backwards
-> compatibility to maintain. Starting with v4l2:
-> 
-> V4L2 case:
-> Multiple v4l2 applications are allowed to open /dev/video0 in
-> read/write mode with no restrictions as long as the tuner is in
-> analog mode. V4L2-core handles conflicting requests between v4l2
-> applications. V4L2-core doesn't have the knowledge that the tuner
-> is in use by a dvb and/or audio is in use. Individual drivers
-> may have this knowledge as, except for one case (bttv driver),
-> they share some data.
-> 
-> As soon as a V4L2 application starts, digital stream glitches and
-> audio glitches.
-> 
-> DVB case:
-> Multiple dvb applications can open the dvb device in read only mode.
-> As soon an application open the device read/write mode a separate
-> kthread is kicked off to handle the request. Only one application
-> can open the device in read/write mode. There's no issue with ALSA
-> in R/O mode, as the application is not allowed to modify anything
-> with the stream. This is used only to monitor an already opened
-> device in R/W mode.
-> 
-> Similar to V4L2-core case, dvb-core doesn't have any knowledge that
-> the tuner is in use by v4l2 and/or audio is in use. As soon as a
-> dvb application starts v4l2 video glitches and audio glitches.
-> 
-> Audio case:
-> Same scenario is applicable to audio application. When a v4l2 or dvb
-> application starts, audio application gets impacted.
-> 
-> Problems to address:
-> 
-> Dvb owns tuner and audio: another dvb, v4l2 application and
->                           ALSA application should detect
->                           tuner/audio busy right away and exit.
->                           Dvb applications don't use audio node,
->                           however, devices can't use audio hardware
->                           while in DVB mode.
-> 
-> V4l2 owns tuner and audio: dvb should detect tuner/audio busy
->                            right away and exit.
->                            The V4L2-core should only hold the token for
->                            the required time to initialize the device
->                            and/or load the firmware.
->                            ALSA applications should wait for v4L2-core
-> 			   to finish programming at audio, and should
->                            keep working after that.
-> 
-> Audio owns audio: dvb applications should detect audio busy and
-> exit. V4L2 applications should work. However, when certain V4L2
-> ioctls are issued, the audio device driver should not send any
-> command to the hardware. After such commands, the audio mixers
-> may change. This is why two tokens are necessary, one for tuner
-> and another for audio.
-> 
-> Because of the above mentioned difference in behavior between dvb
-> and v4l applications when audio is busy, two tokens (one for tuner
-> and another for audio) are necessary and audio token lock should not
-> be held at ALSA open/close.
-> 
-> Special cases:
-> 
-> Dvb applications access tuner in exclusive mode. i.e only one dvb
-> application at a time is allowed to open the device read/write mode.
-> Dvb applications don't use audio node, however, devices can't use
-> audio hardware while in DVB mode. Dvb applications receive data as
-> MPEG-TS, using a separate device node. The same DMA engine that
-> provides video (and, sometimes audio) is used by the DVB device
-> node, making it inaccessible to audio applications while tuner
-> is in DVB mode. Hence, the need to prevent audio applications from
-> accessing audio node when tuner is in DVB mode. As a result, dvb-core
-> will have to hold tuner and audio tokens so v4l2-core and ALSA know
-> that audio is not available. Dvb disables audio hardware so it could
-> be powered-off in some cases.
-> 
-> Audio applications access audio in exclusive mode. i.e only one audio
-> application at a time is allowed to open the device in read/write mode.
-> Audio applications create threads and thread closes and re-opens the
-> audio device. Threads can do this and hence something that higher level
-> construct has to allow. Audio application has to hold audio token so
-> dvb and v4l2 know that it is in use.
-> 
-> V4l2 applications access tuner and audio in shared v4l2 mode.
-> i.e several v4l2 processes and threads could use tuner and audio
-> at the same time. V4L2 core handles concurrency. There's just
-> one file handler with full control to start/stop stream at V4L2
-> side. The higher level construct should not break the ability of
-> multiple v4l2 applications to access tuner and audio in shared
-> mode, and disallow dvb and audio applications access when they
-> are in use by the V4L2-core.
-> 
-> Dvb-core when it gets the tuner, it should also obtain audio right
-> away. v4l2-core when it gets the tuner, it should get the audio at
-> the same time. When dvb-core has the tuner, v4l2 shouldn't get it
-> and vice versa.
-> 
-> When dvb-core has the audio locked, audio application should detect
-> condition and stop streaming, as part of the hardware can be powered
-> off. It can only return opening the device after DVB releases audio
-> token.
-> 
-> When v4l2-core has audio locked, audio application should detect the
-> condition and stop sending commands to audio hardware. It can only
-> resume audio access after V4L2 releases audio token.
-> 
-> Open issues:
-> During testing, snd_pcm_lib_ioctls are coming from dvb application.
-> It is likely that these are related to the audio output and not audio
-> capture or the application in question is an hybrid one. This issue
-> needs further investigation.
-> 
-> Alternatives: (proposed by Sakari Ailus)
-> Can Media controller be used to solve the problem?
-> 
-> The usage of the media controller for this specific usage is that
-> we should not force userspace applications to be aware of the
-> media controller just because of hardware locking.
-> 
-> Currently, media entities may only be entities bound to a given
-> subsystem, but likely need to change media controller for complex
-> embedded DVB device support ...
-> 
-> In case of the Media controller, mutual exclusion of different users
-> is currently performed by adding the entities to a pipeline and
-> incrementing the streaming count once streaming is enabled --- on
-> different interfaces streaming may mean a different thing.
-> 
-> However, we'll still need to find a way for ALSA to prevent it to use
-> the audio demod and DMA engine that will be powered off when DVB is
-> streaming.
-> 
-> The Media controller interface does not handle serializing potential
-> users that may wish to configure the device. Handling serializing is
-> necessary if Media controller is extended instead of pursuing Media
-> Token API to solve the problem.
-> 
-> Reconfiguring the DMA engine and some other registers via V4L2 API
-> should be blocked. The same applies to firmware load, if the device
-> is using tuner input for analog TV.
-> 
-> If we use the media controller, we'll need to add a state to it,
-> to indicate that a block at the pipeline is being reconfigured.
-> 
-> It is dependent on Media Controller adoption on ALSA as well.
+So I would rather see it as a more practical replacement to
+kmemcheck, not an addition.
 
-Thank you for the detailed description of the problem domain.
+> How do we get that confidence?  I've seen a small number of
+> minorish-looking kasan-detected bug reports go past, maybe six or so. 
+> That's in a 20-year-old code base, so one new minor bug discovered per
+> three years?  Not worth it!
+> 
+> Presumably more bugs will be exposed as more people use kasan on
+> different kernel configs, but will their number and seriousness justify
+> the maintenance effort?
 
-Using Media controller for this at this point isn't straightforward, and
-especially for existing drivers for which the current APIs serve the
-existing devices well enough, perhaps not the best solution even when the
-missing pieces were implemented.
+I would expect so. It's also about saving developer time.
 
-More complex devices, though, still need MC in order to control them in a
-meaningful way. If a tuner is connected into one, the media token framework
-wouldn't help there. In other words, we'll need something for such devices
-as well. That'd be proper MC support for DVB and ALSA, but it'll be a
-separate discussion.
+IMHO getting better tools like this is the only way to keep
+up with growing complexity.
 
-One big upside in this patchset is that it does not change the user space
-interface.
+> If kasan will permit us to remove kmemcheck/debug_pagealloc/slub_debug
+> then that tips the balance a little.  What's the feasibility of that?
 
-One concern I have is how generic this framework really is. Do you see
-potential use cases outside the current one?
+Maybe removing kmemcheck. slub_debug/debug_pagealloc are simple, and are in
+different niches (lower overhead debugging)
 
-I'd move this under drivers/media, and possibly think of the naming of the
-framework a little bit.
-
-I'll review the rest of the v2.
+-Andi
 
 -- 
-Kind regards,
-
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+ak@linux.intel.com -- Speaking for myself only.
