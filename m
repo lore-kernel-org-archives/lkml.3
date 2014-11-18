@@ -1,142 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896AbaKRXj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:39:27 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64016 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932115AbaKRXj0 (ORCPT
+	id S932971AbaKRXje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:39:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23912 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932115AbaKRXjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:39:26 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dmitry Torokhov <dtor@chromium.org>
-Cc: "Rafael J. Wysocki" <rafael@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Benson Leung <bleung@chromium.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: do not fail suspend if unable to configure wakeup
-Date: Wed, 19 Nov 2014 01:00:29 +0100
-Message-ID: <1672520.bjZSvglt27@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAE_wzQ-wAWZX5AKsdJ9LNFYkN9rz+WbMgBb4S+-edb76NUoDgA@mail.gmail.com>
-References: <20141015225657.GA818@dtor-ws> <2163272.NHMRkNIupX@vostro.rjw.lan> <CAE_wzQ-wAWZX5AKsdJ9LNFYkN9rz+WbMgBb4S+-edb76NUoDgA@mail.gmail.com>
+	Tue, 18 Nov 2014 18:39:31 -0500
+Message-ID: <546BD866.5050101@oracle.com>
+Date: Tue, 18 Nov 2014 18:38:14 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, akpm@linux-foundation.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 18, 2014 03:31:26 PM Dmitry Torokhov wrote:
-> On Tue, Nov 18, 2014 at 3:43 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Tuesday, November 18, 2014 10:00:53 AM Dmitry Torokhov wrote:
-> >> Hi Rafael,
-> >>
-> >> On Thu, Oct 16, 2014 at 9:05 AM, Dmitry Torokhov <dtor@chromium.org> wrote:
-> >> > Hi Rafael,
-> >> >
-> >> > On Thu, Oct 16, 2014 at 10:10:20AM +0200, Rafael J. Wysocki wrote:
-> >> >> Hi,
-> >> >>
-> >> >> On Thu, Oct 16, 2014 at 12:56 AM, Dmitry Torokhov <dtor@chromium.org> wrote:
-> >> >> > Newer kernels put i2c devices with ACPI companion in ACPI power domain and
-> >> >> > then ACPI will try to configure them for wakeup (if requested).
-> >> >> > Unfortunately on some Chromebooks firmware separates wakeup GPIO into a
-> >> >> > completely separate device (which is handled by the kernel as a sleep
-> >> >> > button), leaving the touchpads themselves not wakeup capable (as far as
-> >> >> > ACPI is concerned). This causes ACPI late suspend code to fail to configure
-> >> >> > them as wakeup sources and aborts entire suspend.
-> >> >> >
-> >> >> > To work around this issues let's not abort entire suspend process if
-> >> >> > driver asked to be a wakeup source but ACPI can not satisfy that
-> >> >> > request.
-> >> >> >
-> >> >> > Note that originally I tried to simply change the driver to not mark
-> >> >> > device as wakeup source, unfortunately then we do not know that we
-> >> >> > should not be powering down the device completely, otherwise we can't
-> >> >> > wake up.
-> >> >> >
-> >> >> > Verified by making sure that "echo mem > /sys/power/state" works on
-> >> >> > Squawks.
-> >> >> >
-> >> >> > Reviewed-by: Benson Leung <bleung@chromium.org>
-> >> >> > Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-> >> >> > ---
-> >> >> >  drivers/acpi/device_pm.c | 16 ++++++++++++----
-> >> >> >  1 file changed, 12 insertions(+), 4 deletions(-)
-> >> >> >
-> >> >> > diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
-> >> >> > index 67075f8..440bc3d 100644
-> >> >> > --- a/drivers/acpi/device_pm.c
-> >> >> > +++ b/drivers/acpi/device_pm.c
-> >> >> > @@ -871,6 +871,7 @@ int acpi_dev_suspend_late(struct device *dev)
-> >> >> >         struct acpi_device *adev = ACPI_COMPANION(dev);
-> >> >> >         u32 target_state;
-> >> >> >         bool wakeup;
-> >> >> > +       bool can_wakeup;
-> >> >> >         int error;
-> >> >> >
-> >> >> >         if (!adev)
-> >> >> > @@ -878,12 +879,19 @@ int acpi_dev_suspend_late(struct device *dev)
-> >> >> >
-> >> >> >         target_state = acpi_target_system_state();
-> >> >> >         wakeup = device_may_wakeup(dev);
-> >> >> > -       error = acpi_device_wakeup(adev, target_state, wakeup);
-> >> >> > -       if (wakeup && error)
-> >> >> > -               return error;
-> >> >> > +       can_wakeup = acpi_device_can_wakeup(adev);
-> >> >> > +
-> >> >> > +       if (can_wakeup) {
-> >> >> > +               error = acpi_device_wakeup(adev, target_state, wakeup);
-> >> >> > +               if (wakeup && error)
-> >> >> > +                       return error;
-> >> >> > +       } else if (wakeup) {
-> >> >>
-> >> >> I think we just need to return an error code in that case, because otherwise
-> >> >
-> >> > We used to return error and that error aborted the suspend altogether,
-> >> > which prompted creating this patch.
-> >> >
-> >> >> this is potentially dangerous (worst case, it may be impossible to wake up
-> >> >> the machine at all after that).
-> >> >
-> >> > Yes, there is such potential, but that kind of error (no working wakeup
-> >> > sources) will be discovered before a box is shipped. Right now we have
-> >> > boxes in the wild that suspend fine with 3.10 and refuse to suspend with
-> >> > 3.14 because between 3.10 and 3.14 we started placing i2c devices with
-> >> > ACPI companions into ACPI power domain and ACPI power domain is now
-> >> > trying to configure them as wakeup sources and fails.
-> >>
-> >> A gentle ping on the patch - without it (or something else) we basically
-> >> have a regression on shipped hardware: Chromebooks that were
-> >> suspending fine with 3.10 refuse to suspend with 3.14.
-> >
-> > It fell of my radar, sorry about that.
-> >
-> > So the error here is that device_may_wakeup(dev) returns true, because the
-> > device is technically wakeup-capable, but the wakeup is not via ACPI?
-> >
-> > I'd say this is rather not in accordance with the spec,
-> 
-> Well, specs, they are mostly like... guidelines ;)
+Hi Andrey,
 
-Just don't tell me ...
+After the recent exchange of mails about kasan it came to me that I haven't
+seen a kasan warning for a while now. To give kasan a quick test I added a rather
+simple error which should generate a kasan warning about accessing userspace
+memory (yes, I know kasan has a test module but my setup doesn't like modules):
 
-> > but that means we
-> > need to simply ignore 'wakeup' if acpi_device_can_wakeup(adev) returns false.
-> >
-> > So what about the appended patch?
-> 
-> Would work as well with the difference that your version is silent so next time
-> firmware engineers come up with similar stuff it will stay unnoticed.
+	diff --git a/net/socket.c b/net/socket.c
+	index fe20c31..794e9f4 100644
+	--- a/net/socket.c
+	+++ b/net/socket.c
+	@@ -1902,7 +1902,7 @@ SYSCALL_DEFINE5(setsockopt, int, fd, int, level, int, optname,
+	 {
+	        int err, fput_needed;
+	        struct socket *sock;
+	-
+	+       *((char *)10) = 5;
+	        if (optlen < 0)
+	                return -EINVAL;
 
-We need to accept this kind of breakage already and the warning can easily get
-ignored during validation ("wakes up" == "works").  Past that, the firmware
-engineers in question don't care any more.
+A gfp was triggered, but no kasan warning was shown.
 
-> I am happy with either version.
+I remembered that one of the biggest changes in kasan was the introduction of
+inline instrumentation, so I went ahead to disable it and see if it helps. But
+the only result of that was having the boot process hang pretty early:
 
-OK, I'll apply the simpler one, then. :-)
+[...]
+[    0.000000] IOAPIC[0]: apic_id 21, version 17, address 0xfec00000, GSI 0-23
+[    0.000000] Processors: 20
+[    0.000000] smpboot: Allowing 24 CPUs, 4 hotplug CPUs
+[    0.000000] e820: [mem 0xd0000000-0xffffffff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on KVM
+[    0.000000] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:24 nr_cpu_ids:24 nr_node_ids:1
+[    0.000000] PERCPU: Embedded 491 pages/cpu @ffff8808dce00000 s1971864 r8192 d31080 u2097152
+*HANG*
 
-Rafael
+I'm using the latest gcc:
 
+$ gcc --version
+gcc (GCC) 5.0.0 20141117 (experimental)
+
+
+I'll continue looking into it tomorrow, just hoping it rings a bell...
+
+
+Thanks,
+Sasha
