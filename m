@@ -1,119 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386AbaKRR4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:56:37 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:59462 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534AbaKRR4g (ORCPT
+	id S1754282AbaKRR77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:59:59 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:56647 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865AbaKRR75 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:56:36 -0500
+	Tue, 18 Nov 2014 12:59:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <tip-45e2a9d4701d8c624d4a4bcdd1084eae31e92f58@git.kernel.org>
-References: <20141114194737.GA3091@www.outflux.net>
-	<tip-45e2a9d4701d8c624d4a4bcdd1084eae31e92f58@git.kernel.org>
-Date: Tue, 18 Nov 2014 09:56:35 -0800
-X-Google-Sender-Auth: V5UBR3FhgGVlY59XSYz9DKTRjAU
-Message-ID: <CAE9FiQUyU4o=M6zG0q4k2Rfb1ZNyOKwTM2HBAkz+U0ypvKaLbA@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86, mm: Set NX across entire PMD at boot
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Wang Nan <wangnan0@huawei.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
+In-Reply-To: <20141117211410.25314.99324@quantum>
+References: <1415884826-7877-1-git-send-email-kever.yang@rock-chips.com>
+	<CAD=FV=WSDtxjtGD3c22OqXsSqaphKcmup9rAfonbeC-bUWHmSQ@mail.gmail.com>
+	<20141114014102.25314.77218@quantum>
+	<6053586.L6Ix8HgKpA@diego>
+	<20141117211410.25314.99324@quantum>
+Date: Tue, 18 Nov 2014 09:59:56 -0800
+X-Google-Sender-Auth: R9gQkxZCERyt4f7rsj6hOc-pgPI
+Message-ID: <CAD=FV=VZ+qPRdeTaAXxBU0aSObBRdY5TDmREYviuh8h3dUs5fQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] clk: add property for force to update clock setting
+From: Doug Anderson <dianders@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 9:40 AM, tip-bot for Kees Cook <tipbot@zytor.com> wrote:
-> Commit-ID:  45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
-> Gitweb:     http://git.kernel.org/tip/45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
-> Author:     Kees Cook <keescook@chromium.org>
-> AuthorDate: Fri, 14 Nov 2014 11:47:37 -0800
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Tue, 18 Nov 2014 18:32:24 +0100
->
-> x86, mm: Set NX across entire PMD at boot
->
-> When setting up permissions on kernel memory at boot, the end of the
-> PMD that was split from bss remained executable. It should be NX like
-> the rest. This performs a PMD alignment instead of a PAGE alignment to
-> get the correct span of memory.
->
-> Before:
-> ---[ High Kernel Mapping ]---
-> ...
-> 0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
-> 0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
-> 0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
-> 0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
-> 0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
->
-> After:
-> ---[ High Kernel Mapping ]---
-> ...
-> 0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
-> 0xffffffff82200000-0xffffffff82e00000    12M     RW   PSE GLB NX pmd
-> 0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
->
-> [ tglx: Changed it to roundup(_brk_end, PMD_SIZE) and added a comment.
->         We really should unmap the reminder along with the holes
->         caused by init,initdata etc. but thats a different issue ]
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Cc: Toshi Kani <toshi.kani@hp.com>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: Wang Nan <wangnan0@huawei.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: stable@vger.kernel.org
-> Link: http://lkml.kernel.org/r/20141114194737.GA3091@www.outflux.net
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/mm/init_64.c | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 4cb8763..4e5dfec 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -1123,7 +1123,7 @@ void mark_rodata_ro(void)
->         unsigned long end = (unsigned long) &__end_rodata_hpage_align;
->         unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
->         unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
-> -       unsigned long all_end = PFN_ALIGN(&_end);
-> +       unsigned long all_end;
->
->         printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
->                (end - start) >> 10);
-> @@ -1134,7 +1134,16 @@ void mark_rodata_ro(void)
->         /*
->          * The rodata/data/bss/brk section (but not the kernel text!)
->          * should also be not-executable.
-> +        *
-> +        * We align all_end to PMD_SIZE because the existing mapping
-> +        * is a full PMD. If we would align _brk_end to PAGE_SIZE we
-> +        * split the PMD and the reminder between _brk_end and the end
-> +        * of the PMD will remain mapped executable.
-> +        *
-> +        * Any PMD which was setup after the one which covers _brk_end
-> +        * has been zapped already via cleanup_highmem().
+Hi,
 
-should be cleanup_highmap()
+On Mon, Nov 17, 2014 at 1:14 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Heiko Stübner (2014-11-14 10:06:47)
+>> Hi Mike,
+>>
+>> Am Donnerstag, 13. November 2014, 17:41:02 schrieb Mike Turquette:
+>> > Quoting Doug Anderson (2014-11-13 15:27:32)
+>>
+>> [...]
+>>
+>> > All of the above is to say that perhaps the solution to this problem
+>> > belongs in the driver. In the end we're talking about details for
+>> > correctly programming hardware, which sounds an awful lot like what
+>> > drivers are supposed to do.
+>> >
+>> > Let me know if the ->init() callback holds any promise for you. If not
+>> > we can figure something out.
+>>
+>> From my theoretical musings, ->init() sounds like a nice idea - but of
+>> course it comes with a "but".
+>>
+>> I guess the general idea would be to have the pll clk-type simply reset
+>> to the same rate but forcing it to use the parameters from its parameter
+>> table - when the rate params differ [0].
+>>
+>> The only problem would be the apll supplying the cpu cores. After all clocks
+>> are registered, our armclk makes sure that the core clock gets reparented
+>> before changing the underlying apll [dpll is safe, as it is read-only currently].
 
->          */
-> +       all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
+DPLL probably won't be read only forever...
 
-Why do you need cast here ?
 
->         set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
+>> At the moment the order would be
+>> clk_register(apll)
+>> apll->init()
+>> clk_register(armclk);
 >
->         rodata_test();
+> Sorry, but I don't understand the problem. The at registration-time,
+> apll is re-programmed to a correct value for its current rate. Then
+> armclk is registered which might change apll's rate. Any change to the
+> apll which is issued from armclk should insure that apll is programmed
+> correctly.
+
+I think Heiko is worried that until the "armclk" is registered that
+nobody is there to reparent the ARM core to GPLL while APLL changes
+(that's armclk's job).  This is potentially unsafe.
+
+NOTE: it actually might not be unsafe, just slow.  I think we'll
+actually swap the PLL into "slow" mode before changing it (24MHz) so
+we won't die we'll just run at 24MHz at boot time while we wait for
+APLL to re-lock.
+
+
+One option would be to just add yet another per-pll parameter.  We'll
+only cleanup CPLL, GPLL, and NPLL.  If APLL (ARM clock) and DPLL
+(memory clock) are set differently by firmware then we're just SOL.
+Of course if firmware boots us on GPLL then I guess we're back to
+square one (would firmware really be that malicious?)
+
+-Doug
