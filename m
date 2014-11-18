@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaKRUtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:49:15 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:63560 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663AbaKRUtO (ORCPT
+	id S1755139AbaKRUxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:53:38 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:44048 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237AbaKRUxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:49:14 -0500
+	Tue, 18 Nov 2014 15:53:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141118084745.GT7996@ZenIV.linux.org.uk>
-References: <20141118084745.GT7996@ZenIV.linux.org.uk>
-Date: Tue, 18 Nov 2014 12:49:13 -0800
-X-Google-Sender-Auth: 9Ei0JQ8Uz6BxTcBP1nrdw5PrJ0c
-Message-ID: <CA+55aFxK0wj2LLp0WmhRsBZch8XfoYbzmbEeJaMpt=SDh5GBvw@mail.gmail.com>
-Subject: Re: [RFC] situation with csum_and_copy_... API
+In-Reply-To: <20141118172644.26303.37688.stgit@ahduyck-server>
+References: <20141118172644.26303.37688.stgit@ahduyck-server>
+Date: Tue, 18 Nov 2014 12:53:34 -0800
+X-Google-Sender-Auth: DZJIX3YjnVScXEKYANvo-VOHh-c
+Message-ID: <CA+55aFw3ygP8UEF1vidWdjBUEkqXOELCPkpjLMD-X=vXXQEGOQ@mail.gmail.com>
+Subject: Re: [PATCH v4 0/4] Add lightweight memory barriers for coherent
+ memory access
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Network Development <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        donald.c.skidmore@intel.com, matthew.vick@intel.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, nic_swsd@realtek.com,
+        Will Deacon <will.deacon@arm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Tony Luck <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        David Miller <davem@davemloft.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 12:47 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> The minimal implementations would be
+On Tue, Nov 18, 2014 at 9:28 AM, Alexander Duyck
+<alexander.h.duyck@redhat.com> wrote:
+> These patches introduce two new primitives for synchronizing cache coherent
+> memory writes and reads.  These two new primitives are:
 >
-> __wsum csum_and_copy_from_user(const void __user *src, void *dst, int len,
->                                __wsum sum, int *err_ptr)
-> {
->         if (unlikely(copy_from_user(dst, src, len) < 0)) {
+>         coherent_rmb()
+>         coherent_wmb()
 
-No. That "< 0" should be "!= 0". The user copy functions return a
-positive value of how many bytes they *failed* to copy.
+So I'm still not convinced about the name. I don't hate it, but if you
+ever want to do "read_acquire", then that whole "coherent_" thing does
+make for a big mouthful. I don't see why "dma" isn't simpler and more
+to the point, and has the advantage of lining up (in documentation
+etc) with "smp".
 
-> Note that we are *not* guaranteed that *err_ptr is touched in case of success
-> - not all architectures zero it in that case.  Callers must (and do) zero it
-> before the call of csum_and_copy_{from,to}_user().  Furthermore, return value
-> in case of error is undefined.
+Why would you ever use "coherent_xyz()" on something that isn't about
+dma? If it's cache-coherent memory without DMA, you'd use "smp_xyz()",
+so I really do prefer that whole "dma-vs-smp" issue, because it talks
+about what is actually the important issue. All sane memory is
+coherent, after all (and if it isn't, you have other issues than
+memory ordering).
 
-Yeah, easy to misuse.
-
-> IMO the calling conventions are atrocious.
-
-Yeah, not pretty. At the same time, the pain of changing what seems to
-work might not be worth it.
-
-And quite frankly, I *detest* your patch 3/5.
-
-"access_ok()" isn't that expensive, and removing them as unnecessary
-is fraught with errors. We've had several cases of "oops, we used
-__get_user() in a loop, because it generates much better code, but
-we'd forgotten to do access_ok(), so now people can read kernel data".
-
-I really think that
-
- (a) using "__get_user/__put_user/__memcpy_from/to_user" should be
-avoided unless there is a clear and present performance issue
-
- (b) when that performance issue is clear and unmistakable, you should
-generally have the "access_ok()" check *locally* to the use of unsafe
-ops, so that you can *locally* see that it's safe.
-
- (c) if there is some upper-level check (ie the normal read/write
-paths that make *sure* the addresses are fine), and there is some huge
-performance issue that means that the local checks would be a problem,
-then we should have a big comment about exactly where the checks are
-done.
-
-Your 3/5 violates pretty much all of these, imho.
-
-The rest of the patches I have nothing against. I'm a bit worried that
-this is stuff that can easily get stupid thinkos (ie exactly due to
-things like the argument order thing), and I wonder how much it buys
-us, but at least it seems to generally remove more lines than it adds,
-and cleans some stuff up, so I'm not against it.
-
-                    Linus
-
-                 Linus
+                  Linus
