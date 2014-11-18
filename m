@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069AbaKRSbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:31:38 -0500
-Received: from mga14.intel.com ([192.55.52.115]:33091 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753542AbaKRSbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:31:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,411,1413270000"; 
-   d="scan'208";a="624386726"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphCABQ+BAIAAEq4AgAAB1ACAAACVgP//kExAABLiaAAAD6th0P//ng0AgACB8wD//4wmgP//ZAXA
-Date: Tue, 18 Nov 2014 18:30:55 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3293FFBA@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
- <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
- <20141112103011.GA16807@pd.tnic>
- <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
- <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
- <20141117185030.GA25157@pd.tnic>
- <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
- <20141117200354.GB25157@pd.tnic>
- <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
- <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
- <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F681@ORSMSX114.amr.corp.intel.com>
- <CALCETrXsxJ6eotRJG1tjPD8dkpAd6P2roDm+fj+Yqi36uh3WHA@mail.gmail.com>
-In-Reply-To: <CALCETrXsxJ6eotRJG1tjPD8dkpAd6P2roDm+fj+Yqi36uh3WHA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1754349AbaKRSfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:35:50 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40336 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629AbaKRSfs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 13:35:48 -0500
+Date: Tue, 18 Nov 2014 19:35:45 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, khilman@kernel.org, aaro.koskinen@iki.fi,
+        freemangordon@abv.bg, bcousson@baylibre.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sakari.ailus@iki.fi, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
+Message-ID: <20141118183545.GA16999@amd>
+References: <20141116075928.GA9763@amd>
+ <20141117101553.GA21151@amd>
+ <20141117145545.GC7046@atomide.com>
+ <201411171601.32311@pali>
+ <20141117150617.GD7046@atomide.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141117150617.GD7046@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAIIVnEL025146
 
->> The lost cpu is *really* lost.  Warm reset doesn't fix the machine, I usually
->> have to do a full power cycle.
+On Mon 2014-11-17 07:06:17, Tony Lindgren wrote:
+> * Pali Rohár <pali.rohar@gmail.com> [141117 07:03]:
+> > On Monday 17 November 2014 15:55:46 Tony Lindgren wrote:
+> > > 
+> > > There's nothing stopping us from initializing the camera code
+> > > from pdata-quirks.c for now to keep it working. Certainly the
+> > > binding should be added to the driver, but that removes a
+> > > dependency to the legacy booting mode if things are otherwise
+> > > working.
+> > 
+> > Tony, legacy board code for n900 is not in mainline tree. And 
+> > that omap3 camera subsystem for n900 is broken since 3.5 
+> > kernel... (both Front and Back camera on n900 show only green 
+> > picture).
+> 
+> I'm still seeing the legacy board code for n900 in mainline tree :)
+> It's deprecated, but still there.
+> 
+> Are you maybe talking about some other piece of platform_data that's
+> no longer in the mainline kernel?
+> 
+> No idea what might be wrong with the camera though.
 
-> How is it even possible that I did that with a few lines of asm?
+Camera support for main and secondary cameras was never mainline, AFAICT.
 
-Probably not your directly your fault - some cascade of errors may have occurred.
+Merging it will not be easy, as it lacks DT support... and was broken
+for long time.
 
-> Could this be a hardware bug?  Is there some condition that causes #MC
-> delivery to wedge hard enough that even INIT/RESET stops working?  Or
-> possibly some CPU got stuck in SMM -- I have no idea what warm reset
-> does these days.
+Anyway, flash is kind of important for me, since it makes phone useful
+as backup light; and it is simple piece of hw, so I intend to keep it
+useful.
 
-I'm not even sure what kind of reset the remote management i/f I used
-actually applied.
-
-> Here's the patch to improve the timeout messages, but given the degree
-> of wedgedness, I can guess what it'll say:
->
-> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/paranoid&id=e5cbd9d141bde651ecb20f0b65ad13bcef2468d0
-
-Heh - I'd already put in some hacky printk()s to do similar. Mine aren't upstream quality, but do print the value of mce_callin/mce_executing
-as appropriate.  But I got some confusing results - reporter complained that only 142 of 144 had shown up. So two threads missing,
-maybe means one core went into h/w shutdown.  Need to dig further to see if the missing duo really are from the same core.
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+       	       	   	    	      	      	  		     Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
