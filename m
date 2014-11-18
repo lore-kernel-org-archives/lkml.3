@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364AbaKRAGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:06:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49004 "EHLO
+	id S1753402AbaKRAHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:07:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49011 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507AbaKRAGm (ORCPT
+	with ESMTP id S1752325AbaKRAHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:06:42 -0500
-Date: Mon, 17 Nov 2014 16:06:30 -0800
+	Mon, 17 Nov 2014 19:07:05 -0500
+Date: Mon, 17 Nov 2014 16:06:54 -0800
 From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
-Message-ID: <tip-4aae7e436fa51faf4bf5d11b175aea82cfe8224a@git.kernel.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, qiaowei.ren@intel.com,
-        dave.hansen@linux.intel.com, hpa@zytor.com, mingo@kernel.org,
-        dave@sr71.net
-Reply-To: mingo@kernel.org, dave@sr71.net, qiaowei.ren@intel.com,
-        dave.hansen@linux.intel.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, tglx@linutronix.de
-In-Reply-To: <20141114151825.565625B3@viggo.jf.intel.com>
-References: <20141114151825.565625B3@viggo.jf.intel.com>
+Message-ID: <tip-57319d80e1d328e34cb24868a4f4405661485e30@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, dave@sr71.net, qiaowei.ren@intel.com,
+        hpa@zytor.com, dave.hansen@linux.intel.com, tglx@linutronix.de,
+        mingo@kernel.org
+Reply-To: mingo@kernel.org, tglx@linutronix.de, dave.hansen@linux.intel.com,
+        hpa@zytor.com, qiaowei.ren@intel.com, dave@sr71.net,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20141114151827.CE440F67@viggo.jf.intel.com>
+References: <20141114151827.CE440F67@viggo.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mpx] x86, mpx:
-  Introduce VM_MPX to indicate that a VMA is MPX specific
-Git-Commit-ID: 4aae7e436fa51faf4bf5d11b175aea82cfe8224a
+Subject: [tip:x86/mpx] x86, mpx: Add MPX-specific mmap interface
+Git-Commit-ID: 57319d80e1d328e34cb24868a4f4405661485e30
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,90 +33,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4aae7e436fa51faf4bf5d11b175aea82cfe8224a
-Gitweb:     http://git.kernel.org/tip/4aae7e436fa51faf4bf5d11b175aea82cfe8224a
+Commit-ID:  57319d80e1d328e34cb24868a4f4405661485e30
+Gitweb:     http://git.kernel.org/tip/57319d80e1d328e34cb24868a4f4405661485e30
 Author:     Qiaowei Ren <qiaowei.ren@intel.com>
-AuthorDate: Fri, 14 Nov 2014 07:18:25 -0800
+AuthorDate: Fri, 14 Nov 2014 07:18:27 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 18 Nov 2014 00:58:53 +0100
 
-x86, mpx: Introduce VM_MPX to indicate that a VMA is MPX specific
+x86, mpx: Add MPX-specific mmap interface
 
-MPX-enabled applications using large swaths of memory can
-potentially have large numbers of bounds tables in process
-address space to save bounds information. These tables can take
-up huge swaths of memory (as much as 80% of the memory on the
-system) even if we clean them up aggressively. In the worst-case
-scenario, the tables can be 4x the size of the data structure
-being tracked. IOW, a 1-page structure can require 4 bounds-table
-pages.
+We have chosen to perform the allocation of bounds tables in
+kernel (See the patch "on-demand kernel allocation of bounds
+tables") and to mark these VMAs with VM_MPX.
 
-Being this huge, our expectation is that folks using MPX are
-going to be keen on figuring out how much memory is being
-dedicated to it. So we need a way to track memory use for MPX.
+However, there is currently no suitable interface to actually do
+this.  Existing interfaces, like do_mmap_pgoff(), have no way to
+set a modified ->vm_ops or ->vm_flags and don't hold mmap_sem
+long enough to let a caller do it.
 
-If we want to specifically track MPX VMAs we need to be able to
-distinguish them from normal VMAs, and keep them from getting
-merged with normal VMAs. A new VM_ flag set only on MPX VMAs does
-both of those things. With this flag, MPX bounds-table VMAs can
-be distinguished from other VMAs, and userspace can also walk
-/proc/$pid/smaps to get memory usage for MPX.
+This patch wraps mmap_region() and hold mmap_sem long enough to
+make the modifications to the VMA which we need.
 
-In addition to this flag, we also introduce a special ->vm_ops
-specific to MPX VMAs (see the patch "add MPX specific mmap
-interface"), but currently different ->vm_ops do not by
-themselves prevent VMA merging, so we still need this flag.
-
-We understand that VM_ flags are scarce and are open to other
-options.
+Also note the 32/64-bit #ifdef in the header.  We actually need
+to do this at runtime eventually.  But, for now, we don't support
+running 32-bit binaries on 64-bit kernels.  Support for this will
+come in later patches.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 Cc: linux-mm@kvack.org
 Cc: linux-mips@linux-mips.org
 Cc: Dave Hansen <dave@sr71.net>
-Link: http://lkml.kernel.org/r/20141114151825.565625B3@viggo.jf.intel.com
+Link: http://lkml.kernel.org/r/20141114151827.CE440F67@viggo.jf.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- fs/proc/task_mmu.c | 3 +++
- include/linux/mm.h | 6 ++++++
- 2 files changed, 9 insertions(+)
+ arch/x86/Kconfig           |  4 +++
+ arch/x86/include/asm/mpx.h | 36 +++++++++++++++++++
+ arch/x86/mm/Makefile       |  2 ++
+ arch/x86/mm/mpx.c          | 86 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 128 insertions(+)
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 4e0388c..f6734c6 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -552,6 +552,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
- 		[ilog2(VM_GROWSDOWN)]	= "gd",
- 		[ilog2(VM_PFNMAP)]	= "pf",
- 		[ilog2(VM_DENYWRITE)]	= "dw",
-+#ifdef CONFIG_X86_INTEL_MPX
-+		[ilog2(VM_MPX)]		= "mp",
-+#endif
- 		[ilog2(VM_LOCKED)]	= "lo",
- 		[ilog2(VM_IO)]		= "io",
- 		[ilog2(VM_SEQ_READ)]	= "sr",
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b464611..f7606d3 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -128,6 +128,7 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
- #define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
- #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
-+#define VM_ARCH_2	0x02000000
- #define VM_DONTDUMP	0x04000000	/* Do not include in the core dump */
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ded8a67..967dfe0 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -248,6 +248,10 @@ config HAVE_INTEL_TXT
+ 	def_bool y
+ 	depends on INTEL_IOMMU && ACPI
  
- #ifdef CONFIG_MEM_SOFT_DIRTY
-@@ -155,6 +156,11 @@ extern unsigned int kobjsize(const void *objp);
- # define VM_MAPPED_COPY	VM_ARCH_1	/* T if mapped copy of data (nommu mmap) */
- #endif
- 
-+#if defined(CONFIG_X86)
-+/* MPX specific bounds table or bounds directory */
-+# define VM_MPX		VM_ARCH_2
++config X86_INTEL_MPX
++	def_bool y
++	depends on CPU_SUP_INTEL
++
+ config X86_32_SMP
+ 	def_bool y
+ 	depends on X86_32 && SMP
+diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
+new file mode 100644
+index 0000000..7d7c5f5
+--- /dev/null
++++ b/arch/x86/include/asm/mpx.h
+@@ -0,0 +1,36 @@
++#ifndef _ASM_X86_MPX_H
++#define _ASM_X86_MPX_H
++
++#include <linux/types.h>
++#include <asm/ptrace.h>
++
++#ifdef CONFIG_X86_64
++
++/* upper 28 bits [47:20] of the virtual address in 64-bit used to
++ * index into bounds directory (BD).
++ */
++#define MPX_BD_ENTRY_OFFSET	28
++#define MPX_BD_ENTRY_SHIFT	3
++/* bits [19:3] of the virtual address in 64-bit used to index into
++ * bounds table (BT).
++ */
++#define MPX_BT_ENTRY_OFFSET	17
++#define MPX_BT_ENTRY_SHIFT	5
++#define MPX_IGN_BITS		3
++
++#else
++
++#define MPX_BD_ENTRY_OFFSET	20
++#define MPX_BD_ENTRY_SHIFT	2
++#define MPX_BT_ENTRY_OFFSET	10
++#define MPX_BT_ENTRY_SHIFT	4
++#define MPX_IGN_BITS		2
++
 +#endif
 +
- #ifndef VM_GROWSUP
- # define VM_GROWSUP	VM_NONE
- #endif
++#define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
++#define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
++
++#define MPX_BNDSTA_ERROR_CODE	0x3
++
++#endif /* _ASM_X86_MPX_H */
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index 6a19ad9..ecfdc46 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -30,3 +30,5 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
+ obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
+ 
+ obj-$(CONFIG_MEMTEST)		+= memtest.o
++
++obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
+diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
+new file mode 100644
+index 0000000..72d13b0
+--- /dev/null
++++ b/arch/x86/mm/mpx.c
+@@ -0,0 +1,86 @@
++/*
++ * mpx.c - Memory Protection eXtensions
++ *
++ * Copyright (c) 2014, Intel Corporation.
++ * Qiaowei Ren <qiaowei.ren@intel.com>
++ * Dave Hansen <dave.hansen@intel.com>
++ */
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <linux/sched/sysctl.h>
++
++#include <asm/mman.h>
++#include <asm/mpx.h>
++
++static const char *mpx_mapping_name(struct vm_area_struct *vma)
++{
++	return "[mpx]";
++}
++
++static struct vm_operations_struct mpx_vma_ops = {
++	.name = mpx_mapping_name,
++};
++
++/*
++ * This is really a simplified "vm_mmap". it only handles MPX
++ * bounds tables (the bounds directory is user-allocated).
++ *
++ * Later on, we use the vma->vm_ops to uniquely identify these
++ * VMAs.
++ */
++static unsigned long mpx_mmap(unsigned long len)
++{
++	unsigned long ret;
++	unsigned long addr, pgoff;
++	struct mm_struct *mm = current->mm;
++	vm_flags_t vm_flags;
++	struct vm_area_struct *vma;
++
++	/* Only bounds table and bounds directory can be allocated here */
++	if (len != MPX_BD_SIZE_BYTES && len != MPX_BT_SIZE_BYTES)
++		return -EINVAL;
++
++	down_write(&mm->mmap_sem);
++
++	/* Too many mappings? */
++	if (mm->map_count > sysctl_max_map_count) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	/* Obtain the address to map to. we verify (or select) it and ensure
++	 * that it represents a valid section of the address space.
++	 */
++	addr = get_unmapped_area(NULL, 0, len, 0, MAP_ANONYMOUS | MAP_PRIVATE);
++	if (addr & ~PAGE_MASK) {
++		ret = addr;
++		goto out;
++	}
++
++	vm_flags = VM_READ | VM_WRITE | VM_MPX |
++			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
++
++	/* Set pgoff according to addr for anon_vma */
++	pgoff = addr >> PAGE_SHIFT;
++
++	ret = mmap_region(NULL, addr, len, vm_flags, pgoff);
++	if (IS_ERR_VALUE(ret))
++		goto out;
++
++	vma = find_vma(mm, ret);
++	if (!vma) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	vma->vm_ops = &mpx_vma_ops;
++
++	if (vm_flags & VM_LOCKED) {
++		up_write(&mm->mmap_sem);
++		mm_populate(ret, len);
++		return ret;
++	}
++
++out:
++	up_write(&mm->mmap_sem);
++	return ret;
++}
