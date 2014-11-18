@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549AbaKRU7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:59:16 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:33258 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702AbaKRU7J (ORCPT
+	id S932816AbaKRVAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:00:06 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:52716 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932731AbaKRU7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:59:09 -0500
+	Tue, 18 Nov 2014 15:59:14 -0500
 From: Mariusz Gorski <marius.gorski@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Willy Tarreau <w@1wt.eu>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] staging: panel: Start making module params read-only
-Date: Tue, 18 Nov 2014 21:56:10 +0100
-Message-Id: <1416344174-9155-6-git-send-email-marius.gorski@gmail.com>
+Subject: [PATCH 8/9] staging: panel: Remove more magic number comparison
+Date: Tue, 18 Nov 2014 21:56:13 +0100
+Message-Id: <1416344174-9155-9-git-send-email-marius.gorski@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com>
 References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com>
@@ -20,151 +20,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Start decoupling module params from the actual device state,
-both for lcd and keypad, by keeping the params read-only
-and moving the device state to related structs.
+Use a macro instead of magic number comparison for checking
+whether a module param value has been set.
 
 Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
 ---
- drivers/staging/panel/panel.c | 35 +++++++++++++++++++++--------------
- 1 file changed, 21 insertions(+), 14 deletions(-)
+ drivers/staging/panel/panel.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 97fc4ca..7f2f5f8 100644
+index ee48bca..268ad2e 100644
 --- a/drivers/staging/panel/panel.c
 +++ b/drivers/staging/panel/panel.c
-@@ -214,6 +214,10 @@ static pmask_t phys_prev;
- static char inputs_stable;
+@@ -136,6 +136,7 @@
+ #define NOT_SET			-1
  
- /* these variables are specific to the keypad */
-+static struct {
-+	bool enabled;
-+} keypad;
-+
- static char keypad_buffer[KEYPAD_BUFFER];
- static int keypad_buflen;
- static int keypad_start;
-@@ -221,6 +225,9 @@ static char keypressed;
- static wait_queue_head_t keypad_read_wait;
+ #define IS_NOT_SET(x)	(x == NOT_SET)
++#define IS_SET(x)		(x > NOT_SET)
  
- /* lcd-specific variables */
-+static struct {
-+	bool enabled;
-+} lcd;
- 
- /* contains the LCD config state */
- static unsigned long int lcd_flags;
-@@ -1395,7 +1402,7 @@ static void panel_lcd_print(const char *s)
- 	const char *tmp = s;
- 	int count = strlen(s);
- 
--	if (lcd_enabled && lcd_initialized) {
-+	if (lcd.enabled && lcd_initialized) {
- 		for (; count-- > 0; tmp++) {
- 			if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
- 				/* let's be a little nice with other processes
-@@ -1925,7 +1932,7 @@ static void panel_process_inputs(void)
- 
- static void panel_scan_timer(void)
- {
--	if (keypad_enabled && keypad_initialized) {
-+	if (keypad.enabled && keypad_initialized) {
- 		if (spin_trylock_irq(&pprt_lock)) {
- 			phys_scan_contacts();
- 
-@@ -1937,7 +1944,7 @@ static void panel_scan_timer(void)
- 			panel_process_inputs();
+ /* macros to simplify use of the parallel port */
+ #define r_ctr(x)        (parport_read_control((x)->port))
+@@ -1496,17 +1497,17 @@ static void lcd_init(void)
  	}
  
--	if (lcd_enabled && lcd_initialized) {
-+	if (lcd.enabled && lcd_initialized) {
- 		if (keypressed) {
- 			if (light_tempo == 0 && ((lcd_flags & LCD_FLAG_L) == 0))
- 				lcd_backlight(1);
-@@ -2116,7 +2123,7 @@ static void keypad_init(void)
- static int panel_notify_sys(struct notifier_block *this, unsigned long code,
- 			    void *unused)
- {
--	if (lcd_enabled && lcd_initialized) {
-+	if (lcd.enabled && lcd_initialized) {
- 		switch (code) {
- 		case SYS_DOWN:
- 			panel_lcd_print
-@@ -2172,13 +2179,13 @@ static void panel_attach(struct parport *port)
- 	/* must init LCD first, just in case an IRQ from the keypad is
- 	 * generated at keypad init
+ 	/* Overwrite with module params set on loading */
+-	if (lcd_height > -1)
++	if (IS_SET(lcd_height))
+ 		lcd.height = lcd_height;
+-	if (lcd_width > -1)
++	if (IS_SET(lcd_width))
+ 		lcd.width = lcd_width;
+-	if (lcd_bwidth > -1)
++	if (IS_SET(lcd_bwidth))
+ 		lcd.bwidth = lcd_bwidth;
+-	if (lcd_hwidth > -1)
++	if (IS_SET(lcd_hwidth))
+ 		lcd.hwidth = lcd_hwidth;
+-	if (lcd_charset > -1)
++	if (IS_SET(lcd_charset))
+ 		lcd.charset = lcd_charset;
+-	if (lcd_proto > -1)
++	if (IS_SET(lcd_proto))
+ 		lcd.proto = lcd_proto;
+ 	if (lcd_e_pin != PIN_NOT_SET)
+ 		lcd.pins.e = lcd_e_pin;
+@@ -2306,16 +2307,16 @@ static int __init panel_init_module(void)
+ 	 * Overwrite selection with module param values (both keypad and lcd),
+ 	 * where the deprecated params have lower prio.
  	 */
--	if (lcd_enabled) {
-+	if (lcd.enabled) {
- 		lcd_init();
- 		if (misc_register(&lcd_dev))
- 			goto err_unreg_device;
- 	}
+-	if (keypad_enabled > -1)
++	if (IS_SET(keypad_enabled))
+ 		selected_keypad_type = keypad_enabled;
+-	if (keypad_type > -1)
++	if (IS_SET(keypad_type))
+ 		selected_keypad_type = keypad_type;
  
--	if (keypad_enabled) {
-+	if (keypad.enabled) {
- 		keypad_init();
- 		if (misc_register(&keypad_dev))
- 			goto err_lcd_unreg;
-@@ -2186,7 +2193,7 @@ static void panel_attach(struct parport *port)
- 	return;
+ 	keypad.enabled = (selected_keypad_type > 0);
  
- err_lcd_unreg:
--	if (lcd_enabled)
-+	if (lcd.enabled)
- 		misc_deregister(&lcd_dev);
- err_unreg_device:
- 	parport_unregister_device(pprt);
-@@ -2204,12 +2211,12 @@ static void panel_detach(struct parport *port)
- 		return;
- 	}
+-	if (lcd_enabled > -1)
++	if (IS_SET(lcd_enabled))
+ 		selected_lcd_type = lcd_enabled;
+-	if (lcd_type > -1)
++	if (IS_SET(lcd_type))
+ 		selected_lcd_type = lcd_type;
  
--	if (keypad_enabled && keypad_initialized) {
-+	if (keypad.enabled && keypad_initialized) {
- 		misc_deregister(&keypad_dev);
- 		keypad_initialized = 0;
- 	}
- 
--	if (lcd_enabled && lcd_initialized) {
-+	if (lcd.enabled && lcd_initialized) {
- 		misc_deregister(&lcd_dev);
- 		lcd_initialized = 0;
- 	}
-@@ -2285,8 +2292,8 @@ static int __init panel_init_module(void)
- 		break;
- 	}
- 
--	lcd_enabled = (lcd_type > 0);
--	keypad_enabled = (keypad_type > 0);
-+	lcd.enabled = (lcd_type > 0);
-+	keypad.enabled = (keypad_type > 0);
- 
- 	switch (keypad_type) {
- 	case KEYPAD_TYPE_OLD:
-@@ -2311,7 +2318,7 @@ static int __init panel_init_module(void)
- 		return -EIO;
- 	}
- 
--	if (!lcd_enabled && !keypad_enabled) {
-+	if (!lcd.enabled && !keypad.enabled) {
- 		/* no device enabled, let's release the parport */
- 		if (pprt) {
- 			parport_release(pprt);
-@@ -2346,12 +2353,12 @@ static void __exit panel_cleanup_module(void)
- 		del_timer_sync(&scan_timer);
- 
- 	if (pprt != NULL) {
--		if (keypad_enabled) {
-+		if (keypad.enabled) {
- 			misc_deregister(&keypad_dev);
- 			keypad_initialized = 0;
- 		}
- 
--		if (lcd_enabled) {
-+		if (lcd.enabled) {
- 			panel_lcd_print("\x0cLCD driver " PANEL_VERSION
- 					"\nunloaded.\x1b[Lc\x1b[Lb\x1b[L-");
- 			misc_deregister(&lcd_dev);
+ 	lcd.enabled = (selected_lcd_type > 0);
 -- 
 2.1.3
 
