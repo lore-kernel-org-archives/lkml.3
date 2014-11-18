@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaKRMin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:38:43 -0500
-Received: from mga03.intel.com ([134.134.136.65]:24856 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266AbaKRMim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:38:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,409,1413270000"; 
-   d="scan'208";a="638933045"
-Message-ID: <546B3DCD.9090307@linux.intel.com>
-Date: Tue, 18 Nov 2014 20:38:37 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754059AbaKRMmD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:42:03 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:49076 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774AbaKRMmA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 07:42:00 -0500
+Message-ID: <546B3E7D.4030800@huawei.com>
+Date: Tue, 18 Nov 2014 20:41:33 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
- to reduce duplicated code
-References: <20141112133941.647950773@linutronix.de> <20141112134120.393705922@linutronix.de> <546B10DA.3040504@huawei.com> <alpine.DEB.2.11.1411181102160.3909@nanos> <546B31D7.6030204@huawei.com>
-In-Reply-To: <546B31D7.6030204@huawei.com>
-Content-Type: text/plain; charset=windows-1252
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linuxppc-dev@lists.ozlabs.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
+        "Russell King" <linux@arm.linux.org.uk>, <linux-pci@vger.kernel.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xinwei Hu <huxinwei@huawei.com>,
+        "Thierry Reding" <thierry.reding@gmail.com>,
+        <Suravee.Suthikulpanit@amd.com>, <linux-ia64@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 07/16] PCI: Separate pci_host_bridge creation out
+ of pci_create_root_bus()
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1936415.emTbbPeHqx@wuerfel> <546B3124.7070206@huawei.com> <2911754.xsk2IUfQFO@wuerfel>
+In-Reply-To: <2911754.xsk2IUfQFO@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 19:47, Yun Wu (Abel) wrote:
-> On 2014/11/18 18:03, Thomas Gleixner wrote:
-> 
->> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>
->>> Hi Thomas, Jiang,
->>> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>>>> We need, some platforms pass NULL pointer as host bridge parent.
 >>>
->>>> From: Jiang Liu <jiang.liu@linux.intel.com>
->>> [...]
->>>> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
->>>> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
->>>> +			 void *chip_data, irq_flow_handler_t handler,
->>>> +			 void *handler_data, const char *handler_name)
->>>> +{
->>>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
->>>> +	__irq_set_handler(virq, handler, 0, handler_name);
->>>> +	irq_set_handler_data(virq, handler_data);
->>>> +}
->>>
->>> When stacked domain enabled, there will be a semantic shift to the linux interrupt
->>> identifiers. The @virq now delivers much more than before.
->>> More specifically, now we need both @virq and @domain, rather than only @irq, to
->>> determine which irq_data we want to configure. And once we configure @irq without
->>> providing the exact domain, it means we are configuring all the domains related to
->>> that @irq. So I think this routine just messed all things up.
+>>> But those don't have to use the new pci_create_host_bridge() function,
+>>> right?
 >>
->> You can mess up anything by using an interface in the wrong way. Open
->> coding will not make that harder.
->>
+>> As I mentioned in another reply, I hope all pci host drivers could use
+>> pci_create_host_bridge(), keep different PCI scan interfaces in PCI core
+>> make things become complex.
 > 
-> But what's the correct way to use this interface?
-Hi Yun,
-	It's to be used by interrupt controller drivers to implement
-hierarchy irqdomains.
-Regards!
-Gerry
+> Doing this for all platforms that have PCI support would be a lot of
+> work though, I think it's better to focus on having a the best interface
+> for the majority of users.
+
+Yes.
 
 > 
-> Thanks,
-> 	Abel
+> 	Arnd
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> .
 > 
+
+
+-- 
+Thanks!
+Yijing
+
