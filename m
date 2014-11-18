@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607AbaKRBLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 20:11:38 -0500
-Received: from regular1.263xmail.com ([211.150.99.131]:46800 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023AbaKRBLe (ORCPT
+	id S1753650AbaKRBLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 20:11:43 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50140 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616AbaKRBLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 20:11:34 -0500
-X-Greylist: delayed 38758 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Nov 2014 20:11:33 EST
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <f00cf1f62bb3db3f38b2163e747f6477>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <546A9CB7.1030207@rock-chips.com>
-Date: Tue, 18 Nov 2014 09:11:19 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Julius Werner <jwerner@chromium.org>
-CC: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Romain Perier <romain.perier@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Douglas Anderson <dianders@chromium.org>,
-        Sonny Rao <sonnyrao@chromium.org>, addy ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Roy Li <roy.li@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc2: resume root hub when device detect with suspend
- state
-References: <1416230077-17535-1-git-send-email-kever.yang@rock-chips.com> <CAODwPW8r0cq2aozVjY9o9wOwqa4Nn1Oom9+Td8e-H0FoDf-LfQ@mail.gmail.com>
-In-Reply-To: <CAODwPW8r0cq2aozVjY9o9wOwqa4Nn1Oom9+Td8e-H0FoDf-LfQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Nov 2014 20:11:42 -0500
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: keescook@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com
+Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+Date: Tue, 18 Nov 2014 10:10:34 +0900
+Message-Id: <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julius,
+If tracer specifies -1 as a syscall number, this traced system call should
+be skipped with a return value specified in x0.
+This patch implements this semantics, but there is one restriction here:
 
-On 11/18/2014 05:21 AM, Julius Werner wrote:
-> On Mon, Nov 17, 2014 at 5:14 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
->> After we implement the bus_suspend/resume, auto suspend id enabled.
->> The root hub will be auto suspend if there is no device connected,
->> we need to resume the root hub when a device connect detect.
->>
->> This patch tested on rk3288.
->>
->> Signed-off-by: Roy Li <roy.li@rock-chips.com>
->> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->> ---
->>
->>   drivers/usb/dwc2/hcd_intr.c | 7 +++++++
->>   1 file changed, 7 insertions(+)
->>
->> diff --git a/drivers/usb/dwc2/hcd_intr.c b/drivers/usb/dwc2/hcd_intr.c
->> index 551ba87..c8299fd 100644
->> --- a/drivers/usb/dwc2/hcd_intr.c
->> +++ b/drivers/usb/dwc2/hcd_intr.c
->> @@ -355,6 +355,13 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
->>                  hprt0_modify |= HPRT0_CONNDET;
->>
->>                  /*
->> +                * Check if root hub is in suspend state
->> +                * if root hub in suspend, resume it.
->> +                */
->> +               if ((bus->root_hub) && (hcd->state == HC_STATE_SUSPENDED))
-> What is bus->root_hub checking for? Is there any chance that this
-> could be NULL here?
-I add bus->root_hub check because the _dwc2_hcd_start check this before it
-call the usb_hcd_resume_root_hub.
-I think we don't need this check for the root_hub must be there if we 
-register
-the HCD success, right?
-I will remove this in next version.
->
->> +                       usb_hcd_resume_root_hub(hcd);
->> +
->> +               /*
->>                   * The Hub driver asserts a reset when it sees port connect
->>                   * status change flag
->>                   */
->> --
->> 1.9.1
-> Seems sensible in general. Does this actually fix the problem Doug was
-> reporting?
-Yes, this fix the problem Doug reported with my dwc2 hcd suspend/resume 
-patch.
+    syscall(-1) always return ENOSYS whatever value is stored in x0
+    (a return value) at syscall entry.
 
-- Kever
+Normally, with ptrace off, syscall(-1) returns -ENOSYS. With ptrace on,
+however, if a tracer didn't pay any attention to user-issued syscall(-1)
+and just let it go, it would return a value in x0 as in other system call
+cases. This means that this system call might succeed and yet see any bogus
+return value. This should be definitely avoided.
+
+Please also note:
+* syscall entry tracing and syscall exit tracing (ftrace tracepoint and
+  audit) are always executed, if enabled, even when skipping a system call
+  (that is, -1).
+  In this way, we can avoid a potential bug where audit_syscall_entry()
+  might be called without audit_syscall_exit() at the previous system call
+  being called, that would cause OOPs in audit_syscall_entry().
+
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ arch/arm64/kernel/entry.S  |    3 +++
+ arch/arm64/kernel/ptrace.c |   18 ++++++++++++++++++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 726b910..01118b1 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -670,6 +670,8 @@ ENDPROC(el0_svc)
+ __sys_trace:
+ 	mov	x0, sp
+ 	bl	syscall_trace_enter
++	cmp	w0, #-1				// skip the syscall?
++	b.eq	__sys_trace_return_skipped
+ 	adr	lr, __sys_trace_return		// return address
+ 	uxtw	scno, w0			// syscall number (possibly new)
+ 	mov	x1, sp				// pointer to regs
+@@ -684,6 +686,7 @@ __sys_trace:
+ 
+ __sys_trace_return:
+ 	str	x0, [sp]			// save returned x0
++__sys_trace_return_skipped:
+ 	mov	x0, sp
+ 	bl	syscall_trace_exit
+ 	b	ret_to_user
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index 8b98781..34b1e85 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -1149,6 +1149,8 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+ 
+ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+ {
++	int orig_syscallno = regs->syscallno;
++
+ 	if (test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+ 
+@@ -1158,6 +1160,22 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+ 	audit_syscall_entry(regs->syscallno, regs->orig_x0, regs->regs[1],
+ 			    regs->regs[2], regs->regs[3]);
+ 
++	if (((int)regs->syscallno == -1) && (orig_syscallno == -1)) {
++		/*
++		 * user-issued syscall(-1):
++		 * RESTRICTION: We always return ENOSYS whatever value is
++		 *   stored in x0 (a return value) at this point.
++		 * Normally, with ptrace off, syscall(-1) returns -ENOSYS.
++		 * With ptrace on, however, if a tracer didn't pay any
++		 * attention to user-issued syscall(-1) and just let it go
++		 * without a hack here, it would return a value in x0 as in
++		 * other system call cases. This means that this system call
++		 * might succeed and see any bogus return value.
++		 * This should be definitely avoided.
++		 */
++		regs->regs[0] = -ENOSYS;
++	}
++
+ 	return regs->syscallno;
+ }
+ 
+-- 
+1.7.9.5
 
