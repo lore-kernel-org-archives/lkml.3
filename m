@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147AbaKRPYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:24:55 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:35402 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756276AbaKRPYv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:24:51 -0500
-Date: Tue, 18 Nov 2014 15:24:43 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, IIO <linux-iio@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>, Carlo Caione <carlo@caione.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Todd Brandt <todd.e.brandt@linux.intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Hartmut Knaack <knaack.h@gmx.de>
-Subject: Re: [PATCH 2/3] mfd/axp20x: avoid irq numbering collision
-Message-ID: <20141118152443.GA13792@x1>
-References: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1415734210-5657-3-git-send-email-jacob.jun.pan@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415734210-5657-3-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757098AbaKRPYi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:24:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56975 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754852AbaKROJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:27 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 029/206] Bluetooth: Fix crash in the Marvell driver initialization codepath
+Date: Tue, 18 Nov 2014 15:06:24 +0100
+Message-Id: <bf0736629bf30132d5429c118e4b6e5a856ddd0a.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Jacob Pan wrote:
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-> IRQ numbers in axp20x devices are defined with high-order bit first
-> in each IRQ enable/status registers. On Intel platforms it is more
-> common to number IRQs with least significant bit first. Therefore,
-> sharing IRQ# between the two is very difficult. Since AXP288 is a
-> customized PMIC for Intel platform and the amount of shared IRQs are
-> very small, we use separate IRQ numbering. This also fixes collision
-> and a duplicate in WBTO interrupt.
-> 
-> e.g. For the 16 interrupts controlled in IRQ enabled registers 1 & 2,
-> on axp20x for ARM, the PMIC local IRQ numbers and register bits are
-> mapped as:
-> IRQ#:  0  1  2  3  4  5  6  7      8  9 10 11 12 13 14 15
-> ---------------------------------------------------------
-> ARM:   7  6  5  4  3  2  1  0      7  6  5  4  3  2  1  0
-> Intel: 0  1  2  3  4  5  6  7      0  1  2  3  4  5  6  7
-> 
-> Signed-off-by: Todd Brandt <todd.e.brandt@linux.intel.com>
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> ---
->  drivers/mfd/axp20x.c | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Applied, thanks.
+===============
 
-> diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-> index daf3c8d..0a8fcd9 100644
-> --- a/drivers/mfd/axp20x.c
-> +++ b/drivers/mfd/axp20x.c
-> @@ -183,21 +183,21 @@ static const struct regmap_irq axp20x_regmap_irqs[] = {
->  
->  /* some IRQs are compatible with axp20x models */
->  static const struct regmap_irq axp288_regmap_irqs[] = {
-> -	INIT_REGMAP_IRQ(AXP20X, VBUS_REMOVAL,           0, 2),
-> -	INIT_REGMAP_IRQ(AXP20X, VBUS_PLUGIN,            0, 3),
-> -	INIT_REGMAP_IRQ(AXP20X, VBUS_OVER_V,            0, 4),
-> +	INIT_REGMAP_IRQ(AXP288, VBUS_FALL,              0, 2),
-> +	INIT_REGMAP_IRQ(AXP288, VBUS_RISE,              0, 3),
-> +	INIT_REGMAP_IRQ(AXP288, OV,                     0, 4),
->  
-> -	INIT_REGMAP_IRQ(AXP20X, CHARG_DONE,             1, 2),
-> -	INIT_REGMAP_IRQ(AXP20X, CHARG,                  1, 3),
-> +	INIT_REGMAP_IRQ(AXP288, DONE,                   1, 2),
-> +	INIT_REGMAP_IRQ(AXP288, CHARGING,               1, 3),
->  	INIT_REGMAP_IRQ(AXP288, SAFE_QUIT,              1, 4),
->  	INIT_REGMAP_IRQ(AXP288, SAFE_ENTER,             1, 5),
-> -	INIT_REGMAP_IRQ(AXP20X, BATT_REMOVAL,           1, 6),
-> -	INIT_REGMAP_IRQ(AXP20X, BATT_PLUGIN,            1, 7),
-> +	INIT_REGMAP_IRQ(AXP288, ABSENT,                 1, 6),
-> +	INIT_REGMAP_IRQ(AXP288, APPEND,                 1, 7),
->  
->  	INIT_REGMAP_IRQ(AXP288, QWBTU,                  2, 0),
->  	INIT_REGMAP_IRQ(AXP288, WBTU,                   2, 1),
->  	INIT_REGMAP_IRQ(AXP288, QWBTO,                  2, 2),
-> -	INIT_REGMAP_IRQ(AXP288, WBTU,                   2, 3),
-> +	INIT_REGMAP_IRQ(AXP288, WBTO,                   2, 3),
->  	INIT_REGMAP_IRQ(AXP288, QCBTU,                  2, 4),
->  	INIT_REGMAP_IRQ(AXP288, CBTU,                   2, 5),
->  	INIT_REGMAP_IRQ(AXP288, QCBTO,                  2, 6),
-> @@ -215,7 +215,7 @@ static const struct regmap_irq axp288_regmap_irqs[] = {
->  	INIT_REGMAP_IRQ(AXP288, POKS,                   4, 4),
->  	INIT_REGMAP_IRQ(AXP288, POKN,                   4, 5),
->  	INIT_REGMAP_IRQ(AXP288, POKP,                   4, 6),
-> -	INIT_REGMAP_IRQ(AXP20X, TIMER,                  4, 7),
-> +	INIT_REGMAP_IRQ(AXP288, TIMER,                  4, 7),
->  
->  	INIT_REGMAP_IRQ(AXP288, MV_CHNG,                5, 0),
->  	INIT_REGMAP_IRQ(AXP288, BC_USB_CHNG,            5, 1),
+commit 8500d791c458ccbbb3e2d3fa9a0320ffd5729069 upstream.
 
+btmrvl_add_card() function calls kthread_run that might return error
+(e.g. if current thread is killed). If one tries to use the error
+value as a pointer then invalid memory access oops happens.
+
+Check kthread_run() return value, if it is an error then release resources
+correctly.
+
+TEST=boot computer with BT modules enabled. I see the error message that
+BT device initialization failed. Now kernel does not crash. Hint: to enable
+BT run 'rmmod btmrvl_sdio; modprobe btmrvl_sdio'
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/bluetooth/btmrvl_main.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/bluetooth/btmrvl_main.c b/drivers/bluetooth/btmrvl_main.c
+index 9a9f51875df5..5592b71f3dae 100644
+--- a/drivers/bluetooth/btmrvl_main.c
++++ b/drivers/bluetooth/btmrvl_main.c
+@@ -628,12 +628,17 @@ struct btmrvl_private *btmrvl_add_card(void *card)
+ 	init_waitqueue_head(&priv->main_thread.wait_q);
+ 	priv->main_thread.task = kthread_run(btmrvl_service_main_thread,
+ 				&priv->main_thread, "btmrvl_main_service");
++	if (IS_ERR(priv->main_thread.task))
++		goto err_thread;
+ 
+ 	priv->btmrvl_dev.card = card;
+ 	priv->btmrvl_dev.tx_dnld_rdy = true;
+ 
+ 	return priv;
+ 
++err_thread:
++	btmrvl_free_adapter(priv);
++
+ err_adapter:
+ 	kfree(priv);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.1.3
+
