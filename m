@@ -1,72 +1,625 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621AbaKRORH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:17:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57088 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115AbaKROK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:27 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Karl Beldan <karl.beldan@rivierawaves.com>,
-        Johannes Berg <johannes.berg@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 186/206] mac80211: fix typo in starting baserate for rts_cts_rate_idx
-Date: Tue, 18 Nov 2014 15:09:01 +0100
-Message-Id: <94f13cde9717b4fc28fffc8f9aa4c411ccf4ab3c.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S1755759AbaKROSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:18:38 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:37933 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755063AbaKROSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:18:35 -0500
+Date: Tue, 18 Nov 2014 14:18:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd: cros_ec: Add Chrome OS EC userspace device
+ interface
+Message-ID: <20141118141827.GB24004@x1>
+References: <1416238213-15263-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1416238213-15263-2-git-send-email-javier.martinez@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416238213-15263-2-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Karl Beldan <karl.beldan@rivierawaves.com>
+On Mon, 17 Nov 2014, Javier Martinez Canillas wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> From: Bill Richardson <wfrichar@chromium.org>
+> 
+> This patch adds a device interface to access the
+> ChromeOS Embedded Controller from user-space.
+> 
+> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+> Reviewed-on: https://gerrit-int.chromium.org/38364
+> Reviewed-by: Simon Glass <sjg@google.com>
+> Tested-by: Simon Glass <sjg@google.com>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>  drivers/mfd/Kconfig             |  12 ++
+>  drivers/mfd/Makefile            |   1 +
+>  drivers/mfd/cros_ec.c           |   4 +
+>  drivers/mfd/cros_ec_dev.c       | 355 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/cros_ec.h     |  12 +-
+>  include/linux/mfd/cros_ec_dev.h |  47 ++++++
+>  6 files changed, 430 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/mfd/cros_ec_dev.c
+>  create mode 100644 include/linux/mfd/cros_ec_dev.h
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 72d3808..31420a7 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -115,6 +115,18 @@ config MFD_CROS_EC_SPI
+>  	  response time cannot be guaranteed, we support ignoring
+>  	  'pre-amble' bytes before the response actually starts.
+>  
+> +config MFD_CROS_EC_DEV
 
-===============
+_DEV as a post-fix doesn't really describe the driver.
 
-commit c7abf25af0f41be4b50d44c5b185d52eea360cb8 upstream.
+> +	tristate "ChromeOS Embedded Controller userspace device interface"
+> +	depends on MFD_CROS_EC
+> +
 
-It affects non-(V)HT rates and can lead to selecting an rts_cts rate
-that is not a basic rate or way superior to the reference rate (ATM
-rates[0] used for the 1st attempt of the protected frame data).
+Superfluous '\n'.
 
-E.g, assuming drivers register growing (bitrate) sorted tables of
-ieee80211_rate-s, having :
-- rates[0].idx == d'2 and basic_rates == b'10100
-will select rts_cts idx b'10011 & ~d'(BIT(2)-1), i.e. 1, likewise
-- rates[0].idx == d'2 and basic_rates == b'10001
-will select rts_cts idx b'10000
-The first is not a basic rate and the second is > rates[0].
+> +	help
+> +	  If you say Y here, you get support for talking to the ChromeOS
+> +	  EC from userspace. This is separate from the normal kernel
+> +	  interfaces.
+> +
+> +	  To compile this driver as a module, choose M here: the module will be
+> +	  called cros_ec_dev.
+> +
+>  config MFD_ASIC3
+>  	bool "Compaq ASIC3"
+>  	depends on GPIOLIB && ARM
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 53467e2..5104a25 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -12,6 +12,7 @@ obj-$(CONFIG_MFD_BCM590XX)	+= bcm590xx.o
+>  obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
+>  obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+>  obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
+> +obj-$(CONFIG_MFD_CROS_EC_DEV)	+= cros_ec_dev.o
 
-Also, wrt severity of the addressed misbehavior, ATM we only have one
-rts_cts_rate_idx rather than one per rate table entry, so this idx might
-still point to bitrates > rates[1..MAX_RATES].
+Alphabetical?
 
-Fixes: 5253ffb8c9e1 ("mac80211: always pick a basic rate to tx RTS/CTS for pre-HT rates")
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/mac80211/rate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>  rtsx_pci-objs			:= rtsx_pcr.o rtsx_gops.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+>  obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
+> index fc0c81e..197b273 100644
+> --- a/drivers/mfd/cros_ec.c
+> +++ b/drivers/mfd/cros_ec.c
+> @@ -119,6 +119,10 @@ static const struct mfd_cell cros_devs[] = {
+>  		.id = 2,
+>  		.of_compatible = "google,cros-ec-i2c-tunnel",
+>  	},
+> +	{
+> +		.name = "cros-ec-dev",
+> +		.id = 3,
+> +	},
+>  };
+>  
+>  int cros_ec_register(struct cros_ec_device *ec_dev)
+> diff --git a/drivers/mfd/cros_ec_dev.c b/drivers/mfd/cros_ec_dev.c
+> new file mode 100644
+> index 0000000..c18eb40
+> --- /dev/null
+> +++ b/drivers/mfd/cros_ec_dev.c
+> @@ -0,0 +1,355 @@
+> +/*
+> + * cros_ec_dev - expose the Chrome OS Embedded Controller to userspace
+> + *
+> + * Copyright (C) 2014 Google, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#define pr_fmt(fmt) "cros_ec_dev: " fmt
 
-diff --git a/net/mac80211/rate.c b/net/mac80211/rate.c
-index e126605cec66..8753b77d4223 100644
---- a/net/mac80211/rate.c
-+++ b/net/mac80211/rate.c
-@@ -454,7 +454,7 @@ static void rate_fixup_ratelist(struct ieee80211_vif *vif,
- 	 */
- 	if (!(rates[0].flags & IEEE80211_TX_RC_MCS)) {
- 		u32 basic_rates = vif->bss_conf.basic_rates;
--		s8 baserate = basic_rates ? ffs(basic_rates - 1) : 0;
-+		s8 baserate = basic_rates ? ffs(basic_rates) - 1 : 0;
- 
- 		rate = &sband->bitrates[rates[0].idx];
- 
+This doesn't appear to even be used?
+
+> +#include <linux/compat.h>
+> +#include <linux/delay.h>
+> +#include <linux/device.h>
+> +#include <linux/fs.h>
+> +#include <linux/mfd/cros_ec.h>
+> +#include <linux/mfd/cros_ec_commands.h>
+> +#include <linux/mfd/cros_ec_dev.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/printk.h>
+
+What do you need this for?
+
+> +#include <linux/types.h>
+> +#include <linux/uaccess.h>
+> +
+> +/* Device variables */
+> +#define CROS_CLASS_NAME "chromeos"
+
+Any reason why you can't use the name directly?
+
+> +static struct cros_ec_device *ec;
+
+Can't you put this in a struct somewhere?
+
+> +static struct class *cros_class;
+
+Why this this global instead of using the one in 'struct
+cros_ec_device'?
+
+> +static int ec_major;
+
+Same here.  Only use globals if you're forced to.
+
+> +
+> +
+
+Superfluous '\n'.
+
+> +/* Basic communication */
+> +static int ec_get_version(struct cros_ec_device *ec, char *str, int maxlen)
+> +{
+> +	struct ec_response_get_version resp;
+> +	static const char * const current_image_name[] = {
+> +		"unknown", "read-only", "read-write", "invalid",
+> +	};
+> +	struct cros_ec_command msg = {
+> +		.version = 0,
+> +		.command = EC_CMD_GET_VERSION,
+> +		.outdata = NULL,
+> +		.outsize = 0,
+> +		.indata = (uint8_t *)&resp,
+> +		.insize = sizeof(resp),
+> +	};
+> +	int ret;
+> +
+> +	ret = cros_ec_cmd_xfer(ec, &msg);
+> +	if (ret < 0)
+> +		return ret;
+> +	if (msg.result != EC_RES_SUCCESS) {
+> +		snprintf(str, maxlen,
+> +			 "%s\nUnknown EC version: EC returned %d\n",
+> +			 CROS_EC_DEV_VERSION, msg.result);
+> +		return 0;
+> +	}
+> +	if (resp.current_image >= ARRAY_SIZE(current_image_name))
+> +		resp.current_image = 3; /* invalid */
+
+Add a '\n' here.
+
+> +	snprintf(str, maxlen, "%s\n%s\n%s\n\%s\n", CROS_EC_DEV_VERSION,
+> +		 resp.version_string_ro, resp.version_string_rw,
+> +		 current_image_name[resp.current_image]);
+> +
+> +	return 0;
+> +}
+> +
+> +/* Device file ops */
+> +static int ec_device_open(struct inode *inode, struct file *filp)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int ec_device_release(struct inode *inode, struct file *filp)
+> +{
+> +	return 0;
+> +}
+> +
+> +static ssize_t ec_device_read(struct file *filp, char __user *buffer,
+> +			      size_t length, loff_t *offset)
+> +{
+> +	char msg[sizeof(struct ec_response_get_version) +
+> +		 sizeof(CROS_EC_DEV_VERSION)];
+> +	size_t count;
+> +	int ret;
+> +
+> +	if (*offset != 0)
+> +		return 0;
+> +
+> +	ret = ec_get_version(ec, msg, sizeof(msg));
+> +	if (ret)
+> +		return ret;
+
+New line here.  Not sure why you are bunching up these segments.
+
+> +	count = min(length, strlen(msg));
+> +
+> +	if (copy_to_user(buffer, msg, count))
+> +		return -EFAULT;
+> +
+> +	*offset += count;
+
+You know offset is 0 here, so you can just *offset = count.
+
+> +	return count;
+> +}
+> +
+> +
+
+Please remove these double line spaces throughout.
+
+> +/* Ioctls */
+> +static long ec_device_ioctl_xcmd(void __user *argp)
+> +{
+> +	long ret;
+> +	struct cros_ec_command s_cmd;
+> +	uint8_t *user_indata;
+> +	uint8_t buf[EC_PROTO2_MAX_PARAM_SIZE];
+> +
+> +	if (copy_from_user(&s_cmd, argp, sizeof(s_cmd)))
+> +		return -EFAULT;
+> +	if (s_cmd.outsize &&
+> +	    copy_from_user(&buf, (void __user *)s_cmd.outdata, sizeof(buf)))
+> +		return -EFAULT;
+> +
+> +	user_indata = s_cmd.indata;
+> +	s_cmd.indata = buf;
+> +	s_cmd.outdata = buf;
+> +	ret = cros_ec_cmd_xfer(ec, &s_cmd);
+> +	s_cmd.indata = user_indata;
+
+For conforming if you swap these round, place a '\n' after this line
+and move the check for 'ret' to just after the call to
+cros_ec_cmd_xfer().
+
+> +	/* Only copy data to userland if data was received. */
+> +	if (ret > 0 && s_cmd.insize) {
+> +		unsigned size = ret;
+> +
+> +		size = min(size, s_cmd.insize);
+> +		if (copy_to_user((void __user *)s_cmd.indata, buf, size))
+> +			return -EFAULT;
+> +	}
+> +	if (copy_to_user(argp, &s_cmd, sizeof(s_cmd)))
+> +		return -EFAULT;
+> +
+> +	return ret;
+> +}
+> +
+> +static long ec_device_ioctl_readmem(void __user *argp)
+> +{
+> +	struct cros_ec_readmem s_mem;
+> +	char buf[EC_MEMMAP_SIZE];
+> +	long num;
+> +
+> +	/* Not every platform supports direct reads */
+> +	if (!ec->cmd_readmem)
+> +		return -ENOTTY;
+> +
+> +	if (copy_from_user(&s_mem, argp, sizeof(s_mem)))
+> +		return -EFAULT;
+> +	num = ec->cmd_readmem(ec, s_mem.offset, s_mem.bytes, buf);
+> +	if (num <= 0)
+> +		return num;
+> +	if (copy_to_user((void __user *)s_mem.buffer, buf, num))
+> +		return -EFAULT;
+> +	return num;
+> +}
+> +
+> +static long ec_device_ioctl(struct file *filp, unsigned int cmd,
+> +			    unsigned long arg)
+> +{
+> +	void __user *argp = (void __user *)arg;
+> +
+> +	if (_IOC_TYPE(cmd) != CROS_EC_DEV_IOC)
+> +		return -ENOTTY;
+> +
+> +	switch (cmd) {
+> +	case CROS_EC_DEV_IOCXCMD:
+> +		return ec_device_ioctl_xcmd(argp);
+> +	case CROS_EC_DEV_IOCRDMEM:
+> +		return ec_device_ioctl_readmem(argp);
+> +	}
+> +
+> +	return -ENOTTY;
+> +}
+> +
+> +#ifdef CONFIG_COMPAT
+> +struct compat_cros_ec_command {
+> +	uint32_t version;
+> +	uint32_t command;
+> +	compat_uptr_t outdata;
+> +	uint32_t outsize;
+> +	compat_uptr_t indata;
+> +	uint32_t insize;
+> +	uint32_t result;
+> +};
+> +
+> +struct compat_cros_ec_readmem {
+> +	uint32_t offset;
+> +	uint32_t bytes;
+> +	compat_uptr_t buffer;
+> +};
+> +
+> +#define CROS_EC_DEV_COMPAT_IOCXCMD  _IOWR(':', 0, struct compat_cros_ec_command)
+> +#define CROS_EC_DEV_COMPAT_IOCRDMEM _IOWR(':', 1, struct compat_cros_ec_readmem)
+> +
+> +static long ec_device_compat_ioctl_readmem(void __user *argp)
+> +{
+> +	struct compat_cros_ec_readmem compat_s_mem;
+> +	char buf[EC_MEMMAP_SIZE];
+> +	long num;
+> +
+> +	/* Not every platform supports direct reads */
+> +	if (!ec->cmd_readmem)
+> +		return -ENOTTY;
+> +
+> +	if (copy_from_user(&compat_s_mem, argp, sizeof(compat_s_mem)))
+> +		return -EFAULT;
+> +
+> +	num = ec->cmd_readmem(ec, compat_s_mem.offset, compat_s_mem.bytes, buf);
+> +	if (num <= 0)
+> +		return num;
+> +
+> +	if (copy_to_user(compat_ptr(compat_s_mem.buffer), buf, num))
+> +		return -EFAULT;
+> +	return num;
+> +}
+> +
+> +static long ec_device_compat_ioctl_xcmd(void __user *argp)
+> +{
+> +	long ret;
+> +	struct cros_ec_command s_cmd;
+> +	struct compat_cros_ec_command compat_s_cmd;
+> +	uint8_t buf[EC_PROTO2_MAX_PARAM_SIZE];
+> +
+> +	if (copy_from_user(&compat_s_cmd, argp, sizeof(compat_s_cmd)))
+> +		return -EFAULT;
+> +
+> +	s_cmd.version = compat_s_cmd.version;
+> +	s_cmd.command = compat_s_cmd.command;
+> +	s_cmd.insize = compat_s_cmd.insize;
+> +	s_cmd.outsize = compat_s_cmd.outsize;
+> +
+> +	if (s_cmd.outsize &&
+> +	    copy_from_user(&buf, compat_ptr(compat_s_cmd.outdata), sizeof(buf)))
+> +		return -EFAULT;
+> +
+> +	s_cmd.indata = buf;
+> +	s_cmd.outdata = buf;
+> +	ret = cros_ec_cmd_xfer(ec, &s_cmd);
+> +
+> +	compat_s_cmd.result = s_cmd.result;
+> +
+> +	/* Only copy data to userland if data was received. */
+> +	if (ret > 0 && s_cmd.insize) {
+> +		unsigned size = ret;
+> +
+> +		size = min(size, s_cmd.insize);
+> +		if (copy_to_user(compat_ptr(compat_s_cmd.indata), buf, size))
+> +			return -EFAULT;
+> +	}
+> +
+> +	if (copy_to_user(argp, &compat_s_cmd, sizeof(compat_s_cmd)))
+> +		return -EFAULT;
+> +
+> +	return ret;
+> +}
+> +
+> +static long ec_device_compat_ioctl(struct file *filp, unsigned int cmd,
+> +				   unsigned long arg)
+> +{
+> +	void __user
+> +	*argp = (void __user *)arg;
+
+Why is this expressed over multiple lines?
+
+> +	switch (cmd) {
+> +	case CROS_EC_DEV_COMPAT_IOCXCMD:
+> +		return ec_device_compat_ioctl_xcmd(argp);
+> +	case CROS_EC_DEV_COMPAT_IOCRDMEM:
+> +		return ec_device_compat_ioctl_readmem(argp);
+> +	}
+
+'\n'
+
+> +	return -ENOTTY;
+> +}
+> +#endif /* CONFIG_COMPAT */
+> +
+> +
+
+Please remove.
+
+> +/* Module initialization */
+> +static const struct file_operations fops = {
+> +	.open = ec_device_open,
+> +	.release = ec_device_release,
+> +	.read = ec_device_read,
+> +	.unlocked_ioctl = ec_device_ioctl,
+> +#ifdef CONFIG_COMPAT
+> +	.compat_ioctl = ec_device_compat_ioctl,
+> +#endif
+> +};
+> +
+> +static int ec_device_probe(struct platform_device *pdev)
+> +{
+> +	int retval = -ENOTTY;
+> +
+> +	ec = dev_get_drvdata(pdev->dev.parent);
+
+Stick this as the first line in the function.
+
+> +	cros_class = class_create(THIS_MODULE, CROS_CLASS_NAME);
+> +	if (IS_ERR(cros_class)) {
+> +		pr_err("failed to register device class\n");
+
+Why are you using pr_err() over dev_err()?
+
+> +		retval = PTR_ERR(cros_class);
+> +		goto failed_class;
+
+Remove this goto and the corresponding label and just return from here.
+
+> +	}
+> +
+> +	/* Let the kernel pick the major num for us */
+> +	ec_major = register_chrdev(0, CROS_EC_DEV_NAME, &fops);
+> +	if (ec_major < 0) {
+> +		pr_err("failed to register device\n");
+> +		retval = ec_major;
+> +		goto failed_chrdevreg;
+> +	}
+> +
+> +	/* Instantiate it */
+> +	ec->vdev = device_create(cros_class, NULL, MKDEV(ec_major, 0),
+> +				 NULL, CROS_EC_DEV_NAME);
+> +	if (IS_ERR(ec->vdev)) {
+> +		pr_err("failed to create device\n");
+> +		retval = PTR_ERR(ec->vdev);
+> +		goto failed_devreg;
+> +	}
+> +
+> +	return 0;
+> +
+> +failed_devreg:
+> +	unregister_chrdev(ec_major, CROS_EC_DEV_NAME);
+> +failed_chrdevreg:
+> +	class_destroy(cros_class);
+> +failed_class:
+> +	return retval;
+> +}
+> +
+> +static int ec_device_remove(struct platform_device *pdev)
+> +{
+> +	device_destroy(cros_class, MKDEV(ec_major, 0));
+> +	unregister_chrdev(ec_major, CROS_EC_DEV_NAME);
+> +	class_destroy(cros_class);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver cros_ec_dev_driver = {
+> +	.driver = {
+> +		.name = "cros-ec-dev",
+> +		.owner = THIS_MODULE,
+
+Remove this line.
+
+> +	},
+> +	.probe = ec_device_probe,
+> +	.remove = ec_device_remove,
+> +};
+
+Where is this device registered from?
+
+> +module_platform_driver(cros_ec_dev_driver);
+> +
+> +MODULE_AUTHOR("Bill Richardson <wfrichar@chromium.org>");
+> +MODULE_DESCRIPTION("Userspace interface to the Chrome OS Embedded Controller");
+> +MODULE_VERSION("1.0");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
+> index 0e166b9..b1cb934 100644
+> --- a/include/linux/mfd/cros_ec.h
+> +++ b/include/linux/mfd/cros_ec.h
+> @@ -59,9 +59,16 @@ struct cros_ec_command {
+>   *
+>   * @ec_name: name of EC device (e.g. 'chromeos-ec')
+>   * @phys_name: name of physical comms layer (e.g. 'i2c-4')
+> - * @dev: Device pointer
+> + * @dev: Device pointer for physical comms device
+> + * @vdev: Device pointer for virtual comms device
+>   * @was_wake_device: true if this device was set to wake the system from
+>   * sleep at the last suspend
+> + * @cmd_read_mem: direct read of the EC memory-mapped region, if supported
+> + *     @offset is within EC_LPC_ADDR_MEMMAP region.
+> + *     @bytes: number of bytes to read. zero means "read a string" (including
+> + *     the trailing '\0'). At most only EC_MEMMAP_SIZE bytes can be read.
+> + *     Caller must ensure that the buffer is large enough for the result when
+> + *     reading a string.
+>   *
+>   * @priv: Private data
+>   * @irq: Interrupt to use
+> @@ -90,8 +97,11 @@ struct cros_ec_device {
+>  	const char *ec_name;
+>  	const char *phys_name;
+>  	struct device *dev;
+> +	struct device *vdev;
+>  	bool was_wake_device;
+>  	struct class *cros_class;
+> +	int (*cmd_readmem)(struct cros_ec_device *ec, unsigned int offset,
+> +			   unsigned int bytes, void *dest);
+>  
+>  	/* These are used to implement the platform-specific interface */
+>  	void *priv;
+> diff --git a/include/linux/mfd/cros_ec_dev.h b/include/linux/mfd/cros_ec_dev.h
+> new file mode 100644
+> index 0000000..465e926
+> --- /dev/null
+> +++ b/include/linux/mfd/cros_ec_dev.h
+> @@ -0,0 +1,47 @@
+> +/*
+> + * cros_ec_dev - expose the Chrome OS Embedded Controller to userspace
+> + *
+> + * Copyright (C) 2013 The Chromium OS Authors
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#ifndef _CROS_EC_DEV_H_
+> +#define _CROS_EC_DEV_H_
+> +
+> +#include <linux/ioctl.h>
+> +#include <linux/types.h>
+> +#include <linux/mfd/cros_ec.h>
+> +
+> +#define CROS_EC_DEV_NAME "cros_ec"
+> +#define CROS_EC_DEV_VERSION "1.0.0"
+> +
+> +/*
+> + * @offset: within EC_LPC_ADDR_MEMMAP region
+> + * @bytes: number of bytes to read. zero means "read a string" (including '\0')
+> + *         (at most only EC_MEMMAP_SIZE bytes can be read)
+> + * @buffer: where to store the result
+> + * ioctl returns the number of bytes read, negative on error
+> + */
+> +struct cros_ec_readmem {
+> +	uint32_t offset;
+> +	uint32_t bytes;
+> +	char *buffer;
+> +};
+> +
+> +#define CROS_EC_DEV_IOC              ':'
+> +#define CROS_EC_DEV_IOCXCMD    _IOWR(':', 0, struct cros_ec_command)
+> +#define CROS_EC_DEV_IOCRDMEM   _IOWR(':', 1, struct cros_ec_readmem)
+> +
+> +#endif /* _CROS_EC_DEV_H_ */
+
 -- 
-2.1.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
