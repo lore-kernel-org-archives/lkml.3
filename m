@@ -1,109 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214AbaKRWPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 17:15:49 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:33858 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaKRWPs (ORCPT
+	id S932413AbaKRWQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 17:16:35 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62575 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932254AbaKRWQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 17:15:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
-References: <502D42E5.7090403@redhat.com>
-	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
-	<502F100A.1080401@redhat.com>
-	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
-	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
-	<20120822032057.GA30871@google.com>
-	<50345232.4090002@redhat.com>
-	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
-	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
-	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
-	<20141118014135.GA17252@cosmos.ssec.wisc.edu>
-	<546AB1F5.6030306@redhat.com>
-	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>
-Date: Wed, 19 Nov 2014 02:15:46 +0400
-Message-ID: <CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Nov 2014 17:16:33 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] OF: Add support for built in FDT blob
+To: Alban Bedel <albeu@free.fr>, devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>
+In-Reply-To: <1415358849-25879-1-git-send-email-albeu@free.fr>
+References: <1415358849-25879-1-git-send-email-albeu@free.fr>
+Date: Tue, 18 Nov 2014 22:16:28 +0000
+Message-Id: <20141118221628.2526EC40966@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 11:19 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 17 Nov 2014 21:41:57 -0500 Rik van Riel <riel@redhat.com> wrote:
->
->> > Because of the serial forking there does indeed end up being an
->> > infinite number of vmas.  The initial vma can never be deleted
->> > (even though the initial parent process has long since terminated)
->> > because the initial vma is referenced by the children.
->>
->> There is a finite number of VMAs, but an infite number of
->> anon_vmas.
->>
->> Subtle, yet deadly...
->
-> Well, we clearly have the data structures screwed up.  I've forgotten
-> enough about this code for me to be unable to work out what the fixed
-> up data structures would look like :( But surely there is some proper
-> solution here.  Help?
+On Fri,  7 Nov 2014 12:14:09 +0100
+, Alban Bedel <albeu@free.fr>
+ wrote:
+> Allow embedding an FDT blob in the kernel image, this is mostly
+> useful to run new kernels on boards with old bootloaders.
+> 
+> Signed-off-by: Alban Bedel <albeu@free.fr>
 
-Not sure if it's right but probably we could reuse on fork an old anon_vma
-from the chain if it's already lost all vmas which points to it.
-For endlessly forking exploit this should work mostly like proposed patch
-which stops branching after some depth but without magic constant.
+The kernel already supports linking in .dtb files. All you need to do is
+add <filename>.dtb.o in the build objects.
 
->
->> > I can't say, but it only affects users who fork more than five
->> > levels deep without doing an exec.  On the other hand, there are at
->> > least three users (Tim Hartrick, Michal Hocko, and myself) who have
->> > real world applications where the consequence of no patch is a
->> > crashed system.
->> >
->> > I would suggest reading the thread starting with my initial bug
->> > report for what others have had to say about this.
->>
->> I suspect what Andrew is hinting at is that the
->> changelog for the patch should contain a detailed
->> description of exactly what the bug is, how it is
->> triggered, what the symptoms are, and how the
->> patch avoids it.
->>
->> That way people can understand what the code does
->> simply by looking at the changelog - no need to go
->> find old linux-kernel mailing list threads.
->
-> Yes please, there's a ton of stuff here which we should attempt to
-> capture.
->
-> https://lkml.org/lkml/2012/8/15/765 is useful.
->
-> I'm assuming that with the "foo < 5" hack, an application which forked
-> 5 times then did a lot of work would still trigger the "catastrophic
-> issue at page reclaim time" issue which Rik identified at
-> https://lkml.org/lkml/2012/8/20/265?
->
-> There are real-world workloads which are triggering this slab growth
-> problem, yes?  (Detail them in the changelog, please).
->
-> This bug snuck under my radar last time - we're permitting unprivileged
-> userspace to exhaust memory and that's bad.  I'm OK with the foo<5
-> thing for -stable kernels, as it is simple.  But I'm reluctant to merge
-> (or at least to retain) it in mainline because then everyone will run
-> away and think about other stuff and this bug will never get fixed
-> properly.
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> ---
+>  drivers/of/Kconfig    | 16 ++++++++++++++++
+>  drivers/of/Makefile   |  8 ++++++++
+>  drivers/of/fdt.c      |  8 ++++++++
+>  drivers/of/fdt_blob.S | 17 +++++++++++++++++
+>  4 files changed, 49 insertions(+)
+>  create mode 100644 drivers/of/fdt_blob.S
+> 
+> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+> index 1a13f5b..97c5d18 100644
+> --- a/drivers/of/Kconfig
+> +++ b/drivers/of/Kconfig
+> @@ -83,4 +83,20 @@ config OF_RESERVED_MEM
+>  config OF_RESOLVE
+>  	bool
+>  
+> +config OF_BUILTIN_FDT
+> +	bool "Include a FDT blob in the kernel"
+> +	help
+> +	  Include a FDT blob in the kernel to use as default when
+> +	  no blob has been passed by the bootloader. This is useful
+> +	  to use devicetree on boards with old bootloaders.
+> +
+> +	  If unsure, say N.
+> +
+> +config OF_BUILTIN_FDT_BLOB
+> +	string "FDT Blob name"
+> +	depends on OF_BUILTIN_FDT
+> +	help
+> +	  Name of the FDT blob to build in the kernel, from one of the
+> +	  dtbs available for the current platform.
+> +
+
+I'm not keen on making this a generic option. ARM and PowerPC already
+have the mechanism for attaching a dtb, and they do not build it into
+the kernel. Each architecture that wants to use this needs to enable it
+separately.
+
+g.
+
+>  endmenu # OF
+> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+> index ca9209c..b96c6e9 100644
+> --- a/drivers/of/Makefile
+> +++ b/drivers/of/Makefile
+> @@ -14,6 +14,14 @@ obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+>  obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+>  obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
+>  obj-$(CONFIG_OF_RESOLVE)  += resolver.o
+> +obj-$(CONFIG_OF_BUILTIN_FDT) += fdt_blob.o
+>  
+>  CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
+>  CFLAGS_fdt_address.o = -I$(src)/../../scripts/dtc/libfdt
+> +
+> +# The FDT blob to include
+> +FDT_BLOB := arch/$(ARCH)/boot/dts/$(CONFIG_OF_BUILTIN_FDT_BLOB:"%"=%).dtb
+> +# Undefine ARCH to avoid breaking the FDT path
+> +AFLAGS_fdt_blob.o += -U$(ARCH) -DFDT_BLOB=$(FDT_BLOB)
+> +# This dependency can't be automatically tracked
+> +$(obj)/fdt_blob.o: $(obj)/../../$(FDT_BLOB)
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index d1ffca8..ffb86a7 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -26,6 +26,9 @@
+>  #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
+>  #include <asm/page.h>
+>  
+> +extern char __fdt_blob_start[];
+> +extern unsigned long __fdt_blob_size;
+> +
+>  /*
+>   * of_fdt_limit_memory - limit the number of regions in the /memory node
+>   * @limit: maximum entries
+> @@ -1064,6 +1067,11 @@ void __init unflatten_and_copy_device_tree(void)
+>  	int size;
+>  	void *dt;
+>  
+> +#ifdef CONFIG_OF_BUILTIN_FDT
+> +	if (!initial_boot_params && __fdt_blob_size > 0)
+> +		initial_boot_params = __fdt_blob_start;
+> +#endif
+> +
+>  	if (!initial_boot_params) {
+>  		pr_warn("No valid device tree found, continuing without\n");
+>  		return;
+> diff --git a/drivers/of/fdt_blob.S b/drivers/of/fdt_blob.S
+> new file mode 100644
+> index 0000000..fcaa2aa
+> --- /dev/null
+> +++ b/drivers/of/fdt_blob.S
+> @@ -0,0 +1,17 @@
+> +#include <linux/stringify.h>
+> +#include <asm-generic/vmlinux.lds.h>
+> +
+> +.align 4
+> +.section .init.fdt_blob,"a"
+> +.globl VMLINUX_SYMBOL(__fdt_blob_start)
+> +VMLINUX_SYMBOL(__fdt_blob_start):
+> +.incbin __stringify(FDT_BLOB)
+> +__fdt_blob_end:
+> +.section .init.fdt_blob.info,"a"
+> +.globl VMLINUX_SYMBOL(__fdt_blob_size)
+> +VMLINUX_SYMBOL(__fdt_blob_size):
+> +#ifdef CONFIG_64BIT
+> +        .quad __fdt_blob_end - __fdt_blob_start
+> +#else
+> +        .long __fdt_blob_end - __fdt_blob_start
+> +#endif
+> -- 
+> 2.0.0
+> 
+
