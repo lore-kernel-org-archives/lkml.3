@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934AbaKRXuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:50:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43592 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932181AbaKRXuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:50:05 -0500
-Message-ID: <546BDB29.9050403@suse.cz>
-Date: Wed, 19 Nov 2014 00:50:01 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Konstantin Khlebnikov <koct9i@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-References: <502D42E5.7090403@redhat.com>	<20120818000312.GA4262@evergreen.ssec.wisc.edu>	<502F100A.1080401@redhat.com>	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>	<20120822032057.GA30871@google.com>	<50345232.4090002@redhat.com>	<20130603195003.GA31275@evergreen.ssec.wisc.edu>	<20141114163053.GA6547@cosmos.ssec.wisc.edu>	<20141117160212.b86d031e1870601240b0131d@linux-foundation.org>	<20141118014135.GA17252@cosmos.ssec.wisc.edu>	<546AB1F5.6030306@redhat.com>	<20141118121936.07b02545a0684b2cc839a10c@linux-foundation.org>	<CALYGNiMxnxmy-LyJ4OT9OoFeKwTPPkZMF-bJ-eJDBFXgZQ6AEA@mail.gmail.com> <CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
-In-Reply-To: <CALYGNiM_CsjjiK_36JGirZT8rTP+ROYcH0CSyZjghtSNDU8ptw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S933069AbaKRXuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:50:20 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:59026 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181AbaKRXuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 18:50:09 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>, Linus Walleij <linus.walleij@linaro.org>
+Cc: Sonny Rao <sonnyrao@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Zhong <zyw@rock-chips.com>, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Pinctrl fixes for rockchip
+Date: Tue, 18 Nov 2014 15:49:54 -0800
+Message-Id: <1416354596-15013-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2014 12:02 AM, Konstantin Khlebnikov wrote:
-> On Wed, Nov 19, 2014 at 1:15 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->> On Tue, Nov 18, 2014 at 11:19 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->>> On Mon, 17 Nov 2014 21:41:57 -0500 Rik van Riel <riel@redhat.com> wrote:
->>>
->>>> > Because of the serial forking there does indeed end up being an
->>>> > infinite number of vmas.  The initial vma can never be deleted
->>>> > (even though the initial parent process has long since terminated)
->>>> > because the initial vma is referenced by the children.
->>>>
->>>> There is a finite number of VMAs, but an infite number of
->>>> anon_vmas.
->>>>
->>>> Subtle, yet deadly...
->>>
->>> Well, we clearly have the data structures screwed up.  I've forgotten
->>> enough about this code for me to be unable to work out what the fixed
->>> up data structures would look like :( But surely there is some proper
->>> solution here.  Help?
->>
->> Not sure if it's right but probably we could reuse on fork an old anon_vma
->> from the chain if it's already lost all vmas which points to it.
->> For endlessly forking exploit this should work mostly like proposed patch
->> which stops branching after some depth but without magic constant.
-> 
-> Something like this. I leave proper comment for tomorrow.
+These two patches fix some pinctrl issues on rockchip.  The first
+fixes a real issue where interrupts were being left on in
+suspend/resume and waking the system up when they shouldn't.  The
+second fixes purely theoretical problems and could be considered more
+of an RFC patch.
 
-Hmm I'm not sure that will work as it is. If I understand it correctly, your
-patch can detect if the parent's anon_vma has no own references at the fork()
-time. But at the fork time, the parent is still alive, it only exits after the
-fork, right? So I guess it still has own references and the child will still
-allocate its new anon_vma, and the problem is not solved.
+I've tested these patches more extensively on a non-mainline tree but
+have done basic compile and boot testing on mainline.  I don't have
+suspend/resume working so well on mainline yet, so I haven't tested
+fully there.
 
-So maybe we could detect that the own references dropped to zero when the parent
-does exit, and then change mapping of all relevant pages to the root anon_vma,
-destroy avc's of children and the anon_vma itself. But that sounds quite
-heavyweight :/
 
-Vlastimil
+Doug Anderson (2):
+  pinctrl: rockchip: Handle wakeup pins
+  pinctrl: rockchip: Fix enable/disable/mask/unmask
 
->>
->>>
+ drivers/pinctrl/pinctrl-rockchip.c | 51 +++++++++++++++++++++++++++++++++++---
+ 1 file changed, 48 insertions(+), 3 deletions(-)
+
+-- 
+2.1.0.rc2.206.gedb03e5
 
