@@ -1,94 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031AbaKRPWC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:22:02 -0500
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:37713 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757009AbaKRPV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:21:58 -0500
-Date: Tue, 18 Nov 2014 09:21:56 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, seth.forshee@canonical.com
-Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of
- init_user_ns
-Message-ID: <20141118152156.GA21726@ubuntu-mba51>
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
- <1414013060-137148-3-git-send-email-seth.forshee@canonical.com>
- <20141111140454.GD333@tucsk>
- <87mw7xd9zt.fsf@x220.int.ebiederm.org>
- <20141112130915.GG333@tucsk>
- <20141112162254.GB31775@ubuntu-hedt>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141112162254.GB31775@ubuntu-hedt>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756927AbaKRPVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:21:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754869AbaKROJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:28 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
+        Oliver Neukum <oneukum@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 033/206] Bluetooth: Enable Atheros 0cf3:311e for firmware upload
+Date: Tue, 18 Nov 2014 15:06:28 +0100
+Message-Id: <912173ce87470ab8b59706520f215f31bd5c43b5.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 10:22:54AM -0600, Seth Forshee wrote:
-> On Wed, Nov 12, 2014 at 02:09:15PM +0100, Miklos Szeredi wrote:
-> > On Tue, Nov 11, 2014 at 09:37:10AM -0600, Eric W. Biederman wrote:
-> > 
-> > > > Maybe I'm being dense, but can someone give a concrete example of such an
-> > > > attack?
-> > > 
-> > > There are two variants of things at play here.
-> > > 
-> > > There is the classic if you don't freeze your context at open time when
-> > > you pass that file descriptor to another process unexpected things can
-> > > happen.  
-> > > 
-> > > An essentially harmless but extremely confusing example is what happens
-> > > to a partial read when it stops halfway through a uid value and the next
-> > > read on the same file descriptor is from a process in a different user
-> > > namespace.  Which uid value should be returned to userspace.
-> > 
-> > Fuse device doesn't currently do partial reads, so that's a non-issue.
-> > 
-> > > Now if I am in a nefarious mood I can create a unprivileged user
-> > > namespace, open /dev/fuse and mount a fuse filesystem.  Pass the file
-> > > descriptor to /dev/fuse to a processes that is in the default user
-> > > namespace (and thus can use any uid/gid).   With that file desctipor
-> > > report that there is a setuid 0 exectuable on that file system.
-> > 
-> > Yes, and this would also be prevented by MNT_NOSUID, which would be a good idea
-> > anyway.  I just don't see the reason we'd want to allow clearing MNT_NOSUID in a
-> > private namespace.
-> > 
-> > So we don't currently see a use case for relaxing either the MNT_NOSUID
-> > restriction or for relaxing the requirement on the user namespace the fuse
-> > server is in.  Is that correct?
-> > 
-> > If so, we should leave both restrictions in place since that allows the greatest
-> > flexibility in the future, is either of those needs to be relaxed.
-> 
-> I'm not aware of specific use cases for either at this point. However,
-> Andy's patch [1] will limit suid to the set of namespaces where the user
-> who mounted the filesystem already has privileges. Enforcing MNT_NOSUID
-> will require enforcement in the vfs, and in that case we definitely need
-> to decide whether the policy is to implicitly add the flag or fail the
-> mount attempt if the flag is not present [2].
+From: Oliver Neukum <oliver@neukum.org>
 
-I asked around a bit, and it turns out there are use cases for nested
-containers (i.e. a container within a container) where the rootfs for
-the outer container mounts a filesystem containing the rootfs for the
-inner container. If that mount is nosuid then suid utilities like ping
-aren't going to work in the inner container.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-So since there's a use case for suid in a userns mount and we have what
-we belive are sufficient protections against using this as a vector to
-get privileges outside the container, I'm planning to move ahead without
-the MNT_NOSUID restriction. Any objections?
+===============
 
-Thanks,
-Seth
+commit b131237ca3995edad9efc162d0bc959c3b1dddc2 upstream.
+
+The device will bind to btusb without firmware, but with the original
+buggy firmware device discovery does not work. No devices are detected.
+
+Device descriptor without firmware:
+T:  Bus=03 Lev=01 Prnt=01 Port=02 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=311e Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+
+with firmware:
+T:  Bus=03 Lev=01 Prnt=01 Port=02 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=311e Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 6b4ba50ed327..ee362348508b 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -78,6 +78,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
+ 	{ USB_DEVICE(0x0CF3, 0x3008) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
++	{ USB_DEVICE(0x0CF3, 0x311E) },
+ 	{ USB_DEVICE(0x0CF3, 0x817a) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+ 	{ USB_DEVICE(0x04CA, 0x3004) },
+@@ -124,6 +125,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x311E), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 6d169f3c98e1..7d9cdb78d76c 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -155,6 +155,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x311e), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
+-- 
+2.1.3
 
