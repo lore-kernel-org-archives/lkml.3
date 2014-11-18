@@ -1,61 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019AbaKRXQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:16:08 -0500
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:19136
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932188AbaKRXQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:16:05 -0500
-From: Tom Huynh <tom.huynh@freescale.com>
-To: <mingo@redhat.com>, <acme@kernel.org>, <namhyung@kernel.org>,
-        <jolsa@kernel.org>
-CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <kim.phillips@freescale.com>,
-        <linux-kernel@vger.kernel.org>, Tom Huynh <tom.huynh@freescale.com>
-Subject: [PATCH] perf hist browser: change print format from lu to llu to fit u64 type
-Date: Tue, 18 Nov 2014 17:00:27 -0600
-Message-ID: <1416351627-360-1-git-send-email-tom.huynh@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(50466002)(21056001)(120916001)(104016003)(68736004)(99396003)(48376002)(19580395003)(44976005)(6806004)(19580405001)(50226001)(106466001)(33646002)(229853001)(62966003)(4396001)(95666004)(36756003)(105606002)(102836001)(77156002)(107046002)(76506005)(20776003)(92726001)(87936001)(97736003)(47776003)(2201001)(57986006)(46102003)(93916002)(84676001)(64706001)(86362001)(31966008)(104166001)(92566001)(88136002)(87286001)(89996001)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0747;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S932951AbaKRXTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:19:10 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:40093 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188AbaKRXTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 18:19:08 -0500
+Message-ID: <546BD3DB.7050207@gmail.com>
+Date: Wed, 19 Nov 2014 07:18:51 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0747;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0747;
-X-Forefront-PRVS: 039975700A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=tom.huynh@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0747;
-X-OriginatorOrg: freescale.com
+To: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
+ hotplug
+References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com> <546377FC.4090408@arm.com>
+In-Reply-To: <546377FC.4090408@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nr_events in tools/perf/ui/browsers/hists.c is of type u64, thus it should
-be printed as %llu instead of %lu. The print format %lu causes perf report
-to show 0 event count when running with 32-bit userspace without 
-redirection. This patch fixes that problem.
+Hi Juri,
+On 11/12/14, 11:08 PM, Juri Lelli wrote:
+> Hi,
+>
+> On 12/11/14 01:06, Wanpeng Li wrote:
+>> I observe that dl task can't be migrated to other cpus during cpu hotplug,
+>> in addition, task may/may not be running again if cpu is added back. The
+>> root cause which I found is that dl task will be throtted and removed from
+>> dl rq after comsuming all budget, which leads to stop task can't pick it up
+>> from dl rq and migrate to other cpus during hotplug.
+>>
+>> The method to reproduce:
+>> schedtool -E -t 50000:100000 -e ./test
+>> Actually test is just a simple for loop. Then observe which cpu the test
+>> task is on.
+>> echo 0 > /sys/devices/system/cpu/cpuN/online
+>>
+>> This patch adds the dl task migration during cpu hotplug by finding a most
+>> suitable later deadline rq after dl timer fire if current rq is offline,
+>> if fail to find a suitable later deadline rq then fallback to any eligible
+>> online cpu in order that the deadline task will come back to us, and the
+>> push/pull mechanism should then move it around properly.
+>>
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>> v4 -> v5:
+>>   * remove raw_spin_unlock(&rq->lock)
+>>   * cleanup codes, spotted by Peterz
+>>   * cleanup patch description
+>> v3 -> v4:
+>>   * use tsk_cpus_allowed wrapper
+>>   * fix compile error
+>> v2 -> v3:
+>>   * don't get_task_struct
+>>   * if cannot preempt any rq, fallback to pick any online cpus
+>>   * use cpu_active_mask as original later_mask if cpu is offline
+>> v1 -> v2:
+>>   * push the task to another cpu in dl_task_timer() if rq is offline.
+>>
+>>   kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
+>>   1 file changed, 41 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>> index f3d7776..7c31906 100644
+>> --- a/kernel/sched/deadline.c
+>> +++ b/kernel/sched/deadline.c
+>> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+>>   	return hrtimer_active(&dl_se->dl_timer);
+>>   }
+>>   
+>> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+>>   /*
+>>    * This is the bandwidth enforcement timer callback. If here, we know
+>>    * a task is not on its dl_rq, since the fact that the timer was running
+>> @@ -538,6 +539,43 @@ again:
+>>   	update_rq_clock(rq);
+>>   	dl_se->dl_throttled = 0;
+>>   	dl_se->dl_yielded = 0;
+>> +
+>> +	/*
+>> +	 * So if we find that the rq the task was on is no longer
+>> +	 * available, we need to select a new rq.
+>> +	 */
+>> +	if (unlikely(!rq->online)) {
+>> +		struct rq *later_rq = NULL;
+>> +
+>> +		later_rq = find_lock_later_rq(p, rq);
+>> +
+>> +		if (!later_rq) {
+>> +			int cpu;
+>> +
+>> +			/*
+>> +			 * If cannot preempt any rq, fallback to pick any
+>> +			 * online cpu.
+>> +			 */
+>> +			cpu = cpumask_any_and(cpu_active_mask,
+>> +					tsk_cpus_allowed(p));
+>> +			if (cpu >= nr_cpu_ids) {
+>> +				pr_warn("fail to find any online cpu and task will never come back\n");
+>> +				goto unlock;
+>> +			}
+>> +			later_rq = cpu_rq(cpu);
+>> +		}
+>> +
+>> +		deactivate_task(rq, p, 0);
+>> +		set_task_cpu(p, later_rq->cpu);
+>> +		activate_task(later_rq, p, 0);
+>> +
+>> +		resched_curr(later_rq);
+>> +
+>> +		double_unlock_balance(rq, later_rq);
+>> +
+>> +		goto unlock;
+>> +	}
+>> +
+>>   	if (task_on_rq_queued(p)) {
+>>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>>   		if (dl_task(rq->curr))
+>> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
+>>   	 * We have to consider system topology and task affinity
+>>   	 * first, then we can look for a suitable cpu.
+>>   	 */
+>> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+>> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+>> +	cpumask_copy(later_mask, cpu_active_mask);
+>> +	if (likely(task_rq(task)->online))
+>> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
+> So, here you consider the span only when the task_rq is online,
+> but there might be others cpus still online belonging to the same
+> rd->span. And you have to consider them when migrating. Actually,
+> migration must still be restricted to the online cpus of task's
+> original rd->span, or I fear you can break clustered scheduling.
 
-Signed-off-by: Tom Huynh <tom.huynh@freescale.com>
----
- tools/perf/ui/browsers/hists.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Sorry, what's clustered scheduling?
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index cfb976b..49b2471 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1254,7 +1254,7 @@ static int hists__browser_title(struct hists *hists,
- 
- 	nr_samples = convert_unit(nr_samples, &unit);
- 	printed = scnprintf(bf, size,
--			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
-+			   "Samples: %lu%c of event '%s', Event count (approx.): %llu",
- 			   nr_samples, unit, ev_name, nr_events);
- 
- 
--- 
-1.9.1
+Regards,
+Wanpeng Li
+
+>
+> Thanks,
+>
+> - Juri
+>
+>>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>>   			task, later_mask);
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
