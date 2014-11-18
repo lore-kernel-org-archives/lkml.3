@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928AbaKRVb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:31:27 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:57341 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932494AbaKRVbY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:31:24 -0500
-Message-ID: <546BBAAA.4050909@codeaurora.org>
-Date: Tue, 18 Nov 2014 13:31:22 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932946AbaKRVba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:31:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932494AbaKRVb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 16:31:28 -0500
+Date: Tue, 18 Nov 2014 16:31:13 -0500
+From: Dave Jones <davej@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141118213113.GA31432@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Don Zickus <dzickus@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>
+References: <20141117170359.GA1382@redhat.com>
+ <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+ <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <CA+55aFxttmjXJX4wtwSpTOdDCMwpSopAsL3MJ1n8mJSJOEpyhQ@mail.gmail.com>
+ <alpine.DEB.2.11.1411182023360.3909@nanos>
+ <20141118212553.GX108701@redhat.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH] ARM: vfp: Silence mvfr0 unused variable warning
-References: <1416344191-20484-1-git-send-email-sboyd@codeaurora.org> <20141119081438.3df66238@canb.auug.org.au>
-In-Reply-To: <20141119081438.3df66238@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141118212553.GX108701@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 01:14 PM, Stephen Rothwell wrote:
-> One small nit below:
->> +		if (IS_ENABLED(CONFIG_VFPv3)) {
->> +			mvfr0 = fmrx(MVFR0);
-> Now that you have a block here, you could move the declaration of mvfr0
-> into this block, right?
->
+On Tue, Nov 18, 2014 at 04:25:53PM -0500, Don Zickus wrote:
+ 
+ > I was going to reply about both points too. :-)  Though the mangling looks
+ > odd because we have spin_locks serializing the output for each cpu.
+ > 
+ > Another thing I wanted to ask DaveJ, did you recently turn on
+ > CONFIG_PREEMPT?  That would explain why you are seeing the softlockups
+ > now.  If you disable CONFIG_PREEMPT does the softlockups disappear.
 
-Sure I can squash in that change.
+I've had it on on my test box forever.  I'll add trying turning to off
+to the list of things to try.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+	Dave
