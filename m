@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaKRCjl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 21:39:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40829 "EHLO mx1.redhat.com"
+	id S1753310AbaKRClm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 21:41:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46093 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483AbaKRCjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 21:39:39 -0500
-Date: Mon, 17 Nov 2014 21:39:30 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141118023930.GA2871@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>
-References: <20141114213124.GB3344@redhat.com>
- <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
- <20141115213405.GA31971@redhat.com>
- <20141116014006.GA5016@redhat.com>
- <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
- <20141117170359.GA1382@redhat.com>
- <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
- <20141118020959.GA2091@redhat.com>
- <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+	id S1751213AbaKRCll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 21:41:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,407,1413270000"; 
+   d="scan'208";a="609498556"
+Date: Tue, 18 Nov 2014 10:21:13 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH] sched/rt: fix rt runtime corrupt when dl refuse a
+ smaller bandwidth
+Message-ID: <20141118022113.GA10673@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1415868459-7043-1-git-send-email-wanpeng.li@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415868459-7043-1-git-send-email-wanpeng.li@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 06:21:08PM -0800, Linus Torvalds wrote:
- > On Mon, Nov 17, 2014 at 6:09 PM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > After wasting countless hours rolling back to Fedora 20 and gcc 4.8.1,
- > > I saw the exact same trace on 3.17, so now I don't know what to think.
- > 
- > Uhhuh.
- > 
- > Has anything else changed? New trinity tests? If it has happened in as
- > little as ten minutes, and you don't recall having seen this until
- > about a week ago, it does sound like something changed.
-
-Looking at the trinity commits over the last month or so, there's a few
-new things, but nothing that sounds like it would trip up a bug like
-this. "generate random ascii strings" and "mess with fcntl's after
-opening fd's on startup" being the stand-outs. Everything else is pretty
-much cleanups and code-motion. There was a lot of work on the code
-that tracks mmaps about a month ago, but that shouldn't have had any
-visible runtime differences.
-
-<runs git diff>
-
-hm, something I changed not that long ago, which I didn't commit yet,
-was that it now runs more child processes than it used to (was 64, now 256)
-I've been running like that for a while though. I want to say that was
-before .17, but I'm not 100% sure.
-
-So it could be that I'm just generating a lot more load now.
-I could drop that back down and see if it 'goes away' or at least
-happens less, but it strikes me that there's something here that needs
-fixing regardless.
-
-	Dave
-
+Ping Juri, ;-)
+On Thu, Nov 13, 2014 at 04:47:39PM +0800, Wanpeng Li wrote:
+>Dl class will refuse the bandwidth being set to some value smaller 
+>than the currently allocated bandwidth in any of the root_domains 
+>through sched_rt_runtime_us and sched_rt_period_us. RT runtime will 
+>be set according to sched_rt_runtime_us before dl class verify if 
+>the new bandwidth is suitable in the case of !CONFIG_RT_GROUP_SCHED.
+>
+>However, rt runtime will be corrupt if dl refuse the new bandwidth 
+>since there is no undo to reset the rt runtime to the old value. 
+>
+>This patch fix it by setting rt runtime after all kinds of rational 
+>checking in the case of !CONFIG_RT_GROUP_SCHED.
+>
+>Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>---
+> kernel/sched/core.c | 30 ++++++++++++++++--------------
+> 1 file changed, 16 insertions(+), 14 deletions(-)
+>
+>diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>index 2e7578a..355dde3 100644
+>--- a/kernel/sched/core.c
+>+++ b/kernel/sched/core.c
+>@@ -7795,20 +7795,7 @@ static int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
+> #else /* !CONFIG_RT_GROUP_SCHED */
+> static int sched_rt_global_constraints(void)
+> {
+>-	unsigned long flags;
+>-	int i, ret = 0;
+>-
+>-	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+>-	for_each_possible_cpu(i) {
+>-		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+>-
+>-		raw_spin_lock(&rt_rq->rt_runtime_lock);
+>-		rt_rq->rt_runtime = global_rt_runtime();
+>-		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+>-	}
+>-	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+>-
+>-	return ret;
+>+	return 0;
+> }
+> #endif /* CONFIG_RT_GROUP_SCHED */
+> 
+>@@ -7890,6 +7877,21 @@ static int sched_rt_global_validate(void)
+> 
+> static void sched_rt_do_global(void)
+> {
+>+#ifndef CONFIG_RT_GROUP_SCHED
+>+	unsigned long flags;
+>+	int i;
+>+
+>+	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+>+	for_each_possible_cpu(i) {
+>+		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+>+
+>+		raw_spin_lock(&rt_rq->rt_runtime_lock);
+>+		rt_rq->rt_runtime = global_rt_runtime();
+>+		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+>+	}
+>+	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+>+#endif
+>+
+> 	def_rt_bandwidth.rt_runtime = global_rt_runtime();
+> 	def_rt_bandwidth.rt_period = ns_to_ktime(global_rt_period());
+> }
+>-- 
+>1.9.1
