@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaKRQZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:25:35 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42861 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898AbaKRQZe (ORCPT
+	id S932128AbaKRQZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:25:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32950 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098AbaKRQZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:25:34 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Petko Manolov <petkan@nucleusys.com>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] usbnet: rtl8150: remove unused variable
-Date: Tue, 18 Nov 2014 21:55:21 +0530
-Message-Id: <1416327921-2233-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 18 Nov 2014 11:25:45 -0500
+Date: Tue, 18 Nov 2014 08:25:44 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+Cc: linux-kernel@vger.kernel.org, San Mehat <san@google.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RFC] serial_core: Add wake_peer uart operation
+Message-ID: <20141118162544.GB1108@kroah.com>
+References: <1416293401-7714-1-git-send-email-kiran.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416293401-7714-1-git-send-email-kiran.kumar@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove unused variable
+On Tue, Nov 18, 2014 at 12:20:01PM +0530, Kiran Kumar Raparthy wrote:
+> From: San Mehat <san@google.com>
+> 
+> serial_core: Add wake_peer uart operation
+> 
+> Add wake_peer which is called before starting UART TX. The idea here
+> is to provide a mechanism where we can wakeup our peer before sending
+> data.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: linux-serial@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+> Signed-off-by: San Mehat <san@google.com>
+> [Kiran: Added context to commit message]
+> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+> ---
+> This is one of the number of patches from the Android AOSP common.git tree,
+> which is used on almost all Android devices.  I wanted to submit it for review
+> to see if it should go upstream.
+> 
+>  drivers/tty/serial/serial_core.c | 3 +++
+>  include/linux/serial_core.h      | 1 +
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index df3a8c7..dc45c4b 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -95,6 +95,9 @@ static void __uart_start(struct tty_struct *tty)
+>  	struct uart_state *state = tty->driver_data;
+>  	struct uart_port *port = state->uart_port;
+>  
+> +	if (port->ops->wake_peer)
+> +		port->ops->wake_peer(port);
+> +
+>  	if (!uart_tx_stopped(port))
+>  		port->ops->start_tx(port);
+>  }
+> diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+> index 21c2e05..219b6a3 100644
+> --- a/include/linux/serial_core.h
+> +++ b/include/linux/serial_core.h
+> @@ -66,6 +66,7 @@ struct uart_ops {
+>  	void		(*set_ldisc)(struct uart_port *, int new);
+>  	void		(*pm)(struct uart_port *, unsigned int state,
+>  			      unsigned int oldstate);
+> +	void		(*wake_peer)(struct uart_port *);
+>  
+>  	/*
+>  	 * Return a string describing the type of the port
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Do you have a driver that uses this callback to submit?  I really don't
+like taking hooks that are not used in the tree, otherwise it usually
+gets removed by someone who says, "look this hook isn't being used,
+let's delete it!"
 
-change in v2: changed the commit message
+thanks,
 
- drivers/net/usb/rtl8150.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/net/usb/rtl8150.c b/drivers/net/usb/rtl8150.c
-index 6e87e57..d37b7dc 100644
---- a/drivers/net/usb/rtl8150.c
-+++ b/drivers/net/usb/rtl8150.c
-@@ -753,14 +753,13 @@ static int rtl8150_open(struct net_device *netdev)
- static int rtl8150_close(struct net_device *netdev)
- {
- 	rtl8150_t *dev = netdev_priv(netdev);
--	int res = 0;
- 
- 	netif_stop_queue(netdev);
- 	if (!test_bit(RTL8150_UNPLUG, &dev->flags))
- 		disable_net_traffic(dev);
- 	unlink_all_urbs(dev);
- 
--	return res;
-+	return 0;
- }
- 
- static void rtl8150_get_drvinfo(struct net_device *netdev, struct ethtool_drvinfo *info)
--- 
-1.8.1.2
-
+greg k-h
