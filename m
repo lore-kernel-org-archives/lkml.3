@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693AbaKRORN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:17:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
+	id S1755674AbaKRORL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:17:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57041 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932249AbaKROK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932251AbaKROK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:26 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 191/206] usb: dwc3: gadget: fix set_halt() bug with pending transfers
-Date: Tue, 18 Nov 2014 15:09:06 +0100
-Message-Id: <4220f3ffc14964c3395c031334d088f6fd545009.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 197/206] acer-wmi: Add acpi_backlight=video quirk for the Acer KAV80
+Date: Tue, 18 Nov 2014 15:09:12 +0100
+Message-Id: <ff631b1c39bf6ff7307eb43e40bcd8ee03e2450c.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,123 +22,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 7a60855972f0d3c014093046cb6f013a1ee5bb19 ]
+commit 183fd8fcd7f8afb7ac5ec68f83194872f9fecc84 upstream.
 
-According to our Gadget Framework API documentation,
-->set_halt() *must* return -EAGAIN if we have pending
-transfers (on either direction) or FIFO isn't empty (on
-TX endpoints).
+The acpi-video backlight interface on the Acer KAV80 is broken, and worse
+it causes the entire machine to slow down significantly after a suspend/resume.
 
-Fix this bug so that the mass storage gadget can be used
-without stall=0 parameter.
+Blacklist it, and use the acer-wmi backlight interface instead. Note that
+the KAV80 is somewhat unique in that it is the only Acer model where we
+fall back to acer-wmi after blacklisting, rather then using the native
+(e.g. intel) backlight driver. This is done because there is no native
+backlight interface on this model.
 
-This patch should be backported to all kernels since v3.2.
-
-Suggested-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1128309
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/dwc3/ep0.c    |  4 ++--
- drivers/usb/dwc3/gadget.c | 16 ++++++++++++----
- drivers/usb/dwc3/gadget.h |  2 +-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+ drivers/platform/x86/acer-wmi.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/usb/dwc3/ep0.c b/drivers/usb/dwc3/ep0.c
-index 056da977ebdf..4a1922cafc8e 100644
---- a/drivers/usb/dwc3/ep0.c
-+++ b/drivers/usb/dwc3/ep0.c
-@@ -251,7 +251,7 @@ static void dwc3_ep0_stall_and_restart(struct dwc3 *dwc)
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index c9076bdaf2c1..59a8d325a697 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -572,6 +572,17 @@ static const struct dmi_system_id video_vendor_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5750"),
+ 		},
+ 	},
++	{
++		/*
++		 * Note no video_set_backlight_video_vendor, we must use the
++		 * acer interface, as there is no native backlight interface.
++		 */
++		.ident = "Acer KAV80",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "KAV80"),
++		},
++	},
+ 	{}
+ };
  
- 	/* stall is always issued on EP0 */
- 	dep = dwc->eps[0];
--	__dwc3_gadget_ep_set_halt(dep, 1);
-+	__dwc3_gadget_ep_set_halt(dep, 1, false);
- 	dep->flags = DWC3_EP_ENABLED;
- 	dwc->delayed_status = false;
- 
-@@ -461,7 +461,7 @@ static int dwc3_ep0_handle_feature(struct dwc3 *dwc,
- 				return -EINVAL;
- 			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
- 				break;
--			ret = __dwc3_gadget_ep_set_halt(dep, set);
-+			ret = __dwc3_gadget_ep_set_halt(dep, set, true);
- 			if (ret)
- 				return -EINVAL;
- 			break;
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 2cdf69962e31..be149b82564f 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -587,7 +587,7 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
- 
- 	/* make sure HW endpoint isn't stalled */
- 	if (dep->flags & DWC3_EP_STALL)
--		__dwc3_gadget_ep_set_halt(dep, 0);
-+		__dwc3_gadget_ep_set_halt(dep, 0, false);
- 
- 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
- 	reg &= ~DWC3_DALEPENA_EP(dep->number);
-@@ -1185,7 +1185,7 @@ out0:
- 	return ret;
- }
- 
--int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
-+int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol)
- {
- 	struct dwc3_gadget_ep_cmd_params	params;
- 	struct dwc3				*dwc = dep->dwc;
-@@ -1194,6 +1194,14 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
- 	memset(&params, 0x00, sizeof(params));
- 
- 	if (value) {
-+		if (!protocol && ((dep->direction && dep->flags & DWC3_EP_BUSY) ||
-+				(!list_empty(&dep->req_queued) ||
-+				 !list_empty(&dep->request_list)))) {
-+			dev_dbg(dwc->dev, "%s: pending request, cannot halt\n",
-+					dep->name);
-+			return -EAGAIN;
-+		}
-+
- 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
- 			DWC3_DEPCMD_SETSTALL, &params);
- 		if (ret)
-@@ -1233,7 +1241,7 @@ static int dwc3_gadget_ep_set_halt(struct usb_ep *ep, int value)
- 		goto out;
- 	}
- 
--	ret = __dwc3_gadget_ep_set_halt(dep, value);
-+	ret = __dwc3_gadget_ep_set_halt(dep, value, false);
- out:
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-@@ -1253,7 +1261,7 @@ static int dwc3_gadget_ep_set_wedge(struct usb_ep *ep)
- 	if (dep->number == 0 || dep->number == 1)
- 		return dwc3_gadget_ep0_set_halt(ep, 1);
- 	else
--		return dwc3_gadget_ep_set_halt(ep, 1);
-+		return __dwc3_gadget_ep_set_halt(dep, 1, false);
- }
- 
- /* -------------------------------------------------------------------------- */
-diff --git a/drivers/usb/dwc3/gadget.h b/drivers/usb/dwc3/gadget.h
-index a0ee75b68a80..ac62558231be 100644
---- a/drivers/usb/dwc3/gadget.h
-+++ b/drivers/usb/dwc3/gadget.h
-@@ -85,7 +85,7 @@ void dwc3_ep0_out_start(struct dwc3 *dwc);
- int dwc3_gadget_ep0_set_halt(struct usb_ep *ep, int value);
- int dwc3_gadget_ep0_queue(struct usb_ep *ep, struct usb_request *request,
- 		gfp_t gfp_flags);
--int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value);
-+int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol);
- 
- /**
-  * dwc3_gadget_ep_get_transfer_index - Gets transfer index from HW
 -- 
 2.1.3
 
