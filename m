@@ -1,124 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099AbaKRId2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:33:28 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:33057 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaKRIdX (ORCPT
+	id S1753954AbaKRIeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:34:15 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43759 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaKRIeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:33:23 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-4a-546b043e2c3b
-Message-id: <546B043E.5040000@samsung.com>
-Date: Tue, 18 Nov 2014 17:33:02 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: broonie@kernel.org, mturquette@linaro.org, a.zummo@towertech.it,
-        lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
-        geunsik.lim@samsung.com, inki.dae@samsung.com,
-        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/5] mfd: sec-core: Add support for S2MPS13 device
-References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
- <1416184980-532-2-git-send-email-cw00.choi@samsung.com>
- <20141118082207.GU24004@x1>
-In-reply-to: <20141118082207.GU24004@x1>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsWyRsSkUNeOJTvE4P0Ka4slF6+yW0x9+ITN
-	Yv6Rc6wWfya0sllMuj+BxeJs0xt2i/tfjzJafLvSwWRxedccNounEy6yWZzuZrW4uOILkwOP
-	x85Zd9k9Nq3qZPO4c20Pm8e8k4EefVtWMXpMn/eTyePzJrkA9igum5TUnMyy1CJ9uwSujCk3
-	XzEWnOSpmP+gh7GB8RlnFyMnh4SAicS0W89ZIWwxiQv31rN1MXJxCAksZZSYtuAnG0zRnK0L
-	mSASixglrly7zQzhvGaU+DHtK1gVr4CWROvbc4xdjBwcLAKqEnv7dUHCbEDh/S9ugJWICoRJ
-	rJx+hQWiXFDix+R7LCDlIgIqEufemIOMZBboY5L43fOAHaRGWMBNYu6Li1C7ZjNKPHz7GuxU
-	TgENiTftB5lAbGYBdYlJ8xYxQ9jyEpvXvAVrkBBo5JDY1HmXESTBIiAg8W3yIbBtEgKyEpsO
-	MEN8JilxcMUNlgmMYrOQ3DQLydhZSMYuYGRexSiaWpBcUJyUXmSqV5yYW1yal66XnJ+7iREY
-	u6f/PZu4g/H+AetDjAIcjEo8vAlTs0KEWBPLiitzDzGaAl0xkVlKNDkfmCDySuINjc2MLExN
-	TI2NzC3NlMR5daR/BgsJpCeWpGanphakFsUXleakFh9iZOLglGpg7P+2492O+tsF/hZmh/gs
-	DTtZk8rXvbD/ErRsipvpJZGMuVfVjJ4F/gheHx27ou23jcyWwNLMwlff+9oWNGZGdsry/HOf
-	JfY+fbYn4wp9fgmJ9TUbe0L/PNpzeIdXrcYJv08FD5pqL29ty64+OE/9/JFXFtPjD3/eHvPo
-	o2656zmhR/y1ZudklFiKMxINtZiLihMBo+wmvtgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgK4dS3aIwd43JhZLLl5lt5j68Amb
-	xfwj51gt/kxoZbOYdH8Ci8XZpjfsFve/HmW0+Halg8ni8q45bBZPJ1xkszjdzWpxccUXJgce
-	j52z7rJ7bFrVyeZx59oeNo95JwM9+rasYvSYPu8nk8fnTXIB7FENjDYZqYkpqUUKqXnJ+SmZ
-	eem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QIcqKZQl5pQChQISi4uV9O0wTQgN
-	cdO1gGmM0PUNCYLrMTJAAwlrGDOm3HzFWHCSp2L+gx7GBsZnnF2MnBwSAiYSc7YuZIKwxSQu
-	3FvP1sXIxSEksIhR4sq128wQzmtGiR/TvrKBVPEKaEm0vj3H2MXIwcEioCqxt18XJMwGFN7/
-	4gZYiahAmMTK6VdYIMoFJX5MvscCUi4ioCJx7o05yEhmgT4mid89D9hBaoQF3CTmvrgItWs2
-	o8TDt69ZQRKcAhoSb9oPgl3HLKAuMWneImYIW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqm
-	FiQXFCel5xrqFSfmFpfmpesl5+duYgQnhmdSOxhXNlgcYhTgYFTi4U2YmhUixJpYVlyZe4hR
-	goNZSYT3XDdQiDclsbIqtSg/vqg0J7X4EKMpMAQmMkuJJucDk1ZeSbyhsYmZkaWRuaGFkbG5
-	kjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQZG2wa/c+YLWy/1HGQ9+eTUfo2sT9Z9i8/HTdk4
-	K2GFXr3ka87HrL0VNz8uUD7LvaD+bbJy0yM2rc0x88TyjZ8kzpv/6/sZi2MN9fEn98yavHZK
-	uMmzV6xZX06t/fwv/VabV6ELA5+nb4zDh975SQGcx0qCD7IGrv938scHF1/VRbGbGi3tO/UL
-	lViKMxINtZiLihMB7QHMtCIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 18 Nov 2014 03:34:13 -0500
+Date: Tue, 18 Nov 2014 09:34:11 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Kevin Hilman <khilman@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is selected
+ (was: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd
+ enabled)
+Message-ID: <20141118083411.GB4059@amd>
+References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
+ <6465990.KKns6W8hQE@vostro.rjw.lan>
+ <7hioid3cqx.fsf@deeprootsystems.com>
+ <1452958.d0yJE5gVgq@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1452958.d0yJE5gVgq@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Lee,
-
-On 11/18/2014 05:22 PM, Lee Jones wrote:
-> On Mon, 17 Nov 2014, Chanwoo Choi wrote:
+On Tue 2014-11-18 01:39:06, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
->> This patch adds the support for Samsung S2MPS13 PMIC device to the sec-core MFD
->> driver. The S2MPS13 is very similar with existing S2MPS14 and includes PMIC/
->> RTC/CLOCK devices.
->>
->> Cc: Lee Jones <lee.jones@linaro.org>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> ---
->>  drivers/mfd/sec-core.c           | 18 ++++++++++++++++++
->>  drivers/mfd/sec-irq.c            | 23 +++++++++++++++++------
->>  include/linux/mfd/samsung/core.h |  1 +
->>  3 files changed, 36 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
->> index 5993608..48c0d4a 100644
->> --- a/drivers/mfd/sec-core.c
->> +++ b/drivers/mfd/sec-core.c
->> @@ -73,6 +73,17 @@ static const struct mfd_cell s2mps11_devs[] = {
->>  	}
->>  };
->>  
->> +static const struct mfd_cell s2mps13_devs[] = {
->> +	{
->> +		.name = "s2mps13-pmic",
->> +	}, {
->> +		.name = "s2mps13-rtc",
->> +	}, {
->> +		.name = "s2mps13-clk",
->> +		.of_compatible = "samsung,s2mps13-clk",
->> +	}
->> +};
+> The number of and dependencies between high-level power management
+> Kconfig options make life much harder than necessary.  Several
+> conbinations of them have to be tested and supported, even though
+> some of those combinations are very rarely used in practice (it
+> they are used in practice at all).  Moreover, the fact that we
+> have separate independent Kconfig options for runtime PM and
+> system suspend is a serious obscacle for integration between
+> the two frameworks.
 > 
-> If you have to resubmit this for any reason, I'd like the one liners
-> on one single line (curly braces and all).
+> To overcome these difficulties, always select PM_RUNTIME if PM_SLEEP
+> is set.  Among other things, this will allow system suspend callbacks
+> provided by bus types and device drivers to rely on the runtime PM
+> framework regardless of the kernel configuration.
 
-OK, I'll modify it as following:
+3.18-rc5 still has:
 
-static const struct mfd_cell s2mps13_devs[] = {
-	{ .name = "s2mps13-pmic", },
-	{ .name = "s2mps13-rtc", },
-	{
-		.name = "s2mps13-clk",
-		.of_compatible = "samsung,s2mps13-clk",
-	},
-};
+config PM_RUNTIME
+        bool "Run-time PM core functionality"
+        depends on !IA64_HP_SIM
+        ---help---
 
-Best Regards,
-Chanwoo Choi
+So I assume this patch is against tree where PM_RUNTIME does not
+depend on anything?
 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
 > 
-> But for now, for my reference:
+> As a follow up.
 > 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Note that we won't need the patch making genpd select PM_RUNTIME with this,
+> because genpd already depends on PM.
 
+Looking through the config file, there are more config options that
+should be stripped.
 
+config SUSPEND_FREEZER
+        bool "Enable freezer for suspend to RAM/standby" \
+"Turning OFF this setting is NOT recommended! If in doubt, say Y."
 
+config HIBERNATE_CALLBACKS
+       bool
 
+...can we just use CONFIG_HIBERNATE, instead?
+
+> ===================================================================
+> --- linux-pm.orig/kernel/power/Kconfig
+> +++ linux-pm/kernel/power/Kconfig
+> @@ -94,6 +94,7 @@ config PM_STD_PARTITION
+>  config PM_SLEEP
+>  	def_bool y
+>  	depends on SUSPEND || HIBERNATE_CALLBACKS
+> +	select PM_RUNTIME
+>  
+>  config PM_SLEEP_SMP
+>  	def_bool y
+
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
