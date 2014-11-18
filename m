@@ -1,158 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028AbaKRQBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:01:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60275 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327AbaKRQBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:01:19 -0500
-Date: Tue, 18 Nov 2014 16:01:12 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [RFC PATCH 0/7] Replace _PAGE_NUMA with PAGE_NONE protections
-Message-ID: <20141118160112.GC2725@suse.de>
-References: <1415971986-16143-1-git-send-email-mgorman@suse.de>
- <877fyugrmc.fsf@linux.vnet.ibm.com>
+	id S1755129AbaKRQCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:02:04 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:43479 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183AbaKRQCC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 11:02:02 -0500
+Message-ID: <546B6D14.3090807@vanguardiasur.com.ar>
+Date: Tue, 18 Nov 2014 13:00:20 -0300
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Organization: VanguardiaSur
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <877fyugrmc.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: treding@nvidia.com, swarren@nvidia.com, pdeschrijver@nvidia.com
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] misc: Remove unused fuse/Makefile
+References: <1414516354-29932-1-git-send-email-ezequiel@vanguardiasur.com.ar>
+In-Reply-To: <1414516354-29932-1-git-send-email-ezequiel@vanguardiasur.com.ar>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 01:56:19PM +0530, Aneesh Kumar K.V wrote:
-> Mel Gorman <mgorman@suse.de> writes:
-> 
-> > This is follow up from the "pipe/page fault oddness" thread.
-> >
-> > Automatic NUMA balancing depends on being able to protect PTEs to trap a
-> > fault and gather reference locality information. Very broadly speaking it
-> > would mark PTEs as not present and use another bit to distinguish between
-> > NUMA hinting faults and other types of faults. It was universally loved
-> > by everybody and caused no problems whatsoever. That last sentence might
-> > be a lie.
-> >
-> > This series is very heavily based on patches from Linus and Aneesh to
-> > replace the existing PTE/PMD NUMA helper functions with normal change
-> > protections. I did alter and add parts of it but I consider them relatively
-> > minor contributions. Note that the signed-offs here need addressing. I
-> > couldn't use "From" or Signed-off-by from the original authors as the
-> > patches had to be broken up and they were never signed off. I expect the
-> > two people involved will just stick their signed-off-by on it.
-> 
-> 
-> How about the additional change listed below for ppc64 ? One part of the
-> patch is to make sure that we don't hit the WARN_ON in set_pte and set_pmd
-> because we find the _PAGE_PRESENT bit set in case of numa fault. I
-> ended up relaxing the check there.
-> 
+(increasing CC list)
 
-I folded the set_pte_at and set_pmd_at changes into the patch "mm: Convert
-p[te|md]_numa users to p[te|md]_protnone_numa" with one change -- both
-set_pte_at and set_pmd_at checks are under CONFIG_DEBUG_VM for consistency.
-
-> Second part of the change is to add a WARN_ON to make sure we are
-> not depending on DSISR_PROTFAULT for anything else. We ideally should not
-> get a DSISR_PROTFAULT for PROT_NONE or NUMA fault. hash_page_mm do check
-> whether the access is allowed by pte before inserting a pte into hash
-> page table. Hence we will never find a PROT_NONE or PROT_NONE_NUMA ptes
-> in hash page table. But it is good to run with VM_WARN_ON ?
+On 10/28/2014 02:12 PM, Ezequiel Garcia wrote:
+> This commit:
+> 
+> commit 783c8f4c84451bc444e314a71b447239c6ef6fd9
+> Author: Peter De Schrijver <pdeschrijver@nvidia.com>
+> Date:   Thu Jun 12 18:36:37 2014 +0300
+> 
+>     soc/tegra: Add efuse driver for Tegra
+> 
+> introduced a fuse driver in drivers/soc. While at it, an unused file
+> drivers/misc/fuse/Makefile sneaked in, apparently as a left over from
+> a previous series. Remove it.
+> 
+> Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+> ---
+>  drivers/misc/fuse/Makefile | 1 -
+>  1 file changed, 1 deletion(-)
+>  delete mode 100644 drivers/misc/fuse/Makefile
+> 
+> diff --git a/drivers/misc/fuse/Makefile b/drivers/misc/fuse/Makefile
+> deleted file mode 100644
+> index 0679c4f..0000000
+> --- a/drivers/misc/fuse/Makefile
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
 > 
 
-Due to the nature of the check and when they are hit, I converted it to
-a WARN_ON_ONCE. Due to the exceptional circumstance the overhead should
-be non-existant and shouldn't need to be hidden below VM_WARN_ON. I also
-noted that with the patch the kernel  potentially no longer recovers
-from this exceptional cirsumstance and instead falls through. To avoid
-this, I preserved the "goto out_unlock".
-
-Is this still ok?
-
----8<---
-ppc64: Add paranoid warnings for unexpected DSISR_PROTFAULT
-
-ppc64 should not be depending on DSISR_PROTFAULT and it's unexpected
-if they are triggered. This patch adds warnings just in case they
-are being accidentally depended upon.
-
-Requires-signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/powerpc/mm/copro_fault.c |  7 ++++++-
- arch/powerpc/mm/fault.c       | 20 +++++++++-----------
- 2 files changed, 15 insertions(+), 12 deletions(-)
-
-diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-index 5a236f0..46152aa 100644
---- a/arch/powerpc/mm/copro_fault.c
-+++ b/arch/powerpc/mm/copro_fault.c
-@@ -64,7 +64,12 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
- 		if (!(vma->vm_flags & VM_WRITE))
- 			goto out_unlock;
- 	} else {
--		if (dsisr & DSISR_PROTFAULT)
-+		/*
-+		 * protfault should only happen due to us
-+		 * mapping a region readonly temporarily. PROT_NONE
-+		 * is also covered by the VMA check above.
-+		 */
-+		if (WARN_ON_ONCE(dsisr & DSISR_PROTFAULT))
- 			goto out_unlock;
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
- 			goto out_unlock;
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index 5007497..9d6e0b3 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -396,17 +396,6 @@ good_area:
- #endif /* CONFIG_8xx */
- 
- 	if (is_exec) {
--#ifdef CONFIG_PPC_STD_MMU
--		/* Protection fault on exec go straight to failure on
--		 * Hash based MMUs as they either don't support per-page
--		 * execute permission, or if they do, it's handled already
--		 * at the hash level. This test would probably have to
--		 * be removed if we change the way this works to make hash
--		 * processors use the same I/D cache coherency mechanism
--		 * as embedded.
--		 */
--#endif /* CONFIG_PPC_STD_MMU */
--
- 		/*
- 		 * Allow execution from readable areas if the MMU does not
- 		 * provide separate controls over reading and executing.
-@@ -421,6 +410,14 @@ good_area:
- 		    (cpu_has_feature(CPU_FTR_NOEXECUTE) ||
- 		     !(vma->vm_flags & (VM_READ | VM_WRITE))))
- 			goto bad_area;
-+#ifdef CONFIG_PPC_STD_MMU
-+		/*
-+		 * protfault should only happen due to us
-+		 * mapping a region readonly temporarily. PROT_NONE
-+		 * is also covered by the VMA check above.
-+		 */
-+		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
-+#endif /* CONFIG_PPC_STD_MMU */
- 	/* a write */
- 	} else if (is_write) {
- 		if (!(vma->vm_flags & VM_WRITE))
-@@ -430,6 +427,7 @@ good_area:
- 	} else {
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)))
- 			goto bad_area;
-+		WARN_ON_ONCE(error_code & DSISR_PROTFAULT);
- 	}
- 
- 	/*
+-- 
+Ezequiel Garcia, VanguardiaSur
+www.vanguardiasur.com.ar
