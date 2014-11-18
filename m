@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbaKRKjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:39:39 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:50512 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbaKRKji (ORCPT
+	id S1754133AbaKRKkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:40:24 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:59967 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaKRKkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:39:38 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Ingo Molnar <mingo@redhat.com>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] asm-generic: Add msi.h
-Date: Tue, 18 Nov 2014 11:39:20 +0100
-Message-ID: <1703620.E5bhVDQPHc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.11.1411181133080.3909@nanos>
-References: <alpine.DEB.2.11.1411181133080.3909@nanos>
+	Tue, 18 Nov 2014 05:40:23 -0500
+Date: Tue, 18 Nov 2014 10:40:12 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/11] arm: perf: parse cpu affinity from dt
+Message-ID: <20141118104012.GF18842@arm.com>
+References: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
+ <1415377536-12841-10-git-send-email-mark.rutland@arm.com>
+ <20141117112033.GF18061@arm.com>
+ <20141117150804.GC25416@leverpostej>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:GcsHOO78901GY/mpvZY2tuyM9jy4NmvU6CwP0YHW2dQ
- D85pxjqwonBvkNjJG0GixX/0qz6b30waL9wsyhCHu4rn8Lu5Iq
- zg1OcRM0ne6TGyXw31ubGMUoTu8QcXyXjL1uleugzSlp5xiQ49
- IVe2Vao3hcoeIO9ZDHmrq5rZ0TOPReQXnVV5NzxrS7h21PpMrr
- 6dBddPdZxUT09VV8/amYKaZpKan4eULeff2YABLnQ3DoCRbSr6
- /kDheiFllc25irdpPX/OWIKvPmyBj9VwTKKKf/D9x5OHKfbbqh
- M2CXqj9nmGe66nmpxP2Z2Jmwc3/2+1xFHQhMGddC0msYFWiT7Q
- sFQe5axF9J+NnMJjZkUM=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117150804.GC25416@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 November 2014 11:34:37 Thomas Gleixner wrote:
-> To support MSI irq domains we want a generic data structure for
-> allocation, but we need the option to provide an architecture specific
-> version of it. So instead of playing #ifdef games in linux/msi.h we
-> add a generic header file and let architectures decide whether to
-> include it or to provide their own implementation and provide the
-> required typedef.
+On Mon, Nov 17, 2014 at 03:08:04PM +0000, Mark Rutland wrote:
+> On Mon, Nov 17, 2014 at 11:20:35AM +0000, Will Deacon wrote:
+> > On Fri, Nov 07, 2014 at 04:25:34PM +0000, Mark Rutland wrote:
+> > > diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+> > > index dfcaba5..f09c8a0 100644
+> > > --- a/arch/arm/kernel/perf_event_cpu.c
+> > > +++ b/arch/arm/kernel/perf_event_cpu.c
+> > > @@ -85,20 +85,27 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
+> > >  	struct platform_device *pmu_device = cpu_pmu->plat_device;
+> > >  	struct pmu_hw_events __percpu *hw_events = cpu_pmu->hw_events;
+> > >  
+> > > -	irqs = min(pmu_device->num_resources, num_possible_cpus());
+> > > +	irqs = cpu_pmu->nr_irqs;
+> > >  
+> > > -	irq = platform_get_irq(pmu_device, 0);
+> > > -	if (irq >= 0 && irq_is_percpu(irq)) {
+> > > -		on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
+> > > -		free_percpu_irq(irq, &hw_events->percpu_pmu);
+> > > -	} else {
+> > > -		for (i = 0; i < irqs; ++i) {
+> > > -			if (!cpumask_test_and_clear_cpu(i, &cpu_pmu->active_irqs))
+> > > -				continue;
+> > > -			irq = platform_get_irq(pmu_device, i);
+> > > -			if (irq >= 0)
+> > > -				free_irq(irq, per_cpu_ptr(&hw_events->percpu_pmu, i));
+> > > +	for (i = 0; i < irqs; i++) {
+> > > +		struct cpu_irq *map = &cpu_pmu->irq_map[i];
+> > > +		irq = map->irq;
+> > > +
+> > > +		if (irq <= 0)
+> > > +			continue;
+> > > +
+> > > +		if (irq_is_percpu(irq)) {
+> > > +			on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
+> > 
+> > Hmm, ok, so we're assuming that all the PMUs will be wired with PPIs in this
+> > case. I have a patch allowing per-cpu interrupts to be requested for a
+> > cpumask, but I suppose that can wait until it's actually needed.
+> 
+> I wasn't too keen on assuming all CPUs, but I didn't have the facility
+> to request a PPI on a subset of CPUs. If you can point me at your patch,
+> I'd be happy to take a look.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+The patch is here:
 
-for merging the asm-generic file
+https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=irq&id=774f7bc54577b6875d96e670ee34580077fc10be
 
-> I know that typedefs are not really nice, but in this case there are no
-> forward declarations required and it's the simplest solution.
+But I think we can avoid it until we find a platform that needs it. I can't
+see a DT/ABI issue with that, can you?
 
-I must be missing the obvious: what problem does the typedef solve
-that you would have with just a struct?
-
-	Arnd
+Will
