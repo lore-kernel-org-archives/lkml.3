@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826AbaKRPPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:15:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56973 "EHLO mx2.suse.de"
+	id S1756840AbaKRPPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:15:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57148 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907AbaKROJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754903AbaKROJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:09:31 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Quentin Casasnovas <quentin.casasnovas@oracle.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 051/206] regmap: fix kernel hang on regmap_bulk_write with zero val_count.
-Date: Tue, 18 Nov 2014 15:06:46 +0100
-Message-Id: <a7a2830c5cf50217e38ffbc6797e36bc15bb4f1c.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Anantha Krishnan <ananthk@codeaurora.org>,
+        Marcel Holtmann <marcel@holtmann.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 037/206] Bluetooth: Add support for Acer [13D3:3432]
+Date: Tue, 18 Nov 2014 15:06:32 +0100
+Message-Id: <e4ee97b70030f68d8b8d099436080cffadca0014.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,46 +22,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+From: Anantha Krishnan <ananthk@codeaurora.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-If val_count is zero we return -EINVAL with map->lock_arg locked, which
-will deadlock the kernel next time we try to acquire this lock.
+commit fa2f1394fe9c1a217213f02df77812701de6362f upstream.
 
-In 3.12, this was introduced by a0b8d8d906d267987d507138003048c5fdf774
-("regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.")
-which improperly back-ported d6b41cb06044a7d895db82bdd54f6e4219970510.
+Add support for the QCA6174 chip.
 
-This issue was found during review of Ubuntu Trusty 3.13.0-40.68 kernel to
-prepare Ksplice rebootless updates.
+    T:  Bus=04 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#= 30 Spd=12  MxCh= 0
+    D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+    P:  Vendor=13d3 ProdID=3432 Rev=00.02
+    C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+    I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+    I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 
-Fixes: f5942dd ("regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.")
-Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+Signed-off-by: Anantha Krishnan <ananthk@codeaurora.org>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/base/regmap/regmap.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 7a58be457eb5..9f7990187653 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1403,8 +1403,10 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- 	if (val_bytes == 1) {
- 		wval = (void *)val;
- 	} else {
--		if (!val_count)
--			return -EINVAL;
-+		if (!val_count) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 2a679929b635..ad0319fd8f71 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -104,6 +104,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+ 	{ USB_DEVICE(0x13d3, 0x3393) },
+ 	{ USB_DEVICE(0x13d3, 0x3402) },
++	{ USB_DEVICE(0x13d3, 0x3432) },
  
- 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
- 		if (!wval) {
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -153,6 +154,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE036), .driver_info = BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 663a938779e0..55ca2c6c8425 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -181,6 +181,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 -- 
 2.1.3
 
