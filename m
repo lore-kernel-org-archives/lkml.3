@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194AbaKRTic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 14:38:32 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:53581 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143AbaKRTia (ORCPT
+	id S932231AbaKRTik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 14:38:40 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:43180 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932143AbaKRTii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 14:38:30 -0500
-Message-ID: <546BA032.1000903@gmail.com>
-Date: Tue, 18 Nov 2014 20:38:26 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+	Tue, 18 Nov 2014 14:38:38 -0500
+Message-ID: <546BA04E.1050406@gmail.com>
+Date: Tue, 18 Nov 2014 14:38:54 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        Peter.Chen@freescale.com, balbi@ti.com, p.zabel@pengutronix.de
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com, michal.simek@xilinx.com,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 13/13] ARM: dts: berlin: enable USB on the Google Chromecast
-References: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com> <1416231347-27193-14-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1416231347-27193-14-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/16] rcupdate: Replace smp_read_barrier_depends() with
+ lockless_dereference()
+References: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com> <1415906662-4576-9-git-send-email-bobby.prani@gmail.com> <20141118171639.GV5050@linux.vnet.ibm.com>
+In-Reply-To: <20141118171639.GV5050@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.11.2014 14:35, Antoine Tenart wrote:
-> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->
-> Enable usb1 on Google Chromecast which is connected to micro-USB
-> plug used for external power supply, too.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 
-Applied to berlin/dt.
+On 11/18/2014 12:16 PM, Paul E. McKenney wrote:
+> On Thu, Nov 13, 2014 at 02:24:14PM -0500, Pranith Kumar wrote:
+>> Recently lockless_dereference() was added which can be used in place of
+>> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Queued for 3.20, thank you!  I was wondering about your removing the
+> "_" from "_________p1", but see that this allowed you to avoid the
+> checkpatch.pl warning.  ;-)
+>
+Yes, that was the easiest way I could think of to avoid the warning with adding more lines.
 
-Thanks!
+I will send the rest of the patches updated with comments.
 
-> ---
->   arch/arm/boot/dts/berlin2cd-google-chromecast.dts | 4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/berlin2cd-google-chromecast.dts b/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
-> index bcd81ffc495d..5c42c3bfb613 100644
-> --- a/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
-> +++ b/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
-> @@ -27,3 +27,7 @@
->   };
->
->   &uart0 { status = "okay"; };
-> +
-> +&usb_phy1 { status = "okay"; };
-> +
-> +&usb1 { status = "okay"; };
->
+Thanks,
+Pranith
 
