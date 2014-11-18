@@ -1,136 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695AbaKRNtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:49:18 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:43191 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677AbaKRNtQ (ORCPT
+	id S1754239AbaKRNvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:51:40 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:39482 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862AbaKRNvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:49:16 -0500
-Message-ID: <546B4E30.6000608@huawei.com>
-Date: Tue, 18 Nov 2014 21:48:32 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 18 Nov 2014 08:51:38 -0500
+Message-ID: <546B4EDD.9050804@linaro.org>
+Date: Tue, 18 Nov 2014 21:51:25 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
         Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
         Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 04/16] genirq: Introduce irq_chip.irq_compose_msi_msg()
- to support stacked irqchip
-References: <20141112133941.647950773@linutronix.de> <20141112134120.137871641@linutronix.de> <546B10D2.4050300@huawei.com> <alpine.DEB.2.11.1411181059090.3909@nanos> <546B31CE.2020006@huawei.com> <546B3F01.2010005@linux.intel.com> <546B46C0.6070904@huawei.com> <546B48CF.50100@linux.intel.com>
-In-Reply-To: <546B48CF.50100@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v5 03/18] ACPI / table: Count matched and successfully
+ parsed entries without specifying max entries
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-4-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1413553034-20956-4-git-send-email-hanjun.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 21:25, Jiang Liu wrote:
+Hi Rafael,
 
-> On 2014/11/18 21:16, Yun Wu (Abel) wrote:
->> On 2014/11/18 20:43, Jiang Liu wrote:
->>
->>> On 2014/11/18 19:47, Yun Wu (Abel) wrote:
->>>> On 2014/11/18 18:02, Thomas Gleixner wrote:
->>>>
->>>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>>>>> On 2014/11/12 21:42, Thomas Gleixner wrote:
->>>>>>> +int irq_chip_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
->>>>>>> +{
->>>>>>> +	struct irq_data *pos = NULL;
->>>>>>> +
->>>>>>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
->>>>>>> +	for (; data; data = data->parent_data)
->>>>>>> +#endif
->>>>>>> +		if (data->chip && data->chip->irq_compose_msi_msg)
->>>>>>> +			pos = data;
->>>>>>> +	if (!pos)
->>>>>>> +		return -ENOSYS;
->>>>>>> +
->>>>>>> +	pos->chip->irq_compose_msi_msg(pos, msg);
->>>>>>> +
->>>>>>> +	return 0;
->>>>>>> +}
->>>>>>
->>>>>> Adding message composing routine to struct irq_chip is OK to me, and it should
->>>>>> be because it is interrupt controllers' duty to compose messages (so that they
->>>>>> can parse the messages correctly without any pre-defined rules that endpoint
->>>>>> devices absolutely need not to know).
->>>>>> However a problem comes out when deciding which parameters should be passed to
->>>>>> this routine. A message can associate with multiple interrupts, which makes me
->>>>>> think composing messages for each interrupt is not that appropriate. And we
->>>>>> can take a look at the new routine irq_chip_compose_msi_msg(). It is called by
->>>>>> msi_domain_activate() which will be called by irq_domain_activate_irq() in
->>>>>> irq_startup() for each interrupt descriptor, result in composing a message for
->>>>>> each interrupt, right? (Unless requiring a judge on the parameter @data when
->>>>>> implementing the irq_compose_msi_msg() callback that only compose message for
->>>>>> the first entry of that message. But I really don't like that...)
->>>>>
->>>>> No, that's not correct. You are looking at some random stale version
->>>>> of this. The current state of affairs is in 
->>>>>
->>>>>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/irqdomain
->>>>>
->>>>> See also https://lkml.org/lkml/2014/11/17/764
->>>>>
->>>>> In activate we write the message, which is the right point to do so.
->>>>>
->>>>
->>>> I checked the current state, it seems to be the same.
->>>> Yes, the decision of postponing the actual hardware programming to the point
->>>> where the interrupt actually gets used is right, but here above I was talking
->>>> another thing.
->>>> As I mentioned, a message can associate with multiple interrupts. Enabling
->>>> any of them will call irq_startup(). So if we don't want to compose or write
->>>> messages repeatedly, we'd better require performing some checks before
->>>> activating the interrupts.
->>> Hi Yun,
->>> 	Seems you are talking about the case of multiple MSI support.
->>> Yes, we have special treatment for multiple MSI, which only writes PCI
->>> MSI registers when starting up the first MSI interrupt.
->>> void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg
->>> *msg)
->>> {
->>>         struct msi_desc *desc = irq_data->msi_desc;
->>>
->>>         /*
->>>          * For MSI-X desc->irq is always equal to irq_data->irq. For
->>>          * MSI only the first interrupt of MULTI MSI passes the test.
->>>          */
->>>         if (desc->irq == irq_data->irq)
->>>                 __pci_write_msi_msg(desc, msg);
->>> }
->>
->>
->> Yes, I picked the case of multiple MSI support.
->> The check should also be performed when composing messages. That's why
->> I don't like its parameters. The @data only indicates one interrupt,
->> while I prefer doing compose/write in the unit of message descriptor.
-> Hi Yun,
-> 	The common abstraction is that every message interrupt could be
-> controlled independently, so have compose_msi_msg()/write_msi_msg() per
-> interrupt. MSI is abstracted as an special message signaled interrupt
-> with hardware limitation where multiple interrupts sharing the same
-> hardware registers. So we filter in pci_msi_domain_write_msg(). On the
-> other handle, the generic MSI framework caches msi_msg in msi_desc,
-> so we don't filter compose_msi_msg().
-> 
+On 2014年10月17日 21:36, Hanjun Guo wrote:
+> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>
+> It is very useful to traverse all available table entries without max
+> number of expected entries type. Current acpi_parse_entries()
+> implementation gives that feature but it does not count those entries,
+> it returns 0 instead, so fix it to count matched and successfully
+> entries and return it.
+>
+> NOTE: This change has no impact to x86 and ia64 archs since existing code
+> checks for error occurrence only (acpi_parse_entries(...,0) < 0).
+>
+> Acked-by: Grant Likely <grant.likely@linaro.org>
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 
-It's true that every message interrupt could be controlled independently,
-I mean, by enable/disable/mask/unmask. But the message data & address are
-shared among the interrupts of that message.
-Despite the detailed hardware implementation, MSI and MSI-X are the same
-thing in software view, that is a message related with several consecutive
-interrupts. And the core MSI infrastructure you want to build should not
-be based on any hardware assumptions.
+Patch 2 and patch 3 are only for ACPI cores, and have no harm to x86
+and IA64, could you merge first in 3.19?
 
-Thanks,
-	Abel
+Thanks
+Hanjun
 
-
+> ---
+>   drivers/acpi/tables.c |    5 ++++-
+>   1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+> index 21ae521..b18e45e 100644
+> --- a/drivers/acpi/tables.c
+> +++ b/drivers/acpi/tables.c
+> @@ -225,10 +225,13 @@ acpi_parse_entries(unsigned long table_size,
+>   	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
+>   	       table_end) {
+>   		if (entry->type == entry_id
+> -		    && (!max_entries || count++ < max_entries))
+> +		    && (!max_entries || count < max_entries)) {
+>   			if (handler(entry, table_end))
+>   				return -EINVAL;
+>
+> +			count++;
+> +		}
+> +
+>   		/*
+>   		 * If entry->length is 0, break from this loop to avoid
+>   		 * infinite loop.
+>
