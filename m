@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaKRBnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 20:43:14 -0500
-Received: from gate.crashing.org ([63.228.1.57]:40464 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752121AbaKRBnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 20:43:12 -0500
-Message-ID: <1416271167.18381.16.camel@kernel.crashing.org>
-Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb()
- and fast_wmb()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexander Duyck <alexander.duyck@gmail.com>
-Cc: Alexander Duyck <alexander.h.duyck@redhat.com>, linux-arch@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        heiko.carstens@de.ibm.com, mingo@kernel.org, mikey@neuling.org,
-        linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
-        michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Tue, 18 Nov 2014 11:39:27 +1100
-In-Reply-To: <546A5968.1090201@gmail.com>
-References: <20141117171005.22333.96544.stgit@ahduyck-server>
-	 <20141117171812.22333.90395.stgit@ahduyck-server>
-	 <1416254687.18381.3.camel@kernel.crashing.org> <546A5968.1090201@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753781AbaKRBpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 20:45:55 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:58494 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744AbaKRBpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 20:45:53 -0500
+Date: Tue, 18 Nov 2014 01:45:41 +0000
+From: "Tobenna P. Igwe" <ptigwe@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org,
+        gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
+        Jes.Sorensen@redhat.com
+Subject: [PATCH] staging:rtl8723au: Fix sparse warning cast to restricted
+ __le16
+Message-ID: <20141118014529.GA937@Tobenna-Peter-Igwes-MacBook-Pro.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-17 at 12:24 -0800, Alexander Duyck wrote:
-> Yes and no.  So for example on ARM I used the dmb() operation, however
-> I
-> have to use the barrier at the system level instead of just the inner
-> shared domain.  However on many other architectures they are just the
-> same as the smp_* variants.
-> 
-> Basically the resultant code is somewhere between the smp and non-smp
-> barriers in terms of what they cover.
+This patch fixes the following sparse warning:
 
-There I don't quite follow you. You need to explain better especially in
-the documentation because otherwise people will get it wrong...
+drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c:343:36: warning:
+cast to restricted __le16
 
-If it's ordering in the coherent domain, I fail to see how a DMA agent
-is different than another processor when it comes to barriers, so I fail
-to see the difference with smp_*
+by using the le16_to_cpus function.
 
-I understand the MMIO vs. memory issue, we do have the same on powerpc,
-but that other aspect eludes me.
+Signed-off-by: Tobenna P. Igwe <ptigwe@gmail.com>
+---
+ drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ben.
-
+diff --git a/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c b/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c
+index d80ea4e..78665ee 100644
+--- a/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c
++++ b/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c
+@@ -340,7 +340,7 @@ static u8 bthci_GetAssocInfo(struct rtw_adapter *padapter, u8 EntryNum)
+ 			tempBuf, TotalLen-BaseMemoryShift);
+ 
+ 		pAmpAsoc = (struct amp_assoc_structure *)tempBuf;
+-		pAmpAsoc->Length = le16_to_cpu(pAmpAsoc->Length);
++		le16_to_cpus(&pAmpAsoc->Length);
+ 		BaseMemoryShift += 3 + pAmpAsoc->Length;
+ 
+ 		RTPRINT(FIOCTL, IOCTL_BT_HCICMD, ("TypeID = 0x%x, ", pAmpAsoc->TypeID));
+-- 
+1.7.10.4
 
