@@ -1,87 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957AbaKRSLa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:11:30 -0500
-Received: from [114.143.50.60] ([114.143.50.60]:19210 "EHLO
-	dhcp223-82.pnq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754010AbaKRSL2 (ORCPT
+	id S1754223AbaKRSOD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:14:03 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:13780 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669AbaKRSOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:11:28 -0500
-From: Pankaj Gupta <pagupta@redhat.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com.pnq.redhat.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org, jiri@resnulli.us,
-        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
-Subject: [PATCH net-net 0/4] Increase the limit of tuntap queues
-Date: Tue, 18 Nov 2014 21:52:54 +0530
-Message-Id: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 18 Nov 2014 13:14:01 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-cf-546b8c6546ff
+Message-id: <546B8C64.3010904@samsung.com>
+Date: Tue, 18 Nov 2014 21:13:56 +0300
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Icedove/31.2.0
+MIME-version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: [PATCH RFC] ARM: option for loading modules into vmalloc area
+References: <20141118172146.3784.81151.stgit@buzz>
+ <20141118173413.GB4042@n2100.arm.linux.org.uk>
+In-reply-to: <20141118173413.GB4042@n2100.arm.linux.org.uk>
+Content-type: text/plain; charset=windows-1252; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t/xa7qpPdkhBq9uaFhs+/WIzWLT42us
+	Fpd3zWGzuH2Z14HFo6W5h81j85J6j74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mq4Mu04Y8F1
+	6Yr9T9kbGNeKdjFyckgImEjceLeSHcIWk7hwbz1bFyMXh5DAUkaJG4feQjmfGCUuNSxiBani
+	FdCSOH16EksXIwcHi4CqxKk/8iBhNgEziW37bjOC2KICIRJznt5mgigXlPgx+R4LiC0iYCpx
+	7dEzZhCbWaBIYsvSU2A1wgJeEqvPzAOrERJIlui7cRfsIE4Ba4nWx3/ZIOptJRa8X8cCYctL
+	bF7zlnkCo8AsJCtmISmbhaRsASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQsP26g3Hp
+	MatDjAIcjEo8vA0bs0KEWBPLiitzDzFKcDArifAKdmeHCPGmJFZWpRblxxeV5qQWH2Jk4uCU
+	amDUeTRRznRO5tXkXZGeX++uzktXU3/PYp/PZfxR66DLr68Tfxtv49j4xtHYbrnzqskb2YPS
+	y8pKbsfLyL5IuhX7T6hegL380s+WkHb+iozFGUIKwVanwzTieiN3fXy46+usO8n10/zi7JVm
+	LON64md6m/H71O2tOm0/OLgjSne3XuBSEJyU9VKJpTgj0VCLuag4EQCx5Qi9OQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is followup to the RFC posted as:
-https://lkml.org/lkml/2014/8/18/392
 
-Changes from RFC are:
-PATCH 1: Sergei Shtylyov - Add an empty line after declarations.
-PATCH 2: Jiri Pirko - Do not introduce new module paramaters.
-	 Michael.S.Tsirkin - We can use sysctl for limiting max number
-                             of queues.
+On 2014-11-18 20:34, Russell King - ARM Linux wrote:
+> On Tue, Nov 18, 2014 at 08:21:46PM +0400, Konstantin Khlebnikov wrote:
+>> Usually modules are loaded into small area prior to the kernel
+>> text because they are linked with the kernel using short calls.
+>> Compile-time instrumentation like GCOV or KASAN bloats code a lot,
+>> and as a result huge modules no longer fit into reserved area.
+>>
+>> This patch adds option CONFIG_MODULES_USE_VMALLOC which lifts
+>> limitation on amount of loaded modules. It links modules using
+>> long-calls (option -mlong-calls) and loads them into vmalloc area.
+>>
+>> In few places exported symbols are called from inline assembly.
+>> This patch adds macro for such call sites: __asmbl and __asmbl_clobber.
+>> Call turns into single 'bl' or sequence 'movw; movt; blx' depending on
+>> context and state of config option.
+>>
+>> Unfortunately this option isn't compatible with CONFIG_FUNCTION_TRACER.
+>> Compiler emits short calls to profiling function despite of -mlong-calls.
+>> This is a bug in GCC, but ftrace anyway needs an update to handle this.
+> It also isn't compatible with the older architectures which don't have
+> "blx".
 
-Networking under KVM works best if we allocate a per-vCPU rx and tx
-queue in a virtual NIC. This requires a per-vCPU queue on the host side.
-Modern physical NICs have multiqueue support for large number of queues.
-To scale vNIC to run multiple queues parallel to maximum number of vCPU's
-we need to increase number of queues support in tuntap.   
+Ok, I'll add "depends on CPU_V6 || CPU_V7" I don't think that it is 
+necessary for older cpus.
 
-This series is to increase the limit of tuntap queues. Original work is being 
-done by 'jasowang@redhat.com'. I am taking this 'https://lkml.org/lkml/2013/6/19/29' 
-patch series as a reference. As per discussion in the patch series:
+>> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+>> index 9d2cdda..9e0c4f4 100644
+>> --- a/arch/arm/mm/mmu.c
+>> +++ b/arch/arm/mm/mmu.c
+>> @@ -1161,16 +1161,15 @@ void __init sanity_check_meminfo(void)
+>>   
+>>   static inline void prepare_page_table(void)
+>>   {
+>> -	unsigned long addr;
+>> +	unsigned long addr = 0;
+>>   	phys_addr_t end;
+>>   
+>>   	/*
+>>   	 * Clear out all the mappings below the kernel image.
+>>   	 */
+>> -	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE)
+>> -		pmd_clear(pmd_off_k(addr));
+>> -
+>>   #ifdef CONFIG_XIP_KERNEL
+>> +	for ( ; addr < MODULES_VADDR; addr += PMD_SIZE)
+>> +		pmd_clear(pmd_off_k(addr));
+>>   	/* The XIP kernel is mapped in the module area -- skip over it */
+>>   	addr = ((unsigned long)_etext + PMD_SIZE - 1) & PMD_MASK;
+>>   #endif
+> This seems to be an unrelated change.  In any case, it looks wrong to
+> me.  Please describe what you are trying to achieve here.
+>
 
-There were two reasons which prevented us from increasing number of tun queues:
+My patch changes  MODULES_VADDR, if option enabled it becomes alias for 
+VMALLOC_START
 
-- The netdev_queue array in netdevice were allocated through kmalloc, which may 
-  cause a high order memory allocation too when we have several queues. 
-  E.g. sizeof(netdev_queue) is 320, which means a high order allocation would 
-  happens when the device has more than 16 queues.
+It's used as border between two loops, before patch this code looks like:
 
-- We store the hash buckets in tun_struct which results a very large size of
-  tun_struct, this high order memory allocation fail easily when the memory is
-  fragmented.
+     /*
+      * Clear out all the mappings below the kernel image.
+      */
+     for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE)
+         pmd_clear(pmd_off_k(addr));
 
-The patch 60877a32bce00041528576e6b8df5abe9251fa73 increases the number of tx 
-queues. Memory allocation fallback to vzalloc() when kmalloc() fails.
+#ifdef CONFIG_XIP_KERNEL
+     /* The XIP kernel is mapped in the module area -- skip over it */
+     addr = ((unsigned long)_etext + PMD_SIZE - 1) & PMD_MASK;
+#endif
+     for ( ; addr < PAGE_OFFSET; addr += PMD_SIZE)
+         pmd_clear(pmd_off_k(addr));
 
-This series tries to address following issues:
+It's written with assumption that MODULES_VADDR < PAGE_OFFSET,
+but this no longer true if modules are placed inside vmalloc area.
 
-- Increase the number of netdev_queue queues for rx similarly its done for tx 
-  queues by falling back to vzalloc() when memory allocation with kmalloc() fails.
 
-- Switches to use flex array to implement the flow caches to avoid higher order 
-  allocations.
+After patch:
 
-- Accept maximum number of queues as sysctl param so that any user space 
-  application like libvirt can use this value to limit number of queues. Also
-  Administrators can specify maximum number of queues by updating this sysctl
-  entry.
+     unsigned long addr = 0;
 
-- Increase number of queues to 256, maximum number is equal to maximum number 
-  of vCPUS allowed in a guest.
+     /*
+      * Clear out all the mappings below the kernel image.
+      */
+#ifdef CONFIG_XIP_KERNEL
+     for ( ; addr < MODULES_VADDR; addr += PMD_SIZE)
+         pmd_clear(pmd_off_k(addr));
+     /* The XIP kernel is mapped in the module area -- skip over it */
+     addr = ((unsigned long)_etext + PMD_SIZE - 1) & PMD_MASK;
+#endif
+     for ( ; addr < PAGE_OFFSET; addr += PMD_SIZE)
+         pmd_clear(pmd_off_k(addr));
 
-I have done some testing to find out any regression and with sample program
- which creates tun/tap for single queue / multiqueue device and it seems to be 
- working fine. I will also post the performance numbers.
 
-  tuntap: Increase the number of queues in tun
-  tuntap: Reduce the size of tun_struct by using flex array
-  tuntap: Accept tuntap max queue length as sysctl entry
-  net: allow large number of rx queues
-
- drivers/net/tun.c |   91 +++++++++++++++++++++++++++++++++++---------
- net/core/dev.c    |   19 ++++++---
- 2 files changed, 86 insertions(+), 24 deletions(-)
+Without XIP there is no reason for splitting it into two loops.
