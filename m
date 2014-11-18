@@ -1,126 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153AbaKROpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:45:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58598 "EHLO mx2.suse.de"
+	id S933186AbaKROpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:45:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57191 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933125AbaKROpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:45:19 -0500
-Date: Tue, 18 Nov 2014 15:45:22 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/3] kernel: add support for live patching
-In-Reply-To: <1416187764-3341-3-git-send-email-sjenning@redhat.com>
-Message-ID: <alpine.LNX.2.00.1411181540580.1117@pobox.suse.cz>
-References: <1416187764-3341-1-git-send-email-sjenning@redhat.com> <1416187764-3341-3-git-send-email-sjenning@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754996AbaKROKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:03 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Quinn Tran <quinn.tran@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 112/206] target: Fix queue full status NULL pointer for SCF_TRANSPORT_TASK_SENSE
+Date: Tue, 18 Nov 2014 15:07:47 +0100
+Message-Id: <63e62ea88d0511922dd69fbee72257ad65c22099.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Quinn Tran <quinn.tran@qlogic.com>
 
-On Sun, 16 Nov 2014, Seth Jennings wrote:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-[...]
+===============
 
-> diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
-> new file mode 100644
-> index 0000000..8b68fef
-> --- /dev/null
-> +++ b/include/linux/livepatch.h
-> @@ -0,0 +1,68 @@
-> +/*
-> + * livepatch.h - Live Kernel Patching Core
-> + *
-> + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#ifndef _LINUX_LIVEPATCH_H_
-> +#define _LINUX_LIVEPATCH_H_
-> +
-> +#include <linux/module.h>
-> +
+commit 082f58ac4a48d3f5cb4597232cb2ac6823a96f43 upstream.
 
-I think we need something like 
+During temporary resource starvation at lower transport layer, command
+is placed on queue full retry path, which expose this problem.  The TCM
+queue full handling of SCF_TRANSPORT_TASK_SENSE currently sends the same
+cmd twice to lower layer.  The 1st time led to cmd normal free path.
+The 2nd time cause Null pointer access.
 
-#if IS_ENABLED(CONFIG_LIVE_PATCHING)
+This regression bug was originally introduced v3.1-rc code in the
+following commit:
 
-here. Otherwise kernel module with live patch itself would be built 
-even with live patching support disabled (as the structures and needed 
-functions are declared).
+commit e057f53308a5f071556ee80586b99ee755bf07f5
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Mon Oct 17 13:56:41 2011 -0400
 
-> +/* TODO: add kernel-doc for structures once agreed upon */
-> +
-> +struct lp_func {
-> +	const char *old_name; /* function to be patched */
-> +	void *new_func; /* replacement function in patch module */
-> +	/*
-> +	 * The old_addr field is optional and can be used to resolve
-> +	 * duplicate symbol names in the vmlinux object.  If this
-> +	 * information is not present, the symbol is located by name
-> +	 * with kallsyms. If the name is not unique and old_addr is
-> +	 * not provided, the patch application fails as there is no
-> +	 * way to resolve the ambiguity.
-> +	 */
-> +	unsigned long old_addr;
-> +};
-> +
-> +struct lp_reloc {
-> +	unsigned long dest;
-> +	unsigned long src;
-> +	unsigned long type;
-> +	const char *name;
-> +	int addend;
-> +	int external;
-> +};
-> +
-> +struct lp_object {
-> +	const char *name; /* "vmlinux" or module name */
-> +	struct lp_func *funcs;
-> +	struct lp_reloc *relocs;
-> +};
-> +
-> +struct lp_patch {
-> +	struct module *mod; /* module containing the patch */
-> +	struct lp_object *objs;
-> +};
-> +
-> +int lp_register_patch(struct lp_patch *);
-> +int lp_unregister_patch(struct lp_patch *);
-> +int lp_enable_patch(struct lp_patch *);
-> +int lp_disable_patch(struct lp_patch *);
-> +
-> +#include <asm/livepatch.h>
+    target: remove the transport_qf_callback se_cmd callback
 
-and #endif for CONFIG_LIVE_PATCHING here.
+Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/target/target_core_transport.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> +
-> +#endif /* _LINUX_LIVEPATCH_H_ */
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 334c3364837d..b37371ee9f95 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1856,8 +1856,7 @@ static void transport_complete_qf(struct se_cmd *cmd)
+ 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
+ 		trace_target_cmd_complete(cmd);
+ 		ret = cmd->se_tfo->queue_status(cmd);
+-		if (ret)
+-			goto out;
++		goto out;
+ 	}
+ 
+ 	switch (cmd->data_direction) {
+-- 
+2.1.3
 
-Thanks,
---
-Miroslav Benes
-SUSE Labs
