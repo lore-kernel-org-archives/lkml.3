@@ -1,72 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336AbaKRUq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:46:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35752 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109AbaKRUq0 (ORCPT
+	id S932373AbaKRUqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:46:51 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60525 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109AbaKRUqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:46:26 -0500
-Date: Tue, 18 Nov 2014 12:46:24 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH vfs 1/2] lib: implement ptrset
-Message-Id: <20141118124624.ff0b3140068a090b2860f202@linux-foundation.org>
-In-Reply-To: <20141114131202.GB21209@htj.dyndns.org>
-References: <20141113220927.GF2598@htj.dyndns.org>
-	<20141113142333.39fc29592019a397131fb03c@linux-foundation.org>
-	<20141113222736.GH2598@htj.dyndns.org>
-	<20141113144041.23bff773808562c699507621@linux-foundation.org>
-	<20141114131202.GB21209@htj.dyndns.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Nov 2014 15:46:50 -0500
+Date: Tue, 18 Nov 2014 14:47:08 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
+CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH]  usb: gadget: USB3 support to the legacy printer driver
+Message-ID: <20141118204708.GR6179@saruman>
+Reply-To: <balbi@ti.com>
+References: <546A829A.8030106@linaro.org>
+ <20141118003028.GA11280@saruman>
+ <546B5578.8040809@linaro.org>
+ <20141118151753.GB8223@saruman>
+ <546B874B.8060700@linaro.org>
+ <20141118180039.GJ6179@saruman>
+ <546BAF07.1050605@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VdnGiXwuH6t1Tqzo"
+Content-Disposition: inline
+In-Reply-To: <546BAF07.1050605@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014 08:12:02 -0500 Tejun Heo <tj@kernel.org> wrote:
+--VdnGiXwuH6t1Tqzo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hello, Andrew.
-> 
-> On Thu, Nov 13, 2014 at 02:40:41PM -0800, Andrew Morton wrote:
-> > In that case tjpointer_add() would need to do a kmalloc() for each inode
-> > which is added to the bdev/cdev, just as ptrset_add() is doing.
-> > 
-> > That might require a nasty preload thing.  But really, for just two
-> > known callers it would be better to require the caller to create the
-> > storage.
-> > 
-> > 
-> > 	struct tjpointer *new_tpj;
-> > 
-> > 	new_tpj = kmalloc(...);
-> > 	lock();
-> > 	tjpointer_add(&my_tjp_list, new_tjp, my_pointer);
-> > 	unlock();
-> > 
-> > Basically what I'm saying is nuke the rbtree and use lists.
-> 
-> Hah?  Then, each removal would be O(N) where N is the number of total
-> block devices and there are cases where massive number of block
-> devices exist and many are added / removed back-to-back.  I don't
-> think making those operations O(N^2) is a good idea.
-> 
+Hi,
 
-bdev_evict_inode() walks all the inodes attached to the bdev and
-unlinks them from the bdev.  That can be done with
-list_for_each_safe(), just as it is (effectively) in current mainline.
+On Tue, Nov 18, 2014 at 03:41:43PM -0500, Jorge Ramirez-Ortiz wrote:
+> >>> you have no clue what these mean, do you ? How about reading the USB
+> >>> specification of even http://www.beyondlogic.org/usbnutshell/usb1.sht=
+ml
+> >>
+> >> Unfortunately I do.
+> >> It was easier to temporarily hack the driver code for a test - while I
+> >> was at it - rather than modifying the host code.
+> >> Since you asked for them, I though you would read the logs and wonder
+> >> where the funny ids where coming from.
+> > why do you even need to hack the host driver for these ? The driver
+> > shows a Printer Class interface and the linux host side driver should
+> > bind to it without any issues.
+>=20
+> the hack was on the gadget side.
+>=20
+> the usbhost test code in charge of sending the file to the device had the=
+ wrong ids.
+> to save time -since I was modifying the gadget driver code and only for t=
+he
+> tests (it is not part of the final patch) - I hacked those ids on the pri=
+nter.c
+> file.
+> but anyway. lets move on. I removed those, recompiled the usb host code a=
+nd sent
+> the new traces.
 
-IOW, all we need to do is to remove the list_head from struct inode and
-create a new, separately allocated { struct list_head l; void *inode }
-to point at the inode.  IOW, simply convert the intrusive list to a
-nonintrusive list.
+then the host side needs a fix because it shouldn't really care about
+the device ID, rather it should care about the class being printer.
 
+> >> That hack above would have given you an answer: so I kind of know what
+> >> the ids are for. honestly.  anyway, will send the new logs - it took
+> >> me a while to find and modify the host test code.
+> > Which host test code ? Why don't you just use lpr or even cat file >
+> > /dev/lp0 or something like that ?
+>=20
+> it is some proprietary code that links libusb -part of a different projec=
+t: it
+> was useful as it generated some metrics I was interested in.
 
-This is proving a painful way of extracting a changelog :( Perhaps I'm
-still not getting it and you should have another go, this time
-explaining the reasoning behind the design choices.
+I would be surprised if lpr doesn't work for the same purpose.
+
+> >>> do you want to debug that and find the culprit since you're already at
+> >>> it ?
+> >> probably: I still need to get used to this process, thanks for bearing
+> >> with me on this.
+> > no problem.
+> >
+> >> I spoke to Ricardo Ribalda three months ago while I was doing this
+> >> stuff.  but yes, I might work on this -after I finish with this
+> >> patch!- since I have access to the hardware locally.
+> > cool, that'll help.
+>=20
+> notice that the original PLX driver was still far from the theoretical 5G=
+bps
+> target (I was expecting to measure at least 3Gbps and could only get 1Gbp=
+s).
+> So 1Gbps should be the target to meet on the kernel.org net2280 - do you =
+agree?
+
+this depends on a whole bunch of things. Mainline is a lot different
+=66rom PLX's kernel tree, I'm sure.
+
+It also depends on how many PCIe lanes you're using. Just because USB3
+guarantees 5Gbps bandwidth, if you use a 1x PCIe connector, you'll never
+get that ;-)
+
+--=20
+balbi
+
+--VdnGiXwuH6t1Tqzo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUa7BMAAoJEIaOsuA1yqREppIP/1BMmTm/Z/2Lzarfuy5hCxLZ
+IJFN9yClhZ5KB6Jv/SAFihUFNc4LfG4xmiGptrwvV9vQ3W8oP5mbaA0QJf+VtvGi
+eQiJNWYjwe0Fg8bCclLOD3z0gR2dQ7YZoLL4slkd293Y7Ptwvqa5qzgckazvK9rS
+IWvEk1KuNXQhZdw5cv1Y/b0KmXut4SRkHSIhb5SWL4zfnyPa2vq4h6tOAW1c/h5c
+b07TJQr0+OaTP2oeLE11UUfs5tJ2zMAaLGzRmr/u4IYt4Ypoou9Fzmaf1XXg/W5w
+ul4pW1JluAR7LIwKnFe34oGQKhLjV2H9+u+tdppX1VoABM3+L9RN73fMqBhKcW+G
+vM/UMELp3GVpVruCzaKg0/8xY5lgGXfWIinNWIp3rjF63T0sdKsdnzzALOH0lWrD
+uzlUlF6z2jzofdqdBXpVV7VMtVqX6efoUhcRoPtbC+mj5JFFe4SRaEjkL9mXMdS8
+eS4TLtDKX08/podbAxN0KWTli5+PlA8EqohGANTnpCW/wtHaUew+TISnEryhPiwx
+/JvYvQJs62g7Q1iZjiC++psrFegNp7fbSOlVRKID9W22hVe8Qwr1PwdZjy64x4Tn
+6xU9ffSk3ubZn1125QxV1py/nL6oGWEAWP709jE8RIAxL1adciTt7oi0ZViABN05
+xlKntc3u7HHmRtY2Re2g
+=i3GN
+-----END PGP SIGNATURE-----
+
+--VdnGiXwuH6t1Tqzo--
