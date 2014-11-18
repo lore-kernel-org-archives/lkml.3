@@ -1,123 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaKRBL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 20:11:27 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:42949 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999AbaKRBLZ (ORCPT
+	id S1753607AbaKRBLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 20:11:38 -0500
+Received: from regular1.263xmail.com ([211.150.99.131]:46800 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023AbaKRBLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 20:11:25 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: keescook@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com
-Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v8 0/6] arm64: add seccomp support
-Date: Tue, 18 Nov 2014 10:10:32 +0900
-Message-Id: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Mon, 17 Nov 2014 20:11:34 -0500
+X-Greylist: delayed 38758 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Nov 2014 20:11:33 EST
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: linux-kernel@vger.kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <f00cf1f62bb3db3f38b2163e747f6477>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <546A9CB7.1030207@rock-chips.com>
+Date: Tue, 18 Nov 2014 09:11:19 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Julius Werner <jwerner@chromium.org>
+CC: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Romain Perier <romain.perier@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Douglas Anderson <dianders@chromium.org>,
+        Sonny Rao <sonnyrao@chromium.org>, addy ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, wulf <wulf@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Roy Li <roy.li@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc2: resume root hub when device detect with suspend
+ state
+References: <1416230077-17535-1-git-send-email-kever.yang@rock-chips.com> <CAODwPW8r0cq2aozVjY9o9wOwqa4Nn1Oom9+Td8e-H0FoDf-LfQ@mail.gmail.com>
+In-Reply-To: <CAODwPW8r0cq2aozVjY9o9wOwqa4Nn1Oom9+Td8e-H0FoDf-LfQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series enables secure computing (system call filtering) on arm64,
-and contains related enhancements and bug fixes.
+Hi Julius,
 
-  NOTE: This versions contain a workaround against possible BUG_ON() failure
-  at audit_syscall_exit(), but doesn't contain an extra optimization, as I
-  submitted for arm, of excluding syscall enter/exit tracing against invalid
-  system calls due to an issue that I reported in:
-       http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/292170.html
+On 11/18/2014 05:21 AM, Julius Werner wrote:
+> On Mon, Nov 17, 2014 at 5:14 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+>> After we implement the bus_suspend/resume, auto suspend id enabled.
+>> The root hub will be auto suspend if there is no device connected,
+>> we need to resume the root hub when a device connect detect.
+>>
+>> This patch tested on rk3288.
+>>
+>> Signed-off-by: Roy Li <roy.li@rock-chips.com>
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>> ---
+>>
+>>   drivers/usb/dwc2/hcd_intr.c | 7 +++++++
+>>   1 file changed, 7 insertions(+)
+>>
+>> diff --git a/drivers/usb/dwc2/hcd_intr.c b/drivers/usb/dwc2/hcd_intr.c
+>> index 551ba87..c8299fd 100644
+>> --- a/drivers/usb/dwc2/hcd_intr.c
+>> +++ b/drivers/usb/dwc2/hcd_intr.c
+>> @@ -355,6 +355,13 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
+>>                  hprt0_modify |= HPRT0_CONNDET;
+>>
+>>                  /*
+>> +                * Check if root hub is in suspend state
+>> +                * if root hub in suspend, resume it.
+>> +                */
+>> +               if ((bus->root_hub) && (hcd->state == HC_STATE_SUSPENDED))
+> What is bus->root_hub checking for? Is there any chance that this
+> could be NULL here?
+I add bus->root_hub check because the _dwc2_hcd_start check this before it
+call the usb_hcd_resume_root_hub.
+I think we don't need this check for the root_hub must be there if we 
+register
+the HCD success, right?
+I will remove this in next version.
+>
+>> +                       usb_hcd_resume_root_hub(hcd);
+>> +
+>> +               /*
+>>                   * The Hub driver asserts a reset when it sees port connect
+>>                   * status change flag
+>>                   */
+>> --
+>> 1.9.1
+> Seems sensible in general. Does this actually fix the problem Doug was
+> reporting?
+Yes, this fix the problem Doug reported with my dwc2 hcd suspend/resume 
+patch.
 
-The code was tested on ARMv8 fast model with 64-bit/32-bit userspace using:
- * libseccomp v2.1.1 with modifications for arm64, especially its "live"
-   tests: No.20, 21 and 24.
- * modified version of Kees' seccomp test for 'changing/skipping a syscall'
-   and seccomp() system call
- * in-house tests for 'changing/skipping a system call' by tracing with
-   ptrace(SETREGSET, NT_SYSTEM_CALL) (that is, not via seccomp filter)'
-with and without audit tracing.
-
-
-Changes v7 -> v8:
-* changed an interface of changing a syscall number from ptrace(SET_SYSCALL)
-  to ptrace(SETREGSET, NT_ARM_SYSTEM_CALL) [1/6]
-* removed IS_SKILL_SYSCALL macro [2/6]
-* clarified comments in syscall_trace_enter() [2/6]
-* changed unsigned int to compat_uint_t in compat_siginfo._sigsys [5/6]
-* moved to a new calling interface of secure_computing(void) [6/6]
-
-Changes v6 -> v7:
-* simplified the condition of checking for user-issued syscall(-1) at
-  syscall_trace_enter() [2/6]
-* defines __NR_seccomp_sigreturn only if arch-specific def doesn't exist.
-  As Kees suggests, this is necessary for x86 and others. [3/6]
-* removed "#ifdef __ARCH_SIGSYS" which is always true on arm64. [5/6]
-* changed to call syscall_trace_exit() even if secure_computing fails. [6/6]
-  In v6, syscall_trace_enter() returns RET_SYSCALL_SKIP_TRACE (== -2) and
-  skips syscall_trace_exit() to minimize the overhead, but this case can be
-  easily confused with user-issued (and invalid) syscall(-2).
-  Anyway, this is now a consistent behavior with arm and other archs.
-
-Changes v5 -> v6:
-* rebased to v3.17-rc
-* changed the interface of changing/skipping a system call from re-writing
-  x8 register [v5 1/3] to using dedicated PTRACE_SET_SYSCALL command
-  [1/6, 2/6]
-  Patch [1/6] contains a checkpatch error around a switch statement, but it
-  won't be fixed as in compat_arch_ptrace().
-* added a new system call, seccomp(), for compat task [4/6]
-* added SIGSYS siginfo for compat task [5/6]
-* changed to always execute audit exit tracing to avoid OOPs [2/6, 6/6]
-
-Changes v4 -> v5:
-* rebased to v3.16-rc
-* add patch [1/3] to allow ptrace to change a system call
-  (please note that this patch should be applied even without seccomp.)
-
-Changes v3 -> v4:
-* removed the following patch and moved it to "arm64: prerequisites for
-  audit and ftrace" patchset since it is required for audit and ftrace in
-  case of !COMPAT, too.
-  "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
-
-Changes v2 -> v3:
-* removed unnecessary 'type cast' operations [2/3]
-* check for a return value (-1) of secure_computing() explicitly [2/3]
-* aligned with the patch, "arm64: split syscall_trace() into separate
-  functions for enter/exit" [2/3]
-* changed default of CONFIG_SECCOMP to n [2/3]
-
-Changes v1 -> v2:
-* added generic seccomp.h for arm64 to utilize it [1,2/3] 
-* changed syscall_trace() to return more meaningful value (-EPERM)
-  on seccomp failure case [2/3]
-* aligned with the change in "arm64: make a single hook to syscall_trace()
-  for all syscall features" v2 [2/3]
-* removed is_compat_task() definition from compat.h [3/3]
-
-AKASHI Takahiro (6):
-  arm64: ptrace: add NT_ARM_SYSTEM_CALL regset
-  arm64: ptrace: allow tracer to skip a system call
-  asm-generic: add generic seccomp.h for secure computing mode 1
-  arm64: add seccomp syscall for compat task
-  arm64: add SIGSYS siginfo for compat task
-  arm64: add seccomp support
-
- arch/arm64/Kconfig                |   14 +++++++++
- arch/arm64/include/asm/compat.h   |    7 +++++
- arch/arm64/include/asm/seccomp.h  |   25 ++++++++++++++++
- arch/arm64/include/asm/unistd.h   |    3 ++
- arch/arm64/include/asm/unistd32.h |    3 +-
- arch/arm64/kernel/entry.S         |    3 ++
- arch/arm64/kernel/ptrace.c        |   58 +++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/signal32.c      |    6 ++++
- include/asm-generic/seccomp.h     |   30 +++++++++++++++++++
- include/uapi/linux/elf.h          |    1 +
- 10 files changed, 149 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm64/include/asm/seccomp.h
- create mode 100644 include/asm-generic/seccomp.h
-
--- 
-1.7.9.5
+- Kever
 
