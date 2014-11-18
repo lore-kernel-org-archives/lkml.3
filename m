@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496AbaKROdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:33:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57159 "EHLO mx2.suse.de"
+	id S932566AbaKROeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:34:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57147 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755114AbaKROKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:15 -0500
+	id S1755088AbaKROKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:12 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Adel Gadllah <adel.gadllah@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 167/206] ALSA: usb-audio: Fix device_del() sysfs warnings at disconnect
-Date: Tue, 18 Nov 2014 15:08:42 +0100
-Message-Id: <2dbb38ff27f4c91eaa8e23887b7b36678f19c774.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 161/206] USB: quirks: enable device-qualifier quirk for another Elan touchscreen
+Date: Tue, 18 Nov 2014 15:08:36 +0100
+Message-Id: <21748d8c32e22ed04b5fc2ad48a1029b81216ef9.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,109 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Adel Gadllah <adel.gadllah@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0725dda207e95ff25f1aa01432250323e0ec49d6 upstream.
+commit 876af5d454548be40327ba9efea4bc92a8575019 upstream.
 
-Some USB-audio devices show weird sysfs warnings at disconnecting the
-devices, e.g.
- usb 1-3: USB disconnect, device number 3
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 973 at fs/sysfs/group.c:216 device_del+0x39/0x180()
- sysfs group ffffffff8183df40 not found for kobject 'midiC1D0'
- Call Trace:
-  [<ffffffff814a3e38>] ? dump_stack+0x49/0x71
-  [<ffffffff8103cb72>] ? warn_slowpath_common+0x82/0xb0
-  [<ffffffff8103cc55>] ? warn_slowpath_fmt+0x45/0x50
-  [<ffffffff813521e9>] ? device_del+0x39/0x180
-  [<ffffffff81352339>] ? device_unregister+0x9/0x20
-  [<ffffffff81352384>] ? device_destroy+0x34/0x40
-  [<ffffffffa00ba29f>] ? snd_unregister_device+0x7f/0xd0 [snd]
-  [<ffffffffa025124e>] ? snd_rawmidi_dev_disconnect+0xce/0x100 [snd_rawmidi]
-  [<ffffffffa00c0192>] ? snd_device_disconnect+0x62/0x90 [snd]
-  [<ffffffffa00c025c>] ? snd_device_disconnect_all+0x3c/0x60 [snd]
-  [<ffffffffa00bb574>] ? snd_card_disconnect+0x124/0x1a0 [snd]
-  [<ffffffffa02e54e8>] ? usb_audio_disconnect+0x88/0x1c0 [snd_usb_audio]
-  [<ffffffffa015260e>] ? usb_unbind_interface+0x5e/0x1b0 [usbcore]
-  [<ffffffff813553e9>] ? __device_release_driver+0x79/0xf0
-  [<ffffffff81355485>] ? device_release_driver+0x25/0x40
-  [<ffffffff81354e11>] ? bus_remove_device+0xf1/0x130
-  [<ffffffff813522b9>] ? device_del+0x109/0x180
-  [<ffffffffa01501d5>] ? usb_disable_device+0x95/0x1f0 [usbcore]
-  [<ffffffffa014634f>] ? usb_disconnect+0x8f/0x190 [usbcore]
-  [<ffffffffa0149179>] ? hub_thread+0x539/0x13a0 [usbcore]
-  [<ffffffff810669f5>] ? sched_clock_local+0x15/0x80
-  [<ffffffff81066c98>] ? sched_clock_cpu+0xb8/0xd0
-  [<ffffffff81070730>] ? bit_waitqueue+0xb0/0xb0
-  [<ffffffffa0148c40>] ? usb_port_resume+0x430/0x430 [usbcore]
-  [<ffffffffa0148c40>] ? usb_port_resume+0x430/0x430 [usbcore]
-  [<ffffffff8105973e>] ? kthread+0xce/0xf0
-  [<ffffffff81059670>] ? kthread_create_on_node+0x1c0/0x1c0
-  [<ffffffff814a8b7c>] ? ret_from_fork+0x7c/0xb0
-  [<ffffffff81059670>] ? kthread_create_on_node+0x1c0/0x1c0
- ---[ end trace 40b1928d1136b91e ]---
+Currently this quirk is enabled for the model with the device id 0x0089, it
+is needed for the 0x009b model, which is found on the Fujitsu Lifebook u904
+as well.
 
-This comes from the fact that usb-audio driver may receive the
-disconnect callback multiple times, per each usb interface.  When a
-device has both audio and midi interfaces, it gets called twice, and
-currently the driver tries to release resources at the last call.
-At this point, the first parent interface has been already deleted,
-thus deleting a child of the first parent hits such a warning.
-
-For fixing this problem, we need to call snd_card_disconnect() and
-cancel pending operations at the very first disconnect while the
-release of the whole objects waits until the last disconnect call.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80931
-Reported-and-tested-by: Tomas Gayoso <tgayoso@gmail.com>
-Reported-and-tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/usb/card.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/usb/core/quirks.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/sound/usb/card.c b/sound/usb/card.c
-index fda227e3bbac..4476b9047adc 100644
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -589,18 +589,19 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
- {
- 	struct snd_card *card;
- 	struct list_head *p;
-+	bool was_shutdown;
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 83355b3de7b4..7898fa55cfe5 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -96,6 +96,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	{ USB_DEVICE(0x04f3, 0x0089), .driver_info =
+ 			USB_QUIRK_DEVICE_QUALIFIER },
  
- 	if (chip == (void *)-1L)
- 		return;
- 
- 	card = chip->card;
- 	down_write(&chip->shutdown_rwsem);
-+	was_shutdown = chip->shutdown;
- 	chip->shutdown = 1;
- 	up_write(&chip->shutdown_rwsem);
- 
- 	mutex_lock(&register_mutex);
--	chip->num_interfaces--;
--	if (chip->num_interfaces <= 0) {
-+	if (!was_shutdown) {
- 		struct snd_usb_endpoint *ep;
- 
- 		snd_card_disconnect(card);
-@@ -620,6 +621,10 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
- 		list_for_each(p, &chip->mixer_list) {
- 			snd_usb_mixer_disconnect(p);
- 		}
-+	}
++	{ USB_DEVICE(0x04f3, 0x009b), .driver_info =
++			USB_QUIRK_DEVICE_QUALIFIER },
 +
-+	chip->num_interfaces--;
-+	if (chip->num_interfaces <= 0) {
- 		usb_chip[chip->index] = NULL;
- 		mutex_unlock(&register_mutex);
- 		snd_card_free_when_closed(card);
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 -- 
 2.1.3
 
