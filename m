@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaKRAgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:36:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:42547 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433AbaKRAgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:36:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,406,1413270000"; 
-   d="scan'208";a="623906435"
-Subject: [PATCH] do not include mpx.h in exec.c
-To: tglx@linutronix.de
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>,
-        dave.hansen@linux.intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 17 Nov 2014 16:36:08 -0800
-Message-Id: <20141118003608.837015B3@viggo.jf.intel.com>
+	id S1753542AbaKRAgz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:36:55 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:47739 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873AbaKRAgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 19:36:52 -0500
+Date: Mon, 17 Nov 2014 20:01:36 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCHv2 1/1] thermal: of: improve of-thermal sensor
+ registration API
+Message-ID: <20141118000133.GA10027@developer>
+References: <1416263769-6578-2-git-send-email-edubezval@gmail.com>
+ <1416264255-10083-1-git-send-email-edubezval@gmail.com>
+ <546A8EA9.5070001@kapsi.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <546A8EA9.5070001@kapsi.fi>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We no longer need mpx.h in exec.c.  This will obviously also
-break the build for non-x86 builds.  We get the MPX includes that
-we need from mmu_context.h now.
+Mikko,
 
-This applies on top of the MPX patches currently in the -tip
-branch.
+On Tue, Nov 18, 2014 at 02:11:21AM +0200, Mikko Perttunen wrote:
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
+<big cut>
 
- b/fs/exec.c |    1 -
- 1 file changed, 1 deletion(-)
+> > diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_s=
+octherm.c
+> > index 70f7e9e..893c39c 100644
+> > --- a/drivers/thermal/tegra_soctherm.c
+> > +++ b/drivers/thermal/tegra_soctherm.c
+> > @@ -317,6 +317,10 @@ static int tegra_thermctl_get_temp(void *data, lon=
+g *out_temp)
+> >   	return 0;
+> >   }
+> >
+> > +static const struct thermal_zone_of_device_ops tegra_of_thermal_ops =
+=3D {
+> > +	.get_trend =3D tegra_thermctl_get_temp,
+> > +};
+>=20
+> This should probably read ".get_temp =3D tegra_thermctl_get_temp" instead=
+=20
+> of .get_trend :)
 
-diff -puN fs/exec.c~no-mpx-in fs/exec.c
---- a/fs/exec.c~no-mpx-in	2014-11-17 16:22:33.935154876 -0800
-+++ b/fs/exec.c	2014-11-17 16:22:39.466404410 -0800
-@@ -60,7 +60,6 @@
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
- #include <asm/tlb.h>
--#include <asm/mpx.h>
- 
- #include <trace/events/task.h>
- #include "internal.h"
-_
+Indeed. Sending in v3.
+
+>=20
+> > ...
+>=20
+> Cheers,
+> Mikko
+>=20
+
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUaoxTAAoJEMLUO4d9pOJWJAAH/2qZa9BRjOyRJafxzuMVJsPq
+n7vOsR67hXnAL0EI44g6GB6EWHT9dKlFz9P/9oQsdnVxwYJJdyX4w956ZW3Lu2XO
+uPc+6hwtkd/iFNs9weunfNG1UzRR/N+F4EDZJZwui8cCqstnhQKwp95LXxCxsj/S
+pcEjKbntS12X24HB759xsfKRE5YFlZ2HzBL5MDOBSR71Y583lya5vwShJQ+uuwRc
+7ZWaHV26Wy0wiBnAbdDwlXSnkLPt/1E4rsFpM/gfGK5H0aXwpDaOzLHbvllIYrqO
+obXnaciSf0t1tODk1U6LrQiN944jbY4iSpaugwRx8g3ndNqPDzHT6E/paexIazs=
+=KoFZ
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
