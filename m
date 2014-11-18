@@ -1,92 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaKRNhj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:37:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10980 "EHLO mga02.intel.com"
+	id S1754278AbaKRNnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:43:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53044 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754113AbaKRNhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:37:38 -0500
+	id S1753520AbaKRNnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 08:43:52 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,410,1413270000"; 
-   d="scan'208";a="609767498"
-Message-ID: <546B4B7E.5090602@linux.intel.com>
-Date: Tue, 18 Nov 2014 21:37:02 +0800
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="488386450"
+Message-ID: <546B4D0D.9050601@linux.intel.com>
+Date: Tue, 18 Nov 2014 21:43:41 +0800
 From: Jiang Liu <jiang.liu@linux.intel.com>
 Organization: Intel
 User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Grant Likely <grant.likely@linaro.org>,
         Marc Zyngier <marc.zyngier@arm.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
- to reduce duplicated code
-References: <20141112133941.647950773@linutronix.de> <20141112134120.393705922@linutronix.de> <546B10DA.3040504@huawei.com> <alpine.DEB.2.11.1411181102160.3909@nanos> <546B31D7.6030204@huawei.com> <546B3DCD.9090307@linux.intel.com> <546B4994.7080302@huawei.com>
-In-Reply-To: <546B4994.7080302@huawei.com>
+Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
+References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com>
+In-Reply-To: <546B4A91.6080004@huawei.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 21:28, Yun Wu (Abel) wrote:
-> On 2014/11/18 20:38, Jiang Liu wrote:
+On 2014/11/18 21:33, Yun Wu (Abel) wrote:
+> On 2014/11/18 18:19, Thomas Gleixner wrote:
 > 
->> On 2014/11/18 19:47, Yun Wu (Abel) wrote:
->>> On 2014/11/18 18:03, Thomas Gleixner wrote:
+>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>>>>  struct irq_chip {
+>>>> @@ -359,6 +360,7 @@ struct irq_chip {
+>>>>  	void		(*irq_release_resources)(struct irq_data *data);
+>>>>  
+>>>>  	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>> +	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
 >>>
->>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>>>
->>>>> Hi Thomas, Jiang,
->>>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
->>>>>
->>>>>> From: Jiang Liu <jiang.liu@linux.intel.com>
->>>>> [...]
->>>>>> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
->>>>>> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
->>>>>> +			 void *chip_data, irq_flow_handler_t handler,
->>>>>> +			 void *handler_data, const char *handler_name)
->>>>>> +{
->>>>>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
->>>>>> +	__irq_set_handler(virq, handler, 0, handler_name);
->>>>>> +	irq_set_handler_data(virq, handler_data);
->>>>>> +}
->>>>>
->>>>> When stacked domain enabled, there will be a semantic shift to the linux interrupt
->>>>> identifiers. The @virq now delivers much more than before.
->>>>> More specifically, now we need both @virq and @domain, rather than only @irq, to
->>>>> determine which irq_data we want to configure. And once we configure @irq without
->>>>> providing the exact domain, it means we are configuring all the domains related to
->>>>> that @irq. So I think this routine just messed all things up.
->>>>
->>>> You can mess up anything by using an interface in the wrong way. Open
->>>> coding will not make that harder.
->>>>
+>>> Hmm... It's really weird.
+>>> I don't think it's the interrupt controllers' responsibility to write messages
+>>> for all the endpoint devices since the methods of configuring message registers
+>>> may different between these devices. And theoretically, the endpoint devices
+>>> themselves should take the responsibility to configure their message registers.
+>>> To say the least, the write_msg callback here still need to call some certain
+>>> interfaces provided by the corresponding device.
 >>>
->>> But what's the correct way to use this interface?
+>>> There would be lots of ARM new devices capable of sending message
+>>> based interrupts to interrupt controllers, does all the drivers of
+>>> the devices need to expose a write_msg callback to interrupt
+>>> controllers?
 >>
->> 	It's to be used by interrupt controller drivers to implement
->> hierarchy irqdomains.
+>> Well, writing the message _IS_ part of the interrupt controller.
+>>
+>> So in order to enable non PCI based MSI we want to have generic
+>> infrastructure with minimal per device/device class callbacks and of
+>> course you need to provide that callback for your special device.
+>>
+>> We already have non PCI based MSI controllers in x86 today and we need
+>> to handle the whole stuff with tons of copied coded extra for each of
+>> those. So consolidating it into common infrastructure allows us to get
+>> rid of the pointless copied code and reduce the per device effort to
+>> the relevant hardware specific callbacks. irq_write_msi_msg being one
+>> of those.
 >>
 > 
-> Each time an interrupt domain calls this, the previous (@handler, @handler_name,
-> @handler_data) will be overrode. It's because the routines __irq_set_handler()
-> and irq_set_handler_data() only configure top level (without Marc's fix which is
-> not ideal). Is this what we really want to see?
+> At least, we have the same goal.
+> I will illustrate my thoughts by an example.
+> The current code is something like:
+> 
+> Device A
+> ========
+> void A_write_msg() { ... }
+> 
+> Group B
+> (a group of devices behave same on writing messages, i.e. PCI)
+> =======
+> void B_write_msg() { ... }
+> 
+> Controller
+> ==========
+> irq_chip.irq_write_msi_msg () {
+> 	if (A)
+> 		A_write_msg();
+> 	if (B)
+> 		B_write_msg();
+> }
+> 
+> It's horrible when new devices come out, since we need to modify the
+> controller part for each new device.
+> What I suggested is:
+> 
+> MSI Core
+> ========
+> struct msi_ops { .write_msg, };
+> struct msi_desc { .msi_ops, };
+> 
+> write_msg() {
+> 	X = get_dev();
+> 	irq_chip.compose_msg(X);	// IRQ chips' responsibility
+> 	X_msi_ops.write_msg();		// nothing to do with IRQ chips
+> }
+> 
+> Device A
+> ========
+> void A_write_msg() { ... }
+> A_msi_ops.write_msg = A_write_msg;
+> 
+> Group B
+> =======
+> void B_write_msg() { ... }
+> B_msi_ops.write_msg = B_write_msg;
+> 
+> Please correct me if I misunderstood anything.
 Hi Yun,
-	There are different interfaces for different purposes.
-irq_domain_set_hwirq_and_chip() sets hwirq, irq_chip and irq_chip_data.
-irq_domain_set_info() sets handler and handler_data in addition to
-irq_domain_set_hwirq_and_chip().
-	Which irqdomain to call irq_domain_set_info() to set irq_handler
-is determined by the interrupt hierarchy. And at least on irqdomain in
-the hierarchy must set flow handler for the irq.
-Thanks!
+	We provide an irq_chip for each type of interrupt controller
+instead of devices. For the example mentioned above, if device A
+and Group B has different interrupt controllers, we just need to
+implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
+to suitable callbacks.
+	The framework already achieves what you you want:)
+Regards!
 Gerry
-
 > 
 > Thanks,
 > 	Abel
