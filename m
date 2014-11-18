@@ -1,114 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaKRACP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:02:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52300 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982AbaKRACO (ORCPT
+	id S1752815AbaKRAFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:05:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48953 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaKRAFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:02:14 -0500
-Date: Mon, 17 Nov 2014 16:02:12 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tim Hartrick <tim@edgecast.com>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-Message-Id: <20141117160212.b86d031e1870601240b0131d@linux-foundation.org>
-In-Reply-To: <20141114163053.GA6547@cosmos.ssec.wisc.edu>
-References: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
-	<502D42E5.7090403@redhat.com>
-	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
-	<502F100A.1080401@redhat.com>
-	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
-	<CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
-	<20120822032057.GA30871@google.com>
-	<50345232.4090002@redhat.com>
-	<20130603195003.GA31275@evergreen.ssec.wisc.edu>
-	<20141114163053.GA6547@cosmos.ssec.wisc.edu>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Nov 2014 19:05:10 -0500
+Date: Mon, 17 Nov 2014 16:04:52 -0800
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-c04e051cccd2446d9ca373628d14b7e732462f5d@git.kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, dave@sr71.net,
+        qiaowei.ren@intel.com, fenghua.yu@intel.com,
+        dave.hansen@linux.intel.com, mingo@kernel.org, hpa@linux.intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, dave.hansen@linux.intel.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com, hpa@zytor.com,
+        qiaowei.ren@intel.com, dave@sr71.net, linux-kernel@vger.kernel.org
+In-Reply-To: <20141031215820.5EA5E0EC@viggo.jf.intel.com>
+References: <20141031215820.5EA5E0EC@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mpx] x86: mpx: Give bndX registers actual names
+Git-Commit-ID: c04e051cccd2446d9ca373628d14b7e732462f5d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014 10:30:53 -0600 Daniel Forrest <dan.forrest@ssec.wisc.edu> wrote:
+Commit-ID:  c04e051cccd2446d9ca373628d14b7e732462f5d
+Gitweb:     http://git.kernel.org/tip/c04e051cccd2446d9ca373628d14b7e732462f5d
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Fri, 31 Oct 2014 14:58:20 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 18 Nov 2014 00:58:52 +0100
 
-> There have been a couple of inquiries about the status of this patch
-> over the last few months, so I am going to try pushing it out.
-> 
-> Andrea Arcangeli has commented:
-> 
-> > Agreed. The only thing I don't like about this patch is the hardcoding
-> > of number 5: could we make it a variable to tweak with sysfs/sysctl so
-> > if some weird workload arises we have a tuning tweak? It'd cost one
-> > cacheline during fork, so it doesn't look excessive overhead.
-> 
-> Adding this is beyond my experience level, so if it is required then
-> someone else will have to make it so.
-> 
-> Rik van Riel has commented:
-> 
-> > I believe we should just merge that patch.
-> > 
-> > I have not seen any better ideas come by.
-> > 
-> > The comment should probably be fixed to reflect the
-> > chain length of 5 though :)
-> 
-> So here is Michel's patch again with "(length > 1)" modified to
-> "(length > 5)" and fixed comments.
-> 
-> I have been running with this patch (with the threshold set to 5) for
-> over two years now and it does indeed solve the problem.
-> 
-> ---
-> 
-> anon_vma_clone() is modified to return the length of the existing
-> same_vma anon vma chain, and we create a new anon_vma in the child
-> if it is more than five forks after the anon_vma was created, as we
-> don't want the same_vma chain to grow arbitrarily large.
+x86: mpx: Give bndX registers actual names
 
-hoo boy, what's going on here.
+Consider the bndX MPX registers.  There 4 registers each
+containing a 64-bit lower and a 64-bit upper bound.  That's 8*64
+bits and we declare it thusly:
 
-- Under what circumstances are we seeing this slab windup?
+	struct bndregs_struct {
+		u64 bndregs[8];
+	}
+    
+Let's say you want to read the upper bound from the MPX register
+bnd2 out of the xsave buf.  You do:
 
-- What are the consequences?  Can it OOM the machine?
+	bndregno = 2;
+	upper_bound = xsave_buf->bndregs.bndregs[2*bndregno+1];
 
-- Why is this occurring?  There aren't an infinite number of vmas, so
-  there shouldn't be an infinite number of anon_vmas or
-  anon_vma_chains.
+That kinda sucks.  Every time you access it, you need to know:
+1. Each bndX register is two entries wide in "bndregs"
+2. The lower comes first followed by upper.  We do the +1 to get
+   upper vs. lower.
 
-- IOW, what has to be done to fix this properly?
+This replaces the old definition.  You can now access them
+indexed by the register number directly, and with a meaningful
+name for the lower and upper bound:
 
-- What are the runtime consequences of limiting the length of the chain?
+	bndregno = 2;
+	xsave_buf->bndreg[bndregno].upper_bound;
 
-> ...
->
-> @@ -331,10 +334,17 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
->  	 * First, attach the new VMA to the parent VMA's anon_vmas,
->  	 * so rmap can find non-COWed pages in child processes.
->  	 */
-> -	if (anon_vma_clone(vma, pvma))
-> +	length = anon_vma_clone(vma, pvma);
-> +	if (length < 0)
->  		return -ENOMEM;
+It's now *VERY* clear that there are 4 registers.  The programmer
+now doesn't have to care what order the lower and upper bounds
+are in, and it's harder to get it wrong.
 
-This should propagate the anon_vma_clone() return val instead of
-assuming ENOMEM.  But that won't fix anything...
+[ tglx: Changed ub/lb to upper_bound/lower_bound and renamed struct
+bndreg_struct to struct bndreg ]
 
-> +	else if (length > 5)
-> +		return 0;
->  
-> -	/* Then add our own anon_vma. */
-> +	/*
-> +	 * Then add our own anon_vma. We do this only for five forks after
-> +	 * the anon_vma was created, as we don't want the same_vma chain to
-> +	 * grow arbitrarily large.
-> +	 */
->  	anon_vma = anon_vma_alloc();
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: x86@kernel.org
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Link: http://lkml.kernel.org/r/20141031215820.5EA5E0EC@viggo.jf.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/processor.h | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index eb71ec7..0f2263a 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -374,8 +374,9 @@ struct lwp_struct {
+ 	u8 reserved[128];
+ };
+ 
+-struct bndregs_struct {
+-	u64 bndregs[8];
++struct bndreg {
++	u64 lower_bound;
++	u64 upper_bound;
+ } __packed;
+ 
+ struct bndcsr_struct {
+@@ -394,7 +395,7 @@ struct xsave_struct {
+ 	struct xsave_hdr_struct xsave_hdr;
+ 	struct ymmh_struct ymmh;
+ 	struct lwp_struct lwp;
+-	struct bndregs_struct bndregs;
++	struct bndreg bndreg[4];
+ 	struct bndcsr_struct bndcsr;
+ 	/* new processor state extensions will go here */
+ } __attribute__ ((packed, aligned (64)));
