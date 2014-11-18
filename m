@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799AbaKRSKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:10:51 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40990 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708AbaKRSKt (ORCPT
+	id S1754957AbaKRSLa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:11:30 -0500
+Received: from [114.143.50.60] ([114.143.50.60]:19210 "EHLO
+	dhcp223-82.pnq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754010AbaKRSL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:10:49 -0500
-Date: Tue, 18 Nov 2014 10:09:37 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Michael Thalmeier <michael.thalmeier@hale.at>
-Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] hwmon: (lm75) Add support for the NXP LM75B
-Message-ID: <20141118180937.GA12854@roeck-us.net>
-References: <1416326884-22623-1-git-send-email-michael.thalmeier@hale.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416326884-22623-1-git-send-email-michael.thalmeier@hale.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.546B8BA9.0278,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 18 Nov 2014 13:11:28 -0500
+From: Pankaj Gupta <pagupta@redhat.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com.pnq.redhat.com, xemul@parallels.com,
+        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
+        stephen@networkplumber.org, jiri@resnulli.us,
+        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
+Subject: [PATCH net-net 0/4] Increase the limit of tuntap queues
+Date: Tue, 18 Nov 2014 21:52:54 +0530
+Message-Id: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 05:08:04PM +0100, Michael Thalmeier wrote:
-> It is basically a faster lm75 with improved (11 bit) resolution.
-> 
-> Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
+This patch series is followup to the RFC posted as:
+https://lkml.org/lkml/2014/8/18/392
 
-Applied to -next.
+Changes from RFC are:
+PATCH 1: Sergei Shtylyov - Add an empty line after declarations.
+PATCH 2: Jiri Pirko - Do not introduce new module paramaters.
+	 Michael.S.Tsirkin - We can use sysctl for limiting max number
+                             of queues.
 
-Thanks,
-Guenter
+Networking under KVM works best if we allocate a per-vCPU rx and tx
+queue in a virtual NIC. This requires a per-vCPU queue on the host side.
+Modern physical NICs have multiqueue support for large number of queues.
+To scale vNIC to run multiple queues parallel to maximum number of vCPU's
+we need to increase number of queues support in tuntap.   
+
+This series is to increase the limit of tuntap queues. Original work is being 
+done by 'jasowang@redhat.com'. I am taking this 'https://lkml.org/lkml/2013/6/19/29' 
+patch series as a reference. As per discussion in the patch series:
+
+There were two reasons which prevented us from increasing number of tun queues:
+
+- The netdev_queue array in netdevice were allocated through kmalloc, which may 
+  cause a high order memory allocation too when we have several queues. 
+  E.g. sizeof(netdev_queue) is 320, which means a high order allocation would 
+  happens when the device has more than 16 queues.
+
+- We store the hash buckets in tun_struct which results a very large size of
+  tun_struct, this high order memory allocation fail easily when the memory is
+  fragmented.
+
+The patch 60877a32bce00041528576e6b8df5abe9251fa73 increases the number of tx 
+queues. Memory allocation fallback to vzalloc() when kmalloc() fails.
+
+This series tries to address following issues:
+
+- Increase the number of netdev_queue queues for rx similarly its done for tx 
+  queues by falling back to vzalloc() when memory allocation with kmalloc() fails.
+
+- Switches to use flex array to implement the flow caches to avoid higher order 
+  allocations.
+
+- Accept maximum number of queues as sysctl param so that any user space 
+  application like libvirt can use this value to limit number of queues. Also
+  Administrators can specify maximum number of queues by updating this sysctl
+  entry.
+
+- Increase number of queues to 256, maximum number is equal to maximum number 
+  of vCPUS allowed in a guest.
+
+I have done some testing to find out any regression and with sample program
+ which creates tun/tap for single queue / multiqueue device and it seems to be 
+ working fine. I will also post the performance numbers.
+
+  tuntap: Increase the number of queues in tun
+  tuntap: Reduce the size of tun_struct by using flex array
+  tuntap: Accept tuntap max queue length as sysctl entry
+  net: allow large number of rx queues
+
+ drivers/net/tun.c |   91 +++++++++++++++++++++++++++++++++++---------
+ net/core/dev.c    |   19 ++++++---
+ 2 files changed, 86 insertions(+), 24 deletions(-)
