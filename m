@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaKRGeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 01:34:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:58190 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753140AbaKRGdC convert rfc822-to-8bit (ORCPT
+	id S1753838AbaKRGfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:35:31 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15679 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaKRGf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 01:33:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="417982761"
-From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "Sam Protsenko" <semen.protsenko@linaro.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: RE: [PATCH v2 1/3] firmware loader: Introduce new API -
- request_firmware_abort()
-Thread-Topic: [PATCH v2 1/3] firmware loader: Introduce new API -
- request_firmware_abort()
-Thread-Index: AQHP+4de++OfUYhRjkKfGs6CqwuvNJxZipnAgArp9ICAAXTQMA==
-Date: Tue, 18 Nov 2014 06:31:38 +0000
-Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B85DA57@PGSMSX102.gar.corp.intel.com>
-References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
- <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
- <20141108190655.GA2638@kroah.com>
- <F54AEECA5E2B9541821D670476DAE19C2B8529E3@PGSMSX102.gar.corp.intel.com>
- <20141117151211.GB6810@console-pimps.org>
-In-Reply-To: <20141117151211.GB6810@console-pimps.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Nov 2014 01:35:29 -0500
+Message-ID: <546AE8A9.1090600@huawei.com>
+Date: Tue, 18 Nov 2014 14:35:21 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3 cgroup/for-3.19] cgroup: implement cgroup_get_e_css()
+References: <20141117205652.GA23126@htj.dyndns.org> <20141117205734.GB23126@htj.dyndns.org> <20141117205855.GC23126@htj.dyndns.org>
+In-Reply-To: <20141117205855.GC23126@htj.dyndns.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Matt Fleming [mailto:matt@console-pimps.org]
-> Sent: Monday, November 17, 2014 11:12 PM
-> >
-> > - Only doing module unload is required to be aware of this synchronization
-> > 	-> Ensuring the call back does not fall into unloaded code which may
-> cause
-> > 	     undefined behavior.
-> > 	-> Ensuring the put_device() & module_put() code have finished in
-> firmware_class.c
-> > 	     function request_firmware_work_func() before the device is
-> unregistered
-> > 	     and module unloaded happen.
+On 2014/11/18 4:58, Tejun Heo wrote:
+> Implement cgroup_get_e_css() which finds and gets the effective css
+> for the specified cgroup and subsystem combination.  This function
+> always returns a valid pinned css.  This will be used by cgroup
+> writeback support.
 > 
-> Shouldn't the existing module_{put,get}() and {put,get}_device() calls
-> provide all the necessary synchronisation?
+> While at it, add comment to cgroup_e_css() to explain why that
+> function is different from cgroup_get_e_css() and has to test
+> cgrp->child_subsys_mask instead of cgroup_css(cgrp, ss).
 > 
-> Module unload should not be possible while other code is using the
-> module (and the module refcnt has been incremented accordindly).
-> 
-> Right?
-> 
-> --
-> Matt Fleming, Intel Open Source Technology Center
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-Hi Matt,
+For all 3 patches:
 
-Yes, you are right. If the module refcount is not zero, you will get error
-message and returned while you do "rmmod". But I strongly believe if we
-have the capability in our code to take care of it by doing synchronization,
-we should take care of it in case people are doing "rmmod -f". Don't
-you think so?
-
-
-Regards,
-Wilson
+Acked-by: Zefan Li <lizefan@huawei.com>
 
