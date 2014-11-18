@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988AbaKRI3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:29:17 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38393 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915AbaKRI2z (ORCPT
+	id S1753920AbaKRI2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:28:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32937 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaKRI2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:28:55 -0500
+	Tue, 18 Nov 2014 03:28:44 -0500
 From: Ethan Zhao <ethan.zhao@oracle.com>
 To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
         corbet@lwn.net
@@ -14,8 +14,8 @@ Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
         brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
 Subject: [PATCH] intel_pstate: add module and kernel command line parameter to ignore ACPI _PPC
-Date: Tue, 18 Nov 2014 17:27:33 +0900
-Message-Id: <1416299253-14912-8-git-send-email-ethan.zhao@oracle.com>
+Date: Tue, 18 Nov 2014 17:27:29 +0900
+Message-Id: <1416299253-14912-4-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
 References: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
