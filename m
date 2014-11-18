@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaKRJkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 04:40:09 -0500
-Received: from lb3-smtp-cloud3.xs4all.net ([194.109.24.30]:42680 "EHLO
-	lb3-smtp-cloud3.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751699AbaKRJkF (ORCPT
+	id S1753634AbaKRJlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 04:41:07 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47922 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358AbaKRJlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 04:40:05 -0500
-Message-ID: <546B13CC.6050605@xs4all.nl>
-Date: Tue, 18 Nov 2014 10:39:24 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 18 Nov 2014 04:41:04 -0500
+Date: Tue, 18 Nov 2014 09:40:23 +0000
+From: Mark Brown <broonie@kernel.org>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>, Jaroslav Kysela <perex@perex.cz>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Takashi Iwai <tiwai@suse.de>,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Message-ID: <20141118094023.GG22111@sirena.org.uk>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <5469F4D5.9050908@users.sourceforge.net>
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>, linux-media@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API
- for v4l2_subdev_get_try_*()
-References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lHGcFxmlz1yfXmOs"
+Content-Disposition: inline
+In-Reply-To: <5469F4D5.9050908@users.sourceforge.net>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 81.128.185.34
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: ASoC: omap-mcbsp: Deletion of an unnecessary check before the
+ function call "kfree"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/14 11:41, Lad, Prabhakar wrote:
-> this patch removes the guard CONFIG_VIDEO_V4L2_SUBDEV_API
-> for v4l2_subdev_get_try_*() functions.
-> In cases where a subdev using v4l2_subdev_get_try_*() calls
-> internally and the bridge using subdev pad ops which is
-> not MC aware forces to select MEDIA_CONTROLLER, as
-> VIDEO_V4L2_SUBDEV_API is dependent on it.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  include/media/v4l2-subdev.h | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
-> index 5860292..076ca11 100644
-> --- a/include/media/v4l2-subdev.h
-> +++ b/include/media/v4l2-subdev.h
-> @@ -642,7 +642,6 @@ struct v4l2_subdev_fh {
->  #define to_v4l2_subdev_fh(fh)	\
->  	container_of(fh, struct v4l2_subdev_fh, vfh)
->  
-> -#if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
->  #define __V4L2_SUBDEV_MK_GET_TRY(rtype, fun_name, field_name)		\
->  	static inline struct rtype *					\
->  	v4l2_subdev_get_try_##fun_name(struct v4l2_subdev_fh *fh,	\
-> @@ -656,7 +655,6 @@ struct v4l2_subdev_fh {
->  __V4L2_SUBDEV_MK_GET_TRY(v4l2_mbus_framefmt, format, try_fmt)
->  __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, crop, try_crop)
->  __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, compose, try_compose)
-> -#endif
->  
->  extern const struct v4l2_file_operations v4l2_subdev_fops;
->  
-> 
 
-The problem is that v4l2_subdev_get_try_*() needs a v4l2_subdev_fh which
-you don't have if CONFIG_VIDEO_V4L2_SUBDEV_API is not defined. So I don't
-see how removing the guards help with that.
+--lHGcFxmlz1yfXmOs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What can be done is that if CONFIG_VIDEO_V4L2_SUBDEV_API is not defined,
-then these functions return NULL.
+On Mon, Nov 17, 2014 at 02:15:01PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Mon, 17 Nov 2014 14:05:27 +0100
+>=20
+> The kfree() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 
-BTW, one patch I will very happily accept is one where the __V4L2_SUBDEV_MK_GET_TRY
-is removed and these three try functions are just written as proper
-static inlines. I find it very obfuscated code.
+Applied, thanks.
 
-In addition, because it is a macro you won't find the function definitions
-if you grep on the function name.
+--lHGcFxmlz1yfXmOs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-But any functional changes here need to be Acked by Laurent first.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Regards,
+iQEcBAEBAgAGBQJUaxQCAAoJECTWi3JdVIfQZU0H/356TKBrEHx9HSKrWeApVsta
+Vyw6L73dZOV9Zaz6tW5YN4jFmgMY+ukFjXaNjliD0aWDW5CoZ7dL5cxa2Fh4p1UB
+CUWrnBANHwWtuC9RnN8tjQufkon1+wCylbxFy7MfLybR3eAPaf1d0CKXGHLMshAV
+eFElkPCOaxDUqOcdsOMW5s7iul46voFGAPnVzlE47SUHjGLlRWv7+fgblUO0amav
+16KdKBnwVBwRkkQ1oXe3CnMB5XmVqVBw4akfQRTELPYiBfYKgpwlHOmiA04lXae5
+X7lnWENrPDL+lHC0rSfQXuKAXQ/+bf1Re8W/+/OaXS6qiJg9g7DU8p9lPRfVgQQ=
+=I3wy
+-----END PGP SIGNATURE-----
 
-	Hans
+--lHGcFxmlz1yfXmOs--
