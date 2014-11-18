@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475AbaKROt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:49:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57215 "EHLO mx2.suse.de"
+	id S1755282AbaKROuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:50:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57041 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754978AbaKROJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:58 -0500
+	id S932195AbaKROJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:56 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 126/206] ext4: fix overflow when updating superblock backups after resize
-Date: Tue, 18 Nov 2014 15:08:01 +0100
-Message-Id: <6eac6ac49db2487a748258be990a34cff73dc792.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Paul Fertser <fercerpav@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 098/206] media: usb: uvc: add a quirk for Dell XPS M1330 webcam
+Date: Tue, 18 Nov 2014 15:07:33 +0100
+Message-Id: <2b78ff2f0d9f5be64af3ab88d2bff9033010a422.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,42 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Paul Fertser <fercerpav@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9378c6768e4fca48971e7b6a9075bc006eda981d upstream.
+commit 62ea864f84fed6e04dd033d500d4c9183a83d590 upstream.
 
-When there are no meta block groups update_backups() will compute the
-backup block in 32-bit arithmetics thus possibly overflowing the block
-number and corrupting the filesystem. OTOH filesystems without meta
-block groups larger than 16 TB should be rare. Fix the problem by doing
-the counting in 64-bit arithmetics.
+As reported on [1], this device needs this quirk to be able to
+reliably initialise the webcam.
 
-Coverity-id: 741252
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+[1] http://ubuntuforums.org/showthread.php?t=2145996
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Paul Fertser <fercerpav@gmail.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ext4/resize.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/uvc/uvc_driver.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 14e0f8a25c81..2400ad1c3d12 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1071,7 +1071,7 @@ static void update_backups(struct super_block *sb, int blk_off, char *data,
- 			break;
- 
- 		if (meta_bg == 0)
--			backup_block = group * bpg + blk_off;
-+			backup_block = ((ext4_fsblk_t)group) * bpg + blk_off;
- 		else
- 			backup_block = (ext4_group_first_block_no(sb, group) +
- 					ext4_bg_has_super(sb, group));
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index c3bb2502225b..753ad4cfc118 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -2210,6 +2210,15 @@ static struct usb_device_id uvc_ids[] = {
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_QUIRK_PROBE_DEF },
++	/* Dell XPS M1330 (OmniVision OV7670 webcam) */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x05a9,
++	  .idProduct		= 0x7670,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_PROBE_DEF },
+ 	/* Apple Built-In iSight */
+ 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+ 				| USB_DEVICE_ID_MATCH_INT_INFO,
 -- 
 2.1.3
 
