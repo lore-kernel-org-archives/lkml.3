@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974AbaKRKRg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:17:36 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:53019 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847AbaKRKRd (ORCPT
+	id S1753953AbaKRKSq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:18:46 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:46180 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaKRKSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:17:33 -0500
-Message-ID: <546B1CA6.1030300@linaro.org>
-Date: Tue, 18 Nov 2014 11:17:10 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linaro-acpi@lists.linaro.org
-CC: linux-arm-kernel@lists.infradead.org, rjw@rjwysocki.net,
-        linux-pci@vger.kernel.org, catalin.marinas@arm.com, x86@kernel.org,
-        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org, will.deacon@arm.com,
-        linux-acpi@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        bhelgaas@google.com, tglx@linutronix.de
-Subject: Re: [Linaro-acpi] [RFC PATCH 4/4] arm64, acpi, pci: Provide arch-specific
- calls for PCI host bridge dirver (PNP0A03).
-References: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org> <4474363.kMvYSLl2Ev@wuerfel> <54660D44.9020406@linaro.org> <2009440.GJsvyI3SUN@wuerfel>
-In-Reply-To: <2009440.GJsvyI3SUN@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Nov 2014 05:18:44 -0500
+From: Johan Hovold <johan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-serial@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH] serial: tegra: clean up tty-flag assignments
+Date: Tue, 18 Nov 2014 11:18:02 +0100
+Message-Id: <1416305882-8713-1-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.11.2014 15:53, Arnd Bergmann wrote:
-> On Friday 14 November 2014 15:10:12 Tomasz Nowicki wrote:
->> On 07.11.2014 15:24, Arnd Bergmann wrote:
->>> On Friday 07 November 2014 14:27:56 Tomasz Nowicki wrote:
->>>>
->>>>    #ifdef CONFIG_PCI
->>>> +struct pci_controller {
->>>> +	struct acpi_device *companion;
->>>> +	int segment;
->>>> +	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
->>>> +};
->>>> +
->>>> +#define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
->>>> +
->>>
->>> Don't use busdev->sysdata in architecture specific code, it belongs to the
->>> host bridge driver with the new model. For ACPI you don't have a host bridge
->>> driver, but it's better to keep these separate.
->>>
->>> The segment is always the same as the domain number, so just use that.
->>> The node and companion members here can get added to struct pci_host_bridge.
->>
->> The reason why I put segment field to struct pci_controller is to
->> initialize domain_nr of struct pci_bus being in pci_create_root_bus(),
->> domain_nr can be used later on though. Correct me I am wrong.
->>
->> Honestly I do not see the way to create root bus without e.g.
->> sysdata.segment here.
->
-> See the patches that Liviu and Lorenzo have been posting recently. This
-> should be straightforward in 3.19.
+The tty break and error flags are not bit masks so do not to use bitwise
+OR when assigning them.
 
-Hi Arnd,
+Note that there is no functional change due to the if-else construct and
+flag having been initialised to zero (TTY_NORMAL).
 
-I have been looking into patch (if that what you meant) :
-[RFC PATCH v2] drivers: pci: move PCI domain assignment to generic PCI code
+Signed-off-by: Johan Hovold <johan@kernel.org>
+---
+ drivers/tty/serial/serial-tegra.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-This is not enough for me since it gets domain number from its OF parent 
-or just uses sequential increased domain number. In my case, I do not 
-have parent so I need to get segment from ACPI node which is not 
-available there.
-
-On the other hand, patch set posted by Wang Yijing:
-[RFC PATCH 00/16] Refine PCI host bridge scan interfaces
-tends to solve that issue.
-
-What would be the best way for this patch, keep busdev->sysdata usage 
-and rebase once Wang Yijing patch set will be accepted?
-
-Regards,
-Tomasz
-
-
+diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
+index 53d7c31ce098..0b615d8b968a 100644
+--- a/drivers/tty/serial/serial-tegra.c
++++ b/drivers/tty/serial/serial-tegra.c
+@@ -319,16 +319,16 @@ static char tegra_uart_decode_rx_error(struct tegra_uart_port *tup,
+ 	if (unlikely(lsr & TEGRA_UART_LSR_ANY)) {
+ 		if (lsr & UART_LSR_OE) {
+ 			/* Overrrun error */
+-			flag |= TTY_OVERRUN;
++			flag = TTY_OVERRUN;
+ 			tup->uport.icount.overrun++;
+ 			dev_err(tup->uport.dev, "Got overrun errors\n");
+ 		} else if (lsr & UART_LSR_PE) {
+ 			/* Parity error */
+-			flag |= TTY_PARITY;
++			flag = TTY_PARITY;
+ 			tup->uport.icount.parity++;
+ 			dev_err(tup->uport.dev, "Got Parity errors\n");
+ 		} else if (lsr & UART_LSR_FE) {
+-			flag |= TTY_FRAME;
++			flag = TTY_FRAME;
+ 			tup->uport.icount.frame++;
+ 			dev_err(tup->uport.dev, "Got frame errors\n");
+ 		} else if (lsr & UART_LSR_BI) {
+-- 
+2.0.4
 
