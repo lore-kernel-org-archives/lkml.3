@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaKRI25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:28:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33011 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821AbaKRI2x (ORCPT
+	id S1754010AbaKRI3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:29:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38340 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922AbaKRI2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:28:53 -0500
+	Tue, 18 Nov 2014 03:28:48 -0500
 From: Ethan Zhao <ethan.zhao@oracle.com>
 To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
         corbet@lwn.net
 Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
         brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH] intel_pstate: allow driver to be built as a module
-Date: Tue, 18 Nov 2014 17:27:32 +0900
-Message-Id: <1416299253-14912-7-git-send-email-ethan.zhao@oracle.com>
+Subject: [PATCH] intel_pstate: skip the driver if Sun server has ACPI _PPC method
+Date: Tue, 18 Nov 2014 17:27:31 +0900
+Message-Id: <1416299253-14912-6-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
 References: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Maly <brian.maly@oracle.com>
+Oracle Sun X86 servers have dynamic power capping capability that works via
+ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
+enabled.
 
-To provide the flexibility of module, allow this driver to
-be configured and built as a module.
-
-Signed-off-by: Brian Maly <brian.maly@oracle.com>
 Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 ---
- drivers/cpufreq/Kconfig.x86    | 2 +-
- drivers/cpufreq/intel_pstate.c | 6 ++++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-index 89ae88f..94c9e6b 100644
---- a/drivers/cpufreq/Kconfig.x86
-+++ b/drivers/cpufreq/Kconfig.x86
-@@ -3,7 +3,7 @@
- #
- 
- config X86_INTEL_PSTATE
--       bool "Intel P state control"
-+       tristate "Intel P state control"
-        depends on X86
-        help
-           This driver provides a P state for Intel core processors.
 diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 5498eb0..7c5faea 100644
+index 27bb6d3..5498eb0 100644
 --- a/drivers/cpufreq/intel_pstate.c
 +++ b/drivers/cpufreq/intel_pstate.c
-@@ -590,7 +590,9 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
- 	if (pstate == cpu->pstate.current_pstate)
- 		return;
- 
-+#ifndef MODULE
- 	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
-+#endif
- 
- 	cpu->pstate.current_pstate = pstate;
- 
-@@ -705,12 +707,14 @@ static void intel_pstate_timer_func(unsigned long __data)
- 
- 	intel_pstate_adjust_busy_pstate(cpu);
- 
-+#ifndef MODULE
- 	trace_pstate_sample(fp_toint(sample->core_pct_busy),
- 			fp_toint(intel_pstate_get_scaled_busy(cpu)),
- 			cpu->pstate.current_pstate,
- 			sample->mperf,
- 			sample->aperf,
- 			sample->freq);
-+#endif
- 
- 	intel_pstate_set_sample_time(cpu);
+@@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
+ 	return true;
  }
-@@ -1054,6 +1058,7 @@ out:
- }
- device_initcall(intel_pstate_init);
  
-+#ifndef MODULE
- static int __init intel_pstate_setup(char *str)
- {
- 	if (!str)
-@@ -1064,6 +1069,7 @@ static int __init intel_pstate_setup(char *str)
- 	return 0;
- }
- early_param("intel_pstate", intel_pstate_setup);
-+#endif
++static bool intel_pstate_has_acpi_ppc(void)
++{
++	int i;
++
++	for_each_possible_cpu(i) {
++		struct acpi_processor *pr = per_cpu(processors, i);
++
++		if (!pr)
++			continue;
++		if (acpi_has_method(pr->handle, "_PPC"))
++			return true;
++	}
++	return false;
++}
++
+ struct hw_vendor_info {
+ 	u16  valid;
+ 	char oem_id[ACPI_OEM_ID_SIZE];
+@@ -952,6 +967,7 @@ struct hw_vendor_info {
+ /* Hardware vendor-specific info that has its own power management modes */
+ static struct hw_vendor_info vendor_info[] = {
+ 	{1, "HP    ", "ProLiant"},
++	{1, "ORACLE", ""},
+ 	{0, "", ""},
+ };
  
- MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
- MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+@@ -969,12 +985,16 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+ 		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
+ 		    intel_pstate_no_acpi_pss())
+ 			return true;
++		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
++			intel_pstate_has_acpi_ppc())
++			return true;
+ 	}
+ 
+ 	return false;
+ }
+ #else /* CONFIG_ACPI not enabled */
+ static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
++static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+ #endif /* CONFIG_ACPI */
+ 
+ static int __init intel_pstate_init(void)
 -- 
 1.8.3.1
 
