@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaKRAF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:05:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48961 "EHLO
+	id S1753204AbaKRAFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:05:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48970 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaKRAFV (ORCPT
+	with ESMTP id S1751464AbaKRAFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:05:21 -0500
-Date: Mon, 17 Nov 2014 16:05:07 -0800
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-62e7759b1bdaf9b753c3724a56fcbe3235ebd5f3@git.kernel.org>
-Cc: tglx@linutronix.de, qiaowei.ren@intel.com, mingo@kernel.org, dave@sr71.net,
-        linux-kernel@vger.kernel.org, hpa@zytor.com,
+	Mon, 17 Nov 2014 19:05:34 -0500
+Date: Mon, 17 Nov 2014 16:05:23 -0800
+From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
+Message-ID: <tip-ee1b58d36aa1b5a79eaba11f5c3633c88231da83@git.kernel.org>
+Cc: dave.hansen@linux.intel.com, linux-kernel@vger.kernel.org,
+        qiaowei.ren@intel.com, mingo@kernel.org, dave@sr71.net, hpa@zytor.com,
+        tglx@linutronix.de
+Reply-To: tglx@linutronix.de, hpa@zytor.com, dave@sr71.net, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, qiaowei.ren@intel.com,
         dave.hansen@linux.intel.com
-Reply-To: tglx@linutronix.de, qiaowei.ren@intel.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com,
-        dave.hansen@linux.intel.com, mingo@kernel.org, dave@sr71.net
-In-Reply-To: <20141114151817.031762AC@viggo.jf.intel.com>
-References: <20141114151817.031762AC@viggo.jf.intel.com>
+In-Reply-To: <20141114151819.1908C900@viggo.jf.intel.com>
+References: <20141114151819.1908C900@viggo.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mpx] x86, mpx: Rename cfg_reg_u and status_reg
-Git-Commit-ID: 62e7759b1bdaf9b753c3724a56fcbe3235ebd5f3
+Subject: [tip:x86/mpx] mpx:
+  Extend siginfo structure to include bound violation information
+Git-Commit-ID: ee1b58d36aa1b5a79eaba11f5c3633c88231da83
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,55 +34,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  62e7759b1bdaf9b753c3724a56fcbe3235ebd5f3
-Gitweb:     http://git.kernel.org/tip/62e7759b1bdaf9b753c3724a56fcbe3235ebd5f3
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Fri, 14 Nov 2014 07:18:17 -0800
+Commit-ID:  ee1b58d36aa1b5a79eaba11f5c3633c88231da83
+Gitweb:     http://git.kernel.org/tip/ee1b58d36aa1b5a79eaba11f5c3633c88231da83
+Author:     Qiaowei Ren <qiaowei.ren@intel.com>
+AuthorDate: Fri, 14 Nov 2014 07:18:19 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 18 Nov 2014 00:58:53 +0100
 
-x86, mpx: Rename cfg_reg_u and status_reg
+mpx: Extend siginfo structure to include bound violation information
 
-According to Intel SDM extension, MPX configuration and status registers
-should be BNDCFGU and BNDSTATUS. This patch renames cfg_reg_u and
-status_reg to bndcfgu and bndstatus.
+This patch adds new fields about bound violation into siginfo
+structure. si_lower and si_upper are respectively lower bound
+and upper bound when bound violation is caused.
 
-[ tglx: Renamed 'struct bndscr_struct' to 'struct bndscr' ]
-
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 Cc: linux-mm@kvack.org
 Cc: linux-mips@linux-mips.org
 Cc: Dave Hansen <dave@sr71.net>
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>
-Link: http://lkml.kernel.org/r/20141114151817.031762AC@viggo.jf.intel.com
+Link: http://lkml.kernel.org/r/20141114151819.1908C900@viggo.jf.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/processor.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ include/uapi/asm-generic/siginfo.h | 9 ++++++++-
+ kernel/signal.c                    | 4 ++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 0f2263a..6571aaa 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -379,9 +379,9 @@ struct bndreg {
- 	u64 upper_bound;
- } __packed;
+diff --git a/include/uapi/asm-generic/siginfo.h b/include/uapi/asm-generic/siginfo.h
+index ba5be7f..1e35520 100644
+--- a/include/uapi/asm-generic/siginfo.h
++++ b/include/uapi/asm-generic/siginfo.h
+@@ -91,6 +91,10 @@ typedef struct siginfo {
+ 			int _trapno;	/* TRAP # which caused the signal */
+ #endif
+ 			short _addr_lsb; /* LSB of the reported address */
++			struct {
++				void __user *_lower;
++				void __user *_upper;
++			} _addr_bnd;
+ 		} _sigfault;
  
--struct bndcsr_struct {
--	u64 cfg_reg_u;
--	u64 status_reg;
-+struct bndcsr {
-+	u64 bndcfgu;
-+	u64 bndstatus;
- } __packed;
+ 		/* SIGPOLL */
+@@ -131,6 +135,8 @@ typedef struct siginfo {
+ #define si_trapno	_sifields._sigfault._trapno
+ #endif
+ #define si_addr_lsb	_sifields._sigfault._addr_lsb
++#define si_lower	_sifields._sigfault._addr_bnd._lower
++#define si_upper	_sifields._sigfault._addr_bnd._upper
+ #define si_band		_sifields._sigpoll._band
+ #define si_fd		_sifields._sigpoll._fd
+ #ifdef __ARCH_SIGSYS
+@@ -199,7 +205,8 @@ typedef struct siginfo {
+  */
+ #define SEGV_MAPERR	(__SI_FAULT|1)	/* address not mapped to object */
+ #define SEGV_ACCERR	(__SI_FAULT|2)	/* invalid permissions for mapped object */
+-#define NSIGSEGV	2
++#define SEGV_BNDERR	(__SI_FAULT|3)  /* failed address bound checks */
++#define NSIGSEGV	3
  
- struct xsave_hdr_struct {
-@@ -396,7 +396,7 @@ struct xsave_struct {
- 	struct ymmh_struct ymmh;
- 	struct lwp_struct lwp;
- 	struct bndreg bndreg[4];
--	struct bndcsr_struct bndcsr;
-+	struct bndcsr bndcsr;
- 	/* new processor state extensions will go here */
- } __attribute__ ((packed, aligned (64)));
- 
+ /*
+  * SIGBUS si_codes
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 8f0876f..2c403a4 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2748,6 +2748,10 @@ int copy_siginfo_to_user(siginfo_t __user *to, const siginfo_t *from)
+ 		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
+ 			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
+ #endif
++#ifdef SEGV_BNDERR
++		err |= __put_user(from->si_lower, &to->si_lower);
++		err |= __put_user(from->si_upper, &to->si_upper);
++#endif
+ 		break;
+ 	case __SI_CHLD:
+ 		err |= __put_user(from->si_pid, &to->si_pid);
