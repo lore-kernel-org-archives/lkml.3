@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575AbaKRQ4w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:56:52 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59037 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755007AbaKRQ4v (ORCPT
+	id S932597AbaKRQ5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:57:20 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60467 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932577AbaKRQ5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:56:51 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>, Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/7] Replace _PAGE_NUMA with PAGE_NONE protections
-In-Reply-To: <546B74F5.10004@oracle.com>
-References: <1415971986-16143-1-git-send-email-mgorman@suse.de> <5466C8A5.3000402@oracle.com> <20141118154246.GB2725@suse.de> <546B74F5.10004@oracle.com>
-User-Agent: Notmuch/0.18.2+162~g34d2c62 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
-Date: Tue, 18 Nov 2014 22:26:41 +0530
-Message-ID: <87tx1w78hi.fsf@linux.vnet.ibm.com>
+	Tue, 18 Nov 2014 11:57:18 -0500
+Date: Tue, 18 Nov 2014 16:57:13 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v5 01/18] ARM64: Move the init of cpu_logical_map(0)
+ before unflatten_device_tree()
+Message-ID: <20141118165713.GT18842@arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <1413553034-20956-2-git-send-email-hanjun.guo@linaro.org>
+ <546B4D8D.2020605@linaro.org>
+ <20141118164312.GL28279@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111816-0021-0000-0000-00000248C21F
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141118164312.GL28279@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> writes:
+On Tue, Nov 18, 2014 at 04:43:13PM +0000, Catalin Marinas wrote:
+> On Tue, Nov 18, 2014 at 01:45:49PM +0000, Hanjun Guo wrote:
+> > On 2014年10月17日 21:36, Hanjun Guo wrote:
+> > > It always make sense to initialize CPU0's logical map entry from the
+> > > hardware values, so move the initialization of cpu_logical_map(0)
+> > > before unflatten_device_tree() which is needed by ACPI code later.
+> > >
+> > > Acked-by: Olof Johansson <olof@lixom.net>
+> > > Acked-by: Mark Rutland <mark.rutland@arm.com>
+> > > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> > 
+> > Could you merge this patch first in 3.19? It was acked by Olof and
+> > Mark, and it will make sense without ACPI too.
+> 
+> I think it can go in for 3.19 (it's Will's turn this time ;)).
 
-> On 11/18/2014 10:42 AM, Mel Gorman wrote:
->> 1. I'm assuming this is a KVM setup but can you confirm?
->
-> Yes.
->
->> 2. Are you using numa=fake=N?
->
-> Yes. numa=fake=24, which is probably way more nodes on any physical machine
-> than the new code was tested on?
->
->> 3. If you are using fake NUMA, what happens if you boot without it as
->>    that should make the patches a no-op?
->
-> Nope, still seeing it without fake numa.
->
->> 4. Similarly, does the kernel boot properly without without patches?
->
-> Yes, the kernel works fine without the patches both with and without fake
-> numa.
+This patch doesn't apply on for-next/core, as it conflicts with some of
+Rutland's rework ("arm64: log physical ID of boot CPU").
 
-
-Hmm that is interesting. I am not sure how writeback_fid can be
-related. We use writeback fid to enable client side caching with 9p
-(cache=loose). We use this fid to write back dirty pages later. Can you
-share the qemu command line used, 9p mount options and the test details ? 
-
-
--aneesh
-
+Will
