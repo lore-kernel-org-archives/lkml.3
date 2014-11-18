@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447AbaKRPtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:49:45 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:60759 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299AbaKRPtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:49:43 -0500
-Date: Tue, 18 Nov 2014 16:49:35 +0100
-From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: VFS: Parallel unmounting of filesystems produces system call error
-Message-ID: <20141118164935.19771a88@lilie>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754657AbaKRPxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:53:45 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53324 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754252AbaKRPxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:53:44 -0500
+Message-ID: <546B6B65.4050005@ti.com>
+Date: Tue, 18 Nov 2014 21:23:09 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Russell King <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: davinci: Remove redundant casts
+References: <1413903211-3143-1-git-send-email-linux@rasmusvillemoes.dk> <54468558.8040204@cogentembedded.com>
+In-Reply-To: <54468558.8040204@cogentembedded.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111815-0021-0000-0000-000001D349B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On Tuesday 21 October 2014 09:40 PM, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 10/21/2014 06:53 PM, Rasmus Villemoes wrote:
+> 
+>> These casts to char* are unnecessary and slightly confusing, since
+>> both operands actually have type const char*.
+> 
+>    Both operands of what? Typecast only has 1 operand. :-)
 
-I just ran some tests involving many parallel mount and unmount
-operations. I sometimes get EINVAL and the umount program says "not
-mounted". Which is definitively wrong. It feels like a race condition
-somewhere in the VFS code.
+Queuing this with this description:
 
-I use todays master branch (commit fc14f9c1272f62c3) on s390 with 1024
-DASD devices.
+"
+Remove unnecessary casts to char*. Both operands of the
+assignment actually have type const char*.
+"
 
-In fs/namespace.c, sys_umount:
-
-> 	retval = user_path_mountpoint_at(AT_FDCWD, name, 
-> lookup_flags, &path);
-...
-> 	retval = -EINVAL;
-> 	if (path.dentry != path.mnt->mnt_root)
-> 		goto dput_and_out;
-This seems to be erroneously true from time to time.
-
-
-The script does something equivalent to:
-> for n in $DEVNODES; do
->	umount $n &
-> done
-
-Do you have any idea what's wrong?
-
-
-Kind regards
-
-Philipp
-
-
-
-
-
+Thanks,
+Sekhar
