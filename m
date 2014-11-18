@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaKRCXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 21:23:45 -0500
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:53403 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116AbaKRCXm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 21:23:42 -0500
-References: <1414762838-13067-1-git-send-email-eternal.n08@gmail.com> <xr9361ed9rrj.fsf@gthelen.mtv.corp.google.com>
-From: Greg Thelen <gthelen@google.com>
-To: Junjie Mao <eternal.n08@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v3] x86, kaslr: Prevent .bss from overlaping initrd
-In-reply-to: <xr9361ed9rrj.fsf@gthelen.mtv.corp.google.com>
-Date: Mon, 17 Nov 2014 18:23:42 -0800
-Message-ID: <xr934mtx9rgx.fsf@gthelen.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753402AbaKRCXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 21:23:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:19817 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753116AbaKRCXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 21:23:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,407,1413270000"; 
+   d="asc'?scan'208";a="638672221"
+Message-ID: <1416277424.2295.1.camel@jtkirshe-mobl>
+Subject: Re: [PATCH (sent originally to netdev)] device: Add
+ dev_<level>_once variants
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 17 Nov 2014 18:23:44 -0800
+In-Reply-To: <1416277102.29010.14.camel@perches.com>
+References: <1416031715-32498-1-git-send-email-jeffrey.t.kirsher@intel.com>
+	 <1416031715-32498-2-git-send-email-jeffrey.t.kirsher@intel.com>
+	 <5467C3BA.6090003@gmail.com> <1416277102.29010.14.camel@perches.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-nuj0z72yUvFcRP5VA+FK"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Mon, Nov 17 2014, Greg Thelen wrote:
-[...]
-> Given that bss and brk are nobits (i.e. only ALLOC) sections, does
-> file_offset make sense as a load address.  This fails with gold:
->
-> $ git checkout v3.18-rc5
-> $ make  # with gold
-> [...]
-> ..bss and .brk lack common file offset
-> ..bss and .brk lack common file offset
-> ..bss and .brk lack common file offset
-> ..bss and .brk lack common file offset
->   MKPIGGY arch/x86/boot/compressed/piggy.S
-> Usage: arch/x86/boot/compressed/mkpiggy compressed_file run_size
-> make[2]: *** [arch/x86/boot/compressed/piggy.S] Error 1
-> make[1]: *** [arch/x86/boot/compressed/vmlinux] Error 2
-> make: *** [bzImage] Error 2
-[...]
+--=-nuj0z72yUvFcRP5VA+FK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I just saw http://www.spinics.net/lists/kernel/msg1869328.html which
-fixes things for me.  Sorry for the noise.
+On Mon, 2014-11-17 at 18:18 -0800, Joe Perches wrote:
+> Add the equivalents to pr_<level>_once.
+>=20
+> Suggested-by: Florian Fainelli <f.fainelli@gmail.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+
+> ---
+>  include/linux/device.h | 35 +++++++++++++++++++++++++++++++++++
+>  1 file changed, 35 insertions(+)
+
+
+
+--=-nuj0z72yUvFcRP5VA+FK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUaq2wAAoJEOVv75VaS+3ODrYP/1nksBh55gk473t8nrZaUxYh
+ENxbIQudN3Fj4uwM0sA2aErLlbebHADwWf4YeNT6dkx/xZOElpIi1DrHTB4gVXko
+ii9a6w9/4Q/E86pQBZJ0rF3qr7GrvZZv8ZHbk1IPEpLbdIsUrfVnREkAIwzVqb1g
+b/kaWEl/I7XFnn0SoKdTB+0KmDNGyzAWdo1kqF78z05k1m4Icyf1JpaYUIx4y/ct
+cIe0IbSeBs89vS3mi7hykhPAr8pH0hCsaJ/3e7EgID8t5DUCND/T6LHNhAK3h9M/
+QHswGg0OCocimGBG+yHAXQIz6uKQKdUN2KW165OnBhpMhoSiTzzF/1akhwrCDrGk
+oTGhzzb4X/pGc31JRkzzFPiSoCnm5BowG4AzH67gVuahoinyya3qMQajy8cyoHwh
+Xvx5w36ZZxI6mLnkwfHchM3XT1qvO0Rg6EdwyFuGc8dobgzHZ6gBteCREhPoPmr8
+Y6BKT0aNzkkYYY41VT+IArZYUUB1WiNyIH80tsuFX7rT/yUOvpc2+Z+ENLR8TwKA
+Yj5xccbu+B1nuSMjeinSxQX/by05WUZu82gxyVmswfNx+8ioQTEs/3+UCgpbVRq/
+dsLj88P0I8CQAwNpMHc3fJsSHg52KkGbUjY6imF7N48ucmpooiCggl96o3iVt3+W
+x0tBSVyKhSpDdQlkcTyw
+=LTym
+-----END PGP SIGNATURE-----
+
+--=-nuj0z72yUvFcRP5VA+FK--
+
