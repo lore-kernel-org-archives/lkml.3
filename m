@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbaKRVvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:51:01 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:63465 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaKRVu7 (ORCPT
+	id S1755020AbaKRVvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:51:15 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:52185 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071AbaKRVvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:50:59 -0500
-Date: Tue, 18 Nov 2014 22:50:54 +0100
+	Tue, 18 Nov 2014 16:51:13 -0500
+Date: Tue, 18 Nov 2014 22:51:08 +0100
 From: Mariusz Gorski <marius.gorski@gmail.com>
 To: Willy Tarreau <w@1wt.eu>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] staging: panel: Remove more magic number comparison
-Message-ID: <20141118215053.GC10306@firebird>
+Subject: Re: [PATCH 7/9] staging: panel: Refactor LCD init code
+Message-ID: <20141118215108.GD10306@firebird>
 References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com>
- <1416344174-9155-9-git-send-email-marius.gorski@gmail.com>
- <20141118212523.GK26514@1wt.eu>
+ <1416344174-9155-8-git-send-email-marius.gorski@gmail.com>
+ <20141118212326.GJ26514@1wt.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141118212523.GK26514@1wt.eu>
+In-Reply-To: <20141118212326.GJ26514@1wt.eu>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 10:25:23PM +0100, Willy Tarreau wrote:
-> On Tue, Nov 18, 2014 at 09:56:13PM +0100, Mariusz Gorski wrote:
-> > Use a macro instead of magic number comparison for checking
-> > whether a module param value has been set.
+On Tue, Nov 18, 2014 at 10:23:26PM +0100, Willy Tarreau wrote:
+> On Tue, Nov 18, 2014 at 09:56:12PM +0100, Mariusz Gorski wrote:
+> > Rework lcd_init method to make it a little bit more clear about
+> > the precedence of the params, move LCD geometry and pins layout
+> > to the LCD struct and thus make the LCD-related module params
+> > effectively read-only.
 > > 
 > > Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
-> > ---
-> >  drivers/staging/panel/panel.c | 21 +++++++++++----------
-> >  1 file changed, 11 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> > index ee48bca..268ad2e 100644
-> > --- a/drivers/staging/panel/panel.c
-> > +++ b/drivers/staging/panel/panel.c
-> > @@ -136,6 +136,7 @@
-> >  #define NOT_SET			-1
-> >  
-> >  #define IS_NOT_SET(x)	(x == NOT_SET)
-> > +#define IS_SET(x)		(x > NOT_SET)
-> >  
-> >  /* macros to simplify use of the parallel port */
-> >  #define r_ctr(x)        (parport_read_control((x)->port))
-> > @@ -1496,17 +1497,17 @@ static void lcd_init(void)
-> >  	}
-> >  
-> >  	/* Overwrite with module params set on loading */
-> > -	if (lcd_height > -1)
-> > +	if (IS_SET(lcd_height))
-> >  		lcd.height = lcd_height;
-> > -	if (lcd_width > -1)
-> > +	if (IS_SET(lcd_width))
-> >  		lcd.width = lcd_width;
 > 
-> (...)
+> Acked-by: Willy Tarreau <w@1wt.eu>
 > 
-> Same as for the other patch, better open-code the test for readability :
-> 
-> -	if (lcd_height > -1)
-> +	if (lcd_height != NOT_SET)
->  		lcd.height = lcd_height;
-> 
-> Note that we take the freedom to change the operator since we only want
-> to check equality and not sign in practice.
+> I like this refactoring. However I don't know if you got your LCD module
+> to work or not, but for such important changes you should definitely test
+> the code, since it's very easy to introduce minor bugs or even to fix a
+> bug that used to make the whole driver work...
 > 
 > Willy
 >
-
-Good point, will apply :)
+Yes, I have tested this code with my LCD module and it works
+as before. This is what I've emphasized in the cover letter -
+- I made sure (and tested), that all lcd and keypad params are
+set to the same state as before this patch series, and that
+the current behaviour of the module doesn't change. I've tested
+all profile/lcd_type combinations in an automated way to catch
+any edge cases :)
 
 Thanks,
 Mariusz
