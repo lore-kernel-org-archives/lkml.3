@@ -1,162 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259AbaKRSy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:54:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40930 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379AbaKRSyX (ORCPT
+	id S932282AbaKRSyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:54:44 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60712 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159AbaKRSxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:54:23 -0500
-Date: Tue, 18 Nov 2014 19:54:17 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <20141118145234.GA7487@redhat.com>
-Message-ID: <alpine.DEB.2.11.1411181914020.3909@nanos>
-References: <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com> <20141115213405.GA31971@redhat.com> <20141116014006.GA5016@redhat.com> <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com> <20141117170359.GA1382@redhat.com>
- <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com> <20141118020959.GA2091@redhat.com> <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com> <20141118023930.GA2871@redhat.com> <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
- <20141118145234.GA7487@redhat.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 18 Nov 2014 13:53:45 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Robert Richter <robert.richter@caviumnetworks.com>,
+        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+Subject: [PATCH v2 13/13] irqchip: GICv3: Binding updates for ITS
+Date: Tue, 18 Nov 2014 18:53:08 +0000
+Message-Id: <1416336788-22634-14-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com>
+References: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Dave Jones wrote:
-> Here's the first hit. Curiously, one cpu is missing.
+Add the documentation for the bindings describing the GICv3 ITS.
 
-I don't think so
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ Documentation/devicetree/bindings/arm/gic-v3.txt | 39 ++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-> NMI watchdog: BUG: soft lockup - CPU#1 stuck for 23s! [trinity-c180:17837]
-
-> irq event stamp: 2258092
-> hardirqs last  enabled at (2258091): [<ffffffffa91a58b5>] get_page_from_freelist+0x555/0xaa0
-> hardirqs last disabled at (2258092): [<ffffffffa985396a>] apic_timer_interrupt+0x6a/0x80
-
-So that means we are in the timer interrupt and handling
-watchdog_timer_fn.
-
-> CPU: 1 PID: 17837 Comm: trinity-c180 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 35/402 20526]
-> task: ffff8801575e4680 ti: ffff880202434000 task.ti: ffff880202434000
-> RIP: 0010:[<ffffffffa91a0db0>]  [<ffffffffa91a0db0>] bad_range+0x0/0x90
-
-So the softlockup tells us, that the high priority watchdog thread was
-not able to touch the watchdog timestamp. That means this task was
-hogging the CPU for 20+ seconds. I have no idea how that happens in
-that call chain.
-
-Call Trace:
- [<ffffffffa91a58c4>] ? get_page_from_freelist+0x564/0xaa0
- [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
- [<ffffffffa91a6030>] __alloc_pages_nodemask+0x230/0xd20
- [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
- [<ffffffffa90d1e45>] ? mark_held_locks+0x75/0xa0
- [<ffffffffa91f400e>] alloc_pages_vma+0xee/0x1b0
- [<ffffffffa91b643e>] ? shmem_alloc_page+0x6e/0xc0
- [<ffffffffa91b643e>] shmem_alloc_page+0x6e/0xc0
- [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
- [<ffffffffa90ac58b>] ? preempt_count_sub+0x7b/0x100
- [<ffffffffa93dcc46>] ? __percpu_counter_add+0x86/0xb0
- [<ffffffffa91d50d6>] ? __vm_enough_memory+0x66/0x1c0
- [<ffffffffa919ad65>] ? find_get_entry+0x5/0x230
- [<ffffffffa933b10c>] ? cap_vm_enough_memory+0x4c/0x60
- [<ffffffffa91b8ff0>] shmem_getpage_gfp+0x630/0xa40
- [<ffffffffa90cee01>] ? match_held_lock+0x111/0x160
- [<ffffffffa91b9442>] shmem_write_begin+0x42/0x70
- [<ffffffffa919a684>] generic_perform_write+0xd4/0x1f0
- [<ffffffffa919d5d2>] __generic_file_write_iter+0x162/0x350
- [<ffffffffa92154a0>] ? new_sync_read+0xd0/0xd0
- [<ffffffffa919d7ff>] generic_file_write_iter+0x3f/0xb0
- [<ffffffffa919d7c0>] ? __generic_file_write_iter+0x350/0x350
- [<ffffffffa92155e8>] do_iter_readv_writev+0x78/0xc0
- [<ffffffffa9216e18>] do_readv_writev+0xd8/0x2a0
- [<ffffffffa919d7c0>] ? __generic_file_write_iter+0x350/0x350
- [<ffffffffa90cf426>] ? lock_release_holdtime.part.28+0xe6/0x160
- [<ffffffffa919d7c0>] ? __generic_file_write_iter+0x350/0x350
- [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
- [<ffffffffa90ac58b>] ? preempt_count_sub+0x7b/0x100
- [<ffffffffa90e782e>] ? rcu_read_lock_held+0x6e/0x80
- [<ffffffffa921706c>] vfs_writev+0x3c/0x50
- [<ffffffffa92171dc>] SyS_writev+0x5c/0x100
- [<ffffffffa9852c49>] tracesys_phase2+0xd4/0xd9
-
-But this gets pages for a write into shmem and the other one below
-does a madvise on a shmem map. Coincidence?
-
-> sending NMI to other CPUs:
-
-So here we kick the other cpus
-
-> NMI backtrace for cpu 2
-> CPU: 2 PID: 15913 Comm: trinity-c141 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 35/402 20526]
-> task: ffff880223229780 ti: ffff8801afca0000 task.ti: ffff8801afca0000
-> RIP: 0010:[<ffffffffa9116dbe>]  [<ffffffffa9116dbe>] generic_exec_single+0xee/0x1a0
->  [<ffffffffa9045bb0>] ? do_flush_tlb_all+0x60/0x60
->  [<ffffffffa9045bb0>] ? do_flush_tlb_all+0x60/0x60
->  [<ffffffffa9116f3a>] smp_call_function_single+0x6a/0xe0
->  [<ffffffffa93b2e1f>] ? cpumask_next_and+0x4f/0xb0
->  [<ffffffffa9045bb0>] ? do_flush_tlb_all+0x60/0x60
->  [<ffffffffa9117679>] smp_call_function_many+0x2b9/0x320
->  [<ffffffffa9046370>] flush_tlb_mm_range+0xe0/0x370
->  [<ffffffffa91cc762>] tlb_flush_mmu_tlbonly+0x42/0x50
->  [<ffffffffa91cdd28>] unmap_single_vma+0x6b8/0x900
->  [<ffffffffa91ce06c>] zap_page_range_single+0xfc/0x160
->  [<ffffffffa91ce254>] unmap_mapping_range+0x134/0x190
->  [<ffffffffa91bb9dd>] shmem_fallocate+0x4fd/0x520
->  [<ffffffffa90c7c77>] ? prepare_to_wait+0x27/0x90
->  [<ffffffffa9213bc2>] do_fallocate+0x132/0x1d0
->  [<ffffffffa91e3228>] SyS_madvise+0x398/0x870
->  [<ffffffffa983f6c0>] ? rcu_read_lock_sched_held+0x4e/0x6a
->  [<ffffffffa9013877>] ? syscall_trace_enter_phase2+0xa7/0x2b0
->  [<ffffffffa9852c49>] tracesys_phase2+0xd4/0xd9
-
-We've seen that before
-
-> NMI backtrace for cpu 0
-> INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 37.091 msecs
-
-So it complains that the backtrace handler took 37 msec, which is
-indeed long for just dumping a stack trace.
-
-> CPU: 0 PID: 15851 Comm: trinity-c80 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 36/402 20526]
-> task: ffff8801874e8000 ti: ffff88022baec000 task.ti: ffff88022baec000
-> RIP: 0010:[<ffffffffa90ac450>]  [<ffffffffa90ac450>] preempt_count_add+0x0/0xc0
-> RSP: 0000:ffff880244003c30  EFLAGS: 00000092
-> RAX: 0000000000000001 RBX: ffffffffa9edb560 RCX: 0000000000000001
-> RDX: 0000000000000001 RSI: 0000000000000001 RDI: 0000000000000001
-> RBP: ffff880244003c48 R08: 0000000000000000 R09: 0000000000000001
-> R10: 0000000000000000 R11: ffff8801874e88c8 [23543.271956] NMI backtrace for cpu 3
-
-So here we mangle CPU3 in and lose the backtrace for cpu0, which might
-be the real interesting one ....
-
-> INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 100.612 msecs
-
-This one takes 100ms.
-
-> CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 37/402 20526]
-> task: ffff880242b5c680 ti: ffff880242b78000 task.ti: ffff880242b78000
-> RIP: 0010:[<ffffffffa94251b5>]  [<ffffffffa94251b5>] intel_idle+0xd5/0x180
-
-So that one is simply idle.
-
-> INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 125.739 msecs
-> 
-
-And we get another backtrace handler taking too long. Of course we
-cannot tell which of the 3 complaints comes from which cpu, because
-the printk lacks a cpuid.
-
-Thanks,
-
-	tglx
-
-
+diff --git a/Documentation/devicetree/bindings/arm/gic-v3.txt b/Documentation/devicetree/bindings/arm/gic-v3.txt
+index 33cd05e..ddfade4 100644
+--- a/Documentation/devicetree/bindings/arm/gic-v3.txt
++++ b/Documentation/devicetree/bindings/arm/gic-v3.txt
+@@ -49,11 +49,29 @@ Optional
+   occupied by the redistributors. Required if more than one such
+   region is present.
+ 
++Sub-nodes:
++
++GICv3 has one or more Interrupt Translation Services (ITS) that are
++used to route Message Signalled Interrupts (MSI) to the CPUs.
++
++These nodes must have the following properties:
++- compatible : Should at least contain  "arm,gic-v3-its".
++- msi-controller : Boolean property. Identifies the node as an MSI controller
++- reg: Specifies the base physical address and size of the ITS
++  registers.
++
++The main GIC node must contain the appropriate #address-cells,
++#size-cells and ranges properties for the reg property of all ITS
++nodes.
++
+ Examples:
+ 
+ 	gic: interrupt-controller@2cf00000 {
+ 		compatible = "arm,gic-v3";
+ 		#interrupt-cells = <3>;
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
+ 		interrupt-controller;
+ 		reg = <0x0 0x2f000000 0 0x10000>,	// GICD
+ 		      <0x0 0x2f100000 0 0x200000>,	// GICR
+@@ -61,11 +79,20 @@ Examples:
+ 		      <0x0 0x2c010000 0 0x2000>,	// GICH
+ 		      <0x0 0x2c020000 0 0x2000>;	// GICV
+ 		interrupts = <1 9 4>;
++
++		gic-its@2c200000 {
++			compatible = "arm,gic-v3-its";
++			msi-controller;
++			reg = <0x0 0x2c200000 0 0x200000>;
++		};
+ 	};
+ 
+ 	gic: interrupt-controller@2c010000 {
+ 		compatible = "arm,gic-v3";
+ 		#interrupt-cells = <3>;
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
+ 		interrupt-controller;
+ 		redistributor-stride = <0x0 0x40000>;	// 256kB stride
+ 		#redistributor-regions = <2>;
+@@ -76,4 +103,16 @@ Examples:
+ 		      <0x0 0x2c060000 0 0x2000>,	// GICH
+ 		      <0x0 0x2c080000 0 0x2000>;	// GICV
+ 		interrupts = <1 9 4>;
++
++		gic-its@2c200000 {
++			compatible = "arm,gic-v3-its";
++			msi-controller;
++			reg = <0x0 0x2c200000 0 0x200000>;
++		};
++
++		gic-its@2c400000 {
++			compatible = "arm,gic-v3-its";
++			msi-controller;
++			reg = <0x0 0x2c400000 0 0x200000>;
++		};
+ 	};
+-- 
+2.1.3
 
