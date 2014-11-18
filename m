@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232AbaKROmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:42:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57207 "EHLO mx2.suse.de"
+	id S1756202AbaKROmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:42:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57215 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755008AbaKROKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755018AbaKROKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:06 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 141/206] staging:iio:ade7758: Fix check if channels are enabled in prenable
-Date: Tue, 18 Nov 2014 15:08:16 +0100
-Message-Id: <4cf866e11cf4f921a0ac20f696031cdf24b2281b.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 147/206] USB: cdc-acm: add device id for GW Instek AFG-2225
+Date: Tue, 18 Nov 2014 15:08:22 +0100
+Message-Id: <4a776e6ac881c8bcbe48ba4e5b26c78384bd7ee6.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,37 +22,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Johan Hovold <johan@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 79fa64eb2ee8ccb4bcad7f54caa2699730b10b22 upstream.
+commit cf84a691a61606a2e7269907d3727e2d9fa148ee upstream.
 
-We should check if a channel is enabled, not if no channels are enabled.
+Add device-id entry for GW Instek AFG-2225, which has a byte swapped
+bInterfaceSubClass (0x20).
 
-Fixes: 550268ca1111 ("staging:iio: scrap scan_count and ensure all drivers use active_scan_mask")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Reported-by: Karl Palsson <karlp@tweak.net.au>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/staging/iio/meter/ade7758_ring.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/iio/meter/ade7758_ring.c b/drivers/staging/iio/meter/ade7758_ring.c
-index 6590944a6678..46eb15d25d4b 100644
---- a/drivers/staging/iio/meter/ade7758_ring.c
-+++ b/drivers/staging/iio/meter/ade7758_ring.c
-@@ -92,7 +92,7 @@ static int ade7758_ring_preenable(struct iio_dev *indio_dev)
- 	unsigned channel;
- 	int ret;
- 
--	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
-+	if (bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
- 		return -EINVAL;
- 
- 	ret = iio_sw_buffer_preenable(indio_dev);
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 669836ae53e0..742acebd0ed5 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1580,6 +1580,7 @@ static const struct usb_device_id acm_ids[] = {
+ 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
+ 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
+ 	},
++	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
+ 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
+ 	},
+ 	/* Motorola H24 HSPA module: */
 -- 
 2.1.3
 
