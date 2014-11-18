@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaKRJK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 04:10:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48943 "EHLO mx2.suse.de"
+	id S1753851AbaKRJKt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 04:10:49 -0500
+Received: from mout.web.de ([212.227.15.4]:60113 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaKRJKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 04:10:25 -0500
-Date: Tue, 18 Nov 2014 10:10:22 +0100
-From: Jan Kara <jack@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, bobby.prani@gmail.com, pmladek@suse.cz,
-        jack@suse.cz, mcgrof@suse.com, rostedt@goodmis.org, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] printk: drop logbuf_cpu volatile qualifier
-Message-ID: <20141118091022.GA19318@quack.suse.cz>
-References: <1415992771-9071-1-git-send-email-elder@linaro.org>
+	id S1752849AbaKRJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 04:10:47 -0500
+Message-ID: <546B0D08.2070305@users.sourceforge.net>
+Date: Tue, 18 Nov 2014 10:10:32 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415992771-9071-1-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benny Halevy <bhalevy@primarydata.com>,
+        Boaz Harrosh <bharrosh@panasas.com>, osd-dev@open-osd.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] exofs: Deletion of an unnecessary check before the function
+ call "ore_put_io_state"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:c1V3A9XX5bvXaFm9SWl3lwJhExbgb1gL8v9He0cW2Lgbp4Jn6RK
+ 2Ve5o7OaunxV3xCZ6HUlPiG05+e8ovcCEY91l+ge0x0aEEKYui/s/i4q3m+WDjUC9qRHxxq
+ 38iDmn4O44PasXyAgrQs3Sc8YxVT8O/0JuOCrd3QjIVTD7eSaCt3h54ShSws7Jm6mJKEJ+W
+ Dcwr0Lh8FM1Rs4Uhh2lEQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-11-14 13:19:31, Alex Elder wrote:
-> Pranith Kumar posted a patch in which removed the "volatile"
-> qualifier for the "logbuf_cpu" variable in vprintk_emit().
->     https://lkml.org/lkml/2014/11/13/894
-> In his patch, he used ACCESS_ONCE() for all references to
-> that symbol to provide whatever protection was intended.
-> 
-> There was some discussion that followed, and in the end
-> Stephen Rostedt concluded that not only was "volatile" not
-> needed, neither was it required to use ACCESS_ONCE().  I
-> offered an elaborate description that concluded Stephen
-> was right, and Pranith asked me to submit an alternative
-> patch.  And this is it.
-> 
-> The basic reason "volatile" is not needed is that "logbuf_cpu" has
-> static storage duration, and vprintk_emit() is an exported
-> interface.  This means that the value of logbuf_cpu must be read
-> from memory the first time it is used in a particular call of
-> vprintk_emit().  The variable's value is read only once in that
-> function, when it's read it'll be the copy from memory (or cache).
-> 
-> In addition, the value of "logbuf_cpu" is only ever written under
-> protection of a spinlock.  So the value that is read is the "real"
-> value (and not an out-of-date cached one).  If its value is not
-> UINT_MAX, it is the current CPU's processor id, and it will have
-> been last written by the running CPU.
-> 
-> Reported-by: Pranith Kumar <bobby.prani@gmail.com>
-> Fix-suggested-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> ---
-> 	Note!!!  I am not able to stress test this patch.
-  The patch looks good to me. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 18 Nov 2014 10:05:19 +0100
 
-  BTW, stress-testing this is tough. I never saw printk recursion happening
-in practice - only when I screwed up something in printk code when
-experimenting.
+The ore_put_io_state() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-								Honza
+This issue was detected by using the Coccinelle software.
 
->  kernel/printk/printk.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index ced2b84..fefc8d0 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -1627,7 +1627,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->  	int printed_len = 0;
->  	bool in_sched = false;
->  	/* cpu currently holding logbuf_lock in this function */
-> -	static volatile unsigned int logbuf_cpu = UINT_MAX;
-> +	static unsigned int logbuf_cpu = UINT_MAX;
->  
->  	if (level == SCHED_MESSAGE_LOGLEVEL) {
->  		level = -1;
-> -- 
-> 1.9.1
-> 
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ fs/exofs/ore_raid.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/fs/exofs/ore_raid.c b/fs/exofs/ore_raid.c
+index 84529b8..5dc7c4c 100644
+--- a/fs/exofs/ore_raid.c
++++ b/fs/exofs/ore_raid.c
+@@ -716,6 +716,5 @@ void _ore_free_raid_stuff(struct ore_io_state *ios)
+ 		if (ios->extra_part_alloc)
+ 			kfree(ios->per_dev[0].sglist);
+ 	}
+-	if (ios->ios_read_4_write)
+-		ore_put_io_state(ios->ios_read_4_write);
++	ore_put_io_state(ios->ios_read_4_write);
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+2.1.3
+
