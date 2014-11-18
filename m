@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaKRPIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:08:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
+	id S1756609AbaKRPKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:10:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57148 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754965AbaKROJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:39 -0500
+	id S1754952AbaKROJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:37 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Richard Leitner <richard.leitner@skidata.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 044/206] Input: serio - avoid negative serio device numbers
-Date: Tue, 18 Nov 2014 15:06:39 +0100
-Message-Id: <336cc76cb08dd42fa6afc3e1d92b9bd547cc6aa9.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 073/206] missing data dependency barrier in prepend_name()
+Date: Tue, 18 Nov 2014 15:07:08 +0100
+Message-Id: <1c4b9d08a82414e5351a2aa54e047eff7286e93e.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -24,39 +22,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Leitner <richard.leitner@skidata.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0224ec9e9f111b1c39ec00a10de4858061b4afea upstream.
+commit 6d13f69444bd3d4888e43f7756449748f5a98bad upstream.
 
-Fix the format string for serio device name generation to avoid negative
-device numbers when the id exceeds the maximum signed integer value.
+AFAICS, prepend_name() is broken on SMP alpha.  Disclaimer: I don't have
+SMP alpha boxen to reproduce it on.  However, it really looks like the race
+is real.
 
-Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CPU1: d_path() on /mnt/ramfs/<255-character>/foo
+CPU2: mv /mnt/ramfs/<255-character> /mnt/ramfs/<63-character>
+
+CPU2 does d_alloc(), which allocates an external name, stores the name there
+including terminating NUL, does smp_wmb() and stores its address in
+dentry->d_name.name.  It proceeds to d_add(dentry, NULL) and d_move()
+old dentry over to that.  ->d_name.name value ends up in that dentry.
+
+In the meanwhile, CPU1 gets to prepend_name() for that dentry.  It fetches
+->d_name.name and ->d_name.len; the former ends up pointing to new name
+(64-byte kmalloc'ed array), the latter - 255 (length of the old name).
+Nothing to force the ordering there, and normally that would be OK, since we'd
+run into the terminating NUL and stop.  Except that it's alpha, and we'd need
+a data dependency barrier to guarantee that we see that store of NUL
+__d_alloc() has done.  In a similar situation dentry_cmp() would survive; it
+does explicit smp_read_barrier_depends() after fetching ->d_name.name.
+prepend_name() doesn't and it risks walking past the end of kmalloc'ed object
+and possibly oops due to taking a page fault in kernel mode.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/input/serio/serio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/dcache.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-index 2b56855c2c77..de019ebb7e29 100644
---- a/drivers/input/serio/serio.c
-+++ b/drivers/input/serio/serio.c
-@@ -506,8 +506,8 @@ static void serio_init_port(struct serio *serio)
- 	spin_lock_init(&serio->lock);
- 	mutex_init(&serio->drv_mutex);
- 	device_initialize(&serio->dev);
--	dev_set_name(&serio->dev, "serio%ld",
--			(long)atomic_inc_return(&serio_no) - 1);
-+	dev_set_name(&serio->dev, "serio%lu",
-+		     (unsigned long)atomic_inc_return(&serio_no) - 1);
- 	serio->dev.bus = &serio_bus;
- 	serio->dev.release = serio_release_port;
- 	serio->dev.groups = serio_device_attr_groups;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index e15f90c0e96a..d449b1aed5ad 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2736,6 +2736,9 @@ static int prepend(char **buffer, int *buflen, const char *str, int namelen)
+  * the beginning of the name. The sequence number check at the caller will
+  * retry it again when a d_move() does happen. So any garbage in the buffer
+  * due to mismatched pointer and length will be discarded.
++ *
++ * Data dependency barrier is needed to make sure that we see that terminating
++ * NUL.  Alpha strikes again, film at 11...
+  */
+ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+ {
+@@ -2743,6 +2746,8 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+ 	u32 dlen = ACCESS_ONCE(name->len);
+ 	char *p;
+ 
++	smp_read_barrier_depends();
++
+ 	*buflen -= dlen + 1;
+ 	if (*buflen < 0)
+ 		return -ENAMETOOLONG;
 -- 
 2.1.3
 
