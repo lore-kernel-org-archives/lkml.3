@@ -1,145 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaKROEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:04:25 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:47723 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808AbaKROEY (ORCPT
+	id S1754714AbaKROEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:04:32 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60248 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932AbaKROE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:04:24 -0500
-Message-ID: <546B51BC.9010504@huawei.com>
-Date: Tue, 18 Nov 2014 22:03:40 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 18 Nov 2014 09:04:29 -0500
+Date: Tue, 18 Nov 2014 14:04:25 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+Message-ID: <20141118140425.GM18842@arm.com>
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
+ <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 04/16] genirq: Introduce irq_chip.irq_compose_msi_msg()
- to support stacked irqchip
-References: <20141112133941.647950773@linutronix.de> <20141112134120.137871641@linutronix.de> <546B10D2.4050300@huawei.com> <alpine.DEB.2.11.1411181059090.3909@nanos> <546B31CE.2020006@huawei.com> <546B3F01.2010005@linux.intel.com> <546B46C0.6070904@huawei.com> <546B48CF.50100@linux.intel.com> <546B4E30.6000608@huawei.com> <546B4FE7.8020801@linux.intel.com>
-In-Reply-To: <546B4FE7.8020801@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 21:55, Jiang Liu wrote:
-
-> On 2014/11/18 21:48, Yun Wu (Abel) wrote:
->> On 2014/11/18 21:25, Jiang Liu wrote:
->>
->>> On 2014/11/18 21:16, Yun Wu (Abel) wrote:
->>>> On 2014/11/18 20:43, Jiang Liu wrote:
->>>>
->>>>> On 2014/11/18 19:47, Yun Wu (Abel) wrote:
->>>>>> On 2014/11/18 18:02, Thomas Gleixner wrote:
->>>>>>
->>>>>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>>>>>>> On 2014/11/12 21:42, Thomas Gleixner wrote:
->>>>>>>>> +int irq_chip_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
->>>>>>>>> +{
->>>>>>>>> +	struct irq_data *pos = NULL;
->>>>>>>>> +
->>>>>>>>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
->>>>>>>>> +	for (; data; data = data->parent_data)
->>>>>>>>> +#endif
->>>>>>>>> +		if (data->chip && data->chip->irq_compose_msi_msg)
->>>>>>>>> +			pos = data;
->>>>>>>>> +	if (!pos)
->>>>>>>>> +		return -ENOSYS;
->>>>>>>>> +
->>>>>>>>> +	pos->chip->irq_compose_msi_msg(pos, msg);
->>>>>>>>> +
->>>>>>>>> +	return 0;
->>>>>>>>> +}
->>>>>>>>
->>>>>>>> Adding message composing routine to struct irq_chip is OK to me, and it should
->>>>>>>> be because it is interrupt controllers' duty to compose messages (so that they
->>>>>>>> can parse the messages correctly without any pre-defined rules that endpoint
->>>>>>>> devices absolutely need not to know).
->>>>>>>> However a problem comes out when deciding which parameters should be passed to
->>>>>>>> this routine. A message can associate with multiple interrupts, which makes me
->>>>>>>> think composing messages for each interrupt is not that appropriate. And we
->>>>>>>> can take a look at the new routine irq_chip_compose_msi_msg(). It is called by
->>>>>>>> msi_domain_activate() which will be called by irq_domain_activate_irq() in
->>>>>>>> irq_startup() for each interrupt descriptor, result in composing a message for
->>>>>>>> each interrupt, right? (Unless requiring a judge on the parameter @data when
->>>>>>>> implementing the irq_compose_msi_msg() callback that only compose message for
->>>>>>>> the first entry of that message. But I really don't like that...)
->>>>>>>
->>>>>>> No, that's not correct. You are looking at some random stale version
->>>>>>> of this. The current state of affairs is in 
->>>>>>>
->>>>>>>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/irqdomain
->>>>>>>
->>>>>>> See also https://lkml.org/lkml/2014/11/17/764
->>>>>>>
->>>>>>> In activate we write the message, which is the right point to do so.
->>>>>>>
->>>>>>
->>>>>> I checked the current state, it seems to be the same.
->>>>>> Yes, the decision of postponing the actual hardware programming to the point
->>>>>> where the interrupt actually gets used is right, but here above I was talking
->>>>>> another thing.
->>>>>> As I mentioned, a message can associate with multiple interrupts. Enabling
->>>>>> any of them will call irq_startup(). So if we don't want to compose or write
->>>>>> messages repeatedly, we'd better require performing some checks before
->>>>>> activating the interrupts.
->>>>> Hi Yun,
->>>>> 	Seems you are talking about the case of multiple MSI support.
->>>>> Yes, we have special treatment for multiple MSI, which only writes PCI
->>>>> MSI registers when starting up the first MSI interrupt.
->>>>> void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg
->>>>> *msg)
->>>>> {
->>>>>         struct msi_desc *desc = irq_data->msi_desc;
->>>>>
->>>>>         /*
->>>>>          * For MSI-X desc->irq is always equal to irq_data->irq. For
->>>>>          * MSI only the first interrupt of MULTI MSI passes the test.
->>>>>          */
->>>>>         if (desc->irq == irq_data->irq)
->>>>>                 __pci_write_msi_msg(desc, msg);
->>>>> }
->>>>
->>>>
->>>> Yes, I picked the case of multiple MSI support.
->>>> The check should also be performed when composing messages. That's why
->>>> I don't like its parameters. The @data only indicates one interrupt,
->>>> while I prefer doing compose/write in the unit of message descriptor.
->>> Hi Yun,
->>> 	The common abstraction is that every message interrupt could be
->>> controlled independently, so have compose_msi_msg()/write_msi_msg() per
->>> interrupt. MSI is abstracted as an special message signaled interrupt
->>> with hardware limitation where multiple interrupts sharing the same
->>> hardware registers. So we filter in pci_msi_domain_write_msg(). On the
->>> other handle, the generic MSI framework caches msi_msg in msi_desc,
->>> so we don't filter compose_msi_msg().
->>>
->>
->> It's true that every message interrupt could be controlled independently,
->> I mean, by enable/disable/mask/unmask. But the message data & address are
->> shared among the interrupts of that message.
->> Despite the detailed hardware implementation, MSI and MSI-X are the same
->> thing in software view, that is a message related with several consecutive
->> interrupts. And the core MSI infrastructure you want to build should not
->> be based on any hardware assumptions.
-> That's the key point. We abstract MSI as using a message to control an
-> interrupt source instead of controlling several consecutive interrupts.
-> PCI MSI is just a special case which controls a group of consecutive
-> interrupts all together due to hardware limitation.
+On Tue, Nov 18, 2014 at 01:10:34AM +0000, AKASHI Takahiro wrote:
+> If tracer specifies -1 as a syscall number, this traced system call should
+> be skipped with a return value specified in x0.
+> This patch implements this semantics, but there is one restriction here:
 > 
+>     syscall(-1) always return ENOSYS whatever value is stored in x0
+>     (a return value) at syscall entry.
+> 
+> Normally, with ptrace off, syscall(-1) returns -ENOSYS. With ptrace on,
+> however, if a tracer didn't pay any attention to user-issued syscall(-1)
+> and just let it go, it would return a value in x0 as in other system call
+> cases. This means that this system call might succeed and yet see any bogus
+> return value. This should be definitely avoided.
+> 
+> Please also note:
+> * syscall entry tracing and syscall exit tracing (ftrace tracepoint and
+>   audit) are always executed, if enabled, even when skipping a system call
+>   (that is, -1).
+>   In this way, we can avoid a potential bug where audit_syscall_entry()
+>   might be called without audit_syscall_exit() at the previous system call
+>   being called, that would cause OOPs in audit_syscall_entry().
+> 
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/kernel/entry.S  |    3 +++
+>  arch/arm64/kernel/ptrace.c |   18 ++++++++++++++++++
+>  2 files changed, 21 insertions(+)
+> 
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index 726b910..01118b1 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -670,6 +670,8 @@ ENDPROC(el0_svc)
+>  __sys_trace:
+>  	mov	x0, sp
+>  	bl	syscall_trace_enter
+> +	cmp	w0, #-1				// skip the syscall?
+> +	b.eq	__sys_trace_return_skipped
+>  	adr	lr, __sys_trace_return		// return address
+>  	uxtw	scno, w0			// syscall number (possibly new)
+>  	mov	x1, sp				// pointer to regs
+> @@ -684,6 +686,7 @@ __sys_trace:
+>  
+>  __sys_trace_return:
+>  	str	x0, [sp]			// save returned x0
+> +__sys_trace_return_skipped:
+>  	mov	x0, sp
+>  	bl	syscall_trace_exit
+>  	b	ret_to_user
+> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+> index 8b98781..34b1e85 100644
+> --- a/arch/arm64/kernel/ptrace.c
+> +++ b/arch/arm64/kernel/ptrace.c
+> @@ -1149,6 +1149,8 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+>  
+>  asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>  {
+> +	int orig_syscallno = regs->syscallno;
+> +
+>  	if (test_thread_flag(TIF_SYSCALL_TRACE))
+>  		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+>  
+> @@ -1158,6 +1160,22 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>  	audit_syscall_entry(regs->syscallno, regs->orig_x0, regs->regs[1],
+>  			    regs->regs[2], regs->regs[3]);
+>  
+> +	if (((int)regs->syscallno == -1) && (orig_syscallno == -1)) {
+> +		/*
+> +		 * user-issued syscall(-1):
+> +		 * RESTRICTION: We always return ENOSYS whatever value is
+> +		 *   stored in x0 (a return value) at this point.
+> +		 * Normally, with ptrace off, syscall(-1) returns -ENOSYS.
+> +		 * With ptrace on, however, if a tracer didn't pay any
+> +		 * attention to user-issued syscall(-1) and just let it go
+> +		 * without a hack here, it would return a value in x0 as in
+> +		 * other system call cases. This means that this system call
+> +		 * might succeed and see any bogus return value.
+> +		 * This should be definitely avoided.
+> +		 */
+> +		regs->regs[0] = -ENOSYS;
+> +	}
 
-Oh, I see. We abstract it in different ways...
-And sounds like you treat multiple MSI as a broken implementation?
+I'm still really uncomfortable with this, and it doesn't seem to match what
+arch/arm/ does either. Doesn't it also prevent a tracer from skipping
+syscall(-1)?
 
-	Abel
-
+Will
