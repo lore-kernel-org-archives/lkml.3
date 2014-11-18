@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598AbaKRORF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:17:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57207 "EHLO mx2.suse.de"
+	id S932248AbaKROK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:10:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56973 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755112AbaKROK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:27 -0500
+	id S1755112AbaKROKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:14 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 168/206] usb-storage: handle a skipped data phase
-Date: Tue, 18 Nov 2014 15:08:43 +0100
-Message-Id: <2aa227341252dc88670a9814793975f1e685e74c.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nathaniel Ting <nathaniel.ting@silabs.com>,
+        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 144/206] USB: serial: cp210x: add Silicon Labs 358x VID and PID
+Date: Tue, 18 Nov 2014 15:08:19 +0100
+Message-Id: <088cfbaf0f7d8aa06257bf6b34603af744af66a9.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,87 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Nathaniel Ting <nathaniel.ting@silabs.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 93c9bf4d1838d5851a18ca398b0ad66397f05056 upstream.
+commit 35cc83eab097e5720a9cc0ec12bdc3a726f58381 upstream.
 
-Sometimes mass-storage devices using the Bulk-only transport will
-mistakenly skip the data phase of a command.  Rather than sending the
-data expected by the host or sending a zero-length packet, they go
-directly to the status phase and send the CSW.
+Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
+driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
+connect to host PCs over a USB serial link.
 
-This causes problems for usb-storage, for obvious reasons.  The driver
-will interpret the CSW as a short data transfer and will wait to
-receive a CSW.  The device won't have anything left to send, so the
-command eventually times out.
-
-The SCSI layer doesn't retry commands after they time out (this is a
-relatively recent change).  Therefore we should do our best to detect
-a skipped data phase and handle it promptly.
-
-This patch adds code to do that.  If usb-storage receives a short
-13-byte data transfer from the device, and if the first four bytes of
-the data match the CSW signature, the driver will set the residue to
-the full transfer length and interpret the data as a CSW.
-
-This fixes Bugzilla #86611.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Tested-by: Paul Osmialowski <newchief@king.net.pl>
+Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/storage/transport.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
-index 22c7d4360fa2..b1d815eb6d0b 100644
---- a/drivers/usb/storage/transport.c
-+++ b/drivers/usb/storage/transport.c
-@@ -1118,6 +1118,31 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
- 		 */
- 		if (result == USB_STOR_XFER_LONG)
- 			fake_sense = 1;
-+
-+		/*
-+		 * Sometimes a device will mistakenly skip the data phase
-+		 * and go directly to the status phase without sending a
-+		 * zero-length packet.  If we get a 13-byte response here,
-+		 * check whether it really is a CSW.
-+		 */
-+		if (result == USB_STOR_XFER_SHORT &&
-+				srb->sc_data_direction == DMA_FROM_DEVICE &&
-+				transfer_length - scsi_get_resid(srb) ==
-+					US_BULK_CS_WRAP_LEN) {
-+			struct scatterlist *sg = NULL;
-+			unsigned int offset = 0;
-+
-+			if (usb_stor_access_xfer_buf((unsigned char *) bcs,
-+					US_BULK_CS_WRAP_LEN, srb, &sg,
-+					&offset, FROM_XFER_BUF) ==
-+						US_BULK_CS_WRAP_LEN &&
-+					bcs->Signature ==
-+						cpu_to_le32(US_BULK_CS_SIGN)) {
-+				usb_stor_dbg(us, "Device skipped data phase\n");
-+				scsi_set_resid(srb, transfer_length);
-+				goto skipped_data_phase;
-+			}
-+		}
- 	}
- 
- 	/* See flow chart on pg 15 of the Bulk Only Transport spec for
-@@ -1153,6 +1178,7 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
- 	if (result != USB_STOR_XFER_GOOD)
- 		return USB_STOR_TRANSPORT_ERROR;
- 
-+ skipped_data_phase:
- 	/* check bulk status */
- 	residue = le32_to_cpu(bcs->Residue);
- 	usb_stor_dbg(us, "Bulk Status S 0x%x T 0x%x R %u Stat 0x%x\n",
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 95b32d0e2b26..34b16b226f74 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -155,6 +155,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
++	{ USB_DEVICE(0x1BA4, 0x0002) },	/* Silicon Labs 358x factory default */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
 -- 
 2.1.3
 
