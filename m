@@ -1,414 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450AbaKRVyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:54:39 -0500
-Received: from mga01.intel.com ([192.55.52.88]:12632 "EHLO mga01.intel.com"
+	id S1754954AbaKRVzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:55:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36773 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754897AbaKRVyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:54:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,412,1413270000"; 
-   d="scan'208";a="634115022"
-From: kan.liang@intel.com
-To: acme@kernel.org, jolsa@redhat.com, a.p.zijlstra@chello.nl,
-        eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        ak@linux.intel.com, namhyung@kernel.org,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V4 3/3] perf tools: Construct LBR call chain
-Date: Tue, 18 Nov 2014 16:36:57 -0500
-Message-Id: <1416346617-3577-4-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1416346617-3577-1-git-send-email-kan.liang@intel.com>
-References: <1416346617-3577-1-git-send-email-kan.liang@intel.com>
+	id S1753954AbaKRVzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 16:55:50 -0500
+Date: Tue, 18 Nov 2014 16:55:40 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141118215540.GD35311@redhat.com>
+References: <20141116014006.GA5016@redhat.com>
+ <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+ <20141117170359.GA1382@redhat.com>
+ <CA+55aFy9dWtS5qh=-HT9M7hQPeWDMvdxEynr0p4aRkiGkV6gyQ@mail.gmail.com>
+ <20141118020959.GA2091@redhat.com>
+ <CA+55aFy65SmGXFeosNqvrgx+P6JQLrzpEYuwXdyeWtZwZsKxZg@mail.gmail.com>
+ <20141118023930.GA2871@redhat.com>
+ <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+ <20141118145234.GA7487@redhat.com>
+ <alpine.DEB.2.11.1411181914020.3909@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411181914020.3909@nanos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+On Tue, Nov 18, 2014 at 07:54:17PM +0100, Thomas Gleixner wrote:
+> On Tue, 18 Nov 2014, Dave Jones wrote:
+> > Here's the first hit. Curiously, one cpu is missing.
+> 
+> I don't think so
+> 
+> > NMI watchdog: BUG: soft lockup - CPU#1 stuck for 23s! [trinity-c180:17837]
+> 
+> > irq event stamp: 2258092
+> > hardirqs last  enabled at (2258091): [<ffffffffa91a58b5>] get_page_from_freelist+0x555/0xaa0
+> > hardirqs last disabled at (2258092): [<ffffffffa985396a>] apic_timer_interrupt+0x6a/0x80
+> 
+> So that means we are in the timer interrupt and handling
+> watchdog_timer_fn.
+> 
+> > CPU: 1 PID: 17837 Comm: trinity-c180 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 35/402 20526]
+> > task: ffff8801575e4680 ti: ffff880202434000 task.ti: ffff880202434000
+> > RIP: 0010:[<ffffffffa91a0db0>]  [<ffffffffa91a0db0>] bad_range+0x0/0x90
+> 
+> So the softlockup tells us, that the high priority watchdog thread was
+> not able to touch the watchdog timestamp. That means this task was
+> hogging the CPU for 20+ seconds. I have no idea how that happens in
+> that call chain.
+> 
+> Call Trace:
+>  [<ffffffffa91a58c4>] ? get_page_from_freelist+0x564/0xaa0
+>  [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
+>  [<ffffffffa91a6030>] __alloc_pages_nodemask+0x230/0xd20
+>  [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
+>  [<ffffffffa90d1e45>] ? mark_held_locks+0x75/0xa0
+>  [<ffffffffa91f400e>] alloc_pages_vma+0xee/0x1b0
+>  [<ffffffffa91b643e>] ? shmem_alloc_page+0x6e/0xc0
+>  [<ffffffffa91b643e>] shmem_alloc_page+0x6e/0xc0
+>  [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
+>  [<ffffffffa90ac58b>] ? preempt_count_sub+0x7b/0x100
+>  [<ffffffffa93dcc46>] ? __percpu_counter_add+0x86/0xb0
+>  [<ffffffffa91d50d6>] ? __vm_enough_memory+0x66/0x1c0
+>  [<ffffffffa919ad65>] ? find_get_entry+0x5/0x230
+>  [<ffffffffa933b10c>] ? cap_vm_enough_memory+0x4c/0x60
+>  [<ffffffffa91b8ff0>] shmem_getpage_gfp+0x630/0xa40
+>  [<ffffffffa90cee01>] ? match_held_lock+0x111/0x160
+>  [<ffffffffa91b9442>] shmem_write_begin+0x42/0x70
+>  [<ffffffffa919a684>] generic_perform_write+0xd4/0x1f0
+>  [<ffffffffa919d5d2>] __generic_file_write_iter+0x162/0x350
+>  [<ffffffffa92154a0>] ? new_sync_read+0xd0/0xd0
+>  [<ffffffffa919d7ff>] generic_file_write_iter+0x3f/0xb0
+>  [<ffffffffa919d7c0>] ? __generic_file_write_iter+0x350/0x350
+>  [<ffffffffa92155e8>] do_iter_readv_writev+0x78/0xc0
+>  [<ffffffffa9216e18>] do_readv_writev+0xd8/0x2a0
+>  [<ffffffffa919d7c0>] ? __generic_file_write_iter+0x350/0x350
+>  [<ffffffffa90cf426>] ? lock_release_holdtime.part.28+0xe6/0x160
+>  [<ffffffffa919d7c0>] ? __generic_file_write_iter+0x350/0x350
+>  [<ffffffffa90ac411>] ? get_parent_ip+0x11/0x50
+>  [<ffffffffa90ac58b>] ? preempt_count_sub+0x7b/0x100
+>  [<ffffffffa90e782e>] ? rcu_read_lock_held+0x6e/0x80
+>  [<ffffffffa921706c>] vfs_writev+0x3c/0x50
+>  [<ffffffffa92171dc>] SyS_writev+0x5c/0x100
+>  [<ffffffffa9852c49>] tracesys_phase2+0xd4/0xd9
+> 
+> But this gets pages for a write into shmem and the other one below
+> does a madvise on a shmem map. Coincidence?
+> 
+> > sending NMI to other CPUs:
+> 
+> So here we kick the other cpus
+> 
+> > NMI backtrace for cpu 2
+> > CPU: 2 PID: 15913 Comm: trinity-c141 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 35/402 20526]
+> > task: ffff880223229780 ti: ffff8801afca0000 task.ti: ffff8801afca0000
+> > RIP: 0010:[<ffffffffa9116dbe>]  [<ffffffffa9116dbe>] generic_exec_single+0xee/0x1a0
+> >  [<ffffffffa9045bb0>] ? do_flush_tlb_all+0x60/0x60
+> >  [<ffffffffa9045bb0>] ? do_flush_tlb_all+0x60/0x60
+> >  [<ffffffffa9116f3a>] smp_call_function_single+0x6a/0xe0
+> >  [<ffffffffa93b2e1f>] ? cpumask_next_and+0x4f/0xb0
+> >  [<ffffffffa9045bb0>] ? do_flush_tlb_all+0x60/0x60
+> >  [<ffffffffa9117679>] smp_call_function_many+0x2b9/0x320
+> >  [<ffffffffa9046370>] flush_tlb_mm_range+0xe0/0x370
+> >  [<ffffffffa91cc762>] tlb_flush_mmu_tlbonly+0x42/0x50
+> >  [<ffffffffa91cdd28>] unmap_single_vma+0x6b8/0x900
+> >  [<ffffffffa91ce06c>] zap_page_range_single+0xfc/0x160
+> >  [<ffffffffa91ce254>] unmap_mapping_range+0x134/0x190
+> >  [<ffffffffa91bb9dd>] shmem_fallocate+0x4fd/0x520
+> >  [<ffffffffa90c7c77>] ? prepare_to_wait+0x27/0x90
+> >  [<ffffffffa9213bc2>] do_fallocate+0x132/0x1d0
+> >  [<ffffffffa91e3228>] SyS_madvise+0x398/0x870
+> >  [<ffffffffa983f6c0>] ? rcu_read_lock_sched_held+0x4e/0x6a
+> >  [<ffffffffa9013877>] ? syscall_trace_enter_phase2+0xa7/0x2b0
+> >  [<ffffffffa9852c49>] tracesys_phase2+0xd4/0xd9
+> 
+> We've seen that before
+> 
+> > NMI backtrace for cpu 0
+> > INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 37.091 msecs
+> 
+> So it complains that the backtrace handler took 37 msec, which is
+> indeed long for just dumping a stack trace.
+> 
+> > CPU: 0 PID: 15851 Comm: trinity-c80 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 36/402 20526]
+> > task: ffff8801874e8000 ti: ffff88022baec000 task.ti: ffff88022baec000
+> > RIP: 0010:[<ffffffffa90ac450>]  [<ffffffffa90ac450>] preempt_count_add+0x0/0xc0
+> > RSP: 0000:ffff880244003c30  EFLAGS: 00000092
+> > RAX: 0000000000000001 RBX: ffffffffa9edb560 RCX: 0000000000000001
+> > RDX: 0000000000000001 RSI: 0000000000000001 RDI: 0000000000000001
+> > RBP: ffff880244003c48 R08: 0000000000000000 R09: 0000000000000001
+> > R10: 0000000000000000 R11: ffff8801874e88c8 [23543.271956] NMI backtrace for cpu 3
+> 
+> So here we mangle CPU3 in and lose the backtrace for cpu0, which might
+> be the real interesting one ....
 
-LBR call stack only has user callchain. It is output as
-PERF_SAMPLE_BRANCH_STACK data format. For the kernel callchain, it's
-still from PERF_SAMPLE_CALLCHAIN.
-The perf tool has to handle both data sources to construct a
-complete callstack.
-For perf report -D option, both lbr and fp information will be
-displayed.
 
-A new call chain recording option "lbr" is introduced into perf tool for
-LBR call stack. The user can use --call-graph lbr to get the call stack
-information from hardware.
+Dave,
 
-Here are some examples.
-When profiling bc(1) on Fedora 19:
-echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph lbr bc -l <
-cmd
-If enabling LBR, perf report output looks like:
-    50.36%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-    33.66%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-                     bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-     7.62%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                    |
-                    |--99.89%-- 0x2000186a8
-                     --0.11%-- [...]
-     6.83%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-                    |
-                    |--99.94%-- bc_add
-                    |          execute
-                    |          run_code
-                    |          yyparse
-                    |          main
-                    |          __libc_start_main
-                    |          _start
-                     --0.06%-- [...]
-     0.46%       bc  libc-2.17.so       [.] __memset_sse2
-                 |
-                 --- __memset_sse2
-                    |
-                    |--54.13%-- bc_new_num
-                    |          |
-                    |          |--51.00%-- bc_divide
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |          |--30.46%-- _bc_do_sub
-                    |          |          bc_add
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |           --18.55%-- _bc_do_add
-                    |                     bc_add
-                    |                     execute
-                    |                     run_code
-                    |                     yyparse
-                    |                     main
-                    |                     __libc_start_main
-                    |                     _start
-                    |
-                     --45.87%-- bc_divide
-                               execute
-                               run_code
-                               yyparse
-                               main
-                               __libc_start_main
-                               _start
+Can you provide another dump?  The hope is we get something not mangled?
 
-If using FP, perf report output looks like:
-echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph fp bc -l < cmd
-    50.49%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-    33.57%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-     7.61%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                     0x2000186a8
-     6.88%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
-                 |
-                 --- __memcpy_ssse3_back
+The other option we have done in RHEL is panic the system and let kdump
+capture the memory.  Then we can analyze the vmcore for the stack trace
+cpu0 stored in memory to get a rough idea where it might be if the cpu
+isn't responding very well.
 
-If using LBR, perf report -D output looks like:
-3458145275743 0x2fd750 [0xd8]: PERF_RECORD_SAMPLE(IP, 0x2): 9748/9748:
-0x408ea8 period: 609644 addr: 0
-... LBR call chain: nr:8
-.....  0: fffffffffffffe00
-.....  1: 0000000000408e50
-.....  2: 000000000040a458
-.....  3: 000000000040562e
-.....  4: 0000000000408590
-.....  5: 00000000004022c0
-.....  6: 00000000004015dd
-.....  7: 0000003d1cc21b43
-... FP chain: nr:2
-.....  0: fffffffffffffe00
-.....  1: 0000000000408ea8
- ... thread: bc:9748
- ...... dso: /usr/bin/bc
+Cheers,
+Don
 
-The LBR call stack has following known limitations
- - Zero length calls are not filtered out by hardware
- - Exception handing such as setjmp/longjmp will have calls/returns not
-   match
- - Pushing different return address onto the stack will have
-   calls/returns
-   not match
- - If callstack is deeper than the LBR, only the last entries are
-   captured
-
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- tools/perf/util/evsel.h   |   4 ++
- tools/perf/util/machine.c | 102 +++++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/session.c |  64 ++++++++++++++++++++++++++---
- 3 files changed, 153 insertions(+), 17 deletions(-)
-
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 9797909..1bbaa74 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -368,4 +368,8 @@ for ((_evsel) = list_entry((_leader)->node.next, struct perf_evsel, node); 	\
-      (_evsel) && (_evsel)->leader == (_leader);					\
-      (_evsel) = list_entry((_evsel)->node.next, struct perf_evsel, node))
- 
-+static inline bool has_branch_callstack(struct perf_evsel *evsel)
-+{
-+	return evsel->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK;
-+}
- #endif /* __PERF_EVSEL_H */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 7fd3cf2..41b7d09 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1500,18 +1500,100 @@ static int remove_loops(struct branch_entry *l, int nr)
- 	return nr;
- }
- 
--static int thread__resolve_callchain_sample(struct thread *thread,
--					     struct ip_callchain *chain,
--					     struct branch_stack *branch,
--					     struct symbol **parent,
--					     struct addr_location *root_al,
--					     int max_stack)
-+/*
-+ * Recolve LBR callstack chain sample
-+ * Return:
-+ * 1 on success get LBR callchain information
-+ * 0 no available LBR callchain information, should try fp
-+ * negative error code on other errors.
-+ */
-+static int resolve_lbr_callchain_sample(struct thread *thread,
-+					struct perf_sample *sample,
-+					struct symbol **parent,
-+					struct addr_location *root_al,
-+					int max_stack)
- {
-+	struct ip_callchain *chain = sample->callchain;
-+	int chain_nr = min(max_stack, (int)chain->nr);
-+	int i, j, err;
-+	u64 ip;
-+
-+	for (i = 0; i < chain_nr; i++) {
-+		if (chain->ips[i] == PERF_CONTEXT_USER)
-+			break;
-+	}
-+
-+	/* LBR only affects the user callchain */
-+	if (i != chain_nr) {
-+		struct branch_stack *lbr_stack = sample->branch_stack;
-+		int lbr_nr = lbr_stack->nr;
-+		/*
-+		 * LBR callstack can only get user call chain.
-+		 * The mix_chain_nr is kernel call chain
-+		 * number plus LBR user call chain number.
-+		 * i is kernel call chain number,
-+		 * 1 is PERF_CONTEXT_USER,
-+		 * lbr_nr + 1 is the user call chain number.
-+		 * For details, please refer to the comments
-+		 * in callchain__printf
-+		 */
-+		int mix_chain_nr = i + 1 + lbr_nr + 1;
-+
-+		if (mix_chain_nr > PERF_MAX_STACK_DEPTH + PERF_MAX_BRANCH_DEPTH) {
-+			pr_warning("corrupted callchain. skipping...\n");
-+			return 0;
-+		}
-+
-+		for (j = 0; j < mix_chain_nr; j++) {
-+			if (callchain_param.order == ORDER_CALLEE) {
-+				if (j < i + 1)
-+					ip = chain->ips[j];
-+				else if (j > i + 1)
-+					ip = lbr_stack->entries[j - i - 2].from;
-+				else
-+					ip = lbr_stack->entries[0].to;
-+			} else {
-+				if (j < lbr_nr)
-+					ip = lbr_stack->entries[lbr_nr - j - 1].from;
-+				else if (j > lbr_nr)
-+					ip = chain->ips[i + 1 - (j - lbr_nr)];
-+				else
-+					ip = lbr_stack->entries[0].to;
-+			}
-+
-+			err = add_callchain_ip(thread, parent, root_al, false, ip);
-+			if (err)
-+				return (err < 0) ? err : 0;
-+		}
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int thread__resolve_callchain_sample(struct thread *thread,
-+					    struct perf_evsel *evsel,
-+					    struct perf_sample *sample,
-+					    struct symbol **parent,
-+					    struct addr_location *root_al,
-+					    int max_stack)
-+{
-+	struct branch_stack *branch = sample->branch_stack;
-+	struct ip_callchain *chain = sample->callchain;
- 	int chain_nr = min(max_stack, (int)chain->nr);
- 	int i, j, err;
- 	int skip_idx = -1;
- 	int first_call = 0;
- 
-+	callchain_cursor_reset(&callchain_cursor);
-+
-+	if (has_branch_callstack(evsel)) {
-+		err = resolve_lbr_callchain_sample(thread, sample, parent,
-+						   root_al, max_stack);
-+		if (err)
-+			return (err < 0) ? err : 0;
-+	}
-+
- 	/*
- 	 * Based on DWARF debug information, some architectures skip
- 	 * a callchain entry saved by the kernel.
-@@ -1519,8 +1601,6 @@ static int thread__resolve_callchain_sample(struct thread *thread,
- 	if (chain->nr < PERF_MAX_STACK_DEPTH)
- 		skip_idx = arch_skip_callchain_idx(thread, chain);
- 
--	callchain_cursor_reset(&callchain_cursor);
--
- 	/*
- 	 * Add branches to call stack for easier browsing. This gives
- 	 * more context for a sample than just the callers.
-@@ -1621,9 +1701,9 @@ int thread__resolve_callchain(struct thread *thread,
- 			      struct addr_location *root_al,
- 			      int max_stack)
- {
--	int ret = thread__resolve_callchain_sample(thread, sample->callchain,
--						   sample->branch_stack,
--						   parent, root_al, max_stack);
-+	int ret = thread__resolve_callchain_sample(thread, evsel,
-+						   sample, parent,
-+						   root_al, max_stack);
- 	if (ret)
- 		return ret;
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index f4478ce..ee18c0d 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -557,15 +557,67 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 	return 0;
- }
- 
--static void callchain__printf(struct perf_sample *sample)
-+static void callchain__lbr_callstack_printf(struct perf_sample *sample)
- {
-+	struct ip_callchain *callchain = sample->callchain;
-+	struct branch_stack *lbr_stack = sample->branch_stack;
-+	u64 kernel_callchain_nr = callchain->nr;
- 	unsigned int i;
- 
--	printf("... chain: nr:%" PRIu64 "\n", sample->callchain->nr);
-+	for (i = 0; i < kernel_callchain_nr; i++) {
-+		if (callchain->ips[i] == PERF_CONTEXT_USER)
-+			break;
-+	}
-+
-+	if ((i != kernel_callchain_nr) && lbr_stack->nr) {
-+		u64 total_nr;
-+		/*
-+		 * LBR callstack can only get user call chain,
-+		 * i is kernel call chain number,
-+		 * 1 is PERF_CONTEXT_USER.
-+		 *
-+		 * The user call chain is stored in LBR registers.
-+		 * LBR are pair registers. The caller is stored
-+		 * in "from" register, while the callee is stored
-+		 * in "to" register.
-+		 * For example, there is a call stack
-+		 * "A"->"B"->"C"->"D".
-+		 * The LBR registers will recorde like
-+		 * "C"->"D", "B"->"C", "A"->"B".
-+		 * So only the first "to" register and all "from"
-+		 * registers are needed to construct the whole stack.
-+		 */
-+		total_nr = i + 1 + lbr_stack->nr + 1;
-+		kernel_callchain_nr = i + 1;
-+
-+		printf("... LBR call chain: nr:%" PRIu64 "\n", total_nr);
-+
-+		for (i = 0; i < kernel_callchain_nr; i++)
-+			printf("..... %2d: %016" PRIx64 "\n",
-+			       i, callchain->ips[i]);
-+
-+		printf("..... %2d: %016" PRIx64 "\n",
-+		       (int)(kernel_callchain_nr), lbr_stack->entries[0].to);
-+		for (i = 0; i < lbr_stack->nr; i++)
-+			printf("..... %2d: %016" PRIx64 "\n",
-+			       (int)(i + kernel_callchain_nr + 1), lbr_stack->entries[i].from);
-+	}
-+}
-+
-+static void callchain__printf(struct perf_evsel *evsel,
-+			      struct perf_sample *sample)
-+{
-+	unsigned int i;
-+	struct ip_callchain *callchain = sample->callchain;
-+
-+	if (has_branch_callstack(evsel))
-+		callchain__lbr_callstack_printf(sample);
-+
-+	printf("... FP chain: nr:%" PRIu64 "\n", callchain->nr);
- 
--	for (i = 0; i < sample->callchain->nr; i++)
-+	for (i = 0; i < callchain->nr; i++)
- 		printf("..... %2d: %016" PRIx64 "\n",
--		       i, sample->callchain->ips[i]);
-+		       i, callchain->ips[i]);
- }
- 
- static void branch_stack__printf(struct perf_sample *sample)
-@@ -691,9 +743,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 	sample_type = evsel->attr.sample_type;
- 
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN)
--		callchain__printf(sample);
-+		callchain__printf(evsel, sample);
- 
--	if (sample_type & PERF_SAMPLE_BRANCH_STACK)
-+	if ((sample_type & PERF_SAMPLE_BRANCH_STACK) && !has_branch_callstack(evsel))
- 		branch_stack__printf(sample);
- 
- 	if (sample_type & PERF_SAMPLE_REGS_USER)
--- 
-1.8.3.2
-
+> 
+> > INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 100.612 msecs
+> 
+> This one takes 100ms.
+> 
+> > CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.18.0-rc5+ #90 [loadavg: 199.00 178.81 173.92 37/402 20526]
+> > task: ffff880242b5c680 ti: ffff880242b78000 task.ti: ffff880242b78000
+> > RIP: 0010:[<ffffffffa94251b5>]  [<ffffffffa94251b5>] intel_idle+0xd5/0x180
+> 
+> So that one is simply idle.
+> 
+> > INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 125.739 msecs
+> > 
+> 
+> And we get another backtrace handler taking too long. Of course we
+> cannot tell which of the 3 complaints comes from which cpu, because
+> the printk lacks a cpuid.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
