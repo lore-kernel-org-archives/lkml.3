@@ -1,120 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037AbaKRNVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:21:42 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58208 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753375AbaKRNVk (ORCPT
+	id S1754376AbaKRNWF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:22:05 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54721 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673AbaKRNWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:21:40 -0500
-Date: Tue, 18 Nov 2014 14:21:30 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Mark Yao <mark.yao@rock-chips.com>, heiko@sntech.de,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
-        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
-        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v12 1/3] drm: rockchip: Add basic drm driver
-Message-ID: <20141118142130.6c12ab50@bbrezillon>
-In-Reply-To: <20141118083234.GZ25711@phenom.ffwll.local>
-References: <1416297587-18959-1-git-send-email-mark.yao@rock-chips.com>
-	<1416297629-19024-1-git-send-email-mark.yao@rock-chips.com>
-	<20141118083234.GZ25711@phenom.ffwll.local>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 18 Nov 2014 08:22:02 -0500
+Date: Tue, 18 Nov 2014 14:21:59 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>, pali.rohar@gmail.com, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg, bcousson@baylibre.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-media@vger.kernel.org,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [RFC] adp1653: Add device tree bindings for LED controller
+Message-ID: <20141118132159.GA21089@amd>
+References: <20141116075928.GA9763@amd>
+ <20141117145857.GO8907@valkosipuli.retiisi.org.uk>
+ <546AFEA5.9020000@samsung.com>
+ <20141118084603.GC4059@amd>
+ <546B19C8.2090008@samsung.com>
+ <20141118113256.GA10022@amd>
+ <546B40FA.2070409@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546B40FA.2070409@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi!
 
-On Tue, 18 Nov 2014 09:32:34 +0100
-Daniel Vetter <daniel@ffwll.ch> wrote:
-
-> On Tue, Nov 18, 2014 at 04:00:29PM +0800, Mark Yao wrote:
-> > From: Mark yao <mark.yao@rock-chips.com>
-> > 
-> > This patch adds the basic structure of a DRM Driver for Rockchip Socs.
-> > 
-> > Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
-> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> > Acked-by: Daniel Vetter <daniel@ffwll.ch>
-> > Reviewed-by: Rob Clark <robdclark@gmail.com>
-> > ---
-> > Changes in v2:
-> > - use the component framework to defer main drm driver probe
-> >   until all VOP devices have been probed.
-> > - use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
-> >   master device and each vop device can shared the drm dma mapping.
-> > - use drm_crtc_init_with_planes and drm_universal_plane_init.
-> > - remove unnecessary middle layers.
-> > - add cursor set, move funcs to rockchip drm crtc.
-> > - use vop reset at first init
-> > - reference framebuffer when used and unreference when swap out vop
-> > 
-> > Changes in v3:
-> > - change "crtc->fb" to "crtc->primary-fb"
-> > Adviced by Daniel Vetter
-> > - init cursor plane with universal api, remove unnecessary cursor set,move 
-> > 
-> > Changes in v4:
-> > Adviced by David Herrmann
-> > - remove drm_platform_*() usage, use register drm device directly.
+> >>>@@ -19,5 +30,10 @@ Examples:
+> >>>  system-status {
+> >>>  	       label = "Status";
+> >>>  	       linux,default-trigger = "heartbeat";
+> >>>+	       iout-torch = <500 500>;
+> >>>+	       iout-flash = <1000 1000>;
+> >>>+	       iout-indicator = <100 100>;
+> >>>+	       flash-timeout = <1000>;
+> >>>+
+> >>>	...
+> >>>  };
+> >>>
+> >>>I don't get it; system-status describes single LED, why are iout-torch
+> >>>(and friends) arrays of two?
+> >>
+> >>Some devices can control more than one led. The array is for such
+> >>purposes. The system-status should be probably renamed to
+> >>something more generic for both common leds and flash leds,
+> >>e.g. system-led.
+> >
+> >No, sorry. The Documentation/devicetree/bindings/leds/common.txt
+> >describes binding for _one LED_. Yes, your device can have two leds,
+> >so your devices should have two such blocks in the device tree... Each
+> >led should have its own label and default trigger, for example. And I
+> >guess flash-timeout be per-LED, too.
 > 
-> Minor fixup for that part below.
+> I think that a device tree binding describes a single physical device.
+> No matter how many sub-leds a device controls, it is still one
+> piece of hardware.
+
+You got this wrong, sorry.
+
+In my case, there are three physical devices:
+
+adp1653
+	white LED
+	red LED
+
+Each LED should have an label, and probably default trigger -- default
+trigger for red one should be "we are recording video" and for white
+should be "this is flash for default camera".
+
+If the hardware LED changes with one that needs different current, the
+block for the adp1653 stays the same, but white LED block should be
+updated with different value.
+
+> default-trigger property should also be an array of strings.
+
+That is not how it currently works.
+
+> I agree that flash-timeout should be per led - an array, similarly
+> as in case of iout's.
+
+Agreed about per-led, disagreed about the array. As all the fields
+would need arrays, and as LED system currently does not use arrays for
+label and linux,default-trigger, I believe we should follow existing
+design and model it as three devices. (It _is_ physically three devices.)
+
+> >>The v4l2-flash sub-device registers with v4l2-async API
+> >>in a media device. Exemplary support for v4l2-flash
+> >>sub-devices is added to the exynos4-is driver in the patch [5].
+> >
+> >Thanks for the links. It seems that aside from moving adp1653 driver
+> >to device tree, it should be moved to the LED framework, but that's a
+> >topic for another patch.
 > 
-> [snip]
-> 
-> > +static int rockchip_drm_bind(struct device *dev)
-> > +{
-> > +	struct drm_device *drm;
-> > +	int ret;
-> > +
-> > +	drm = drm_dev_alloc(&rockchip_drm_driver, dev);
-> > +	if (!drm)
-> > +		return -ENOMEM;
-> > +
-> > +	ret = drm_dev_set_unique(drm, "%s", dev_name(dev));
-> > +	if (ret)
-> > +		goto err_free;
-> 
-> Please call rockchip_drm_load here directly and don't put it as the ->load
-> function into the driver vtable. The point of the alloc/register split is
-> that the driver can be completely set up _before_ we register anything.
-> But for backwards compat and historical reasons ->load is called somewhere
-> in the middle (so that you could access the minor nodes if needed, since
-> some drivers do that).
+> Like I mentioned in the previous message the LED Flash class patch
+> isn't in its final shape yet. Nonetheless I think that we should
+> agree on the leds/common.txt documentation improvements and
+> define DT documentation for adp1653 accordingly.
 
-I tried to do the same in the atmel-hlcdc DRM driver, but I need the
-primary drm_minor to register the connectors (see this kernel
-backtrace [1]), which means I either initialize the connector in the
-wrong place (currently part of the drm load process), or I just can't
-call atmel_hlcdc_dc_load before registering the drm device...
-
-Regards,
-
-Boris
-
-[1]http://code.bulix.org/fi7trt-87436
-
-
+Agreed.
+									Pavel
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
