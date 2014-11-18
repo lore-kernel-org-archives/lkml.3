@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719AbaKROhB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:37:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57040 "EHLO mx2.suse.de"
+	id S932828AbaKROhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:37:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57159 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755068AbaKROKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:10 -0500
+	id S1754609AbaKROKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:09 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Cyril Brulebois <kibi@debian.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 153/206] wireless: rt2x00: add new rt2800usb device
-Date: Tue, 18 Nov 2014 15:08:28 +0100
-Message-Id: <28af2ea590152b183494a6b05d5c04fb3374d10a.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 138/206] staging:iio:ad5933: Fix NULL pointer deref when enabling buffer
+Date: Tue, 18 Nov 2014 15:08:13 +0100
+Message-Id: <5cb3a5568cb11529cdf92cc8f6649f4aac59de2f.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,38 +22,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cyril Brulebois <kibi@debian.org>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 664d6a792785cc677c2091038ce10322c8d04ae1 upstream.
+commit 824269c5868d2a7a26417e5ef3841a27d42c6139 upstream.
 
-0x1b75 0xa200 AirLive WN-200USB wireless 11b/g/n dongle
+In older versions of the IIO framework it was possible to pass a
+completely different set of channels to iio_buffer_register() as the one
+that is assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
+iio_sw_buffer_preenable much more general.") introduced a restriction that
+requires that the set of channels that is passed to iio_buffer_register() is
+a subset of the channels assigned to the IIO device as the IIO core will use
+the list of channels that is assigned to the device to lookup a channel by
+scan index in iio_compute_scan_bytes(). If it can not find the channel the
+function will crash. This patch fixes the issue by making sure that the same
+set of channels is assigned to the IIO device and passed to
+iio_buffer_register().
 
-References: https://bugs.debian.org/766802
-Reported-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Signed-off-by: Cyril Brulebois <kibi@debian.org>
-Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes the follow NULL pointer derefernce kernel crash:
+	Unable to handle kernel NULL pointer dereference at virtual address 00000016
+	pgd = d53d0000
+	[00000016] *pgd=1534e831, *pte=00000000, *ppte=00000000
+	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+	Modules linked in:
+	CPU: 1 PID: 1626 Comm: bash Not tainted 3.15.0-19969-g2a180eb-dirty #9545
+	task: d6c124c0 ti: d539a000 task.ti: d539a000
+	PC is at iio_compute_scan_bytes+0x34/0xa8
+	LR is at iio_compute_scan_bytes+0x34/0xa8
+	pc : [<c03052e4>]    lr : [<c03052e4>]    psr: 60070013
+	sp : d539beb8  ip : 00000001  fp : 00000000
+	r10: 00000002  r9 : 00000000  r8 : 00000001
+	r7 : 00000000  r6 : d6dc8800  r5 : d7571000  r4 : 00000002
+	r3 : d7571000  r2 : 00000044  r1 : 00000001  r0 : 00000000
+	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+	Control: 18c5387d  Table: 153d004a  DAC: 00000015
+	Process bash (pid: 1626, stack limit = 0xd539a240)
+	Stack: (0xd539beb8 to 0xd539c000)
+	bea0:                                                       c02fc0e4 d7571000
+	bec0: d76c1640 d6dc8800 d757117c 00000000 d757112c c0305b04 d76c1690 d76c1640
+	bee0: d7571188 00000002 00000000 d7571000 d539a000 00000000 000dd1c8 c0305d54
+	bf00: d7571010 0160b868 00000002 c69d3900 d7573278 d7573308 c69d3900 c01ece90
+	bf20: 00000002 c0103fac c0103f6c d539bf88 00000002 c69d3b00 c69d3b0c c0103468
+	bf40: 00000000 00000000 d7694a00 00000002 000af408 d539bf88 c000dd84 c00b2f94
+	bf60: d7694a00 000af408 00000002 d7694a00 d7694a00 00000002 000af408 c000dd84
+	bf80: 00000000 c00b32d0 00000000 00000000 00000002 b6f1aa78 00000002 000af408
+	bfa0: 00000004 c000dc00 b6f1aa78 00000002 00000001 000af408 00000002 00000000
+	bfc0: b6f1aa78 00000002 000af408 00000004 be806a4c 000a6094 00000000 000dd1c8
+	bfe0: 00000000 be8069cc b6e8ab77 b6ec125c 40070010 00000001 22940489 154a5007
+	[<c03052e4>] (iio_compute_scan_bytes) from [<c0305b04>] (__iio_update_buffers+0x248/0x438)
+	[<c0305b04>] (__iio_update_buffers) from [<c0305d54>] (iio_buffer_store_enable+0x60/0x7c)
+	[<c0305d54>] (iio_buffer_store_enable) from [<c01ece90>] (dev_attr_store+0x18/0x24)
+	[<c01ece90>] (dev_attr_store) from [<c0103fac>] (sysfs_kf_write+0x40/0x4c)
+	[<c0103fac>] (sysfs_kf_write) from [<c0103468>] (kernfs_fop_write+0x110/0x154)
+	[<c0103468>] (kernfs_fop_write) from [<c00b2f94>] (vfs_write+0xd0/0x160)
+	[<c00b2f94>] (vfs_write) from [<c00b32d0>] (SyS_write+0x40/0x78)
+	[<c00b32d0>] (SyS_write) from [<c000dc00>] (ret_fast_syscall+0x0/0x30)
+	Code: ea00000e e1a01008 e1a00005 ebfff6fc (e5d0a016)
+
+Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/iio/impedance-analyzer/ad5933.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index ec816e0459cc..a44862ad84ec 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -1065,6 +1065,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	/* Ovislink */
- 	{ USB_DEVICE(0x1b75, 0x3071) },
- 	{ USB_DEVICE(0x1b75, 0x3072) },
-+	{ USB_DEVICE(0x1b75, 0xa200) },
- 	/* Para */
- 	{ USB_DEVICE(0x20b8, 0x8888) },
- 	/* Pegatron */
+diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+index 6330af656a0f..9d5f205807c5 100644
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -115,6 +115,7 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.channel = 0,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+ 		.address = AD5933_REG_TEMP_DATA,
++		.scan_index = -1,
+ 		.scan_type = {
+ 			.sign = 's',
+ 			.realbits = 14,
+@@ -125,8 +126,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "real_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_REAL_DATA,
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -139,8 +138,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "imag_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_IMAG_DATA,
+ 		.scan_index = 1,
+ 		.scan_type = {
+@@ -746,14 +743,14 @@ static int ad5933_probe(struct i2c_client *client,
+ 	indio_dev->name = id->name;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	indio_dev->channels = ad5933_channels;
+-	indio_dev->num_channels = 1; /* only register temp0_input */
++	indio_dev->num_channels = ARRAY_SIZE(ad5933_channels);
+ 
+ 	ret = ad5933_register_ring_funcs_and_init(indio_dev);
+ 	if (ret)
+ 		goto error_disable_reg;
+ 
+-	/* skip temp0_input, register in0_(real|imag)_raw */
+-	ret = iio_buffer_register(indio_dev, &ad5933_channels[1], 2);
++	ret = iio_buffer_register(indio_dev, ad5933_channels,
++		ARRAY_SIZE(ad5933_channels));
+ 	if (ret)
+ 		goto error_unreg_ring;
+ 
 -- 
 2.1.3
 
