@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011AbaKRPtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:49:22 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:51179 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586AbaKRPtU (ORCPT
+	id S1756447AbaKRPtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:49:45 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:60759 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299AbaKRPtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:49:20 -0500
-Date: Tue, 18 Nov 2014 15:49:12 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, IIO <linux-iio@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>, Carlo Caione <carlo@caione.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Todd Brandt <todd.e.brandt@linux.intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Hartmut Knaack <knaack.h@gmx.de>
-Subject: [GIT PULL] Immutable branch between MFD and IIO (second tag)
-Message-ID: <20141118154912.GB13959@x1>
-References: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Nov 2014 10:49:43 -0500
+Date: Tue, 18 Nov 2014 16:49:35 +0100
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: VFS: Parallel unmounting of filesystems produces system call error
+Message-ID: <20141118164935.19771a88@lilie>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111815-0021-0000-0000-000001D349B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9:
+Hi Al,
 
-  Linux 3.17 (2014-10-05 12:23:04 -0700)
+I just ran some tests involving many parallel mount and unmount
+operations. I sometimes get EINVAL and the umount program says "not
+mounted". Which is definitively wrong. It feels like a race condition
+somewhere in the VFS code.
 
-are available in the git repository at:
+I use todays master branch (commit fc14f9c1272f62c3) on s390 with 1024
+DASD devices.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-iio-v3.19-1
+In fs/namespace.c, sys_umount:
 
-for you to fetch changes up to 8019f6962708985782b65bd97be88046a55e1e4d:
+> 	retval = user_path_mountpoint_at(AT_FDCWD, name, 
+> lookup_flags, &path);
+...
+> 	retval = -EINVAL;
+> 	if (path.dentry != path.mnt->mnt_root)
+> 		goto dput_and_out;
+This seems to be erroneously true from time to time.
 
-  iio/axp288_adc: remove THIS_MODULE owner (2014-11-18 15:34:22 +0000)
 
-----------------------------------------------------------------
-Immutable branch between MFD and IIO due for v3.19.
+The script does something equivalent to:
+> for n in $DEVNODES; do
+>	umount $n &
+> done
 
-This is the second tag, as more patches have been applied.
+Do you have any idea what's wrong?
 
-----------------------------------------------------------------
-Aaron Lu (1):
-      iio: adc: Add module device table for autoloading
 
-Jacob Pan (4):
-      mfd: axp20x: Extend axp20x to support axp288 pmic
-      iio: adc: Add support for axp288 adc
-      mfd/axp20x: avoid irq numbering collision
-      iio/axp288_adc: remove THIS_MODULE owner
+Kind regards
 
- drivers/iio/adc/Kconfig      |   8 +
- drivers/iio/adc/Makefile     |   1 +
- drivers/iio/adc/axp288_adc.c | 261 +++++++++++++++++++++++++++++++
- drivers/mfd/Kconfig          |   3 +-
- drivers/mfd/axp20x.c         | 361 ++++++++++++++++++++++++++++++++++++-------
- include/linux/mfd/axp20x.h   |  59 +++++++
- 6 files changed, 637 insertions(+), 56 deletions(-)
- create mode 100644 drivers/iio/adc/axp288_adc.c
+Philipp
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+
+
+
