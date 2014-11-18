@@ -1,163 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaKRLCm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:02:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38385 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753160AbaKRLCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:02:41 -0500
-Date: Tue, 18 Nov 2014 13:02:21 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH V3 2/2] virtio-net: sanitize buggy features advertised by
- host
-Message-ID: <20141118110221.GA21664@redhat.com>
-References: <1416215838-21700-1-git-send-email-jasowang@redhat.com>
- <1416215838-21700-2-git-send-email-jasowang@redhat.com>
- <20141117100838.GD20133@redhat.com>
- <546AB704.4010904@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546AB704.4010904@redhat.com>
+	id S1753774AbaKRLE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:04:27 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:13509 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaKRLEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 06:04:25 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f4-b7f6c6d00000120b-f3-546b27b684c0
+Content-transfer-encoding: 8BIT
+Message-id: <546B27B4.4040808@samsung.com>
+Date: Tue, 18 Nov 2014 12:04:20 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+Newsgroups: gmane.comp.video.dri.devel,gmane.linux.kernel.samsung-soc,gmane.linux.ports.arm.kernel,gmane.linux.kernel
+To: Inki Dae <inki.dae@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] blocked task after exynos_drm_init
+References: <1415264811.27478.4.camel@AMDC1943> <546B228E.6030500@samsung.com>
+ <546B2508.8070409@samsung.com>
+In-reply-to: <546B2508.8070409@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOLMWRmVeSWpSXmKPExsVy+t/xq7rb1LNDDE7/V7e48vU9m8Wk+xNY
+	LDY9vsZqcXnXHDaLGef3MTmwetzvPs7ksXlJvUffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
+	7F51nL3giVLFwptTWBsY78p2MXJySAiYSKyf9pUVwhaTuHBvPVsXIxeHkMBSRokfz9+ygyR4
+	BQQlfky+x9LFyMHBLCAvceRSNoSpLjFlSi5E+SdGiaWHmlkgyrUkJvXuYgSxWQRUJdbMfswG
+	YrMJaEr83XwTzBYViJC4smYOWA2fQLlEx7tjYHERAWWJVfva2UGGMgv0MEosmn6LCSQhLGAq
+	cWHRSrAGIYF8iWn9G8FsTgFtiemPtzNNYBScheTUWQinzkI4dQEj8ypG0dTS5ILipPRcQ73i
+	xNzi0rx0veT83E2MkMD+soNx8TGrQ4wCHIxKPLwNG7NChFgTy4orcw8xSnAwK4nwnusGCvGm
+	JFZWpRblxxeV5qQWH2Jk4uCUamBkDrS5f04+cp1CpqkSb7DZU7d7hhOn3Y3T8Cw6eKhaXHfB
+	krXerM/nRSf6zDgrZ1IlGvjAI+bShuknN5y/ujX11ORrV1wPJGaXOV+TTEh/u+Wx5Nx796cd
+	0k5fFdZaJHfDPJDb99Qkm613z7M9Y7MOmtJtlqUnzmDAuzIv0VRJ3UNkf2fW+UglluKMREMt
+	5qLiRACvO3uQSgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 11:03:32AM +0800, Jason Wang wrote:
-> On 11/17/2014 06:08 PM, Michael S. Tsirkin wrote:
-> > On Mon, Nov 17, 2014 at 05:17:18PM +0800, Jason Wang wrote:
-> >> This patch tries to detect the possible buggy features advertised by host
-> >> and sanitize them. One example is booting virtio-net with only ctrl_vq
-> >> disabled, qemu may still advertise many features which depends on it. This
-> >> will trigger several BUG()s in virtnet_send_command().
-> >>
-> >> This patch utilizes the sanitize_features() method, and disables all
-> >> features that depends on ctrl_vq if it was not advertised.
-> >>
-> >> This fixes the crash when booting with ctrl_vq=off using qemu.
-> >>
-> >> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >> Cc: Michael S. Tsirkin <mst@redhat.com>
-> >> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-> >> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >
-> > So I'm not sure this is useful.
-> > The spec says:
-> > 	The device MUST NOT offer a feature which requires another feature which
-> > 	was not offered.
+On 11/18/2014 11:52 AM, Inki Dae wrote:
+> On 2014년 11월 18일 19:42, Andrzej Hajda wrote:
+>> On 11/06/2014 10:06 AM, Krzysztof Kozlowski wrote:
+>>> Hi,
+>>>
+>>> On last next (next-20141104, next-20141105) booting locks after
+>>> initializing Exynos DRM (Trats2 board):
+>>>
+>>> [    2.028283] [drm] Initialized drm 1.1.0 20060810
+>>> [  240.505795] INFO: task swapper/0:1 blocked for more than 120 seconds.
+>>> [  240.510825]       Not tainted 3.18.0-rc3-next-20141105 #794
+>>> [  240.516418] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>>> [  240.524173] swapper/0       D c052534c     0     1      0 0x00000000
+>>> [  240.530527] [<c052534c>] (__schedule) from [<c0525b34>] (schedule_preempt_disabled+0x14/0x20)
+>>> [  240.539030] [<c0525b34>] (schedule_preempt_disabled) from [<c0526d44>] (mutex_lock_nested+0x1c4/0x464)
+>>> [  240.548320] [<c0526d44>] (mutex_lock_nested) from [<c02be908>] (__driver_attach+0x48/0x98)
+>>> [  240.556562] [<c02be908>] (__driver_attach) from [<c02bcc00>] (bus_for_each_dev+0x54/0x88)
+>>> [  240.564717] [<c02bcc00>] (bus_for_each_dev) from [<c02bdce0>] (bus_add_driver+0xe4/0x200)
+>>> [  240.572876] [<c02bdce0>] (bus_add_driver) from [<c02bef94>] (driver_register+0x78/0xf4)
+>>> [  240.580864] [<c02bef94>] (driver_register) from [<c029e99c>] (exynos_drm_platform_probe+0x34/0x234)
+>>> [  240.589890] [<c029e99c>] (exynos_drm_platform_probe) from [<c02bfcf0>] (platform_drv_probe+0x48/0xa4)
+>>> [  240.599090] [<c02bfcf0>] (platform_drv_probe) from [<c02be680>] (driver_probe_device+0x13c/0x37c)
+>>> [  240.607940] [<c02be680>] (driver_probe_device) from [<c02be954>] (__driver_attach+0x94/0x98)
+>>> [  240.616360] [<c02be954>] (__driver_attach) from [<c02bcc00>] (bus_for_each_dev+0x54/0x88)
+>>> [  240.624517] [<c02bcc00>] (bus_for_each_dev) from [<c02bdce0>] (bus_add_driver+0xe4/0x200)
+>>> [  240.632679] [<c02bdce0>] (bus_add_driver) from [<c02bef94>] (driver_register+0x78/0xf4)
+>>> [  240.640667] [<c02bef94>] (driver_register) from [<c029e938>] (exynos_drm_init+0x70/0xa0)
+>>> [  240.648739] [<c029e938>] (exynos_drm_init) from [<c00089b0>] (do_one_initcall+0xac/0x1f0)
+>>> [  240.656914] [<c00089b0>] (do_one_initcall) from [<c074bd90>] (kernel_init_freeable+0x10c/0x1d8)
+>>> [  240.665591] [<c074bd90>] (kernel_init_freeable) from [<c051eabc>] (kernel_init+0x8/0xec)
+>>> [  240.673661] [<c051eabc>] (kernel_init) from [<c000f268>] (ret_from_fork+0x14/0x2c)
+>>> [  240.681196] 3 locks held by swapper/0/1:
+>>> [  240.685091]  #0:  (&dev->mutex){......}, at: [<c02be908>] __driver_attach+0x48/0x98
+>>> [  240.692732]  #1:  (&dev->mutex){......}, at: [<c02be918>] __driver_attach+0x58/0x98
+>>> [  240.700367]  #2:  (&dev->mutex){......}, at: [<c02be908>] __driver_attach+0x48/0x98
+>>
+>>
+>> This is caused by patch moving platform devices to
+>> /sys/devices/platform[1]. Since this patch registering platform
+>> drivers/devices in probe of platform device causes deadlocks. I guess
+>> now all driver registration should be moved to exynos_drm_init and it
+>> seems better location for it IMHO.
 > 
-> We can't guarantee that hypervisor's implementation are 100% correct.
-> > So this is a buggy hypervisor, and I believe we should just fail probe.
-> > This can be done without crashing, and is generally a better
-> > idea that second-guessing what hypervisor wants us to do.
-> >
+> Thanks. It might be a chance that we could separate sub drivers of
+> Exynos drm into independent modules so that they can be called
+> independently because if we move them to exynos_drm_init then the
+> deferred probe wouldn't work correctly.
+
+For full separation of sub-drivers component matching code should be
+fixed first. Now it usually works because components are probed before
+exynos_drm_match_add and this is because components are probed during
+sub-driver registrations.
+
+Regards
+Andrzej
+
 > 
-> So we still need something like this patch to detect the wrong
-> dependencies. And the features fixing like this is not something new,
-> see how net device fix the features through ndo_fix_features().
-
-I think that's different. If linux refuses to work with a broken
-hardware NIC, you can not do anything, and hardware is mass-produced so
-we know many people are affected.
-If linux refuses to work with a misconfigured hypervisor, it's just one
-user who misconfigured it, and hypervisor can be fixed.
-
-So let's not work around bugs at least unless we know that many people
-already use a broken hypervisor, something prevents vendor from fixing it.
-
-
-> >
-> >
-> >
-> > However, assuming that we do want this change:
-> > This can be replaced with a table driven design in virtio core, but
-> > since you chose to open code it, I would drop table below altogether.
-> >
-> >
-> > Just make it
-> > 	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
-> > 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
-> > 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_VLAN);
-> > 		virtio_disable_feature(dev, VIRTIO_NET_F_GUEST_ANNOUNCE);
-> > 		virtio_disable_feature(dev, VIRTIO_NET_F_MQ);
-> > 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR);
-> > 	}
-> >
+> Thanks,
+> Inki Dae
 > 
-> This is similar to what I did in v1 and v2. Either are ok for me.
-> >
-> >
-> >> ---
-> >> Changes from V1:
-> >> - fix the cut-and-paste error
-> >> Changes from V2:
-> >> - loop through an array of feature bits
-> >> - switch to use dev_warn()
-> >> ---
-> >>  drivers/net/virtio_net.c | 26 ++++++++++++++++++++++++++
-> >>  1 file changed, 26 insertions(+)
-> >>
-> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> >> index ec2a8b4..6fadd8c 100644
-> >> --- a/drivers/net/virtio_net.c
-> >> +++ b/drivers/net/virtio_net.c
-> >> @@ -1948,6 +1948,31 @@ static int virtnet_restore(struct virtio_device *vdev)
-> >>  }
-> >>  #endif
-> >>  
-> >> +static void virtnet_sanitize_features(struct virtio_device *dev)
-> >> +{
-> >> +	unsigned int features_for_ctrl_vq[] = {
-> >> +		VIRTIO_NET_F_CTRL_RX,
-> >> +		VIRTIO_NET_F_CTRL_VLAN,
-> >> +		VIRTIO_NET_F_GUEST_ANNOUNCE,
-> >> +		VIRTIO_NET_F_MQ,
-> >> +		VIRTIO_NET_F_CTRL_MAC_ADDR
-> >> +	};
-> > This is not the only dependency: checksums
-> > have dependencies too. See virtio 1.0 spec.
-> >
+>>
+>> Regards
+>> Andrzej
+>>
+>> [1]: http://www.spinics.net/lists/devicetree/msg56101.html
+>>
+>>
+>>
+>>>
+>>> Full dmesg and config attached.
+>>>
+>>> Best regards,
+>>> Krzysztof
+>>>
+>>>
+>>>
+>>> _______________________________________________
+>>> dri-devel mailing list
+>>> dri-devel@lists.freedesktop.org
+>>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
 > 
-> I see ,and this kind of check could be added. But we're really safe
-> since qemu handle such cases and won't advertise any offload feature is
-> csum is not supported.
-> >
-> >> +	int i;
-> >> +
-> >> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
-> >> +		for (i = 0; i < ARRAY_SIZE(features_for_ctrl_vq); i++) {
-> >> +			unsigned int f = features_for_ctrl_vq[i];
-> >> +			if (virtio_has_feature(dev, f)) {
-> >> +				virtio_disable_feature(dev, f);
-> >> +				dev_warn(&dev->dev,
-> >> +					 "buggy hyperviser: disable feature "
-> >> +					 "0x%x since VIRTIO_NET_F_CTRL_VQ was "
-> >> +					 "not advertised.\n", f);
-> >> +			}
-> >> +		}
-> >> +	}
-> >> +}
-> >> +
-> >>  static struct virtio_device_id id_table[] = {
-> >>  	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
-> >>  	{ 0 },
-> >> @@ -1975,6 +2000,7 @@ static struct virtio_driver virtio_net_driver = {
-> >>  	.probe =	virtnet_probe,
-> >>  	.remove =	virtnet_remove,
-> >>  	.config_changed = virtnet_config_changed,
-> >> +	.sanitize_features = virtnet_sanitize_features,
-> >>  #ifdef CONFIG_PM_SLEEP
-> >>  	.freeze =	virtnet_freeze,
-> >>  	.restore =	virtnet_restore,
-> >> -- 
-> >> 1.9.1
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> 
+
