@@ -1,152 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615AbaKRF7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 00:59:06 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:59685 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753560AbaKRF7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 00:59:04 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="43547752"
-Message-ID: <546AE0BC.5020606@cn.fujitsu.com>
-Date: Tue, 18 Nov 2014 14:01:32 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752552AbaKRGHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:07:09 -0500
+Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:2784
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750808AbaKRGHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 01:07:06 -0500
+Date: Tue, 18 Nov 2014 13:00:03 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>,
+        <p.zabel@pengutronix.de>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <michal.simek@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 00/13] ARM: berlin: USB support
+Message-ID: <20141118050002.GC15650@shlinux2>
+References: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Dongsu Park <dongsu.park@profitbricks.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH - v3?] workqueue: allow rescuer thread to do more work.
-References: <20141029172608.39119c80@notabene.brown>	<20141029143210.GA25226@htj.dyndns.org>	<20141030101932.2241daa7@notabene.brown>	<20141104142240.GD14459@htj.dyndns.org>	<20141106165811.GA2338@gmail.com>	<545C368C.5040704@cn.fujitsu.com>	<20141110162848.6f2246bb@notabene.brown>	<20141110085250.GB15948@quack.suse.cz>	<20141111090402.35fa0700@notabene.brown> <20141118152754.60b0c75e@notabene.brown>
-In-Reply-To: <20141118152754.60b0c75e@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(199003)(189002)(54356999)(64706001)(47776003)(20776003)(97756001)(4396001)(50986999)(50466002)(76176999)(31966008)(105606002)(77156002)(106466001)(107046002)(62966003)(95666004)(33716001)(99396003)(86362001)(23726002)(104016003)(46406003)(120916001)(97736003)(83506001)(6806004)(68736004)(15975445006)(110136001)(19580395003)(33656002)(44976005)(87936001)(46102003)(21056001)(102836001)(85426001)(92566001)(92726001)(84676001)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0638;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(7)(6);SRVR:DM2PR0301MB0638;
+X-Forefront-PRVS: 039975700A
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 12:27 PM, NeilBrown wrote:
+On Mon, Nov 17, 2014 at 02:35:34PM +0100, Antoine Tenart wrote:
+> This series adds the support for ChipIdea USB2 (ci13xxx) controllers,
+> the USB PHYs of the Marvell Berlin SoCs and also adds a reset
+> controller for these SoCs.
 > 
-> When there is serious memory pressure, all workers in a pool could be
-> blocked, and a new thread cannot be created because it requires memory
-> allocation.
+> The reset controller is used by the PHY driver and shares the
+> existing chip controller node with the clocks and one pin controller.
 > 
-> In this situation a WQ_MEM_RECLAIM workqueue will wake up the
-> rescuer thread to do some work.
+> The Marvell Berlin USB controllers are host only on the BG2Q and are
+> compatible with USB ChipIdea. We here add a glue to use the available
+> common functions for this kind of controllers, and add a generic USB2
+> ChipIdea driver. A PHY driver is also added to control the USB PHY.
 > 
-> The rescuer will only handle requests that are already on ->worklist.
-> If max_requests is 1, that means it will handle a single request.
+> This series applies on top of Peter Chen's ci-for-usb-next branch[1]
+> containing the generic PHY support in the USB framework[2].
 > 
-> The rescuer will be woken again in 100ms to handle another max_requests
-> requests.
+> Patches 1-4 should already have been taken by Sebastian.
 > 
-> I've seen a machine (running a 3.0 based "enterprise" kernel) with
-> thousands of requests queued for xfslogd, which has a max_requests of
-> 1, and is needed for retiring all 'xfs' write requests.  When one of
-> the worker pools gets into this state, it progresses extremely slowly
-> and possibly never recovers (only waited an hour or two).
-> 
-> With this patch we leave a pool_workqueue on mayday list
-> until it is clearly no longer in need of assistance.  This allows
-> all requests to be handled in a timely fashion.
-> 
-> The code is a bit awkward due to the need to hold both wq_mayday_lock
-> and pool->lock at the same time, and due to the lock ordering imposed
-> on them.  In particular we move work items from the ->worklist to the
-> rescuer list while holding both locks because we need pool->lock
-> to do the move, and need wq_mayday_lock to manipulate the mayday list
-> after we have found out if there was anything to do.
-> 
-> 'need_to_create_worker()' is called *before* moving work items off
-> pool->worklist as an empty worklist will make it return false, but
-> after the move_linked_works() calls and before the
-> process_scheduled_works() call, an empty worklist does not indicate
-> that there is no work to do.
-> 
-> We keep each pool_workqueue on the mayday list until
-> need_to_create_worker() is false, and no work for this workqueue is
-> found in the pool.
-> 
-> As the main rescuer loop now iterates an arbitrary number of time,
-> cond_resched() was inserted to avoid imposing excessive latencies.
-> 
-> I have tested this in combination with a (hackish) patch which forces
-> all work items to be handled by the rescuer thread.  In that context
-> it significantly improves performance.  A similar patch for a 3.0
-> kernel significantly improved performance on a heavy work load.
-> 
-> Thanks to Jan Kara for some design ideas, and to Dongsu Park for
-> some comments and testing.
-> 
-> Cc: Dongsu Park <dongsu.park@profitbricks.com>
-> Cc: Jan Kara <jack@suse.cz>
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index caedde34ee7f..4baa7b8b7e0f 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2253,26 +2253,36 @@ repeat:
->  					struct pool_workqueue, mayday_node);
->  		struct worker_pool *pool = pwq->pool;
->  		struct work_struct *work, *n;
-> +		int still_needed;
->  
->  		__set_current_state(TASK_RUNNING);
-> -		list_del_init(&pwq->mayday_node);
-> -
-> -		spin_unlock_irq(&wq_mayday_lock);
-> -
-> -		worker_attach_to_pool(rescuer, pool);
-> -
-> -		spin_lock_irq(&pool->lock);
-> -		rescuer->pool = pool;
-> -
-> +		spin_lock(&pool->lock);
->  		/*
->  		 * Slurp in all works issued via this workqueue and
->  		 * process'em.
->  		 */
->  		WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
 
-> +		still_needed = need_to_create_worker(pool);
+Applied patches 7-9, thanks.
 
-This line of code will cause the rescuer busy-loop even no work-item pending
-on the workqueue.
+> Changes since v7:
+> 	- rebased on top of the latest CI for-next branch of Peter[1]
+> 	- removed CI_HDRC_REQUIRE_TRANSCEIVER
+> 	- added a missing tested-by
+> 	- some cosmetic fixes and a commit message reword
+> 
+> Changes since v6:
+>         - removed ci_hdrc_usb2_dt_probe
+>         - fixed a bug in the ChipIdea core for PHY handling
+>         - called unconditionally dma_set_mask_and_coherent()
+> 
+> Changes since v5:
+>         - added a missing header in ci_hdrc_usb2
+> 
+> Changes since v4:
+>         - fixed the error handling of ci_hdrc_usb2_probe()
+> 
+> Changes since v3:
+>         - removed the DMA mask property
+>         - moved the clock handling in the common probe function
+>         - fixed the documentation for the USB2 ChipIdea USB PHY binding
+>         - made sure the reset bit is 0-31 in the reset driver
+> 
+> Changes since v2:
+>         - moved the PHY driver to the generic PHY framework
+>         - changed the compatible to 'chipidea,usb2'
+>         - added a property to set the DMA mask in the USB2 CI driver
+>         - separated dt specific calls in the CI probing function
+>         - rebased on top of the generic PHY support for CI[2]
+> 
+> Changes since v1:
+>         - made the Berlin CI USB driver a generic one
+>         - added support to custom offset for the reset register
+>         - added fixed regulators to support supply the VBUS
+>         - modified the PHY driver to support the one one the BG2CD as
+>           well
+>         - documented the reset properties
+>         - added bindings for the BG2CD
+>         - cosmetic fixes
+> 
+> [1] https://github.com/hzpeterchen/linux-usb.git ci-for-usb-next
+> [2] git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+> 
+> Antoine Tenart (11):
+>   reset: add the Berlin reset controller driver
+>   Documentation: bindings: add reset bindings docs for Marvell Berlin
+>     SoCs
+>   ARM: Berlin: select the reset controller
+>   ARM: dts: berlin: add a required reset property in the chip controller
+>     node
+>   phy: add the Berlin USB PHY driver
+>   Documentation: bindings: add doc for the Berlin USB PHY
+>   usb: chipidea: fix phy handling
+>   usb: chipidea: add a usb2 driver for ci13xxx
+>   Documentation: bindings: add doc for the USB2 ChipIdea USB driver
+>   ARM: dts: berlin: add BG2Q nodes for USB support
+>   ARM: dts: Berlin: enable USB on the BG2Q DMP
+> 
+> Sebastian Hesselbarth (2):
+>   ARM: dts: berlin: add BG2CD nodes for USB support
+>   ARM: dts: berlin: enable USB on the Google Chromecast
+> 
+>  .../devicetree/bindings/arm/marvell,berlin.txt     |  10 +
+>  .../devicetree/bindings/phy/berlin-usb-phy.txt     |  16 ++
+>  .../devicetree/bindings/usb/ci-hdrc-usb2.txt       |  24 +++
+>  arch/arm/boot/dts/berlin2.dtsi                     |   1 +
+>  arch/arm/boot/dts/berlin2cd-google-chromecast.dts  |   4 +
+>  arch/arm/boot/dts/berlin2cd.dtsi                   |  37 ++++
+>  arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |  53 +++++
+>  arch/arm/boot/dts/berlin2q.dtsi                    |  56 ++++++
+>  arch/arm/mach-berlin/Kconfig                       |   2 +
+>  drivers/phy/Kconfig                                |   7 +
+>  drivers/phy/Makefile                               |   1 +
+>  drivers/phy/phy-berlin-usb.c                       | 224 +++++++++++++++++++++
+>  drivers/reset/Makefile                             |   1 +
+>  drivers/reset/reset-berlin.c                       | 131 ++++++++++++
+>  drivers/usb/chipidea/Makefile                      |   1 +
+>  drivers/usb/chipidea/ci_hdrc_usb2.c                | 116 +++++++++++
+>  drivers/usb/chipidea/core.c                        |   4 +-
+>  17 files changed, 686 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+>  create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+>  create mode 100644 drivers/phy/phy-berlin-usb.c
+>  create mode 100644 drivers/reset/reset-berlin.c
+>  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
+> 
+> -- 
+> 2.1.0
+> 
 
->  		list_for_each_entry_safe(work, n, &pool->worklist, entry)
->  			if (get_work_pwq(work) == pwq)
->  				move_linked_works(work, scheduled, &n);
->  
-> +		if (!list_empty(scheduled))
-> +			still_needed = 1;
-> +		if (still_needed) {
-> +			list_move_tail(&pwq->mayday_node, &wq->maydays);
-> +			get_pwq(pwq);
-> +		} else
-> +			/* We can let go of this one now */
-> +			list_del_init(&pwq->mayday_node);
-> +
-> +		spin_unlock(&pool->lock);
-> +		spin_unlock_irq(&wq_mayday_lock);
-> +
-> +		worker_attach_to_pool(rescuer, pool);
-> +
-> +		spin_lock_irq(&pool->lock);
-> +		rescuer->pool = pool;
->  		process_scheduled_works(rescuer);
->  
->  		/*
-> @@ -2293,7 +2303,7 @@ repeat:
->  		spin_unlock_irq(&pool->lock);
->  
->  		worker_detach_from_pool(rescuer, pool);
-> -
-> +		cond_resched();
->  		spin_lock_irq(&wq_mayday_lock);
->  	}
->  
+-- 
 
+Best Regards,
+Peter Chen
