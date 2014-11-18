@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbaKRLsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:48:36 -0500
-Received: from [119.145.14.65] ([119.145.14.65]:58139 "EHLO
-	szxga02-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaKRLsf (ORCPT
+	id S1754135AbaKRLsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:48:54 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:22124 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaKRLsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:48:35 -0500
-Message-ID: <546B31D7.6030204@huawei.com>
-Date: Tue, 18 Nov 2014 19:47:35 +0800
+	Tue, 18 Nov 2014 06:48:53 -0500
+Message-ID: <546B320A.4060202@huawei.com>
+Date: Tue, 18 Nov 2014 19:48:26 +0800
 From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -19,49 +19,71 @@ CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
         Marc Zyngier <marc.zyngier@arm.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
- to reduce duplicated code
-References: <20141112133941.647950773@linutronix.de> <20141112134120.393705922@linutronix.de> <546B10DA.3040504@huawei.com> <alpine.DEB.2.11.1411181102160.3909@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411181102160.3909@nanos>
+Subject: Re: [patch 01/16] irqdomain: Introduce new interfaces to support
+ hierarchy irqdomains
+References: <20141112133941.647950773@linutronix.de> <20141112134119.881823615@linutronix.de> <546B1067.2020403@huawei.com> <alpine.DEB.2.11.1411181048110.3909@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411181048110.3909@nanos>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.177.24.136]
 X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020201.546B3216.00D3,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 7e1ae2310568d419ea66557ddbfd4639
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 18:03, Thomas Gleixner wrote:
+On 2014/11/18 17:54, Thomas Gleixner wrote:
 
 > On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
-> 
 >> Hi Thomas, Jiang,
->> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>> On 2014/11/12 21:42, Thomas Gleixner wrote:
 >>
 >>> From: Jiang Liu <jiang.liu@linux.intel.com>
->> [...]
->>> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
->>> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
->>> +			 void *chip_data, irq_flow_handler_t handler,
->>> +			 void *handler_data, const char *handler_name)
->>> +{
->>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
->>> +	__irq_set_handler(virq, handler, 0, handler_name);
->>> +	irq_set_handler_data(virq, handler_data);
->>> +}
+>>> Index: tip/kernel/irq/chip.c
+>>> ===================================================================
+>>> --- tip.orig/kernel/irq/chip.c
+>>> +++ tip/kernel/irq/chip.c
+>>> @@ -15,6 +15,7 @@
+>>>  #include <linux/module.h>
+>>>  #include <linux/interrupt.h>
+>>>  #include <linux/kernel_stat.h>
+>>> +#include <linux/irqdomain.h>
+>>>  
+>>>  #include <trace/events/irq.h>
+>>>  
+>>> @@ -178,6 +179,7 @@ int irq_startup(struct irq_desc *desc, b
+>>>  	irq_state_clr_disabled(desc);
+>>>  	desc->depth = 0;
+>>>  
+>>> +	irq_domain_activate_irq(&desc->irq_data);
 >>
->> When stacked domain enabled, there will be a semantic shift to the linux interrupt
->> identifiers. The @virq now delivers much more than before.
->> More specifically, now we need both @virq and @domain, rather than only @irq, to
->> determine which irq_data we want to configure. And once we configure @irq without
->> providing the exact domain, it means we are configuring all the domains related to
->> that @irq. So I think this routine just messed all things up.
+>> I'm not sure why this is needed, please help me out.. :)
 > 
-> You can mess up anything by using an interface in the wrong way. Open
-> coding will not make that harder.
+> Because it makes the whole error handling in stacked allocations way
+> simpler.
+> 
+> We allocate and reserve resources, but do not program the hardware up
+> to the point where request_irq and therefor irq_startup() is invoked.
+> 
+> So when in the allocation/reservation phase any of the stack level
+> fails we just have to undo the allocations/reservations and not any
+> hardware settings.
+> 
+> That also solves the issue that depending on the stacking we might not
+> be able to program the hardware during the allocation because all
+> stack levels need to be allocated/reserved before we can figure out
+> which hardware configuration we need for the various levels.
+> 
+> So we decided to postpone the actual hardware programming to the point
+> where the interrupt actually gets used.
 > 
 
-But what's the correct way to use this interface?
+OK, I got it.
 
 Thanks,
 	Abel
