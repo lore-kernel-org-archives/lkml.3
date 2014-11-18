@@ -1,308 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031AbaKRMHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:07:42 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:3328 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669AbaKRMHk (ORCPT
+	id S1754084AbaKRMJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:09:33 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39822 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaKRMJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:07:40 -0500
-Message-ID: <546B3667.9040506@huawei.com>
-Date: Tue, 18 Nov 2014 20:07:03 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 09/16] genirq: Add generic msi irq domain support
-References: <20141112133941.647950773@linutronix.de> <20141112134120.569789374@linutronix.de>
-In-Reply-To: <20141112134120.569789374@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
+	Tue, 18 Nov 2014 07:09:32 -0500
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC] debug: add parameters to prevent entering debug mode on errors
+Date: Tue, 18 Nov 2014 17:38:36 +0530
+Message-Id: <1416312516-4551-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/12 21:43, Thomas Gleixner wrote:
+From: Colin Cross <ccross@android.com>
 
-> From: Jiang Liu <jiang.liu@linux.intel.com>
-> 
-> Implement the basic functions for MSI interrupt support with
-> hierarchical interrupt domains.
-> 
-> [ tglx: Extracted and combined from several patches ]
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-> Cc: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  include/linux/msi.h |   35 +++++++++++++++
->  kernel/irq/Kconfig  |   10 ++++
->  kernel/irq/Makefile |    1 
->  kernel/irq/msi.c    |  119 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 165 insertions(+)
-> 
-> Index: tip/include/linux/msi.h
-> ===================================================================
-> --- tip.orig/include/linux/msi.h
-> +++ tip/include/linux/msi.h
-> @@ -77,4 +77,39 @@ struct msi_chip {
->  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
->  };
->  
-> +#ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
-> +struct irq_domain;
-> +struct irq_chip;
-> +struct device_node;
-> +struct msi_domain_info;
-> +
-> +struct msi_domain_ops {
-> +	void		(*calc_hwirq)(struct msi_domain_info *info, void *arg,
-> +				      struct msi_desc *desc);
-> +	irq_hw_number_t	(*get_hwirq)(struct msi_domain_info *info, void *arg);
-> +	int		(*msi_init)(struct irq_domain *domain,
-> +				    struct msi_domain_info *info,
-> +				    unsigned int virq, irq_hw_number_t hwirq,
-> +				    void *arg);
-> +	void		(*msi_free)(struct irq_domain *domain,
-> +				    struct msi_domain_info *info,
-> +				    unsigned int virq);
-> +};
-> +
-> +struct msi_domain_info {
-> +	struct msi_domain_ops	*ops;
-> +	struct irq_chip		*chip;
-> +	void			*data;
-> +};
-> +
-> +int msi_domain_set_affinity(struct irq_data *data, const struct cpumask *mask,
-> +			    bool force);
-> +
-> +struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
-> +					 struct msi_domain_info *info,
-> +					 struct irq_domain *parent);
-> +struct msi_domain_info *msi_get_domain_info(struct irq_domain *domain);
-> +
-> +#endif /* CONFIG_GENERIC_MSI_IRQ_DOMAIN */
-> +
->  #endif /* LINUX_MSI_H */
-> Index: tip/kernel/irq/Kconfig
-> ===================================================================
-> --- tip.orig/kernel/irq/Kconfig
-> +++ tip/kernel/irq/Kconfig
-> @@ -60,6 +60,16 @@ config IRQ_DOMAIN_HIERARCHY
->  	bool
->  	select IRQ_DOMAIN
->  
-> +# Generic MSI interrupt support
-> +config GENERIC_MSI_IRQ
-> +	bool
-> +
-> +# Generic MSI hierarchical interrupt domain support
-> +config GENERIC_MSI_IRQ_DOMAIN
-> +	bool
-> +	select IRQ_DOMAIN_HIERARCHY
-> +	select GENERIC_MSI_IRQ
-> +
->  config HANDLE_DOMAIN_IRQ
->  	bool
->  
-> Index: tip/kernel/irq/Makefile
-> ===================================================================
-> --- tip.orig/kernel/irq/Makefile
-> +++ tip/kernel/irq/Makefile
-> @@ -6,3 +6,4 @@ obj-$(CONFIG_IRQ_DOMAIN) += irqdomain.o
->  obj-$(CONFIG_PROC_FS) += proc.o
->  obj-$(CONFIG_GENERIC_PENDING_IRQ) += migration.o
->  obj-$(CONFIG_PM_SLEEP) += pm.o
-> +obj-$(CONFIG_GENERIC_MSI_IRQ) += msi.o
-> Index: tip/kernel/irq/msi.c
-> ===================================================================
-> --- /dev/null
-> +++ tip/kernel/irq/msi.c
-> @@ -0,0 +1,119 @@
-> +/*
-> + * linux/kernel/irq/msi.c
-> + *
-> + * Copyright (C) 2014 Intel Corp.
-> + * Author: Jiang Liu <jiang.liu@linux.intel.com>
-> + *
-> + * This file is licensed under GPLv2.
-> + *
-> + * This file contains common code to support Message Signalled Interrupt for
-> + * PCI compatible and non PCI compatible devices.
-> + */
-> +#include <linux/irq.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/msi.h>
-> +
-> +#ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
-> +int msi_domain_set_affinity(struct irq_data *irq_data,
-> +			    const struct cpumask *mask, bool force)
-> +{
-> +	struct irq_data *parent = irq_data->parent_data;
-> +	struct msi_msg msg;
-> +	int ret;
-> +
-> +	ret = parent->chip->irq_set_affinity(parent, mask, force);
-> +	if (ret >= 0 && ret != IRQ_SET_MASK_OK_DONE) {
-> +		BUG_ON(irq_chip_compose_msi_msg(irq_data, &msg));
-> +		irq_chip_write_msi_msg(irq_data, &msg);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static void msi_domain_activate(struct irq_domain *domain,
-> +				struct irq_data *irq_data)
-> +{
-> +	struct msi_msg msg;
-> +
-> +	BUG_ON(irq_chip_compose_msi_msg(irq_data, &msg));
-> +	irq_chip_write_msi_msg(irq_data, &msg);
-> +}
-> +
-> +static void msi_domain_deactivate(struct irq_domain *domain,
-> +				  struct irq_data *irq_data)
-> +{
-> +	struct msi_msg msg;
-> +
-> +	memset(&msg, 0, sizeof(msg));
-> +	irq_chip_write_msi_msg(irq_data, &msg);
-> +}
-> +
-> +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
-> +			    unsigned int nr_irqs, void *arg)
-> +{
-> +	struct msi_domain_info *info = domain->host_data;
-> +	struct msi_domain_ops *ops = info->ops;
-> +	irq_hw_number_t hwirq = ops->get_hwirq(info, arg);
-> +	int i, ret;
-> +
-> +	if (irq_find_mapping(domain, hwirq) > 0)
-> +		return -EEXIST;
+debug: add parameters to prevent entering debug mode on errors
 
-I think we need to check range here.
-I fixed this by applying a patch showed in the bottom.
+On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
+device after a panic. Add module parameters debug_core.break_on_exception and
+debug_core.break_on_panic to allow skipping debug on panics and exceptions
+respectively.  Both default to true to preserve existing behavior.
 
-> +
-> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	for (i = 0; i < nr_irqs; i++) {
-> +		ret = ops->msi_init(domain, info, virq + i, hwirq + i, arg);
-> +		if (ret < 0) {
-> +			if (ops->msi_free) {
-> +				for (i--; i > 0; i--)
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Signed-off-by: Colin Cross <ccross@android.com>
+[Kiran: Added context to commit message]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+---
+This is one of the number of patches from the Android AOSP common.git tree,
+which is used on almost all Android devices.  I wanted to submit it for review
+to see if it should go upstream.
 
-while (i--) ?
+ kernel/debug/debug_core.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Regards,
-	Abel
-
-> +					ops->msi_free(domain, info, virq + i);
-> +			}
-> +			irq_domain_free_irqs_top(domain, virq, nr_irqs);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
-> +			    unsigned int nr_irqs)
-> +{
-> +	struct msi_domain_info *info = domain->host_data;
-> +	int i;
-> +
-> +	if (info->ops->msi_free) {
-> +		for (i = 0; i < nr_irqs; i++)
-> +			info->ops->msi_free(domain, info, virq + i);
-> +	}
-> +	irq_domain_free_irqs_top(domain, virq, nr_irqs);
-> +}
-> +
-> +static struct irq_domain_ops msi_domain_ops = {
-> +	.alloc		= msi_domain_alloc,
-> +	.free		= msi_domain_free,
-> +	.activate	= msi_domain_activate,
-> +	.deactivate	= msi_domain_deactivate,
-> +};
-> +
-> +struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
-> +					 struct msi_domain_info *info,
-> +					 struct irq_domain *parent)
-> +{
-> +	struct irq_domain *domain;
-> +
-> +	domain = irq_domain_add_tree(of_node, &msi_domain_ops, info);
-> +	if (domain)
-> +		domain->parent = parent;
-> +
-> +	return domain;
-> +}
-> +
-> +struct msi_domain_info *msi_get_domain_info(struct irq_domain *domain)
-> +{
-> +	return (struct msi_domain_info *)domain->host_data;
-> +}
-> +
-> +#endif /* CONFIG_GENERIC_MSI_IRQ_DOMAIN */
-> 
-> 
-
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index cc18182..6d1be00 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -568,6 +568,34 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
- }
- EXPORT_SYMBOL_GPL(irq_find_mapping);
-
-+/**
-+ * irq_find_mapping_many() - Find a range of linux irqs from a range of hwirqs.
-+ * @domain:	domain owning these hardware interrupts
-+ * @hwirq:	start hardware irq number in @domain space
-+ * @count:	number of interrupts to find
-+ *
-+ * Returns the first linux irq number on success, or 0 when not found, or error.
-+ */
-+int irq_find_mapping_many(struct irq_domain *domain, irq_hw_number_t hwirq,
-+			  int count)
-+{
-+	unsigned int from;
-+	int i;
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b..af06122 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -87,6 +87,10 @@ static int kgdb_use_con;
+ bool dbg_is_early = true;
+ /* Next cpu to become the master debug core */
+ int dbg_switch_cpu;
++/* Flag for entering kdb when a panic occurs */
++static bool break_on_panic = true;
++/* Flag for entering kdb when an exception occurs */
++static bool break_on_exception = true;
+ 
+ /* Use kdb or gdbserver mode */
+ int dbg_kdb_mode = 1;
+@@ -101,6 +105,8 @@ early_param("kgdbcon", opt_kgdb_con);
+ 
+ module_param(kgdb_use_con, int, 0644);
+ module_param(kgdbreboot, int, 0644);
++module_param(break_on_panic, bool, 0644);
++module_param(break_on_exception, bool, 0644);
+ 
+ /*
+  * Holds information about breakpoints in a kernel. These breakpoints are
+@@ -690,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+ 	if (arch_kgdb_ops.enable_nmi)
+ 		arch_kgdb_ops.enable_nmi(0);
+ 
++	if (unlikely(signo != SIGTRAP && !break_on_exception))
++		return 1;
 +
-+	for (i = from = 0; i < count; i++) {
-+		if (!from) {
-+			from = irq_find_mapping(domain, hwirq + i);
-+			if (from && i)
-+				return -1;
-+		} else if ((from + i) != irq_find_mapping(domain, hwirq + i)) {
-+			return -1;
-+		}
-+	}
-+
-+	return from;
-+}
-+EXPORT_SYMBOL_GPL(irq_find_mapping_many);
-+
- #ifdef CONFIG_IRQ_DOMAIN_DEBUG
- static int virq_debug_show(struct seq_file *m, void *private)
+ 	memset(ks, 0, sizeof(struct kgdb_state));
+ 	ks->cpu			= raw_smp_processor_id();
+ 	ks->ex_vector		= evector;
+@@ -821,6 +830,9 @@ static int kgdb_panic_event(struct notifier_block *self,
+ 			    unsigned long val,
+ 			    void *data)
  {
-
-
++	if (!break_on_panic)
++		return NOTIFY_DONE;
++
+ 	if (dbg_kdb_mode)
+ 		kdb_printf("PANIC: %s\n", (char *)data);
+ 	kgdb_breakpoint();
+-- 
+1.8.2.1
 
