@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049AbaKRPXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:23:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56973 "EHLO mx2.suse.de"
+	id S1756207AbaKRPXs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:23:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57159 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854AbaKROJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754859AbaKROJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:09:27 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sergio Gelato <Sergio.Gelato@astro.su.se>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 017/206] nfsd: fix NFS regression
-Date: Tue, 18 Nov 2014 15:06:12 +0100
-Message-Id: <ba1816b40a87a3f3c4ca9cd54a593a10d87bd391.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ian Morgan <imorgan@primordial.ca>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 012/206] ax88179_178a: fix bonding failure
+Date: Tue, 18 Nov 2014 15:06:07 +0100
+Message-Id: <93b6d31fdc9b3b4ee3f6544c18ad48aefeb54ce0.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,42 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergio Gelato <Sergio.Gelato@astro.su.se>
+From: Ian Morgan <imorgan@primordial.ca>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-Fix regression introduced in pre-3.14 kernels by cherry-picking
-aa07c713ecfc0522916f3cd57ac628ea6127c0ec (NFSD: Call ->set_acl with a
-NULL ACL structure if no entries). This is in v3.12.22 as commit
-723ac81c8671b3a095d9eb303974c7bc9964b506.
+[ Upstream commit 95ff88688781db2f64042e69bd499e518bbb36e5 ]
 
-The affected code was removed in 3.14 by commit
-4ac7249ea5a0ceef9f8269f63f33cc873c3fac61 (nfsd: use get_acl
-and ->set_acl). The ->set_acl methods are already able to cope with a
-NULL argument. So this is not needed for >= 3.14.
+The following patch fixes a bug which causes the ax88179_178a driver to be
+incapable of being added to a bond.
 
-Signed-off-by: Sergio Gelato <Sergio.Gelato@astro.su.se>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+When I brought up the issue with the bonding maintainers, they indicated
+that the real problem was with the NIC driver which must return zero for
+success (of setting the MAC address). I see that several other NIC drivers
+follow that pattern by either simply always returing zero, or by passing
+through a negative (error) result while rewriting any positive return code
+to zero. With that same philisophy applied to the ax88179_178a driver, it
+allows it to work correctly with the bonding driver.
+
+I believe this is suitable for queuing in -stable, as it's a small, simple,
+and obvious fix that corrects a defect with no other known workaround.
+
+This patch is against vanilla 3.17(.0).
+
+Signed-off-by: Ian Morgan <imorgan@primordial.ca>
+
+ drivers/net/usb/ax88179_178a.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- fs/nfsd/vfs.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/usb/ax88179_178a.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index e9a80e4553a3..fafac65804d6 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -509,6 +509,9 @@ set_nfsv4_acl_one(struct dentry *dentry, struct posix_acl *pacl, char *key)
- 	char *buf = NULL;
- 	int error = 0;
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 3ecb2133dee6..b8b8f9948a0f 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -698,6 +698,7 @@ static int ax88179_set_mac_addr(struct net_device *net, void *p)
+ {
+ 	struct usbnet *dev = netdev_priv(net);
+ 	struct sockaddr *addr = p;
++	int ret;
  
-+	if (!pacl)
-+		return vfs_setxattr(dentry, key, NULL, 0, 0);
+ 	if (netif_running(net))
+ 		return -EBUSY;
+@@ -707,8 +708,12 @@ static int ax88179_set_mac_addr(struct net_device *net, void *p)
+ 	memcpy(net->dev_addr, addr->sa_data, ETH_ALEN);
+ 
+ 	/* Set the MAC address */
+-	return ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
++	ret = ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_NODE_ID, ETH_ALEN,
+ 				 ETH_ALEN, net->dev_addr);
++	if (ret < 0)
++		return ret;
 +
- 	buflen = posix_acl_xattr_size(pacl->a_count);
- 	buf = kmalloc(buflen, GFP_KERNEL);
- 	error = -ENOMEM;
++	return 0;
+ }
+ 
+ static const struct net_device_ops ax88179_netdev_ops = {
 -- 
 2.1.3
 
