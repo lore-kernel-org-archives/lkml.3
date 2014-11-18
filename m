@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251AbaKRLYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:24:10 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:44740 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747AbaKRLYH (ORCPT
+	id S1754427AbaKRLZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:25:40 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:32910 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234AbaKRLYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:24:07 -0500
+	Tue, 18 Nov 2014 06:24:10 -0500
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: Hans Verkuil <hans.verkuil@cisco.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 05/12] media: sh_veu: use vb2_ops_wait_prepare/finish helper
-Date: Tue, 18 Nov 2014 11:23:34 +0000
-Message-Id: <1416309821-5426-6-git-send-email-prabhakar.csengg@gmail.com>
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Scott Jiang <scott.jiang.linux@gmail.com>
+Subject: [PATCH 08/12] media: blackfin: use vb2_ops_wait_prepare/finish helper
+Date: Tue, 18 Nov 2014 11:23:37 +0000
+Message-Id: <1416309821-5426-9-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416309821-5426-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1416309821-5426-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -24,91 +25,53 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Scott Jiang <scott.jiang.linux@gmail.com> 
 ---
- drivers/media/platform/sh_veu.c | 35 +++++++----------------------------
- 1 file changed, 7 insertions(+), 28 deletions(-)
+ drivers/media/platform/blackfin/bfin_capture.c | 17 +++--------------
+ 1 file changed, 3 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/media/platform/sh_veu.c b/drivers/media/platform/sh_veu.c
-index be3b3bc..7884117 100644
---- a/drivers/media/platform/sh_veu.c
-+++ b/drivers/media/platform/sh_veu.c
-@@ -242,20 +242,6 @@ static void sh_veu_job_abort(void *priv)
- 	veu->aborting = true;
+diff --git a/drivers/media/platform/blackfin/bfin_capture.c b/drivers/media/platform/blackfin/bfin_capture.c
+index b3345b3..819ec0e 100644
+--- a/drivers/media/platform/blackfin/bfin_capture.c
++++ b/drivers/media/platform/blackfin/bfin_capture.c
+@@ -349,18 +349,6 @@ static void bcap_buffer_cleanup(struct vb2_buffer *vb)
+ 	spin_unlock_irqrestore(&bcap_dev->lock, flags);
  }
  
--static void sh_veu_lock(void *priv)
+-static void bcap_lock(struct vb2_queue *vq)
 -{
--	struct sh_veu_dev *veu = priv;
--
--	mutex_lock(&veu->fop_lock);
+-	struct bcap_device *bcap_dev = vb2_get_drv_priv(vq);
+-	mutex_lock(&bcap_dev->mutex);
 -}
 -
--static void sh_veu_unlock(void *priv)
+-static void bcap_unlock(struct vb2_queue *vq)
 -{
--	struct sh_veu_dev *veu = priv;
--
--	mutex_unlock(&veu->fop_lock);
+-	struct bcap_device *bcap_dev = vb2_get_drv_priv(vq);
+-	mutex_unlock(&bcap_dev->mutex);
 -}
 -
- static void sh_veu_process(struct sh_veu_dev *veu,
- 			   struct vb2_buffer *src_buf,
- 			   struct vb2_buffer *dst_buf)
-@@ -950,36 +936,28 @@ static void sh_veu_buf_queue(struct vb2_buffer *vb)
- 	v4l2_m2m_buf_queue(veu->m2m_ctx, vb);
- }
- 
--static void sh_veu_wait_prepare(struct vb2_queue *q)
--{
--	sh_veu_unlock(vb2_get_drv_priv(q));
--}
--
--static void sh_veu_wait_finish(struct vb2_queue *q)
--{
--	sh_veu_lock(vb2_get_drv_priv(q));
--}
--
- static const struct vb2_ops sh_veu_qops = {
- 	.queue_setup	 = sh_veu_queue_setup,
- 	.buf_prepare	 = sh_veu_buf_prepare,
- 	.buf_queue	 = sh_veu_buf_queue,
--	.wait_prepare	 = sh_veu_wait_prepare,
--	.wait_finish	 = sh_veu_wait_finish,
-+	.wait_prepare	 = vb2_ops_wait_prepare,
-+	.wait_finish	 = vb2_ops_wait_finish,
- };
- 
- static int sh_veu_queue_init(void *priv, struct vb2_queue *src_vq,
- 			     struct vb2_queue *dst_vq)
+ static int bcap_start_streaming(struct vb2_queue *vq, unsigned int count)
  {
-+	struct sh_veu_dev *veu = priv;
- 	int ret;
+ 	struct bcap_device *bcap_dev = vb2_get_drv_priv(vq);
+@@ -457,8 +445,8 @@ static struct vb2_ops bcap_video_qops = {
+ 	.buf_prepare            = bcap_buffer_prepare,
+ 	.buf_cleanup            = bcap_buffer_cleanup,
+ 	.buf_queue              = bcap_buffer_queue,
+-	.wait_prepare           = bcap_unlock,
+-	.wait_finish            = bcap_lock,
++	.wait_prepare           = vb2_ops_wait_prepare,
++	.wait_finish            = vb2_ops_wait_finish,
+ 	.start_streaming        = bcap_start_streaming,
+ 	.stop_streaming         = bcap_stop_streaming,
+ };
+@@ -995,6 +983,7 @@ static int bcap_probe(struct platform_device *pdev)
+ 	q->ops = &bcap_video_qops;
+ 	q->mem_ops = &vb2_dma_contig_memops;
+ 	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
++	q->lock = &bcap_dev->mutex;
  
- 	memset(src_vq, 0, sizeof(*src_vq));
- 	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
- 	src_vq->io_modes = VB2_MMAP | VB2_USERPTR;
--	src_vq->drv_priv = priv;
-+	src_vq->drv_priv = veu;
- 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
- 	src_vq->ops = &sh_veu_qops;
- 	src_vq->mem_ops = &vb2_dma_contig_memops;
-+	src_vq->lock = &veu->fop_lock;
- 
- 	ret = vb2_queue_init(src_vq);
- 	if (ret < 0)
-@@ -988,10 +966,11 @@ static int sh_veu_queue_init(void *priv, struct vb2_queue *src_vq,
- 	memset(dst_vq, 0, sizeof(*dst_vq));
- 	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
- 	dst_vq->io_modes = VB2_MMAP | VB2_USERPTR;
--	dst_vq->drv_priv = priv;
-+	dst_vq->drv_priv = veu;
- 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
- 	dst_vq->ops = &sh_veu_qops;
- 	dst_vq->mem_ops = &vb2_dma_contig_memops;
-+	dst_vq->lock = &veu->fop_lock;
- 
- 	return vb2_queue_init(dst_vq);
- }
+ 	ret = vb2_queue_init(q);
+ 	if (ret)
 -- 
 1.9.1
 
