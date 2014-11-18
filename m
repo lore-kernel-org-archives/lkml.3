@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583AbaKRBID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 20:08:03 -0500
-Received: from smtprelay0020.hostedemail.com ([216.40.44.20]:59663 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753091AbaKRBIB (ORCPT
+	id S1753332AbaKRBL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 20:11:27 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:42949 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999AbaKRBLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 20:08:01 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3872:3873:3874:4321:5007:6119:6261:10004:10400:10848:10967:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: laugh16_7ff101c616b3c
-X-Filterd-Recvd-Size: 1998
-Message-ID: <1416272878.29010.8.camel@perches.com>
-Subject: Re: [PATCH 20/26 v5] seq_buf: Add seq_buf_can_fit() helper function
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Date: Mon, 17 Nov 2014 17:07:58 -0800
-In-Reply-To: <20141117195651.27c79369@gandalf.local.home>
-References: <20141115045847.712848224@goodmis.org>
-	 <20141115050604.073390701@goodmis.org>
-	 <20141117123642.1de9252e@gandalf.local.home>
-	 <1416269253.29010.4.camel@perches.com>
-	 <20141117192733.0ab1ba2e@gandalf.local.home>
-	 <1416270932.29010.6.camel@perches.com>
-	 <20141117195651.27c79369@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Nov 2014 20:11:25 -0500
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: keescook@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com
+Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v8 0/6] arm64: add seccomp support
+Date: Tue, 18 Nov 2014 10:10:32 +0900
+Message-Id: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-17 at 19:56 -0500, Steven Rostedt wrote:
-> On Mon, 17 Nov 2014 16:35:32 -0800
-> Joe Perches <joe@perches.com> wrote:
-> 
->  
-> > What "logic" does it place in one place and
-> > how does it matter?
-> 
-> Look at the next patch.
+This patch series enables secure computing (system call filtering) on arm64,
+and contains related enhancements and bug fixes.
 
-I don't have it and you are not cc'ing me.
-I think you are getting carried away with the helpers.
+  NOTE: This versions contain a workaround against possible BUG_ON() failure
+  at audit_syscall_exit(), but doesn't contain an extra optimization, as I
+  submitted for arm, of excluding syscall enter/exit tracing against invalid
+  system calls due to an issue that I reported in:
+       http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/292170.html
 
-> > I don't see it making mistakes more or less
-> > likely, I just see it being used to avoid
-> > setting the overflow state which seems like
-> > more of an error than anything else.
-> > 
-> > Why avoid setting overflow at all?
-[]
-> It has nothing to do with overflow. Where did you get that from?
+The code was tested on ARMv8 fast model with 64-bit/32-bit userspace using:
+ * libseccomp v2.1.1 with modifications for arm64, especially its "live"
+   tests: No.20, 21 and 24.
+ * modified version of Kees' seccomp test for 'changing/skipping a syscall'
+   and seccomp() system call
+ * in-house tests for 'changing/skipping a system call' by tracing with
+   ptrace(SETREGSET, NT_SYSTEM_CALL) (that is, not via seccomp filter)'
+with and without audit tracing.
 
-writing to seq_buf really only cares about overflow.
 
-seq_buf -> write to buffer -> overflowed?
-expand buffer, redo everything else when finished,
-dump buffer
+Changes v7 -> v8:
+* changed an interface of changing a syscall number from ptrace(SET_SYSCALL)
+  to ptrace(SETREGSET, NT_ARM_SYSTEM_CALL) [1/6]
+* removed IS_SKILL_SYSCALL macro [2/6]
+* clarified comments in syscall_trace_enter() [2/6]
+* changed unsigned int to compat_uint_t in compat_siginfo._sigsys [5/6]
+* moved to a new calling interface of secure_computing(void) [6/6]
+
+Changes v6 -> v7:
+* simplified the condition of checking for user-issued syscall(-1) at
+  syscall_trace_enter() [2/6]
+* defines __NR_seccomp_sigreturn only if arch-specific def doesn't exist.
+  As Kees suggests, this is necessary for x86 and others. [3/6]
+* removed "#ifdef __ARCH_SIGSYS" which is always true on arm64. [5/6]
+* changed to call syscall_trace_exit() even if secure_computing fails. [6/6]
+  In v6, syscall_trace_enter() returns RET_SYSCALL_SKIP_TRACE (== -2) and
+  skips syscall_trace_exit() to minimize the overhead, but this case can be
+  easily confused with user-issued (and invalid) syscall(-2).
+  Anyway, this is now a consistent behavior with arm and other archs.
+
+Changes v5 -> v6:
+* rebased to v3.17-rc
+* changed the interface of changing/skipping a system call from re-writing
+  x8 register [v5 1/3] to using dedicated PTRACE_SET_SYSCALL command
+  [1/6, 2/6]
+  Patch [1/6] contains a checkpatch error around a switch statement, but it
+  won't be fixed as in compat_arch_ptrace().
+* added a new system call, seccomp(), for compat task [4/6]
+* added SIGSYS siginfo for compat task [5/6]
+* changed to always execute audit exit tracing to avoid OOPs [2/6, 6/6]
+
+Changes v4 -> v5:
+* rebased to v3.16-rc
+* add patch [1/3] to allow ptrace to change a system call
+  (please note that this patch should be applied even without seccomp.)
+
+Changes v3 -> v4:
+* removed the following patch and moved it to "arm64: prerequisites for
+  audit and ftrace" patchset since it is required for audit and ftrace in
+  case of !COMPAT, too.
+  "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
+
+Changes v2 -> v3:
+* removed unnecessary 'type cast' operations [2/3]
+* check for a return value (-1) of secure_computing() explicitly [2/3]
+* aligned with the patch, "arm64: split syscall_trace() into separate
+  functions for enter/exit" [2/3]
+* changed default of CONFIG_SECCOMP to n [2/3]
+
+Changes v1 -> v2:
+* added generic seccomp.h for arm64 to utilize it [1,2/3] 
+* changed syscall_trace() to return more meaningful value (-EPERM)
+  on seccomp failure case [2/3]
+* aligned with the change in "arm64: make a single hook to syscall_trace()
+  for all syscall features" v2 [2/3]
+* removed is_compat_task() definition from compat.h [3/3]
+
+AKASHI Takahiro (6):
+  arm64: ptrace: add NT_ARM_SYSTEM_CALL regset
+  arm64: ptrace: allow tracer to skip a system call
+  asm-generic: add generic seccomp.h for secure computing mode 1
+  arm64: add seccomp syscall for compat task
+  arm64: add SIGSYS siginfo for compat task
+  arm64: add seccomp support
+
+ arch/arm64/Kconfig                |   14 +++++++++
+ arch/arm64/include/asm/compat.h   |    7 +++++
+ arch/arm64/include/asm/seccomp.h  |   25 ++++++++++++++++
+ arch/arm64/include/asm/unistd.h   |    3 ++
+ arch/arm64/include/asm/unistd32.h |    3 +-
+ arch/arm64/kernel/entry.S         |    3 ++
+ arch/arm64/kernel/ptrace.c        |   58 +++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/signal32.c      |    6 ++++
+ include/asm-generic/seccomp.h     |   30 +++++++++++++++++++
+ include/uapi/linux/elf.h          |    1 +
+ 10 files changed, 149 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/include/asm/seccomp.h
+ create mode 100644 include/asm-generic/seccomp.h
+
+-- 
+1.7.9.5
 
