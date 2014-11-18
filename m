@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579AbaKRPAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:00:14 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:59608 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339AbaKRPAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:00:12 -0500
-Message-ID: <546B5EF9.3080102@mentor.com>
-Date: Tue, 18 Nov 2014 17:00:09 +0200
-From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Question about
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
+	id S933527AbaKRO72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:59:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57203 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932134AbaKROJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:48 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Jens Axboe <axboe@fb.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 088/206] drbd: compute the end before rb_insert_augmented()
+Date: Tue, 18 Nov 2014 15:07:23 +0100
+Message-Id: <5fa353fffaae9794ac109d748e2c6a9808abbba0.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-I need to set a GPIO (active high) output high on boot, which enables a
-power rail supplying some external devices.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I have a question regarding "regulator-boot-on" and "enable-active-high"
-fixed regulator device tree properties (actually AFAIU it applies to
-gpio regulator as well, by the way, which one is proper to use in my
-situation?)
+===============
 
-Here is what we have from the code:
+commit 82cfb90bc99d7b7e0ec62d0505b9d4f06805d5db upstream.
 
-  [...]
-  constraints->boot_on = of_property_read_bool(np, "regulator-boot-on");
-  [...]
-  if (init_data->constraints.boot_on)
-          config->enabled_at_boot = true;
-  [...]
-  config->enable_high = of_property_read_bool(np, "enable-active-high");
-  [...]
-  cfg.ena_gpio_invert = !config->enable_high;
-  if (config->enabled_at_boot) {
-          if (config->enable_high)
-                  cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
-          else
-                  cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
-  } else {
-          if (config->enable_high)
-                  cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
-          else
-                 cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
-  }
-  [...]
-  ret = gpio_request_one(config->ena_gpio,
-                         GPIOF_DIR_OUT | config->ena_gpio_flags,
-                         rdev_get_name(rdev));
-  [...]
-  /* Enable GPIO at initial use */
-  if (pin->enable_count == 0)
-          gpiod_set_value_cansleep(pin->gpiod,
-                                  !pin->ena_gpio_invert);
-  [...]
+Commit 98683650 "Merge branch 'drbd-8.4_ed6' into
+for-3.8-drivers-drbd-8.4_ed6" switches to the new augment API, but the
+new API requires that the tree is augmented before rb_insert_augmented()
+is called, which is missing.
 
+So we add the augment-code to drbd_insert_interval() when it travels the
+tree up to down before rb_insert_augmented().  See the example in
+include/linux/interval_tree_generic.h or Documentation/rbtree.txt.
 
-If we simplify the matter by assuming GPIOF_OUT_INIT_LOW is inverted
-GPIOF_OUT_INIT_HIGH and vice versa, then it is easy to compute by
-running over the variants that GPIO output value is set HIGH (regardless
-of GPIO active low status) if and only if "regulator-boot-on" is
-provided and "enable-active-high" has no effect at all.
+drbd_insert_interval() may cancel the insertion when traveling, in this
+case, the just added augment-code does nothing before cancel since the
+@this node is already in the subtrees in this case.
 
-This fact confuses me, because from the general regulator and fixed
-regulator device tree bindings documentation I get:
+CC: Michel Lespinasse <walken@google.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/block/drbd/drbd_interval.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-  [...]
-  - regulator-boot-on: bootloader/firmware enabled regulator
-  [...]
-  - enable-active-high: Polarity of GPIO is Active high
-  If this property is missing, the default assumed is Active low.
-  [...]
+diff --git a/drivers/block/drbd/drbd_interval.c b/drivers/block/drbd/drbd_interval.c
+index 89c497c630b4..04a14e0f8878 100644
+--- a/drivers/block/drbd/drbd_interval.c
++++ b/drivers/block/drbd/drbd_interval.c
+@@ -79,6 +79,7 @@ bool
+ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ {
+ 	struct rb_node **new = &root->rb_node, *parent = NULL;
++	sector_t this_end = this->sector + (this->size >> 9);
+ 
+ 	BUG_ON(!IS_ALIGNED(this->size, 512));
+ 
+@@ -87,6 +88,8 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ 			rb_entry(*new, struct drbd_interval, rb);
+ 
+ 		parent = *new;
++		if (here->end < this_end)
++			here->end = this_end;
+ 		if (this->sector < here->sector)
+ 			new = &(*new)->rb_left;
+ 		else if (this->sector > here->sector)
+@@ -99,6 +102,7 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ 			return false;
+ 	}
+ 
++	this->end = this_end;
+ 	rb_link_node(&this->rb, parent, new);
+ 	rb_insert_augmented(&this->rb, root, &augment_callbacks);
+ 	return true;
+-- 
+2.1.3
 
-According to the documentation I'd assume that "regulator-boot-on" does
-not touch gpio output value setting (so, if it is controlled by
-bootloader or firmware, then it might be out of Linux kernel control).
-Also my impression of "enable-active-high" property is that is should
-have some effect on the GPIO output value (but it is not, see above),
-and actually I don't quite understand why this property exists - there
-is a high chance that "enable-active-high" and the real GPIO polarity do
-not coincide, it should be more reliable to get GPIO flags of a
-particular GPIO right in the regulator driver/framework.
-
-Let's consider two possible configurations:
-
-| regulator-boot-on | enable-active-high | GPIO polarity | GPIO output |
-+-------------------+--------------------+---------------+-------------+
-|        no         |         yes        |  active high  |    low      |
-|        no         |          no        |  active low   |   high      |
-
-I'd rather think that both resulting GPIO outputs are incorrect or
-better to say do not correspond to my perception of "regulator-boot-on"
-and "enable-active-high" DTS properties described in the documentation,
-however above "enable-active-high" and actual GPIO polarity are the same
-(when they are not, it is another open topic for discussion).
-
-Do I miss something or have a mistake? Is there a problem in the
-implemented logic?
-
-Should documentation be updated to reflect "regulator-boot-on" role that
-a regulator is re-enabled by the kernel?
-
-Should "enable-active-high" be replaced by getting GPIO flags directly?
-
-Thank you in advance.
-
---
-With best wishes,
-Vladimir
