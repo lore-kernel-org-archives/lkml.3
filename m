@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933754AbaKRPUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:20:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
+	id S1756854AbaKRPVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:21:16 -0500
+Received: from 8bytes.org ([81.169.241.247]:33244 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754879AbaKROJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:29 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
-        Oliver Neukum <oneukum@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 034/206] Bluetooth: Add firmware update for Atheros 0cf3:311f
-Date: Tue, 18 Nov 2014 15:06:29 +0100
-Message-Id: <b076ceb94da40c8ed79cdb5bd61ba14d5e0093bf.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S1754881AbaKRPVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:21:12 -0500
+Date: Tue, 18 Nov 2014 16:21:09 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
+        Tony Luck <tony.luck@intel.com>, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [Patch Part3 V7 0/8] Enable support of Intel DMAR device hotplug
+Message-ID: <20141118152109.GE3762@8bytes.org>
+References: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
+ <20141118102537.GB3762@8bytes.org>
+ <546B4249.7050502@linux.intel.com>
+ <20141118142815.GD3762@8bytes.org>
+ <546B5D8D.8050601@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546B5D8D.8050601@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oliver Neukum <oliver@neukum.org>
+On Tue, Nov 18, 2014 at 10:54:05PM +0800, Jiang Liu wrote:
+> 	Could you please help to make the branch immutable
+> so we could pull it into tip/x86/apic to solve some conflicts
+> between IOMMU hotplug and hierarchy irqdomain patch sets?
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Yes, the patches are in my x86/vt-d branch and that branch will not be
+rebased. So this can be pulled into tip/x86/apic.
 
-===============
 
-commit 1e56f1eb2bbeab0ddc3a1e536d2a0065cfe4c131 upstream.
-
-The device is not functional without firmware.
-
-The device without firmware:
-T:  Bus=02 Lev=02 Prnt=02 Port=05 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=311f Rev=00.01
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-
-The device with firmware:
-T:  Bus=02 Lev=02 Prnt=02 Port=05 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=3007 Rev=00.01
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
-
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index ee362348508b..59f3075f66b3 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -79,6 +79,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x0CF3, 0x3008) },
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x0CF3, 0x311E) },
-+	{ USB_DEVICE(0x0CF3, 0x311F) },
- 	{ USB_DEVICE(0x0CF3, 0x817a) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
- 	{ USB_DEVICE(0x04CA, 0x3004) },
-@@ -126,6 +127,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311E), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x311F), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 7d9cdb78d76c..9e101bf542de 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -156,6 +156,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311e), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x311f), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
--- 
-2.1.3
+	Joerg
 
