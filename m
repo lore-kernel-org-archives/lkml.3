@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaKRIeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:34:15 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43759 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaKRIeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:34:13 -0500
-Date: Tue, 18 Nov 2014 09:34:11 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Kevin Hilman <khilman@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is selected
- (was: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd
- enabled)
-Message-ID: <20141118083411.GB4059@amd>
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
- <6465990.KKns6W8hQE@vostro.rjw.lan>
- <7hioid3cqx.fsf@deeprootsystems.com>
- <1452958.d0yJE5gVgq@vostro.rjw.lan>
+	id S1753729AbaKRIgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:36:35 -0500
+Received: from mout.web.de ([212.227.15.3]:60254 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104AbaKRIgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 03:36:33 -0500
+Message-ID: <546B04E2.80000@users.sourceforge.net>
+Date: Tue, 18 Nov 2014 09:35:46 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1452958.d0yJE5gVgq@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] fs-eventpoll: Deletion of unnecessary checks before the
+ function call "__pm_stay_awake"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:b1XCDbqrMzIIhg0qbsDoLJCM2dsZHN5JFJAeQgmSHiGPEDUhU/x
+ 04AmUb7jYXLA+9Id7CuHfFTcE9r3gGCj9ZKSzgVFws08P3GY1Y036o2XwINgmZMMtdCNPKD
+ mYHBx141eU0aRCdEI3U4mrA2oegHpj93dFQLqKMu8N07gkki34YmAEoQ6FcmTEGnlPF2v/s
+ IRaLXmBMqBWRHevkdE3IQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-11-18 01:39:06, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The number of and dependencies between high-level power management
-> Kconfig options make life much harder than necessary.  Several
-> conbinations of them have to be tested and supported, even though
-> some of those combinations are very rarely used in practice (it
-> they are used in practice at all).  Moreover, the fact that we
-> have separate independent Kconfig options for runtime PM and
-> system suspend is a serious obscacle for integration between
-> the two frameworks.
-> 
-> To overcome these difficulties, always select PM_RUNTIME if PM_SLEEP
-> is set.  Among other things, this will allow system suspend callbacks
-> provided by bus types and device drivers to rely on the runtime PM
-> framework regardless of the kernel configuration.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 18 Nov 2014 09:27:16 +0100
 
-3.18-rc5 still has:
+The __pm_stay_awake() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-config PM_RUNTIME
-        bool "Run-time PM core functionality"
-        depends on !IA64_HP_SIM
-        ---help---
+This issue was detected by using the Coccinelle software.
 
-So I assume this patch is against tree where PM_RUNTIME does not
-depend on anything?
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ fs/eventpoll.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
-> 
-> As a follow up.
-> 
-> Note that we won't need the patch making genpd select PM_RUNTIME with this,
-> because genpd already depends on PM.
-
-Looking through the config file, there are more config options that
-should be stripped.
-
-config SUSPEND_FREEZER
-        bool "Enable freezer for suspend to RAM/standby" \
-"Turning OFF this setting is NOT recommended! If in doubt, say Y."
-
-config HIBERNATE_CALLBACKS
-       bool
-
-...can we just use CONFIG_HIBERNATE, instead?
-
-> ===================================================================
-> --- linux-pm.orig/kernel/power/Kconfig
-> +++ linux-pm/kernel/power/Kconfig
-> @@ -94,6 +94,7 @@ config PM_STD_PARTITION
->  config PM_SLEEP
->  	def_bool y
->  	depends on SUSPEND || HIBERNATE_CALLBACKS
-> +	select PM_RUNTIME
->  
->  config PM_SLEEP_SMP
->  	def_bool y
-
-								Pavel
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 7bcfff9..eec2e85 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -555,8 +555,7 @@ static inline void ep_pm_stay_awake(struct epitem *epi)
+ {
+ 	struct wakeup_source *ws = ep_wakeup_source(epi);
+ 
+-	if (ws)
+-		__pm_stay_awake(ws);
++	__pm_stay_awake(ws);
+ }
+ 
+ static inline bool ep_has_wakeup_source(struct epitem *epi)
+@@ -571,8 +570,7 @@ static inline void ep_pm_stay_awake_rcu(struct epitem *epi)
+ 
+ 	rcu_read_lock();
+ 	ws = rcu_dereference(epi->ws);
+-	if (ws)
+-		__pm_stay_awake(ws);
++	__pm_stay_awake(ws);
+ 	rcu_read_unlock();
+ }
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+2.1.3
+
