@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbaKRA4l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:56:41 -0500
-Received: from smtp103.biz.mail.bf1.yahoo.com ([98.139.221.62]:23632 "EHLO
-	smtp103.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753023AbaKRA4h (ORCPT
+	id S1753618AbaKRA46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:56:58 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:41756 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753585AbaKRA45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:56:37 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: wwBm9QIVM1ljrmxdltp1LZkYkKsbZ9hYIX_PBo4qhTf3gXK
- OIB44ZPy7uqua8HxrpTuJNxihD4J46R9M0pq27PWQ34xLDaT5Z6EXgq_INHm
- P688i.EmzggGBj5Ehetnmyyt1vWN582Upsl2NTB1VzLtctAiIC5EU9DpRWuq
- J8nE4OGlWWBEBxBNoa7iQ2T1NV2ucJ3jnTi.HDO_FK7j.jBS9PDs9SDnmXq4
- lKHXrFg44Zg.OoTmP1fSpYhGBitOJCiFWQFPJlpvPEa3j6C2LIVphWzTXSKk
- KlINdtLG0MbWclUXpwtHePCm5_Wg5irFwUS028_W1iSSNAkUKZBXhquYuQcQ
- pox.tW1tDNq3ZXWz0L8JlA2hkSknuF91XEzZwWeM0763hwPiX74vzYhOaw1A
- rWriwVP3JuRUqIStt39IY.y7vdWsEw8TaHythVAn0258yjvR_UEL2XpoHTZ5
- dp9LcUOsKocoThYKkiuowCSO11ZBtNT61EeDyPCB4BZdrKACXSvRM1mf3stX
- 7lwgFffMs8RWvQVvQZle.SzHIoM9md_hx8m5WU5xHp3iWNODuQHTR6rl53bz
- wkKfg1Wgh7TCgQTOTYNXRw9y_HsHQOAds6g--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <546A9942.7030102@schaufler-ca.com>
-Date: Mon, 17 Nov 2014 16:56:34 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: josh@joshtriplett.org, Andy Lutomirski <luto@amacapital.net>
-CC: "Eric W.Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-man <linux-man@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mon, 17 Nov 2014 19:56:57 -0500
+Date: Mon, 17 Nov 2014 19:56:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 2/2] groups: Allow unprivileged processes to use setgroups
- to drop groups
-References: <CALCETrUM=GqsOumTmDMF4B5GS1w=x56t41eE-2xW1bBOfUz02w@mail.gmail.com> <20141115202042.GA20900@thin> <20141116020511.GB5507@thunk.org> <6C690A2C-8EB1-421A-94C3-9803AFB95760@joshtriplett.org> <20141116034005.GC5507@thunk.org> <20141116045232.GB18880@thin> <20141117113734.396798e6@lxorguk.ukuu.org.uk> <CALCETrXi1qHyu4_U7cbROB74n461nBZ9R7=0kfhR8-VFAwOF1w@mail.gmail.com> <0b65fd07-48ea-483b-8fd5-fd84d0bff881@email.android.com> <CALCETrWXC5dMOXTTBOiq4Cv+yjqbA_UdmAN-TDmNAJUo+ABxtg@mail.gmail.com> <20141117223730.GA961@cloud>
-In-Reply-To: <20141117223730.GA961@cloud>
-Content-Type: text/plain; charset=ISO-8859-1
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [PATCH 20/26 v5] seq_buf: Add seq_buf_can_fit() helper function
+Message-ID: <20141117195651.27c79369@gandalf.local.home>
+In-Reply-To: <1416270932.29010.6.camel@perches.com>
+References: <20141115045847.712848224@goodmis.org>
+	<20141115050604.073390701@goodmis.org>
+	<20141117123642.1de9252e@gandalf.local.home>
+	<1416269253.29010.4.camel@perches.com>
+	<20141117192733.0ab1ba2e@gandalf.local.home>
+	<1416270932.29010.6.camel@perches.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2014 2:37 PM, josh@joshtriplett.org wrote:
-> On Mon, Nov 17, 2014 at 02:22:59PM -0800, Andy Lutomirski wrote:
->> On Mon, Nov 17, 2014 at 2:11 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
->>>
->>> On November 17, 2014 1:07:30 PM EST, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Nov 17, 2014 3:37 AM, "One Thousand Gnomes"
->>>> <gnomes@lxorguk.ukuu.org.uk> wrote:
->>>>>> optional), I can do that too.  The security model of "having a
->>>> group
->>>>>> gives you less privilege than not having it" seems crazy, but
->>>>>> nonetheless I can see a couple of easy ways that we can avoid
->>>> breaking
->>>>> It's an old pattern of use that makes complete sense in a traditional
->>>>> Unix permission world because it's the only way to do "exclude
->>>> {list}"
->>>>> nicely. Our default IMHO shouldn't break this.
->>>>>
->>>>>> that pattern, no_new_privs being one of them.  I'd like to make
->>>> sure
->>>>>> that nobody sees any other real-world corner case that unprivileged
->>>>>> setgroups would break.
->>>>> Barring the usual risk of people doing improper error checking I
->>>> don't
->>>>> see one immediately.
->>>>>
->>>>> For containers I think it actually makes sense that the sysctl can be
->>>>> applied per container anyway.
->>>> We'll probably need per container sysctls some day.
->>> We already have a mess of per network namespace sysctls,
->>> as well as few for other namespaces.
->>>
->>> We have the infrastructure it is just a matter of using it for whatever purpose we need.
->>>
->> A list of group id ranges that it's permissible to drop would do the
->> trick, both for setgroups and for unshare.  The downside would be that
->> users in those groups (i.e. everyone by default) would not be able to
->> unshare their user ns.
->>
->> Better ideas welcome.
-> Personally, I think that seems like more flexibility than necessary to
-> achieve the goal.  I think a sysctl turning group-dropping on and off
-> would suffice; systems that know they don't use groups to exclude
-> specific users can enable that sysctl.
+On Mon, 17 Nov 2014 16:35:32 -0800
+Joe Perches <joe@perches.com> wrote:
 
-Right. Until someone comes along and installs a package that
-uses groups in this particular way. You can't count on the fact
-that someone isn't using it in that particular way today as an
-indicator that they won't tomorrow. Are you thinking about providing
-a tool that will tell sysadmins whether or not their system is safe
-to use this option? Certainly you are going to suggest that most
-sysadmins would know how to figure out if it is safe to use this
-option.
+ 
+> What "logic" does it place in one place and
+> how does it matter?
 
-The developers of user namespaces didn't notice it might be a problem.
-You can't count on sysadmins or distro developers to do better.
+Look at the next patch.
 
->
-> - Josh Triplett
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> 
+> I don't see it making mistakes more or less
+> likely, I just see it being used to avoid
+> setting the overflow state which seems like
+> more of an error than anything else.
+> 
+> Why avoid setting overflow at all?
+> 
+
+It has nothing to do with overflow. Where did you get that from?
+
+It has to do with updating the seq->len value or not.
+
+-- Steve
 
