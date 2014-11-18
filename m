@@ -1,188 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286AbaKRPlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:41:15 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:58443 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014AbaKRPlM (ORCPT
+	id S1756365AbaKRPmt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:42:49 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:34526 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398AbaKRPmr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:41:12 -0500
-Date: Tue, 18 Nov 2014 15:41:02 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linus.walleij@linaro.org, gnurou@gmail.com, broonie@kernel.org,
-        tiwai@suse.de, perex@perex.cz, sameo@linux.intel.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        ckeepax@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        linux-gpio@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 1/6] mfd: arizona: add support for WM8280/WM8281
-Message-ID: <20141118154102.GA13959@x1>
-References: <1415901046-3391-1-git-send-email-rf@opensource.wolfsonmicro.com>
- <1415901046-3391-2-git-send-email-rf@opensource.wolfsonmicro.com>
+	Tue, 18 Nov 2014 10:42:47 -0500
+Date: Tue, 18 Nov 2014 15:42:43 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Liviu Dudau <liviu@dudau.co.uk>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Yijing Wang <wangyijing0307@gmail.com>
+Subject: Re: [RFC PATCH 08/16] PCI: Introduce pci_scan_host_bridge() and
+ pci_host_info
+Message-ID: <20141118154243.GM12037@e106497-lin.cambridge.arm.com>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com>
+ <1416219710-26088-9-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <1416219710-26088-9-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 18 Nov 2014 15:42:44.0489 (UTC) FILETIME=[4B9C8F90:01D00346]
+X-MC-Unique: 114111815424505701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415901046-3391-2-git-send-email-rf@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, Richard Fitzgerald wrote:
-
-> This adds support for the Wolfson Microelectronics
-> WM8280 and WM8281 codecs.
+On Mon, Nov 17, 2014 at 10:21:42AM +0000, Yijing Wang wrote:
+> From: Yijing Wang <wangyijing0307@gmail.com>
 > 
-> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+> Now pci_host_bridge has been ripped out from pci root
+> bus creation. Currently pci_scan_root_bus() lacks
+> scalability, so platform host drivers have no proper
+> way to configure pci_host_bridge. E.g we should assign
+> msi_controller to pci_host_bridge, add argument for
+> pci_scan_root_bus() is not a good idea, it has already
+> five, so introudce struct pci_host_info to make
+> pci scan interfaces more scalable. Because almost
+> all host drivers need to configure host resources,
+> so we put .init_res() in it first, and add other
+> hooks when need.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 > ---
->  drivers/mfd/Kconfig              |    5 +++--
->  drivers/mfd/arizona-core.c       |   14 ++++++++++++--
->  drivers/mfd/arizona-i2c.c        |    2 ++
->  drivers/mfd/arizona-irq.c        |    1 +
->  drivers/mfd/arizona-spi.c        |    2 ++
->  include/linux/mfd/arizona/core.h |    1 +
->  6 files changed, 21 insertions(+), 4 deletions(-)
+>  drivers/pci/host-bridge.c |   27 +++++++++-------
+>  drivers/pci/probe.c       |   73 ++++++++++++++++++++++++++++++++++++++++++--
+>  include/linux/pci.h       |   20 ++++++++++++-
+>  3 files changed, 103 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+> index e31604f..49b6c21 100644
+> --- a/drivers/pci/host-bridge.c
+> +++ b/drivers/pci/host-bridge.c
+> @@ -8,9 +8,6 @@
+>  
+>  #include "pci.h"
+>  
+> -LIST_HEAD(pci_host_bridge_list);
+> -DECLARE_RWSEM(pci_host_bridge_sem);
+> -
+>  static struct resource busn_resource = {
+>  	.name	= "PCI busn",
+>  	.start	= 0,
+> @@ -18,6 +15,9 @@ static struct resource busn_resource = {
+>  	.flags	= IORESOURCE_BUS,
+>  };
+>  
+> +LIST_HEAD(pci_host_bridge_list);
+> +DECLARE_RWSEM(pci_host_bridge_sem);
+> +
+>  static void pci_release_host_bridge_dev(struct device *dev)
+>  {
+>  	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
+> @@ -29,14 +29,12 @@ static void pci_release_host_bridge_dev(struct device *dev)
+>  }
+>  
+>  struct pci_host_bridge *pci_create_host_bridge(
+> -		struct device *parent, u32 db, 
+> -		struct pci_ops *ops, void *sysdata, 
+> -		struct list_head *resources)
+> +		struct device *parent, u32 db, struct pci_ops *ops, 
+> +		struct pci_host_info *info)
+>  {
+>  	int error;
+>  	struct pci_bus *b;
+>  	struct pci_host_bridge *host, *h;
+> -	struct pci_host_bridge_window *window, *n;
+>  
+>  	down_read(&pci_host_bridge_sem);
+>  	list_for_each_entry(h, &pci_host_bridge_list, list) {
+> @@ -53,7 +51,7 @@ struct pci_host_bridge *pci_create_host_bridge(
+>  	if (!host)
+>  		return NULL;
+>  
+> -	host->sysdata = sysdata;
+> +	host->sysdata = info->arg;
+>  	host->busnum = PCI_BUSNUM(db);
+>  	host->domain = PCI_DOMAIN(db);
+>  	host->ops = ops;
+> @@ -63,18 +61,23 @@ struct pci_host_bridge *pci_create_host_bridge(
+>  
+>  	/* this is hack, just for build, will be removed later*/
 
-Patch looks fine.  Can I just take it?
+Why do you need this hack? Just for calling pci_domain_nr() ?
 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index abef204..e00a90f 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -1236,10 +1236,11 @@ config MFD_WM5102
->  	  Support for Wolfson Microelectronics WM5102 low power audio SoC
+>  	b = kzalloc(sizeof(*b), GFP_KERNEL);
+> -	b->sysdata = sysdata;
+> +	b->sysdata = host->sysdata;
+>  	pci_bus_assign_domain_nr(b, parent);
+>  	host->domain = pci_domain_nr(b);
+> +	kfree(b);
 >  
->  config MFD_WM5110
-> -	bool "Wolfson Microelectronics WM5110"
-> +	bool "Wolfson Microelectronics WM5110 and WM8280/WM8281"
->  	depends on MFD_ARIZONA
->  	help
-> -	  Support for Wolfson Microelectronics WM5110 low power audio SoC
-> +	  Support for Wolfson Microelectronics WM5110 and WM8280/WM8281
-> +	  low power audio SoC
+> -	if (!resources) {
+> +	if (info->res_type == PCI_HOST_RES_DEFAULT) {
+>  		/* Use default IO/MEM/BUS resources*/
+>  		pci_add_resource(&host->windows, &ioport_resource);
+>  		pci_add_resource(&host->windows, &iomem_resource);
+>  		pci_add_resource(&host->windows, &busn_resource);
+>  	} else {
+> -		list_for_each_entry_safe(window, n, resources, list)
+> -			list_move_tail(&window->list, &host->windows);
+> +		if (!info->init_res || info->init_res(host, info)) {
+> +			pr_err("pci host %04x:%02x init resources fail\n",
+> +					host->domain, host->busnum);
+> +			kfree(host);
+> +			return NULL;
+> +		}
+>  	}
 >  
->  config MFD_WM8997
->  	bool "Wolfson Microelectronics WM8997"
-> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-> index bce7c07..6e6b732 100644
-> --- a/drivers/mfd/arizona-core.c
-> +++ b/drivers/mfd/arizona-core.c
-> @@ -567,6 +567,7 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
->  const struct of_device_id arizona_of_match[] = {
->  	{ .compatible = "wlf,wm5102", .data = (void *)WM5102 },
->  	{ .compatible = "wlf,wm5110", .data = (void *)WM5110 },
-> +	{ .compatible = "wlf,wm8280", .data = (void *)WM8280 },
->  	{ .compatible = "wlf,wm8997", .data = (void *)WM8997 },
->  	{},
->  };
-> @@ -671,6 +672,7 @@ int arizona_dev_init(struct arizona *arizona)
->  	switch (arizona->type) {
->  	case WM5102:
->  	case WM5110:
-> +	case WM8280:
->  	case WM8997:
->  		for (i = 0; i < ARRAY_SIZE(wm5102_core_supplies); i++)
->  			arizona->core_supplies[i].supply
-> @@ -834,11 +836,18 @@ int arizona_dev_init(struct arizona *arizona)
->  #endif
->  #ifdef CONFIG_MFD_WM5110
->  	case 0x5110:
-> -		type_name = "WM5110";
-> -		if (arizona->type != WM5110) {
-> +		switch (arizona->type) {
-> +		case WM5110:
-> +			type_name = "WM5110";
+>  	dev_set_name(&host->dev, "pci%04x:%02x", host->domain, 
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index d472da4..42158fd 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1863,6 +1863,21 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
+>  {
+>  }
+>  
+> +static int pci_default_init_res(struct pci_host_bridge *host,
+> +		struct pci_host_info *info)
+> +{
+> +	struct pci_host_bridge_window *window, *n;
+> +
+> +	if (info->res_type != PCI_HOST_RES_DEFAULT) 
+> +		list_for_each_entry_safe(window, n, info->resources,
+> +				list)
+> +			list_move_tail(&window->list, &host->windows);
+> +	else
+> +		info->res_type = PCI_HOST_RES_DEFAULT;
+
+I'm confused about this assignment. Isn't this a nop as the else part
+means info->res_type *is* PCI_HOST_RES_DEFAULT?
+
+> +
+> +	return 0;
+> +}
+> +
+>  struct pci_bus *__pci_create_root_bus(struct pci_host_bridge *bridge)
+>  {
+>  	int error;
+> @@ -1949,13 +1964,17 @@ err_out:
+>  	return NULL;
+>  }
+>  
+> -struct pci_bus *pci_create_root_bus(struct device *parent, u32 bus,
+> +struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
+>  		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+>  {
+>  	struct pci_host_bridge *host;
+> +	struct pci_host_info info;
+> +	
+> +	info.arg= sysdata;
+> +	info.resources = resources;
+> +	info.init_res = pci_default_init_res;
+>  
+> -	host = pci_create_host_bridge(parent, bus, ops, 
+> -			sysdata ,resources);
+> +	host = pci_create_host_bridge(parent, db, ops, &info);
+>  	if (!host)
+>  		return NULL;
+>  
+> @@ -2038,8 +2057,13 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
+>  	bool found = false;
+>  	struct pci_host_bridge *host;
+>  	int max;
+> +	struct pci_host_info info;
+> +	
+> +	info.arg = sysdata;
+> +	info.resources = resources;
+> +	info.init_res = pci_default_init_res;
+
+I have mixed feelings about this patch. While it is heading in the right direction
+of moving pci_host_bridge relevant information towards the right user, I don't think
+you picked up the right set to move. The resource list is going to be copied into
+internal pci_host_bridge list anyway, keeping another copy is not helpful *and*
+you have increased the code size.
+
+I think for now we should aim to get the *missing* data into pci_host_bridge: MSI
+controllers and PCI domain/segment. Then we can do more cleanup.
+
+>  
+> -	host = pci_create_host_bridge(parent, db, ops, sysdata, resources);
+> +	host = pci_create_host_bridge(parent, db, ops, &info);
+>  	if (!host)
+>  		return NULL;
+>  
+> @@ -2070,6 +2094,47 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
+>  }
+>  EXPORT_SYMBOL(pci_scan_root_bus);
+>  
+> +struct pci_host_bridge *pci_scan_host_bridge(
+> +		struct device *parent, u32 db, struct pci_ops *ops,
+> +		struct pci_host_info *info)
+> +{
+> +	struct pci_host_bridge_window *window;
+> +	bool found = false;
+> +	struct pci_host_bridge *host;
+> +	int max;
+> +
+> +	host = pci_create_host_bridge(parent, db, ops, info);
+> +	if (!host)
+> +		return NULL;
+> +
+> +	list_for_each_entry(window, &host->windows, list)
+> +		if (window->res->flags & IORESOURCE_BUS) {
+> +			found = true;
 > +			break;
-> +		case WM8280:
-> +			type_name = "WM8280";
-> +			break;
-> +		default:
->  			dev_err(arizona->dev, "WM5110 registered as %d\n",
->  				arizona->type);
->  			arizona->type = WM5110;
-> +			break;
->  		}
->  		apply_patch = wm5110_patch;
->  		break;
-> @@ -1010,6 +1019,7 @@ int arizona_dev_init(struct arizona *arizona)
->  				      ARRAY_SIZE(wm5102_devs), NULL, 0, NULL);
->  		break;
->  	case WM5110:
-> +	case WM8280:
->  		ret = mfd_add_devices(arizona->dev, -1, wm5110_devs,
->  				      ARRAY_SIZE(wm5110_devs), NULL, 0, NULL);
->  		break;
-> diff --git a/drivers/mfd/arizona-i2c.c b/drivers/mfd/arizona-i2c.c
-> index 9d4156f..ff782a5 100644
-> --- a/drivers/mfd/arizona-i2c.c
-> +++ b/drivers/mfd/arizona-i2c.c
-> @@ -44,6 +44,7 @@ static int arizona_i2c_probe(struct i2c_client *i2c,
->  #endif
->  #ifdef CONFIG_MFD_WM5110
->  	case WM5110:
-> +	case WM8280:
->  		regmap_config = &wm5110_i2c_regmap;
->  		break;
->  #endif
-> @@ -87,6 +88,7 @@ static int arizona_i2c_remove(struct i2c_client *i2c)
->  static const struct i2c_device_id arizona_i2c_id[] = {
->  	{ "wm5102", WM5102 },
->  	{ "wm5110", WM5110 },
-> +	{ "wm8280", WM8280 },
->  	{ "wm8997", WM8997 },
->  	{ }
->  };
-> diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
-> index 3a3fe7c..d063b94 100644
-> --- a/drivers/mfd/arizona-irq.c
-> +++ b/drivers/mfd/arizona-irq.c
-> @@ -211,6 +211,7 @@ int arizona_irq_init(struct arizona *arizona)
->  #endif
->  #ifdef CONFIG_MFD_WM5110
->  	case WM5110:
-> +	case WM8280:
->  		aod = &wm5110_aod;
->  
->  		switch (arizona->rev) {
-> diff --git a/drivers/mfd/arizona-spi.c b/drivers/mfd/arizona-spi.c
-> index 5145d78..721b93f 100644
-> --- a/drivers/mfd/arizona-spi.c
-> +++ b/drivers/mfd/arizona-spi.c
-> @@ -44,6 +44,7 @@ static int arizona_spi_probe(struct spi_device *spi)
->  #endif
->  #ifdef CONFIG_MFD_WM5110
->  	case WM5110:
-> +	case WM8280:
->  		regmap_config = &wm5110_spi_regmap;
->  		break;
->  #endif
-> @@ -82,6 +83,7 @@ static int arizona_spi_remove(struct spi_device *spi)
->  static const struct spi_device_id arizona_spi_ids[] = {
->  	{ "wm5102", WM5102 },
->  	{ "wm5110", WM5110 },
-> +	{ "wm8280", WM8280 },
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(spi, arizona_spi_ids);
-> diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-> index 910e3aa..f970105 100644
-> --- a/include/linux/mfd/arizona/core.h
-> +++ b/include/linux/mfd/arizona/core.h
-> @@ -24,6 +24,7 @@ enum arizona_type {
->  	WM5102 = 1,
->  	WM5110 = 2,
->  	WM8997 = 3,
-> +	WM8280 = 4,
+> +		}
+> +
+> +	host->bus = __pci_create_root_bus(host);
+> +	if (!host->bus) {
+> +		pci_free_host_bridge(host);
+> +		return NULL;
+> +	}
+> +
+> +	if (!found) {
+> +		dev_info(&host->bus->dev,
+> +		 "No busn resource found for root bus, will use [bus %02x-ff]\n",
+> +			host->busnum);
+> +		pci_bus_insert_busn_res(host->bus, host->busnum, 255);
+> +	}
+> +
+> +	max = pci_scan_child_bus(host->bus);
+> +	if (!found)
+> +		pci_bus_update_busn_res_end(host->bus, max);
+> +
+> +	return host;
+> +
+> +}
+> +EXPORT_SYMBOL(pci_scan_host_bridge);
+> +
+>  /**
+>   * pci_rescan_bus_bridge_resize - scan a PCI bus for devices.
+>   * @bridge: PCI bridge for the bus to scan
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index daa7f40..a51f5f5 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -412,6 +412,21 @@ struct pci_host_bridge {
+>  	void *release_data;
 >  };
 >  
->  #define ARIZONA_IRQ_GP1                    0
+> +struct pci_host_info {
+> +	u8 res_type;
+> +	void *arg;
+> +	struct list_head *resources; /*just for build, will clean up later */
+> +	int (*init_res)(struct pci_host_bridge *host, 
+> +			struct pci_host_info *info);
+> +};
+> +
+> +static inline void init_pci_host_info(struct pci_host_info *info)
+> +{
+> +	memset(info, 0 , sizeof(*info));
+> +}
+
+Where is this used?
+
+> +
+> +#define PCI_HOST_RES_DEFAULT	0x2
+> +
+
+Magic number?
+
+Best regards,
+Liviu
+
+>  #define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
+>  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+>  		     void (*release_fn)(struct pci_host_bridge *),
+> @@ -420,7 +435,7 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+>  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
+>  struct pci_host_bridge *pci_create_host_bridge(
+>  		struct device *parent, u32 db, struct pci_ops *ops, 
+> -		void *sys, struct list_head *resources);
+> +		struct pci_host_info *info);
+>  /*
+>   * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
+>   * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
+> @@ -785,6 +800,9 @@ void pci_bus_release_busn_res(struct pci_bus *b);
+>  struct pci_bus *pci_scan_root_bus(struct device *parent, u32 bus,
+>  					     struct pci_ops *ops, void *sysdata,
+>  					     struct list_head *resources);
+> +struct pci_host_bridge *pci_scan_host_bridge(struct device *parent,
+> +		u32 db, struct pci_ops *ops,
+> +		struct pci_host_info *info);
+>  struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
+>  				int busnr);
+>  void pcie_update_link_speed(struct pci_bus *bus, u16 link_status);
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
