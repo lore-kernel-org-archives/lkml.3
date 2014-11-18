@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbaKRRlR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:41:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55551 "EHLO
+	id S1754296AbaKRRlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:41:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55550 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166AbaKRRlM (ORCPT
+	with ESMTP id S1754159AbaKRRlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 12:41:12 -0500
-Date: Tue, 18 Nov 2014 09:40:39 -0800
+Date: Tue, 18 Nov 2014 09:40:57 -0800
 From: tip-bot for Kees Cook <tipbot@zytor.com>
-Message-ID: <tip-45e2a9d4701d8c624d4a4bcdd1084eae31e92f58@git.kernel.org>
-Cc: david.vrabel@citrix.com, keescook@chromium.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, luto@amacapital.net, isimatu.yasuaki@jp.fujitsu.com,
-        wangnan0@huawei.com, yinghai@kernel.org, toshi.kani@hp.com
-Reply-To: tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, david.vrabel@citrix.com, yinghai@kernel.org,
-        toshi.kani@hp.com, wangnan0@huawei.com, isimatu.yasuaki@jp.fujitsu.com,
-        hpa@zytor.com, luto@amacapital.net
-In-Reply-To: <20141114194737.GA3091@www.outflux.net>
-References: <20141114194737.GA3091@www.outflux.net>
+Message-ID: <tip-70b61e362187b5fccac206506d402f3424e3e749@git.kernel.org>
+Cc: eternal.n08@gmail.com, keescook@chromium.org, markus@trippelsdorf.de,
+        hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        mingo@kernel.org
+Reply-To: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, markus@trippelsdorf.de, keescook@chromium.org,
+        eternal.n08@gmail.com
+In-Reply-To: <20141118001604.GA25045@www.outflux.net>
+References: <20141118001604.GA25045@www.outflux.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mm: Set NX across entire PMD at boot
-Git-Commit-ID: 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
+Subject: [tip:x86/urgent] x86, kaslr: Handle Gold linker for finding bss/
+ brk
+Git-Commit-ID: 70b61e362187b5fccac206506d402f3424e3e749
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,81 +34,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
-Gitweb:     http://git.kernel.org/tip/45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
+Commit-ID:  70b61e362187b5fccac206506d402f3424e3e749
+Gitweb:     http://git.kernel.org/tip/70b61e362187b5fccac206506d402f3424e3e749
 Author:     Kees Cook <keescook@chromium.org>
-AuthorDate: Fri, 14 Nov 2014 11:47:37 -0800
+AuthorDate: Mon, 17 Nov 2014 16:16:04 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 18 Nov 2014 18:32:24 +0100
 
-x86, mm: Set NX across entire PMD at boot
+x86, kaslr: Handle Gold linker for finding bss/brk
 
-When setting up permissions on kernel memory at boot, the end of the
-PMD that was split from bss remained executable. It should be NX like
-the rest. This performs a PMD alignment instead of a PAGE alignment to
-get the correct span of memory.
+When building with the Gold linker, the .bss and .brk areas of vmlinux
+are shown as consecutive instead of having the same file offset. Allow
+for either state, as long as things add up correctly.
 
-Before:
----[ High Kernel Mapping ]---
-...
-0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
-0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
-0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
-0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
-0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
-
-After:
----[ High Kernel Mapping ]---
-...
-0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
-0xffffffff82200000-0xffffffff82e00000    12M     RW   PSE GLB NX pmd
-0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
-
-[ tglx: Changed it to roundup(_brk_end, PMD_SIZE) and added a comment.
-        We really should unmap the reminder along with the holes
-        caused by init,initdata etc. but thats a different issue ]
-
+Fixes: e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Wang Nan <wangnan0@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Junjie Mao <eternal.n08@gmail.com>
+Link: http://lkml.kernel.org/r/20141118001604.GA25045@www.outflux.net
 Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/20141114194737.GA3091@www.outflux.net
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/init_64.c | 11 ++++++++++-
+ arch/x86/tools/calc_run_size.pl | 11 ++++++++++-
  1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 4cb8763..4e5dfec 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1123,7 +1123,7 @@ void mark_rodata_ro(void)
- 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
- 	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
- 	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
--	unsigned long all_end = PFN_ALIGN(&_end);
-+	unsigned long all_end;
- 
- 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
- 	       (end - start) >> 10);
-@@ -1134,7 +1134,16 @@ void mark_rodata_ro(void)
- 	/*
- 	 * The rodata/data/bss/brk section (but not the kernel text!)
- 	 * should also be not-executable.
-+	 *
-+	 * We align all_end to PMD_SIZE because the existing mapping
-+	 * is a full PMD. If we would align _brk_end to PAGE_SIZE we
-+	 * split the PMD and the reminder between _brk_end and the end
-+	 * of the PMD will remain mapped executable.
-+	 *
-+	 * Any PMD which was setup after the one which covers _brk_end
-+	 * has been zapped already via cleanup_highmem().
- 	 */
-+	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
- 	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
- 
- 	rodata_test();
+diff --git a/arch/x86/tools/calc_run_size.pl b/arch/x86/tools/calc_run_size.pl
+index 0b0b124..23210ba 100644
+--- a/arch/x86/tools/calc_run_size.pl
++++ b/arch/x86/tools/calc_run_size.pl
+@@ -19,7 +19,16 @@ while (<>) {
+ 		if ($file_offset == 0) {
+ 			$file_offset = $offset;
+ 		} elsif ($file_offset != $offset) {
+-			die ".bss and .brk lack common file offset\n";
++			# BFD linker shows the same file offset in ELF.
++			# Gold linker shows them as consecutive.
++			next if ($file_offset + $mem_size == $offset + $size);
++
++			printf STDERR "file_offset: 0x%lx\n", $file_offset;
++			printf STDERR "mem_size: 0x%lx\n", $mem_size;
++			printf STDERR "offset: 0x%lx\n", $offset;
++			printf STDERR "size: 0x%lx\n", $size;
++
++			die ".bss and .brk are non-contiguous\n";
+ 		}
+ 	}
+ }
