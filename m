@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474AbaKRVEX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:04:23 -0500
-Received: from ozlabs.org ([103.22.144.67]:43783 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932159AbaKRVEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:04:20 -0500
-Date: Wed, 19 Nov 2014 08:04:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: bad commit in the nfsd tree
-Message-ID: <20141119080411.09f6a811@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S932401AbaKRVIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:08:38 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:51583 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300AbaKRVIg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 16:08:36 -0500
+Date: Tue, 18 Nov 2014 22:08:33 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-pm@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: Re: [RFC 0/4] OOM vs PM freezer fixes
+Message-ID: <20141118210833.GE23640@dhcp22.suse.cz>
+References: <20141110163055.GC18373@dhcp22.suse.cz>
+ <1415818732-27712-1-git-send-email-mhocko@suse.cz>
+ <20141114201419.GI25889@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/lZahKQVJ53uKVryF_+L/dtP"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141114201419.GI25889@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/lZahKQVJ53uKVryF_+L/dtP
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri 14-11-14 15:14:19, Tejun Heo wrote:
+> On Wed, Nov 12, 2014 at 07:58:48PM +0100, Michal Hocko wrote:
+> > Hi,
+> > here is another take at OOM vs. PM freezer interaction fixes/cleanups.
+> > First three patches are fixes for an unlikely cases when OOM races with
+> > the PM freezer which should be closed completely finally. The last patch
+> > is a simple code enhancement which is not needed strictly speaking but
+> > it is nice to have IMO.
+> > 
+> > Both OOM killer and PM freezer are quite subtle so I hope I haven't
+> > missing anything. Any feedback is highly appreciated. I am also
+> > interested about feedback for the used approach. To be honest I am not
+> > really happy about spreading TIF_MEMDIE checks into freezer (patch 1)
+> > but I didn't find any other way for detecting OOM killed tasks.
+> 
+> I really don't get why this is structured this way.  Can't you just do
+> the following?
 
-Hi,
+Well, I liked how simple this was and localized at the only place which
+matters. When I was thinking about a solution which you are describing
+below it was more complicated and more subtle (e.g. waiting for an OOM
+victim might be tricky if it stumbles over a lock which is held by a
+frozen thread which uses try_to_freeze_unsafe). Anyway I gave it another
+try and will post the two patches as a reply to this email. I hope the
+both interface and implementation is cleaner.
 
-I just noticed that the top commit of the nfsd tree (be603bbb7bc1
-"OOPS") has no Signed-off-by tags (or a real commit message at all) ...
+> 1. Freeze all freezables.  Don't worry about PF_MEMDIE.
+> 
+> 2. Disable OOM killer.  This should be contained in the OOM killer
+>    proper.  Lock out the OOM killer and disable it.
+> 
+> 3. At this point, we know that no one will create more freezable
+>    threads and no new process will be OOM kliled.  Wait till there's
+>    no process w/ PF_MEMDIE set.
+> 
+> There's no reason to lock out or disable OOM killer while the system
+> is not in the quiescent state, which is a big can of worms.  Bring
+> down the system to the quiescent state, disable the OOM killer and
+> then drain PF_MEMDIEs.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/lZahKQVJ53uKVryF_+L/dtP
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUa7RQAAoJEMDTa8Ir7ZwVBScP/RhYnFMd95kMlAKncL0sSYjZ
-RIkZ6SolmE8jfpq6k4+i4rWf8IzkUH+44y/DR2N3NFUvW61s2qEwIUNjiGMsRWLa
-NLi8GjwBHHkTf2slGA/hqxLM4NEqyr3Vgm1bgjkrog1w4JZi+C8j9cZq3ThmvMub
-uqMs+wFjuTFW9Q3oCNDYFfTuhXhkgvk069VJcDZkf5kvnS68Nhupa60qmXv0eCPi
-VQNM/XT663QA1ebblrMFsHUYoL7xfXM5iuiO0y/dFyfmiEH4x2sEFsf8vGOUFPiF
-m3oysgBu0YkbM7anMiqJT7KUECU9Scav9rZm/xCL1bisiF/tU14ZK6UpUgOshorG
-2qw+CjP1ACK1bVW4kGBr886wZS2NgGBxRa6n8Ywqyjz8p8QkSfLNEBaZpRHwjM1D
-oebRZZY5C0+zXgix8j19aZATpoB1DdJGAsB56iivUMdSjQE0FnYVlrOF7flwmPJN
-BQ/z+0nn2Yabf2i9bhuxzydkqyy4OD2xF0n8i/H/4n2+5O33smYJ5PQH57mwPtGg
-yYJlo8H92GwibEQ9j6Q4WPM+Wj5kHu3Bnjj87SVIMb2paape1ADU7hKErjY6BsBE
-VHFmgX1gNksuU2oAx4O5lfGAJ3o6WXfl9U+lEbofXRY3M01Z0eLiB2AnfzDr3yPX
-1n1b+HTb9uKtW722doFs
-=Ulze
------END PGP SIGNATURE-----
-
---Sig_/lZahKQVJ53uKVryF_+L/dtP--
+-- 
+Michal Hocko
+SUSE Labs
