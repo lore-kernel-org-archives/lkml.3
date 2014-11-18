@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863AbaKRGfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 01:35:48 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:56973 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166AbaKRGfr (ORCPT
+	id S1753894AbaKRGfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:35:55 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15947 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166AbaKRGfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 01:35:47 -0500
+	Tue, 18 Nov 2014 01:35:53 -0500
 From: Wang Nan <wangnan0@huawei.com>
 To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
@@ -15,10 +15,12 @@ To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>,
         <davem@davemloft.net>
 CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v8 0/2] ARM: kprobes: enable OPTPROBES for ARM32
-Date: Tue, 18 Nov 2014 14:32:37 +0800
-Message-ID: <1416292359-75893-1-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH v8 1/2] kprobes: copy ainsn after alloc aggr kprobe
+Date: Tue, 18 Nov 2014 14:32:38 +0800
+Message-ID: <1416292359-75893-2-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1416292359-75893-1-git-send-email-wangnan0@huawei.com>
+References: <1416292359-75893-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.247]
@@ -27,33 +29,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable OPTPROBES for ARM 32. Previous discussion can be found:
+Copy old kprobe to newly alloced optimized_kprobe before
+arch_prepare_optimized_kprobe(). Original kprove can brings more
+information to optimizer.
 
-https://lkml.org/lkml/2014/10/25/48
-https://lkml.org/lkml/2014/10/22/254
-https://lkml.org/lkml/2014/8/27/255
-https://lkml.org/lkml/2014/8/12/12
-https://lkml.org/lkml/2014/8/8/992
-https://lkml.org/lkml/2014/8/8/5
-https://lkml.org/lkml/2014/8/5/63
+v1 -> v2:
+ -  Bugfix: copy p->addr when alloc_aggr_kprobe.
 
-This series of patches is depend on 'ARM: kprobes: introduces
-instruction checker.', which can be found at:
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ kernel/kprobes.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/303525.html
-
-Wang Nan (2):
-  kprobes: copy ainsn after alloc aggr kprobe
-  ARM: kprobes: enable OPTPROBES for ARM 32
-
- arch/arm/Kconfig                  |   1 +
- arch/arm/include/asm/kprobes.h    |  26 ++++
- arch/arm/kernel/Makefile          |   3 +-
- arch/arm/kernel/kprobes-opt-arm.c | 285 ++++++++++++++++++++++++++++++++++++++
- kernel/kprobes.c                  |   6 +
- 5 files changed, 320 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/kernel/kprobes-opt-arm.c
-
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3995f54..e9868ec 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -730,7 +730,13 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+ 		return NULL;
+ 
+ 	INIT_LIST_HEAD(&op->list);
++
++	/*
++	 * copy gives arch_prepare_optimized_kprobe
++	 * more information
++	 */
+ 	op->kp.addr = p->addr;
++	copy_kprobe(p, &op->kp);
+ 	arch_prepare_optimized_kprobe(op);
+ 
+ 	return &op->kp;
 -- 
 1.8.4
 
