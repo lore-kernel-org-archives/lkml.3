@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001AbaKRASF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:18:05 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50176 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751464AbaKRASC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:18:02 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH] PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is selected (was: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd enabled)
-Date: Tue, 18 Nov 2014 01:39:06 +0100
-Message-ID: <1452958.d0yJE5gVgq@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <7hioid3cqx.fsf@deeprootsystems.com>
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org> <6465990.KKns6W8hQE@vostro.rjw.lan> <7hioid3cqx.fsf@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1752976AbaKRAWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:22:24 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18060 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064AbaKRAWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 19:22:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,406,1413270000"; 
+   d="scan'208";a="633516625"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphCABQ+BAIAAEq4AgAAB1ACAAACVgP//kExAABLiaAAAD6th0P//ng0AgACB8wA=
+Date: Tue, 18 Nov 2014 00:22:20 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3293F681@ORSMSX114.amr.corp.intel.com>
+References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic>
+ <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+ <20141117185030.GA25157@pd.tnic>
+ <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
+ <20141117200354.GB25157@pd.tnic>
+ <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
+ <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
+In-Reply-To: <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAI0MU01017050
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> It could also be interesting to tweak mce_panic to not actually panic
+> the machine but to try to return and stop the test instead.  Then real
+> debugging could be possible :)
 
-The number of and dependencies between high-level power management
-Kconfig options make life much harder than necessary.  Several
-conbinations of them have to be tested and supported, even though
-some of those combinations are very rarely used in practice (it
-they are used in practice at all).  Moreover, the fact that we
-have separate independent Kconfig options for runtime PM and
-system suspend is a serious obscacle for integration between
-the two frameworks.
+The lost cpu is *really* lost.  Warm reset doesn't fix the machine, I usually
+have to do a full power cycle.
 
-To overcome these difficulties, always select PM_RUNTIME if PM_SLEEP
-is set.  Among other things, this will allow system suspend callbacks
-provided by bus types and device drivers to rely on the runtime PM
-framework regardless of the kernel configuration.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-As a follow up.
-
-Note that we won't need the patch making genpd select PM_RUNTIME with this,
-because genpd already depends on PM.
-
-Thoughts, comments?
-
-Rafael
-
----
- kernel/power/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: linux-pm/kernel/power/Kconfig
-===================================================================
---- linux-pm.orig/kernel/power/Kconfig
-+++ linux-pm/kernel/power/Kconfig
-@@ -94,6 +94,7 @@ config PM_STD_PARTITION
- config PM_SLEEP
- 	def_bool y
- 	depends on SUSPEND || HIBERNATE_CALLBACKS
-+	select PM_RUNTIME
- 
- config PM_SLEEP_SMP
- 	def_bool y
-
+-Tony
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
