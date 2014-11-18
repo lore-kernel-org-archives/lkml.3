@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaKRSIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:08:07 -0500
-Received: from [114.143.50.60] ([114.143.50.60]:18818 "EHLO
-	dhcp223-82.pnq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754379AbaKRSIF (ORCPT
+	id S1754910AbaKRSIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:08:21 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34674 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaKRSIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:08:05 -0500
-X-Greylist: delayed 1746 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 13:05:53 EST
-From: Pankaj Gupta <pagupta@redhat.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com.pnq.redhat.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org, jiri@resnulli.us,
-        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
-Subject: [PATCH net-next 4/4] tuntap: Increase the number of queues in tun.
-Date: Tue, 18 Nov 2014 21:52:58 +0530
-Message-Id: <1416327778-17716-5-git-send-email-pagupta@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
-References: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
+	Tue, 18 Nov 2014 13:08:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315EB8F8@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315EB8F8@NTXXIAMBX02.xacn.micron.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 18 Nov 2014 12:07:57 -0600
+Message-ID: <CAL_JsqLeUnVoS1ThzK3hpQBrjUxOXVL4gCpQRXBYjZ_ts6WtFg@mail.gmail.com>
+Subject: Re: [V3 PATCH 1/1] devicetree: bindings: Add vendor prefix for Micron
+ Technology Co., Ltd.
+To: bpqw <bpqw@micron.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
+        Mark Brown <broonie@kernel.org>, Heiko Stuebner <heiko@sntech.de>,
+        Thierry Reding <treding@nvidia.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Networking under kvm works best if we allocate a per-vCPU RX and TX
-queue in a virtual NIC. This requires a per-vCPU queue on the host side.
+On Wed, Nov 12, 2014 at 8:26 AM, bpqw <bpqw@micron.com> wrote:
+> This patch is used to add vendor prefix for Micron Technology Inc in the
+> vendor-prefixes.txt file.
+>
+> Micron Technology,Inc.is an American multinational corporation based in Boise,
+> Idaho,best known for producing many forms of semiconductor devices.This includes
+> DRAM,SDRAM,flash memory,eMMC and SSDs.
+>
+> Signed-off-by: Bean Huo <bpqw@micron.com>
 
-It is now safe to increase the maximum number of queues.
-Preceding patches:
-        net: allow large number of rx queues
-        tuntap: Reduce the size of tun_struct by using flex array
-        tuntap: Accepts tuntap max queue length as net sysctl parameter
+Applied, thanks.
 
-        made sure this won't cause failures due to high order memory
-allocations. Increase it to 256: this is the max number of vCPUs
-KVM supports.
+Rob
 
-Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-Reviewed-by: David Gibson <dgibson@redhat.com>
----
- drivers/net/tun.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index a9b3eb4..2fb31b7 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -115,10 +115,11 @@ struct tap_filter {
- 	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
- };
- 
--/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues allocated for
-- * the netdevice to be fit in one page. So we can make sure the success of
-- * memory allocation. TODO: increase the limit. */
--#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
-+/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
-+ * to max number of vCPUS in guest. Also, we are making sure here
-+ * queue memory allocation do not fail.
-+ */
-+#define MAX_TAP_QUEUES 256
- #define MIN_TAP_QUEUES 1
- #define MAX_TAP_FLOWS  4096
- 
--- 
-1.8.3.1
-
+> ---
+> V2:
+>   - Add signed-off-by
+>   - Modify commit logs that wrapped to less than 80 columns
+> V3:
+>   - Remove the same signed-off-by owner's mailbox
+>   - Modify proper name of signed-off-by
+>
+>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 723999d..a7bbf6e 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -92,6 +92,7 @@ maxim Maxim Integrated Products
+>  mediatek       MediaTek Inc.
+>  micrel Micrel Inc.
+>  microchip      Microchip Technology Inc.
+> +micron Micron Technology Inc.
+>  mitsubishi     Mitsubishi Electric Corporation
+>  mosaixtech     Mosaix Technologies, Inc.
+>  moxa   Moxa
+> --
+> 1.7.9.5
