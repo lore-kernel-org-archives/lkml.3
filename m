@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaKRDwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:52:42 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:42743 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaKRDwl (ORCPT
+	id S1752679AbaKREIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 23:08:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54081 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaKREIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:52:41 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is selected
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-	<6465990.KKns6W8hQE@vostro.rjw.lan>
-	<7hioid3cqx.fsf@deeprootsystems.com>
-	<1452958.d0yJE5gVgq@vostro.rjw.lan>
-Date: Mon, 17 Nov 2014 19:52:37 -0800
-In-Reply-To: <1452958.d0yJE5gVgq@vostro.rjw.lan> (Rafael J. Wysocki's message
-	of "Tue, 18 Nov 2014 01:39:06 +0100")
-Message-ID: <7h61edyxkq.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 17 Nov 2014 23:08:10 -0500
+Date: Mon, 17 Nov 2014 20:06:51 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Tobenna Peter, Igwe" <ptigwe@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Jes.Sorensen@redhat.com, linux-wireless@vger.kernel.org,
+        Larry.Finger@lwfinger.net
+Subject: Re: [PATCH] staging:rtl8723au: Fix sparse warning cast to restricted
+ __le16
+Message-ID: <20141118040651.GA5130@kroah.com>
+References: <20141118014529.GA937@Tobenna-Peter-Igwes-MacBook-Pro.local>
+ <20141118015947.GA21650@kroah.com>
+ <20141118025144.GA1041@Tobenna-Peter-Igwes-MacBook-Pro.local>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141118025144.GA1041@Tobenna-Peter-Igwes-MacBook-Pro.local>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+On Tue, Nov 18, 2014 at 02:51:45AM +0000, Tobenna Peter, Igwe wrote:
+> On Mon, Nov 17, 2014 at 05:59:47PM -0800, Greg KH wrote:
+> > On Tue, Nov 18, 2014 at 01:45:41AM +0000, Tobenna P. Igwe wrote:
+> > > This patch fixes the following sparse warning:
+> > > 
+> > > drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c:343:36: warning:
+> > > cast to restricted __le16
+> > > 
+> > > by using the le16_to_cpus function.
+> > > 
+> > > Signed-off-by: Tobenna P. Igwe <ptigwe@gmail.com>
+> > > ---
+> > >  drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c b/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c
+> > > index d80ea4e..78665ee 100644
+> > > --- a/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c
+> > > +++ b/drivers/staging/rtl8723au/hal/rtl8723a_bt-coexist.c
+> > > @@ -340,7 +340,7 @@ static u8 bthci_GetAssocInfo(struct rtw_adapter *padapter, u8 EntryNum)
+> > >  			tempBuf, TotalLen-BaseMemoryShift);
+> > >  
+> > >  		pAmpAsoc = (struct amp_assoc_structure *)tempBuf;
+> > > -		pAmpAsoc->Length = le16_to_cpu(pAmpAsoc->Length);
+> > > +		le16_to_cpus(&pAmpAsoc->Length);
+> > 
+> > This doesn't change the logic, and you should still have the same
+> > warning.  How about fixing up Length to be the proper endian type?
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> I've checked and sparse doesn't return the warning anymore. Also, I
+> backtracked through the file and Length seems to be set to its
+> correct endian type. The reason for the conversion is tempBuf being
+> an array of 'u8'.
 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> The number of and dependencies between high-level power management
-> Kconfig options make life much harder than necessary.  Several
-> conbinations of them have to be tested and supported, even though
-> some of those combinations are very rarely used in practice (it
-> they are used in practice at all).  Moreover, the fact that we
-> have separate independent Kconfig options for runtime PM and
-> system suspend is a serious obscacle for integration between
-> the two frameworks.
->
-> To overcome these difficulties, always select PM_RUNTIME if PM_SLEEP
-> is set.  Among other things, this will allow system suspend callbacks
-> provided by bus types and device drivers to rely on the runtime PM
-> framework regardless of the kernel configuration.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->
-> As a follow up.
->
-> Note that we won't need the patch making genpd select PM_RUNTIME with this,
-> because genpd already depends on PM.
->
-> Thoughts, comments?
+Ah, that makes sense, ok, I'll queue this up in a few days when I get a
+chance.
 
-Acked-by: Kevin Hilman <khilman@linaro.org>
+thanks,
 
-...with dancing and singing in the streets (or more my speed: a
-celebratory beer.) 
-
-Kevin
-
+greg k-h
