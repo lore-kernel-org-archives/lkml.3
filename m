@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734AbaKRPOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:14:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57040 "EHLO mx2.suse.de"
+	id S1756717AbaKRPOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:14:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57191 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754915AbaKROJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754917AbaKROJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:09:33 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Petr Sebor <petr@scssoft.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Eric Rannaud <e@nanocritical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 040/206] Input: xpad - add new USB IDs for Logitech F310 and F710
-Date: Tue, 18 Nov 2014 15:06:35 +0100
-Message-Id: <6ba3c3431eb82ecf8d8f2d3941fa8f65a6e32546.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 061/206] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+Date: Tue, 18 Nov 2014 15:06:56 +0100
+Message-Id: <e54fc4edabd848ca4d6e3ba7c4f4ffe73c2fec0b.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,37 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Sebor <petr@scssoft.com>
+From: Eric Rannaud <e@nanocritical.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8e2f2325b73f3e5e46ecffd291556f33b8e3f8c9 upstream.
+commit 69a91c237ab0ebe4e9fdeaf6d0090c85275594ec upstream.
 
-This enables the rumble force feedback on the F710 unit since
-it is no longer treated as XTYPE_UNKNOWN type.
+The man page for open(2) indicates that when O_CREAT is specified, the
+'mode' argument applies only to future accesses to the file:
 
-Signed-off-by: Petr Sebor <petr@scssoft.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+	Note that this mode applies only to future accesses of the newly
+	created file; the open() call that creates a read-only file
+	may well return a read/write file descriptor.
+
+The man page for open(2) implies that 'mode' is treated identically by
+O_CREAT and O_TMPFILE.
+
+O_TMPFILE, however, behaves differently:
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
+	assert(fd == -1);
+	assert(errno == EACCES);
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
+	assert(fd > 0);
+
+For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
+
+	if (*opened & FILE_CREATED) {
+		/* Don't check for write permission, don't truncate */
+		open_flag &= ~O_TRUNC;
+		will_truncate = false;
+		acc_mode = MAY_OPEN;
+		path_to_nameidata(path, nd);
+		goto finish_open_created;
+	}
+
+But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
+may_open().
+
+This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
+inode is created, may_open() is called with acc_mode = MAY_OPEN, in
+do_tmpfile().
+
+A different, but related glibc bug revealed the discrepancy:
+https://sourceware.org/bugzilla/show_bug.cgi?id=17523
+
+The glibc lazily loads the 'mode' argument of open() and openat() using
+va_arg() only if O_CREAT is present in 'flags' (to support both the 2
+argument and the 3 argument forms of open; same idea for openat()).
+However, the glibc ignores the 'mode' argument if O_TMPFILE is in
+'flags'.
+
+On x86_64, for open(), it magically works anyway, as 'mode' is in
+RDX when entering open(), and is still in RDX on SYSCALL, which is where
+the kernel looks for the 3rd argument of a syscall.
+
+But openat() is not quite so lucky: 'mode' is in RCX when entering the
+glibc wrapper for openat(), while the kernel looks for the 4th argument
+of a syscall in R10. Indeed, the syscall calling convention differs from
+the regular calling convention in this respect on x86_64. So the kernel
+sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
+fails with EACCES.
+
+Signed-off-by: Eric Rannaud <e@nanocritical.com>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/input/joystick/xpad.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/namei.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index 7995e1fe3061..995e79fa7dad 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -125,6 +125,8 @@ static const struct xpad_device {
- 	{ 0x045e, 0x0291, "Xbox 360 Wireless Receiver (XBOX)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
- 	{ 0x045e, 0x0719, "Xbox 360 Wireless Receiver", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
- 	{ 0x044f, 0x0f07, "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
-+	{ 0x046d, 0xc21d, "Logitech Gamepad F310", 0, XTYPE_XBOX360 },
-+	{ 0x046d, 0xc21f, "Logitech Gamepad F710", 0, XTYPE_XBOX360 },
- 	{ 0x046d, 0xc242, "Logitech Chillstream Controller", 0, XTYPE_XBOX360 },
- 	{ 0x046d, 0xca84, "Logitech Xbox Cordless Controller", 0, XTYPE_XBOX },
- 	{ 0x046d, 0xca88, "Logitech Compact Controller for Xbox", 0, XTYPE_XBOX },
+diff --git a/fs/namei.c b/fs/namei.c
+index 3ac674b793bf..1004966437f9 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3159,7 +3159,8 @@ static int do_tmpfile(int dfd, struct filename *pathname,
+ 	if (error)
+ 		goto out2;
+ 	audit_inode(pathname, nd->path.dentry, 0);
+-	error = may_open(&nd->path, op->acc_mode, op->open_flag);
++	/* Don't check for other permissions, the inode was just created */
++	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
+ 	if (error)
+ 		goto out2;
+ 	file->f_path.mnt = nd->path.mnt;
 -- 
 2.1.3
 
