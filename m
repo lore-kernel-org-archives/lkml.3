@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798AbaKRRMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:12:08 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40417 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaKRRMF (ORCPT
+	id S1755261AbaKRRMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:12:51 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:44760 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755197AbaKRRMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:12:05 -0500
-Date: Tue, 18 Nov 2014 18:11:57 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kees Cook <keescook@chromium.org>
-cc: Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wang Nan <wangnan0@huawei.com>, David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH v2] x86, mm: set NX across entire PMD at boot
-In-Reply-To: <CAGXu5j+8sEhgmHtdky7G5X2arRsSQSjA=xxuBPPZZAP7v046dg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1411181811000.3909@nanos>
-References: <20141114204517.GA24402@www.outflux.net> <CAE9FiQULexNgTYCrQgQK+ccNTVDyiJCWkgiDVgbPG-5SY0uPGQ@mail.gmail.com> <CAE9FiQV=i=+tO2Xum0EYdnqjqso1=twHUfjGZHEASVhUGE-x2g@mail.gmail.com>
- <CAGXu5j+8sEhgmHtdky7G5X2arRsSQSjA=xxuBPPZZAP7v046dg@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 18 Nov 2014 12:12:46 -0500
+Date: Tue, 18 Nov 2014 09:12:40 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Vignesh R <vigneshr@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        richardcochran@gmail.com,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
+        Brad Griffis <bgriffis@ti.com>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kardell <jan.kardell@telliq.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v4 3/6] mfd: ti_am335x_tscadc: Remove unwanted
+ reg_se_cache save
+Message-ID: <20141118171240.GB3003@dtor-ws>
+References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
+ <1415941651-28962-4-git-send-email-vigneshr@ti.com>
+ <20141118143005.GF24004@x1>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141118143005.GF24004@x1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014, Kees Cook wrote:
-> On Fri, Nov 14, 2014 at 6:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Fri, Nov 14, 2014 at 5:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> On Fri, Nov 14, 2014 at 12:45 PM, Kees Cook <keescook@chromium.org> wrote:
-> >>> v2:
-> >>>  - added call to free_init_pages(), as suggested by tglx
-> >
-> >> something is wrong:
-> >>
-> >> [    7.842479] Freeing unused kernel memory: 3844K (ffffffff82e52000 -
-> >> ffffffff83213000)
-> >> [    7.843305] Write protecting the kernel read-only data: 28672k
-> >
-> > ....
-> > should use attached one instead.
-> >
-> > 1. should use _brk_end instead of &end, as we only use partial of
-> >    brk.
-> > 2. [_brk_end, pm_end) page range is already converted. aka
-> >    is not wasted.
+On Tue, Nov 18, 2014 at 02:30:05PM +0000, Lee Jones wrote:
+> On Fri, 14 Nov 2014, Vignesh R wrote:
 > 
-> Are you sure? For me, _brk_end isn't far enough:
+> > In one shot mode, sequencer automatically disables all enabled steps at
+> > the end of each cycle. (both ADC steps and TSC steps) Hence these steps
+> > need not be saved in reg_se_cache for clearing these steps at a later
+> > stage.
+> > Also, when ADC wakes up Sequencer should not be busy executing any of the
+> > config steps except for the charge step. Previously charge step was 1 ADC
+> > clock cycle and hence it was ignored.
+> > 
+> > Signed-off-by: Vignesh R <vigneshr@ti.com>
+> > ---
+> >  drivers/mfd/ti_am335x_tscadc.c       | 7 +++++--
+> >  include/linux/mfd/ti_am335x_tscadc.h | 1 +
+> >  2 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> Code looks better now.
+> 
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> 
+> What's the plan for this series?
 
-_brk_end is guaranteed to be <= _end. But we really want to use
-_brk_end here, because if we have the following situation:
+I am waiting for the interested parties to provide more feedback. So far
+I have seen a few reports saying that they see issues with the series
+applied.
 
-_brk_start:     0x03ff0000
-_brk_end:       0x03ffff00
-_end:           0x04016000
-
-So we have the following PMDs setup:
-
-0x03e00000     pmd rw nx        <- covers the top of .bss
-                                   and the start  of .brk
-0x04000000     pmd rw nx        <- covers the end of .brk
-                                   and some random unused
-
-So if _brk_end is less than 0x04000000, then cleanup_highmem() has
-zapped the extra PMD already. So we don't want to call set_nx() on
-that.
-
-If _brk_end is >= 0x04000000 then we cover that last pmd with the
-set_nx call.
-
-Completely non obvious as anything else in that area.
-
-Thanks,
-
-	tglx
+-- 
+Dmitry
