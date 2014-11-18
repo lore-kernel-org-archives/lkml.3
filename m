@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaKRR2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:28:04 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:65110 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079AbaKRR2C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:28:02 -0500
+	id S1754503AbaKRRaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:30:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39029 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754413AbaKRRaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 12:30:20 -0500
+Subject: [PATCH v4 0/4] Add lightweight memory barriers for coherent memory
+ access
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
+        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
+        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
+        michael@ellerman.id.au, tony.luck@intel.com,
+        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
+        fweisbec@gmail.com, davem@davemloft.net
+Date: Tue, 18 Nov 2014 09:28:47 -0800
+Message-ID: <20141118172644.26303.37688.stgit@ahduyck-server>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <1415904621-26800-1-git-send-email-abrestic@chromium.org>
-References: <1415904621-26800-1-git-send-email-abrestic@chromium.org>
-Date: Tue, 18 Nov 2014 09:28:00 -0800
-X-Google-Sender-Auth: NTm13cuPVUBOCvJTn_JAGRMuPRs
-Message-ID: <CAD=FV=WZx6r5L76Bfn2L8WeSU4hKwNJ=tZq_FoT3ot1Hd2ToeQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Add support for IMG Pistachio
-From: Doug Anderson <dianders@chromium.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        James Hartley <James.Hartley@imgtec.com>,
-        Ezequiel Garcia <Ezequiel.Garcia@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+These patches introduce two new primitives for synchronizing cache coherent
+memory writes and reads.  These two new primitives are:
 
-On Thu, Nov 13, 2014 at 10:50 AM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
-> Add support for the DW MMC host found on the Imagination Pistachio SoC.
-> Like the DW MMC hosts found on SOCFPGA and Rockchip SoCs, the DW MMC
-> host on Pistachio requires the use of SDMMC_CMD_USE_HOLD_REG.
->
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> ---
->  .../devicetree/bindings/mmc/img-dw-mshc.txt        | 29 ++++++++++++++++++++++
->  drivers/mmc/host/dw_mmc-pltfm.c                    |  6 +++++
->  2 files changed, 35 insertions(+)
+	coherent_rmb()
+	coherent_wmb()
 
-This seems quite sane to me.
+The first patch cleans up some unnecessary overhead related to the
+definition of read_barrier_depends, smp_read_barrier_depends, and comments
+related to the barrier.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+The second patch adds the primitives for the applicable architectures and
+asm-generic.
+
+The third patch adds the barriers to r8169 which turns out to be a good
+example of where the new barriers might be useful as they have full
+rmb()/wmb() barriers ordering accesses to the descriptors and the DescOwn
+bit.
+
+The fourth patch adds support for coherent_rmb() to the Intel fm10k, igb,
+and ixgbe drivers.  Testing with the ixgbe driver has shown a processing
+time reduction of at least 7ns per 64B frame on a Core i7-4930K.
+
+This patch series is essentially the v4 for:
+v3:	Add lightweight memory barriers fast_rmb() and fast_wmb()
+v2:	Introduce load_acquire() and store_release()
+v1:	Introduce read_acquire()
+
+The key changes in this patch series versus the earlier patches are:
+v4:
+	- Updated ARM barrier domains to outer shareable
+	- Renamed barriers coherent_rmb and coherent_wmb
+	- Added smp_lwsync for use in smp_load_acquire/smp_store_release
+v3:
+	- Moved away from acquire()/store() and instead focused on barriers
+	- Added cleanup of read_barrier_depends
+	- Added change in r8169 to fix cur_tx/DescOwn ordering
+	- Simplified changes to just replacing/moving barriers in r8169
+	- Added update to documentation with code example
+v2:
+	- Renamed read_acquire() to be consistent with smp_load_acquire()
+	- Changed barrier used to be consistent with smp_load_acquire()
+	- Updated PowerPC code to use __lwsync based on IBM article
+	- Added store_release() as this is a viable use case for drivers
+	- Added r8169 patch which is able to fully use primitives
+	- Added fm10k/igb/ixgbe patch which is able to test performance
+
+---
+
+Alexander Duyck (4):
+      arch: Cleanup read_barrier_depends() and comments
+      arch: Add lightweight memory barriers coherent_rmb() and coherent_wmb()
+      r8169: Use coherent_rmb() and coherent_wmb() for DescOwn checks
+      fm10k/igb/ixgbe: Use coherent_rmb on Rx descriptor reads
+
+
+ Documentation/memory-barriers.txt             |   41 +++++++++++++++
+ arch/alpha/include/asm/barrier.h              |   51 ++++++++++++++++++
+ arch/arm/include/asm/barrier.h                |    4 +
+ arch/arm64/include/asm/barrier.h              |    3 +
+ arch/blackfin/include/asm/barrier.h           |   51 ++++++++++++++++++
+ arch/ia64/include/asm/barrier.h               |   25 ++++-----
+ arch/metag/include/asm/barrier.h              |   19 ++++---
+ arch/mips/include/asm/barrier.h               |   61 ++--------------------
+ arch/powerpc/include/asm/barrier.h            |   23 +++++---
+ arch/s390/include/asm/barrier.h               |    7 ++-
+ arch/sparc/include/asm/barrier_64.h           |    7 ++-
+ arch/x86/include/asm/barrier.h                |   70 ++++---------------------
+ arch/x86/um/asm/barrier.h                     |   20 ++++---
+ drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +-
+ drivers/net/ethernet/intel/igb/igb_main.c     |    6 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 +--
+ drivers/net/ethernet/realtek/r8169.c          |   29 ++++++++--
+ include/asm-generic/barrier.h                 |    8 +++
+ 18 files changed, 259 insertions(+), 181 deletions(-)
+
+--
