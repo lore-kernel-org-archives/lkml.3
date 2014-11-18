@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481AbaKROcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:32:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57164 "EHLO mx2.suse.de"
+	id S1756141AbaKROce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:32:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56994 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755116AbaKROKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755117AbaKROKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:15 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Adel Gadllah <adel.gadllah@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 166/206] HID: usbhid: enable always-poll quirk for Elan Touchscreen 016f
-Date: Tue, 18 Nov 2014 15:08:41 +0100
-Message-Id: <07c1ac2971496b2a05e02490b554ef7b77811867.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 169/206] USB: opticon: fix non-atomic allocation in write path
+Date: Tue, 18 Nov 2014 15:08:44 +0100
+Message-Id: <b7b72e586240ab69fc5bc30c65005bebae0f8793.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,49 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adel Gadllah <adel.gadllah@gmail.com>
+From: Johan Hovold <johan@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1af39588f84c7c18f8c6d88342f36513a4ce383c upstream.
+commit e681286de221af78fc85db9222b6a203148c005a upstream.
 
-This device needs the quirk as well.
+Write may be called from interrupt context so make sure to use
+GFP_ATOMIC for all allocations in write.
 
-Tested-by: Kevin Fenzi <kevin@scrye.com>
-Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fixes: 0d930e51cfe6 ("USB: opticon: Add Opticon OPN2001 write support")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hid/hid-ids.h           | 1 +
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/usb/serial/opticon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 5da254eb6c37..28f6cdc5aaf9 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -291,6 +291,7 @@
- #define USB_VENDOR_ID_ELAN		0x04f3
- #define USB_DEVICE_ID_ELAN_TOUCHSCREEN	0x0089
- #define USB_DEVICE_ID_ELAN_TOUCHSCREEN_009B	0x009b
-+#define USB_DEVICE_ID_ELAN_TOUCHSCREEN_016F	0x016f
+diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
+index cbe779f578f9..df495ea0d977 100644
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -219,7 +219,7 @@ static int opticon_write(struct tty_struct *tty, struct usb_serial_port *port,
  
- #define USB_VENDOR_ID_ELECOM		0x056e
- #define USB_DEVICE_ID_ELECOM_BM084	0x0061
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index ac5f1ff5dbb3..19b5fc350354 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -72,6 +72,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN, HID_QUIRK_ALWAYS_POLL },
- 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_009B, HID_QUIRK_ALWAYS_POLL },
-+	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_016F, HID_QUIRK_ALWAYS_POLL },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	/* The conncected devices do not have a bulk write endpoint,
+ 	 * to transmit data to de barcode device the control endpoint is used */
+-	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
++	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_ATOMIC);
+ 	if (!dr) {
+ 		dev_err(&port->dev, "out of memory\n");
+ 		count = -ENOMEM;
 -- 
 2.1.3
 
