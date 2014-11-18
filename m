@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaKRJ6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 04:58:15 -0500
-Received: from regular1.263xmail.com ([211.150.99.137]:41310 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaKRJ57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 04:57:59 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <67a292ab11021750c507c49f9c598068>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <546B1818.20907@rock-chips.com>
-Date: Tue, 18 Nov 2014 17:57:44 +0800
-From: Mark yao <mark.yao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753819AbaKRJ6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 04:58:46 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:48970 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753779AbaKRJ6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 04:58:44 -0500
+Date: Tue, 18 Nov 2014 11:58:11 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 06/19] mm: store mapcount for compound page separate
+Message-ID: <20141118095811.GA21774@node.dhcp.inet.fi>
+References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
+ <20141118084337.GA16714@hori1.linux.bs1.fc.nec.co.jp>
 MIME-Version: 1.0
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
-        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
-        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v12 1/3] drm: rockchip: Add basic drm driver
-References: <1416297587-18959-1-git-send-email-mark.yao@rock-chips.com> <1416297629-19024-1-git-send-email-mark.yao@rock-chips.com> <20141118083234.GZ25711@phenom.ffwll.local>
-In-Reply-To: <20141118083234.GZ25711@phenom.ffwll.local>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141118084337.GA16714@hori1.linux.bs1.fc.nec.co.jp>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年11月18日 16:32, Daniel Vetter wrote:
-> On Tue, Nov 18, 2014 at 04:00:29PM +0800, Mark Yao wrote:
->> From: Mark yao <mark.yao@rock-chips.com>
->>
->> This patch adds the basic structure of a DRM Driver for Rockchip Socs.
->>
->> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> Acked-by: Daniel Vetter <daniel@ffwll.ch>
->> Reviewed-by: Rob Clark <robdclark@gmail.com>
->> ---
->> Changes in v2:
->> - use the component framework to defer main drm driver probe
->>    until all VOP devices have been probed.
->> - use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
->>    master device and each vop device can shared the drm dma mapping.
->> - use drm_crtc_init_with_planes and drm_universal_plane_init.
->> - remove unnecessary middle layers.
->> - add cursor set, move funcs to rockchip drm crtc.
->> - use vop reset at first init
->> - reference framebuffer when used and unreference when swap out vop
->>
->> Changes in v3:
->> - change "crtc->fb" to "crtc->primary-fb"
->> Adviced by Daniel Vetter
->> - init cursor plane with universal api, remove unnecessary cursor set,move
->>
->> Changes in v4:
->> Adviced by David Herrmann
->> - remove drm_platform_*() usage, use register drm device directly.
-> Minor fixup for that part below.
->
-> [snip]
->
->> +static int rockchip_drm_bind(struct device *dev)
->> +{
->> +	struct drm_device *drm;
->> +	int ret;
->> +
->> +	drm = drm_dev_alloc(&rockchip_drm_driver, dev);
->> +	if (!drm)
->> +		return -ENOMEM;
->> +
->> +	ret = drm_dev_set_unique(drm, "%s", dev_name(dev));
->> +	if (ret)
->> +		goto err_free;
-> Please call rockchip_drm_load here directly and don't put it as the ->load
-> function into the driver vtable. The point of the alloc/register split is
-> that the driver can be completely set up _before_ we register anything.
-> But for backwards compat and historical reasons ->load is called somewhere
-> in the middle (so that you could access the minor nodes if needed, since
-> some drivers do that).
->
-> Cheers, Daniel
-OK, got it.
+On Tue, Nov 18, 2014 at 08:43:00AM +0000, Naoya Horiguchi wrote:
+> > @@ -1837,6 +1839,9 @@ static void __split_huge_page_refcount(struct page *page,
+> >  	atomic_sub(tail_count, &page->_count);
+> >  	BUG_ON(atomic_read(&page->_count) <= 0);
+> >  
+> > +	page->_mapcount = *compound_mapcount_ptr(page);
+> 
+> Is atomic_set() necessary?
 
+Do you mean
+	atomic_set(&page->_mapcount, atomic_read(compound_mapcount_ptr(page)));
+?
+
+I don't see why we would need this. Simple assignment should work just
+fine. Or we have archs which will break?
+
+> > @@ -6632,10 +6637,12 @@ static void dump_page_flags(unsigned long flags)
+> >  void dump_page_badflags(struct page *page, const char *reason,
+> >  		unsigned long badflags)
+> >  {
+> > -	printk(KERN_ALERT
+> > -	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
+> > +	pr_alert("page:%p count:%d mapcount:%d mapping:%p index:%#lx",
+> >  		page, atomic_read(&page->_count), page_mapcount(page),
+> >  		page->mapping, page->index);
+> > +	if (PageCompound(page))
+> 
+> > +		printk(" compound_mapcount: %d", compound_mapcount(page));
+> > +	printk("\n");
+> 
+> These two printk() should be pr_alert(), too?
+
+No. It will split the line into several messages in dmesg.
+
+> > @@ -986,9 +986,30 @@ void page_add_anon_rmap(struct page *page,
+> >  void do_page_add_anon_rmap(struct page *page,
+> >  	struct vm_area_struct *vma, unsigned long address, int flags)
+> >  {
+> > -	int first = atomic_inc_and_test(&page->_mapcount);
+> > +	bool compound = flags & RMAP_COMPOUND;
+> > +	bool first;
+> > +
+> > +	VM_BUG_ON_PAGE(!PageLocked(compound_head(page)), page);
+> > +
+> > +	if (PageTransCompound(page)) {
+> > +		struct page *head_page = compound_head(page);
+> > +
+> > +		if (compound) {
+> > +			VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+> > +			first = atomic_inc_and_test(compound_mapcount_ptr(page));
+> 
+> Is compound_mapcount_ptr() well-defined for tail pages?
+
+The page is head page, otherwise VM_BUG_ON on the line above would trigger.
+
+> > @@ -1032,10 +1052,19 @@ void page_add_new_anon_rmap(struct page *page,
+> >  
+> >  	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+> >  	SetPageSwapBacked(page);
+> > -	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
+> >  	if (compound) {
+> > +		atomic_t *compound_mapcount;
+> > +
+> >  		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+> > +		compound_mapcount = (atomic_t *)&page[1].mapping;
+> 
+> You can use compound_mapcount_ptr() here.
+
+Right, thanks.
+
+-- 
+ Kirill A. Shutemov
