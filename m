@@ -1,122 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719AbaKRQnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:43:32 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50168 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832AbaKRQna (ORCPT
+	id S1756225AbaKRQob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:44:31 -0500
+Received: from [114.143.51.95] ([114.143.51.95]:26068 "EHLO
+	dhcp223-82.pnq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754776AbaKRQo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:43:30 -0500
-Date: Tue, 18 Nov 2014 10:41:00 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-CC: Kever Yang <kever.yang@rock-chips.com>,
-        Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        <romain.perier@gmail.com>, Heiko Stuebner <heiko@sntech.de>,
-        <dianders@chromium.org>, <sonnyrao@chromium.org>,
-        <addy.ke@rock-chips.com>, <cf@rock-chips.com>, <wulf@rock-chips.com>,
-        <huangtao@rock-chips.com>, <linux-rockchip@lists.infradead.org>,
-        Roy Li <roy.li@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
- suspend state
-Message-ID: <20141118164100.GD6179@saruman>
-Reply-To: <balbi@ti.com>
-References: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
- <Pine.LNX.4.44L0.1411181104280.1500-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZJcv+A0YCCLh2VIg"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1411181104280.1500-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Nov 2014 11:44:29 -0500
+X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 11:44:26 EST
+From: Pankaj Gupta <pagupta@redhat.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com.pnq.redhat.com, xemul@parallels.com,
+        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
+        stephen@networkplumber.org, jiri@resnulli.us,
+        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
+Subject: [PATCH net-next 2/4] tuntap: Accept tuntap maximum number of queues as sysctl
+Date: Tue, 18 Nov 2014 21:52:56 +0530
+Message-Id: <1416327778-17716-3-git-send-email-pagupta@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
+References: <1416327778-17716-1-git-send-email-pagupta@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ZJcv+A0YCCLh2VIg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ This patch accepts maximum number of tun/tap queues allocated as
+ sysctl entry which a user space application like libvirt
+ can make use of to limit maximum number of tuntap queues. 
+ Value of sysctl entry is writable dynamically.
+ 
+ If no value is set for sysctl entry 'net.tuntap.max_queues' 
+ a default value 256 is used which is equal to maximum number 
+ of vCPUS allowed by KVM.
 
-On Tue, Nov 18, 2014 at 11:07:34AM -0500, Alan Stern wrote:
-> On Tue, 18 Nov 2014, Kever Yang wrote:
->=20
-> > After we implement the bus_suspend/resume, auto suspend id enabled.
-> > The root hub will be auto suspend if there is no device connected,
-> > we need to resume the root hub when a device connect detect.
-> >=20
-> > This patch tested on rk3288.
-> >=20
-> > Signed-off-by: Roy Li <roy.li@rock-chips.com>
-> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> > ---
-> >=20
-> > Changes in v2:
-> > - add definition for hcd structure
-> > - remove check for bus->root_hub
-> >=20
-> >  drivers/usb/dwc2/hcd_intr.c | 5 +++++
-> >  1 file changed, 5 insertions(+)
-> >=20
-> > diff --git a/drivers/usb/dwc2/hcd_intr.c b/drivers/usb/dwc2/hcd_intr.c
-> > index 551ba87..680206f 100644
-> > --- a/drivers/usb/dwc2/hcd_intr.c
-> > +++ b/drivers/usb/dwc2/hcd_intr.c
-> > @@ -329,6 +329,7 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
-> >  {
-> >  	u32 hprt0;
-> >  	u32 hprt0_modify;
-> > +	struct usb_hcd *hcd =3D (struct usb_hcd *)hsotg->priv;
-> > =20
-> >  	dev_vdbg(hsotg->dev, "--Port Interrupt--\n");
-> > =20
-> > @@ -354,6 +355,10 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsot=
-g)
-> >  		hsotg->flags.b.port_connect_status =3D 1;
-> >  		hprt0_modify |=3D HPRT0_CONNDET;
-> > =20
-> > +		/* resume root hub? */
-> > +		if (hcd->state =3D=3D HC_STATE_SUSPENDED)
-> > +			usb_hcd_resume_root_hub(hcd);
->=20
-> You should be aware that it's not safe to use hcd->state for anything=20
-> in a host controller driver.  That field is owned by usbcore, not by=20
-> the HCD, and it is not protected by any locks.
->=20
-> Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
-> until some time after the bus_suspend routine has returned.  A
-> port-change interrupt might occur during that time interval.
+Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+---
+ drivers/net/tun.c | 33 +++++++++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
 
-In that case, XHCI has a bug :-) Mathias, care to add it to your TODO
-list ?
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index e3fa65a..b03a745 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -71,6 +71,7 @@
+ #include <net/rtnetlink.h>
+ #include <net/sock.h>
+ #include <linux/seq_file.h>
++#include <linux/sysctl.h>
+ #include <linux/uio.h>
+ 
+ #include <asm/uaccess.h>
+@@ -117,10 +118,16 @@ struct tap_filter {
+  * the netdevice to be fit in one page. So we can make sure the success of
+  * memory allocation. TODO: increase the limit. */
+ #define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
++#define MIN_TAP_QUEUES 1
+ #define MAX_TAP_FLOWS  4096
+ 
+ #define TUN_FLOW_EXPIRE (3 * HZ)
+ 
++static struct ctl_table_header *tun_sysctl_header;
++static int tun_queues = MAX_TAP_QUEUES;
++static int min_queues = MIN_TAP_QUEUES;
++static int max_queues = MAX_TAP_QUEUES;
++
+ /* A tun_file connects an open character device to a tuntap netdevice. It
+  * also contains all socket related structures (except sock_fprog and tap_filter)
+  * to serve as one transmit queue for tuntap device. The sock_fprog and
+@@ -197,6 +204,19 @@ struct tun_struct {
+ 	u32 flow_count;
+ };
+ 
++static struct ctl_table tun_ctl_table[] = {
++	{
++		.procname       = "tun_max_queues",
++		.data           = &tun_queues,
++		.maxlen         = sizeof(int),
++		.mode           = 0644,
++		.proc_handler   = proc_dointvec_minmax,
++		.extra1         = &min_queues,
++		.extra2         = &max_queues
++	},
++	{  }
++};
++
+ static inline u32 tun_hashfn(u32 rxhash)
+ {
+ 	return rxhash & 0x3ff;
+@@ -547,7 +567,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file, bool skip_filte
+ 
+ 	err = -E2BIG;
+ 	if (!tfile->detached &&
+-	    tun->numqueues + tun->numdisabled == MAX_TAP_QUEUES)
++	    tun->numqueues + tun->numdisabled == tun_queues)
+ 		goto out;
+ 
+ 	err = 0;
+@@ -1624,7 +1644,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		char *name;
+ 		unsigned long flags = 0;
+ 		int queues = ifr->ifr_flags & IFF_MULTI_QUEUE ?
+-			     MAX_TAP_QUEUES : 1;
++			     tun_queues : 1;
+ 
+ 		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
+ 			return -EPERM;
+@@ -2335,6 +2355,13 @@ static int __init tun_init(void)
+ 	pr_info("%s, %s\n", DRV_DESCRIPTION, DRV_VERSION);
+ 	pr_info("%s\n", DRV_COPYRIGHT);
+ 
++	tun_sysctl_header = register_net_sysctl(&init_net, "net/tuntap",
++						tun_ctl_table);
++
++	if (!tun_sysctl_header)
++		pr_err("Can't register tun_ctl_table. Tun device queue"
++		       "setting to default value : %d queues.\n", tun_queues);
++
+ 	ret = rtnl_link_register(&tun_link_ops);
+ 	if (ret) {
+ 		pr_err("Can't register link_ops\n");
+@@ -2357,6 +2384,8 @@ static void tun_cleanup(void)
+ {
+ 	misc_deregister(&tun_miscdev);
+ 	rtnl_link_unregister(&tun_link_ops);
++	if (tun_sysctl_header)
++		unregister_net_sysctl_table(tun_sysctl_header);
+ }
+ 
+ /* Get an underlying socket object from tun file.  Returns error unless file is
+-- 
+1.8.3.1
 
---=20
-balbi
-
---ZJcv+A0YCCLh2VIg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUa3acAAoJEIaOsuA1yqRECyAP/RU5FGigEDx6U5MpDnbSOVkx
-zrf+DkRbTi2NKwjWwqDtkEP9RPmbt2rC5T0b6V1C3DTi4m3Ft/ZdVA/1v6kK0WOz
-bAmytMBnG4MxHF7lSv00HKWW1CT+DT289WOwKvmyopGbSIJjoRpknovCPBmVZsF6
-s8INdxf4iudKHjuXBFpI7kcnX1tw65460TrQLIupav/caSuBb+WYjLiH9nqWwCmW
-40SVY9uznA987qenaDa6zzDxmwfWdcv4vzNgPc+x7CsmYys57k9V2lRa7llJXsQE
-rtkplBXNPsaXv4b5YfpLzkL/VjJxJ3fkCF5q6qqiB6TAuZR6fmZW1fs23rjreKTh
-1XTzCO8eZVDA4cEkF/KhH4oIQXCQumGWX8TCGwsOUXh/5JjnLk7LSbrIAaMSy/8x
-5sqI/6aWtYnrzIwuGwdl4ISj+FbFihOvRLE9WV9ILzNfazrFgnchK4MPeQMsD6vk
-euaIvAT9Kc7OdURQh0BEGuXiWUlubujV+YYB6PRmAirsnVtBYoBt/4F+lKzXqAKP
-x+o1EdxSc7rxs7ZxxjbiSaHEPUHP0uW1E/5yaEHW3RBXLimLWLV7WQ6cNl+yxidj
-a9k+pwlA2qlqAH/hftK/o8bD3+AevnQwCfrWCcny6tmMBNA0kqCPkfkt3H4OUWUa
-OxBwcXCHzvKRC9U09jcL
-=zikY
------END PGP SIGNATURE-----
-
---ZJcv+A0YCCLh2VIg--
