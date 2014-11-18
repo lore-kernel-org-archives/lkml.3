@@ -1,77 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaKRWfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 17:35:55 -0500
-Received: from gate.crashing.org ([63.228.1.57]:36402 "EHLO gate.crashing.org"
+	id S932595AbaKRWmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 17:42:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:16968 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932098AbaKRWfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 17:35:52 -0500
-Message-ID: <1416344873.5704.12.camel@kernel.crashing.org>
-Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb()
- and fast_wmb()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexander Duyck <alexander.h.duyck@redhat.com>
-Cc: Alexander Duyck <alexander.duyck@gmail.com>, linux-arch@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        heiko.carstens@de.ibm.com, mingo@kernel.org, mikey@neuling.org,
-        linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
-        michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Wed, 19 Nov 2014 08:07:53 +1100
-In-Reply-To: <546AB959.1020602@redhat.com>
-References: <20141117171005.22333.96544.stgit@ahduyck-server>
-	 <20141117171812.22333.90395.stgit@ahduyck-server>
-	 <1416254687.18381.3.camel@kernel.crashing.org> <546A5968.1090201@gmail.com>
-	 <1416271167.18381.16.camel@kernel.crashing.org>
-	 <546AB959.1020602@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753595AbaKRWmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 17:42:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,412,1413270000"; 
+   d="scan'208";a="624511932"
+Date: Wed, 19 Nov 2014 06:21:14 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched/rt: fix rt runtime corrupt when dl refuse a
+ smaller bandwidth
+Message-ID: <20141118222114.GA11950@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1415868459-7043-1-git-send-email-wanpeng.li@linux.intel.com>
+ <546B8934.5040100@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546B8934.5040100@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-17 at 19:13 -0800, Alexander Duyck wrote:
-> 
-> ARM adds some funky things.  They have two different types of 
-> primitives, a dmb() which is a data memory barrier, and a dsb() which is 
-> a data synchronization barrier.  Then with each of those they have the 
-> "domains" the barriers are effective within.
-> 
-> So for example on ARM a rmb() is dsb(sy) which means it is a system wide 
-> synchronization barrier which stops execution on the CPU core until the 
-> read completes.  
+Hi Juri,
+On Tue, Nov 18, 2014 at 06:00:20PM +0000, Juri Lelli wrote:
+>Hi,
+>
+>On 13/11/14 08:47, Wanpeng Li wrote:
+>> Dl class will refuse the bandwidth being set to some value smaller 
+>> than the currently allocated bandwidth in any of the root_domains 
+>> through sched_rt_runtime_us and sched_rt_period_us. RT runtime will 
+>> be set according to sched_rt_runtime_us before dl class verify if 
+>> the new bandwidth is suitable in the case of !CONFIG_RT_GROUP_SCHED.
+>> 
+>> However, rt runtime will be corrupt if dl refuse the new bandwidth 
+>> since there is no undo to reset the rt runtime to the old value. 
+>> 
+>
+>Can't we just move sched_dl_global_constraints() before
+>sched_rt_global_constraints(), and change the name of the
+>former to sched_dl_global_validate() ?
 
-That's amazingly heavy handed ... I can see that being useful for MMIO,
-we do something similar in our MMIO accessors by using a special variant
-of trap instruction that never traps to make the core thing the load
-value has been consumed. But that's typically only needed to guarantee
-MMIO timings.
+Good idea, I will send out the next version later. ;-)
 
-> However the smp_rmb() is a dmb(ish) which means it is 
-> only a barrier as far as the inner shareable domain which I believe only 
-> goes as far as the local shared cache hierarchy and only guarantees read 
-> ordering without necessarily halting the CPU or stopping in-order 
-> speculative reads.  So what a coherent_rmb() would be in my setup is 
-> dmb(sy) which means the barrier runs all the way out to memory, and it 
-> is allowed to speculative read as long as it does it in order.
+Regards,
+Wanpeng Li
 
-Correct, which is thus the same as smp_rmb() ... which was my original
-point, or am I missing something else ?
-
-> If it is still unclear you might check out Will Deacon's talk on the 
-> topic at https://www.youtube.com/watch?v=6ORn6_35kKo, at about 7:00 in 
-> he explains the whole domains thing, and at 13:30 he explains dmb()/dsb().
-
-Ok, I'll try to watch that when I get a chance.
-
-Cheers,
-Ben.
-
-
+>
+>Thanks,
+>
+>- Juri
+>
+>> This patch fix it by setting rt runtime after all kinds of rational 
+>> checking in the case of !CONFIG_RT_GROUP_SCHED.
+>> 
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>>  kernel/sched/core.c | 30 ++++++++++++++++--------------
+>>  1 file changed, 16 insertions(+), 14 deletions(-)
+>> 
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 2e7578a..355dde3 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -7795,20 +7795,7 @@ static int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
+>>  #else /* !CONFIG_RT_GROUP_SCHED */
+>>  static int sched_rt_global_constraints(void)
+>>  {
+>> -	unsigned long flags;
+>> -	int i, ret = 0;
+>> -
+>> -	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+>> -	for_each_possible_cpu(i) {
+>> -		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+>> -
+>> -		raw_spin_lock(&rt_rq->rt_runtime_lock);
+>> -		rt_rq->rt_runtime = global_rt_runtime();
+>> -		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+>> -	}
+>> -	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+>> -
+>> -	return ret;
+>> +	return 0;
+>>  }
+>>  #endif /* CONFIG_RT_GROUP_SCHED */
+>>  
+>> @@ -7890,6 +7877,21 @@ static int sched_rt_global_validate(void)
+>>  
+>>  static void sched_rt_do_global(void)
+>>  {
+>> +#ifndef CONFIG_RT_GROUP_SCHED
+>> +	unsigned long flags;
+>> +	int i;
+>> +
+>> +	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+>> +	for_each_possible_cpu(i) {
+>> +		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+>> +
+>> +		raw_spin_lock(&rt_rq->rt_runtime_lock);
+>> +		rt_rq->rt_runtime = global_rt_runtime();
+>> +		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+>> +	}
+>> +	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+>> +#endif
+>> +
+>>  	def_rt_bandwidth.rt_runtime = global_rt_runtime();
+>>  	def_rt_bandwidth.rt_period = ns_to_ktime(global_rt_period());
+>>  }
+>> 
