@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbaKRPLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:11:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57226 "EHLO mx2.suse.de"
+	id S1756705AbaKRPLC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:11:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57219 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754951AbaKROJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:37 -0500
+	id S1754943AbaKROJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:36 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 066/206] x86: Reject x32 executables if x32 ABI not supported
-Date: Tue, 18 Nov 2014 15:07:01 +0100
-Message-Id: <19ad5dfd81d7bebf89a9a5c49ab0bc2bc6187ae7.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Richard Genoud <richard.genoud@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 078/206] UBI: add missing kmem_cache_free() in process_pool_aeb error path
+Date: Tue, 18 Nov 2014 15:07:13 +0100
+Message-Id: <c7077ed405a94651d01822ab8390ab1b84bf341a.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,45 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Richard Genoud <richard.genoud@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1 upstream.
+commit 1bf1890e86869032099b539bc83b098be12fc5a7 upstream.
 
-It is currently possible to execve() an x32 executable on an x86_64
-kernel that has only ia32 compat enabled.  However all its syscalls
-will fail, even _exit().  This usually causes it to segfault.
+I ran into this error after a ubiupdatevol, because I forgot to backport
+e9110361a9a4 UBI: fix the volumes tree sorting criteria.
 
-Change the ELF compat architecture check so that x32 executables are
-rejected if we don't support the x32 ABI.
+UBI error: process_pool_aeb: orphaned volume in fastmap pool
+UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
+kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
+[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
+[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
+[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
+[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
+[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
+[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
+[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
+[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
+[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
+UBI: scanning is finished
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Link: http://lkml.kernel.org/r/1410120305.6822.9.camel@decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Freeing the cache in the error path fixes the Slab error.
+
+Tested on at91sam9g35 (3.14.18+fastmap backports)
+
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/elf.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/mtd/ubi/fastmap.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
-index 9c999c1674fa..01f15b227d7e 100644
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -155,8 +155,9 @@ do {						\
- #define elf_check_arch(x)			\
- 	((x)->e_machine == EM_X86_64)
+diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+index f5aa4b02cfa6..85cd77c9cd12 100644
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_device *ubi, struct ubi_attach_info *ai,
+ 		av = tmp_av;
+ 	else {
+ 		ubi_err("orphaned volume in fastmap pool!");
++		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
+ 		return UBI_BAD_FASTMAP;
+ 	}
  
--#define compat_elf_check_arch(x)		\
--	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
-+#define compat_elf_check_arch(x)					\
-+	(elf_check_arch_ia32(x) ||					\
-+	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine == EM_X86_64))
- 
- #if __USER32_DS != __USER_DS
- # error "The following code assumes __USER32_DS == __USER_DS"
 -- 
 2.1.3
 
