@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626AbaKRW6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 17:58:47 -0500
-Received: from 1wt.eu ([62.212.114.60]:53553 "EHLO 1wt.eu"
+	id S932835AbaKRW7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 17:59:45 -0500
+Received: from 1wt.eu ([62.212.114.60]:53557 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932098AbaKRW6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 17:58:46 -0500
-Date: Tue, 18 Nov 2014 23:58:39 +0100
+	id S932149AbaKRW7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 17:59:44 -0500
+Date: Tue, 18 Nov 2014 23:59:38 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: Mariusz Gorski <marius.gorski@gmail.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/9] staging: panel: Make two more module params read-only
-Message-ID: <20141118225839.GO26514@1wt.eu>
-References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com> <1416344174-9155-7-git-send-email-marius.gorski@gmail.com> <20141118212034.GI26514@1wt.eu> <20141118215034.GA10306@firebird>
+Subject: Re: [PATCH 7/9] staging: panel: Refactor LCD init code
+Message-ID: <20141118225938.GP26514@1wt.eu>
+References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com> <1416344174-9155-8-git-send-email-marius.gorski@gmail.com> <20141118212326.GJ26514@1wt.eu> <20141118215108.GD10306@firebird>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141118215034.GA10306@firebird>
+In-Reply-To: <20141118215108.GD10306@firebird>
 User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 10:50:35PM +0100, Mariusz Gorski wrote:
-> On Tue, Nov 18, 2014 at 10:20:34PM +0100, Willy Tarreau wrote:
-> > On Tue, Nov 18, 2014 at 09:56:11PM +0100, Mariusz Gorski wrote:
-> > > Make keypad_type and lcd_type module params read-only.
-> > > This step also starts making it more clear what is
-> > > the precedence of device params coming from different
-> > > sources (device profile, runtime module param values etc).
+On Tue, Nov 18, 2014 at 10:51:08PM +0100, Mariusz Gorski wrote:
+> On Tue, Nov 18, 2014 at 10:23:26PM +0100, Willy Tarreau wrote:
+> > On Tue, Nov 18, 2014 at 09:56:12PM +0100, Mariusz Gorski wrote:
+> > > Rework lcd_init method to make it a little bit more clear about
+> > > the precedence of the params, move LCD geometry and pins layout
+> > > to the LCD struct and thus make the LCD-related module params
+> > > effectively read-only.
 > > > 
 > > > Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
-> > > ---
-> > >  drivers/staging/panel/panel.c | 71 ++++++++++++++++++++++---------------------
-> > >  1 file changed, 37 insertions(+), 34 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> > > index 7f2f5f8..5b4f0a4 100644
-> > > --- a/drivers/staging/panel/panel.c
-> > > +++ b/drivers/staging/panel/panel.c
-> > > @@ -229,6 +229,9 @@ static struct {
-> > >  	bool enabled;
-> > >  } lcd;
-> > >  
-> > > +/* Needed only for init */
-> > > +static int selected_lcd_type = NOT_SET;
-> > > +
-> > >  /* contains the LCD config state */
-> > >  static unsigned long int lcd_flags;
-> > >  /* contains the LCD X offset */
-> > > @@ -1417,7 +1420,7 @@ static void panel_lcd_print(const char *s)
-> > >  /* initialize the LCD driver */
-> > >  static void lcd_init(void)
-> > >  {
-> > > -	switch (lcd_type) {
-> > > +	switch (selected_lcd_type) {
 > > 
-> > (...)
+> > Acked-by: Willy Tarreau <w@1wt.eu>
 > > 
-> > stupid question : why not move that to the lcd struct you just
-> > created instead of creating a new variable ? It would make sense
-> > to me to have lcd.type here just like you did with enabled.
-> > Same for keypad.
+> > I like this refactoring. However I don't know if you got your LCD module
+> > to work or not, but for such important changes you should definitely test
+> > the code, since it's very easy to introduce minor bugs or even to fix a
+> > bug that used to make the whole driver work...
 > > 
 > > Willy
 > >
-> 
-> I get your point here. This var is here only because it's set
-> in init_panel_module() and then used in lcd_init(). So it's needed
-> really only for the init code. It doesn't directly_ describe the 
-> lcd's state, so I decided to keep it out.
+> Yes, I have tested this code with my LCD module and it works
+> as before.
 
-OK but isn't it the same for some of the other variables you moved there ?
-Anyway that's not important, I have nothing against this, it was just a
-question.
+great!
+
+> This is what I've emphasized in the cover letter -
+> - I made sure (and tested), that all lcd and keypad params are
+> set to the same state as before this patch series, and that
+> the current behaviour of the module doesn't change. I've tested
+> all profile/lcd_type combinations in an automated way to catch
+> any edge cases :)
+
+"tested" was not mentionned in the cover letter, hence my asking :-)
 
 Willy
 
