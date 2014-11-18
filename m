@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615AbaKRXEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:04:45 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:42921 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408AbaKRXEn (ORCPT
+	id S932711AbaKRXGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:06:53 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:52706 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716AbaKRXGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:04:43 -0500
+	Tue, 18 Nov 2014 18:06:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3293FFBA@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
- <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
- <20141112103011.GA16807@pd.tnic> <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
- <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
- <20141117185030.GA25157@pd.tnic> <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
- <20141117200354.GB25157@pd.tnic> <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
- <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
- <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F681@ORSMSX114.amr.corp.intel.com>
- <CALCETrXsxJ6eotRJG1tjPD8dkpAd6P2roDm+fj+Yqi36uh3WHA@mail.gmail.com> <3908561D78D1C84285E8C5FCA982C28F3293FFBA@ORSMSX114.amr.corp.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 18 Nov 2014 15:04:21 -0800
-Message-ID: <CALCETrXdfKut2MDi1Z-iS1aJF30Ebfyumh65=QTm4MCihBbv1A@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <546BCC73.3050903@redhat.com>
+References: <20141118172644.26303.37688.stgit@ahduyck-server>
+	<CA+55aFw3ygP8UEF1vidWdjBUEkqXOELCPkpjLMD-X=vXXQEGOQ@mail.gmail.com>
+	<546BCC73.3050903@redhat.com>
+Date: Tue, 18 Nov 2014 15:06:49 -0800
+X-Google-Sender-Auth: Q9TvkuAwBorvTUMcXyzQiCK41l8
+Message-ID: <CA+55aFwHUQv+zBxyN41Y4MDyRXbQ84H8zc01O6O_eg9ZvoqYiQ@mail.gmail.com>
+Subject: Re: [PATCH v4 0/4] Add lightweight memory barriers for coherent
+ memory access
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        donald.c.skidmore@intel.com, matthew.vick@intel.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, nic_swsd@realtek.com,
+        Will Deacon <will.deacon@arm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Tony Luck <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        David Miller <davem@davemloft.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 10:30 AM, Luck, Tony <tony.luck@intel.com> wrote:
->>> The lost cpu is *really* lost.  Warm reset doesn't fix the machine, I usually
->>> have to do a full power cycle.
+On Tue, Nov 18, 2014 at 2:47 PM, Alexander Duyck
+<alexander.h.duyck@redhat.com> wrote:
 >
->> How is it even possible that I did that with a few lines of asm?
->
-> Probably not your directly your fault - some cascade of errors may have occurred.
+> The problem is DMA is a broad brush.  There are multiple cases I can think
+> of where DMA does not represent coherent memory.
 
-I went and read the manual.  Here's a hypothesis:
+.. and I already addressed that, in the thing you even included:
 
-Your test case is presumably doing something that involves setting
-undocumented registers* to program the CPU or memory controller to
-generate a machine check on access to some address.  Presumably this
-is done by broadcasting an SMI and programming the registers in SMM.
+>> about what is actually the important issue. All sane memory is
+>> coherent, after all (and if it isn't, you have other issues than
+>> memory ordering).
 
-Now SMM is rather strange.  The docs list a large set of interrupt
-sources that are disabled on SMM entry, and this list does not include
-#MC.  So presumably #MC is actually left enabled on entry to SMM.
-That means that, unless SMRAM has an interrupt table that has a
-working machine check handler (which seems highly unlikely), then
-there is at least some window in which a #MC delivered in SMM will
-cause some kind of failure.  This could really happen: a broadcast #MC
-could easily race a broadcast SMI and do this.
+The thing is, if the DMA isn't coherent, nobody is going to care about
+the memory barriers anyway. You have bigger issues.
 
-If you crash your SMM code, then I wouldn't be at all surprised if the
-CPU wedges hard enough that even your remote management thing can't
-reset it.
+And your argument is that "dma" is bigger than this issue. *MY*
+argument is that "coherent" is bigger than this issue. There's tons of
+coherent memory that is not about DMA, the same way that there is DMA
+memory that isn't coherent.
 
-* These are probably the registers that are supposed to be documented
-in volume 2 section 4.4.9 of the Xeon E5 1600/2600 datasheet,
-reference 326509-003, but the docs are extremely incomplete.
+See? The two are 100% equivalent. Except "dma" is just three letters,
+and matches "smp" both visually and in use (SMP memory is "coherent"
+too - yes, you can - and crap architectures do - have incoherent
+caches due to virtual aliases etc, but exactly as with DMA, if you
+have incoherent SMP, you have bigger issues than the barriers).
 
---Andy
+And yes, you could call it "coherent_dma_read_memory_barrier()", and
+it would be very descriptive. It would also drive everybody crazy.
 
->
->> Could this be a hardware bug?  Is there some condition that causes #MC
->> delivery to wedge hard enough that even INIT/RESET stops working?  Or
->> possibly some CPU got stuck in SMM -- I have no idea what warm reset
->> does these days.
->
-> I'm not even sure what kind of reset the remote management i/f I used
-> actually applied.
->
->> Here's the patch to improve the timeout messages, but given the degree
->> of wedgedness, I can guess what it'll say:
->>
->> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/paranoid&id=e5cbd9d141bde651ecb20f0b65ad13bcef2468d0
->
-> Heh - I'd already put in some hacky printk()s to do similar. Mine aren't upstream quality, but do print the value of mce_callin/mce_executing
-> as appropriate.  But I got some confusing results - reporter complained that only 142 of 144 had shown up. So two threads missing,
-> maybe means one core went into h/w shutdown.  Need to dig further to see if the missing duo really are from the same core.
->
-> -Tony
+So I argue for "dma_mb()" pairing with "smp_mb()" from a naming
+standpoint. It just *describes* the problem better. Look at the
+drivers, it's very much about the devices doing DMA to memory, and our
+ordering.
 
+To be even more clear: nobody sane cares about the "coherent" part,
+because only insane horrible crap architectures have incoherent memory
+in the first place, and sane people run away screaming from that
+steaming pile of sh*t.
 
+Just look at some of the drivers you actually *use* this in. They are
+for intel hardware, they presumably would never even work in the first
+place without cache-coherent DMA. Why do you think that "coherent" is
+so important?
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+                       Linus
