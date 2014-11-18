@@ -1,61 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169AbaKRDBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:01:10 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:48790 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839AbaKRDBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:01:08 -0500
+	id S1753316AbaKRDDx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:03:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547AbaKRDDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 22:03:52 -0500
+Message-ID: <546AB704.4010904@redhat.com>
+Date: Tue, 18 Nov 2014 11:03:32 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
-References: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
-Date: Mon, 17 Nov 2014 19:01:07 -0800
-X-Google-Sender-Auth: Wbo2vN5y_hyJiaFUqDbRmHcKF4Q
-Message-ID: <CAD=FV=WNtxxTGtT4h4wg_oX5_c9bGRi+WWViqVXYmSWghn_giw@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
- suspend state
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Romain Perier <romain.perier@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        wulf <wulf@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Roy Li <roy.li@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jwerner@chromium.org
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V3 2/2] virtio-net: sanitize buggy features advertised
+ by host
+References: <1416215838-21700-1-git-send-email-jasowang@redhat.com> <1416215838-21700-2-git-send-email-jasowang@redhat.com> <20141117100838.GD20133@redhat.com>
+In-Reply-To: <20141117100838.GD20133@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On 11/17/2014 06:08 PM, Michael S. Tsirkin wrote:
+> On Mon, Nov 17, 2014 at 05:17:18PM +0800, Jason Wang wrote:
+>> This patch tries to detect the possible buggy features advertised by host
+>> and sanitize them. One example is booting virtio-net with only ctrl_vq
+>> disabled, qemu may still advertise many features which depends on it. This
+>> will trigger several BUG()s in virtnet_send_command().
+>>
+>> This patch utilizes the sanitize_features() method, and disables all
+>> features that depends on ctrl_vq if it was not advertised.
+>>
+>> This fixes the crash when booting with ctrl_vq=off using qemu.
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+>> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>
+> So I'm not sure this is useful.
+> The spec says:
+> 	The device MUST NOT offer a feature which requires another feature which
+> 	was not offered.
 
-On Mon, Nov 17, 2014 at 5:21 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> After we implement the bus_suspend/resume, auto suspend id enabled.
-> The root hub will be auto suspend if there is no device connected,
-> we need to resume the root hub when a device connect detect.
+We can't guarantee that hypervisor's implementation are 100% correct.
+> So this is a buggy hypervisor, and I believe we should just fail probe.
+> This can be done without crashing, and is generally a better
+> idea that second-guessing what hypervisor wants us to do.
 >
-> This patch tested on rk3288.
->
-> Signed-off-by: Roy Li <roy.li@rock-chips.com>
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
-> Changes in v2:
-> - add definition for hcd structure
-> - remove check for bus->root_hub
->
->  drivers/usb/dwc2/hcd_intr.c | 5 +++++
->  1 file changed, 5 insertions(+)
 
-I can confirm that in my tests this fixes the problems introduced by
-your v3 patch at <https://patchwork.kernel.org/patch/5266281/>.  On
-rk3288-pinky:
+So we still need something like this patch to detect the wrong
+dependencies. And the features fixing like this is not something new,
+see how net device fix the features through ndo_fix_features().
+>
+>
+>
+> However, assuming that we do want this change:
+> This can be replaced with a table driven design in virtio core, but
+> since you chose to open code it, I would drop table below altogether.
+>
+>
+> Just make it
+> 	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
+> 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
+> 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_VLAN);
+> 		virtio_disable_feature(dev, VIRTIO_NET_F_GUEST_ANNOUNCE);
+> 		virtio_disable_feature(dev, VIRTIO_NET_F_MQ);
+> 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR);
+> 	}
+>
 
-Tested-by: Doug Anderson <dianders@chromium.org>
+This is similar to what I did in v1 and v2. Either are ok for me.
+>
+>
+>> ---
+>> Changes from V1:
+>> - fix the cut-and-paste error
+>> Changes from V2:
+>> - loop through an array of feature bits
+>> - switch to use dev_warn()
+>> ---
+>>  drivers/net/virtio_net.c | 26 ++++++++++++++++++++++++++
+>>  1 file changed, 26 insertions(+)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index ec2a8b4..6fadd8c 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -1948,6 +1948,31 @@ static int virtnet_restore(struct virtio_device *vdev)
+>>  }
+>>  #endif
+>>  
+>> +static void virtnet_sanitize_features(struct virtio_device *dev)
+>> +{
+>> +	unsigned int features_for_ctrl_vq[] = {
+>> +		VIRTIO_NET_F_CTRL_RX,
+>> +		VIRTIO_NET_F_CTRL_VLAN,
+>> +		VIRTIO_NET_F_GUEST_ANNOUNCE,
+>> +		VIRTIO_NET_F_MQ,
+>> +		VIRTIO_NET_F_CTRL_MAC_ADDR
+>> +	};
+> This is not the only dependency: checksums
+> have dependencies too. See virtio 1.0 spec.
+>
+
+I see ,and this kind of check could be added. But we're really safe
+since qemu handle such cases and won't advertise any offload feature is
+csum is not supported.
+>
+>> +	int i;
+>> +
+>> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
+>> +		for (i = 0; i < ARRAY_SIZE(features_for_ctrl_vq); i++) {
+>> +			unsigned int f = features_for_ctrl_vq[i];
+>> +			if (virtio_has_feature(dev, f)) {
+>> +				virtio_disable_feature(dev, f);
+>> +				dev_warn(&dev->dev,
+>> +					 "buggy hyperviser: disable feature "
+>> +					 "0x%x since VIRTIO_NET_F_CTRL_VQ was "
+>> +					 "not advertised.\n", f);
+>> +			}
+>> +		}
+>> +	}
+>> +}
+>> +
+>>  static struct virtio_device_id id_table[] = {
+>>  	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
+>>  	{ 0 },
+>> @@ -1975,6 +2000,7 @@ static struct virtio_driver virtio_net_driver = {
+>>  	.probe =	virtnet_probe,
+>>  	.remove =	virtnet_remove,
+>>  	.config_changed = virtnet_config_changed,
+>> +	.sanitize_features = virtnet_sanitize_features,
+>>  #ifdef CONFIG_PM_SLEEP
+>>  	.freeze =	virtnet_freeze,
+>>  	.restore =	virtnet_restore,
+>> -- 
+>> 1.9.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
