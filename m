@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982AbaKRQMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:12:30 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:53686 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755941AbaKRQM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:12:28 -0500
-Message-ID: <546B6FEA.1090405@lwfinger.net>
-Date: Tue, 18 Nov 2014 10:12:26 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Gheorhios <gheorhios@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: Fabian Frederick <fabf@skynet.be>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Stefano Brivio <stefano.brivio@polimi.it>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Julian Calaby <julian.calaby@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
+	id S1756045AbaKRQNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:13:09 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48804 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754920AbaKRQNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 11:13:07 -0500
+Date: Tue, 18 Nov 2014 17:12:59 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        b43-dev <b43-dev@lists.infradead.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH 1/1 net-next] wireless: remove unnecessary sizeof(u8)
-References: <1415998553-12636-1-git-send-email-fabf@skynet.be>	<CAGRGNgWqjsDu_mQK=_agBWjOequb4b7ffgCuxRH=9d72grDYtQ@mail.gmail.com>	<828430032.148603.1416203787175.open-xchange@webmail.nmp.skynet.be>	<20141117133618.GC3511@tuxdriver.com> <CAFpvzpxYrjR_tSF99iosMGZTAmt=_6o_aA+iYjNhxRGJ9aJ6oA@mail.gmail.com>
-In-Reply-To: <CAFpvzpxYrjR_tSF99iosMGZTAmt=_6o_aA+iYjNhxRGJ9aJ6oA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Message-ID: <20141118161259.GC5238@pd.tnic>
+References: <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic>
+ <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic>
+ <20141113180436.GG14070@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+ <20141117185030.GA25157@pd.tnic>
+ <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
+ <20141117200354.GB25157@pd.tnic>
+ <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 07:34 AM, Gheorhios wrote:
-> Anyone could gently send the link for downloading B43 linux drivers for
-> this procedure?
->
->
->
-> Then transfer it over to your Ubuntu box.
->
-> Now in your Ubuntu Box [computer] please make your way to your Home folder.
->
-> Once you are at your home folder right click on your home folder and make a
-> new folder and call it wireless.
->
-> Now that you have made a new folder called wireless in your home directory,
-> it is time to move the downloaded file into the new folder called wireless.
->
-> Move The Wireless Folder To The Firmware Directory
->
-> sudo cp -r ~/wireless/* /lib/firmware/
->
-> Now let's double check to make sure the download made it to the firmware
-> directory. To do this type this into the terminal:
->
-> ls /lib/firmware
->
-> Ok so now that the download is in the firmware directory we need to go to
-> that directory. To go there open your terminal and type in:
->
-> cd /lib/firmware
->
-> Now that you have changed directories let's double check to make sure you
-> are in the right directory, this next code tells us where we are in the
-> computer file directory. This next code stands for "print working
-> directory".
->
-> pwd
->
-> Are you at /lib/firmware if so good if not go back one step.
->
-> Now that we are in the firmware directory. We have to extract the download,
-> to do this type in:
->
-> sudo -s
->
-> Then enter your password then:
->
-> tar xvf b43-all-fw.tar_.gz
->
-> Now is the firmware extracted properly? check by typing:
->
-> ls /lib/firmware/b43
->
-> or:
->
-> ls /lib/firmware/b43legacy
->
-> Do you see the ucode files? if so then delete the gz file:
->
-> sudo rm *.gz
->
-> Then:
->
-> exit
->
-> Reboot
+On Mon, Nov 17, 2014 at 12:05:59PM -0800, Andy Lutomirski wrote:
+> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/paranoid
+> 
+> I'm not quite ready to send v3.  I want to do two things first:
+> 
+> 1. Consider disabling the stack switch for double_fault.
 
-No, I do not know where that file is found. Even if I knew of such a file, 
-Broadcom has expressly declined to provide that firmware for redistribution. 
-Posting such a file could invite legal action. If someone else has violated 
-Broadcom's directive, I would not facilitate that violation.
+Sounds conservatively nice :)
 
-Rather than doing that, the link at 
-http://wireless.kernel.org/en/users/Drivers/b43#firmwareinstallation shows what 
-to do for Ubuntu installations. Follow those instructions - they refer to a 
-legal way to get the firmware. I would have thought that asking this question on 
-an Ubuntu Forum would have been more productive.
+> 2. Clean up the macros.  I'll validate this by ensuring that the
+> generated code is identical to the current version.
+> 
+> IOW, I don't expect the asm for machine_check to change.
 
-By the way, piggybacking your request on this thread is very bad netiquette. You 
-should not have done a "reply-to".
+Right, so I don't see anything wrong with the patch but entry_64.S is
+nasty so don't take my word for it.
 
-Larry
+I guess handlers should need to do "if (user_mode_vm(regs))" after your
+change now, in order to know what to do.
 
+I'll try to do some error injection here too, on my boxes to see how
+this behaves.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
