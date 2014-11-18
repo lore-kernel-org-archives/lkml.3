@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179AbaKRPHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:07:24 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:51379 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097AbaKRPHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:07:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <546B5D5A.8020304@ti.com>
-References: <20141117190905.4e96294a@canb.auug.org.au>
-	<546B5D5A.8020304@ti.com>
-Date: Tue, 18 Nov 2014 16:07:19 +0100
-Message-ID: <CANq1E4SMLHmezfXSENSQ8xUaXptwA8YKQ9Nne=sDCB0gPkPLmA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the omap_dss2 tree
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Luc Verhaegen <libv@skynet.be>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756564AbaKRPGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:06:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932071AbaKROJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:40 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Thorsten Knabe <linux@thorsten-knabe.de>,
+        Richard Weinberger <richard@nod.at>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 076/206] um: ubd: Fix for processes stuck in D state forever
+Date: Tue, 18 Nov 2014 15:07:11 +0100
+Message-Id: <63550e4be59837925cc1bee167bee83a90ce974c.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Thorsten Knabe <linux@thorsten-knabe.de>
 
-On Tue, Nov 18, 2014 at 3:53 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> Hi,
->
-> Thanks Stephen!
->
-> Hans, have you had a look at this? kbuild test bot also reported this.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-The fix from Stephen should not go to main-line. It breaks simplefb on
-x86 without OF. Imo, linux/clk.h should provide a fallback if OF is
-not defined (like it already does for of_clk_get() and friends).
+===============
 
-Hans, any comments?
+commit 2a2361228c5e6d8c1733f00653481de918598e50 upstream.
 
-Thanks
-David
+Starting with Linux 3.12 processes get stuck in D state forever in
+UserModeLinux under sync heavy workloads. This bug was introduced by
+commit 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport).
+Fix bug by adding a check if FLUSH request was successfully submitted to
+the I/O thread and keeping the FLUSH request on the request queue on
+submission failures.
+
+Fixes: 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport)
+Signed-off-by: Thorsten Knabe <linux@thorsten-knabe.de>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/um/drivers/ubd_kern.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+index 3716e6952554..e8ab93c3e638 100644
+--- a/arch/um/drivers/ubd_kern.c
++++ b/arch/um/drivers/ubd_kern.c
+@@ -1277,7 +1277,7 @@ static void do_ubd_request(struct request_queue *q)
+ 
+ 	while(1){
+ 		struct ubd *dev = q->queuedata;
+-		if(dev->end_sg == 0){
++		if(dev->request == NULL){
+ 			struct request *req = blk_fetch_request(q);
+ 			if(req == NULL)
+ 				return;
+@@ -1299,7 +1299,8 @@ static void do_ubd_request(struct request_queue *q)
+ 				return;
+ 			}
+ 			prepare_flush_request(req, io_req);
+-			submit_request(io_req, dev);
++			if (submit_request(io_req, dev) == false)
++				return;
+ 		}
+ 
+ 		while(dev->start_sg < dev->end_sg){
+-- 
+2.1.3
+
