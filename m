@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336AbaKRAG2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:06:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48996 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaKRAGZ (ORCPT
+	id S1753386AbaKRAGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:06:46 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:50043 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753156AbaKRAFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:06:25 -0500
-Date: Mon, 17 Nov 2014 16:06:14 -0800
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-95290cf13e561b52dceadb9a8b8ee8ff2464b142@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, dave.hansen@linux.intel.com,
-        qiaowei.ren@intel.com, mingo@kernel.org, tglx@linutronix.de,
-        dave@sr71.net
-Reply-To: dave.hansen@linux.intel.com, qiaowei.ren@intel.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, dave@sr71.net
-In-Reply-To: <20141114151823.B358EAD2@viggo.jf.intel.com>
-References: <20141114151823.B358EAD2@viggo.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mpx] x86, mpx: Add MPX to disabled features
-Git-Commit-ID: 95290cf13e561b52dceadb9a8b8ee8ff2464b142
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 17 Nov 2014 19:05:23 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
+References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic> <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+ <20141117185030.GA25157@pd.tnic> <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
+ <20141117200354.GB25157@pd.tnic> <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com> <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 17 Nov 2014 16:05:00 -0800
+Message-ID: <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  95290cf13e561b52dceadb9a8b8ee8ff2464b142
-Gitweb:     http://git.kernel.org/tip/95290cf13e561b52dceadb9a8b8ee8ff2464b142
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Fri, 14 Nov 2014 07:18:23 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 18 Nov 2014 00:58:53 +0100
+On Mon, Nov 17, 2014 at 3:16 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> I still wonder whether the timeout code is the real culprit.  My patch
+>> will slow down entry into do_machine_check by tens of cycles, several
+>> cachelines, and possibly a couple of TLB misses.  Given that the
+>> timing seemed marginal to me, it's possible (albeit not that likely)
+>> that it pushed the time needed for synchronization into the range of
+>> unreliability.
+>
+> I think we have very conservative timeouts.  Here are the significant bits from mce
+>
+> First SPINUNIT ... how many nanoseconds to spin "ndelay(SPINUNIT)"  before pounding on an atomic op to see if we are done:
+> #define SPINUNIT 100    /* 100ns */
+>
+> Initialization of our timeout - comment above this claims we are aiming for "one second"
+>
+>         cfg->monarch_timeout = USEC_PER_SEC;
+>
+> Inside mce_start() - set up our timeout. Math says this will be 1e9
+>
+>         u64 timeout = (u64)mca_cfg.monarch_timeout * NSEC_PER_USEC;
 
-x86, mpx: Add MPX to disabled features
+Aha.  I missed the extra multiplication.
 
-This allows us to use cpu_feature_enabled(X86_FEATURE_MPX) as
-both a runtime and compile-time check.
+>
+> Now the actual loop:
+>         while (atomic_read(&mce_callin) != cpus) {
+>                 if (mce_timed_out(&timeout)) {
+>                         atomic_set(&global_nwo, 0);
+>                         return -1;
+>                 }
+>                 ndelay(SPINUNIT);
+>         }
 
-When CONFIG_X86_INTEL_MPX is disabled,
-cpu_feature_enabled(X86_FEATURE_MPX) will evaluate at
-compile-time to 0. If CONFIG_X86_INTEL_MPX=y, then the cpuid
-flag will be checked at runtime.
+And I missed the ndelay.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: linux-mm@kvack.org
-Cc: linux-mips@linux-mips.org
-Cc: Dave Hansen <dave@sr71.net>
-Link: http://lkml.kernel.org/r/20141114151823.B358EAD2@viggo.jf.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/disabled-features.h | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+*sigh* reading comprehension wasn't so good there.
 
-diff --git a/arch/x86/include/asm/disabled-features.h b/arch/x86/include/asm/disabled-features.h
-index 97534a7..f226df0 100644
---- a/arch/x86/include/asm/disabled-features.h
-+++ b/arch/x86/include/asm/disabled-features.h
-@@ -10,6 +10,12 @@
-  * cpu_feature_enabled().
-  */
- 
-+#ifdef CONFIG_X86_INTEL_MPX
-+# define DISABLE_MPX	0
-+#else
-+# define DISABLE_MPX	(1<<(X86_FEATURE_MPX & 31))
-+#endif
-+
- #ifdef CONFIG_X86_64
- # define DISABLE_VME		(1<<(X86_FEATURE_VME & 31))
- # define DISABLE_K6_MTRR	(1<<(X86_FEATURE_K6_MTRR & 31))
-@@ -34,6 +40,6 @@
- #define DISABLED_MASK6	0
- #define DISABLED_MASK7	0
- #define DISABLED_MASK8	0
--#define DISABLED_MASK9	0
-+#define DISABLED_MASK9	(DISABLE_MPX)
- 
- #endif /* _ASM_X86_DISABLED_FEATURES_H */
+>From a debugging POV, it would be kind of nice to know which of the
+four mce_timed_out calls is reporting the failure.  IIUC, the first
+one would mean that a cpu didn't make it in to do_machine_check at
+all, whereas the second one would mean that a cpu got lost after
+entering do_machine_check.  Also, the second one presumably knows how
+far it got (i.e. mce_executing and order).
+
+It could also be interesting to tweak mce_panic to not actually panic
+the machine but to try to return and stop the test instead.  Then real
+debugging could be possible :)
+
+I still wish I could test this.  The mce-inject code is completely
+useless here, since it calls do_machine_check directly instead of
+going through the MCE code.
+
+>
+> And the inside of mce_timed_out() ... we decrement our 1e9 by 100 for each call:
+>
+>         if ((s64)*t < SPINUNIT) {
+>                 if (mca_cfg.tolerant <= 1)
+>                         mce_panic("Timeout synchronizing machine check over CPUs",
+>                                   NULL, NULL);
+>                 cpu_missing = 1;
+>                 return 1;
+>         }
+>         *t -= SPINUNIT;
+>
+> Not sure what the worst case is for waiting for other processors to show up. Perhaps it is
+> when the other cpu is in some deep C-state and we have to wait for it to power the core
+> back on and resync clock.  Maybe it is when a cpu has just started a "wbinvd" instruction
+> with a cache entirely full of dirty lines that belong on some other processor so have to
+> be written back across QPI (may when QPI links are congested with 10gbit network traffic?
+>
+> But a full second seems like a lot ... you adding a handful of cache and TLB misses shouldn't
+> push us over the edge.
+
+Agreed.
+
+>
+> -Tony
+>
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
