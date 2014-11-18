@@ -1,250 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaKRLAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:00:34 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:49274 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957AbaKRLAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:00:32 -0500
+	id S1754051AbaKRLCm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:02:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753160AbaKRLCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 06:02:41 -0500
+Date: Tue, 18 Nov 2014 13:02:21 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V3 2/2] virtio-net: sanitize buggy features advertised by
+ host
+Message-ID: <20141118110221.GA21664@redhat.com>
+References: <1416215838-21700-1-git-send-email-jasowang@redhat.com>
+ <1416215838-21700-2-git-send-email-jasowang@redhat.com>
+ <20141117100838.GD20133@redhat.com>
+ <546AB704.4010904@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <546B23DD.4080804@gmail.com>
-References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org>
- <1414745252-4895-4-git-send-email-vincent.guittot@linaro.org> <546B23DD.4080804@gmail.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 18 Nov 2014 12:00:11 +0100
-Message-ID: <CAKfTPtBrMURRrv2R4UGGUObOYbVHo0kG3d2U9Dz45t9XYG1Hcg@mail.gmail.com>
-Subject: Re: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
-To: Wanpeng Li <kernellwp@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546AB704.4010904@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 November 2014 11:47, Wanpeng Li <kernellwp@gmail.com> wrote:
-> Hi Vincent,
-> On 10/31/14, 4:47 PM, Vincent Guittot wrote:
->>
->> When a CPU is used to handle a lot of IRQs or some RT tasks, the remaining
->> capacity for CFS tasks can be significantly reduced. Once we detect such
->
->
-> I see the cpu capacity will be reduced if RT tasks are running in
-> scale_rt_capacity(), could you point out where cpu capacity reduced due to
-> IRQs?
+On Tue, Nov 18, 2014 at 11:03:32AM +0800, Jason Wang wrote:
+> On 11/17/2014 06:08 PM, Michael S. Tsirkin wrote:
+> > On Mon, Nov 17, 2014 at 05:17:18PM +0800, Jason Wang wrote:
+> >> This patch tries to detect the possible buggy features advertised by host
+> >> and sanitize them. One example is booting virtio-net with only ctrl_vq
+> >> disabled, qemu may still advertise many features which depends on it. This
+> >> will trigger several BUG()s in virtnet_send_command().
+> >>
+> >> This patch utilizes the sanitize_features() method, and disables all
+> >> features that depends on ctrl_vq if it was not advertised.
+> >>
+> >> This fixes the crash when booting with ctrl_vq=off using qemu.
+> >>
+> >> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> >> Cc: Michael S. Tsirkin <mst@redhat.com>
+> >> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+> >> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >
+> > So I'm not sure this is useful.
+> > The spec says:
+> > 	The device MUST NOT offer a feature which requires another feature which
+> > 	was not offered.
+> 
+> We can't guarantee that hypervisor's implementation are 100% correct.
+> > So this is a buggy hypervisor, and I believe we should just fail probe.
+> > This can be done without crashing, and is generally a better
+> > idea that second-guessing what hypervisor wants us to do.
+> >
+> 
+> So we still need something like this patch to detect the wrong
+> dependencies. And the features fixing like this is not something new,
+> see how net device fix the features through ndo_fix_features().
 
-with CONFIG_IRQ_TIME_ACCOUNTING, the time spent in interrupt context
-will be added in rq->rt_avg
+I think that's different. If linux refuses to work with a broken
+hardware NIC, you can not do anything, and hardware is mass-produced so
+we know many people are affected.
+If linux refuses to work with a misconfigured hypervisor, it's just one
+user who misconfigured it, and hypervisor can be fixed.
 
-Regards,
-Vincent
+So let's not work around bugs at least unless we know that many people
+already use a broken hypervisor, something prevents vendor from fixing it.
 
->
-> Regards,
-> Wanpeng Li
->
->
->> situation by comparing cpu_capacity_orig and cpu_capacity, we trig an idle
->> load balance to check if it's worth moving its tasks on an idle CPU.
->>
->> Once the idle load_balance has selected the busiest CPU, it will look for
->> an
->> active load balance for only two cases :
->> - there is only 1 task on the busiest CPU.
->> - we haven't been able to move a task of the busiest rq.
->>
->> A CPU with a reduced capacity is included in the 1st case, and it's worth
->> to
->> actively migrate its task if the idle CPU has got full capacity. This test
->> has
->> been added in need_active_balance.
->>
->> As a sidenote, this will note generate more spurious ilb because we
->> already
->> trig an ilb if there is more than 1 busy cpu. If this cpu is the only one
->> that
->> has a task, we will trig the ilb once for migrating the task.
->>
->> The nohz_kick_needed function has been cleaned up a bit while adding the
->> new
->> test
->>
->> env.src_cpu and env.src_rq must be set unconditionnally because they are
->> used
->> in need_active_balance which is called even if busiest->nr_running equals
->> 1
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>   kernel/sched/fair.c | 86
->> ++++++++++++++++++++++++++++++++++++++++-------------
->>   1 file changed, 65 insertions(+), 21 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index bd214d2..54468f3 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5889,6 +5889,18 @@ fix_small_capacity(struct sched_domain *sd, struct
->> sched_group *group)
->>   }
->>     /*
->> + * Check whether the capacity of the rq has been noticeably reduced by
->> side
->> + * activity. The imbalance_pct is used for the threshold.
->> + * Return true is the capacity is reduced
->> + */
->> +static inline int
->> +check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
->> +{
->> +       return ((rq->cpu_capacity * sd->imbalance_pct) <
->> +                               (rq->cpu_capacity_orig * 100));
->> +}
->> +
->> +/*
->>    * Group imbalance indicates (and tries to solve) the problem where
->> balancing
->>    * groups is inadequate due to tsk_cpus_allowed() constraints.
->>    *
->> @@ -6562,6 +6574,28 @@ static int need_active_balance(struct lb_env *env)
->>                         return 1;
->>         }
->>   +     /*
->> +        * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
->> +        * It's worth migrating the task if the src_cpu's capacity is
->> reduced
->> +        * because of other sched_class or IRQs whereas capacity stays
->> +        * available on dst_cpu.
->> +        */
->> +       if ((env->idle != CPU_NOT_IDLE) &&
->> +                       (env->src_rq->cfs.h_nr_running == 1)) {
->> +               unsigned long src_eff_capacity, dst_eff_capacity;
->> +
->> +               dst_eff_capacity = 100;
->> +               dst_eff_capacity *= capacity_of(env->dst_cpu);
->> +               dst_eff_capacity *= capacity_orig_of(env->src_cpu);
->> +
->> +               src_eff_capacity = sd->imbalance_pct;
->> +               src_eff_capacity *= capacity_of(env->src_cpu);
->> +               src_eff_capacity *= capacity_orig_of(env->dst_cpu);
->> +
->> +               if (src_eff_capacity < dst_eff_capacity)
->> +                       return 1;
->> +       }
->> +
->>         return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);
->>   }
->>   @@ -6661,6 +6695,9 @@ static int load_balance(int this_cpu, struct rq
->> *this_rq,
->>         schedstat_add(sd, lb_imbalance[idle], env.imbalance);
->>   +     env.src_cpu = busiest->cpu;
->> +       env.src_rq = busiest;
->> +
->>         ld_moved = 0;
->>         if (busiest->nr_running > 1) {
->>                 /*
->> @@ -6670,8 +6707,6 @@ static int load_balance(int this_cpu, struct rq
->> *this_rq,
->>                  * correctly treated as an imbalance.
->>                  */
->>                 env.flags |= LBF_ALL_PINNED;
->> -               env.src_cpu   = busiest->cpu;
->> -               env.src_rq    = busiest;
->>                 env.loop_max  = min(sysctl_sched_nr_migrate,
->> busiest->nr_running);
->>     more_balance:
->> @@ -7371,22 +7406,25 @@ static void nohz_idle_balance(struct rq *this_rq,
->> enum cpu_idle_type idle)
->>     /*
->>    * Current heuristic for kicking the idle load balancer in the presence
->> - * of an idle cpu is the system.
->> + * of an idle cpu in the system.
->>    *   - This rq has more than one task.
->> - *   - At any scheduler domain level, this cpu's scheduler group has
->> multiple
->> - *     busy cpu's exceeding the group's capacity.
->> + *   - This rq has at least one CFS task and the capacity of the CPU is
->> + *     significantly reduced because of RT tasks or IRQs.
->> + *   - At parent of LLC scheduler domain level, this cpu's scheduler
->> group has
->> + *     multiple busy cpu.
->>    *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->>    *     domain span are idle.
->>    */
->> -static inline int nohz_kick_needed(struct rq *rq)
->> +static inline bool nohz_kick_needed(struct rq *rq)
->>   {
->>         unsigned long now = jiffies;
->>         struct sched_domain *sd;
->>         struct sched_group_capacity *sgc;
->>         int nr_busy, cpu = rq->cpu;
->> +       bool kick = false;
->>         if (unlikely(rq->idle_balance))
->> -               return 0;
->> +               return false;
->>            /*
->>         * We may be recently in ticked or tickless idle mode. At the first
->> @@ -7400,38 +7438,44 @@ static inline int nohz_kick_needed(struct rq *rq)
->>          * balancing.
->>          */
->>         if (likely(!atomic_read(&nohz.nr_cpus)))
->> -               return 0;
->> +               return false;
->>         if (time_before(now, nohz.next_balance))
->> -               return 0;
->> +               return false;
->>         if (rq->nr_running >= 2)
->> -               goto need_kick;
->> +               return true;
->>         rcu_read_lock();
->>         sd = rcu_dereference(per_cpu(sd_busy, cpu));
->> -
->>         if (sd) {
->>                 sgc = sd->groups->sgc;
->>                 nr_busy = atomic_read(&sgc->nr_busy_cpus);
->>   -             if (nr_busy > 1)
->> -                       goto need_kick_unlock;
->> +               if (nr_busy > 1) {
->> +                       kick = true;
->> +                       goto unlock;
->> +               }
->> +
->>         }
->>   -     sd = rcu_dereference(per_cpu(sd_asym, cpu));
->> +       sd = rcu_dereference(rq->sd);
->> +       if (sd) {
->> +               if ((rq->cfs.h_nr_running >= 1) &&
->> +                               check_cpu_capacity(rq, sd)) {
->> +                       kick = true;
->> +                       goto unlock;
->> +               }
->> +       }
->>   +     sd = rcu_dereference(per_cpu(sd_asym, cpu));
->>         if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
->>                                   sched_domain_span(sd)) < cpu))
->> -               goto need_kick_unlock;
->> +               kick = true;
->>   +unlock:
->>         rcu_read_unlock();
->> -       return 0;
->> -
->> -need_kick_unlock:
->> -       rcu_read_unlock();
->> -need_kick:
->> -       return 1;
->> +       return kick;
->>   }
->>   #else
->>   static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type
->> idle) { }
->
->
+
+> >
+> >
+> >
+> > However, assuming that we do want this change:
+> > This can be replaced with a table driven design in virtio core, but
+> > since you chose to open code it, I would drop table below altogether.
+> >
+> >
+> > Just make it
+> > 	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
+> > 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
+> > 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_VLAN);
+> > 		virtio_disable_feature(dev, VIRTIO_NET_F_GUEST_ANNOUNCE);
+> > 		virtio_disable_feature(dev, VIRTIO_NET_F_MQ);
+> > 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR);
+> > 	}
+> >
+> 
+> This is similar to what I did in v1 and v2. Either are ok for me.
+> >
+> >
+> >> ---
+> >> Changes from V1:
+> >> - fix the cut-and-paste error
+> >> Changes from V2:
+> >> - loop through an array of feature bits
+> >> - switch to use dev_warn()
+> >> ---
+> >>  drivers/net/virtio_net.c | 26 ++++++++++++++++++++++++++
+> >>  1 file changed, 26 insertions(+)
+> >>
+> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> >> index ec2a8b4..6fadd8c 100644
+> >> --- a/drivers/net/virtio_net.c
+> >> +++ b/drivers/net/virtio_net.c
+> >> @@ -1948,6 +1948,31 @@ static int virtnet_restore(struct virtio_device *vdev)
+> >>  }
+> >>  #endif
+> >>  
+> >> +static void virtnet_sanitize_features(struct virtio_device *dev)
+> >> +{
+> >> +	unsigned int features_for_ctrl_vq[] = {
+> >> +		VIRTIO_NET_F_CTRL_RX,
+> >> +		VIRTIO_NET_F_CTRL_VLAN,
+> >> +		VIRTIO_NET_F_GUEST_ANNOUNCE,
+> >> +		VIRTIO_NET_F_MQ,
+> >> +		VIRTIO_NET_F_CTRL_MAC_ADDR
+> >> +	};
+> > This is not the only dependency: checksums
+> > have dependencies too. See virtio 1.0 spec.
+> >
+> 
+> I see ,and this kind of check could be added. But we're really safe
+> since qemu handle such cases and won't advertise any offload feature is
+> csum is not supported.
+> >
+> >> +	int i;
+> >> +
+> >> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
+> >> +		for (i = 0; i < ARRAY_SIZE(features_for_ctrl_vq); i++) {
+> >> +			unsigned int f = features_for_ctrl_vq[i];
+> >> +			if (virtio_has_feature(dev, f)) {
+> >> +				virtio_disable_feature(dev, f);
+> >> +				dev_warn(&dev->dev,
+> >> +					 "buggy hyperviser: disable feature "
+> >> +					 "0x%x since VIRTIO_NET_F_CTRL_VQ was "
+> >> +					 "not advertised.\n", f);
+> >> +			}
+> >> +		}
+> >> +	}
+> >> +}
+> >> +
+> >>  static struct virtio_device_id id_table[] = {
+> >>  	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
+> >>  	{ 0 },
+> >> @@ -1975,6 +2000,7 @@ static struct virtio_driver virtio_net_driver = {
+> >>  	.probe =	virtnet_probe,
+> >>  	.remove =	virtnet_remove,
+> >>  	.config_changed = virtnet_config_changed,
+> >> +	.sanitize_features = virtnet_sanitize_features,
+> >>  #ifdef CONFIG_PM_SLEEP
+> >>  	.freeze =	virtnet_freeze,
+> >>  	.restore =	virtnet_restore,
+> >> -- 
+> >> 1.9.1
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
