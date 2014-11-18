@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115AbaKRObc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:31:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
+	id S1756132AbaKRObg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:31:36 -0500
+Received: from tex.lwn.net ([70.33.254.29]:37294 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755119AbaKROKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:16 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 171/206] USB: kobil_sct: fix non-atomic allocation in write path
-Date: Tue, 18 Nov 2014 15:08:46 +0100
-Message-Id: <b67eae0838424db8b4bb2f49024922df6792d0bb.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S1756113AbaKRObc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:31:32 -0500
+Date: Tue, 18 Nov 2014 09:31:29 -0500
+From: Jonathan Corbet <corbet@lwn.net>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/12] media: marvell-ccic: use
+ vb2_ops_wait_prepare/finish helper
+Message-ID: <20141118093129.06a5b3d3@lwn.net>
+In-Reply-To: <CA+V-a8uC0en+hnsJEA_kUnJRUy4ha4Tb8OY1_JLRUSwHx-XbJQ@mail.gmail.com>
+References: <1416309821-5426-1-git-send-email-prabhakar.csengg@gmail.com>
+	<1416309821-5426-7-git-send-email-prabhakar.csengg@gmail.com>
+	<20141118080317.73b6b29e@lwn.net>
+	<CA+V-a8uC0en+hnsJEA_kUnJRUy4ha4Tb8OY1_JLRUSwHx-XbJQ@mail.gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
+On Tue, 18 Nov 2014 13:23:04 +0000
+Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> Sorry there is no movement of code to other file.  And I dont see any
+> reason why anybody reading will go haywire its a standard v4l2 thing.
 
-===============
+Whatever, I said I wouldn't stand in the way.
 
-commit 191252837626fca0de694c18bb2aa64c118eda89 upstream.
+> The subject explains it all, If you still want me to elaborate I can
+> post a v2.
 
-Write may be called from interrupt context so make sure to use
-GFP_ATOMIC for all allocations in write.
+Here I totally disagree, though.  You say what you are doing, not why.
+What's strange about the idea that a patch should have a reasonable
+changelog?
 
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/serial/kobil_sct.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/serial/kobil_sct.c b/drivers/usb/serial/kobil_sct.c
-index 78b48c31abf5..efa75b4e51f2 100644
---- a/drivers/usb/serial/kobil_sct.c
-+++ b/drivers/usb/serial/kobil_sct.c
-@@ -336,7 +336,8 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
- 			port->interrupt_out_urb->transfer_buffer_length = length;
- 
- 			priv->cur_pos = priv->cur_pos + length;
--			result = usb_submit_urb(port->interrupt_out_urb, GFP_NOIO);
-+			result = usb_submit_urb(port->interrupt_out_urb,
-+					GFP_ATOMIC);
- 			dev_dbg(&port->dev, "%s - Send write URB returns: %i\n", __func__, result);
- 			todo = priv->filled - priv->cur_pos;
- 
-@@ -351,7 +352,7 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
- 		if (priv->device_type == KOBIL_ADAPTER_B_PRODUCT_ID ||
- 			priv->device_type == KOBIL_ADAPTER_K_PRODUCT_ID) {
- 			result = usb_submit_urb(port->interrupt_in_urb,
--								GFP_NOIO);
-+					GFP_ATOMIC);
- 			dev_dbg(&port->dev, "%s - Send read URB returns: %i\n", __func__, result);
- 		}
- 	}
--- 
-2.1.3
-
+jon
