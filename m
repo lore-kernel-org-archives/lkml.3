@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaKRIjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:39:47 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:34030 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381AbaKRIhl (ORCPT
+	id S1754097AbaKRIjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:39:43 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:54161 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935AbaKRIhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:37:41 -0500
+	Tue, 18 Nov 2014 03:37:43 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz, Tejun Heo <tj@kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: [PATCH 05/10] writeback: move lingering dirty IO lists transfer from bdi_destroy() to wb_exit()
-Date: Tue, 18 Nov 2014 03:37:23 -0500
-Message-Id: <1416299848-22112-6-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 07/10] writeback: separate out include/linux/backing-dev-defs.h
+Date: Tue, 18 Nov 2014 03:37:25 -0500
+Message-Id: <1416299848-22112-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416299848-22112-1-git-send-email-tj@kernel.org>
 References: <1416299848-22112-1-git-send-email-tj@kernel.org>
@@ -21,88 +20,547 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a bdi still has dirty IOs on destruction, bdi_destroy() transfers
-them to the default bdi; however, dirty IO lists belong to wb
-(bdi_writeback) not bdi (backing_dev_info) and after the recent
-changes we now have wb_exit() which handles destruction of a wb.  Move
-the transfer logic to wb_exit().
+With the planned cgroup writeback support, backing-dev related
+declarations will be more widely used across block and cgroup;
+unfortunately, including backing-dev.h from include/linux/blkdev.h
+makes cyclic include dependency quite likely.
 
-This patch is pure reorganization.
+This patch separates out backing-dev-defs.h which only has the
+essential definitions and updates blkdev.h to include it.  c files
+which need access to more backing-dev details now include
+backing-dev.h directly.  This takes backing-dev.h off the common
+include dependency chain making it a lot easier to use it across block
+and cgroup.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/backing-dev.c | 48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+ block/blk-integrity.c            |   1 +
+ block/blk-sysfs.c                |   1 +
+ block/bounce.c                   |   1 +
+ block/genhd.c                    |   1 +
+ drivers/block/drbd/drbd_int.h    |   1 +
+ drivers/block/pktcdvd.c          |   1 +
+ drivers/char/raw.c               |   1 +
+ drivers/md/bcache/request.c      |   1 +
+ drivers/md/dm.h                  |   1 +
+ drivers/md/md.h                  |   1 +
+ drivers/mtd/devices/block2mtd.c  |   1 +
+ fs/block_dev.c                   |   1 +
+ fs/ext4/extents.c                |   1 +
+ fs/ext4/mballoc.c                |   1 +
+ fs/f2fs/segment.h                |   1 +
+ fs/hfs/super.c                   |   1 +
+ fs/hfsplus/super.c               |   1 +
+ fs/nfs/filelayout/filelayout.c   |   1 +
+ fs/reiserfs/super.c              |   1 +
+ fs/ufs/super.c                   |   1 +
+ include/linux/backing-dev-defs.h | 105 +++++++++++++++++++++++++++++++++++++++
+ include/linux/backing-dev.h      | 100 +------------------------------------
+ include/linux/blkdev.h           |   2 +-
+ mm/madvise.c                     |   1 +
+ 24 files changed, 128 insertions(+), 100 deletions(-)
+ create mode 100644 include/linux/backing-dev-defs.h
 
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 4904456..18a4c32 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -456,6 +456,30 @@ static void wb_exit(struct bdi_writeback *wb)
+diff --git a/block/blk-integrity.c b/block/blk-integrity.c
+index 79ffb48..f548b64 100644
+--- a/block/blk-integrity.c
++++ b/block/blk-integrity.c
+@@ -21,6 +21,7 @@
+  */
  
- 	WARN_ON(delayed_work_pending(&wb->dwork));
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/mempool.h>
+ #include <linux/bio.h>
+ #include <linux/scatterlist.h>
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 1fac434..70f4fc6 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -6,6 +6,7 @@
+ #include <linux/module.h>
+ #include <linux/bio.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/blktrace_api.h>
+ #include <linux/blk-mq.h>
  
+diff --git a/block/bounce.c b/block/bounce.c
+index ab21ba2..c616a60 100644
+--- a/block/bounce.c
++++ b/block/bounce.c
+@@ -13,6 +13,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/mempool.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/init.h>
+ #include <linux/hash.h>
+ #include <linux/highmem.h>
+diff --git a/block/genhd.c b/block/genhd.c
+index bd30606..e0ba5ce 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -8,6 +8,7 @@
+ #include <linux/kdev_t.h>
+ #include <linux/kernel.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/init.h>
+ #include <linux/spinlock.h>
+ #include <linux/proc_fs.h>
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index b905e98..efd19c2 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -38,6 +38,7 @@
+ #include <linux/mutex.h>
+ #include <linux/major.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/genhd.h>
+ #include <linux/idr.h>
+ #include <net/tcp.h>
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index 09e628da..4c20c22 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -61,6 +61,7 @@
+ #include <linux/freezer.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/backing-dev.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <scsi/scsi_ioctl.h>
+ #include <scsi/scsi.h>
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index 0102dc7..ca49f11 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -12,6 +12,7 @@
+ #include <linux/fs.h>
+ #include <linux/major.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/module.h>
+ #include <linux/raw.h>
+ #include <linux/capability.h>
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 62e6e98..502b4ed 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -15,6 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/hash.h>
+ #include <linux/random.h>
++#include <linux/backing-dev.h>
+ 
+ #include <trace/events/bcache.h>
+ 
+diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+index 988c7fb..c7d087b 100644
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -14,6 +14,7 @@
+ #include <linux/device-mapper.h>
+ #include <linux/list.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/hdreg.h>
+ #include <linux/completion.h>
+ #include <linux/kobject.h>
+diff --git a/drivers/md/md.h b/drivers/md/md.h
+index 03cec5b..684b7ff 100644
+--- a/drivers/md/md.h
++++ b/drivers/md/md.h
+@@ -16,6 +16,7 @@
+ #define _MD_MD_H
+ 
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/kobject.h>
+ #include <linux/list.h>
+ #include <linux/mm.h>
+diff --git a/drivers/mtd/devices/block2mtd.c b/drivers/mtd/devices/block2mtd.c
+index 66f0405..e22e40f 100644
+--- a/drivers/mtd/devices/block2mtd.c
++++ b/drivers/mtd/devices/block2mtd.c
+@@ -12,6 +12,7 @@
+ #include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/bio.h>
+ #include <linux/pagemap.h>
+ #include <linux/list.h>
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index cc9d411..0bfe096 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -14,6 +14,7 @@
+ #include <linux/device_cgroup.h>
+ #include <linux/highmem.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/module.h>
+ #include <linux/blkpg.h>
+ #include <linux/magic.h>
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 37043d0..38d1c16 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -39,6 +39,7 @@
+ #include <linux/slab.h>
+ #include <asm/uaccess.h>
+ #include <linux/fiemap.h>
++#include <linux/backing-dev.h>
+ #include "ext4_jbd2.h"
+ #include "ext4_extents.h"
+ #include "xattr.h"
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index dbfe15c..4fcc4a0 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -26,6 +26,7 @@
+ #include <linux/log2.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/backing-dev.h>
+ #include <trace/events/ext4.h>
+ 
+ #ifdef CONFIG_EXT4_DEBUG
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 2495bec..230dd48 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -9,6 +9,7 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ 
+ /* constant macro */
+ #define NULL_SEGNO			((unsigned int)(~0))
+diff --git a/fs/hfs/super.c b/fs/hfs/super.c
+index eee7206..55c03b9 100644
+--- a/fs/hfs/super.c
++++ b/fs/hfs/super.c
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/mount.h>
+ #include <linux/init.h>
+ #include <linux/nls.h>
+diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
+index 4cf2024..01b9a23 100644
+--- a/fs/hfsplus/super.c
++++ b/fs/hfsplus/super.c
+@@ -11,6 +11,7 @@
+ #include <linux/init.h>
+ #include <linux/pagemap.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
+ #include <linux/vfs.h>
+diff --git a/fs/nfs/filelayout/filelayout.c b/fs/nfs/filelayout/filelayout.c
+index 0554e3c..4a8d758 100644
+--- a/fs/nfs/filelayout/filelayout.c
++++ b/fs/nfs/filelayout/filelayout.c
+@@ -32,6 +32,7 @@
+ #include <linux/nfs_fs.h>
+ #include <linux/nfs_page.h>
+ #include <linux/module.h>
++#include <linux/backing-dev.h>
+ 
+ #include <linux/sunrpc/metrics.h>
+ 
+diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+index f1376c9..1929dd9 100644
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -21,6 +21,7 @@
+ #include "xattr.h"
+ #include <linux/init.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/buffer_head.h>
+ #include <linux/exportfs.h>
+ #include <linux/quotaops.h>
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index da73801..c6b9466 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -80,6 +80,7 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/init.h>
+ #include <linux/parser.h>
+ #include <linux/buffer_head.h>
+diff --git a/include/linux/backing-dev-defs.h b/include/linux/backing-dev-defs.h
+new file mode 100644
+index 0000000..2874d83
+--- /dev/null
++++ b/include/linux/backing-dev-defs.h
+@@ -0,0 +1,105 @@
++#ifndef __LINUX_BACKING_DEV_DEFS_H
++#define __LINUX_BACKING_DEV_DEFS_H
++
++#include <linux/list.h>
++#include <linux/spinlock.h>
++#include <linux/percpu_counter.h>
++#include <linux/flex_proportions.h>
++#include <linux/timer.h>
++#include <linux/workqueue.h>
++
++struct page;
++struct device;
++struct dentry;
++
++/*
++ * Bits in bdi_writeback.state
++ */
++enum wb_state {
++	WB_async_congested,	/* The async (write) queue is getting full */
++	WB_sync_congested,	/* The sync queue is getting full */
++	WB_registered,		/* bdi_register() was done */
++	WB_writeback_running,	/* Writeback is in progress */
++};
++
++typedef int (congested_fn)(void *, int);
++
++enum wb_stat_item {
++	WB_RECLAIMABLE,
++	WB_WRITEBACK,
++	WB_DIRTIED,
++	WB_WRITTEN,
++	NR_WB_STAT_ITEMS
++};
++
++#define WB_STAT_BATCH (8*(1+ilog2(nr_cpu_ids)))
++
++struct bdi_writeback {
++	struct backing_dev_info *bdi;	/* our parent bdi */
++
++	unsigned long state;		/* Always use atomic bitops on this */
++	unsigned long last_old_flush;	/* last old data flush */
++
++	struct list_head b_dirty;	/* dirty inodes */
++	struct list_head b_io;		/* parked for writeback */
++	struct list_head b_more_io;	/* parked for more writeback */
++	spinlock_t list_lock;		/* protects the b_* lists */
++
++	struct percpu_counter stat[NR_WB_STAT_ITEMS];
++
++	unsigned long bw_time_stamp;	/* last time write bw is updated */
++	unsigned long dirtied_stamp;
++	unsigned long written_stamp;	/* pages written at bw_time_stamp */
++	unsigned long write_bandwidth;	/* the estimated write bandwidth */
++	unsigned long avg_write_bandwidth; /* further smoothed write bw */
++
 +	/*
-+	 * Splice our entries to the default_backing_dev_info.  This
-+	 * condition shouldn't happen.  @wb must be empty at this point and
-+	 * dirty inodes on it might cause other issues.  This workaround is
-+	 * added by ce5f8e779519 ("writeback: splice dirty inode entries to
-+	 * default bdi on bdi_destroy()") without root-causing the issue.
-+	 *
-+	 * http://lkml.kernel.org/g/1253038617-30204-11-git-send-email-jens.axboe@oracle.com
-+	 * http://thread.gmane.org/gmane.linux.file-systems/35341/focus=35350
-+	 *
-+	 * We should probably add WARN_ON() to find out whether it still
-+	 * happens and track it down if so.
++	 * The base dirty throttle rate, re-calculated on every 200ms.
++	 * All the bdi tasks' dirty rate will be curbed under it.
++	 * @dirty_ratelimit tracks the estimated @balanced_dirty_ratelimit
++	 * in small steps and is much more smooth/stable than the latter.
 +	 */
-+	if (wb_has_dirty_io(wb)) {
-+		struct bdi_writeback *dst = &default_backing_dev_info.wb;
++	unsigned long dirty_ratelimit;
++	unsigned long balanced_dirty_ratelimit;
 +
-+		bdi_lock_two(wb, dst);
-+		list_splice(&wb->b_dirty, &dst->b_dirty);
-+		list_splice(&wb->b_io, &dst->b_io);
-+		list_splice(&wb->b_more_io, &dst->b_more_io);
-+		spin_unlock(&wb->list_lock);
-+		spin_unlock(&dst->list_lock);
-+	}
++	struct fprop_local_percpu completions;
++	int dirty_exceeded;
 +
- 	for (i = 0; i < NR_WB_STAT_ITEMS; i++)
- 		percpu_counter_destroy(&wb->stat[i]);
++	spinlock_t work_lock;		/* protects work_list & dwork scheduling */
++	struct list_head work_list;
++	struct delayed_work dwork;	/* work item used for writeback */
++};
++
++struct backing_dev_info {
++	struct list_head bdi_list;
++	unsigned long ra_pages;	/* max readahead in PAGE_CACHE_SIZE units */
++	unsigned int capabilities; /* Device capabilities */
++	congested_fn *congested_fn; /* Function pointer if device is md/dm */
++	void *congested_data;	/* Pointer to aux data for congested func */
++
++	char *name;
++
++	unsigned int min_ratio;
++	unsigned int max_ratio, max_prop_frac;
++
++	struct bdi_writeback wb;  /* default writeback info for this bdi */
++
++	struct device *dev;
++
++	struct timer_list laptop_mode_wb_timer;
++
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *debug_dir;
++	struct dentry *debug_stats;
++#endif
++};
++
++enum {
++	BLK_RW_ASYNC	= 0,
++	BLK_RW_SYNC	= 1,
++};
++
++void clear_bdi_congested(struct backing_dev_info *bdi, int sync);
++void set_bdi_congested(struct backing_dev_info *bdi, int sync);
++
++#endif	/* __LINUX_BACKING_DEV_DEFS_H */
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 6aba0d3..918f5c9 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -8,103 +8,12 @@
+ #ifndef _LINUX_BACKING_DEV_H
+ #define _LINUX_BACKING_DEV_H
  
-@@ -483,30 +507,6 @@ EXPORT_SYMBOL(bdi_init);
+-#include <linux/percpu_counter.h>
+-#include <linux/log2.h>
+-#include <linux/flex_proportions.h>
+ #include <linux/kernel.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+-#include <linux/timer.h>
+ #include <linux/writeback.h>
+-#include <linux/atomic.h>
+-#include <linux/sysctl.h>
+-#include <linux/workqueue.h>
  
- void bdi_destroy(struct backing_dev_info *bdi)
- {
+-struct page;
+-struct device;
+-struct dentry;
+-
+-/*
+- * Bits in bdi_writeback.state
+- */
+-enum wb_state {
+-	WB_async_congested,	/* The async (write) queue is getting full */
+-	WB_sync_congested,	/* The sync queue is getting full */
+-	WB_registered,		/* bdi_register() was done */
+-	WB_writeback_running,	/* Writeback is in progress */
+-};
+-
+-typedef int (congested_fn)(void *, int);
+-
+-enum wb_stat_item {
+-	WB_RECLAIMABLE,
+-	WB_WRITEBACK,
+-	WB_DIRTIED,
+-	WB_WRITTEN,
+-	NR_WB_STAT_ITEMS
+-};
+-
+-#define WB_STAT_BATCH (8*(1+ilog2(nr_cpu_ids)))
+-
+-struct bdi_writeback {
+-	struct backing_dev_info *bdi;	/* our parent bdi */
+-
+-	unsigned long state;		/* Always use atomic bitops on this */
+-	unsigned long last_old_flush;	/* last old data flush */
+-
+-	struct list_head b_dirty;	/* dirty inodes */
+-	struct list_head b_io;		/* parked for writeback */
+-	struct list_head b_more_io;	/* parked for more writeback */
+-	spinlock_t list_lock;		/* protects the b_* lists */
+-
+-	struct percpu_counter stat[NR_WB_STAT_ITEMS];
+-
+-	unsigned long bw_time_stamp;	/* last time write bw is updated */
+-	unsigned long dirtied_stamp;
+-	unsigned long written_stamp;	/* pages written at bw_time_stamp */
+-	unsigned long write_bandwidth;	/* the estimated write bandwidth */
+-	unsigned long avg_write_bandwidth; /* further smoothed write bw */
+-
 -	/*
--	 * Splice our entries to the default_backing_dev_info.  This
--	 * condition shouldn't happen.  @wb must be empty at this point and
--	 * dirty inodes on it might cause other issues.  This workaround is
--	 * added by ce5f8e779519 ("writeback: splice dirty inode entries to
--	 * default bdi on bdi_destroy()") without root-causing the issue.
--	 *
--	 * http://lkml.kernel.org/g/1253038617-30204-11-git-send-email-jens.axboe@oracle.com
--	 * http://thread.gmane.org/gmane.linux.file-systems/35341/focus=35350
--	 *
--	 * We should probably add WARN_ON() to find out whether it still
--	 * happens and track it down if so.
+-	 * The base dirty throttle rate, re-calculated on every 200ms.
+-	 * All the bdi tasks' dirty rate will be curbed under it.
+-	 * @dirty_ratelimit tracks the estimated @balanced_dirty_ratelimit
+-	 * in small steps and is much more smooth/stable than the latter.
 -	 */
--	if (bdi_has_dirty_io(bdi)) {
--		struct bdi_writeback *dst = &default_backing_dev_info.wb;
+-	unsigned long dirty_ratelimit;
+-	unsigned long balanced_dirty_ratelimit;
 -
--		bdi_lock_two(&bdi->wb, dst);
--		list_splice(&bdi->wb.b_dirty, &dst->b_dirty);
--		list_splice(&bdi->wb.b_io, &dst->b_io);
--		list_splice(&bdi->wb.b_more_io, &dst->b_more_io);
--		spin_unlock(&bdi->wb.list_lock);
--		spin_unlock(&dst->list_lock);
--	}
+-	struct fprop_local_percpu completions;
+-	int dirty_exceeded;
 -
- 	bdi_unregister(bdi);
- 	wb_exit(&bdi->wb);
+-	spinlock_t work_lock;		/* protects work_list & dwork scheduling */
+-	struct list_head work_list;
+-	struct delayed_work dwork;	/* work item used for writeback */
+-};
+-
+-struct backing_dev_info {
+-	struct list_head bdi_list;
+-	unsigned long ra_pages;	/* max readahead in PAGE_CACHE_SIZE units */
+-	unsigned int capabilities; /* Device capabilities */
+-	congested_fn *congested_fn; /* Function pointer if device is md/dm */
+-	void *congested_data;	/* Pointer to aux data for congested func */
+-
+-	char *name;
+-
+-	unsigned int min_ratio;
+-	unsigned int max_ratio, max_prop_frac;
+-
+-	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-
+-	struct device *dev;
+-
+-	struct timer_list laptop_mode_wb_timer;
+-
+-#ifdef CONFIG_DEBUG_FS
+-	struct dentry *debug_dir;
+-	struct dentry *debug_stats;
+-#endif
+-};
++#include <linux/backing-dev-defs.h>
+ 
+ int __must_check bdi_init(struct backing_dev_info *bdi);
+ void bdi_destroy(struct backing_dev_info *bdi);
+@@ -291,13 +200,6 @@ static inline int bdi_rw_congested(struct backing_dev_info *bdi)
+ 				  (1 << WB_async_congested));
  }
+ 
+-enum {
+-	BLK_RW_ASYNC	= 0,
+-	BLK_RW_SYNC	= 1,
+-};
+-
+-void clear_bdi_congested(struct backing_dev_info *bdi, int sync);
+-void set_bdi_congested(struct backing_dev_info *bdi, int sync);
+ long congestion_wait(int sync, long timeout);
+ long wait_iff_congested(struct zone *zone, int sync, long timeout);
+ int pdflush_proc_obsolete(struct ctl_table *table, int write,
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 77db6dc..de56016 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -12,7 +12,7 @@
+ #include <linux/timer.h>
+ #include <linux/workqueue.h>
+ #include <linux/pagemap.h>
+-#include <linux/backing-dev.h>
++#include <linux/backing-dev-defs.h>
+ #include <linux/wait.h>
+ #include <linux/mempool.h>
+ #include <linux/bio.h>
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 0938b30..5793169 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -17,6 +17,7 @@
+ #include <linux/fs.h>
+ #include <linux/file.h>
+ #include <linux/blkdev.h>
++#include <linux/backing-dev.h>
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
+ 
 -- 
 1.9.3
 
