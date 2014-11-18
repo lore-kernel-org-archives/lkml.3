@@ -1,131 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448AbaKRO40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:56:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57226 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142AbaKROJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:51 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Frank Schaefer <fschaefer.oss@googlemail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 099/206] media: em28xx-v4l: give back all active video buffers to the vb2 core properly on streaming stop
-Date: Tue, 18 Nov 2014 15:07:34 +0100
-Message-Id: <e59ec6fb45becf48c400c84124df2ff55c38b930.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S933475AbaKRO4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:56:50 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60314 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932141AbaKRO4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:56:47 -0500
+Date: Tue, 18 Nov 2014 14:56:44 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: David Long <dave.long@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/5] arm64: Kprobes with single stepping support
+Message-ID: <20141118145643.GO18842@arm.com>
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
+ <1416292375-29560-2-git-send-email-dave.long@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416292375-29560-2-git-send-email-dave.long@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Schaefer <fschaefer.oss@googlemail.com>
+Hello,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Nov 18, 2014 at 06:32:51AM +0000, David Long wrote:
+> From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+> 
+> Add support for basic kernel probes(kprobes) and jump probes
+> (jprobes) for ARM64.
+> 
+> Kprobes will utilize software breakpoint and single step debug
+> exceptions supported on ARM v8.
+> 
+> software breakpoint is placed at the probe address to trap the
+> kernel execution into kprobe handler.
+> 
+> ARM v8 support single stepping to be enabled while exception return
+> (ERET) with next PC in exception return address (ELR_EL1).
+> kprobe handler prepares a executable memory slot for out-of-line
+> execution with the copy of the original instruction under probe, and
+> enable single stepping from the instruction slot. With this scheme,
+> the instruction is executed with the exact same register context
+> 'except PC' that points to instruction slot.
+> 
+> Debug mask(PSTATE.D) is enabled only when single stepping a recursive
+> kprobes i.e. during kprobes reenter so that probes instruction can be
+> single stepped within the kprobe handler -exception- context.
+> The recursion depth of kprobe is always 2, i.e. upon probe re-entry,
+> any further re-entry is prevented by not calling handlers and the case
+> counted as missed kprobe)
+> 
+> Single stepping from slot has drawback on PC-relative accesses
+> like branching and symbolic literals access as offset from new PC
+> (slot address) may not be ensured to fit in immediate value of
+> opcode, Such instructions needs simulation, so reject
+> probing such instructions.
+> 
+> Instructions generating exceptions or cpu mode change are rejected,
+> and not allowed to insert probe for these instructions.
+> 
+> Instructions using Exclusive Monitor are rejected right too.
+> 
+> System instructions are mostly enabled for stepping, except MSR
+> immediate that update "daif" flags in PSTATE, which are not safe
+> for probing -rejected.
 
-===============
+One thing I noticed looking through this patch is that we're effectively
+reinventing a bunch of the instruction decoding logic that we already have
+in the kernel (introduced since Sandeepa last sent his patch).
 
-commit 627530c32a43283474e9dd3e954519410ffa033a upstream.
+Could you take a look at include/asm/insn.h and kernel/insn.c please, and
+see if you can at least consolidate some of this? Some of it should be easy
+(i.e. reusing masks, using existing #defines to construct BRK encodings),
+but I appreciate there may be places where kprobes needs to add extra bits,
+in which case I'd really like to keep this all together if at all possible.
 
-When a new video frame is started, the driver takes the next video buffer from
-the list of active buffers and moves it to dev->usb_ctl.vid_buf / dev->usb_ctl.vbi_buf
-for further processing.
+We're currently in a position where the module loader, BPF jit, ftrace and
+the proposed alternative patching scheme are all using the same instruction
+manipulation functions, so we should try to continue that trend if we can.
 
-On streaming stop we currently only give back the pending buffers from the list
-but not the ones which are currently processed.
+Thanks,
 
-This causes the following warning from the vb2 core since kernel 3.15:
-
-...
- ------------[ cut here ]------------
- WARNING: CPU: 1 PID: 2284 at drivers/media/v4l2-core/videobuf2-core.c:2115 __vb2_queue_cancel+0xed/0x150 [videobuf2_core]()
- [...]
- Call Trace:
-  [<c0769c46>] dump_stack+0x48/0x69
-  [<c0245b69>] warn_slowpath_common+0x79/0x90
-  [<f925e4ad>] ? __vb2_queue_cancel+0xed/0x150 [videobuf2_core]
-  [<f925e4ad>] ? __vb2_queue_cancel+0xed/0x150 [videobuf2_core]
-  [<c0245bfd>] warn_slowpath_null+0x1d/0x20
-  [<f925e4ad>] __vb2_queue_cancel+0xed/0x150 [videobuf2_core]
-  [<f925fa35>] vb2_internal_streamoff+0x35/0x90 [videobuf2_core]
-  [<f925fac5>] vb2_streamoff+0x35/0x60 [videobuf2_core]
-  [<f925fb27>] vb2_ioctl_streamoff+0x37/0x40 [videobuf2_core]
-  [<f8e45895>] v4l_streamoff+0x15/0x20 [videodev]
-  [<f8e4925d>] __video_do_ioctl+0x23d/0x2d0 [videodev]
-  [<f8e49020>] ? video_ioctl2+0x20/0x20 [videodev]
-  [<f8e48c63>] video_usercopy+0x203/0x5a0 [videodev]
-  [<f8e49020>] ? video_ioctl2+0x20/0x20 [videodev]
-  [<c039d0e7>] ? fsnotify+0x1e7/0x2b0
-  [<f8e49012>] video_ioctl2+0x12/0x20 [videodev]
-  [<f8e49020>] ? video_ioctl2+0x20/0x20 [videodev]
-  [<f8e4461e>] v4l2_ioctl+0xee/0x130 [videodev]
-  [<f8e44530>] ? v4l2_open+0xf0/0xf0 [videodev]
-  [<c0378de2>] do_vfs_ioctl+0x2e2/0x4d0
-  [<c0368eec>] ? vfs_write+0x13c/0x1c0
-  [<c0369a8f>] ? vfs_writev+0x2f/0x50
-  [<c0379028>] SyS_ioctl+0x58/0x80
-  [<c076fff3>] sysenter_do_call+0x12/0x12
- ---[ end trace 5545f934409f13f4 ]---
-...
-
-Many thanks to Hans Verkuil, whose recently added check in the vb2 core unveiled
-this long standing issue and who has investigated it further.
-
-Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/media/usb/em28xx/em28xx-video.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/media/usb/em28xx/em28xx-video.c b/drivers/media/usb/em28xx/em28xx-video.c
-index 9d103344f34a..81b21d937201 100644
---- a/drivers/media/usb/em28xx/em28xx-video.c
-+++ b/drivers/media/usb/em28xx/em28xx-video.c
-@@ -695,13 +695,16 @@ static int em28xx_stop_streaming(struct vb2_queue *vq)
- 	}
- 
- 	spin_lock_irqsave(&dev->slock, flags);
-+	if (dev->usb_ctl.vid_buf != NULL) {
-+		vb2_buffer_done(&dev->usb_ctl.vid_buf->vb, VB2_BUF_STATE_ERROR);
-+		dev->usb_ctl.vid_buf = NULL;
-+	}
- 	while (!list_empty(&vidq->active)) {
- 		struct em28xx_buffer *buf;
- 		buf = list_entry(vidq->active.next, struct em28xx_buffer, list);
- 		list_del(&buf->list);
- 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
- 	}
--	dev->usb_ctl.vid_buf = NULL;
- 	spin_unlock_irqrestore(&dev->slock, flags);
- 
- 	return 0;
-@@ -723,13 +726,16 @@ int em28xx_stop_vbi_streaming(struct vb2_queue *vq)
- 	}
- 
- 	spin_lock_irqsave(&dev->slock, flags);
-+	if (dev->usb_ctl.vbi_buf != NULL) {
-+		vb2_buffer_done(&dev->usb_ctl.vbi_buf->vb, VB2_BUF_STATE_ERROR);
-+		dev->usb_ctl.vbi_buf = NULL;
-+	}
- 	while (!list_empty(&vbiq->active)) {
- 		struct em28xx_buffer *buf;
- 		buf = list_entry(vbiq->active.next, struct em28xx_buffer, list);
- 		list_del(&buf->list);
- 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
- 	}
--	dev->usb_ctl.vbi_buf = NULL;
- 	spin_unlock_irqrestore(&dev->slock, flags);
- 
- 	return 0;
--- 
-2.1.3
-
+Will
