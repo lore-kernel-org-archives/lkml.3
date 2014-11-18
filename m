@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaKRIhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:37:37 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:43462 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060AbaKRIhe (ORCPT
+	id S1754021AbaKRImb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:42:31 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37361 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaKRIhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:37:34 -0500
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz
-Subject: [PATCHSET block/for-next] writeback: prepare for cgroup writeback support
-Date: Tue, 18 Nov 2014 03:37:18 -0500
-Message-Id: <1416299848-22112-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.3
+	Tue, 18 Nov 2014 03:37:35 -0500
+From: Ethan Zhao <ethan.zhao@oracle.com>
+To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
+        corbet@lwn.net
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
+        brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
+Subject: [PATCH 2/3] intel_pstate: allow driver to be built as a module
+Date: Tue, 18 Nov 2014 17:37:01 +0900
+Message-Id: <1416299826-15813-3-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
+References: <1416299826-15813-1-git-send-email-ethan.zhao@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Brian Maly <brian.maly@oracle.com>
 
-This patchset contains the following 10 prepatory patches for cgroup
-writeback support.  None of these patches introduces behavior changes.
+To provide the flexibility of module, allow this driver to
+be configured and built as a module.
 
- 0001-writeback-move-backing_dev_info-state-into-bdi_write.patch
- 0002-writeback-move-backing_dev_info-bdi_stat-into-bdi_wr.patch
- 0003-writeback-move-bandwidth-related-fields-from-backing.patch
- 0004-writeback-move-backing_dev_info-wb_lock-and-worklist.patch
- 0005-writeback-move-lingering-dirty-IO-lists-transfer-fro.patch
- 0006-writeback-reorganize-mm-backing-dev.c.patch
- 0007-writeback-separate-out-include-linux-backing-dev-def.patch
- 0008-writeback-cosmetic-change-in-account_page_dirtied.patch
- 0009-writeback-add-gfp-to-wb_init.patch
- 0010-writeback-move-inode_to_bdi-to-include-linux-backing.patch
+Signed-off-by: Brian Maly <brian.maly@oracle.com>
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+---
+ drivers/cpufreq/Kconfig.x86    | 2 +-
+ drivers/cpufreq/intel_pstate.c | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-0001-0005 move writeback related fields from bdi (backing_dev_info) to
-wb (bdi_writeback).  Currently, one bdi embeds one wb and the
-separation between the two is blurry.  bdi's lock protects wb's fields
-and fields which are closely related are scattered across the two.
-These five patches move all fields which are used during writeback
-into wb.
+diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
+index 89ae88f..94c9e6b 100644
+--- a/drivers/cpufreq/Kconfig.x86
++++ b/drivers/cpufreq/Kconfig.x86
+@@ -3,7 +3,7 @@
+ #
+ 
+ config X86_INTEL_PSTATE
+-       bool "Intel P state control"
++       tristate "Intel P state control"
+        depends on X86
+        help
+           This driver provides a P state for Intel core processors.
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 5498eb0..7c5faea 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -590,7 +590,9 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+ 	if (pstate == cpu->pstate.current_pstate)
+ 		return;
+ 
++#ifndef MODULE
+ 	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
++#endif
+ 
+ 	cpu->pstate.current_pstate = pstate;
+ 
+@@ -705,12 +707,14 @@ static void intel_pstate_timer_func(unsigned long __data)
+ 
+ 	intel_pstate_adjust_busy_pstate(cpu);
+ 
++#ifndef MODULE
+ 	trace_pstate_sample(fp_toint(sample->core_pct_busy),
+ 			fp_toint(intel_pstate_get_scaled_busy(cpu)),
+ 			cpu->pstate.current_pstate,
+ 			sample->mperf,
+ 			sample->aperf,
+ 			sample->freq);
++#endif
+ 
+ 	intel_pstate_set_sample_time(cpu);
+ }
+@@ -1054,6 +1058,7 @@ out:
+ }
+ device_initcall(intel_pstate_init);
+ 
++#ifndef MODULE
+ static int __init intel_pstate_setup(char *str)
+ {
+ 	if (!str)
+@@ -1064,6 +1069,7 @@ static int __init intel_pstate_setup(char *str)
+ 	return 0;
+ }
+ early_param("intel_pstate", intel_pstate_setup);
++#endif
+ 
+ MODULE_AUTHOR("Dirk Brandewie <dirk.j.brandewie@intel.com>");
+ MODULE_DESCRIPTION("'intel_pstate' - P state driver Intel Core processors");
+-- 
+1.8.3.1
 
-0006-0010 are misc prep patches.  They're all rather trivial and each
-is self-explanatory.
-
-This patchset is on top of the current block/for-next eb494facbee2
-("5748c0fce0fd40c87d164d6bee61") and is available in the following git
-branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-cgroup-writeback-wb-prep
-
-diffstat follows.  Thanks.
-
- block/blk-core.c                 |    1 
- block/blk-integrity.c            |    1 
- block/blk-sysfs.c                |    1 
- block/bounce.c                   |    1 
- block/genhd.c                    |    1 
- drivers/block/drbd/drbd_int.h    |    1 
- drivers/block/drbd/drbd_main.c   |   10 -
- drivers/block/pktcdvd.c          |    1 
- drivers/char/raw.c               |    1 
- drivers/md/bcache/request.c      |    1 
- drivers/md/dm.c                  |    2 
- drivers/md/dm.h                  |    1 
- drivers/md/md.h                  |    1 
- drivers/md/raid1.c               |    4 
- drivers/md/raid10.c              |    2 
- drivers/mtd/devices/block2mtd.c  |    1 
- fs/block_dev.c                   |    1 
- fs/ext4/extents.c                |    1 
- fs/ext4/mballoc.c                |    1 
- fs/f2fs/node.c                   |    2 
- fs/f2fs/segment.h                |    1 
- fs/fs-writeback.c                |  121 ++++++---------
- fs/fuse/file.c                   |   12 -
- fs/gfs2/super.c                  |    2 
- fs/hfs/super.c                   |    1 
- fs/hfsplus/super.c               |    1 
- fs/nfs/filelayout/filelayout.c   |    5 
- fs/nfs/write.c                   |   11 -
- fs/reiserfs/super.c              |    1 
- fs/ufs/super.c                   |    1 
- include/linux/backing-dev-defs.h |  105 +++++++++++++
- include/linux/backing-dev.h      |  174 +++++-----------------
- include/linux/blkdev.h           |    2 
- include/linux/writeback.h        |   19 +-
- include/trace/events/writeback.h |    8 -
- mm/backing-dev.c                 |  306 +++++++++++++++++++--------------------
- mm/filemap.c                     |    2 
- mm/madvise.c                     |    1 
- mm/page-writeback.c              |  304 +++++++++++++++++++-------------------
- mm/truncate.c                    |    4 
- 40 files changed, 570 insertions(+), 546 deletions(-)
-
---
-tejun
