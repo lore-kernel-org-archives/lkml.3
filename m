@@ -1,150 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546AbaKRRbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:31:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34629 "EHLO mx1.redhat.com"
+	id S1755391AbaKRRcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:32:18 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:45721 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754523AbaKRRbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:31:39 -0500
-Subject: [PATCH v4 3/4] r8169: Use coherent_rmb() and coherent_wmb() for
- DescOwn checks
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
-        michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Tue, 18 Nov 2014 09:29:25 -0800
-Message-ID: <20141118172924.26303.57.stgit@ahduyck-server>
-In-Reply-To: <20141118172644.26303.37688.stgit@ahduyck-server>
-References: <20141118172644.26303.37688.stgit@ahduyck-server>
-User-Agent: StGit/0.17-dirty
+	id S1754792AbaKRRcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 12:32:14 -0500
+Message-ID: <546B8295.6070407@osg.samsung.com>
+Date: Tue, 18 Nov 2014 10:32:05 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/206] 3.12.33-stable review
+References: <cover.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The r8169 use a pair of wmb() calls when setting up the descriptor rings.
-The first is to synchronize the descriptor data with the descriptor status,
-and the second is to synchronize the descriptor status with the use of the
-MMIO doorbell to notify the device that descriptors are ready.  This can
-come at a heavy price on some systems, and is not really necessary on
-systems such as x86 as a simple barrier() would suffice to order store/store
-accesses.  As such we can replace the first memory barrier with
-coherent_wmb() to reduce the cost for these accesses.
+On 11/18/2014 07:08 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.33 release.
+> There are 206 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Thu Nov 20 15:08:12 CET 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.33-rc1.xz
+> and the diffstat can be found below.
+> 
+> thanks,
+> js
+> 
 
-In addition the r8169 uses a rmb() to prevent compiler optimization in the
-cleanup paths, however by moving the barrier down a few lines and replacing
-it with a coherent_rmb() we should be able to use it to guarantee
-descriptor accesses do not occur until the device has updated the DescOwn
-bit from its end.
+Compiled and booted on my test system. No dmesg regressions.
 
-One last change I made is to move the update of cur_tx in the xmit path to
-after the wmb.  This way we can guarantee the device and all CPUs should
-see the DescOwn update before they see the cur_tx value update.
+-- Shuah
 
-Cc: Realtek linux nic maintainers <nic_swsd@realtek.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
----
- drivers/net/ethernet/realtek/r8169.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index cf154f7..2886c4a 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -6601,6 +6601,9 @@ static inline void rtl8169_mark_to_asic(struct RxDesc *desc, u32 rx_buf_sz)
- {
- 	u32 eor = le32_to_cpu(desc->opts1) & RingEnd;
- 
-+	/* Force memory writes to complete before releasing descriptor */
-+	coherent_wmb();
-+
- 	desc->opts1 = cpu_to_le32(DescOwn | eor | rx_buf_sz);
- }
- 
-@@ -6608,7 +6611,6 @@ static inline void rtl8169_map_to_asic(struct RxDesc *desc, dma_addr_t mapping,
- 				       u32 rx_buf_sz)
- {
- 	desc->addr = cpu_to_le64(mapping);
--	wmb();
- 	rtl8169_mark_to_asic(desc, rx_buf_sz);
- }
- 
-@@ -7077,16 +7079,18 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 
- 	skb_tx_timestamp(skb);
- 
--	wmb();
-+	/* Force memory writes to complete before releasing descriptor */
-+	coherent_wmb();
- 
- 	/* Anti gcc 2.95.3 bugware (sic) */
- 	status = opts[0] | len | (RingEnd * !((entry + 1) % NUM_TX_DESC));
- 	txd->opts1 = cpu_to_le32(status);
- 
--	tp->cur_tx += frags + 1;
--
-+	/* Force all memory writes to complete before notifying device */
- 	wmb();
- 
-+	tp->cur_tx += frags + 1;
-+
- 	RTL_W8(TxPoll, NPQ);
- 
- 	mmiowb();
-@@ -7185,11 +7189,16 @@ static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
- 		struct ring_info *tx_skb = tp->tx_skb + entry;
- 		u32 status;
- 
--		rmb();
- 		status = le32_to_cpu(tp->TxDescArray[entry].opts1);
- 		if (status & DescOwn)
- 			break;
- 
-+		/* This barrier is needed to keep us from reading
-+		 * any other fields out of the Tx descriptor until
-+		 * we know the status of DescOwn
-+		 */
-+		coherent_rmb();
-+
- 		rtl8169_unmap_tx_skb(&tp->pci_dev->dev, tx_skb,
- 				     tp->TxDescArray + entry);
- 		if (status & LastFrag) {
-@@ -7284,11 +7293,16 @@ static int rtl_rx(struct net_device *dev, struct rtl8169_private *tp, u32 budget
- 		struct RxDesc *desc = tp->RxDescArray + entry;
- 		u32 status;
- 
--		rmb();
- 		status = le32_to_cpu(desc->opts1) & tp->opts1_mask;
--
- 		if (status & DescOwn)
- 			break;
-+
-+		/* This barrier is needed to keep us from reading
-+		 * any other fields out of the Rx descriptor until
-+		 * we know the status of DescOwn
-+		 */
-+		coherent_rmb();
-+
- 		if (unlikely(status & RxRES)) {
- 			netif_info(tp, rx_err, dev, "Rx ERROR. status = %08x\n",
- 				   status);
-@@ -7350,7 +7364,6 @@ process_pkt:
- 		}
- release_descriptor:
- 		desc->opts2 = 0;
--		wmb();
- 		rtl8169_mark_to_asic(desc, rx_buf_sz);
- 	}
- 
-
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
