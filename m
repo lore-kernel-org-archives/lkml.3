@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaKRLUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:20:16 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49491 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699AbaKRLUO (ORCPT
+	id S1753966AbaKRLUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:20:25 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63744 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917AbaKRLUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:20:14 -0500
+	Tue, 18 Nov 2014 06:20:19 -0500
 From: "pang.xunlei" <pang.xunlei@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
@@ -14,9 +14,9 @@ Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <john.stultz@linaro.org>,
         Arnd Bergmann <arnd.bergmann@linaro.org>,
         "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [RFC PATCH v3 1/5] time: Provide y2038 safe do_settimeofday() replacement
-Date: Tue, 18 Nov 2014 19:15:16 +0800
-Message-Id: <1416309320-7498-2-git-send-email-pang.xunlei@linaro.org>
+Subject: [RFC PATCH v3 2/5] time: Provide y2038 safe timekeeping_inject_sleeptime() replacement
+Date: Tue, 18 Nov 2014 19:15:17 +0800
+Message-Id: <1416309320-7498-3-git-send-email-pang.xunlei@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1416309320-7498-1-git-send-email-pang.xunlei@linaro.org>
 References: <1416309320-7498-1-git-send-email-pang.xunlei@linaro.org>
@@ -24,123 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel uses 32-bit signed value(time_t) for seconds elapsed
-1970-01-01:00:00:00, thus it will overflow at 2038-01-19 03:14:08
-on 32-bit systems. This is widely known as the y2038 problem.
+As part of addressing "y2038 problem" for in-kernel uses, this
+patch adds timekeeping_inject_sleeptime64() using timespec64.
 
-As part of addressing "y2038 problem" for in-kernel uses, this patch
-adds safe do_settimeofday64() using timespec64.
+After this patch, timekeeping_inject_sleeptime() is deprecated
+and all its call sites will be fixed using the new interface,
+after that it can be removed.
 
-After this patch, do_settimeofday() is deprecated and all its call
-sites will be fixed using do_settimeofday64(), after that it can be
-removed.
+NOTE: timekeeping_inject_sleeptime() is safe actually, but we
+want to eliminate timespec eventually, so comes this patch.
 
 Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 ---
- include/linux/timekeeping.h |   21 ++++++++++++++++++++-
- kernel/time/timekeeping.c   |   19 +++++++++----------
- 2 files changed, 29 insertions(+), 11 deletions(-)
+ include/linux/timekeeping.h |   13 ++++++++++++-
+ kernel/time/timekeeping.c   |   10 ++++------
+ 2 files changed, 16 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
-index 1caa6b0..071ad7e 100644
+index 071ad7e..6d76c65 100644
 --- a/include/linux/timekeeping.h
 +++ b/include/linux/timekeeping.h
-@@ -10,7 +10,7 @@ extern int timekeeping_suspended;
-  * Get and set timeofday
+@@ -201,7 +201,18 @@ static inline void timekeeping_clocktai(struct timespec *ts)
+ /*
+  * RTC specific
   */
- extern void do_gettimeofday(struct timeval *tv);
--extern int do_settimeofday(const struct timespec *tv);
-+extern int do_settimeofday64(const struct timespec64 *ts);
- extern int do_sys_settimeofday(const struct timespec *tv,
- 			       const struct timezone *tz);
- 
-@@ -33,6 +33,14 @@ extern int __getnstimeofday64(struct timespec64 *tv);
- extern void getnstimeofday64(struct timespec64 *tv);
- 
- #if BITS_PER_LONG == 64
+-extern void timekeeping_inject_sleeptime(struct timespec *delta);
++extern void timekeeping_inject_sleeptime64(struct timespec64 *delta);
++
 +/**
-+ * Deprecated. Use do_settimeofday64().
++ * Deprecated. Use timekeeping_inject_sleeptime64().
 + */
-+static inline int do_settimeofday(const struct timespec *ts)
++static inline void timekeeping_inject_sleeptime(struct timespec *delta)
 +{
-+	return do_settimeofday64(ts);
-+}
++	struct timespec64 delta64;
 +
- static inline int __getnstimeofday(struct timespec *ts)
- {
- 	return __getnstimeofday64(ts);
-@@ -54,6 +62,17 @@ static inline void ktime_get_real_ts(struct timespec *ts)
- }
++	delta64 = timespec_to_timespec64(*delta);
++	timekeeping_inject_sleeptime64(&delta64);
++}
  
- #else
-+/**
-+ * Deprecated. Use do_settimeofday64().
-+ */
-+static inline int do_settimeofday(const struct timespec *ts)
-+{
-+	struct timespec64 ts64;
-+
-+	ts64 = timespec_to_timespec64(*ts);
-+	return do_settimeofday64(&ts64);
-+}
-+
- static inline int __getnstimeofday(struct timespec *ts)
- {
- 	struct timespec64 ts64;
+ /*
+  * PPS accessor
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index ec1791f..1d33550 100644
+index 1d33550..d37f775 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -703,18 +703,18 @@ void do_gettimeofday(struct timeval *tv)
- EXPORT_SYMBOL(do_gettimeofday);
+@@ -1067,8 +1067,8 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
+ }
  
  /**
-- * do_settimeofday - Sets the time of day
-- * @tv:		pointer to the timespec variable containing the new time
-+ * do_settimeofday64 - Sets the time of day.
-+ * @ts:     pointer to the timespec64 variable containing the new time
+- * timekeeping_inject_sleeptime - Adds suspend interval to timeekeeping values
+- * @delta: pointer to a timespec delta value
++ * timekeeping_inject_sleeptime64 - Adds suspend interval to timeekeeping values
++ * @delta: pointer to a timespec64 delta value
   *
-  * Sets the time of day to the new time and update NTP and notify hrtimers
+  * This hook is for architectures that cannot support read_persistent_clock
+  * because their RTC/persistent clock is only accessible when irqs are enabled.
+@@ -1076,10 +1076,9 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
+  * This function should only be called by rtc_resume(), and allows
+  * a suspend offset to be injected into the timekeeping values.
   */
--int do_settimeofday(const struct timespec *tv)
-+int do_settimeofday64(const struct timespec64 *ts)
+-void timekeeping_inject_sleeptime(struct timespec *delta)
++void timekeeping_inject_sleeptime64(struct timespec64 *delta)
  {
  	struct timekeeper *tk = &tk_core.timekeeper;
--	struct timespec64 ts_delta, xt, tmp;
-+	struct timespec64 ts_delta, xt;
+-	struct timespec64 tmp;
  	unsigned long flags;
  
--	if (!timespec_valid_strict(tv))
-+	if (!timespec64_valid_strict(ts))
- 		return -EINVAL;
+ 	/*
+@@ -1094,8 +1093,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
  
- 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
-@@ -723,13 +723,12 @@ int do_settimeofday(const struct timespec *tv)
  	timekeeping_forward_now(tk);
  
- 	xt = tk_xtime(tk);
--	ts_delta.tv_sec = tv->tv_sec - xt.tv_sec;
--	ts_delta.tv_nsec = tv->tv_nsec - xt.tv_nsec;
-+	ts_delta.tv_sec = ts->tv_sec - xt.tv_sec;
-+	ts_delta.tv_nsec = ts->tv_nsec - xt.tv_nsec;
- 
- 	tk_set_wall_to_mono(tk, timespec64_sub(tk->wall_to_monotonic, ts_delta));
- 
--	tmp = timespec_to_timespec64(*tv);
--	tk_set_xtime(tk, &tmp);
-+	tk_set_xtime(tk, ts);
+-	tmp = timespec_to_timespec64(*delta);
+-	__timekeeping_inject_sleeptime(tk, &tmp);
++	__timekeeping_inject_sleeptime(tk, delta);
  
  	timekeeping_update(tk, TK_CLEAR_NTP | TK_MIRROR | TK_CLOCK_WAS_SET);
  
-@@ -741,7 +740,7 @@ int do_settimeofday(const struct timespec *tv)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(do_settimeofday);
-+EXPORT_SYMBOL(do_settimeofday64);
- 
- /**
-  * timekeeping_inject_offset - Adds or subtracts from the current time.
 -- 
 1.7.9.5
 
