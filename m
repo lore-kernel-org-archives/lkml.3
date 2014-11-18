@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673AbaKRVR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:17:26 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41263 "EHLO arroyo.ext.ti.com"
+	id S1754933AbaKRVSu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:18:50 -0500
+Received: from 1wt.eu ([62.212.114.60]:53243 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932145AbaKRVRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:17:25 -0500
-Date: Tue, 18 Nov 2014 15:17:34 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: George Cherian <george.cherian@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <bigeasy@linutronix.de>
-Subject: Re: [PATCH] usb: musb: core: Disable the Interrupts till BABBLE is
- fully handled
-Message-ID: <20141118211734.GA19146@saruman>
-Reply-To: <balbi@ti.com>
-References: <1415953486-6000-1-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
+	id S1753867AbaKRVSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 16:18:49 -0500
+Date: Tue, 18 Nov 2014 22:18:44 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Mariusz Gorski <marius.gorski@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] staging: panel: Use a macro for checking module params state
+Message-ID: <20141118211844.GG26514@1wt.eu>
+References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com> <1416344174-9155-5-git-send-email-marius.gorski@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415953486-6000-1-git-send-email-george.cherian@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416344174-9155-5-git-send-email-marius.gorski@gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 18, 2014 at 09:56:09PM +0100, Mariusz Gorski wrote:
+> Avoid values comparison and use a macro instead that checks
+> whether module param has been set by the user to some value
+> at loading time.
+> 
+> Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
+> ---
+>  drivers/staging/panel/panel.c | 88 ++++++++++++++++++++++---------------------
+>  1 file changed, 45 insertions(+), 43 deletions(-)
+> 
+> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+> index 1b4a211..97fc4ca 100644
+> --- a/drivers/staging/panel/panel.c
+> +++ b/drivers/staging/panel/panel.c
+> @@ -135,6 +135,8 @@
+>  
+>  #define NOT_SET			-1
+>  
+> +#define IS_NOT_SET(x)	(x == NOT_SET)
+> +
+>  /* macros to simplify use of the parallel port */
+>  #define r_ctr(x)        (parport_read_control((x)->port))
+>  #define r_dtr(x)        (parport_read_data((x)->port))
+> @@ -1411,29 +1413,29 @@ static void lcd_init(void)
+>  	switch (lcd_type) {
+>  	case LCD_TYPE_OLD:
+>  		/* parallel mode, 8 bits */
+> -		if (lcd_proto < 0)
+> +		if (IS_NOT_SET(lcd_proto))
+>  			lcd_proto = LCD_PROTO_PARALLEL;
+> -		if (lcd_charset < 0)
+> +		if (IS_NOT_SET(lcd_charset))
+>  			lcd_charset = LCD_CHARSET_NORMAL;
+>  		if (lcd_e_pin == PIN_NOT_SET)
+>  			lcd_e_pin = PIN_STROBE;
+>  		if (lcd_rs_pin == PIN_NOT_SET)
+>  			lcd_rs_pin = PIN_AUTOLF;
+>  
+> -		if (lcd_width < 0)
+> +		if (IS_NOT_SET(lcd_width))
+>  			lcd_width = 40;
+(...)
 
-On Fri, Nov 14, 2014 at 01:54:46PM +0530, George Cherian wrote:
-> Disable the MUSB interrupts till MUSB is recovered fully from BABBLE
-> condition. There are chances that we could get multiple interrupts
-> till the time the babble recover work gets scheduled. Sometimes
-> this could even end up in an endless loop making MUSB itself unusable.
->=20
-> Reported-by: Felipe Balbi <balbi@ti.com>=09
-> Signed-off-by: George Cherian <george.cherian@ti.com>
+I'm not convinced at all by the increased readability of this one.
+To me it adds obfuscation since I have to look for the macro definition
+to see how it checks whether the type is set or not.
 
-while this helps the situation it doesn't solve the problem I'm having
-with testusb on BBB when host port is connected to peripheral port on
-the same BBB.
+I think you'd rather simply open-code the macro here and keep the natural
+comparison. The fields were already initialized to the NOT_SET value, better
+check agaist the same value here especially since it matches other tests as
+well. That would give :
 
-I still have:
+-		if (lcd_proto < 0)
++		if (lcd_proto == NOT_SET)
+  			lcd_proto = LCD_PROTO_PARALLEL;
 
-# ./testusb -t 13 -c 10 -s 2048 -a
-unknown speed   /dev/bus/usb/002/004    0
-[  114.811407] usbtest 2-1:3.0: set altsetting to 0 failed, -71
-/dev/bus/usb/002/004 test 13 --> 71 (error 71)
-[  114.862387] CAUTION: musb: Babble Interrupt Occurred
-[  114.868132] usb 2-1: USB disconnect, device number 4
-[  114.961491] musb-hdrc musb-hdrc.1.auto: Restarting MUSB to recover from =
-Babble
-[  115.430829] usb 2-1: new high-speed USB device number 5 using musb-hdrc
-[  115.573471] zero gadget: high-speed config #3: source/sink
-[  115.584014] usbtest 2-1:3.0: Linux gadget zero
-[  115.588682] usbtest 2-1:3.0: high-speed {control in/out bulk-in bulk-out=
-} tests (+alt)
+etc...  To me it's more readable.
 
-I think the driver is mis-detecting Babble. A babble only occurs when
-the device side tries to move data without the host asking for anything.
+Willy
 
---=20
-balbi
-
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUa7duAAoJEIaOsuA1yqREMsgP+gJ17mTmPM05UbeiavT1dOnG
-Dcfr2T6W1V63YxgDS9FrDxpCMiMDDtYGFH6V0qY376FRZoEfQwSA8JZR13pNk2WF
-OmI7LmJ2Spe5w6BbsKWEg/P+6Td+GOjFlFzA1QHGKMPplKZMEmC0IX6CrKktLjD5
-zzxyYraYvyaUO8aqohfkRh9sTPd5oiyR1SAUqYJdddqGefbocZylrv1nMLdLV6dn
-GYVvblhEijbfyRZTK7znyifBcUslbNFIU4DlkYBCdrP8DT9JOwwUJTqoa0mkK2kq
-uM0ZRjyjSmZOdspywA+2ZdkgyBEK4rLGXFDT5P4jePj+3RPF8ByjrXwYYpA2Uczc
-DO98dXXv/W9JcqH/POumzxNkTnn6aD5snGZvmv9+9fzPefMalB7ElIvfhRW9vPgT
-RuLpnUtWjUmSNdW4cD/eTMnFKyncVd3bthN2WdvcW/WcJn4yLz6AO2AyQBEJQ1hc
-nWBRUAsEb0MtrjUtFI/jJx8v94xUgKQokPbEXeRGC4ocPvL3eK/+aa2QqhemRwtx
-oL8S5cGPteXhPVhSsr2tvrF2nbj755FJogMywF6Rv+us1j3annCZXA8yE7rCLUHa
-qYeuHjbdaAE3FsJxrxX9w92mZYsSuWgldmlIQM6gd4s9AEz2QDLm0Uv7zdE8KStp
-JU5AsqZ1Ul+8c4cDnv/2
-=SM5F
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
