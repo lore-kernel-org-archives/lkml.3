@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbaKRAgz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:36:55 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:47739 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873AbaKRAgw (ORCPT
+	id S1753130AbaKRAi5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:38:57 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:39293 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134AbaKRAiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:36:52 -0500
-Date: Mon, 17 Nov 2014 20:01:36 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Cc: Linux PM <linux-pm@vger.kernel.org>,
-        Caesar Wang <caesar.wang@rock-chips.com>, Wei Ni <wni@nvidia.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCHv2 1/1] thermal: of: improve of-thermal sensor
- registration API
-Message-ID: <20141118000133.GA10027@developer>
-References: <1416263769-6578-2-git-send-email-edubezval@gmail.com>
- <1416264255-10083-1-git-send-email-edubezval@gmail.com>
- <546A8EA9.5070001@kapsi.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <546A8EA9.5070001@kapsi.fi>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 17 Nov 2014 19:38:55 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-8d-546a95193952
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Chanwoo Choi'" <cw00.choi@samsung.com>, lee.jones@linaro.org,
+        broonie@kernel.org, mturquette@linaro.org, a.zummo@towertech.it
+Cc: lgirdwood@gmail.com, sameo@linux.intel.com, geunsik.lim@samsung.com,
+        inki.dae@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
+ <1416184980-532-5-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1416184980-532-5-git-send-email-cw00.choi@samsung.com>
+Subject: RE: [PATCH 4/5] rtc: s5m: Add the support for S2MPS13 RTC
+Date: Tue, 18 Nov 2014 09:38:49 +0900
+Message-id: <012401d002c8$04efe610$0ecfb230$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIBIGxsMOaDFXn+jUEunj34K9G6SgJGHyxCm/EcFaA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsWyRsSkRVdyalaIQe8OZYslF6+yW0x9+ITN
+	4vqX56wW84+cY7X4M6GVzWLS/QksFmeb3rBb3P96lNHi25UOJovLu+awWTydcJHN4nQ3qwOP
+	x85Zd9k9Nq3qZPO4c20Pm8e8k4EefVtWMXpMn/eTyePzJrkA9igum5TUnMyy1CJ9uwSujKf/
+	gwsamSr+LjrL3MB4mrGLkZNDQsBE4uyEbnYIW0ziwr31bF2MXBxCAksZJV6+nMgEU/TrxHx2
+	iMR0Ront319DVf1mlPi+dA5YFZuAhsTK3W/BEiICzYwSO6+/YQFxmAW2MUpM+HsKbImQQK1E
+	w+oPQMs5ODgFXCSmTNcHCQsLOEmcnjkPrIRFQFXi/eqrYPfxClhK7J2ykQ3CFpT4MfkeC4jN
+	LKAlsX7ncSYIW15i85q3zBCnKkjsOPsarFdEwEqia/IBVogaEYl9L94xgtwjITCXQ+LM7Hms
+	EMsEJL5NPsQCco+EgKzEpgNQcyQlDq64wTKBUWIWktWzkKyehWT1LCQrFjCyrGIUTS1ILihO
+	Si8y0itOzC0uzUvXS87P3cQITAGn/z3r28F484D1IUYBDkYlHt4d2ZkhQqyJZcWVuYcYTYEu
+	msgsJZqcD0w0eSXxhsZmRhamJqbGRuaWZkrivAlSP4OFBNITS1KzU1MLUovii0pzUosPMTJx
+	cEo1MDqUhxmrdSs1JIqtCH9zrUi3ajVD3gqt7LT5N9O0+worSvmbDPfMZT3Q5r5pnU6tnmb6
+	oQ/K283rpF5VV+Y8SfyXpMz+oex+5/6vXDeK7/iLz21ULC55GbP3m7+e+NlgOcEvHvrc/FWq
+	03Yu42TPb2LhThb/5RV1OKm3zvvdGSvpV+vq7XSVWIozEg21mIuKEwGitrOu/AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQV3JqVkhBlN/yVksuXiV3WLqwyds
+	Fte/PGe1mH/kHKvFnwmtbBaT7k9gsTjb9Ibd4v7Xo4wW3650MFlc3jWHzeLphItsFqe7WR14
+	PHbOusvusWlVJ5vHnWt72DzmnQz06NuyitFj+ryfTB6fN8kFsEc1MNpkpCampBYppOYl56dk
+	5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAB2qpFCWmFMKFApILC5W0rfDNCE0
+	xE3XAqYxQtc3JAiux8gADSSsY8x4+j+4oJGp4u+is8wNjKcZuxg5OSQETCR+nZjPDmGLSVy4
+	t56ti5GLQ0hgOqPE9u+voZzfjBLfl85hAqliE9CQWLn7LVhCRKCZUWLn9TcsIA6zwDZGiQl/
+	T4HNEhKolWhY/QFoBwcHp4CLxJTp+iBhYQEnidMz54GVsAioSrxffRXsDF4BS4m9UzayQdiC
+	Ej8m32MBsZkFtCTW7zzOBGHLS2xe85YZ4lQFiR1nX4P1ighYSXRNPsAKUSMise/FO8YJjEKz
+	kIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOME8k9rBuLLB4hCj
+	AAejEg/vjuzMECHWxLLiytxDjBIczEoivOe6s0KEeFMSK6tSi/Lji0pzUosPMZoCfTqRWUo0
+	OR+Y/PJK4g2NTcyMLI3MLIxMzM2VxHkPtFoHCgmkJ5akZqemFqQWwfQxcXBKNTD6dnV6Nuvz
+	2U8+2Ll9u/Wa/sqmSRpe/9o5J5T9Y/T7bveCMzxbNkTjVcjGQzvuOk3S/CZRePpbR+e3u0cS
+	by3d3XLb7KzxBeXnD9Yu+RJ59VpxcN66w/bi6REdztY5+d4L7V3tJFZYXm1pKk3bfMn6XMei
+	tUXpoR9V7yQu+q2d1G17bheLoYQSS3FGoqEWc1FxIgCxufGCRgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+On Monday, November 17, 2014 9:43 AM, Chanwoo Choi wrote:
+> This patch adds only the compatible string for S2MPS13 clock which is identical
+> with S2MPS14 clock driver.
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+What's the relation of S2MPS14 RTC and clock driver?
 
-Mikko,
+Thanks,
+Sangbeom.
 
-On Tue, Nov 18, 2014 at 02:11:21AM +0200, Mikko Perttunen wrote:
-
-<big cut>
-
-> > diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_s=
-octherm.c
-> > index 70f7e9e..893c39c 100644
-> > --- a/drivers/thermal/tegra_soctherm.c
-> > +++ b/drivers/thermal/tegra_soctherm.c
-> > @@ -317,6 +317,10 @@ static int tegra_thermctl_get_temp(void *data, lon=
-g *out_temp)
-> >   	return 0;
-> >   }
-> >
-> > +static const struct thermal_zone_of_device_ops tegra_of_thermal_ops =
-=3D {
-> > +	.get_trend =3D tegra_thermctl_get_temp,
-> > +};
->=20
-> This should probably read ".get_temp =3D tegra_thermctl_get_temp" instead=
-=20
-> of .get_trend :)
-
-Indeed. Sending in v3.
-
->=20
-> > ...
->=20
-> Cheers,
-> Mikko
->=20
-
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUaoxTAAoJEMLUO4d9pOJWJAAH/2qZa9BRjOyRJafxzuMVJsPq
-n7vOsR67hXnAL0EI44g6GB6EWHT9dKlFz9P/9oQsdnVxwYJJdyX4w956ZW3Lu2XO
-uPc+6hwtkd/iFNs9weunfNG1UzRR/N+F4EDZJZwui8cCqstnhQKwp95LXxCxsj/S
-pcEjKbntS12X24HB759xsfKRE5YFlZ2HzBL5MDOBSR71Y583lya5vwShJQ+uuwRc
-7ZWaHV26Wy0wiBnAbdDwlXSnkLPt/1E4rsFpM/gfGK5H0aXwpDaOzLHbvllIYrqO
-obXnaciSf0t1tODk1U6LrQiN944jbY4iSpaugwRx8g3ndNqPDzHT6E/paexIazs=
-=KoFZ
------END PGP SIGNATURE-----
-
---G4iJoqBmSsgzjUCe--
