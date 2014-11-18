@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248AbaKROK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:10:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56973 "EHLO mx2.suse.de"
+	id S1755793AbaKROTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:19:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57040 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755112AbaKROKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:14 -0500
+	id S932244AbaKROK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:26 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nathaniel Ting <nathaniel.ting@silabs.com>,
-        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 144/206] USB: serial: cp210x: add Silicon Labs 358x VID and PID
-Date: Tue, 18 Nov 2014 15:08:19 +0100
-Message-Id: <088cfbaf0f7d8aa06257bf6b34603af744af66a9.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ray Jui <rjui@broadcom.com>,
+        Mark Brown <broonie@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 155/206] spi: pl022: Fix incorrect dma_unmap_sg
+Date: Tue, 18 Nov 2014 15:08:30 +0100
+Message-Id: <d0ef4acce233803e2113b9e6b2c6f8400e48a9fe.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,37 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nathaniel Ting <nathaniel.ting@silabs.com>
+From: Ray Jui <rjui@broadcom.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 35cc83eab097e5720a9cc0ec12bdc3a726f58381 upstream.
+commit 3ffa6158f002e096d28ede71be4e0ee8ab20baa2 upstream.
 
-Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
-driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
-connect to host PCs over a USB serial link.
+When mapped RX DMA entries are unmapped in an error condition when DMA
+is firstly configured in the driver, the number of TX DMA entries was
+passed in, which is incorrect
 
-Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Ray Jui <rjui@broadcom.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/spi/spi-pl022.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 95b32d0e2b26..34b16b226f74 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -155,6 +155,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
-+	{ USB_DEVICE(0x1BA4, 0x0002) },	/* Silicon Labs 358x factory default */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+index 9c511a954d21..b1a9ba893fab 100644
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -1075,7 +1075,7 @@ err_rxdesc:
+ 		     pl022->sgt_tx.nents, DMA_TO_DEVICE);
+ err_tx_sgmap:
+ 	dma_unmap_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
+-		     pl022->sgt_tx.nents, DMA_FROM_DEVICE);
++		     pl022->sgt_rx.nents, DMA_FROM_DEVICE);
+ err_rx_sgmap:
+ 	sg_free_table(&pl022->sgt_tx);
+ err_alloc_tx_sg:
 -- 
 2.1.3
 
