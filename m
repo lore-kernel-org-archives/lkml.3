@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaKRAWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:22:24 -0500
-Received: from mga11.intel.com ([192.55.52.93]:18060 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064AbaKRAWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:22:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,406,1413270000"; 
-   d="scan'208";a="633516625"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphCABQ+BAIAAEq4AgAAB1ACAAACVgP//kExAABLiaAAAD6th0P//ng0AgACB8wA=
-Date: Tue, 18 Nov 2014 00:22:20 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3293F681@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
- <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
- <20141112103011.GA16807@pd.tnic>
- <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
- <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
- <20141117185030.GA25157@pd.tnic>
- <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
- <20141117200354.GB25157@pd.tnic>
- <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
- <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
- <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
-In-Reply-To: <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753186AbaKRAXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:23:13 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:58720 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaKRAXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 19:23:12 -0500
+Message-ID: <1416270188.18197.16.camel@gmail.com>
+Subject: Re: [PATCH] staging: lustre: mdc: use __FMODE_EXEC macro
+From: Juston <juston.h.li@gmail.com>
+Reply-To: 20141117224616.GI4905@mwanda
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: oleg.drokin@intel.com, devel@driverdev.osuosl.org,
+        andreas.dilger@intel.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, HPDD-discuss@ml01.01.org
+Date: Mon, 17 Nov 2014 16:23:08 -0800
+In-Reply-To: <20141117224616.GI4905@mwanda>
+References: <1416263028-16026-1-git-send-email-juston.h.li@gmail.com>
+	 <20141117224616.GI4905@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.8 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAI0MU01017050
 
-> It could also be interesting to tweak mce_panic to not actually panic
-> the machine but to try to return and stop the test instead.  Then real
-> debugging could be possible :)
+On Tue, 2014-11-18 at 01:46 +0300, Dan Carpenter wrote:
+> On Mon, Nov 17, 2014 at 02:23:48PM -0800, Juston Li wrote:
+> > FMODE_EXEC is type fmode_t but is used in operations
+> > with integers which leads to sparse warnings:
+> > drivers/staging/lustre/lustre/mdc/mdc_lib.c:198:21: warning: restricted fmode_t degrades to integer
+> > drivers/staging/lustre/lustre/mdc/mdc_locks.c:300:49: warning: restricted fmode_t degrades to integer
+> > 
+> > Fix by using __FMODE_EXEC macro defined in fs.h.
+> > 
+> > Note the same warnings occurs with other fmode flags
+> > here but they don't have a corresponding int macro.
+> > 
+> 
+> When are FMODE_EXEC and __FMODE_EXEC not defined?  I think they're
+> always defined.  I don't understand the point of these ifdefs.  I guess
+> maybe they are for compatability with obsolete kernels?
+> 
+> regards,
+> dan carpenter
+> 
+Seems to be the case. Looked at some old commits (2.6.17) and found
+FMODE_EXEC was mainlined to allow lustre to be installed on a vanilla
+kernel.
+Since you pointed it out, if we are dealing with compatability with 
+obselete kernels, __FMODE_EXEC was added later in 2.6.38. Wondering
+if I should address the case where FMODE_EXEC is defined but 
+__FMODE_EXEC isn't since I currently only check __FMODE_EXEC.
 
-The lost cpu is *really* lost.  Warm reset doesn't fix the machine, I usually
-have to do a full power cycle.
+Regards,
+Juston Li
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
