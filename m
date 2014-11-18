@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaKRKdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:33:13 -0500
-Received: from mail-bn1bon0132.outbound.protection.outlook.com ([157.56.111.132]:9366
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753485AbaKRKch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:32:37 -0500
-From: Yuan Yao <yao.yuan@freescale.com>
-To: <wsa@the-dreams.de>, <marex@denx.de>
-CC: <LW@KARO-electronics.de>, <mark.rutland@arm.com>,
-        <fugang.duan@freescale.com>, <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: [PATCH v11 1/3] i2c: imx: Sort include headers alphabetically
-Date: Tue, 18 Nov 2014 18:31:05 +0800
-Message-ID: <1416306667-15673-2-git-send-email-yao.yuan@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-In-Reply-To: <1416306667-15673-1-git-send-email-yao.yuan@freescale.com>
-References: <1416306667-15673-1-git-send-email-yao.yuan@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(46102003)(6806004)(4396001)(87936001)(50226001)(89996001)(88136002)(31966008)(97736003)(87286001)(86362001)(19580405001)(48376002)(104166001)(47776003)(102836001)(20776003)(93916002)(44976005)(68736004)(76176999)(50986999)(50466002)(19580395003)(64706001)(84676001)(92726001)(92566001)(104016003)(106466001)(99396003)(120916001)(95666004)(33646002)(229853001)(105606002)(36756003)(77156002)(62966003)(107046002)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB380;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1754059AbaKRKfB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:35:01 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38012 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851AbaKRKe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 05:34:59 -0500
+Date: Tue, 18 Nov 2014 11:34:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] asm-generic: Add msi.h
+Message-ID: <alpine.DEB.2.11.1411181133080.3909@nanos>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB380;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB380;
-X-Forefront-PRVS: 039975700A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yao.yuan@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB380;
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the inlcude headers aren't sorted alphabetically, then the
-logical choice is to append new ones, however that creates a
-lot of potential for conflicts or duplicates because every change
-will then add new includes in the same location.
+To support MSI irq domains we want a generic data structure for
+allocation, but we need the option to provide an architecture specific
+version of it. So instead of playing #ifdef games in linux/msi.h we
+add a generic header file and let architectures decide whether to
+include it or to provide their own implementation and provide the
+required typedef.
+    
+I know that typedefs are not really nice, but in this case there are no
+forward declarations required and it's the simplest solution.
+    
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 
-Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
----
- drivers/i2c/busses/i2c-imx.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index a7a2a79..d025c47 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -32,22 +32,22 @@
- /** Includes *******************************************************************
- *******************************************************************************/
- 
--#include <linux/init.h>
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/errno.h>
--#include <linux/err.h>
--#include <linux/interrupt.h>
-+#include <linux/clk.h>
- #include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/errno.h>
- #include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
--#include <linux/sched.h>
--#include <linux/platform_device.h>
--#include <linux/clk.h>
--#include <linux/slab.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/platform_data/i2c-imx.h>
-+#include <linux/platform_device.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
- 
- /** Defines ********************************************************************
- *******************************************************************************/
--- 
-2.1.0.27.g96db324
-
+diff --git a/include/asm-generic/msi.h b/include/asm-generic/msi.h
+new file mode 100644
+index 000000000000..61c58d8878ce
+--- /dev/null
++++ b/include/asm-generic/msi.h
+@@ -0,0 +1,32 @@
++#ifndef __ASM_GENERIC_MSI_H
++#define __ASM_GENERIC_MSI_H
++
++#include <linux/types.h>
++
++#ifndef NUM_MSI_ALLOC_SCRATCHPAD_REGS
++# define NUM_MSI_ALLOC_SCRATCHPAD_REGS	2
++#endif
++
++struct msi_desc;
++
++/**
++ * struct msi_alloc_info - Default structure for MSI interrupt allocation.
++ * @desc:	Pointer to msi descriptor
++ * @hwirq:	Associated hw interrupt number in the domain
++ * @scratchpad:	Storage for implementation specific scratch data
++ *
++ * Architectures can provide their own implementation by not including
++ * asm-generic/msi.h into their arch specific header file.
++ */
++typedef struct msi_alloc_info {
++	struct msi_desc			*desc;
++	irq_hw_number_t			hwirq;
++	union {
++		unsigned long		ul;
++		void			*ptr;
++	} scratchpad[NUM_MSI_ALLOC_SCRATCHPAD_REGS];
++} msi_alloc_info_t;
++
++#define GENERIC_MSI_DOMAIN_OPS		1
++
++#endif
