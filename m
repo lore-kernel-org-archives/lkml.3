@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaKRLFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:05:37 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:55467 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439AbaKRLFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:05:35 -0500
+	id S1754142AbaKRLFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:05:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52854 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754041AbaKRLFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 06:05:48 -0500
+Message-ID: <546B27FF.6080702@redhat.com>
+Date: Tue, 18 Nov 2014 11:05:35 +0000
+From: Steven Whitehouse <swhiteho@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Date: Tue, 18 Nov 2014 11:05:32 +0000
-Message-ID: <CANszf4jKHq-WY=+W=D3mFEnhL9=aZJ+-Mx7yp9kw=hYTi+gGFA@mail.gmail.com>
-Subject: mysterious udev segfault
-From: Rogelio Serrano <rogelio.serrano@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: SF Markus Elfring <elfring@users.sourceforge.net>,
+        cluster-devel@redhat.com
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] GFS2: Deletion of unnecessary checks before two function
+ calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <546B20F0.9040202@users.sourceforge.net>
+In-Reply-To: <546B20F0.9040202@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on boot i get this half of the time:
+Hi,
 
-[    6.349867] general protection fault: 0000 [#1] SMP
-[    6.352177] Modules linked in: zram lz4_decompress lz4_compress unix
-[    6.354483] CPU: 1 PID: 112 Comm: udevd Not tainted 3.16.3-grsec-26 #2
-[    6.356583] Hardware name: Matsushita Electric Industrial Co.,Ltd. CF-W7DWM0$
-[    6.356583] task: ffff8800ba589e00 ti: ffff8800ba58a5d8 task.ti: ffff8800ba5$
-[    6.356583] RIP: 0010:[<ffffffff812f9a2c>]  [<ffffffff812f9a2c>] ffffffff812$
-[    6.356583] RSP: 0018:ffffc9001555b9c8  EFLAGS: 00010246
-[    6.356583] RAX: 0000000000000000 RBX: fefefefefefefefe RCX: ffff8800bb6d0a68
-[    6.356583] RDX: ffffc9001555ba18 RSI: 0000000000000036 RDI: fefefefefefefefe
-[    6.356583] RBP: ffffc9001555b9f8 R08: 0000000000015660 R09: ffff8800bb71d890
-[    6.356583] R10: ffff8800b9087000 R11: 000000000000000a R12: 0000000000000036
-[    6.356583] R13: ffffc9001555ba18 R14: ffff8800bb145b58 R15: ffff8800bab10000
-[    6.356583] FS:  000002c2ecf717c0(0000) GS:ffff8800bf500000(0000) knlGS:0000$
-[    6.356583] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[    6.356583] CR2: 000006c2ecf7b000 CR3: 000000000194d000 CR4: 00000000000007f0
-[    6.356583] Stack:
-[    6.356583]  ffffc9001555b9f8 f4b9ed2e7f08ef51 000000000003602f ffff8800bb71$
-[    6.356583]  ffff8800bb6d0c70 0000000000000036 ffffc9001555ba58 ffffffff812f$
-[    6.356583]  ffff8800bb6d0a68 ffff8800bb71d680 ffffc9001555ba58 f4b9ed2e7f08$
-[    6.356583] Call Trace:
-[    6.356583]  [<ffffffff812fa70e>] diRead+0x7e/0x250
-[    6.356583]  [<ffffffff812f06c0>] jfs_iget+0x70/0x190
-[    6.356583]  [<ffffffff812f1034>] jfs_lookup+0xd4/0xe0
-[    6.356583]  [<ffffffff8119e8dc>] ? kmem_cache_alloc+0x3c/0x160
-[    6.356583]  [<ffffffff811cf315>] ? __d_alloc+0x35/0x1d0
-[    6.356583]  [<ffffffff813b643a>] ? __list_add+0x3a/0x80
-[    6.356583]  [<ffffffff811cf7ec>] ? d_alloc+0x6c/0xa0
-[    6.356583]  [<ffffffff811bbe28>] lookup_real+0x58/0xb0
-[    6.356583]  [<ffffffff811c2f33>] do_last.isra.58+0x7a3/0xf70
-[    6.356583]  [<ffffffff811c37d1>] path_openat+0xd1/0x690
-[    6.356583]  [<ffffffff811c4188>] do_filp_open+0x58/0xd0
-[    6.356583]  [<ffffffff811aca43>] do_sys_open+0x143/0x2d0
-[    6.356583]  [<ffffffff811acc13>] SyS_open+0x43/0x70
-[    6.356583]  [<ffffffff8193e3b8>] system_call_fastpath+0x16/0x1b
-[    6.356583] Code: 48 89 e5 48 83 ec 30 65 48 8b 04 25 28 00 00 00 48 89 45 d$
-[    6.356583] RIP  [<ffffffff812f9a2c>] ffffffff812f9a2c
-[    6.356583]  RSP <ffffc9001555b9c8>
-[    6.380024] general protection fault: 0000 [#2]
-[    6.443540] ---[ end trace 32a35fdec5a04e9e ]---
+Now in the GFS2 -nmw git tree. Thanks,
 
+Steve.
 
-what are we seeing here? a jfs bug?
+On 18/11/14 10:35, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 18 Nov 2014 11:31:23 +0100
+>
+> The functions iput() and put_pid() test whether their argument is NULL
+> and then return immediately. Thus the test around the call is not needed.
+>
+> This issue was detected by using the Coccinelle software.
+>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>   fs/gfs2/glock.c      | 3 +--
+>   fs/gfs2/ops_fstype.c | 3 +--
+>   2 files changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+> index 7f513b1..f4aa085 100644
+> --- a/fs/gfs2/glock.c
+> +++ b/fs/gfs2/glock.c
+> @@ -836,8 +836,7 @@ void gfs2_holder_reinit(unsigned int state, unsigned flags, struct gfs2_holder *
+>   	gh->gh_flags = flags;
+>   	gh->gh_iflags = 0;
+>   	gh->gh_ip = (unsigned long)__builtin_return_address(0);
+> -	if (gh->gh_owner_pid)
+> -		put_pid(gh->gh_owner_pid);
+> +	put_pid(gh->gh_owner_pid);
+>   	gh->gh_owner_pid = get_pid(task_pid(current));
+>   }
+>   
+> diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+> index d3eae24..272ff81 100644
+> --- a/fs/gfs2/ops_fstype.c
+> +++ b/fs/gfs2/ops_fstype.c
+> @@ -918,8 +918,7 @@ fail_qc_i:
+>   fail_ut_i:
+>   	iput(sdp->sd_sc_inode);
+>   fail:
+> -	if (pn)
+> -		iput(pn);
+> +	iput(pn);
+>   	return error;
+>   }
+>   
+
