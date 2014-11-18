@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190AbaKRUjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:39:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47436 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932426AbaKRUjF (ORCPT
+	id S932490AbaKRUkC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:40:02 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:56651 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076AbaKRUj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:39:05 -0500
-Message-ID: <546BAE64.7030406@pengutronix.de>
-Date: Tue, 18 Nov 2014 21:39:00 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+	Tue, 18 Nov 2014 15:39:59 -0500
+Date: Tue, 18 Nov 2014 15:39:53 -0500 (EST)
+Message-Id: <20141118.153953.1397340325201477025.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: mingo@kernel.org, luto@amacapital.net, dborkman@redhat.com,
+        hannes@stressinduktion.org, edumazet@google.com,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] net: can: remove unused variable
-References: <1416318427-28676-1-git-send-email-sudipm.mukherjee@gmail.com>
-In-Reply-To: <1416318427-28676-1-git-send-email-sudipm.mukherjee@gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="2SIFd2A4enKJhnqeVUJotQIuriOILaqj9"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net-next 0/7] implementation of eBPF maps
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
+References: <1415929010-9361-1-git-send-email-ast@plumgrid.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 18 Nov 2014 12:39:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---2SIFd2A4enKJhnqeVUJotQIuriOILaqj9
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Thu, 13 Nov 2014 17:36:43 -0800
 
-On 11/18/2014 02:47 PM, Sudip Mukherjee wrote:
-> these variable were only assigned some values, but then never
-> reused again.
-> so they are safe to be removed.
+> v1->v2:
+> renamed flags for MAP_UPDATE_ELEM command to be more concise,
+> clarified commit logs and improved comments in patches 1,3,7
+> per discussions with Daniel
+>  
+> Old v1 cover:
+> 
+> this set of patches adds implementation of HASH and ARRAY types of eBPF maps
+> which were described in manpage in commit b4fc1a460f30("Merge branch 'bpf-next'")
+> 
+> The difference vs previous version of these patches from August:
+> - added 'flags' attribute to BPF_MAP_UPDATE_ELEM
+> - in HASH type implementation removed per-map kmem_cache.
+>   I was doing kmem_cache_create() for every map to enable selective slub
+>   debugging to check for overflows and leaks. Now it's not needed, so just
+>   use normal kmalloc() for map elements.
+> - added ARRAY type which was mentioned in manpage, but wasn't public yet
+> - added map testsuite and removed temporary bits from test_stubs
+> 
+> Note, eBPF programs cannot be attached to events yet.
+> It will come in the next set.
 
-Thanks, I've applied both patches.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---2SIFd2A4enKJhnqeVUJotQIuriOILaqj9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUa65kAAoJECte4hHFiupU4k0P/iJTMIH/d2Shj0PibwHfTbz/
-oz5DalefJNoxkaMcmbpOMHRn27KwJijCbn+G5Dgy5HA7kKp1Y2fkITqjlqlwS5AE
-z5jH4zXDW4IzzsloZhy1XSLzVW56UIh1H8lcd2fyLNn8Qa+QQ25/QxRTLtokKXXx
-TBwrK03yjt3R9Mj1pvaoc7yUSYxLChjvoYl9i9bVh9xEeQLj3wBP0KdJmjxWnd1Z
-Sq6AmuZXrIi2crNeBoQCCJZwYEPr60UCDKFpltjHjcWk3eZKHNE4kkEj2jef39dn
-jBmclYsPh5UINByZK4Xu+nDo0cFioMXyd7CcjghRfqYOfrueWOsnDT99UrWpd5XR
-2TDHSOF0qFxN09+RdPBHe70e0ONfiTJHIQvBNEG3AVyFJxrkFqAfDZYzTVmB4re4
-xe8L4S0U+yyuOmwadrHHnPpJXHazABBmv9Va2uFOU2bigSnWWLU82rlHFLgyqlse
-qxhve57jq/t2VR01q/5HjbUQvuJ9VL1FJPo5lt9r9aA4GufZ1ZLRnKnFYe0G4LJ1
-xpo43iWuuxt6xOYl8WXCmQOc7mvmuFsKAPOkw+ojO8uOq5WewuTgEbNpJjbDE9Pw
-Eq6xYsCs9Dc643wlSxS7JAY0/VvItDeXwAWWCSaL58zIQOIUFleOxodFrTsKv4Cx
-Xb8jeYEoQiPVB4snH/2t
-=NaXV
------END PGP SIGNATURE-----
-
---2SIFd2A4enKJhnqeVUJotQIuriOILaqj9--
+Series applied, thanks Alexei.
