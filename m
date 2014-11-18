@@ -1,113 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138AbaKRQ6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:58:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33177 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754940AbaKRQ6C (ORCPT
+	id S1753748AbaKRRAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:00:12 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:49491 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160AbaKRRAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:58:02 -0500
-Date: Tue, 18 Nov 2014 08:58:00 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Hung <hpeter@gmail.com>
-Cc: jslaby@suse.cz, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hung <hpeter+linux_kernel@gmail.com>
-Subject: Re: [PATCH] Fix IO address calculation with Multi-Fintek PCI-to-UART
- Product
-Message-ID: <20141118165800.GA3708@kroah.com>
-References: <1416304088-6049-1-git-send-email-hpeter+linux_kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416304088-6049-1-git-send-email-hpeter+linux_kernel@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Nov 2014 12:00:10 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3] of/base: Fix PowerPC address parsing hack
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, linuxppc-dev <linuxppc-dev@ozlabs.org>
+In-Reply-To: <1415948103.666.47.camel@kernel.crashing.org>
+References: <1415771461.5124.33.camel@kernel.crashing.org>
+	<20141113091036.4e9ec43d@canb.auug.org.au>
+	<1415833725.5124.53.camel@kernel.crashing.org>
+	<1415839522.5124.58.camel@kernel.crashing.org>
+	<CACxGe6s0CXL2oRKCLhzzycOKWJStxdZsc1pn_X8fLuAqCguBMA@mail.gmail.com>
+	<1415883227.666.6.camel@kernel.crashing.org>
+	<1415948103.666.47.camel@kernel.crashing.org>
+Date: Tue, 18 Nov 2014 16:52:38 +0000
+Message-Id: <20141118165238.3C4FEC40966@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 05:48:08PM +0800, Peter Hung wrote:
-> Signed-off-by: Peter Hung <hpeter+linux_kernel@gmail.com>
+On Fri, 14 Nov 2014 17:55:03 +1100
+, Benjamin Herrenschmidt <benh@kernel.crashing.org>
+ wrote:
+> We have a historical hack that treats missing ranges properties as the
+> equivalent of an empty one. This is needed for ancient PowerMac "bad"
+> device-trees, and shouldn't be enabled for any other PowerPC platform,
+> otherwise we get some nasty layout of devices in sysfs or even
+> duplication when a set of otherwise identically named devices is
+> created multiple times under a different parent node with no ranges
+> property.
+> 
+> This fix is needed for the PowerNV i2c busses to be exposed properly
+> and will fix a number of other embedded cases.
+> 
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: <stable@vger.kernel.org>
 
-We need some kind of information in the body of the changelog here.
+Acked-by: Grant Likely <grant.likely@linaro.org>
+
+Rob will pick up this patch and send it to Linus in his fixups tree for
+v3.18
+
+g.
 
 > ---
->  drivers/tty/serial/8250/8250_pci.c | 37 ++++++++++++++++++++++++-------------
->  1 file changed, 24 insertions(+), 13 deletions(-)
 > 
-> diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-> index 0468e15..255bc56 100644
-> --- a/drivers/tty/serial/8250/8250_pci.c
-> +++ b/drivers/tty/serial/8250/8250_pci.c
-> @@ -1551,28 +1551,31 @@ static int pci_fintek_setup(struct serial_private *priv,
->  {
->  	struct pci_dev *pdev = priv->dev;
->  	unsigned long base;
-> -	unsigned long iobase;
-> +	unsigned long iobase = 0;
->  	unsigned long ciobase = 0;
->  	u8 config_base;
-> +	u32 bar_data[3];
-> +	
+> V2: Make it less horrendously ugly
+> 
+> V3: use IS_ENABLED()
+> 
+>  drivers/of/address.c | 19 ++++++++++++++++---
+>  1 file changed, 16 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index e371825..42e416a 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -403,6 +403,21 @@ static struct of_bus *of_match_bus(struct device_node *np)
+>  	return NULL;
+>  }
 >  
-
-_ALWAYS_ run your patches through checkpatch.pl and fix up the issues it
-reports so that a grumpy maintainer doesn't reject your patch for
-obvious issues :(
-
-
-
->  	/*
->  	 * We are supposed to be able to read these from the PCI config space,
->  	 * but the values there don't seem to match what we need to use, so
->  	 * just use these hard-coded values for now, as they are correct.
+> +static int of_empty_ranges_quirk(void)
+> +{
+> +	if (IS_ENABLED(CONFIG_PPC)) {
+> +		/* To save cycles, we cache the result */
+> +		static int quirk_state = -1;
+> +
+> +		if (quirk_state < 0)
+> +			quirk_state =
+> +				of_machine_is_compatible("Power Macintosh") ||
+> +				of_machine_is_compatible("MacRISC");
+> +		return quirk_state;
+> +	}
+> +	return false;
+> +}
+> +
+>  static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+>  			    struct of_bus *pbus, __be32 *addr,
+>  			    int na, int ns, int pna, const char *rprop)
+> @@ -428,12 +443,10 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+>  	 * This code is only enabled on powerpc. --gcl
 >  	 */
-> +
->  	switch (idx) {
-> -	case 0: iobase = 0xe000; config_base = 0x40; break;
-> -	case 1: iobase = 0xe008; config_base = 0x48; break;
-> -	case 2: iobase = 0xe010; config_base = 0x50; break;
-> -	case 3: iobase = 0xe018; config_base = 0x58; break;
-> -	case 4: iobase = 0xe020; config_base = 0x60; break;
-> -	case 5: iobase = 0xe028; config_base = 0x68; break;
-> -	case 6: iobase = 0xe030; config_base = 0x70; break;
-> -	case 7: iobase = 0xe038; config_base = 0x78; break;
-> -	case 8: iobase = 0xe040; config_base = 0x80; break;
-> -	case 9: iobase = 0xe048; config_base = 0x88; break;
-> -	case 10: iobase = 0xe050; config_base = 0x90; break;
-> -	case 11: iobase = 0xe058; config_base = 0x98; break;
-> +	case 0: config_base = 0x40; break;
-> +	case 1: config_base = 0x48; break;
-> +	case 2: config_base = 0x50; break;
-> +	case 3: config_base = 0x58; break;
-> +	case 4: config_base = 0x60; break;
-> +	case 5: config_base = 0x68; break;
-> +	case 6: config_base = 0x70; break;
-> +	case 7: config_base = 0x78; break;
-> +	case 8: config_base = 0x80; break;
-> +	case 9: config_base = 0x88; break;
-> +	case 10: config_base = 0x90; break;
-> +	case 11: config_base = 0x98; break;
->  	default:
->  		/* Unknown number of ports, get out of here */
->  		return -EINVAL;
-> @@ -1583,9 +1586,17 @@ static int pci_fintek_setup(struct serial_private *priv,
->  		ciobase = (int)(base + (0x8 * idx));
+>  	ranges = of_get_property(parent, rprop, &rlen);
+> -#if !defined(CONFIG_PPC)
+> -	if (ranges == NULL) {
+> +	if (ranges == NULL && !of_empty_ranges_quirk()) {
+>  		pr_err("OF: no ranges; cannot translate\n");
+>  		return 1;
 >  	}
->  
-> +	pci_read_config_dword(pdev, 0x24, &bar_data[0]);
-> +	pci_read_config_dword(pdev, 0x20, &bar_data[1]);
-> +	pci_read_config_dword(pdev, 0x1c, &bar_data[2]);
-> +
-> +	/* Calculate Real IO Port */
-> +	iobase = (bar_data[idx/4] & 0xffffffE0) + (idx % 4) * 8;
-> +
->  	dev_dbg(&pdev->dev, "%s: idx=%d iobase=0x%lx ciobase=0x%lx config_base=0x%2x\n",
->  		__func__, idx, iobase, ciobase, config_base);
->  
-> +
+> -#endif /* !defined(CONFIG_PPC) */
+>  	if (ranges == NULL || rlen == 0) {
+>  		offset = of_read_number(addr, na);
+>  		memset(addr, 0, pna * 4);
+> 
+> 
+> 
 
-New line added for no reason?
-
-thanks,
-
-greg k-h
