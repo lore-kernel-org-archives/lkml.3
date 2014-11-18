@@ -1,271 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaKRH5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 02:57:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13548 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971AbaKRH5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 02:57:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,408,1413270000"; 
-   d="scan'208";a="633697223"
-From: "Jamet, Michael" <michael.jamet@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Levy, Amir (Jer)" <amir.jer.levy@intel.com>,
-        "Alloun, Dan" <dan.alloun@intel.com>,
-        Rafael Wysocki <rjw@rjwysocki.net>,
-        Andreas Noever <andreas.noever@gmail.com>
-Subject: RE: [PATCH] pci: support Thunderbolt requirements for I/O resources.
-Thread-Topic: [PATCH] pci: support Thunderbolt requirements for I/O
- resources.
-Thread-Index: AQHP/ohLgY5RjnqrwESQUJmb1M7dNZxdHb+AgAju7eA=
-Date: Tue, 18 Nov 2014 07:57:44 +0000
-Message-ID: <BC567D27D6B7384F84318942321624DE16179E60@hasmsx109.ger.corp.intel.com>
-References: <1415847123-15558-1-git-send-email-michael.jamet@intel.com>
- <CAErSpo7Z5x=U3vSnxrFpwYUDrUrnrrBCe1F9_GQNYqWWQFWNpQ@mail.gmail.com>
-In-Reply-To: <CAErSpo7Z5x=U3vSnxrFpwYUDrUrnrrBCe1F9_GQNYqWWQFWNpQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753638AbaKRIAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:00:05 -0500
+Received: from regular1.263xmail.com ([211.150.99.135]:51548 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaKRIAB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 03:00:01 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <f1dc7a65931f4caea06f24f6ac998885>
+X-DNS-TYPE: 0
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, cf@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@rock-chips.com, xw@rock-chips.com,
+        Mark Yao <mark.yao@rock-chips.com>
+Subject: [PATCH v12 0/3] Add drm driver for Rockchip Socs
+Date: Tue, 18 Nov 2014 15:59:47 +0800
+Message-Id: <1416297587-18959-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAI7vwWB018687
 
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Wednesday, November 12, 2014 19:29
-> To: Jamet, Michael
-> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Levy, Amir
-> (Jer); Alloun, Dan; Rafael Wysocki; Andreas Noever
-> Subject: Re: [PATCH] pci: support Thunderbolt requirements for I/O
-> resources.
-> 
-> [+cc Rafael, Andreas]
-> 
-> On Wed, Nov 12, 2014 at 7:52 PM, Michael Jamet
-> <michael.jamet@intel.com> wrote:
-> > Every Thunderbolt-based devices or Thunderbolt-connected devices
-> > should not allocate PCI I/O resources per Thunderbolt specs.
-> 
-> Please include a pointer to those specs in the changelog.
-> 
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-Unfortunately these specs are not publically available.
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-> > On a Thunderbolt PC, BIOS is responsible to allocate IO resources.
-> > Kernel shouldn't allocate the PCI I/O resources as it interferes with
-> > BIOS operation.
-> > Doing this may cause the devices in the Thunderbolt chain not being
-> > detected or added, or worse to stuck the Thunderbolt Host controller.
-> 
-> These new kernel/firmware coordination requirements need to be
-> documented.  If they're already part of a PCIe ECN or PCI firmware spec, just
-> provide a pointer.
-> 
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
 
-Same, this refers to same specs.
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
 
-> > To prevent this, we detect a chain contains a Thunderbolt device by
-> > checking the Thunderbolt PCI device id.
-> 
-> I'm really not happy about checking a list of device IDs to identify
-> Thunderbolt devices.  Surely there's a better way, because a list like this has
-> to be updated regularly.
-> 
-> Bjorn
-> 
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
 
-This was also discussed internally and the only way to identify Thunderbolt devices is to check the device IDs.
-As you said, this will require us to maintain and keep the list up-to-date as we deliver new devices.
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
 
-Michael
+Changes in v6:
+- set gem buffer pitch 64 bytes align, needed by mali gpu.
+Adviced by Daniel Kurtz
+- fix some mistake, bugs, remove unused define, more better code style etc. 
+- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+  at runtime instead of clk_prepare_enable().
+- provide a help function from vop for encoder to do mode config, instead of
+  using drm_diaplay_mode private method.
+- change vop mode_set timing to make it more safely. 
 
-> > The validation is carried out at the pci_enable_device_flags()
-> > function that checks the PCI device or bridge is Thunderbolt chained
-> > and avoid IO resources allocation.
-> >
-> > In addition, decode_bar() and pci_bridge_check_ranges() function has
-> > been internally checked for Thunderbolt as well to ensure no IO
-> > resources are allocated.
-> >
-> > Signed-off-by: Michael Jamet <michael.jamet@intel.com>
-> > ---
-> >  drivers/pci/pci.c       | 64
-> +++++++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/pci/pci.h       |  2 ++
-> >  drivers/pci/probe.c     |  3 ++-
-> >  drivers/pci/setup-bus.c |  4 ++--
-> >  include/linux/pci.h     |  2 ++
-> >  5 files changed, 72 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c index
-> > 625a4ac..41c2619 100644
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -198,6 +198,62 @@ static int __pci_bus_find_cap_start(struct
-> > pci_bus *bus,  }
-> >
-> >  /**
-> > + * pci_is_thunderbolt_device - checks PCI device is Thunderbolt-based.
-> > + * The only existing way is to check the device id is allocated to
-> Thunderbolt.
-> > + * @dev: the PCI device structure to check against
-> > + *
-> > + * Returns true if the PCI device is of the Thunderbolt type.
-> > + */
-> > +bool pci_is_thunderbolt_device(struct pci_dev *dev) {
-> > +       if ((dev->vendor == PCI_VENDOR_ID_INTEL) &&
-> > +                       ((dev->device == 0xcaca)
-> > +                       || (dev->device == 0x1513)
-> > +                       || (dev->device == 0xcbca)
-> > +                       || (dev->device == 0x151A)
-> > +                       || (dev->device == 0x151B)
-> > +                       || (dev->device == 0x1549)
-> > +                       || (dev->device == 0x1547)
-> > +                       || (dev->device == 0x1548)
-> > +                       || (dev->device == 0x1566)
-> > +                       || (dev->device == 0x1567)
-> > +                       || (dev->device == 0x1569)
-> > +                       || (dev->device == 0x1568)
-> > +                       || (dev->device == 0x156A)
-> > +                       || (dev->device == 0x156B)
-> > +                       || (dev->device == 0x156C)
-> > +                       || (dev->device == 0x156D)
-> > +                       || (dev->device == 0x1579)
-> > +                       || (dev->device == 0x157A)
-> > +                       || (dev->device == 0x157D)
-> > +                       || (dev->device == 0x157E)))
-> > +               return true;
-> > +
-> > +       return false;
-> > +}
-> > +EXPORT_SYMBOL(pci_is_thunderbolt_device);
-> > +
-> > +/**
-> > + * pci_is_connected_to_thunderbolt - check if connected to a
-> Thunderbolt chain.
-> > + * @dev: the PCI device structure to check against
-> > + *
-> > + * Returns true if the PCI device s connected is connected to a
-> > + * Thunderbolt-based in the chain.
-> > + */
-> > +bool pci_is_connected_to_thunderbolt(struct pci_dev *dev) {
-> > +       struct pci_dev *bridge;
-> > +
-> > +       if (pci_is_thunderbolt_device(dev))
-> > +               return true;
-> > +       bridge =  pci_upstream_bridge(dev);
-> > +       if (bridge)
-> > +               return pci_is_connected_to_thunderbolt(bridge);
-> > +       return false;
-> > +}
-> > +EXPORT_SYMBOL(pci_is_connected_to_thunderbolt);
-> > +
-> > +/**
-> >   * pci_find_capability - query for devices' capabilities
-> >   * @dev: PCI device to query
-> >   * @cap: capability code
-> > @@ -1285,6 +1341,14 @@ static int pci_enable_device_flags(struct pci_dev
-> *dev, unsigned long flags)
-> >         if (atomic_inc_return(&dev->enable_cnt) > 1)
-> >                 return 0;               /* already enabled */
-> >
-> > +       /*
-> > +        * if IO resource have been requested, but the device is connected
-> > +        * to Thunderbolt chain, don't allocate IO resource
-> > +        */
-> > +       if ((flags & IORESOURCE_IO)
-> > +                       && pci_is_connected_to_thunderbolt(dev))
-> > +               flags &= ~IORESOURCE_IO;
-> > +
-> >         bridge = pci_upstream_bridge(dev);
-> >         if (bridge)
-> >                 pci_enable_bridge(bridge); diff --git
-> > a/drivers/pci/pci.h b/drivers/pci/pci.h index 0601890..fb9a3b1 100644
-> > --- a/drivers/pci/pci.h
-> > +++ b/drivers/pci/pci.h
-> > @@ -4,6 +4,8 @@
-> >  #define PCI_CFG_SPACE_SIZE     256
-> >  #define PCI_CFG_SPACE_EXP_SIZE 4096
-> >
-> > +bool pci_is_thunderbolt_device(struct pci_dev *dev);
-> > +
-> >  extern const unsigned char pcie_link_speed[];
-> >
-> >  /* Functions internal to the PCI core code */ diff --git
-> > a/drivers/pci/probe.c b/drivers/pci/probe.c index 5ed9930..d8171af
-> > 100644
-> > --- a/drivers/pci/probe.c
-> > +++ b/drivers/pci/probe.c
-> > @@ -131,7 +131,8 @@ static inline unsigned long decode_bar(struct
-> > pci_dev *dev, u32 bar)
-> >
-> >         if ((bar & PCI_BASE_ADDRESS_SPACE) ==
-> PCI_BASE_ADDRESS_SPACE_IO) {
-> >                 flags = bar & ~PCI_BASE_ADDRESS_IO_MASK;
-> > -               flags |= IORESOURCE_IO;
-> > +               if (!pci_is_connected_to_thunderbolt(dev))
-> > +                       flags |= IORESOURCE_IO;
-> >                 return flags;
-> >         }
-> >
-> > diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c index
-> > 0482235..79ac38f 100644
-> > --- a/drivers/pci/setup-bus.c
-> > +++ b/drivers/pci/setup-bus.c
-> > @@ -663,12 +663,12 @@ static void pci_bridge_check_ranges(struct
-> pci_bus *bus)
-> >         b_res[1].flags |= IORESOURCE_MEM;
-> >
-> >         pci_read_config_word(bridge, PCI_IO_BASE, &io);
-> > -       if (!io) {
-> > +       if (!io || pci_is_thunderbolt_device(bridge)) {
-> >                 pci_write_config_word(bridge, PCI_IO_BASE, 0xe0f0);
-> >                 pci_read_config_word(bridge, PCI_IO_BASE, &io);
-> >                 pci_write_config_word(bridge, PCI_IO_BASE, 0x0);
-> >         }
-> > -       if (io)
-> > +       if (io && !pci_is_thunderbolt_device(bridge))
-> >                 b_res[0].flags |= IORESOURCE_IO;
-> >
-> >         /*  DECchip 21050 pass 2 errata: the bridge may miss an
-> > address diff --git a/include/linux/pci.h b/include/linux/pci.h index
-> > 2a8c405..09ddc2c 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -931,6 +931,8 @@ int __must_check pci_enable_device_io(struct
-> > pci_dev *dev);  int __must_check pci_enable_device_mem(struct pci_dev
-> > *dev);  int __must_check pci_reenable_device(struct pci_dev *);  int
-> > __must_check pcim_enable_device(struct pci_dev *pdev);
-> > +
-> > +bool pci_is_connected_to_thunderbolt(struct pci_dev *dev);
-> >  void pcim_pin_device(struct pci_dev *pdev);
-> >
-> >  static inline int pci_is_enabled(struct pci_dev *pdev)
-> > --
-> > 1.9.1
-> >
-> > ---------------------------------------------------------------------
-> > Intel Israel (74) Limited
-> >
-> > This e-mail and any attachments may contain confidential material for
-> > the sole use of the intended recipient(s). Any review or distribution
-> > by others is strictly prohibited. If you are not the intended
-> > recipient, please contact the sender and delete all copies.
-> >
----------------------------------------------------------------------
-Intel Israel (74) Limited
+Changes in v7:
+- fix memory leakage problem.
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Changes in v8:
+- fix iommu crash when use dual crtc.
+- use frame start interrupt for vsync instead of line flag interrupt,
+because the win config take affect at frame start time, if we use ling flag
+interrupt, the address check often failed.
+Adviced by Daniel Kurtz
+- fix some bugs, mistake, remove unused function
+- keep clock and vop disabled when probe end
+- use drm_plane_helper_check_update to check update_plane if vaild
+
+Changes in v9:
+- fix suspend and resume bug, make iommu attach and detach safely.
+- fix mail info style.
+
+Changes in v10:
+Adviced by Andrzej Hajda
+- check drm_dev if it's NULL at PM suspend/resume
+Adviced by Sean Paul
+- use drm_fb_helper_prepare to init fb_helper funcs
+- Optimized code structure and remove some unnecessary Variables.
+
+Changes in v11:
+- fix mistake that use wrong variable at rockchip sys_resume/sys_suspend
+
+Changes in v12:
+- fix compile problem with drm-next
+- Optimization framebuffer reference/unreference
+- Optimization Code structure
+- fix pm suspend/resume problem
+- fix vblank irq can't close problem
+
+
+Mark yao (3):
+  drm: rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  482 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   55 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1459 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  201 +++
+ 16 files changed, 3108 insertions(+)
+
+-- 
+1.7.9.5
+
+
