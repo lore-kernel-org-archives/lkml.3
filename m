@@ -1,75 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266AbaKROXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:23:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57088 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755127AbaKROKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:18 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.12 175/206] scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND
-Date: Tue, 18 Nov 2014 15:08:50 +0100
-Message-Id: <e00e9894a2a3a78d1a5d890f778afd2c50b8e017.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S932291AbaKROXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:23:31 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:17124 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272AbaKROX1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:23:27 -0500
+Message-ID: <546B5635.6020806@huawei.com>
+Date: Tue, 18 Nov 2014 22:22:45 +0800
+From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Jiang Liu <jiang.liu@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
+References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <546B51BA.6070806@linux.intel.com>
+In-Reply-To: <546B51BA.6070806@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.136]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+On 2014/11/18 22:03, Jiang Liu wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> On 2014/11/18 21:52, Yun Wu (Abel) wrote:
+>> On 2014/11/18 21:43, Jiang Liu wrote:
+>>
+>>> On 2014/11/18 21:33, Yun Wu (Abel) wrote:
+>>>> On 2014/11/18 18:19, Thomas Gleixner wrote:
+>>>>
+>>>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>>>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>>>>>>>  struct irq_chip {
+>>>>>>> @@ -359,6 +360,7 @@ struct irq_chip {
+>>>>>>>  	void		(*irq_release_resources)(struct irq_data *data);
+>>>>>>>  
+>>>>>>>  	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>>>> +	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+>>>>>>
+>>>>>> Hmm... It's really weird.
+>>>>>> I don't think it's the interrupt controllers' responsibility to write messages
+>>>>>> for all the endpoint devices since the methods of configuring message registers
+>>>>>> may different between these devices. And theoretically, the endpoint devices
+>>>>>> themselves should take the responsibility to configure their message registers.
+>>>>>> To say the least, the write_msg callback here still need to call some certain
+>>>>>> interfaces provided by the corresponding device.
+>>>>>>
+>>>>>> There would be lots of ARM new devices capable of sending message
+>>>>>> based interrupts to interrupt controllers, does all the drivers of
+>>>>>> the devices need to expose a write_msg callback to interrupt
+>>>>>> controllers?
+>>>>>
+>>>>> Well, writing the message _IS_ part of the interrupt controller.
+>>>>>
+>>>>> So in order to enable non PCI based MSI we want to have generic
+>>>>> infrastructure with minimal per device/device class callbacks and of
+>>>>> course you need to provide that callback for your special device.
+>>>>>
+>>>>> We already have non PCI based MSI controllers in x86 today and we need
+>>>>> to handle the whole stuff with tons of copied coded extra for each of
+>>>>> those. So consolidating it into common infrastructure allows us to get
+>>>>> rid of the pointless copied code and reduce the per device effort to
+>>>>> the relevant hardware specific callbacks. irq_write_msi_msg being one
+>>>>> of those.
+>>>>>
+>>>>
+>>>> At least, we have the same goal.
+>>>> I will illustrate my thoughts by an example.
+>>>> The current code is something like:
+>>>>
+>>>> Device A
+>>>> ========
+>>>> void A_write_msg() { ... }
+>>>>
+>>>> Group B
+>>>> (a group of devices behave same on writing messages, i.e. PCI)
+>>>> =======
+>>>> void B_write_msg() { ... }
+>>>>
+>>>> Controller
+>>>> ==========
+>>>> irq_chip.irq_write_msi_msg () {
+>>>> 	if (A)
+>>>> 		A_write_msg();
+>>>> 	if (B)
+>>>> 		B_write_msg();
+>>>> }
+>>>>
+>>>> It's horrible when new devices come out, since we need to modify the
+>>>> controller part for each new device.
+>>>> What I suggested is:
+>>>>
+>>>> MSI Core
+>>>> ========
+>>>> struct msi_ops { .write_msg, };
+>>>> struct msi_desc { .msi_ops, };
+>>>>
+>>>> write_msg() {
+>>>> 	X = get_dev();
+>>>> 	irq_chip.compose_msg(X);	// IRQ chips' responsibility
+>>>> 	X_msi_ops.write_msg();		// nothing to do with IRQ chips
+>>>> }
+>>>>
+>>>> Device A
+>>>> ========
+>>>> void A_write_msg() { ... }
+>>>> A_msi_ops.write_msg = A_write_msg;
+>>>>
+>>>> Group B
+>>>> =======
+>>>> void B_write_msg() { ... }
+>>>> B_msi_ops.write_msg = B_write_msg;
+>>>>
+>>>> Please correct me if I misunderstood anything.
+>>> Hi Yun,
+>>> 	We provide an irq_chip for each type of interrupt controller
+>>> instead of devices. For the example mentioned above, if device A
+>>> and Group B has different interrupt controllers, we just need to
+>>> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
+>>> to suitable callbacks.
+>>> 	The framework already achieves what you you want:)
+>>
+>> What if device A and group B have the same interrupt controller?
+> Device doesn't care about interrupt controllers, it just cares about
+> interrupts used by itself. It's the interrupt source (controller)
+> enumerators' responsibility to discover interrupt source, associate
+> methods to control the interrupt source and assign irq numbers for
+> interrupt sources.
 
-===============
+Yes, indeed.
 
-commit 84ce0f0e94ac97217398b3b69c21c7a62ebeed05 upstream.
+> There are two ways to associate irq numbers with device:
+> 1) arch code/bus drivers statically assigns irq number for devices
+>    when creating device objects, such as PCI legacy interrupt
+>    (INTA-INTD), IOAPIC interrupts.
 
-When sg_scsi_ioctl() fails to prepare request to submit in
-blk_rq_map_kern() we jump to a label where we just end up copying
-(luckily zeroed-out) kernel buffer to userspace instead of reporting
-error. Fix the problem by jumping to the right label.
+And OF interfaces.
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: linux-scsi@vger.kernel.org
-Coverity-id: 1226871
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> 2) device drivers ask interrupt source enumerators to dynamically
+>    create irq numbers, such pci_enable_msix_range() and friends.
+> So device driver definitely doesn't need to known about irq_chip
+> methods to control interrupt sources.
+> 
 
-Fixed up the, now unused, out label.
+The above you described is absolutely right, but not the things I want
+to know. :)
+Take GICv3 ITS for example, it deals with both PCI and non PCI message
+interrupts. IIUC, several irq_chips need to be implemented in the ITS
+driver (i.e. pci_msi_chip, A_msi_chip and B_msi_chip). What should we
+do to the ITS driver if new MSI-capable devices come out?
 
-Signed-off-by: Jens Axboe <axboe@fb.com>
----
- block/scsi_ioctl.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index a5ffcc988f0b..1b4988b4bc11 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -506,7 +506,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 
- 	if (bytes && blk_rq_map_kern(q, rq, buffer, bytes, __GFP_WAIT)) {
- 		err = DRIVER_ERROR << 24;
--		goto out;
-+		goto error;
- 	}
- 
- 	memset(sense, 0, sizeof(sense));
-@@ -516,7 +516,6 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 
- 	blk_execute_rq(q, disk, rq, 0);
- 
--out:
- 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
- 	if (err) {
- 		if (rq->sense_len && rq->sense) {
--- 
-2.1.3
+Regards,
+	Abel
 
