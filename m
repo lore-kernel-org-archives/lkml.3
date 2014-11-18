@@ -1,135 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaKRKxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:53:00 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:46123 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305AbaKRKw6 convert rfc822-to-8bit (ORCPT
+	id S1753520AbaKRK55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:57:57 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:33826 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaKRK5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:52:58 -0500
-X-AuditID: cbfee68d-f79296d000004278-50-546b2508056a
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <546B2508.8070409@samsung.com>
-Date: Tue, 18 Nov 2014 19:52:56 +0900
-From: Inki Dae <inki.dae@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] blocked task after exynos_drm_init
-References: <1415264811.27478.4.camel@AMDC1943> <546B228E.6030500@samsung.com>
-In-reply-to: <546B228E.6030500@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsWyRsSkUJdDNTvE4PIUPotb686xWlz5+p7N
-	YtPja6wWl3fNYbOYcX4fkwOrx/3u40wem5fUe/RtWcXo8XmTXABLFJdNSmpOZllqkb5dAlfG
-	9D+fWAqOyFWs2naLrYGxXaqLkYNDQsBE4lyHTxcjJ5ApJnHh3nq2LkYuDiGBpYwSq+43MUEk
-	TCSet1xkhEhMZ5SYOPcuWIJXQFDix+R7LCA2s4C6xKR5i5ghbBGJBwtbWCFsbYllC18zQzS/
-	YpRY8fcmO0SzlsTVlZ1sIDaLgKrE6sf3wWw2IHviCghbVCBM4sWrXWBDRYAWzD55B2pBD6PE
-	4T0mILawgKnEhUUrGUFsIQE/iYMHL4D1cgItvtUzB+wdCYFN7BL/Tm5ggVgmIPFt8iEWiPdl
-	JTYdYIb4UlLi4IobLBMYxWch+W0Wkt9mIfltFpLfFjCyrGIUTS1ILihOSi8y1CtOzC0uzUvX
-	S87P3cQIjMPT/5717mC8fcD6EKMAB6MSD2/C1KwQIdbEsuLK3EOMpkAXTWSWEk3OB0Z7Xkm8
-	obGZkYWpiamxkbmlmZI4r6LUz2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjHsyeG4UKLLP
-	vmAtee5dw9tkn/fyO9hWGHl/s+BoXbpFQE+29b3BTpmF07sS0+Re5ktu760+uf2kot/7n+9/
-	duh89LpZoKPX4X5O694DPp1H9boP+UK41vqm/mRb0hXnUd53Pkvo87qXprv33UmsS9rqVdWy
-	Sfd8VeTf4A9x3FYyFf5pmfUXlFiKMxINtZiLihMBdYvsMr4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQV0O1ewQg8nb2SxurTvHanHl63s2
-	i02Pr7FaXN41h81ixvl9TA6sHve7jzN5bF5S79G3ZRWjx+dNcgEsUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
-	hIa46VrANEbo+oYEwfUYGaCBhDWMGS/eX2cp2CRXsXFzJ1MD41fJLkZODgkBE4nnLRcZIWwx
-	iQv31rN1MXJxCAlMZ5SYOPcuE0iCV0BQ4sfkeyxdjBwczALyEkcuZYOEmQXUJSbNW8QMUf+K
-	UWLF35vsEPVaEldXdrKB2CwCqhKrH98Hs9mA7IkrIGxRgTCJF692MYPYIkCDZp+8wwwxtIdR
-	4vAeExBbWMBU4sKilWDHCQn4SRw8eAGsl1NAW+JWzxy2CYwCs5CcNwvhvFlIzlvAyLyKUTS1
-	ILmgOCk910ivODG3uDQvXS85P3cTIzhmn0nvYFzVYHGIUYCDUYmHN3FqVogQa2JZcWXuIUYJ
-	DmYlEd5z3UAh3pTEyqrUovz4otKc1OJDjKZAz01klhJNzgemk7ySeENjEzMjSyNzQwsjY3Ml
-	cd6DrdaBQgLpiSWp2ampBalFMH1MHJxSDYyOSu+jv/DxujSaCs9RlfB+4vgl382Rz6zDf4N5
-	VFBorEPtLH2zXDXGhw/ey4oeTLl39fq2vOnfXy12/Cqn4p4vteFTT8nJbj1TWdO2M+v6FGXn
-	lPoJ3f1TufH/ZfGbLffD0k8z6Z/ga1d+f+n8Lfk5vJfLUjW1LvMWKyw+xsSy9lhCv1HMASWW
-	4oxEQy3mouJEAMZJaQTvAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 18 Nov 2014 05:57:55 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-55-546b2630a60f
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sangjung Woo <sangjung.woo@samsung.com>, linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        stable@vger.kernel.org
+Subject: [PATCH v2 RESEND] extcon: Fix sleeping in atomic context after
+ connecting USB cable
+Date: Tue, 18 Nov 2014 11:57:08 +0100
+Message-id: <1416308228-7582-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJMWRmVeSWpSXmKPExsVy+t/xa7oGatkhBs+XqlpsnLGe1eLg/XqL
+	61+es1q8fmFocbbpDbvF5V1z2CzWHrnLbnG7cQWbxYI9JRYLNj5idODy6NuyitHj+I3tTB6f
+	N8kFMEdx2aSk5mSWpRbp2yVwZRx+uJq94IhtRUtDO1MD4xXjLkZODgkBE4kjz04xQ9hiEhfu
+	rWfrYuTiEBJYyiixZMdLRginj0ni1bzvYFVsAsYSm5cvAasSEXjFKPGkpQ+sillgDaPE9p/T
+	2UGqhAXiJJbd6GcCsVkEVCV2/TjIAmLzCrhJNExugtonJ3Hy2GTWCYzcCxgZVjGKppYmFxQn
+	peca6hUn5haX5qXrJefnbmKEhMuXHYyLj1kdYhTgYFTi4W3YmBUixJpYVlyZe4hRgoNZSYT3
+	XDdQiDclsbIqtSg/vqg0J7X4ECMTB6dUA6PXGw/Zq1+tFOS3LFE+t15Hf+axe6efab5kF7us
+	I9d27VVlmICRcujXw5cm7BPUMv5Qtdi3letTzfS5rs07D5TyXxRVXaD44EN96Ib1lpKHF68L
+	0XHVCV0s9++4bHXAwck67MxGObUbtkZWG66v3rZp4keXGSU/nu62zP575v5LaY4zzOfZt21T
+	YinOSDTUYi4qTgQA3K6tA/UBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014년 11월 18일 19:42, Andrzej Hajda wrote:
-> On 11/06/2014 10:06 AM, Krzysztof Kozlowski wrote:
->> Hi,
->>
->> On last next (next-20141104, next-20141105) booting locks after
->> initializing Exynos DRM (Trats2 board):
->>
->> [    2.028283] [drm] Initialized drm 1.1.0 20060810
->> [  240.505795] INFO: task swapper/0:1 blocked for more than 120 seconds.
->> [  240.510825]       Not tainted 3.18.0-rc3-next-20141105 #794
->> [  240.516418] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> [  240.524173] swapper/0       D c052534c     0     1      0 0x00000000
->> [  240.530527] [<c052534c>] (__schedule) from [<c0525b34>] (schedule_preempt_disabled+0x14/0x20)
->> [  240.539030] [<c0525b34>] (schedule_preempt_disabled) from [<c0526d44>] (mutex_lock_nested+0x1c4/0x464)
->> [  240.548320] [<c0526d44>] (mutex_lock_nested) from [<c02be908>] (__driver_attach+0x48/0x98)
->> [  240.556562] [<c02be908>] (__driver_attach) from [<c02bcc00>] (bus_for_each_dev+0x54/0x88)
->> [  240.564717] [<c02bcc00>] (bus_for_each_dev) from [<c02bdce0>] (bus_add_driver+0xe4/0x200)
->> [  240.572876] [<c02bdce0>] (bus_add_driver) from [<c02bef94>] (driver_register+0x78/0xf4)
->> [  240.580864] [<c02bef94>] (driver_register) from [<c029e99c>] (exynos_drm_platform_probe+0x34/0x234)
->> [  240.589890] [<c029e99c>] (exynos_drm_platform_probe) from [<c02bfcf0>] (platform_drv_probe+0x48/0xa4)
->> [  240.599090] [<c02bfcf0>] (platform_drv_probe) from [<c02be680>] (driver_probe_device+0x13c/0x37c)
->> [  240.607940] [<c02be680>] (driver_probe_device) from [<c02be954>] (__driver_attach+0x94/0x98)
->> [  240.616360] [<c02be954>] (__driver_attach) from [<c02bcc00>] (bus_for_each_dev+0x54/0x88)
->> [  240.624517] [<c02bcc00>] (bus_for_each_dev) from [<c02bdce0>] (bus_add_driver+0xe4/0x200)
->> [  240.632679] [<c02bdce0>] (bus_add_driver) from [<c02bef94>] (driver_register+0x78/0xf4)
->> [  240.640667] [<c02bef94>] (driver_register) from [<c029e938>] (exynos_drm_init+0x70/0xa0)
->> [  240.648739] [<c029e938>] (exynos_drm_init) from [<c00089b0>] (do_one_initcall+0xac/0x1f0)
->> [  240.656914] [<c00089b0>] (do_one_initcall) from [<c074bd90>] (kernel_init_freeable+0x10c/0x1d8)
->> [  240.665591] [<c074bd90>] (kernel_init_freeable) from [<c051eabc>] (kernel_init+0x8/0xec)
->> [  240.673661] [<c051eabc>] (kernel_init) from [<c000f268>] (ret_from_fork+0x14/0x2c)
->> [  240.681196] 3 locks held by swapper/0/1:
->> [  240.685091]  #0:  (&dev->mutex){......}, at: [<c02be908>] __driver_attach+0x48/0x98
->> [  240.692732]  #1:  (&dev->mutex){......}, at: [<c02be918>] __driver_attach+0x58/0x98
->> [  240.700367]  #2:  (&dev->mutex){......}, at: [<c02be908>] __driver_attach+0x48/0x98
-> 
-> 
-> This is caused by patch moving platform devices to
-> /sys/devices/platform[1]. Since this patch registering platform
-> drivers/devices in probe of platform device causes deadlocks. I guess
-> now all driver registration should be moved to exynos_drm_init and it
-> seems better location for it IMHO.
+Sleeping in atomic context happens because:
+1. Extcon is notifying with raw notifier chain under spin lock.
+2. Notified charger-manager calls sleeping functions.
 
-Thanks. It might be a chance that we could separate sub drivers of
-Exynos drm into independent modules so that they can be called
-independently because if we move them to exynos_drm_init then the
-deferred probe wouldn't work correctly.
+Actually the problem is not only charger-manager specific because
+the extcon is also exporting as API its raw notifier chain with
+extcon_register_notifier(). User registers its own notifier which may or
+may not sleep, and extcon does not know that.
 
-Thanks,
-Inki Dae
+Solve the problem in a generic way: notify on cable change not directly
+in extcon_update_state(), but from scheduled work on ordered workqueue.
 
-> 
-> Regards
-> Andrzej
-> 
-> [1]: http://www.spinics.net/lists/devicetree/msg56101.html
-> 
-> 
-> 
->>
->> Full dmesg and config attached.
->>
->> Best regards,
->> Krzysztof
->>
->>
->>
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Details on issue (steps to reproduce):
+======================================
+Kernel built with extcon and charger-manager. After connecting the USB
+cable:
+[    6.534930] max77693-muic max77693-muic: external connector is attached(chg_type:0x1, prev_chg_type:0x1)
+[    6.544043] max77693-muic max77693-muic: CONTROL1 : 0x09, CONTROL2 : 0x04, state : attached
+[    6.551539] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:615
+[    6.559691] in_atomic(): 1, irqs_disabled(): 128, pid: 1248, name: kworker/2:1
+[    6.566892] 4 locks held by kworker/2:1/1248:
+[    6.571229]  #0:  ("events"){.+.+.+}, at: [<c0039648>] process_one_work+0x114/0x3f4
+[    6.578867]  #1:  ((&info->irq_work)){+.+...}, at: [<c0039648>] process_one_work+0x114/0x3f4
+[    6.587287]  #2:  (&info->mutex){+.+...}, at: [<c038e56c>] max77693_muic_irq_work+0x28/0x120
+[    6.595706]  #3:  (&(&edev->lock)->rlock){......}, at: [<c038c3b8>] extcon_update_state+0x20/0x204
+[    6.604648] irq event stamp: 3944
+[    6.607945] hardirqs last  enabled at (3943): [<c0068fb4>] vprintk_emit+0x1dc/0x5c0
+[    6.615584] hardirqs last disabled at (3944): [<c048b5ac>] _raw_spin_lock_irqsave+0x1c/0x5c
+[    6.623917] softirqs last  enabled at (0): [<c0020c7c>] copy_process.part.54+0x3f4/0x1520
+[    6.632076] softirqs last disabled at (0): [<  (null)>]   (null)
+[    6.638065] Preemption disabled at:[<  (null)>]   (null)
+[    6.643359]
+[    6.644843] CPU: 2 PID: 1248 Comm: kworker/2:1 Not tainted 3.17.0-next-20141007-00047-g1b95596dfa88 #302
+[    6.654307] Workqueue: events max77693_muic_irq_work
+[    6.659277] [<c0014d2c>] (unwind_backtrace) from [<c0011c98>] (show_stack+0x10/0x14)
+[    6.666986] [<c0011c98>] (show_stack) from [<c0484d18>] (dump_stack+0x70/0xbc)
+[    6.674186] [<c0484d18>] (dump_stack) from [<c0487b38>] (mutex_lock_nested+0x24/0x458)
+[    6.682087] [<c0487b38>] (mutex_lock_nested) from [<c028ef6c>] (regmap_read+0x30/0x60)
+[    6.689990] [<c028ef6c>] (regmap_read) from [<c033d830>] (max77693_charger_get_property+0x20c/0x244)
+[    6.699113] [<c033d830>] (max77693_charger_get_property) from [<c03365f8>] (power_supply_get_property+0x20/0x2c)
+[    6.709255] [<c03365f8>] (power_supply_get_property) from [<c033a0a4>] (is_ext_pwr_online+0x30/0xb8)
+[    6.718364] [<c033a0a4>] (is_ext_pwr_online) from [<c033b6ac>] (charger_extcon_notifier+0x40/0x70)
+[    6.727306] [<c033b6ac>] (charger_extcon_notifier) from [<c038bf4c>] (_call_per_cable+0x40/0x4c)
+[    6.736080] [<c038bf4c>] (_call_per_cable) from [<c00402b4>] (notifier_call_chain+0x64/0xd4)
+[    6.744492] [<c00402b4>] (notifier_call_chain) from [<c0040340>] (raw_notifier_call_chain+0x18/0x20)
+[    6.753607] [<c0040340>] (raw_notifier_call_chain) from [<c038c440>] (extcon_update_state+0xa8/0x204)
+[    6.762807] [<c038c440>] (extcon_update_state) from [<c038de44>] (max77693_muic_chg_handler+0x1f4/0x25c)
+[    6.772267] [<c038de44>] (max77693_muic_chg_handler) from [<c038e650>] (max77693_muic_irq_work+0x10c/0x120)
+[    6.781992] [<c038e650>] (max77693_muic_irq_work) from [<c00396b4>] (process_one_work+0x180/0x3f4)
+[    6.790930] [<c00396b4>] (process_one_work) from [<c003998c>] (worker_thread+0x30/0x458)
+[    6.799000] [<c003998c>] (worker_thread) from [<c003f374>] (kthread+0xd8/0xf4)
+[    6.806209] [<c003f374>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
+
+The first sleeping function is is_ext_pwr_online()
+(drivers/power/charger-manager.c). The atomic context initiating the
+flow is set up in extcon_update_state() (drivers/extcon/extcon-class.c).
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: <stable@vger.kernel.org>
+Fixes: 0ea625037826 ("Extcon: renamed files to comply with the standard naming.")
+
+---
+
+Changes since v1:
+1. Re-work after discussions MyungJoo Ham. Don't change spin locks into
+   mutexes but completely move raw_notifier_call_chain out of atomic
+   context.
+2. Mark cc-stable.
+---
+ drivers/extcon/extcon-class.c | 47 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/extcon.h        |  1 +
+ 2 files changed, 47 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 4c2f2c543bb7..730e41cad935 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -34,6 +34,16 @@
+ #include <linux/of.h>
+ 
+ /*
++ * Not part of API.
++ * Work item for notifying on update state.
++ */
++struct notifier_work {
++	struct extcon_dev *edev;
++	u32 old_state;
++	struct work_struct work;
++};
++
++/*
+  * extcon_cable_name suggests the standard cable names for commonly used
+  * cable types.
+  *
+@@ -187,6 +197,32 @@ static ssize_t cable_state_show(struct device *dev,
+ 					       cable->cable_index));
+ }
+ 
++static void update_state_notifier_worker(struct work_struct *_work)
++{
++	struct notifier_work *work = container_of(_work, struct notifier_work,
++			work);
++
++	raw_notifier_call_chain(&work->edev->nh, work->old_state, work->edev);
++	kfree(work);
++}
++
++static int queue_update_state_notifier(struct extcon_dev *edev, u32 old_state)
++{
++	struct notifier_work *work;
++
++	work = kzalloc(sizeof(*work), GFP_NOWAIT);
++	if (!work)
++		return -ENOMEM;
++
++	work->edev = edev;
++	work->old_state = old_state;
++	INIT_WORK(&work->work, update_state_notifier_worker);
++
++	queue_work(edev->noti_workqueue, &work->work);
++
++	return 0;
++}
++
+ /**
+  * extcon_update_state() - Update the cable attach states of the extcon device
+  *			   only for the masked bits.
+@@ -216,6 +252,7 @@ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ 
+ 	if (edev->state != ((edev->state & ~mask) | (state & mask))) {
+ 		u32 old_state = edev->state;
++		int ret;
+ 
+ 		if (check_mutually_exclusive(edev, (edev->state & ~mask) |
+ 						   (state & mask))) {
+@@ -226,7 +263,12 @@ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ 		edev->state &= ~mask;
+ 		edev->state |= state & mask;
+ 
+-		raw_notifier_call_chain(&edev->nh, old_state, edev);
++		ret = queue_update_state_notifier(edev, old_state);
++		if (ret) {
++			spin_unlock_irqrestore(&edev->lock, flags);
++			return ret;
++		}
++
+ 		/* This could be in interrupt handler */
+ 		prop_buf = (char *)get_zeroed_page(GFP_ATOMIC);
+ 		if (prop_buf) {
+@@ -588,6 +630,8 @@ struct extcon_dev *extcon_dev_allocate(const char **supported_cable)
+ 	edev->max_supported = 0;
+ 	edev->supported_cable = supported_cable;
+ 
++	edev->noti_workqueue = create_singlethread_workqueue("extcon");
++
+ 	return edev;
+ }
+ 
+@@ -597,6 +641,7 @@ struct extcon_dev *extcon_dev_allocate(const char **supported_cable)
+  */
+ void extcon_dev_free(struct extcon_dev *edev)
+ {
++	destroy_workqueue(edev->noti_workqueue);
+ 	kfree(edev);
+ }
+ EXPORT_SYMBOL_GPL(extcon_dev_free);
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index 36f49c405dfb..327bf5d85920 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -123,6 +123,7 @@ struct extcon_dev {
+ 	/* Internal data. Please do not set. */
+ 	struct device dev;
+ 	struct raw_notifier_head nh;
++	struct workqueue_struct *noti_workqueue;
+ 	struct list_head entry;
+ 	int max_supported;
+ 	spinlock_t lock;	/* could be called by irq handler */
+-- 
+1.9.1
 
