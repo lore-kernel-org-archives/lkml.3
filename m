@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816AbaKRVAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:00:06 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52716 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932731AbaKRU7O (ORCPT
+	id S932728AbaKRU7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:59:12 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45460 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932685AbaKRU7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:59:14 -0500
+	Tue, 18 Nov 2014 15:59:06 -0500
 From: Mariusz Gorski <marius.gorski@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Willy Tarreau <w@1wt.eu>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] staging: panel: Remove more magic number comparison
-Date: Tue, 18 Nov 2014 21:56:13 +0100
-Message-Id: <1416344174-9155-9-git-send-email-marius.gorski@gmail.com>
+Subject: [PATCH 3/9] staging: panel: Remove magic numbers
+Date: Tue, 18 Nov 2014 21:56:08 +0100
+Message-Id: <1416344174-9155-4-git-send-email-marius.gorski@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com>
 References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com>
@@ -20,71 +20,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a macro instead of magic number comparison for checking
-whether a module param value has been set.
+Get rid of magic numbers indicating that the value of a module param
+is not set. Use a defined value instead.
 
 Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
 ---
- drivers/staging/panel/panel.c | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ drivers/staging/panel/panel.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index ee48bca..268ad2e 100644
+index 0d3f09e..1b4a211 100644
 --- a/drivers/staging/panel/panel.c
 +++ b/drivers/staging/panel/panel.c
-@@ -136,6 +136,7 @@
- #define NOT_SET			-1
+@@ -133,6 +133,8 @@
+ #define LCD_ESCAPE_LEN		24	/* max chars for LCD escape command */
+ #define LCD_ESCAPE_CHAR	27	/* use char 27 for escape command */
  
- #define IS_NOT_SET(x)	(x == NOT_SET)
-+#define IS_SET(x)		(x > NOT_SET)
- 
++#define NOT_SET			-1
++
  /* macros to simplify use of the parallel port */
  #define r_ctr(x)        (parport_read_control((x)->port))
-@@ -1496,17 +1497,17 @@ static void lcd_init(void)
- 	}
+ #define r_dtr(x)        (parport_read_data((x)->port))
+@@ -439,37 +441,37 @@ MODULE_PARM_DESC(profile,
+ 		 "1=16x2 old kp; 2=serial 16x2, new kp; 3=16x2 hantronix; "
+ 		 "4=16x2 nexcom; default=40x2, old kp");
  
- 	/* Overwrite with module params set on loading */
--	if (lcd_height > -1)
-+	if (IS_SET(lcd_height))
- 		lcd.height = lcd_height;
--	if (lcd_width > -1)
-+	if (IS_SET(lcd_width))
- 		lcd.width = lcd_width;
--	if (lcd_bwidth > -1)
-+	if (IS_SET(lcd_bwidth))
- 		lcd.bwidth = lcd_bwidth;
--	if (lcd_hwidth > -1)
-+	if (IS_SET(lcd_hwidth))
- 		lcd.hwidth = lcd_hwidth;
--	if (lcd_charset > -1)
-+	if (IS_SET(lcd_charset))
- 		lcd.charset = lcd_charset;
--	if (lcd_proto > -1)
-+	if (IS_SET(lcd_proto))
- 		lcd.proto = lcd_proto;
- 	if (lcd_e_pin != PIN_NOT_SET)
- 		lcd.pins.e = lcd_e_pin;
-@@ -2306,16 +2307,16 @@ static int __init panel_init_module(void)
- 	 * Overwrite selection with module param values (both keypad and lcd),
- 	 * where the deprecated params have lower prio.
- 	 */
--	if (keypad_enabled > -1)
-+	if (IS_SET(keypad_enabled))
- 		selected_keypad_type = keypad_enabled;
--	if (keypad_type > -1)
-+	if (IS_SET(keypad_type))
- 		selected_keypad_type = keypad_type;
+-static int keypad_type = -1;
++static int keypad_type = NOT_SET;
+ module_param(keypad_type, int, 0000);
+ MODULE_PARM_DESC(keypad_type,
+ 		 "Keypad type: 0=none, 1=old 6 keys, 2=new 6+1 keys, 3=nexcom 4 keys");
  
- 	keypad.enabled = (selected_keypad_type > 0);
+-static int lcd_type = -1;
++static int lcd_type = NOT_SET;
+ module_param(lcd_type, int, 0000);
+ MODULE_PARM_DESC(lcd_type,
+ 		 "LCD type: 0=none, 1=old //, 2=serial ks0074, 3=hantronix //, 4=nexcom //, 5=compiled-in");
  
--	if (lcd_enabled > -1)
-+	if (IS_SET(lcd_enabled))
- 		selected_lcd_type = lcd_enabled;
--	if (lcd_type > -1)
-+	if (IS_SET(lcd_type))
- 		selected_lcd_type = lcd_type;
+-static int lcd_height = -1;
++static int lcd_height = NOT_SET;
+ module_param(lcd_height, int, 0000);
+ MODULE_PARM_DESC(lcd_height, "Number of lines on the LCD");
  
- 	lcd.enabled = (selected_lcd_type > 0);
+-static int lcd_width = -1;
++static int lcd_width = NOT_SET;
+ module_param(lcd_width, int, 0000);
+ MODULE_PARM_DESC(lcd_width, "Number of columns on the LCD");
+ 
+-static int lcd_bwidth = -1;	/* internal buffer width (usually 40) */
++static int lcd_bwidth = NOT_SET;	/* internal buffer width (usually 40) */
+ module_param(lcd_bwidth, int, 0000);
+ MODULE_PARM_DESC(lcd_bwidth, "Internal LCD line width (40)");
+ 
+-static int lcd_hwidth = -1;	/* hardware buffer width (usually 64) */
++static int lcd_hwidth = NOT_SET;	/* hardware buffer width (usually 64) */
+ module_param(lcd_hwidth, int, 0000);
+ MODULE_PARM_DESC(lcd_hwidth, "LCD line hardware address (64)");
+ 
+-static int lcd_charset = -1;
++static int lcd_charset = NOT_SET;
+ module_param(lcd_charset, int, 0000);
+ MODULE_PARM_DESC(lcd_charset, "LCD character set: 0=standard, 1=KS0074");
+ 
+-static int lcd_proto = -1;
++static int lcd_proto = NOT_SET;
+ module_param(lcd_proto, int, 0000);
+ MODULE_PARM_DESC(lcd_proto,
+ 		 "LCD communication: 0=parallel (//), 1=serial, 2=TI LCD Interface");
+@@ -515,11 +517,11 @@ MODULE_PARM_DESC(lcd_bl_pin,
+ 
+ /* Deprecated module parameters - consider not using them anymore */
+ 
+-static int lcd_enabled = -1;
++static int lcd_enabled = NOT_SET;
+ module_param(lcd_enabled, int, 0000);
+ MODULE_PARM_DESC(lcd_enabled, "Deprecated option, use lcd_type instead");
+ 
+-static int keypad_enabled = -1;
++static int keypad_enabled = NOT_SET;
+ module_param(keypad_enabled, int, 0000);
+ MODULE_PARM_DESC(keypad_enabled, "Deprecated option, use keypad_type instead");
+ 
 -- 
 2.1.3
 
