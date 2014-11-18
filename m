@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaKRPiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:38:12 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:40485 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312AbaKRPiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:38:10 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        "moderated list:ARM/Rockchip SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "open list:COMMON CLK FRAMEWORK" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: rockchip: fix parent clock for rk3188 hclk_lcdc1
-Date: Tue, 18 Nov 2014 16:41:48 +0100
-Message-ID: <3112886.9YHa130KKH@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1416309043-29069-1-git-send-email-julien.chauveau@neo-technologies.fr>
-References: <1416309043-29069-1-git-send-email-julien.chauveau@neo-technologies.fr>
+	id S1755804AbaKRPjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:39:14 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46593 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754578AbaKRPjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:39:12 -0500
+Message-ID: <546B67F5.20108@ti.com>
+Date: Tue, 18 Nov 2014 21:08:29 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Joe Perches <joe@perches.com>, Kevin Hilman <khilman@deeprootsystems.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] davinci: Use standard logging styles
+References: <1414803111.13647.13.camel@perches.com>
+In-Reply-To: <1414803111.13647.13.camel@perches.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julien,
-
-Am Dienstag, 18. November 2014, 12:10:43 schrieb Julien CHAUVEAU:
-> The parent clock for hclk_lcdc1 was set to aclk_cpu instead of hclk_cpu.
+On Saturday 01 November 2014 06:21 AM, Joe Perches wrote:
+> Convert printks to pr_<level> and pr_warning to pr_warn.
 > 
-> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+> Other miscellanea:
+> 
+> o Coalesce formats
+> o Realign arguments
+> o Use %s, __func__ instead of embedded function names
+> o Add pr_fmt to mityomapl138 and mux
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-thanks for catching this. I've applied it to my clk branch for 3.19
+Sending to ARM-SoC for v3.19. Prefixed subject line with ARM: as is the
+convention.
 
-
-Heiko
+Thanks,
+Sekhar
