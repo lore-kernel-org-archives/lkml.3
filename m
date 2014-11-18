@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378AbaKRQsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:48:40 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60432 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158AbaKRQsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:48:32 -0500
-Date: Tue, 18 Nov 2014 16:48:27 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Alexander Duyck <alexander.h.duyck@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Duyck <alexander.duyck@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "mikey@neuling.org" <mikey@neuling.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
-        "matthew.vick@intel.com" <matthew.vick@intel.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
-        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
-        "michael@ellerman.id.au" <michael@ellerman.id.au>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb() and
- fast_wmb()
-Message-ID: <20141118164827.GR18842@arm.com>
-References: <20141117171005.22333.96544.stgit@ahduyck-server>
- <20141117171812.22333.90395.stgit@ahduyck-server>
- <1416254687.18381.3.camel@kernel.crashing.org>
- <546A5968.1090201@gmail.com>
- <1416271167.18381.16.camel@kernel.crashing.org>
- <546AB959.1020602@redhat.com>
- <20141118115836.GL18842@arm.com>
- <546B71DE.4050506@redhat.com>
+	id S1755186AbaKRQtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:49:51 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:32296 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753511AbaKRQtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 11:49:50 -0500
+X-IronPort-AV: E=Sophos;i="5.07,410,1413244800"; 
+   d="scan'208";a="192551837"
+Date: Tue, 18 Nov 2014 16:49:21 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <linux@arm.linux.org.uk>
+CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <catalin.marinas@arm.com>, <linux@arm.linux.org.uk>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH v9 05/13] arm: introduce is_device_dma_coherent
+In-Reply-To: <alpine.DEB.2.02.1411141158560.26318@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1411181649000.27247@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411121130020.26318@kaball.uk.xensource.com> <1415792454-23161-5-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411141158560.26318@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546B71DE.4050506@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 04:20:46PM +0000, Alexander Duyck wrote:
-> On 11/18/2014 03:58 AM, Will Deacon wrote:
-> > So actually, this is an interesting case where the barrier would like to
-> > know whether the memory returned by dma_alloc_coherent is h/w coherent
-> > (normal, cacheable) or s/w coherent (normal, non-cacheable). I think Ben
-> > is thinking of the h/w coherent case (i.e. actual snooping into the CPU
-> > caches by the DMA master).
-> >
-> > For the former, we could use inner-shareable barriers. For the latter, we'd
-> > need to use outer-shareable barriers.
-> >
-> > If we can't tell, then these should be dmb(osh), which will work for both.
-> >
+ping?
+
+On Fri, 14 Nov 2014, Stefano Stabellini wrote:
+> Russell,
+> this patch needs your feedback.
 > 
-> Okay, so I will update the ARM portion of my patches to use osh and 
-> oshst then since it sounds like I was using too strong of barriers.
-
-Sounds good. Another reason this is interesting is because the native
-acquire/release instructions on ARMv8 actually take into account the
-shareability domain of the virtual address, so using them would give you
-the shareability domain you want but slightly stronger ordering guarantees
-within that domain.
-
-Still, either of them will be a damn sight better than the dsb we currently
-have courtesy of the mandatory barriers.
-
-Will
+> - Stefano
+> 
+> On Wed, 12 Nov 2014, Stefano Stabellini wrote:
+> > Introduce a boolean flag and an accessor function to check whether a
+> > device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> > CC: linux@arm.linux.org.uk
+> > ---
+> >  arch/arm/include/asm/device.h      |    1 +
+> >  arch/arm/include/asm/dma-mapping.h |    6 ++++++
+> >  2 files changed, 7 insertions(+)
+> > 
+> > diff --git a/arch/arm/include/asm/device.h b/arch/arm/include/asm/device.h
+> > index dc662fc..4111592 100644
+> > --- a/arch/arm/include/asm/device.h
+> > +++ b/arch/arm/include/asm/device.h
+> > @@ -17,6 +17,7 @@ struct dev_archdata {
+> >  #ifdef CONFIG_ARM_DMA_USE_IOMMU
+> >  	struct dma_iommu_mapping	*mapping;
+> >  #endif
+> > +	bool dma_coherent;
+> >  };
+> >  
+> >  struct omap_device;
+> > diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> > index 85738b2..8c3b616 100644
+> > --- a/arch/arm/include/asm/dma-mapping.h
+> > +++ b/arch/arm/include/asm/dma-mapping.h
+> > @@ -123,11 +123,17 @@ static inline unsigned long dma_max_pfn(struct device *dev)
+> >  
+> >  static inline int set_arch_dma_coherent_ops(struct device *dev)
+> >  {
+> > +	dev->archdata.dma_coherent = true;
+> >  	set_dma_ops(dev, &arm_coherent_dma_ops);
+> >  	return 0;
+> >  }
+> >  #define set_arch_dma_coherent_ops(dev)	set_arch_dma_coherent_ops(dev)
+> >  
+> > +static inline bool is_device_dma_coherent(struct device *dev)
+> > +{
+> > +	return dev->archdata.dma_coherent;
+> > +}
+> > +
+> >  static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> >  {
+> >  	unsigned int offset = paddr & ~PAGE_MASK;
+> > -- 
+> > 1.7.10.4
+> > 
+> 
