@@ -1,34 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615AbaKRU42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:56:28 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:56854 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577AbaKRU4Z (ORCPT
+	id S932660AbaKRU6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:58:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35974 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175AbaKRU6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:56:25 -0500
-Date: Tue, 18 Nov 2014 15:56:23 -0500 (EST)
-Message-Id: <20141118.155623.1918421784549626366.davem@davemloft.net>
-To: joestringer@nicira.com
-Cc: netdev@vger.kernel.org, ogerlitz@mellanox.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] vxlan: Inline vxlan_gso_check().
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1416270294-21516-1-git-send-email-joestringer@nicira.com>
-References: <1416270294-21516-1-git-send-email-joestringer@nicira.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 18 Nov 2014 15:58:46 -0500
+Date: Tue, 18 Nov 2014 12:58:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
+ debugger.
+Message-Id: <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+In-Reply-To: <5461B906.1040803@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+	<5461B906.1040803@samsung.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 18 Nov 2014 12:56:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Stringer <joestringer@nicira.com>
-Date: Mon, 17 Nov 2014 16:24:54 -0800
+On Tue, 11 Nov 2014 10:21:42 +0300 Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
 
-> Suggested-by: Or Gerlitz <ogerlitz@mellanox.com>
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+> Hi Andrew,
+> 
+> Now we have stable GCC(4.9.2) which supports kasan and from my point of view patchset is ready for merging.
+> I could have sent v7 (it's just rebased v6), but I see no point in doing that and bothering people,
+> unless you are ready to take it.
 
-Applied.
+It's a huge pile of tricky code we'll need to maintain.  To justify its
+inclusion I think we need to be confident that kasan will find a
+significant number of significant bugs that
+kmemcheck/debug_pagealloc/slub_debug failed to detect.
+
+How do we get that confidence?  I've seen a small number of
+minorish-looking kasan-detected bug reports go past, maybe six or so. 
+That's in a 20-year-old code base, so one new minor bug discovered per
+three years?  Not worth it!
+
+Presumably more bugs will be exposed as more people use kasan on
+different kernel configs, but will their number and seriousness justify
+the maintenance effort?
+
+If kasan will permit us to remove kmemcheck/debug_pagealloc/slub_debug
+then that tips the balance a little.  What's the feasibility of that?
+
+
+Sorry to play the hardass here, but someone has to ;)
