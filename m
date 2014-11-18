@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaKROKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:10:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57147 "EHLO mx2.suse.de"
+	id S1755044AbaKROKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:10:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754974AbaKROJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:58 -0500
+	id S1754609AbaKROJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:57 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Darrick J. Wong" <darrick.wong@oracle.com>,
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
         "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 118/206] ext4: check EA value offset when loading
-Date: Tue, 18 Nov 2014 15:07:53 +0100
-Message-Id: <2d550cd1fcb6816e8f41c46f19802d57daa9762f.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 119/206] ext4: don't check quota format when there are no quota files
+Date: Tue, 18 Nov 2014 15:07:54 +0100
+Message-Id: <0dce193f3456fe009fc3c588f4ac39f33446df61.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,106 +22,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a0626e75954078cfacddb00a4545dde821170bc5 upstream.
+commit 279bf6d390933d5353ab298fcc306c391a961469 upstream.
 
-When loading extended attributes, check each entry's value offset to
-make sure it doesn't collide with the entries.
+The check whether quota format is set even though there are no
+quota files with journalled quota is pointless and it actually
+makes it impossible to turn off journalled quotas (as there's
+no way to unset journalled quota format). Just remove the check.
 
-Without this check it is easy to crash the kernel by mounting a
-malicious FS containing a file with an EA wherein e_value_offs = 0 and
-e_value_size > 0 and then deleting the EA, which corrupts the name
-list.
-
-(See the f_ea_value_crash test's FS image in e2fsprogs for an example.)
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ext4/xattr.c | 32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ fs/ext4/super.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 298e9c8da364..a20816e7eb3a 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -189,14 +189,28 @@ ext4_listxattr(struct dentry *dentry, char *buffer, size_t size)
- }
- 
- static int
--ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
-+ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end,
-+		       void *value_start)
- {
--	while (!IS_LAST_ENTRY(entry)) {
--		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(entry);
-+	struct ext4_xattr_entry *e = entry;
-+
-+	while (!IS_LAST_ENTRY(e)) {
-+		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(e);
- 		if ((void *)next >= end)
- 			return -EIO;
--		entry = next;
-+		e = next;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index b52a34bc7600..cf3068a50b48 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1687,13 +1687,6 @@ static int parse_options(char *options, struct super_block *sb,
+ 					"not specified");
+ 			return 0;
+ 		}
+-	} else {
+-		if (sbi->s_jquota_fmt) {
+-			ext4_msg(sb, KERN_ERR, "journaled quota format "
+-					"specified with no journaling "
+-					"enabled");
+-			return 0;
+-		}
  	}
-+
-+	while (!IS_LAST_ENTRY(entry)) {
-+		if (entry->e_value_size != 0 &&
-+		    (value_start + le16_to_cpu(entry->e_value_offs) <
-+		     (void *)e + sizeof(__u32) ||
-+		     value_start + le16_to_cpu(entry->e_value_offs) +
-+		    le32_to_cpu(entry->e_value_size) > end))
-+			return -EIO;
-+		entry = EXT4_XATTR_NEXT(entry);
-+	}
-+
- 	return 0;
- }
- 
-@@ -213,7 +227,8 @@ ext4_xattr_check_block(struct inode *inode, struct buffer_head *bh)
- 		return -EIO;
- 	if (!ext4_xattr_block_csum_verify(inode, bh->b_blocknr, BHDR(bh)))
- 		return -EIO;
--	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
-+	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size,
-+				       bh->b_data);
- 	if (!error)
- 		set_buffer_verified(bh);
- 	return error;
-@@ -329,7 +344,7 @@ ext4_xattr_ibody_get(struct inode *inode, int name_index, const char *name,
- 	header = IHDR(inode, raw_inode);
- 	entry = IFIRST(header);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(entry, end);
-+	error = ext4_xattr_check_names(entry, end, entry);
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_find_entry(&entry, name_index, name,
-@@ -457,7 +472,7 @@ ext4_xattr_ibody_list(struct dentry *dentry, char *buffer, size_t buffer_size)
- 	raw_inode = ext4_raw_inode(&iloc);
- 	header = IHDR(inode, raw_inode);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(IFIRST(header), end);
-+	error = ext4_xattr_check_names(IFIRST(header), end, IFIRST(header));
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_list_entries(dentry, IFIRST(header),
-@@ -972,7 +987,8 @@ int ext4_xattr_ibody_find(struct inode *inode, struct ext4_xattr_info *i,
- 	is->s.here = is->s.first;
- 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
- 	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
--		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
-+		error = ext4_xattr_check_names(IFIRST(header), is->s.end,
-+					       IFIRST(header));
- 		if (error)
- 			return error;
- 		/* Find the named attribute. */
+ #endif
+ 	if (test_opt(sb, DIOREAD_NOLOCK)) {
 -- 
 2.1.3
 
