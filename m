@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804AbaKRQHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:07:37 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34826 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755773AbaKRQHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:07:35 -0500
-Date: Tue, 18 Nov 2014 11:07:34 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Kever Yang <kever.yang@rock-chips.com>
-cc: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        <romain.perier@gmail.com>, Heiko Stuebner <heiko@sntech.de>,
-        <dianders@chromium.org>, <sonnyrao@chromium.org>,
-        <addy.ke@rock-chips.com>, <cf@rock-chips.com>, <wulf@rock-chips.com>,
-        <huangtao@rock-chips.com>, <linux-rockchip@lists.infradead.org>,
-        Roy Li <roy.li@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
- suspend state
-In-Reply-To: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
-Message-ID: <Pine.LNX.4.44L0.1411181104280.1500-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755875AbaKRQIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:08:38 -0500
+Received: from gw.hale.at ([83.64.51.210]:55514 "EHLO gw.hale.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755072AbaKRQIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 11:08:36 -0500
+X-HALE-Mailborder-Watermark: 1416931701.45247@OX5avk+ov6URGrkZ4Gz5nA
+X-HALE-Mailborder-From: michael.thalmeier@hale.at
+X-HALE-Mailborder-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.899, required 3, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90, URIBL_BLOCKED 0.00)
+X-HALE-Mailborder-IP-Protocol: IPv4
+X-HALE-Mailborder: Found to be clean
+X-HALE-Mailborder-ID: 782C12C0760.AF99B
+X-HALE-Mailborder-Information: Please contact your admin for more information
+From: Michael Thalmeier <michael.thalmeier@hale.at>
+To: linux@roeck-us.net, jdelvare@suse.de
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] hwmon: (lm75) Add support for the NXP LM75B
+Date: Tue, 18 Nov 2014 17:08:04 +0100
+Message-Id: <1416326884-22623-1-git-send-email-michael.thalmeier@hale.at>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Kever Yang wrote:
+It is basically a faster lm75 with improved (11 bit) resolution.
 
-> After we implement the bus_suspend/resume, auto suspend id enabled.
-> The root hub will be auto suspend if there is no device connected,
-> we need to resume the root hub when a device connect detect.
-> 
-> This patch tested on rk3288.
-> 
-> Signed-off-by: Roy Li <roy.li@rock-chips.com>
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
-> 
-> Changes in v2:
-> - add definition for hcd structure
-> - remove check for bus->root_hub
-> 
->  drivers/usb/dwc2/hcd_intr.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/usb/dwc2/hcd_intr.c b/drivers/usb/dwc2/hcd_intr.c
-> index 551ba87..680206f 100644
-> --- a/drivers/usb/dwc2/hcd_intr.c
-> +++ b/drivers/usb/dwc2/hcd_intr.c
-> @@ -329,6 +329,7 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
->  {
->  	u32 hprt0;
->  	u32 hprt0_modify;
-> +	struct usb_hcd *hcd = (struct usb_hcd *)hsotg->priv;
->  
->  	dev_vdbg(hsotg->dev, "--Port Interrupt--\n");
->  
-> @@ -354,6 +355,10 @@ static void dwc2_port_intr(struct dwc2_hsotg *hsotg)
->  		hsotg->flags.b.port_connect_status = 1;
->  		hprt0_modify |= HPRT0_CONNDET;
->  
-> +		/* resume root hub? */
-> +		if (hcd->state == HC_STATE_SUSPENDED)
-> +			usb_hcd_resume_root_hub(hcd);
+Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
+---
+v2: keep alphabetic order
 
-You should be aware that it's not safe to use hcd->state for anything 
-in a host controller driver.  That field is owned by usbcore, not by 
-the HCD, and it is not protected by any locks.
+ Documentation/hwmon/lm75 | 5 +++++
+ drivers/hwmon/lm75.c     | 6 ++++++
+ 2 files changed, 11 insertions(+)
 
-Thus, for example, hcd->state does not get set to HC_STATE_SUSPENDED
-until some time after the bus_suspend routine has returned.  A
-port-change interrupt might occur during that time interval.
-
-Alan Stern
+diff --git a/Documentation/hwmon/lm75 b/Documentation/hwmon/lm75
+index c6a5ff1..67691a0a 100644
+--- a/Documentation/hwmon/lm75
++++ b/Documentation/hwmon/lm75
+@@ -53,6 +53,11 @@ Supported chips:
+                http://www.ti.com/product/tmp75
+                http://www.ti.com/product/tmp175
+                http://www.ti.com/product/tmp275
++  * NXP LM75B
++    Prefix: 'lm75b'
++    Addresses scanned: none
++    Datasheet: Publicly available at the NXP website
++               http://www.nxp.com/documents/data_sheet/LM75B.pdf
+ 
+ Author: Frodo Looijaard <frodol@dds.nl>
+ 
+diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
+index d16dbb33a..f58439b 100644
+--- a/drivers/hwmon/lm75.c
++++ b/drivers/hwmon/lm75.c
+@@ -44,6 +44,7 @@ enum lm75_type {		/* keep sorted in alphabetical order */
+ 	g751,
+ 	lm75,
+ 	lm75a,
++	lm75b,
+ 	max6625,
+ 	max6626,
+ 	mcp980x,
+@@ -233,6 +234,10 @@ lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		data->resolution = 9;
+ 		data->sample_time = HZ / 2;
+ 		break;
++	case lm75b:
++		data->resolution = 11;
++		data->sample_time = HZ / 4;
++		break;
+ 	case max6625:
+ 		data->resolution = 9;
+ 		data->sample_time = HZ / 4;
+@@ -322,6 +327,7 @@ static const struct i2c_device_id lm75_ids[] = {
+ 	{ "g751", g751, },
+ 	{ "lm75", lm75, },
+ 	{ "lm75a", lm75a, },
++	{ "lm75b", lm75b, },
+ 	{ "max6625", max6625, },
+ 	{ "max6626", max6626, },
+ 	{ "mcp980x", mcp980x, },
+-- 
+1.9.3
 
