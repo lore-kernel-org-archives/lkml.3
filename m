@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564AbaKRPB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:01:26 -0500
-Received: from sauhun.de ([89.238.76.85]:45663 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754427AbaKRPBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:01:22 -0500
-Date: Tue, 18 Nov 2014 16:01:55 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Yuan Yao <yao.yuan@freescale.com>
-Cc: marex@denx.de, LW@KARO-electronics.de, mark.rutland@arm.com,
-        fugang.duan@freescale.com, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v11 0/3] i2c: imx: add DMA support for freescale i2c
- driver
-Message-ID: <20141118150155.GA30004@katana>
-References: <1416306667-15673-1-git-send-email-yao.yuan@freescale.com>
+	id S1755634AbaKRPBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:01:33 -0500
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:51992 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427AbaKRPB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:01:29 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
-Content-Disposition: inline
-In-Reply-To: <1416306667-15673-1-git-send-email-yao.yuan@freescale.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141117230232.GC25157@pd.tnic>
+References: <1416251225-17721-1-git-send-email-eranian@google.com>
+	<1416251225-17721-14-git-send-email-eranian@google.com>
+	<20141117230232.GC25157@pd.tnic>
+Date: Tue, 18 Nov 2014 17:01:28 +0200
+Message-ID: <CAHzUATiZPYNt5nQ82TmCGH9mz0-Y-T6UFdo+0xHpYNcMFBnfZw@mail.gmail.com>
+Subject: Re: [PATCH v3 13/13] perf/x86: add syfs entry to disable HT bug workaround
+From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Stephane Eranian <eranian@google.com>, x86-ml <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, kan.liang@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 18, 2014 at 1:02 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Mon, Nov 17, 2014 at 08:07:05PM +0100, Stephane Eranian wrote:
+>> From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+>>
+>> This patch adds a sysfs entry:
+>>
+>>       /sys/devices/cpu/ht_bug_workaround
+>>
+>> to activate/deactivate the PMU HT bug workaround.
+>>
+>> To activate (activated by default):
+>>  # echo 1 > /sys/devices/cpu/ht_bug_workaround
+>>
+>> To deactivate:
+>>  # echo 0 > /sys/devices/cpu/ht_bug_workaround
+>
+> If I put my simple-user hat and stare at this sysfs node, I'm not really
+> becoming any smarter from looking at the name. HT bug? A hyper-threading
+> bug?? I see the user forums going nuts already.
+>
+OK. We can call it perf_pmu_ht_bug_workaround to make this more explicit.
 
---bg08WKrSYDhXBjb5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The other thing we will do in V4 is to make the file disappear if HT
+is off because
+the problem does not exist in that case.
 
-On Tue, Nov 18, 2014 at 06:31:04PM +0800, Yuan Yao wrote:
->=20
-> Changed in v11:=20
-> - Fix the bug for 'orig_jiffies' uninitialized.
-> - Use wait_for_completion_timeout() instead of wait_for_completion_interr=
-uptible_timeout().=20
-
-Applied to for-next, thanks!
-
-
---bg08WKrSYDhXBjb5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUa19iAAoJEBQN5MwUoCm2rjIP/0UFcRatChJe4L+YU7l24G9H
-J+uDWA+uSUqXa2uRreYcUmobkLtDfK6hfjtphnqlNPasJdGwZ3DsQsBSKHiwOM0k
-TLxDd4aegWYPzivU0DCNUMw2LEr9aJn7PcyEVmgzWyNGWGWhQqDlp56vRjA4DJ7S
-CQkyD0KRKiJd9NA2Z5FKx/8+lcBylJuto7LAMfG29SpGXBBdD+gyuLGS/AsW2hE0
-BokWXHFlaxMy6v0apBFrs5BfcRN8DI6+dWwMKtsSKhP8z9uQ9bODSjRAjLy4DQfD
-UOagqsuIjZgk2Doakmze59GiJtjb6Fsea7VV9HIhWWgINWlfmInJD5KMj6FwdezZ
-CDPE561NYJROv3SG90uwgVACH+BiLMtzDfZZ0mVQQz4GwiK+nMp1aaG7hlwoZEVz
-yEOAKJ/ANAZOmOPevdT4shtUwIRXFUSFlmf9SM0l2IdfVe83myoPog73o34M4Ewx
-XsEraBUnR4zR+GLSuO/VPQHEa/bm3q8Z7wVlQ5becZYpoU4lKImiZ6JL6O/yHKwV
-MFmWACjqCcxLt/aMCXpea1mMjeuc+bR+Q+KfDJz/blfviKfssp7nw71PdDHYWyxj
-5Xu4FZ9t+hd/73MwebEnoNXy8tOZ7SEo/zvPuHFJ5BmhaI47gHSPo6Tz4VIRzXid
-s8W2pApsHLTaMyrsfUT2
-=NlES
------END PGP SIGNATURE-----
-
---bg08WKrSYDhXBjb5--
+> Instead of adding a sysfs node per CPU bug, I'm wondering whether adding
+> a
+>
+>         /sys/devices/system/cpu/bugs
+>
+> file which gets a mask of bits to enable and disable workarounds would
+> be much cleaner.
+>
+> x86 guys, what do you guys think?
+>
+> Such a scheme should be much more easily extensible in the future in
+> case we want to add another workaround toggle.
+>
+> The hierarchy is not optimal either as it should be under
+> "perf"-something but I don't think we have a perf sysfs node...
+>
+>> Results effective only once there is no more active
+>> events.
+>>
+>> Reviewed-by: Stephane Eranian <eranian@google.com>
+>> Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+>> ---
+>
+> ...
+>
+>>  static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
+>> +static DEVICE_ATTR(ht_bug_workaround, S_IRUSR | S_IWUSR, get_attr_xsu,
+>> +                set_attr_xsu);
+>>
+>>  static struct attribute *x86_pmu_attrs[] = {
+>>       &dev_attr_rdpmc.attr,
+>> +     &dev_attr_ht_bug_workaround.attr,
+>
+> You should be adding this dynamically, only when running on Intel, i.e.
+>
+>         if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
+>                 /* add bug_workaround attr */
+>
+> For an example, see amd_l3_attrs() in
+> arch/x86/kernel/cpu/intel_cacheinfo.c
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
