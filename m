@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937AbaKRGwf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 01:52:35 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45191 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaKRGwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 01:52:33 -0500
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: San Mehat <san@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC] serial_core: Add wake_peer uart operation
-Date: Tue, 18 Nov 2014 12:20:01 +0530
-Message-Id: <1416293401-7714-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	id S1753258AbaKRG4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:56:24 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37260 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038AbaKRG4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 01:56:22 -0500
+Subject: [PATCH] cpuidle/powernv: Re-enable fastsleep at boot time
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: mpe@ellerman.id.au, mikey@neuling.org, joel.stanley@au1.ibm.com
+Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Date: Tue, 18 Nov 2014 12:26:03 +0530
+Message-ID: <20141118065603.22544.88816.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111806-0033-0000-0000-00000114189F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: San Mehat <san@google.com>
+Commit dcb18694 "Fix ipi on palmeto" disabled fastsleep at boot time.
+Revert this commit since we no longer need this fix. However we can
+continue to use powersave_nap parameter to control entry into deep
+idle states beyond snooze.
 
-serial_core: Add wake_peer uart operation
-
-Add wake_peer which is called before starting UART TX. The idea here
-is to provide a mechanism where we can wakeup our peer before sending
-data.
-
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Signed-off-by: San Mehat <san@google.com>
-[Kiran: Added context to commit message]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+Signed-off-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
 ---
-This is one of the number of patches from the Android AOSP common.git tree,
-which is used on almost all Android devices.  I wanted to submit it for review
-to see if it should go upstream.
 
- drivers/tty/serial/serial_core.c | 3 +++
- include/linux/serial_core.h      | 1 +
- 2 files changed, 4 insertions(+)
+ drivers/cpuidle/cpuidle-powernv.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index df3a8c7..dc45c4b 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -95,6 +95,9 @@ static void __uart_start(struct tty_struct *tty)
- 	struct uart_state *state = tty->driver_data;
- 	struct uart_port *port = state->uart_port;
+diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
+index b57681d..b430e76 100644
+--- a/drivers/cpuidle/cpuidle-powernv.c
++++ b/drivers/cpuidle/cpuidle-powernv.c
+@@ -69,8 +69,9 @@ static int fastsleep_loop(struct cpuidle_device *dev,
+ 	unsigned long old_lpcr = mfspr(SPRN_LPCR);
+ 	unsigned long new_lpcr;
  
-+	if (port->ops->wake_peer)
-+		port->ops->wake_peer(port);
+-	if (powersave_nap < 2)
+-		return;
++	if (!(powersave_nap > 0))
++		return index;
 +
- 	if (!uart_tx_stopped(port))
- 		port->ops->start_tx(port);
- }
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 21c2e05..219b6a3 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -66,6 +66,7 @@ struct uart_ops {
- 	void		(*set_ldisc)(struct uart_port *, int new);
- 	void		(*pm)(struct uart_port *, unsigned int state,
- 			      unsigned int oldstate);
-+	void		(*wake_peer)(struct uart_port *);
+ 	if (unlikely(system_state < SYSTEM_RUNNING))
+ 		return index;
  
- 	/*
- 	 * Return a string describing the type of the port
--- 
-1.8.2.1
 
