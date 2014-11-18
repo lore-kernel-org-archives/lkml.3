@@ -1,85 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaKRMrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:47:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54059 "EHLO mx2.suse.de"
+	id S1754168AbaKRMuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:50:05 -0500
+Received: from mga03.intel.com ([134.134.136.65]:5952 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753595AbaKRMrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:47:40 -0500
-Date: Tue, 18 Nov 2014 13:47:46 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Vojtech Pavlik <vojtech@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
-        kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Kernel Live Patching
-Message-ID: <20141118124746.GB23958@pathway.suse.cz>
-References: <20141107131153.GD4071@treble.redhat.com>
- <20141107140458.GA21774@suse.cz>
- <20141107154500.GF4071@treble.redhat.com>
- <20141107212735.GA21409@suse.cz>
- <54616533.1070301@hitachi.com>
- <20141111102655.GB20424@suse.cz>
- <546399E4.6050605@hitachi.com>
- <20141112214719.GA26809@suse.cz>
- <5464D4B6.5010808@hitachi.com>
- <20141113163804.GA10388@suse.cz>
+	id S1753629AbaKRMuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 07:50:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,409,1413270000"; 
+   d="scan'208";a="638937305"
+Message-ID: <546B4075.9050406@linux.intel.com>
+Date: Tue, 18 Nov 2014 20:49:57 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141113163804.GA10388@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 09/16] genirq: Add generic msi irq domain support
+References: <20141112133941.647950773@linutronix.de> <20141112134120.569789374@linutronix.de> <546B3667.9040506@huawei.com>
+In-Reply-To: <546B3667.9040506@huawei.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-11-13 17:38:04, Vojtech Pavlik wrote:
-> On Fri, Nov 14, 2014 at 12:56:38AM +0900, Masami Hiramatsu wrote:
-> > > It'd be mostly based on your refcounting code, including stack
-> > > checking (when a process sleeps, counter gets set based on number of
-> > > patched functions on the stack), possibly including setting the counter
-> > > to 0 on syscall entry/exit, but it'd make the switch per-thread like
-> > > kGraft does, not for the whole system, when the respective counters
-> > > reach zero.
-> > 
-> > I'm not sure what happens if a process sleeps on the patched-set?
+
+On 2014/11/18 20:07, Yun Wu (Abel) wrote:
+> On 2014/11/12 21:43, Thomas Gleixner wrote:
 > 
-> Then the patching process will be stuck until it is woken up somehow.
-> But it's still much better to only have to care about processes sleeping
-> on the patched-set than about processes sleeping anywhere (kGraft).
+>> From: Jiang Liu <jiang.liu@linux.intel.com>
+<snip>
+>> +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
+>> +			    unsigned int nr_irqs, void *arg)
+>> +{
+>> +	struct msi_domain_info *info = domain->host_data;
+>> +	struct msi_domain_ops *ops = info->ops;
+>> +	irq_hw_number_t hwirq = ops->get_hwirq(info, arg);
+>> +	int i, ret;
+>> +
+>> +	if (irq_find_mapping(domain, hwirq) > 0)
+>> +		return -EEXIST;
 > 
-> > If we switch the other threads, when this sleeping thread wakes up
-> > that will see the old functions (and old data).
+> I think we need to check range here.
+> I fixed this by applying a patch showed in the bottom.
+Hi Yun,
+	Yes, we have some assumptions here about the way the interface
+will be used for. Will improve it in future patches.
+Regards!
+Gerry
 > 
-> Yes, until the patching process is complete, data must be kept in the
-> old format, even by new functions.
-
-I am not sure if I am able to follow all the ideas. Anyway,
-the above sentence triggered some warning bells in my head ;-)
-
-Would it mean waiting for two safe switch points, please? One to switch
-functions and the second to switch the data structures?
-
-The later condition looks pretty complicated to me. It would mean to
-make sure that the old structures won't be stored anywhere and nobody
-would want to use them later. It won't be enough to check the stack
-because some function might be called later that would access a saved
-pointer pointing to the old structure.
-
-
-> > So I think we need both SWITCH_THREAD and SWITCH_KERNEL options in
-> > that case.
+>> +
+>> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	for (i = 0; i < nr_irqs; i++) {
+>> +		ret = ops->msi_init(domain, info, virq + i, hwirq + i, arg);
+>> +		if (ret < 0) {
+>> +			if (ops->msi_free) {
+>> +				for (i--; i > 0; i--)
 > 
-> With data shadowing that's not required. It still may be worth having
-> it.
-
-I am not 100% sure what the shadowing means. If it means that the new
-function will be able to read and write both versions of the
-structure, it looks more easily doable to me.
-
-
-Best Regards,
-Petr
+> while (i--) ?
+> 
+> Regards,
+> 	Abel
+> 
+>> +					ops->msi_free(domain, info, virq + i);
+>> +			}
+>> +			irq_domain_free_irqs_top(domain, virq, nr_irqs);
+>> +			return ret;
+>> +		}
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
+>> +			    unsigned int nr_irqs)
+>> +{
+>> +	struct msi_domain_info *info = domain->host_data;
+>> +	int i;
+>> +
+>> +	if (info->ops->msi_free) {
+>> +		for (i = 0; i < nr_irqs; i++)
+>> +			info->ops->msi_free(domain, info, virq + i);
+>> +	}
+>> +	irq_domain_free_irqs_top(domain, virq, nr_irqs);
+>> +}
+>> +
+>> +static struct irq_domain_ops msi_domain_ops = {
+>> +	.alloc		= msi_domain_alloc,
+>> +	.free		= msi_domain_free,
+>> +	.activate	= msi_domain_activate,
+>> +	.deactivate	= msi_domain_deactivate,
+>> +};
+>> +
+>> +struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
+>> +					 struct msi_domain_info *info,
+>> +					 struct irq_domain *parent)
+>> +{
+>> +	struct irq_domain *domain;
+>> +
+>> +	domain = irq_domain_add_tree(of_node, &msi_domain_ops, info);
+>> +	if (domain)
+>> +		domain->parent = parent;
+>> +
+>> +	return domain;
+>> +}
+>> +
+>> +struct msi_domain_info *msi_get_domain_info(struct irq_domain *domain)
+>> +{
+>> +	return (struct msi_domain_info *)domain->host_data;
+>> +}
+>> +
+>> +#endif /* CONFIG_GENERIC_MSI_IRQ_DOMAIN */
+>>
+>>
+> 
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index cc18182..6d1be00 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -568,6 +568,34 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+>  }
+>  EXPORT_SYMBOL_GPL(irq_find_mapping);
+> 
+> +/**
+> + * irq_find_mapping_many() - Find a range of linux irqs from a range of hwirqs.
+> + * @domain:	domain owning these hardware interrupts
+> + * @hwirq:	start hardware irq number in @domain space
+> + * @count:	number of interrupts to find
+> + *
+> + * Returns the first linux irq number on success, or 0 when not found, or error.
+> + */
+> +int irq_find_mapping_many(struct irq_domain *domain, irq_hw_number_t hwirq,
+> +			  int count)
+> +{
+> +	unsigned int from;
+> +	int i;
+> +
+> +	for (i = from = 0; i < count; i++) {
+> +		if (!from) {
+> +			from = irq_find_mapping(domain, hwirq + i);
+> +			if (from && i)
+> +				return -1;
+> +		} else if ((from + i) != irq_find_mapping(domain, hwirq + i)) {
+> +			return -1;
+> +		}
+> +	}
+> +
+> +	return from;
+> +}
+> +EXPORT_SYMBOL_GPL(irq_find_mapping_many);
+> +
+>  #ifdef CONFIG_IRQ_DOMAIN_DEBUG
+>  static int virq_debug_show(struct seq_file *m, void *private)
+>  {
+> 
+> 
+> 
