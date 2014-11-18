@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932787AbaKRX1D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:27:03 -0500
-Received: from mga03.intel.com ([134.134.136.65]:52872 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401AbaKRX1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:27:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,413,1413270000"; 
-   d="scan'208";a="639320034"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphCABQ+BAIAAEq4AgAAB1ACAAACVgP//kExAABLiaAAAD6th0P//ng0AgACB8wD//4wmgP//ZAXAgAIPRYCAAIIoEA==
-Date: Tue, 18 Nov 2014 23:26:30 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F329407F2@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
- <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
- <20141112103011.GA16807@pd.tnic>
- <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
- <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
- <20141117185030.GA25157@pd.tnic>
- <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
- <20141117200354.GB25157@pd.tnic>
- <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
- <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
- <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F681@ORSMSX114.amr.corp.intel.com>
- <CALCETrXsxJ6eotRJG1tjPD8dkpAd6P2roDm+fj+Yqi36uh3WHA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293FFBA@ORSMSX114.amr.corp.intel.com>
- <CALCETrXdfKut2MDi1Z-iS1aJF30Ebfyumh65=QTm4MCihBbv1A@mail.gmail.com>
-In-Reply-To: <CALCETrXdfKut2MDi1Z-iS1aJF30Ebfyumh65=QTm4MCihBbv1A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S932831AbaKRXb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:31:29 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:33709 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692AbaKRXb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 18:31:27 -0500
 MIME-Version: 1.0
+In-Reply-To: <2163272.NHMRkNIupX@vostro.rjw.lan>
+References: <20141015225657.GA818@dtor-ws>
+	<20141016160555.GA3255@dtor-ws>
+	<CAE_wzQ8FTtnMGTxyaFu8=QqyuD0=W_ZyWXCf9_BK1sWKZHh95g@mail.gmail.com>
+	<2163272.NHMRkNIupX@vostro.rjw.lan>
+Date: Tue, 18 Nov 2014 15:31:26 -0800
+Message-ID: <CAE_wzQ-wAWZX5AKsdJ9LNFYkN9rz+WbMgBb4S+-edb76NUoDgA@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: do not fail suspend if unable to configure wakeup
+From: Dmitry Torokhov <dtor@chromium.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Dmitry Torokhov <dtor@chromium.org>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAINRAoD027923
 
-> Your test case is presumably doing something that involves setting
-> undocumented registers* to program the CPU or memory controller to
-> generate a machine check on access to some address.  Presumably this
-> is done by broadcasting an SMI and programming the registers in SMM.
+On Tue, Nov 18, 2014 at 3:43 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Tuesday, November 18, 2014 10:00:53 AM Dmitry Torokhov wrote:
+>> Hi Rafael,
+>>
+>> On Thu, Oct 16, 2014 at 9:05 AM, Dmitry Torokhov <dtor@chromium.org> wrote:
+>> > Hi Rafael,
+>> >
+>> > On Thu, Oct 16, 2014 at 10:10:20AM +0200, Rafael J. Wysocki wrote:
+>> >> Hi,
+>> >>
+>> >> On Thu, Oct 16, 2014 at 12:56 AM, Dmitry Torokhov <dtor@chromium.org> wrote:
+>> >> > Newer kernels put i2c devices with ACPI companion in ACPI power domain and
+>> >> > then ACPI will try to configure them for wakeup (if requested).
+>> >> > Unfortunately on some Chromebooks firmware separates wakeup GPIO into a
+>> >> > completely separate device (which is handled by the kernel as a sleep
+>> >> > button), leaving the touchpads themselves not wakeup capable (as far as
+>> >> > ACPI is concerned). This causes ACPI late suspend code to fail to configure
+>> >> > them as wakeup sources and aborts entire suspend.
+>> >> >
+>> >> > To work around this issues let's not abort entire suspend process if
+>> >> > driver asked to be a wakeup source but ACPI can not satisfy that
+>> >> > request.
+>> >> >
+>> >> > Note that originally I tried to simply change the driver to not mark
+>> >> > device as wakeup source, unfortunately then we do not know that we
+>> >> > should not be powering down the device completely, otherwise we can't
+>> >> > wake up.
+>> >> >
+>> >> > Verified by making sure that "echo mem > /sys/power/state" works on
+>> >> > Squawks.
+>> >> >
+>> >> > Reviewed-by: Benson Leung <bleung@chromium.org>
+>> >> > Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+>> >> > ---
+>> >> >  drivers/acpi/device_pm.c | 16 ++++++++++++----
+>> >> >  1 file changed, 12 insertions(+), 4 deletions(-)
+>> >> >
+>> >> > diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
+>> >> > index 67075f8..440bc3d 100644
+>> >> > --- a/drivers/acpi/device_pm.c
+>> >> > +++ b/drivers/acpi/device_pm.c
+>> >> > @@ -871,6 +871,7 @@ int acpi_dev_suspend_late(struct device *dev)
+>> >> >         struct acpi_device *adev = ACPI_COMPANION(dev);
+>> >> >         u32 target_state;
+>> >> >         bool wakeup;
+>> >> > +       bool can_wakeup;
+>> >> >         int error;
+>> >> >
+>> >> >         if (!adev)
+>> >> > @@ -878,12 +879,19 @@ int acpi_dev_suspend_late(struct device *dev)
+>> >> >
+>> >> >         target_state = acpi_target_system_state();
+>> >> >         wakeup = device_may_wakeup(dev);
+>> >> > -       error = acpi_device_wakeup(adev, target_state, wakeup);
+>> >> > -       if (wakeup && error)
+>> >> > -               return error;
+>> >> > +       can_wakeup = acpi_device_can_wakeup(adev);
+>> >> > +
+>> >> > +       if (can_wakeup) {
+>> >> > +               error = acpi_device_wakeup(adev, target_state, wakeup);
+>> >> > +               if (wakeup && error)
+>> >> > +                       return error;
+>> >> > +       } else if (wakeup) {
+>> >>
+>> >> I think we just need to return an error code in that case, because otherwise
+>> >
+>> > We used to return error and that error aborted the suspend altogether,
+>> > which prompted creating this patch.
+>> >
+>> >> this is potentially dangerous (worst case, it may be impossible to wake up
+>> >> the machine at all after that).
+>> >
+>> > Yes, there is such potential, but that kind of error (no working wakeup
+>> > sources) will be discovered before a box is shipped. Right now we have
+>> > boxes in the wild that suspend fine with 3.10 and refuse to suspend with
+>> > 3.14 because between 3.10 and 3.14 we started placing i2c devices with
+>> > ACPI companions into ACPI power domain and ACPI power domain is now
+>> > trying to configure them as wakeup sources and fails.
+>>
+>> A gentle ping on the patch - without it (or something else) we basically
+>> have a regression on shipped hardware: Chromebooks that were
+>> suspending fine with 3.10 refuse to suspend with 3.14.
+>
+> It fell of my radar, sorry about that.
+>
+> So the error here is that device_may_wakeup(dev) returns true, because the
+> device is technically wakeup-capable, but the wakeup is not via ACPI?
+>
+> I'd say this is rather not in accordance with the spec,
 
-Good theory - but not quite how it works.  The ACPI/EINJ table does trigger
-an SMI so the BIOS can do the injection.  What BIOS actually does is to play
-with the memory controller so that the next write to the target address will
-flip some ECC bits in an unnatural way (to either plant a correctable error
-with just one bit flipped, or a UC error with two bits flipped).  Then the SMI
-returns.
+Well, specs, they are mostly like... guidelines ;)
 
-Then my application reads the target address, and we see CMCI or MCE
-when the ECC check fails.
+> but that means we
+> need to simply ignore 'wakeup' if acpi_device_can_wakeup(adev) returns false.
+>
+> So what about the appended patch?
 
-Hopefully this keeps the SMI path decoupled from the MCE ... I even sleep
-a little after injection and before consumption just in case there are any
-stragglers late returning from the (broadcast) SMI that planted the error.
+Would work as well with the difference that your version is silent so next time
+firmware engineers come up with similar stuff it will stay unnoticed.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I am happy with either version.
+
+Thanks.
+
+-- 
+Dmitry
