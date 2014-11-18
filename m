@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738AbaKRVLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:11:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38612 "EHLO mx2.suse.de"
+	id S932397AbaKRVOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:14:19 -0500
+Received: from 1wt.eu ([62.212.114.60]:53231 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754805AbaKRVLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:11:07 -0500
-Date: Tue, 18 Nov 2014 22:11:12 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Antonio Borneo <borneo.antonio@gmail.com>
-cc: linux-input@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-Subject: Re: [PATCH] HID: i2c-hid: print the correct data in dbg msg
-In-Reply-To: <1416149143-25703-1-git-send-email-borneo.antonio@gmail.com>
-Message-ID: <alpine.LNX.2.00.1411182209320.4454@pobox.suse.cz>
-References: <1416149143-25703-1-git-send-email-borneo.antonio@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753867AbaKRVOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 16:14:18 -0500
+Date: Tue, 18 Nov 2014 22:14:11 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Mariusz Gorski <marius.gorski@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/9] staging: panel: Remove magic numbers
+Message-ID: <20141118211411.GD26514@1wt.eu>
+References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com> <1416344174-9155-4-git-send-email-marius.gorski@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416344174-9155-4-git-send-email-marius.gorski@gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Nov 2014, Antonio Borneo wrote:
-
-> From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+On Tue, Nov 18, 2014 at 09:56:08PM +0100, Mariusz Gorski wrote:
+> Get rid of magic numbers indicating that the value of a module param
+> is not set. Use a defined value instead.
 > 
-> Report is received in "buffer"; fix the following i2c_hid_dbg()
-> to dump data from the correct pointer.
-> 
-> Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-> [Antonio Borneo: cleanup and rebase to v3.17]
-> Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+> Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
 
-Added Benjamin's Reviewed-by and applied, thanks.
+Acked-by: Willy Tarreau <w@1wt.eu>
 
--- 
-Jiri Kosina
-SUSE Labs
