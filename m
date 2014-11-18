@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaKRDIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:08:54 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:58013 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaKRDIw (ORCPT
+	id S1752709AbaKRDRZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:17:25 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:64347 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaKRDRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:08:52 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 18 Nov 2014 12:11:26 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Weijie Yang <weijie.yang.kh@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] mm/page_alloc: fix incorrect isolation behavior
- by rechecking migratetype
-Message-ID: <20141118031125.GA12197@js1304-P5Q-DELUXE>
-References: <1414740330-4086-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1414740330-4086-2-git-send-email-iamjoonsoo.kim@lge.com>
- <CAL1ERfMxR0BPQ-1hsD+Z-Oizkt4WHzL_rwYmKd2n70R=H0X22Q@mail.gmail.com>
- <20141114103301.GD21422@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141114103301.GD21422@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Nov 2014 22:17:24 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-85-546aba31551b
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 1/3] f2fs: avoid unable to restart gc thread in
+ remount
+Date: Tue, 18 Nov 2014 11:16:01 +0800
+Message-id: <006601d002de$20ec59a0$62c50ce0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AdAC18XmrfPSz0o8QxazhqsewEdvfg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jQV3DXVkhBsdOy1tc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr4/sJj4KX
+	XBV31j9kbWC8xNHFyMkhIWAi8W57HyuELSZx4d56ti5GLg4hgemMEsfb5kE5Pxgl+hseMoFU
+	sQmoSCzv+A9miwh4SUzaf4IFxGYW8JBo7PgONklYIFhi+YkDYHEWAVWJS91LGLsYOTh4BSwl
+	vtyoBQnzCghK/Jh8D6pVS2L9zuNMELa8xOY1b5khDlKQ2HH2NSPEKj2Jm2//QdWLS2w8cotl
+	AqPALCSjZiEZNQvJqFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA7oZ9I7GFc1
+	WBxiFOBgVOLhTZyaFSLEmlhWXJl7iFGCg1lJhPdcN1CINyWxsiq1KD++qDQntfgQozQHi5I4
+	78FW60AhgfTEktTs1NSC1CKYLBMHp1QDYx/HprMM/EbV+2rv27PG7FjItXs5q9Cv69/YIkrT
+	uJdWPFswxb9nWZbk7rWFbGcEnmay16xLfsXxav6Uw3Upv6LzRAI+SS/lrF+y95JXjWIO4761
+	iZHOTaq746XZZgrHfF6268DKFa/Xs6zRnXP5t61XZ9icybYOD+v4jL40WVadX3ax653yTyWW
+	4oxEQy3mouJEABeaq4pkAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 10:33:01AM +0000, Mel Gorman wrote:
-> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > > index 4593567..3d090af 100644
-> > > --- a/include/linux/mmzone.h
-> > > +++ b/include/linux/mmzone.h
-> > > @@ -431,6 +431,15 @@ struct zone {
-> > >          */
-> > >         int                     nr_migrate_reserve_block;
-> > >
-> > > +#ifdef CONFIG_MEMORY_ISOLATION
-> > > +       /*
-> > > +        * Number of isolated pageblock. It is used to solve incorrect
-> > > +        * freepage counting problem due to racy retrieving migratetype
-> > > +        * of pageblock. Protected by zone->lock.
-> > > +        */
-> > > +       unsigned long           nr_isolate_pageblock;
-> > > +#endif
-> > > +
-> > 
-> > First sorry for this deferred reply, I see these patches have been merged
-> > into the mainline.
-> > However, I still have a tiny question:
-> > Why use ZONE_PADDING(_pad1_)  seperate it and zone->lock?
-> > How about move it to the same cacheline with zone->lock, because it is
-> > accessed under zone->lock?
-> > 
-> 
-> zone->lock is currently sharing lines with the data that is frequently
-> updated under zone lock and some of the dirty data cache line bouncing has
-> completed when the lock is acquired. nr_isolate_pageblock is a read-mostly
-> field and in some cases will never be used. It's fine where it is beside
-> other read-mostly fields.
-> 
+In f2fs_remount, we will stop gc thread and set need_restart_gc as true when new
+option is set without BG_GC, then if any error occurred in the following
+procedure, we can restore to start the gc thread.
+But after that, We will fail to restore gc thread in start_gc_thread as BG_GC is
+not set in new option, so we'd better move this condition judgment out of
+start_gc_thread to fix this issue.
 
-My bad...
-I don't remember why I decide that place. :/
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/gc.c    | 2 --
+ fs/f2fs/super.c | 2 +-
+ 2 files changed, 1 insertion(+), 3 deletions(-)
 
-It seems better to move nr_isolate_pageblock to the same cacheline with
-zone->lock, but, as Mel said, it is rarely used field so improvement would
-be marginal.
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index b197a2f..657683c9 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -96,8 +96,6 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
+ 	dev_t dev = sbi->sb->s_bdev->bd_dev;
+ 	int err = 0;
+ 
+-	if (!test_opt(sbi, BG_GC))
+-		goto out;
+ 	gc_th = kmalloc(sizeof(struct f2fs_gc_kthread), GFP_KERNEL);
+ 	if (!gc_th) {
+ 		err = -ENOMEM;
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 512ffd8..536d414 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -1138,7 +1138,7 @@ try_onemore:
+ 	 * If filesystem is not mounted as read-only then
+ 	 * do start the gc_thread.
+ 	 */
+-	if (!f2fs_readonly(sb)) {
++	if (test_opt(sbi, BG_GC) && !f2fs_readonly(sb)) {
+ 		/* After POR, we can run background GC thread.*/
+ 		err = start_gc_thread(sbi);
+ 		if (err)
+-- 
+2.1.2
 
-Thanks.
+
