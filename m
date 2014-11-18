@@ -1,90 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525AbaKRL12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 06:27:28 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:46187 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031AbaKRLYD (ORCPT
+	id S1753900AbaKRLbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 06:31:40 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:55932 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbaKRLbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 06:24:03 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 03/12] media: exynos-gsc: use vb2_ops_wait_prepare/finish helper
-Date: Tue, 18 Nov 2014 11:23:32 +0000
-Message-Id: <1416309821-5426-4-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416309821-5426-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1416309821-5426-1-git-send-email-prabhakar.csengg@gmail.com>
+	Tue, 18 Nov 2014 06:31:38 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-arm-kernel@lists.infradead.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Suravee.Suthikulpanit@amd.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Wuyun <wuyun.wu@huawei.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 00/16] Refine PCI host bridge scan interfaces
+Date: Tue, 18 Nov 2014 12:30:11 +0100
+Message-ID: <20535707.3sA6NjSINh@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <546B2ACC.90304@huawei.com>
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1463511.o4kE8TX3Bd@wuerfel> <546B2ACC.90304@huawei.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Ru8u+VvW5cWakMbDe8agPHA46l4Qq+IPcnS60eQuZtL
+ vb8x+csdhGFOP+IKhOXMtreqKa1AXjsPhIPAvChXnBr9DJUeEH
+ y9zEsCTTDFQ4Lwlu3SP0NCtdDumGGwHj5k9rc7x0WvbBiOdi4U
+ +IfJa+mTx28XOA/bDdmT1D77O/nN0g4LiCWoc7MkPnoXaUFnU8
+ tlWT3e30CG9ovJdf8uuDWD3+YEeQWYaQE1Hv2OxjkqXHEK6lnb
+ sLUJwBKMmgIUJrb/JT5P6lzGuNeu/r+PrqC1goqoSO0QAuFEtY
+ Ac36ypP023MABZLiYKV3Qt/rn8+rt2zSU1Gz+Lprlv7ZFWCWU1
+ VLA7XN4eSdO9m0Ffgrf4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
----
- drivers/media/platform/exynos-gsc/gsc-core.h | 12 ------------
- drivers/media/platform/exynos-gsc/gsc-m2m.c  |  6 ++++--
- 2 files changed, 4 insertions(+), 14 deletions(-)
+On Tuesday 18 November 2014 19:17:32 Yijing Wang wrote:
+> On 2014/11/17 22:13, Arnd Bergmann wrote:
+> > On Monday 17 November 2014 18:21:34 Yijing Wang wrote:
+> >> This series is based Linux 3.18-rc1 and Lorenzo Pieralisi's
+> >> arm PCI domain cleanup patches, link: 
+> >> https://patchwork.ozlabs.org/patch/407585/
+> >>
+> >> Current pci scan interfaces like pci_scan_root_bus() and directly
+> >> call pci_create_root_bus()/pci_scan_child_bus() lack flexiblity.
+> >> Some platform infos like PCI domain and msi_chip have to be
+> >> associated to PCI bus by some arch specific function.
+> >> We want to make a generic pci_host_bridge, and make it hold
+> >> the platform infos or hook. Then we could eliminate the lots
+> >> of arch pci_domain_nr, also we could associate some platform 
+> >> ops something like pci_get_msi_chip(struct pci_dev *dev)
+> >> with pci_host_bridge to avoid introduce arch weak functions.
+> >>
+> >> This RFC version not for all platforms, just applied the new
+> >> scan interface in x86/arm/powerpc/ia64, I will refresh other
+> >> platforms after the core pci scan interfaces are ok.
+> > 
+> > I think overall this is a good direction to take, in particular
+> > moving more things into struct pci_host_bridge so we can
+> > slim down the architecture specific code.
+> 
+> Hi Arnd, thanks very much for your review and comments!
+> 
+> > 
+> > I don't particularly like the way you use the 'pci_host_info'
+> > to pass callback pointers and some of the generic information.
+> > This duplicates some of the issues we are currently trying
+> > to untangle in the arm32 code to make drivers easier to share
+> > between architectures.
+> 
+> What arm32 code you are trying to untangle for example ?
 
-diff --git a/drivers/media/platform/exynos-gsc/gsc-core.h b/drivers/media/platform/exynos-gsc/gsc-core.h
-index 0abdb17..fa572aa 100644
---- a/drivers/media/platform/exynos-gsc/gsc-core.h
-+++ b/drivers/media/platform/exynos-gsc/gsc-core.h
-@@ -466,18 +466,6 @@ static inline void gsc_hw_clear_irq(struct gsc_dev *dev, int irq)
- 	writel(cfg, dev->regs + GSC_IRQ);
- }
- 
--static inline void gsc_lock(struct vb2_queue *vq)
--{
--	struct gsc_ctx *ctx = vb2_get_drv_priv(vq);
--	mutex_lock(&ctx->gsc_dev->lock);
--}
--
--static inline void gsc_unlock(struct vb2_queue *vq)
--{
--	struct gsc_ctx *ctx = vb2_get_drv_priv(vq);
--	mutex_unlock(&ctx->gsc_dev->lock);
--}
--
- static inline bool gsc_ctx_state_is_set(u32 mask, struct gsc_ctx *ctx)
- {
- 	unsigned long flags;
-diff --git a/drivers/media/platform/exynos-gsc/gsc-m2m.c b/drivers/media/platform/exynos-gsc/gsc-m2m.c
-index 74e1de6..d5cffef 100644
---- a/drivers/media/platform/exynos-gsc/gsc-m2m.c
-+++ b/drivers/media/platform/exynos-gsc/gsc-m2m.c
-@@ -267,8 +267,8 @@ static struct vb2_ops gsc_m2m_qops = {
- 	.queue_setup	 = gsc_m2m_queue_setup,
- 	.buf_prepare	 = gsc_m2m_buf_prepare,
- 	.buf_queue	 = gsc_m2m_buf_queue,
--	.wait_prepare	 = gsc_unlock,
--	.wait_finish	 = gsc_lock,
-+	.wait_prepare	 = vb2_ops_wait_prepare,
-+	.wait_finish	 = vb2_ops_wait_finish,
- 	.stop_streaming	 = gsc_m2m_stop_streaming,
- 	.start_streaming = gsc_m2m_start_streaming,
- };
-@@ -590,6 +590,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
- 	src_vq->mem_ops = &vb2_dma_contig_memops;
- 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
- 	src_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
-+	src_vq->lock = &ctx->gsc_dev->lock;
- 
- 	ret = vb2_queue_init(src_vq);
- 	if (ret)
-@@ -603,6 +604,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
- 	dst_vq->mem_ops = &vb2_dma_contig_memops;
- 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
- 	dst_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
-+	dst_vq->lock = &ctx->gsc_dev->lock;
- 
- 	return vb2_queue_init(dst_vq);
- }
--- 
-1.9.1
+We have a few problems that currently prevent us from using shared
+drivers across arm32 and arm64:
 
+- arm32 has an architecture-defined pci_sys_data structure, but
+  we really want to have one that is defined by the host bridge driver
+  and that is architecture independent. Some core functions depend
+  on this structure at the moment, which Lorenzo is trying to
+  undo
+
+- The pci_common_init interface on arm32 doesn't work well on
+  loadable drivers, it does not return an error, and it is built
+  around the assumption that you probe all pci host bridges at
+  the same time, while the standard Linux driver model assumes
+  that you probe one at a time.
+
+- The way we pass a temporary structure (hw_pci) with function pointers
+  into the architecture code makes it relatively hard to follow
+  how the initialization sequence works.
+ 
+> Introduce pci_host_info here because I want to make the PCI scan interfaces
+> simple to host drviers, host drivers only need to call one scan
+> interface(pci_scan_host_bridge), but from your comments,
+> The combination pci_create_host_bridge() + pci_scan_xx()
+> seems to be more popular.
+
+Yes, I think a simpler interface structure would be better than trying
+to minimize the amount of code needed in drivers at the expense of
+interface complexity.
+
+> > As a general approach, I'd rather see generic helper functions
+> > being exported by the PCI core that a driver may or may not
+> > call. 
+> > The way you split the interface between things that happen
+> > before scanning the buses (pci_create_host_bridge) and
+> > the actual scanning (__pci_create_root_bus, pci_scan_child_bus)
+> > seems very helpful and I think we can expand that concept further:
+> > 
+> > - The normal pci_create_host_bridge() function can contain
+> >   all of the DT scanning functions (finding bus/mem/io resources, 
+> >   finding the msi-parent), while drivers that don't depend on DT
+> >   for this information can call the same function and fill the
+> >   same things after they have the pci_host_bridge pointer.
+> > 
+> > - If a driver needs to set up mapping windows, it can do that after
+> >   calling pci_create_host_bridge(). E.g. all the dw_pcie glue drivers
+> >   can call a dw_pcie_setup_windows() function that takes the resources
+> >   out of the pci_host_bridge pointer before the bus is scanned.
+> > 
+> > - The ACPI code can have a completely different way of creating
+> >   a struct pci_host_bridge, which is also passed into the same
+> >   bus scanning functions, but doesn't have to come from
+> >   pci_create_host_bridge.
+> 
+> I hope platforms with ACPI or DT could both use pci_create_host_bridge().
+> Why we need to use two different ways to process it ?
+
+These are completely different use cases:
+
+a) For DT, we want loadable device drivers that start by probing a host
+   bridge device which was added through the DT platform code. The
+   driver is self-contained, and eventually we want to be able to unload
+   it. We have lots of different per-soc drivers that require different
+   quirks
+
+b) For ACPI, the interface is defined in the ACPI spec across architectures
+   and SoCs, we don't have host bridge drivers and the code that initializes
+   the PCI is required early during boot and called from architecture
+   code. There is no parent device, as ACPI sees PCI as a fundamental building
+   block by itself, and there are no drivers because the firmware does
+   the initial hardware setup, so we only have to access the config space.
+
+	Arnd
