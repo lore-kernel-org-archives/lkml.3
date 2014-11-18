@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415AbaKRQD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:03:56 -0500
-Received: from sauhun.de ([89.238.76.85]:46110 "EHLO pokefinder.org"
+	id S1755340AbaKRQDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:03:55 -0500
+Received: from sauhun.de ([89.238.76.85]:46112 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755244AbaKRQDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755241AbaKRQDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 11:03:52 -0500
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-i2c@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: linux-sh@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 2/3] i2c: slave-eeprom: add eeprom simulator driver
-Date: Tue, 18 Nov 2014 17:04:54 +0100
-Message-Id: <1416326695-13083-3-git-send-email-wsa@the-dreams.de>
+Subject: [PATCH 1/3] i2c: core changes for slave support
+Date: Tue, 18 Nov 2014 17:04:53 +0100
+Message-Id: <1416326695-13083-2-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1416326695-13083-1-git-send-email-wsa@the-dreams.de>
 References: <1416326695-13083-1-git-send-email-wsa@the-dreams.de>
@@ -26,238 +26,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
-The first user of the i2c-slave interface is an eeprom simulator. It is
-a shared memory which can be accessed by the remote master via I2C and
-locally via sysfs.
+Finally(!), make Linux support being an I2C slave. Most of the existing
+infrastructure is reused. We mainly add i2c_slave_register/unregister()
+calls which tells i2c bus drivers to activate the slave mode. Then, they
+also get a callback to report slave events to.
 
 Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
 ---
 
 Changes since RFC:
-* fix build error for modules
-* don't hardcode size
-* add boundary checks for sysfs access
-* use a spinlock
-* s/at24s/eeprom/g
-* add some docs
-* clean up exit paths
-* use size-variable instead of driver_data
+* add slave mode kernel doc
+* lock adapter around slave registration
+* inline i2c_slave_event
 
- drivers/i2c/Kconfig            |  10 +++
- drivers/i2c/Makefile           |   1 +
- drivers/i2c/i2c-slave-eeprom.c | 170 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 181 insertions(+)
- create mode 100644 drivers/i2c/i2c-slave-eeprom.c
+ drivers/i2c/i2c-core.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/i2c.h    | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 78 insertions(+)
 
-diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-index b51a402752c4..8c9e619f3026 100644
---- a/drivers/i2c/Kconfig
-+++ b/drivers/i2c/Kconfig
-@@ -110,6 +110,16 @@ config I2C_STUB
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index f43b4e11647a..bbcf427bf123 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -24,6 +24,7 @@
+    (c) 2013  Wolfram Sang <wsa@the-dreams.de>
+    I2C ACPI code Copyright (C) 2014 Intel Corp
+    Author: Lan Tianyu <tianyu.lan@intel.com>
++   I2C slave support (c) 2014 by Wolfram Sang <wsa@sang-engineering.com> 
+  */
  
- 	  If you don't know what to do here, definitely say N.
+ #include <linux/module.h>
+@@ -2902,6 +2903,54 @@ trace:
+ }
+ EXPORT_SYMBOL(i2c_smbus_xfer);
  
-+config I2C_SLAVE
-+	bool "I2C slave support"
-+
-+if I2C_SLAVE
-+
-+config I2C_SLAVE_EEPROM
-+	tristate "I2C eeprom slave driver"
-+
-+endif
-+
- config I2C_DEBUG_CORE
- 	bool "I2C Core debugging messages"
- 	help
-diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-index 1722f50f2473..45095b3d16a9 100644
---- a/drivers/i2c/Makefile
-+++ b/drivers/i2c/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_I2C_CHARDEV)	+= i2c-dev.o
- obj-$(CONFIG_I2C_MUX)		+= i2c-mux.o
- obj-y				+= algos/ busses/ muxes/
- obj-$(CONFIG_I2C_STUB)		+= i2c-stub.o
-+obj-$(CONFIG_I2C_SLAVE_EEPROM)	+= i2c-slave-eeprom.o
- 
- ccflags-$(CONFIG_I2C_DEBUG_CORE) := -DDEBUG
- CFLAGS_i2c-core.o := -Wno-deprecated-declarations
-diff --git a/drivers/i2c/i2c-slave-eeprom.c b/drivers/i2c/i2c-slave-eeprom.c
-new file mode 100644
-index 000000000000..6631400b5f02
---- /dev/null
-+++ b/drivers/i2c/i2c-slave-eeprom.c
-@@ -0,0 +1,170 @@
-+/*
-+ * I2C slave mode EEPROM simulator
-+ *
-+ * Copyright (C) 2014 by Wolfram Sang, Sang Engineering <wsa@sang-engineering.com>
-+ * Copyright (C) 2014 by Renesas Electronics Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; version 2 of the License.
-+ *
-+ * Because most IP blocks can only detect one I2C slave address anyhow, this
-+ * driver does not support simulating EEPROM types which take more than one
-+ * address. It is prepared to simulate bigger EEPROMs with an internal 16 bit
-+ * pointer, yet implementation is deferred until the need actually arises.
-+ */
-+
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/sysfs.h>
-+
-+struct eeprom_data {
-+	struct bin_attribute bin;
-+	bool first_write;
-+	spinlock_t buffer_lock;
-+	u8 buffer_idx;
-+	u8 buffer[];
-+};
-+
-+static int i2c_slave_eeprom_slave_cb(struct i2c_client *client,
-+				     enum i2c_slave_event event, u8 *val)
++int i2c_slave_register(struct i2c_client *client, i2c_slave_cb_t slave_cb)
 +{
-+	struct eeprom_data *eeprom = i2c_get_clientdata(client);
-+
-+	switch (event) {
-+	case I2C_SLAVE_REQ_WRITE_END:
-+		if (eeprom->first_write) {
-+			eeprom->buffer_idx = *val;
-+			eeprom->first_write = false;
-+		} else {
-+			spin_lock(&eeprom->buffer_lock);
-+			eeprom->buffer[eeprom->buffer_idx++] = *val;
-+			spin_unlock(&eeprom->buffer_lock);
-+		}
-+		break;
-+
-+	case I2C_SLAVE_REQ_READ_START:
-+		spin_lock(&eeprom->buffer_lock);
-+		*val = eeprom->buffer[eeprom->buffer_idx];
-+		spin_unlock(&eeprom->buffer_lock);
-+		break;
-+
-+	case I2C_SLAVE_REQ_READ_END:
-+		eeprom->buffer_idx++;
-+		break;
-+
-+	case I2C_SLAVE_STOP:
-+		eeprom->first_write = true;
-+		break;
-+
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static ssize_t i2c_slave_eeprom_bin_read(struct file *filp, struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf, loff_t off, size_t count)
-+{
-+	struct eeprom_data *eeprom;
-+	unsigned long flags;
-+
-+	if (off + count >= attr->size)
-+		return -EFBIG;
-+
-+	eeprom = dev_get_drvdata(container_of(kobj, struct device, kobj));
-+
-+	spin_lock_irqsave(&eeprom->buffer_lock, flags);
-+	memcpy(buf, &eeprom->buffer[off], count);
-+	spin_unlock_irqrestore(&eeprom->buffer_lock, flags);
-+
-+	return count;
-+}
-+
-+static ssize_t i2c_slave_eeprom_bin_write(struct file *filp, struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf, loff_t off, size_t count)
-+{
-+	struct eeprom_data *eeprom;
-+	unsigned long flags;
-+
-+	if (off + count >= attr->size)
-+		return -EFBIG;
-+
-+	eeprom = dev_get_drvdata(container_of(kobj, struct device, kobj));
-+
-+	spin_lock_irqsave(&eeprom->buffer_lock, flags);
-+	memcpy(&eeprom->buffer[off], buf, count);
-+	spin_unlock_irqrestore(&eeprom->buffer_lock, flags);
-+
-+	return count;
-+}
-+
-+static int i2c_slave_eeprom_probe(struct i2c_client *client, const struct i2c_device_id *id)
-+{
-+	struct eeprom_data *eeprom;
 +	int ret;
-+	unsigned size = id->driver_data;
 +
-+	eeprom = devm_kzalloc(&client->dev, sizeof(struct eeprom_data) + size, GFP_KERNEL);
-+	if (!eeprom)
-+		return -ENOMEM;
++	if (!client || !slave_cb)
++		return -EINVAL;
 +
-+	eeprom->first_write = true;
-+	spin_lock_init(&eeprom->buffer_lock);
-+	i2c_set_clientdata(client, eeprom);
-+
-+	sysfs_bin_attr_init(&eeprom->bin);
-+	eeprom->bin.attr.name = "slave-eeprom";
-+	eeprom->bin.attr.mode = S_IRUSR | S_IWUSR;
-+	eeprom->bin.read = i2c_slave_eeprom_bin_read;
-+	eeprom->bin.write = i2c_slave_eeprom_bin_write;
-+	eeprom->bin.size = size;
-+
-+	ret = sysfs_create_bin_file(&client->dev.kobj, &eeprom->bin);
-+	if (ret)
-+		return ret;
-+
-+	ret = i2c_slave_register(client, i2c_slave_eeprom_slave_cb);
-+	if (ret) {
-+		sysfs_remove_bin_file(&client->dev.kobj, &eeprom->bin);
-+		return ret;
++	if (!(client->flags & I2C_CLIENT_TEN)) {
++		/* Enforce stricter address checking */
++		ret = i2c_check_addr_validity(client->addr);
++		if (ret)
++			return ret;
 +	}
 +
-+	return 0;
++	if (!client->adapter->algo->reg_slave)
++		return -EOPNOTSUPP;
++
++	client->slave_cb = slave_cb;
++
++	i2c_lock_adapter(client->adapter);
++	ret = client->adapter->algo->reg_slave(client);
++	i2c_unlock_adapter(client->adapter);
++
++	if (ret)
++		client->slave_cb = NULL;
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(i2c_slave_register);
++
++int i2c_slave_unregister(struct i2c_client *client)
++{
++	int ret;
++
++	if (!client->adapter->algo->unreg_slave)
++		return -EOPNOTSUPP;
++
++	i2c_lock_adapter(client->adapter);
++	ret = client->adapter->algo->unreg_slave(client);
++	i2c_unlock_adapter(client->adapter);
++
++	if (ret == 0)
++		client->slave_cb = NULL;
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(i2c_slave_unregister);
++
+ MODULE_AUTHOR("Simon G. Vogl <simon@tk.uni-linz.ac.at>");
+ MODULE_DESCRIPTION("I2C-Bus main module");
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index b556e0ab946f..0f1c5a61c931 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -46,6 +46,8 @@ struct i2c_client;
+ struct i2c_driver;
+ union i2c_smbus_data;
+ struct i2c_board_info;
++enum i2c_slave_event;
++typedef int (*i2c_slave_cb_t)(struct i2c_client *, enum i2c_slave_event, u8 *);
+ 
+ struct module;
+ 
+@@ -209,6 +211,8 @@ struct i2c_driver {
+  * @irq: indicates the IRQ generated by this device (if any)
+  * @detected: member of an i2c_driver.clients list or i2c-core's
+  *	userspace_devices list
++ * @slave_cb: Callback when I2C slave mode of an adapter is used. The adapter
++ * 	calls it to pass on slave events to the slave driver.
+  *
+  * An i2c_client identifies a single device (i.e. chip) connected to an
+  * i2c bus. The behaviour exposed to Linux is defined by the driver
+@@ -224,6 +228,7 @@ struct i2c_client {
+ 	struct device dev;		/* the device structure		*/
+ 	int irq;			/* irq issued by device		*/
+ 	struct list_head detected;
++	i2c_slave_cb_t slave_cb;	/* callback for slave mode	*/
+ };
+ #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
+ 
+@@ -246,6 +251,25 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
+ 	dev_set_drvdata(&dev->dev, data);
+ }
+ 
++/* I2C slave support */
++
++enum i2c_slave_event {
++	I2C_SLAVE_REQ_READ_START,
++	I2C_SLAVE_REQ_READ_END,
++	I2C_SLAVE_REQ_WRITE_START,
++	I2C_SLAVE_REQ_WRITE_END,
++	I2C_SLAVE_STOP,
 +};
 +
-+static int i2c_slave_eeprom_remove(struct i2c_client *client)
++extern int i2c_slave_register(struct i2c_client *client, i2c_slave_cb_t slave_cb);
++extern int i2c_slave_unregister(struct i2c_client *client);
++
++static inline int i2c_slave_event(struct i2c_client *client,
++				  enum i2c_slave_event event, u8 *val)
 +{
-+	struct eeprom_data *eeprom = i2c_get_clientdata(client);
-+
-+	i2c_slave_unregister(client);
-+	sysfs_remove_bin_file(&client->dev.kobj, &eeprom->bin);
-+
-+	return 0;
++	return client->slave_cb(client, event, val);
 +}
 +
-+static const struct i2c_device_id i2c_slave_eeprom_id[] = {
-+	{ "slave-24c02", 2048 / 8 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, i2c_slave_eeprom_id);
+ /**
+  * struct i2c_board_info - template for device creation
+  * @type: chip type, to initialize i2c_client.name
+@@ -352,6 +376,8 @@ i2c_register_board_info(int busnum, struct i2c_board_info const *info,
+  *   into I2C transfers instead.
+  * @functionality: Return the flags that this algorithm/adapter pair supports
+  *   from the I2C_FUNC_* flags.
++ * @reg_slave: Register given client to I2C slave mode of this adapter
++ * @unreg_slave: Unregister given client from I2C slave mode of this adapter
+  *
+  * The following structs are for those who like to implement new bus drivers:
+  * i2c_algorithm is the interface to a class of hardware solutions which can
+@@ -377,6 +403,9 @@ struct i2c_algorithm {
+ 
+ 	/* To determine what the adapter supports */
+ 	u32 (*functionality) (struct i2c_adapter *);
 +
-+static struct i2c_driver i2c_slave_eeprom_driver = {
-+	.driver = {
-+		.name = "i2c-slave-eeprom",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = i2c_slave_eeprom_probe,
-+	.remove = i2c_slave_eeprom_remove,
-+	.id_table = i2c_slave_eeprom_id,
-+};
-+module_i2c_driver(i2c_slave_eeprom_driver);
-+
-+MODULE_AUTHOR("Wolfram Sang <wsa@sang-engineering.com>");
-+MODULE_DESCRIPTION("I2C slave mode EEPROM simulator");
-+MODULE_LICENSE("GPL v2");
++	int (*reg_slave)(struct i2c_client *client);
++	int (*unreg_slave)(struct i2c_client *client);
+ };
+ 
+ /**
 -- 
 2.1.1
 
