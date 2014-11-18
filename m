@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaKRGnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 01:43:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26509 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaKRGnk (ORCPT
+	id S1752937AbaKRGwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:52:35 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:45191 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaKRGwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 01:43:40 -0500
-Date: Tue, 18 Nov 2014 09:43:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Juston <juston.h.li@gmail.com>
-Cc: devel@driverdev.osuosl.org, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        oleg.drokin@intel.com, HPDD-discuss@ml01.01.org
-Subject: Re: [PATCH] staging: lustre: mdc: use __FMODE_EXEC macro
-Message-ID: <20141118064314.GJ4905@mwanda>
-References: <1416263028-16026-1-git-send-email-juston.h.li@gmail.com>
- <20141117224616.GI4905@mwanda>
- <1416270188.18197.16.camel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416270188.18197.16.camel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 18 Nov 2014 01:52:33 -0500
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: San Mehat <san@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC] serial_core: Add wake_peer uart operation
+Date: Tue, 18 Nov 2014 12:20:01 +0530
+Message-Id: <1416293401-7714-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 04:23:08PM -0800, Juston wrote:
-> Seems to be the case. Looked at some old commits (2.6.17) and found
-> FMODE_EXEC was mainlined to allow lustre to be installed on a vanilla
-> kernel.
+From: San Mehat <san@google.com>
 
-We actually only care about the most recent kernel.  I think you can
-remove the ifdefs in this case.
+serial_core: Add wake_peer uart operation
 
-regards,
-dan carpenter
+Add wake_peer which is called before starting UART TX. The idea here
+is to provide a mechanism where we can wakeup our peer before sending
+data.
+
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Signed-off-by: San Mehat <san@google.com>
+[Kiran: Added context to commit message]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+---
+This is one of the number of patches from the Android AOSP common.git tree,
+which is used on almost all Android devices.  I wanted to submit it for review
+to see if it should go upstream.
+
+ drivers/tty/serial/serial_core.c | 3 +++
+ include/linux/serial_core.h      | 1 +
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index df3a8c7..dc45c4b 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -95,6 +95,9 @@ static void __uart_start(struct tty_struct *tty)
+ 	struct uart_state *state = tty->driver_data;
+ 	struct uart_port *port = state->uart_port;
+ 
++	if (port->ops->wake_peer)
++		port->ops->wake_peer(port);
++
+ 	if (!uart_tx_stopped(port))
+ 		port->ops->start_tx(port);
+ }
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 21c2e05..219b6a3 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -66,6 +66,7 @@ struct uart_ops {
+ 	void		(*set_ldisc)(struct uart_port *, int new);
+ 	void		(*pm)(struct uart_port *, unsigned int state,
+ 			      unsigned int oldstate);
++	void		(*wake_peer)(struct uart_port *);
+ 
+ 	/*
+ 	 * Return a string describing the type of the port
+-- 
+1.8.2.1
 
