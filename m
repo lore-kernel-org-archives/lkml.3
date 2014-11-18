@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627AbaKROfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:35:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
+	id S932696AbaKROgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:36:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755007AbaKROKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755071AbaKROKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:11 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 157/206] spi: pxa2xx: toggle clocks on suspend if not disabled by runtime PM
-Date: Tue, 18 Nov 2014 15:08:32 +0100
-Message-Id: <45b5df583c2c1d0e68f09e18b6c88cf476c6354e.1416319692.git.jslaby@suse.cz>
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>, davej@redhat.com,
+        hmh@hmh.eng.br, Thomas Gleixner <tglx@linutronix.de>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 131/206] x86: Add cpu_detect_cache_sizes to init_intel() add Quark legacy_cache()
+Date: Tue, 18 Nov 2014 15:08:06 +0100
+Message-Id: <03ed94fdc8607b448c48f40429f03938a51ab318.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,77 +25,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2b9375b91bef65b837bed61a05fb387159b38ddf upstream.
+commit aece118e487a744eafcdd0c77fe32b55ee2092a1 upstream.
 
-If PM_RUNTIME is enabled, it is easy to trigger the following backtrace
-on pxa2xx hosts:
+Intel processors which don't report cache information via cpuid(2)
+or cpuid(4) need quirk code in the legacy_cache_size callback to
+report this data. For Intel that callback is is intel_size_cache().
 
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1 at /home/lumag/linux/arch/arm/mach-pxa/clock.c:35 clk_disable+0xa0/0xa8()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-00007-g1b3d2ee-dirty #104
-[<c000de68>] (unwind_backtrace) from [<c000c078>] (show_stack+0x10/0x14)
-[<c000c078>] (show_stack) from [<c001d75c>] (warn_slowpath_common+0x6c/0x8c)
-[<c001d75c>] (warn_slowpath_common) from [<c001d818>] (warn_slowpath_null+0x1c/0x24)
-[<c001d818>] (warn_slowpath_null) from [<c0015e80>] (clk_disable+0xa0/0xa8)
-[<c0015e80>] (clk_disable) from [<c02507f8>] (pxa2xx_spi_suspend+0x2c/0x34)
-[<c02507f8>] (pxa2xx_spi_suspend) from [<c0200360>] (platform_pm_suspend+0x2c/0x54)
-[<c0200360>] (platform_pm_suspend) from [<c0207fec>] (dpm_run_callback.isra.14+0x2c/0x74)
-[<c0207fec>] (dpm_run_callback.isra.14) from [<c0209254>] (__device_suspend+0x120/0x2f8)
-[<c0209254>] (__device_suspend) from [<c0209a94>] (dpm_suspend+0x50/0x208)
-[<c0209a94>] (dpm_suspend) from [<c00455ac>] (suspend_devices_and_enter+0x8c/0x3a0)
-[<c00455ac>] (suspend_devices_and_enter) from [<c0045ad4>] (pm_suspend+0x214/0x2a8)
-[<c0045ad4>] (pm_suspend) from [<c04b5c34>] (test_suspend+0x14c/0x1dc)
-[<c04b5c34>] (test_suspend) from [<c000880c>] (do_one_initcall+0x8c/0x1fc)
-[<c000880c>] (do_one_initcall) from [<c04aecfc>] (kernel_init_freeable+0xf4/0x1b4)
-[<c04aecfc>] (kernel_init_freeable) from [<c0378078>] (kernel_init+0x8/0xec)
-[<c0378078>] (kernel_init) from [<c0009590>] (ret_from_fork+0x14/0x24)
----[ end trace 46524156d8faa4f6 ]---
+This patch enables calling of cpu_detect_cache_sizes() inside of
+init_intel() and hence the calling of the legacy_cache callback in
+intel_size_cache(). Adding this call will ensure that PIII Tualatin
+currently in intel_size_cache() and Quark SoC X1000 being added to
+intel_size_cache() in this patch will report their respective cache
+sizes.
 
-This happens because suspend function tries to disable a clock that is
-already disabled by runtime_suspend callback. Add if
-(!pm_runtime_suspended()) checks to suspend/resume path.
+This model of calling cpu_detect_cache_sizes() is consistent with
+AMD/Via/Cirix/Transmeta and Centaur.
 
-Fixes: 7d94a505858 (spi/pxa2xx: add support for runtime PM)
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Reported-by: Andrea Adami <andrea.adami@gmail.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Also added is a string to idenitfy the Quark as Quark SoC X1000
+giving better and more descriptive output via /proc/cpuinfo
+
+Adding cpu_detect_cache_sizes to init_intel() will enable calling
+of intel_size_cache() on Intel processors which currently no code
+can reach. Therefore this patch will also re-enable reporting
+of PIII Tualatin cache size information as well as add
+Quark SoC X1000 support.
+
+Comment text and cache flow logic suggested by Thomas Gleixner
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Cc: davej@redhat.com
+Cc: hmh@hmh.eng.br
+Link: http://lkml.kernel.org/r/1412641189-12415-3-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/spi/spi-pxa2xx.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/intel.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index fa28c75c6d04..5b0e57210066 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1287,7 +1287,9 @@ static int pxa2xx_spi_suspend(struct device *dev)
- 	if (status != 0)
- 		return status;
- 	write_SSCR0(0, drv_data->ioaddr);
--	clk_disable_unprepare(ssp->clk);
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1d8152b764a7..f4a9985ca88e 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -384,6 +384,13 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 	detect_extended_topology(c);
+ 
+ 	l2 = init_intel_cacheinfo(c);
 +
-+	if (!pm_runtime_suspended(dev))
-+		clk_disable_unprepare(ssp->clk);
- 
- 	return 0;
++	/* Detect legacy cache sizes if init_intel_cacheinfo did not */
++	if (l2 == 0) {
++		cpu_detect_cache_sizes(c);
++		l2 = c->x86_cache_size;
++	}
++
+ 	if (c->cpuid_level > 9) {
+ 		unsigned eax = cpuid_eax(10);
+ 		/* Check for version and the number of counters */
+@@ -498,6 +505,13 @@ static unsigned int intel_size_cache(struct cpuinfo_x86 *c, unsigned int size)
+ 	 */
+ 	if ((c->x86 == 6) && (c->x86_model == 11) && (size == 0))
+ 		size = 256;
++
++	/*
++	 * Intel Quark SoC X1000 contains a 4-way set associative
++	 * 16K cache with a 16 byte cache line and 256 lines per tag
++	 */
++	if ((c->x86 == 5) && (c->x86_model == 9))
++		size = 16;
+ 	return size;
  }
-@@ -1301,7 +1303,8 @@ static int pxa2xx_spi_resume(struct device *dev)
- 	pxa2xx_spi_dma_resume(drv_data);
- 
- 	/* Enable the SSP clock */
--	clk_prepare_enable(ssp->clk);
-+	if (!pm_runtime_suspended(dev))
-+		clk_prepare_enable(ssp->clk);
- 
- 	/* Start the queue running */
- 	status = spi_master_resume(drv_data->master);
+ #endif
+@@ -703,7 +717,8 @@ static const struct cpu_dev intel_cpu_dev = {
+ 			  [3] = "OverDrive PODP5V83",
+ 			  [4] = "Pentium MMX",
+ 			  [7] = "Mobile Pentium 75 - 200",
+-			  [8] = "Mobile Pentium MMX"
++			  [8] = "Mobile Pentium MMX",
++			  [9] = "Quark SoC X1000",
+ 		  }
+ 		},
+ 		{ .vendor = X86_VENDOR_INTEL, .family = 6, .model_names =
 -- 
 2.1.3
 
