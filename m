@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbaKRIjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:39:45 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:50581 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaKRIhm (ORCPT
+	id S1754153AbaKRIjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:39:47 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:34030 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaKRIhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:37:42 -0500
+	Tue, 18 Nov 2014 03:37:41 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, jack@suse.cz, Tejun Heo <tj@kernel.org>,
         Wu Fengguang <fengguang.wu@intel.com>
-Subject: [PATCH 06/10] writeback: reorganize mm/backing-dev.c
-Date: Tue, 18 Nov 2014 03:37:24 -0500
-Message-Id: <1416299848-22112-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/10] writeback: move lingering dirty IO lists transfer from bdi_destroy() to wb_exit()
+Date: Tue, 18 Nov 2014 03:37:23 -0500
+Message-Id: <1416299848-22112-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416299848-22112-1-git-send-email-tj@kernel.org>
 References: <1416299848-22112-1-git-send-email-tj@kernel.org>
@@ -21,252 +21,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move wb_shutdown(), bdi_register(), bdi_register_dev(),
-bdi_prune_sb(), bdi_remove_from_list() and bdi_unregister() so that
-init / exit functions are grouped together.  This will make updating
-init / exit paths for cgroup writeback support easier.
+If a bdi still has dirty IOs on destruction, bdi_destroy() transfers
+them to the default bdi; however, dirty IO lists belong to wb
+(bdi_writeback) not bdi (backing_dev_info) and after the recent
+changes we now have wb_exit() which handles destruction of a wb.  Move
+the transfer logic to wb_exit().
 
-This is pure source file reorganization.
+This patch is pure reorganization.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/backing-dev.c | 206 +++++++++++++++++++++++++++----------------------------
- 1 file changed, 103 insertions(+), 103 deletions(-)
+ mm/backing-dev.c | 48 ++++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 18a4c32..4d87957 100644
+index 4904456..18a4c32 100644
 --- a/mm/backing-dev.c
 +++ b/mm/backing-dev.c
-@@ -303,109 +303,6 @@ void wb_wakeup_delayed(struct bdi_writeback *wb)
- }
+@@ -456,6 +456,30 @@ static void wb_exit(struct bdi_writeback *wb)
  
- /*
-- * Remove bdi from bdi_list, and ensure that it is no longer visible
-- */
--static void bdi_remove_from_list(struct backing_dev_info *bdi)
--{
--	spin_lock_bh(&bdi_lock);
--	list_del_rcu(&bdi->bdi_list);
--	spin_unlock_bh(&bdi_lock);
--
--	synchronize_rcu_expedited();
--}
--
--int bdi_register(struct backing_dev_info *bdi, struct device *parent,
--		const char *fmt, ...)
--{
--	va_list args;
--	struct device *dev;
--
--	if (bdi->dev)	/* The driver needs to use separate queues per device */
--		return 0;
--
--	va_start(args, fmt);
--	dev = device_create_vargs(bdi_class, parent, MKDEV(0, 0), bdi, fmt, args);
--	va_end(args);
--	if (IS_ERR(dev))
--		return PTR_ERR(dev);
--
--	bdi->dev = dev;
--
--	bdi_debug_register(bdi, dev_name(dev));
--	set_bit(WB_registered, &bdi->wb.state);
--
--	spin_lock_bh(&bdi_lock);
--	list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
--	spin_unlock_bh(&bdi_lock);
--
--	trace_writeback_bdi_register(bdi);
--	return 0;
--}
--EXPORT_SYMBOL(bdi_register);
--
--int bdi_register_dev(struct backing_dev_info *bdi, dev_t dev)
--{
--	return bdi_register(bdi, NULL, "%u:%u", MAJOR(dev), MINOR(dev));
--}
--EXPORT_SYMBOL(bdi_register_dev);
--
--/*
-- * Remove bdi from the global list and shutdown any threads we have running
-- */
--static void wb_shutdown(struct bdi_writeback *wb)
--{
--	/* Make sure nobody queues further work */
--	spin_lock_bh(&wb->work_lock);
--	clear_bit(WB_registered, &wb->state);
--	spin_unlock_bh(&wb->work_lock);
--
--	/*
--	 * Drain work list and shutdown the delayed_work.  !WB_registered
--	 * tells wb_workfn() that @wb is dying and its work_list needs to
--	 * be drained no matter what.
--	 */
--	mod_delayed_work(bdi_wq, &wb->dwork, 0);
--	flush_delayed_work(&wb->dwork);
--	WARN_ON(!list_empty(&wb->work_list));
--	WARN_ON(delayed_work_pending(&wb->dwork));
--}
--
--/*
-- * This bdi is going away now, make sure that no super_blocks point to it
-- */
--static void bdi_prune_sb(struct backing_dev_info *bdi)
--{
--	struct super_block *sb;
--
--	spin_lock(&sb_lock);
--	list_for_each_entry(sb, &super_blocks, s_list) {
--		if (sb->s_bdi == bdi)
--			sb->s_bdi = &default_backing_dev_info;
--	}
--	spin_unlock(&sb_lock);
--}
--
--void bdi_unregister(struct backing_dev_info *bdi)
--{
--	if (bdi->dev) {
--		bdi_set_min_ratio(bdi, 0);
--		trace_writeback_bdi_unregister(bdi);
--		bdi_prune_sb(bdi);
--
--		if (bdi_cap_writeback_dirty(bdi)) {
--			/* make sure nobody finds us on the bdi_list anymore */
--			bdi_remove_from_list(bdi);
--			wb_shutdown(&bdi->wb);
--		}
--
--		bdi_debug_unregister(bdi);
--		device_unregister(bdi->dev);
--		bdi->dev = NULL;
--	}
--}
--EXPORT_SYMBOL(bdi_unregister);
--
--/*
-  * Initial write bandwidth: 100 MB/s
-  */
- #define INIT_BW		(100 << (20 - PAGE_SHIFT))
-@@ -450,6 +347,27 @@ static int wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
- 	return 0;
- }
+ 	WARN_ON(delayed_work_pending(&wb->dwork));
  
-+/*
-+ * Remove bdi from the global list and shutdown any threads we have running
-+ */
-+static void wb_shutdown(struct bdi_writeback *wb)
-+{
-+	/* Make sure nobody queues further work */
-+	spin_lock_bh(&wb->work_lock);
-+	clear_bit(WB_registered, &wb->state);
-+	spin_unlock_bh(&wb->work_lock);
-+
 +	/*
-+	 * Drain work list and shutdown the delayed_work.  !WB_registered
-+	 * tells wb_workfn() that @wb is dying and its work_list needs to
-+	 * be drained no matter what.
++	 * Splice our entries to the default_backing_dev_info.  This
++	 * condition shouldn't happen.  @wb must be empty at this point and
++	 * dirty inodes on it might cause other issues.  This workaround is
++	 * added by ce5f8e779519 ("writeback: splice dirty inode entries to
++	 * default bdi on bdi_destroy()") without root-causing the issue.
++	 *
++	 * http://lkml.kernel.org/g/1253038617-30204-11-git-send-email-jens.axboe@oracle.com
++	 * http://thread.gmane.org/gmane.linux.file-systems/35341/focus=35350
++	 *
++	 * We should probably add WARN_ON() to find out whether it still
++	 * happens and track it down if so.
 +	 */
-+	mod_delayed_work(bdi_wq, &wb->dwork, 0);
-+	flush_delayed_work(&wb->dwork);
-+	WARN_ON(!list_empty(&wb->work_list));
-+	WARN_ON(delayed_work_pending(&wb->dwork));
-+}
++	if (wb_has_dirty_io(wb)) {
++		struct bdi_writeback *dst = &default_backing_dev_info.wb;
 +
- static void wb_exit(struct bdi_writeback *wb)
- {
- 	int i;
-@@ -505,6 +423,88 @@ int bdi_init(struct backing_dev_info *bdi)
- }
- EXPORT_SYMBOL(bdi_init);
++		bdi_lock_two(wb, dst);
++		list_splice(&wb->b_dirty, &dst->b_dirty);
++		list_splice(&wb->b_io, &dst->b_io);
++		list_splice(&wb->b_more_io, &dst->b_more_io);
++		spin_unlock(&wb->list_lock);
++		spin_unlock(&dst->list_lock);
++	}
++
+ 	for (i = 0; i < NR_WB_STAT_ITEMS; i++)
+ 		percpu_counter_destroy(&wb->stat[i]);
  
-+int bdi_register(struct backing_dev_info *bdi, struct device *parent,
-+		const char *fmt, ...)
-+{
-+	va_list args;
-+	struct device *dev;
-+
-+	if (bdi->dev)	/* The driver needs to use separate queues per device */
-+		return 0;
-+
-+	va_start(args, fmt);
-+	dev = device_create_vargs(bdi_class, parent, MKDEV(0, 0), bdi, fmt, args);
-+	va_end(args);
-+	if (IS_ERR(dev))
-+		return PTR_ERR(dev);
-+
-+	bdi->dev = dev;
-+
-+	bdi_debug_register(bdi, dev_name(dev));
-+	set_bit(WB_registered, &bdi->wb.state);
-+
-+	spin_lock_bh(&bdi_lock);
-+	list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
-+	spin_unlock_bh(&bdi_lock);
-+
-+	trace_writeback_bdi_register(bdi);
-+	return 0;
-+}
-+EXPORT_SYMBOL(bdi_register);
-+
-+int bdi_register_dev(struct backing_dev_info *bdi, dev_t dev)
-+{
-+	return bdi_register(bdi, NULL, "%u:%u", MAJOR(dev), MINOR(dev));
-+}
-+EXPORT_SYMBOL(bdi_register_dev);
-+
-+/*
-+ * This bdi is going away now, make sure that no super_blocks point to it
-+ */
-+static void bdi_prune_sb(struct backing_dev_info *bdi)
-+{
-+	struct super_block *sb;
-+
-+	spin_lock(&sb_lock);
-+	list_for_each_entry(sb, &super_blocks, s_list) {
-+		if (sb->s_bdi == bdi)
-+			sb->s_bdi = &default_backing_dev_info;
-+	}
-+	spin_unlock(&sb_lock);
-+}
-+
-+/*
-+ * Remove bdi from bdi_list, and ensure that it is no longer visible
-+ */
-+static void bdi_remove_from_list(struct backing_dev_info *bdi)
-+{
-+	spin_lock_bh(&bdi_lock);
-+	list_del_rcu(&bdi->bdi_list);
-+	spin_unlock_bh(&bdi_lock);
-+
-+	synchronize_rcu_expedited();
-+}
-+
-+void bdi_unregister(struct backing_dev_info *bdi)
-+{
-+	if (bdi->dev) {
-+		bdi_set_min_ratio(bdi, 0);
-+		trace_writeback_bdi_unregister(bdi);
-+		bdi_prune_sb(bdi);
-+
-+		if (bdi_cap_writeback_dirty(bdi)) {
-+			/* make sure nobody finds us on the bdi_list anymore */
-+			bdi_remove_from_list(bdi);
-+			wb_shutdown(&bdi->wb);
-+		}
-+
-+		bdi_debug_unregister(bdi);
-+		device_unregister(bdi->dev);
-+		bdi->dev = NULL;
-+	}
-+}
-+EXPORT_SYMBOL(bdi_unregister);
-+
+@@ -483,30 +507,6 @@ EXPORT_SYMBOL(bdi_init);
+ 
  void bdi_destroy(struct backing_dev_info *bdi)
  {
+-	/*
+-	 * Splice our entries to the default_backing_dev_info.  This
+-	 * condition shouldn't happen.  @wb must be empty at this point and
+-	 * dirty inodes on it might cause other issues.  This workaround is
+-	 * added by ce5f8e779519 ("writeback: splice dirty inode entries to
+-	 * default bdi on bdi_destroy()") without root-causing the issue.
+-	 *
+-	 * http://lkml.kernel.org/g/1253038617-30204-11-git-send-email-jens.axboe@oracle.com
+-	 * http://thread.gmane.org/gmane.linux.file-systems/35341/focus=35350
+-	 *
+-	 * We should probably add WARN_ON() to find out whether it still
+-	 * happens and track it down if so.
+-	 */
+-	if (bdi_has_dirty_io(bdi)) {
+-		struct bdi_writeback *dst = &default_backing_dev_info.wb;
+-
+-		bdi_lock_two(&bdi->wb, dst);
+-		list_splice(&bdi->wb.b_dirty, &dst->b_dirty);
+-		list_splice(&bdi->wb.b_io, &dst->b_io);
+-		list_splice(&bdi->wb.b_more_io, &dst->b_more_io);
+-		spin_unlock(&bdi->wb.list_lock);
+-		spin_unlock(&dst->list_lock);
+-	}
+-
  	bdi_unregister(bdi);
+ 	wb_exit(&bdi->wb);
+ }
 -- 
 1.9.3
 
