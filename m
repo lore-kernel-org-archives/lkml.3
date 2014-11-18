@@ -1,120 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaKRAGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:06:46 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:50043 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156AbaKRAFX (ORCPT
+	id S1753364AbaKRAGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:06:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49004 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaKRAGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:05:23 -0500
+	Mon, 17 Nov 2014 19:06:42 -0500
+Date: Mon, 17 Nov 2014 16:06:30 -0800
+From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
+Message-ID: <tip-4aae7e436fa51faf4bf5d11b175aea82cfe8224a@git.kernel.org>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, qiaowei.ren@intel.com,
+        dave.hansen@linux.intel.com, hpa@zytor.com, mingo@kernel.org,
+        dave@sr71.net
+Reply-To: mingo@kernel.org, dave@sr71.net, qiaowei.ren@intel.com,
+        dave.hansen@linux.intel.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, tglx@linutronix.de
+In-Reply-To: <20141114151825.565625B3@viggo.jf.intel.com>
+References: <20141114151825.565625B3@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mpx] x86, mpx:
+  Introduce VM_MPX to indicate that a VMA is MPX specific
+Git-Commit-ID: 4aae7e436fa51faf4bf5d11b175aea82cfe8224a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
- <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
- <20141112103011.GA16807@pd.tnic> <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
- <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
- <20141117185030.GA25157@pd.tnic> <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
- <20141117200354.GB25157@pd.tnic> <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
- <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com> <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 17 Nov 2014 16:05:00 -0800
-Message-ID: <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 3:16 PM, Luck, Tony <tony.luck@intel.com> wrote:
->> I still wonder whether the timeout code is the real culprit.  My patch
->> will slow down entry into do_machine_check by tens of cycles, several
->> cachelines, and possibly a couple of TLB misses.  Given that the
->> timing seemed marginal to me, it's possible (albeit not that likely)
->> that it pushed the time needed for synchronization into the range of
->> unreliability.
->
-> I think we have very conservative timeouts.  Here are the significant bits from mce
->
-> First SPINUNIT ... how many nanoseconds to spin "ndelay(SPINUNIT)"  before pounding on an atomic op to see if we are done:
-> #define SPINUNIT 100    /* 100ns */
->
-> Initialization of our timeout - comment above this claims we are aiming for "one second"
->
->         cfg->monarch_timeout = USEC_PER_SEC;
->
-> Inside mce_start() - set up our timeout. Math says this will be 1e9
->
->         u64 timeout = (u64)mca_cfg.monarch_timeout * NSEC_PER_USEC;
+Commit-ID:  4aae7e436fa51faf4bf5d11b175aea82cfe8224a
+Gitweb:     http://git.kernel.org/tip/4aae7e436fa51faf4bf5d11b175aea82cfe8224a
+Author:     Qiaowei Ren <qiaowei.ren@intel.com>
+AuthorDate: Fri, 14 Nov 2014 07:18:25 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 18 Nov 2014 00:58:53 +0100
 
-Aha.  I missed the extra multiplication.
+x86, mpx: Introduce VM_MPX to indicate that a VMA is MPX specific
 
->
-> Now the actual loop:
->         while (atomic_read(&mce_callin) != cpus) {
->                 if (mce_timed_out(&timeout)) {
->                         atomic_set(&global_nwo, 0);
->                         return -1;
->                 }
->                 ndelay(SPINUNIT);
->         }
+MPX-enabled applications using large swaths of memory can
+potentially have large numbers of bounds tables in process
+address space to save bounds information. These tables can take
+up huge swaths of memory (as much as 80% of the memory on the
+system) even if we clean them up aggressively. In the worst-case
+scenario, the tables can be 4x the size of the data structure
+being tracked. IOW, a 1-page structure can require 4 bounds-table
+pages.
 
-And I missed the ndelay.
+Being this huge, our expectation is that folks using MPX are
+going to be keen on figuring out how much memory is being
+dedicated to it. So we need a way to track memory use for MPX.
 
-*sigh* reading comprehension wasn't so good there.
+If we want to specifically track MPX VMAs we need to be able to
+distinguish them from normal VMAs, and keep them from getting
+merged with normal VMAs. A new VM_ flag set only on MPX VMAs does
+both of those things. With this flag, MPX bounds-table VMAs can
+be distinguished from other VMAs, and userspace can also walk
+/proc/$pid/smaps to get memory usage for MPX.
 
->From a debugging POV, it would be kind of nice to know which of the
-four mce_timed_out calls is reporting the failure.  IIUC, the first
-one would mean that a cpu didn't make it in to do_machine_check at
-all, whereas the second one would mean that a cpu got lost after
-entering do_machine_check.  Also, the second one presumably knows how
-far it got (i.e. mce_executing and order).
+In addition to this flag, we also introduce a special ->vm_ops
+specific to MPX VMAs (see the patch "add MPX specific mmap
+interface"), but currently different ->vm_ops do not by
+themselves prevent VMA merging, so we still need this flag.
 
-It could also be interesting to tweak mce_panic to not actually panic
-the machine but to try to return and stop the test instead.  Then real
-debugging could be possible :)
+We understand that VM_ flags are scarce and are open to other
+options.
 
-I still wish I could test this.  The mce-inject code is completely
-useless here, since it calls do_machine_check directly instead of
-going through the MCE code.
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: linux-mm@kvack.org
+Cc: linux-mips@linux-mips.org
+Cc: Dave Hansen <dave@sr71.net>
+Link: http://lkml.kernel.org/r/20141114151825.565625B3@viggo.jf.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ fs/proc/task_mmu.c | 3 +++
+ include/linux/mm.h | 6 ++++++
+ 2 files changed, 9 insertions(+)
 
->
-> And the inside of mce_timed_out() ... we decrement our 1e9 by 100 for each call:
->
->         if ((s64)*t < SPINUNIT) {
->                 if (mca_cfg.tolerant <= 1)
->                         mce_panic("Timeout synchronizing machine check over CPUs",
->                                   NULL, NULL);
->                 cpu_missing = 1;
->                 return 1;
->         }
->         *t -= SPINUNIT;
->
-> Not sure what the worst case is for waiting for other processors to show up. Perhaps it is
-> when the other cpu is in some deep C-state and we have to wait for it to power the core
-> back on and resync clock.  Maybe it is when a cpu has just started a "wbinvd" instruction
-> with a cache entirely full of dirty lines that belong on some other processor so have to
-> be written back across QPI (may when QPI links are congested with 10gbit network traffic?
->
-> But a full second seems like a lot ... you adding a handful of cache and TLB misses shouldn't
-> push us over the edge.
-
-Agreed.
-
->
-> -Tony
->
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 4e0388c..f6734c6 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -552,6 +552,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+ 		[ilog2(VM_GROWSDOWN)]	= "gd",
+ 		[ilog2(VM_PFNMAP)]	= "pf",
+ 		[ilog2(VM_DENYWRITE)]	= "dw",
++#ifdef CONFIG_X86_INTEL_MPX
++		[ilog2(VM_MPX)]		= "mp",
++#endif
+ 		[ilog2(VM_LOCKED)]	= "lo",
+ 		[ilog2(VM_IO)]		= "io",
+ 		[ilog2(VM_SEQ_READ)]	= "sr",
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b464611..f7606d3 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -128,6 +128,7 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
+ #define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
+ #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
++#define VM_ARCH_2	0x02000000
+ #define VM_DONTDUMP	0x04000000	/* Do not include in the core dump */
+ 
+ #ifdef CONFIG_MEM_SOFT_DIRTY
+@@ -155,6 +156,11 @@ extern unsigned int kobjsize(const void *objp);
+ # define VM_MAPPED_COPY	VM_ARCH_1	/* T if mapped copy of data (nommu mmap) */
+ #endif
+ 
++#if defined(CONFIG_X86)
++/* MPX specific bounds table or bounds directory */
++# define VM_MPX		VM_ARCH_2
++#endif
++
+ #ifndef VM_GROWSUP
+ # define VM_GROWSUP	VM_NONE
+ #endif
