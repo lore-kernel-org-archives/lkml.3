@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367AbaKRO1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:27:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755126AbaKROKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:18 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 180/206] nfsd4: fix crash on unknown operation number
-Date: Tue, 18 Nov 2014 15:08:55 +0100
-Message-Id: <613a5ea57f0ed08228311a46b84155986949c7d4.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S932401AbaKRO2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:28:07 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:48088 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569AbaKRO2E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:28:04 -0500
+MIME-Version: 1.0
+X-Originating-IP: [46.139.80.5]
+Date: Tue, 18 Nov 2014 15:28:03 +0100
+Message-ID: <CAJfpegtG68g=dDi7j-WfhkuJidZRBg46vyuWg8CTrW3TrW_nYw@mail.gmail.com>
+Subject: How to cope with two incompatible overlayfs formats out in the wild
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Neil Brown <neilb@suse.de>,
+        linux-unionfs@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+[CC-ing mailing lists, Al and Linus for wider exposure]
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This issue is this: Ubuntu and SUSE carry an "old" format of overlayfs
+while mainline has a "new" format.  The differences are:
 
-===============
+ - whiteouts are represented differently (symlink + xattr in the old
+format, chardev in the new)
 
-commit 51904b08072a8bf2b9ed74d1bd7a5300a614471d upstream.
+ - new one needs a "workdir" mount option, which points to a directory
+on the same filesystem as upperdir.  If upperdir was the root of the
+filesystem then it needs to be moved into a subdir to make space for
+the work directory.
 
-Unknown operation numbers are caught in nfsd4_decode_compound() which
-sets op->opnum to OP_ILLEGAL and op->status to nfserr_op_illegal.  The
-error causes the main loop in nfsd4_proc_compound() to skip most
-processing.  But nfsd4_proc_compound also peeks ahead at the next
-operation in one case and doesn't take similar precautions there.
+Migrating from old to new is not a big issue, but Ubuntu people have
+expressed concerns about systems with mixed kernel versions and want
+to support the old format alongside the new.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/nfsd/nfs4proc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+This can all be done with out-of-tree code.
 
-diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
-index 08c8e023c157..25024d5060da 100644
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1233,7 +1233,8 @@ static bool need_wrongsec_check(struct svc_rqst *rqstp)
- 	 */
- 	if (argp->opcnt == resp->opcnt)
- 		return false;
--
-+	if (next->opnum == OP_ILLEGAL)
-+		return false;
- 	nextd = OPDESC(next);
- 	/*
- 	 * Rest of 2.6.3.1.1: certain operations will return WRONGSEC
--- 
-2.1.3
+So from mainline we need two things:
 
+  - when mounting distinguish between old and new format.
+
+  - userspace can detect which formats are supported by the kernel.
+
+If we'd have a different filesystem type for the old and new formats,
+then that would solve both (checking /proc/filesystems would indicate
+which one is supported).
+
+Unfortunately that would mean having to change "overlayfs" type to
+something else in 3.18.  Question is, is there some sane name which
+would fit?  "overlayfs2" is perhaps the best, but I'm not overly
+enthusiastic about it.
+
+Any other ideas?
+
+Thanks,
+Miklos
