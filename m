@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303AbaKRP3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:29:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56850 "EHLO mx2.suse.de"
+	id S1757288AbaKRP3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:29:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56851 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833AbaKROJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754178AbaKROJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:09:23 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 004/206] drm/i915, HD-audio: Don't continue probing when nomodeset is given
-Date: Tue, 18 Nov 2014 15:05:59 +0100
-Message-Id: <fcb1eed7baee724ca62f157df7684e99edd4145a.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Reyad Attiyat <reyad.attiyat@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 018/206] HID: usbhid: Use flag HID_DISCONNECTED when a usb device is removed
+Date: Tue, 18 Nov 2014 15:06:13 +0100
+Message-Id: <4c1e006db378eca8181f7e0dd90918c7b40e0f5b.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,163 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 74b0c2d75fb4cc89173944e6d8f9eb47aca0c343 upstream.
+commit 46df9dedabc1541f9c45f94ecd2c3c7ab0c3bf23 upstream.
 
-When a machine is booted with nomodeset option, i915 driver skips the
-whole initialization.  Meanwhile, HD-audio tries to bind wth i915 just
-by request_symbol() without knowing that the initialization was
-skipped, and eventually it hits WARN_ON() in i915_request_power_well()
-and i915_release_power_well() wrongly but still continues probing,
-even though it doesn't work at all.
+Set disconnected flag in struct usbhid when a usb device is removed. Check for
+disconnected flag before sending urb requests. This prevents a kernel panic
+when a hid driver calls hid_hw_request() after removing a usb device.
 
-In this patch, both functions are changed to return an error in case
-of uninitialized state instead of WARN_ON(), so that HD-audio driver
-can give up HDMI controller initialization at the right time.
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+ IP: [<ffffffff8161746f>] hid_submit_ctrl+0x7f/0x290
+ PGD 0
+ Oops: 0002 [#1] PREEMPT SMP
+ CPU: 2 PID: 39 Comm: khubd Tainted: G          IO  3.16.0-rc5+ #112
+ Hardware name: Microsoft Corporation Surface Pro 2/Surface Pro 2, BIOS 2.03.0250 09/06/2013
+ task: ffff880118aba6e0 ti: ffff8800daf80000 task.ti: ffff8800daf80000
+ RIP: 0010:[<ffffffff8161746f>]  [<ffffffff8161746f>] hid_submit_ctrl+0x7f/0x290
+ RSP: 0018:ffff8800daf83750  EFLAGS: 00010086
+ RAX: 0000000080000300 RBX: ffff88003f60c000 RCX: 0000000000000000
+ RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff880117f78000
+ RBP: ffff8800daf83788 R08: 0000000000000001 R09: 0000000000000001
+ R10: 0000000000000001 R11: 0000000000000000 R12: ffff880117f78000
+ R13: ffff88003f11a290 R14: 000000000000000c R15: ffff880091cb3ab8
+ FS:  0000000000000000(0000) GS:ffff88011b000000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000000058 CR3: 0000000001c11000 CR4: 00000000001407e0
+ Stack:
+  ffff880117f3dcd0 ffff880117f78000 ffff88003f60c000 ffff880117f78000
+  ffff880117f78000 ffff88003f11a290 0000000000000000 ffff8800daf837b0
+  ffffffff81617707 ffff880117f78000 ffff88003f60c000 0000000000000013
+ Call Trace:
+  [<ffffffff81617707>] usbhid_restart_ctrl_queue+0x87/0x140
+  [<ffffffff81617a88>] usbhid_submit_report+0x2c8/0x370
+  [<ffffffff81617b4a>] usbhid_request+0x1a/0x30
+  [<ffffffffa020edfb>] sensor_hub_set_feature+0x8b/0xd0 [hid_sensor_hub]
+  [<ffffffffa02d9084>] hid_sensor_power_state+0x84/0x110 [hid_sensor_trigger]
+  [<ffffffffa02d9129>] hid_sensor_data_rdy_trigger_set_state+0x19/0x20 [hid_sensor_trigger]
+  [<ffffffffa034d5b7>] iio_triggered_buffer_predisable+0xa7/0xb0 [industrialio]
+  [<ffffffffa034cc4a>] iio_disable_all_buffers+0x3a/0xc0 [industrialio]
+  [<ffffffffa03487d3>] iio_device_unregister+0x53/0x80 [industrialio]
+  [<ffffffffa026c06a>] hid_accel_3d_remove+0x2a/0x50 [hid_sensor_accel_3d]
+  [<ffffffff814f433d>] platform_drv_remove+0x1d/0x40
+  [<ffffffff814f18bf>] __device_release_driver+0x7f/0xf0
+  [<ffffffff814f1955>] device_release_driver+0x25/0x40
+  [<ffffffff814f121c>] bus_remove_device+0x11c/0x1a0
+  [<ffffffff814ed7d6>] device_del+0x136/0x1e0
+  [<ffffffff81512190>] ? mfd_cell_disable+0x80/0x80
+  [<ffffffff814f41d1>] platform_device_del+0x21/0xc0
+  [<ffffffff814f4282>] platform_device_unregister+0x12/0x30
+  [<ffffffff815121d3>] mfd_remove_devices_fn+0x43/0x50
+  [<ffffffff814ed3e3>] device_for_each_child+0x43/0x70
+  [<ffffffff81512105>] mfd_remove_devices+0x25/0x30
+  [<ffffffffa020ebd7>] sensor_hub_remove+0x87/0x140 [hid_sensor_hub]
+  [<ffffffff81607c5b>] hid_device_remove+0x6b/0xd0
+  [<ffffffff814f18bf>] __device_release_driver+0x7f/0xf0
+  [<ffffffff814f1955>] device_release_driver+0x25/0x40
+  [<ffffffff814f121c>] bus_remove_device+0x11c/0x1a0
+  [<ffffffff814ed7d6>] device_del+0x136/0x1e0
+  [<ffffffff81607d47>] hid_destroy_device+0x27/0x60
+  [<ffffffff81616972>] usbhid_disconnect+0x22/0x50
+  [<ffffffff81568597>] usb_unbind_interface+0x77/0x2b0
+  [<ffffffff814f18bf>] __device_release_driver+0x7f/0xf0
+  [<ffffffff814f1955>] device_release_driver+0x25/0x40
+  [<ffffffff814f121c>] bus_remove_device+0x11c/0x1a0
+  [<ffffffff814ed7d6>] device_del+0x136/0x1e0
+  [<ffffffff81565cd1>] usb_disable_device+0x91/0x2a0
+  [<ffffffff8155b046>] usb_disconnect+0x96/0x2e0
+  [<ffffffff8155d74a>] hub_thread+0xb5a/0x1840
 
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: <stable@vger.kernel.org> [3.15]
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/i915/intel_pm.c | 15 +++++++++------
- include/drm/i915_powerwell.h    |  4 ++--
- sound/pci/hda/hda_i915.c        | 12 ++++++------
- sound/pci/hda/hda_i915.h        |  4 ++--
- sound/pci/hda/hda_intel.c       |  6 +++++-
- 5 files changed, 24 insertions(+), 17 deletions(-)
+ drivers/hid/usbhid/hid-core.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index 71a831ae73e9..aa99bb61778c 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -5347,24 +5347,26 @@ static void __intel_set_power_well(struct drm_device *dev, bool enable)
- static struct i915_power_well *hsw_pwr;
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index 44df131d390a..63a2bb96e5cd 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -536,7 +536,8 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
+ 	int head;
+ 	struct usbhid_device *usbhid = hid->driver_data;
  
- /* Display audio driver power well request */
--void i915_request_power_well(void)
-+int i915_request_power_well(void)
- {
--	if (WARN_ON(!hsw_pwr))
--		return;
-+	if (!hsw_pwr)
-+		return -ENODEV;
+-	if ((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN)
++	if (((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN) ||
++		test_bit(HID_DISCONNECTED, &usbhid->iofl))
+ 		return;
  
- 	spin_lock_irq(&hsw_pwr->lock);
- 	if (!hsw_pwr->count++ &&
- 			!hsw_pwr->i915_request)
- 		__intel_set_power_well(hsw_pwr->device, true);
- 	spin_unlock_irq(&hsw_pwr->lock);
-+	return 0;
+ 	if (usbhid->urbout && dir == USB_DIR_OUT && report->type == HID_OUTPUT_REPORT) {
+@@ -1338,6 +1339,9 @@ static void usbhid_disconnect(struct usb_interface *intf)
+ 		return;
+ 
+ 	usbhid = hid->driver_data;
++	spin_lock_irq(&usbhid->lock);	/* Sync with error and led handlers */
++	set_bit(HID_DISCONNECTED, &usbhid->iofl);
++	spin_unlock_irq(&usbhid->lock);
+ 	hid_destroy_device(hid);
+ 	kfree(usbhid);
  }
- EXPORT_SYMBOL_GPL(i915_request_power_well);
- 
- /* Display audio driver power well release */
--void i915_release_power_well(void)
-+int i915_release_power_well(void)
- {
--	if (WARN_ON(!hsw_pwr))
--		return;
-+	if (!hsw_pwr)
-+		return -ENODEV;
-+
- 
- 	spin_lock_irq(&hsw_pwr->lock);
- 	WARN_ON(!hsw_pwr->count);
-@@ -5372,6 +5374,7 @@ void i915_release_power_well(void)
- 		       !hsw_pwr->i915_request)
- 		__intel_set_power_well(hsw_pwr->device, false);
- 	spin_unlock_irq(&hsw_pwr->lock);
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(i915_release_power_well);
- 
-diff --git a/include/drm/i915_powerwell.h b/include/drm/i915_powerwell.h
-index cfdc884405b7..2baba9996094 100644
---- a/include/drm/i915_powerwell.h
-+++ b/include/drm/i915_powerwell.h
-@@ -30,7 +30,7 @@
- #define _I915_POWERWELL_H_
- 
- /* For use by hda_i915 driver */
--extern void i915_request_power_well(void);
--extern void i915_release_power_well(void);
-+extern int i915_request_power_well(void);
-+extern int i915_release_power_well(void);
- 
- #endif				/* _I915_POWERWELL_H_ */
-diff --git a/sound/pci/hda/hda_i915.c b/sound/pci/hda/hda_i915.c
-index 76c13d5b3ca0..3ea8b980460e 100644
---- a/sound/pci/hda/hda_i915.c
-+++ b/sound/pci/hda/hda_i915.c
-@@ -22,20 +22,20 @@
- #include <drm/i915_powerwell.h>
- #include "hda_i915.h"
- 
--static void (*get_power)(void);
--static void (*put_power)(void);
-+static int (*get_power)(void);
-+static int (*put_power)(void);
- 
--void hda_display_power(bool enable)
-+int hda_display_power(bool enable)
- {
- 	if (!get_power || !put_power)
--		return;
-+		return -ENODEV;
- 
- 	snd_printdd("HDA display power %s \n",
- 			enable ? "Enable" : "Disable");
- 	if (enable)
--		get_power();
-+		return get_power();
- 	else
--		put_power();
-+		return put_power();
- }
- 
- int hda_i915_init(void)
-diff --git a/sound/pci/hda/hda_i915.h b/sound/pci/hda/hda_i915.h
-index 5a63da2c53e5..bfd835f8f1aa 100644
---- a/sound/pci/hda/hda_i915.h
-+++ b/sound/pci/hda/hda_i915.h
-@@ -17,11 +17,11 @@
- #define __SOUND_HDA_I915_H
- 
- #ifdef CONFIG_SND_HDA_I915
--void hda_display_power(bool enable);
-+int hda_display_power(bool enable);
- int hda_i915_init(void);
- int hda_i915_exit(void);
- #else
--static inline void hda_display_power(bool enable) {}
-+static inline int hda_display_power(bool enable) { return 0; }
- static inline int hda_i915_init(void)
- {
- 	return -ENODEV;
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index 37806a97c878..3eb2976824a8 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -3902,8 +3902,12 @@ static int azx_probe_continue(struct azx *chip)
- 			snd_printk(KERN_ERR SFX "Error request power-well from i915\n");
- 			goto out_free;
- 		}
-+		err = hda_display_power(true);
-+		if (err < 0) {
-+			snd_printk(KERN_ERR SFX "Cannot turn on display power on i915\n");
-+			goto out_free;
-+		}
- #endif
--		hda_display_power(true);
- 	}
- 
- 	err = azx_first_init(chip);
 -- 
 2.1.3
 
