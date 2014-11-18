@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657AbaKRORK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:17:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57203 "EHLO mx2.suse.de"
+	id S1755640AbaKRORI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:17:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932253AbaKROK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:26 -0500
+	id S1755013AbaKROK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:27 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 199/206] regulator: max77693: Fix use of uninitialized regulator config
-Date: Tue, 18 Nov 2014 15:09:14 +0100
-Message-Id: <7f7ae192a6d6472d06a2d5a05daba04ce9facc43.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Yijing Wang <wangyijing@huawei.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 201/206] sysfs: driver core: Fix glue dir race condition by gdp_mutex
+Date: Tue, 18 Nov 2014 15:09:16 +0100
+Message-Id: <b2a5a44246eaad27e7002c98ee9df2790e43bb56.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,43 +23,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Yijing Wang <wangyijing@huawei.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ca0c37a0b489bb14bf3e1549e7a8d0c9a17f4919 upstream.
+commit e4a60d139060975eb956717e4f63ae348d4d8cc5 upstream.
 
-Driver allocated on stack struct regulator_config but didn't initialize
-it fully. Few fields (driver_data, ena_gpio) were left untouched. This
-lead to using random ena_gpio values as GPIOs for max77693 regulators.
+There is a race condition when removing glue directory.
+It can be reproduced in following test:
 
-On occasion these values could match real GPIO numbers leading to
-interfering with other drivers and to unsuccessful enable/disable of
-regulator.
+path 1: Add first child device
+device_add()
+    get_device_parent()
+            /*find parent from glue_dirs.list*/
+            list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)
+                    if (k->parent == parent_kobj) {
+                            kobj = kobject_get(k);
+                            break;
+                    }
+            ....
+            class_dir_create_and_add()
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 80b022e29bfd ("regulator: max77693: Add max77693 regualtor driver.")
-Signed-off-by: Mark Brown <broonie@kernel.org>
+path2: Remove last child device under glue dir
+device_del()
+    cleanup_device_parent()
+            cleanup_glue_dir()
+                    kobject_put(glue_dir);
+
+If path2 has been called cleanup_glue_dir(), but not
+call kobject_put(glue_dir), the glue dir is still
+in parent's kset list. Meanwhile, path1 find the glue
+dir from the glue_dirs.list. Path2 may release glue dir
+before path1 call kobject_get(). So kernel will report
+the warning and bug_on.
+
+This is a "classic" problem we have of a kref in a list
+that can be found while the last instance could be removed
+at the same time.
+
+This patch reuse gdp_mutex to fix this race condition.
+
+The following calltrace is captured in kernel 3.4, but
+the latest kernel still has this bug.
+
+-----------------------------------------------------
+<4>[ 3965.441471] WARNING: at ...include/linux/kref.h:41 kobject_get+0x33/0x40()
+<4>[ 3965.441474] Hardware name: Romley
+<4>[ 3965.441475] Modules linked in: isd_iop(O) isd_xda(O)...
+...
+<4>[ 3965.441605] Call Trace:
+<4>[ 3965.441611]  [<ffffffff8103717a>] warn_slowpath_common+0x7a/0xb0
+<4>[ 3965.441615]  [<ffffffff810371c5>] warn_slowpath_null+0x15/0x20
+<4>[ 3965.441618]  [<ffffffff81215963>] kobject_get+0x33/0x40
+<4>[ 3965.441624]  [<ffffffff812d1e45>] get_device_parent.isra.11+0x135/0x1f0
+<4>[ 3965.441627]  [<ffffffff812d22d4>] device_add+0xd4/0x6d0
+<4>[ 3965.441631]  [<ffffffff812d0dbc>] ? dev_set_name+0x3c/0x40
+....
+<2>[ 3965.441912] kernel BUG at ..../fs/sysfs/group.c:65!
+<4>[ 3965.441915] invalid opcode: 0000 [#1] SMP
+...
+<4>[ 3965.686743]  [<ffffffff811a677e>] sysfs_create_group+0xe/0x10
+<4>[ 3965.686748]  [<ffffffff810cfb04>] blk_trace_init_sysfs+0x14/0x20
+<4>[ 3965.686753]  [<ffffffff811fcabb>] blk_register_queue+0x3b/0x120
+<4>[ 3965.686756]  [<ffffffff812030bc>] add_disk+0x1cc/0x490
+....
+-------------------------------------------------------
+
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/regulator/max77693.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/max77693.c b/drivers/regulator/max77693.c
-index ce4b96c15eba..85a54b39e3b7 100644
---- a/drivers/regulator/max77693.c
-+++ b/drivers/regulator/max77693.c
-@@ -231,7 +231,7 @@ static int max77693_pmic_probe(struct platform_device *pdev)
- 	struct max77693_pmic_dev *max77693_pmic;
- 	struct max77693_regulator_data *rdata = NULL;
- 	int num_rdata, i, ret;
--	struct regulator_config config;
-+	struct regulator_config config = { };
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 34abf4d8a45f..944fecd32e9f 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -812,12 +812,12 @@ class_dir_create_and_add(struct class *class, struct kobject *parent_kobj)
+ 	return &dir->kobj;
+ }
  
- 	num_rdata = max77693_pmic_init_rdata(&pdev->dev, &rdata);
- 	if (!rdata || num_rdata <= 0) {
++static DEFINE_MUTEX(gdp_mutex);
+ 
+ static struct kobject *get_device_parent(struct device *dev,
+ 					 struct device *parent)
+ {
+ 	if (dev->class) {
+-		static DEFINE_MUTEX(gdp_mutex);
+ 		struct kobject *kobj = NULL;
+ 		struct kobject *parent_kobj;
+ 		struct kobject *k;
+@@ -881,7 +881,9 @@ static void cleanup_glue_dir(struct device *dev, struct kobject *glue_dir)
+ 	    glue_dir->kset != &dev->class->p->glue_dirs)
+ 		return;
+ 
++	mutex_lock(&gdp_mutex);
+ 	kobject_put(glue_dir);
++	mutex_unlock(&gdp_mutex);
+ }
+ 
+ static void cleanup_device_parent(struct device *dev)
 -- 
 2.1.3
 
