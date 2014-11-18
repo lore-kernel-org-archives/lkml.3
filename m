@@ -1,189 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513AbaKRO70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:59:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135AbaKROJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:48 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Scott Carter <ccscott@funsoft.com>,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 055/206] pata_serverworks: disable 64-KB DMA transfers on Broadcom OSB4 IDE Controller
-Date: Tue, 18 Nov 2014 15:06:50 +0100
-Message-Id: <49deccc83930e5e153de766c57f182ccd34f3d34.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S1755436AbaKRPBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:01:13 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48774 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427AbaKRPBJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:01:09 -0500
+Date: Tue, 18 Nov 2014 15:00:39 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>, linus.walleij@linaro.org,
+        gnurou@gmail.com, alsa-devel@alsa-project.org, tiwai@suse.de,
+        patches@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+Message-ID: <20141118150039.GO22111@sirena.org.uk>
+References: <20141111165227.GA24344@opensource.wolfsonmicro.com>
+ <20141111171532.GA26106@opensource.wolfsonmicro.com>
+ <20141113101228.GE24004@x1>
+ <20141113164017.GA12443@opensource.wolfsonmicro.com>
+ <20141117121648.GP24004@x1>
+ <20141117125433.GA29518@opensource.wolfsonmicro.com>
+ <20141117151318.GE12443@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XMHqbYJb993HXwLR"
+Content-Disposition: inline
+In-Reply-To: <20141117151318.GE12443@opensource.wolfsonmicro.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 81.128.185.34
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] mfd: arizona: Add support for CS47L24
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Scott Carter <ccscott@funsoft.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--XMHqbYJb993HXwLR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-===============
+On Mon, Nov 17, 2014 at 03:13:18PM +0000, Charles Keepax wrote:
 
-commit 37017ac6849e772e67dd187ba2fbd056c4afa533 upstream.
+> 1) We could add #defines for various IP blocks and the readable
+> callback could include these defines for various blocks. Which
+> would reduce the duplication between chips. Although a lot of the
+> blocks have small differences between chips which might hurt some
+> of the benefits and this does also have some negative affects on the
+> greppability of it all. This could also be done as functions then
+> some of the differences could be taken into account locally for
+> each block but that hurts the performance and probably
+> readability.
 
-The Broadcom OSB4 IDE Controller (vendor and device IDs: 1166:0211)
-does not support 64-KB DMA transfers.
-Whenever a 64-KB DMA transfer is attempted,
-the transfer fails and messages similar to the following
-are written to the console log:
+I don't follow this suggestion, sorry.
 
-   [ 2431.851125] sr 0:0:0:0: [sr0] Unhandled sense code
-   [ 2431.851139] sr 0:0:0:0: [sr0]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-   [ 2431.851152] sr 0:0:0:0: [sr0]  Sense Key : Hardware Error [current]
-   [ 2431.851166] sr 0:0:0:0: [sr0]  Add. Sense: Logical unit communication time-out
-   [ 2431.851182] sr 0:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 76 f4 00 00 40 00
-   [ 2431.851210] end_request: I/O error, dev sr0, sector 121808
+> 2) We could add a function to the regmap core that makes any
+> register with a default or marked as volatile readable. That
+> would remove the readable callback completely and not really hurt
+> greppability (assuming we could change the default array to use
+> the #defines for the register) but at fairly large runtime cost.
+> We would have to search the default array everytime we wanted to
+> check if a register is readable.
 
-When the libata and pata_serverworks modules
-are recompiled with ATA_DEBUG and ATA_VERBOSE_DEBUG defined in libata.h,
-the 64-KB transfer size in the scatter-gather list can be seen
-in the console log:
+This sounds far too expensive at runtime, especially for large register
+sets.  You can do tables of ranges but that's much more efficient since
+the expecation is that if you're using that there's an order of
+magnitude size difference.
 
-   [ 2664.897267] sr 9:0:0:0: [sr0] Send:
-   [ 2664.897274] 0xf63d85e0
-   [ 2664.897283] sr 9:0:0:0: [sr0] CDB:
-   [ 2664.897288] Read(10): 28 00 00 00 7f b4 00 00 40 00
-   [ 2664.897319] buffer = 0xf6d6fbc0, bufflen = 131072, queuecommand 0xf81b7700
-   [ 2664.897331] ata_scsi_dump_cdb: CDB (1:0,0,0) 28 00 00 00 7f b4 00 00 40
-   [ 2664.897338] ata_scsi_translate: ENTER
-   [ 2664.897345] ata_sg_setup: ENTER, ata1
-   [ 2664.897356] ata_sg_setup: 3 sg elements mapped
-   [ 2664.897364] ata_bmdma_fill_sg: PRD[0] = (0x66FD2000, 0xE000)
-   [ 2664.897371] ata_bmdma_fill_sg: PRD[1] = (0x65000000, 0x10000)
-   ------------------------------------------------------> =======
-   [ 2664.897378] ata_bmdma_fill_sg: PRD[2] = (0x66A10000, 0x2000)
-   [ 2664.897386] ata1: ata_dev_select: ENTER, device 0, wait 1
-   [ 2664.897422] ata_sff_tf_load: feat 0x1 nsect 0x0 lba 0x0 0x0 0xFC
-   [ 2664.897428] ata_sff_tf_load: device 0xA0
-   [ 2664.897448] ata_sff_exec_command: ata1: cmd 0xA0
-   [ 2664.897457] ata_scsi_translate: EXIT
-   [ 2664.897462] leaving scsi_dispatch_cmnd()
-   [ 2664.897497] Doing sr request, dev = sr0, block = 0
-   [ 2664.897507] sr0 : reading 64/256 512 byte blocks.
-   [ 2664.897553] ata_sff_hsm_move: ata1: protocol 7 task_state 1 (dev_stat 0x58)
-   [ 2664.897560] atapi_send_cdb: send cdb
-   [ 2666.910058] ata_bmdma_port_intr: ata1: host_stat 0x64
-   [ 2666.910079] __ata_sff_port_intr: ata1: protocol 7 task_state 3
-   [ 2666.910093] ata_sff_hsm_move: ata1: protocol 7 task_state 3 (dev_stat 0x51)
-   [ 2666.910101] ata_sff_hsm_move: ata1: protocol 7 task_state 4 (dev_stat 0x51)
-   [ 2666.910129] sr 9:0:0:0: [sr0] Done:
-   [ 2666.910136] 0xf63d85e0 TIMEOUT
+Honestly I'm not sure I see a big problem with the large tables; they're
+large but not hard to think about, from my point of view large blocks of
+code are scary but large blocks of data, meh.
 
-lspci shows that the driver used for the Broadcom OSB4 IDE Controller is
-pata_serverworks:
+--XMHqbYJb993HXwLR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-   00:0f.1 IDE interface: Broadcom OSB4 IDE Controller (prog-if 8e [Master SecP SecO PriP])
-           Flags: bus master, medium devsel, latency 64
-           [virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
-           [virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
-           I/O ports at 0170 [size=8]
-           I/O ports at 0374 [size=4]
-           I/O ports at 1440 [size=16]
-           Kernel driver in use: pata_serverworks
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-The pata_serverworks driver supports five distinct device IDs,
-one being the OSB4 and the other four belonging to the CSB series.
-The CSB series appears to support 64-KB DMA transfers,
-as tests on a machine with an SAI2 motherboard
-containing a Broadcom CSB5 IDE Controller (vendor and device IDs: 1166:0212)
-showed no problems with 64-KB DMA transfers.
+iQEcBAEBAgAGBQJUa18WAAoJECTWi3JdVIfQx3wH/RKKaJBIleU5rrOwi5AxJweQ
+xRRFSuhxjq6i357ZPoDctGjsU9AEBsm1NjgreyqgxeL2t8PZv6GiICmRMo9KWU3e
+CgoqlfsVZYvtt8jZZ+NLkBy39oPIaJbFPZEDhe+F2Gks5SgNsPyGJWLAwEneTTt7
+NrahWPA9j304ll4bco+4MVCOs5IE7YXx+PNADTCFiIV3mcWq2AdVi90ZT8Thi//A
+W8GUVj8oTcfK4ntIKCrm5TxX9TH/FOIcTMHiwBYI3V0cfNTTxpRlb+9NqwAWL+ZF
+pwFEm87CMzB8Ph0Q5XhaazgHklZJzkEyGkTVP7QKf83dgMa9X1+UavESWddYclc=
+=xleV
+-----END PGP SIGNATURE-----
 
-This problem was first discovered when attempting to install openSUSE
-from a DVD on a machine with an STL2 motherboard.
-Using the pata_serverworks module,
-older releases of openSUSE will not install at all due to the timeouts.
-Releases of openSUSE prior to 11.3 can be installed by disabling
-the pata_serverworks module using the brokenmodules boot parameter,
-which causes the serverworks module to be used instead.
-Recent releases of openSUSE (12.2 and later) include better error recovery and
-will install, though very slowly.
-On all openSUSE releases, the problem can be recreated
-on a machine containing a Broadcom OSB4 IDE Controller
-by mounting an install DVD and running a command similar to the following:
-
-   find /mnt -type f -print | xargs cat > /dev/null
-
-The patch below corrects the problem.
-Similar to the other ATA drivers that do not support 64-KB DMA transfers,
-the patch changes the ata_port_operations qc_prep vector to point to a routine
-that breaks any 64-KB segment into two 32-KB segments and
-changes the scsi_host_template sg_tablesize element to reduce by half
-the number of scatter/gather elements allowed.
-These two changes affect only the OSB4.
-
-Signed-off-by: Scott Carter <ccscott@funsoft.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/ata/pata_serverworks.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/ata/pata_serverworks.c b/drivers/ata/pata_serverworks.c
-index 96c6a79ef606..79dedbae282c 100644
---- a/drivers/ata/pata_serverworks.c
-+++ b/drivers/ata/pata_serverworks.c
-@@ -252,12 +252,18 @@ static void serverworks_set_dmamode(struct ata_port *ap, struct ata_device *adev
- 	pci_write_config_byte(pdev, 0x54, ultra_cfg);
- }
- 
--static struct scsi_host_template serverworks_sht = {
-+static struct scsi_host_template serverworks_osb4_sht = {
-+	ATA_BMDMA_SHT(DRV_NAME),
-+	.sg_tablesize	= LIBATA_DUMB_MAX_PRD,
-+};
-+
-+static struct scsi_host_template serverworks_csb_sht = {
- 	ATA_BMDMA_SHT(DRV_NAME),
- };
- 
- static struct ata_port_operations serverworks_osb4_port_ops = {
- 	.inherits	= &ata_bmdma_port_ops,
-+	.qc_prep	= ata_bmdma_dumb_qc_prep,
- 	.cable_detect	= serverworks_cable_detect,
- 	.mode_filter	= serverworks_osb4_filter,
- 	.set_piomode	= serverworks_set_piomode,
-@@ -266,6 +272,7 @@ static struct ata_port_operations serverworks_osb4_port_ops = {
- 
- static struct ata_port_operations serverworks_csb_port_ops = {
- 	.inherits	= &serverworks_osb4_port_ops,
-+	.qc_prep	= ata_bmdma_qc_prep,
- 	.mode_filter	= serverworks_csb_filter,
- };
- 
-@@ -405,6 +412,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 		}
- 	};
- 	const struct ata_port_info *ppi[] = { &info[id->driver_data], NULL };
-+	struct scsi_host_template *sht = &serverworks_csb_sht;
- 	int rc;
- 
- 	rc = pcim_enable_device(pdev);
-@@ -418,6 +426,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 		/* Select non UDMA capable OSB4 if we can't do fixups */
- 		if (rc < 0)
- 			ppi[0] = &info[1];
-+		sht = &serverworks_osb4_sht;
- 	}
- 	/* setup CSB5/CSB6 : South Bridge and IDE option RAID */
- 	else if ((pdev->device == PCI_DEVICE_ID_SERVERWORKS_CSB5IDE) ||
-@@ -434,7 +443,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 			ppi[1] = &ata_dummy_port_info;
- 	}
- 
--	return ata_pci_bmdma_init_one(pdev, ppi, &serverworks_sht, NULL, 0);
-+	return ata_pci_bmdma_init_one(pdev, ppi, sht, NULL, 0);
- }
- 
- #ifdef CONFIG_PM
--- 
-2.1.3
-
+--XMHqbYJb993HXwLR--
