@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaKRJaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 04:30:19 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:36615 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915AbaKRJaP (ORCPT
+	id S1754162AbaKRJbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 04:31:19 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:29146 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753836AbaKRJbR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 04:30:15 -0500
+	Tue, 18 Nov 2014 04:31:17 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="43558716"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
+Subject: [PATCH v8 0/2] ns, procfs: pid conversion between ns and showing pidns hierarchy
+Date: Tue, 18 Nov 2014 17:30:11 +0800
+Message-ID: <1416303013-13762-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-In-Reply-To: <2279061.naADrHDgyn@wuerfel>
-References: <1416220572-13381-1-git-send-email-ankit.jindal@linaro.org>
- <1416220572-13381-6-git-send-email-ankit.jindal@linaro.org> <2279061.naADrHDgyn@wuerfel>
-From: Ankit Jindal <ankit.jindal@linaro.org>
-Date: Tue, 18 Nov 2014 14:59:54 +0530
-Message-ID: <CAPTm99WYNyxtY-NCVN8pB0HwNPn+EFx-7w7yEevaEK1z7-Zqxg@mail.gmail.com>
-Subject: Re: [PATCH v5 5/6] Documentation: dt-bindings: Add binding info for
- X-Gene QMTM UIO driver
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Varka Bhadram <varkabhadram@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anup Patel <anup@brainfault.org>, Guenter Roeck <linux@roeck-us.net>,
-        "patches@apm.com" <patches@apm.com>, Rob Herring <robh+dt@kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 November 2014 16:47, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 17 November 2014 16:06:11 Ankit Jindal wrote:
->> +
->> +       qmtm1_uio: qmtm_uio@1f200000 {
->> +               compatible = "apm,xgene-qmtm";
->> +               status = "disabled";
->> +               reg = <0x0 0x1f200000 0x0 0x10000>,
->> +                     <0x0 0x1b000000 0x0 0x400000>;
->> +               reg-names = "csr", "fabric";
->> +               qpool-memory = <&qmtm1_uio_qpool>;
->> +               clocks = <&qmtm1clk 0>;
->> +               num-queues = <0x400>;
->> +               devid = <1>;
->> +       };
->> +
->
-> To make my previous review comments clearer:
->
-> NAK
->
-> Do not create device nodes that are meant for a specific use case in
-> software and that are not usable for the common case. I don't think
-> it makes any sense to keep on submitting a UIO driver for this until
-> we have a proper network driver that uses this so we can make sure we
-> have a working binding.
+This series will expose pid inside containers
+via procfs.
+Also show the hierarchy of pid namespcae.
+Then we could know how pid looks inside a container
+and their ns relationships.
 
-The dataplane frameworks like OpenDataPlane etc, need to have access
-to complete subsystem from the user space. Hence, we would like to
-have this driver and some other UIO drivers to be the part of kernel
-to have data plane frameworks working on our platform.
+1. helpful for nested container check/restore
+>From /proc/PID/ns/pid, we could know whether two pid lived
+in the same ns.
+>From this patch, we could know whether two pid had relationship
+between each other.
 
->
->         Arnd
+2. used for pid translation from container
+Ex:
+     init_pid_ns    ns1         ns2
+ t1  2
+ t2   `- 3          1
+ t3   `- 4          3
+ t4       `- 5      `- 5        1
+ t5       `- 6      `- 8        3
 
-Thanks,
-Ankit
+It could solve problems like: we see a pid 3 goes wrong
+in container's log, what is its pid on hosts:
+a) inside container:
+# readlink /proc/3/ns/pid
+pid:[4026532388]
+
+b) on host:
+We show it in the form of :
+<init_PID> <parent_of_init_PID> <relative PID level>
+
+# cat /proc/pidns_hierarchy
+14918 1 1
+16263 14918 2
+16581 1 1
+Then we could easily find /proc/16263/ns/pid->4026532388.
+On host, we knew that reported pid 3 is in level 2,
+   and its parental pid ns is from pid 14918.
+
+c) on host, check child of 16263, grep it from status:
+NSpid:  16268   8       3
+
+We knew that pid 16268 is pid 3 reported by container.
+
+v8: fix some improper comments
+    use max() from kernel.h
+v7: change stype to be consistent with current interface like
+    <init_PID> <parent_of_init_PID> <relative PID level>
+    remove EXPERT dependent in Kconfig
+v6: fix some get_pid leaks and do some cleanups
+v5: collect pid by find_ge_pid;
+    use local list inside nslist_proc_show;
+    use get_pid, remove mutex lock.
+v4: simplify pid collection and some performance optimizamtion
+    fix another race issue.
+v3: fix a race issue and memory leak issue in pidns_hierarchy;
+    add another two fielsd: NSpgid and NSsid.
+v2: use a procfs text file instead of dirs under /proc for
+    showing pidns hierarchy;
+    add two new fields: NStgid and NSpid
+    keep fields of Tgid and Pid unchanged for back compatibility.
+
+
+Chen Hanxiao (2):
+  procfs: show hierarchy of pid namespace
+  /proc/PID/status: show all sets of pid according to ns
+
+ fs/proc/Kconfig           |   6 +
+ fs/proc/Makefile          |   1 +
+ fs/proc/array.c           |  17 +++
+ fs/proc/pidns_hierarchy.c | 280 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 304 insertions(+)
+ create mode 100644 fs/proc/pidns_hierarchy.c
+
+-- 
+1.9.3
+
