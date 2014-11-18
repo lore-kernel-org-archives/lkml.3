@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbaKRXXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:23:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37883 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754252AbaKRXXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:23:37 -0500
-Date: Tue, 18 Nov 2014 15:23:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Karam Lee <karam.lee@lge.com>, Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] zram: rely on the bi_end_io for zram_rw_page fails
-Message-Id: <20141118152336.d58b7b61a711b7d9982deb9d@linux-foundation.org>
-In-Reply-To: <1415926147-9023-1-git-send-email-minchan@kernel.org>
-References: <1415926147-9023-1-git-send-email-minchan@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932787AbaKRX1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:27:03 -0500
+Received: from mga03.intel.com ([134.134.136.65]:52872 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932401AbaKRX1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 18:27:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,413,1413270000"; 
+   d="scan'208";a="639320034"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
+ userspace
+Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEIAAoQn1gADe14CAAAmMgIABruEAgAFGphCABQ+BAIAAEq4AgAAB1ACAAACVgP//kExAABLiaAAAD6th0P//ng0AgACB8wD//4wmgP//ZAXAgAIPRYCAAIIoEA==
+Date: Tue, 18 Nov 2014 23:26:30 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F329407F2@ORSMSX114.amr.corp.intel.com>
+References: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
+ <CA+8MBbJy3QziFGDzOxMrweWEe_yneETuo4O8bTPZg=2y15qdkQ@mail.gmail.com>
+ <20141112103011.GA16807@pd.tnic>
+ <CALCETrWsWGf+WRf7gUWs5x=6Ts5KwqWpecrp-Q61jL7usTOvAQ@mail.gmail.com>
+ <20141112162225.GF16807@pd.tnic> <20141113180436.GG14070@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3293BEAE@ORSMSX114.amr.corp.intel.com>
+ <20141117185030.GA25157@pd.tnic>
+ <CALCETrXOPc3j8dC3rMS1jbcAofZkXDhFupbtHZgYw1JpmZasOQ@mail.gmail.com>
+ <20141117200354.GB25157@pd.tnic>
+ <CALCETrW75rES4=c1AYFXO0pobTZVjb6gYzpgWb0f9jAjYYduPQ@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293F5DA@ORSMSX114.amr.corp.intel.com>
+ <CALCETrU6x4yVQy57KGm-Rk==ZYNqHorytAs6WvgKNVoT+Dk9Uw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293F64E@ORSMSX114.amr.corp.intel.com>
+ <CALCETrWPzO1vz+Rcjs78B+wWWi4eu_g__-k9iCHH1G1Mc6af+A@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293F681@ORSMSX114.amr.corp.intel.com>
+ <CALCETrXsxJ6eotRJG1tjPD8dkpAd6P2roDm+fj+Yqi36uh3WHA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3293FFBA@ORSMSX114.amr.corp.intel.com>
+ <CALCETrXdfKut2MDi1Z-iS1aJF30Ebfyumh65=QTm4MCihBbv1A@mail.gmail.com>
+In-Reply-To: <CALCETrXdfKut2MDi1Z-iS1aJF30Ebfyumh65=QTm4MCihBbv1A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAINRAoD027923
 
-On Fri, 14 Nov 2014 09:49:07 +0900 Minchan Kim <minchan@kernel.org> wrote:
+> Your test case is presumably doing something that involves setting
+> undocumented registers* to program the CPU or memory controller to
+> generate a machine check on access to some address.  Presumably this
+> is done by broadcasting an SMI and programming the registers in SMM.
 
-> When I tested zram, I found processes got segfaulted.
-> The reason was zram_rw_page doesn't make the page dirty
-> again when swap write failed, and even it doesn't return
-> error by [1].
-> 
-> If error by zram internal happens, zram_rw_page should return
-> non-zero without calling page_endio.
-> It causes resubmit the IO with bio so that it ends up calling
-> bio->bi_end_io.
-> 
-> The reason is zram could be used for a block device for FS and
-> swap, which they uses different bio complete callback, which
-> works differently. So, we should rely on the bio I/O complete
-> handler rather than zram_bvec_rw itself in case of I/O fail.
-> 
-> This patch fixes the segfault issue as well one [1]'s
-> mentioned
-> 
-> ...
->
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -978,12 +978,10 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
->  out_unlock:
->  	up_read(&zram->init_lock);
->  out:
-> -	page_endio(page, rw, err);
-> +	if (unlikely(err))
-> +		return err;
->  
-> -	/*
-> -	 * Return 0 prevents I/O fallback trial caused by rw_page fail
-> -	 * and upper layer can handle this IO error via page error.
-> -	 */
-> +	page_endio(page, rw, 0);
->  	return 0;
+Good theory - but not quite how it works.  The ACPI/EINJ table does trigger
+an SMI so the BIOS can do the injection.  What BIOS actually does is to play
+with the memory controller so that the next write to the target address will
+flip some ECC bits in an unnatural way (to either plant a correctable error
+with just one bit flipped, or a UC error with two bits flipped).  Then the SMI
+returns.
 
-Losing the comment makes me sad.  The code is somewhat odd-looking.  We
-should add some words explaining why we're not reporting errors at this
-point.
+Then my application reads the target address, and we see CMCI or MCE
+when the ECC check fails.
 
+Hopefully this keeps the SMI path decoupled from the MCE ... I even sleep
+a little after injection and before consumption just in case there are any
+stragglers late returning from the (broadcast) SMI that planted the error.
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
