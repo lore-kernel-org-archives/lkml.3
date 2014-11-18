@@ -1,120 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205AbaKROsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:48:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57148 "EHLO mx2.suse.de"
+	id S1756489AbaKROuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:50:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57207 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754985AbaKROKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:00 -0500
+	id S1754971AbaKROJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:58 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 122/206] ext4: add ext4_iget_normal() which is to be used for dir tree lookups
-Date: Tue, 18 Nov 2014 15:07:57 +0100
-Message-Id: <bead15b503cf4007a0383f6e8a7409569c41a546.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>,
+        =?UTF-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 116/206] qxl: don't create too large primary surface
+Date: Tue, 18 Nov 2014 15:07:51 +0100
+Message-Id: <ff4b0a924a8d99fb56e77760ebe7ea1e0129163b.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
 References: <cover.1416319692.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Marc-André Lureau <marcandre.lureau@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f4bb2981024fc91b23b4d09a8817c415396dbabb upstream.
+commit c572aaf46f71f63ae5914d4e194a955e0ba1b519 upstream.
 
-If there is a corrupted file system which has directory entries that
-point at reserved, metadata inodes, prohibit them from being used by
-treating them the same way we treat Boot Loader inodes --- that is,
-mark them to be bad inodes.  This prohibits them from being opened,
-deleted, or modified via chmod, chown, utimes, etc.
+Limit primary to qemu vgamem size, to avoid reaching
+qemu guest bug "requested primary larger than framebuffer"
+on resizing screen too large to fit.
 
-In particular, this prevents a corrupted file system which has a
-directory entry which points at the journal inode from being deleted
-and its blocks released, after which point Much Hilarity Ensues.
+Remove unneeded and misleading variables.
 
-Reported-by: Sami Liedes <sami.liedes@iki.fi>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Related to:
+https://bugzilla.redhat.com/show_bug.cgi?id=1127552
+
+Signed-off-by: Marc-André Lureau <marcandre.lureau@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ext4/ext4.h  | 1 +
- fs/ext4/inode.c | 7 +++++++
- fs/ext4/namei.c | 4 ++--
- fs/ext4/super.c | 2 +-
- 4 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/qxl/qxl_display.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 54d94db2cf03..4eca63f8314a 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2093,6 +2093,7 @@ int do_journal_get_write_access(handle_t *handle,
- #define CONVERT_INLINE_DATA	 2
+diff --git a/drivers/gpu/drm/qxl/qxl_display.c b/drivers/gpu/drm/qxl/qxl_display.c
+index 835caba026d3..5f79e511c2a6 100644
+--- a/drivers/gpu/drm/qxl/qxl_display.c
++++ b/drivers/gpu/drm/qxl/qxl_display.c
+@@ -508,7 +508,6 @@ static int qxl_crtc_mode_set(struct drm_crtc *crtc,
+ 	struct qxl_framebuffer *qfb;
+ 	struct qxl_bo *bo, *old_bo = NULL;
+ 	struct qxl_crtc *qcrtc = to_qxl_crtc(crtc);
+-	uint32_t width, height, base_offset;
+ 	bool recreate_primary = false;
+ 	int ret;
+ 	int surf_id;
+@@ -538,9 +537,10 @@ static int qxl_crtc_mode_set(struct drm_crtc *crtc,
+ 	if (qcrtc->index == 0)
+ 		recreate_primary = true;
  
- extern struct inode *ext4_iget(struct super_block *, unsigned long);
-+extern struct inode *ext4_iget_normal(struct super_block *, unsigned long);
- extern int  ext4_write_inode(struct inode *, struct writeback_control *);
- extern int  ext4_setattr(struct dentry *, struct iattr *);
- extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 474b9eafee43..a43859ca3184 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4251,6 +4251,13 @@ bad_inode:
- 	return ERR_PTR(ret);
- }
+-	width = mode->hdisplay;
+-	height = mode->vdisplay;
+-	base_offset = 0;
++	if (bo->surf.stride * bo->surf.height > qdev->vram_size) {
++		DRM_ERROR("Mode doesn't fit in vram size (vgamem)");
++		return -EINVAL;
++        }
  
-+struct inode *ext4_iget_normal(struct super_block *sb, unsigned long ino)
-+{
-+	if (ino < EXT4_FIRST_INO(sb) && ino != EXT4_ROOT_INO)
-+		return ERR_PTR(-EIO);
-+	return ext4_iget(sb, ino);
-+}
-+
- static int ext4_inode_blocks_set(handle_t *handle,
- 				struct ext4_inode *raw_inode,
- 				struct ext4_inode_info *ei)
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 5a0408d7b114..8e000a058958 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1430,7 +1430,7 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, unsi
- 					 dentry->d_name.name);
- 			return ERR_PTR(-EIO);
- 		}
--		inode = ext4_iget(dir->i_sb, ino);
-+		inode = ext4_iget_normal(dir->i_sb, ino);
- 		if (inode == ERR_PTR(-ESTALE)) {
- 			EXT4_ERROR_INODE(dir,
- 					 "deleted inode referenced: %u",
-@@ -1461,7 +1461,7 @@ struct dentry *ext4_get_parent(struct dentry *child)
- 		return ERR_PTR(-EIO);
- 	}
- 
--	return d_obtain_alias(ext4_iget(child->d_inode->i_sb, ino));
-+	return d_obtain_alias(ext4_iget_normal(child->d_inode->i_sb, ino));
- }
- 
- /*
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index cf3068a50b48..2914dc7ce9e8 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -977,7 +977,7 @@ static struct inode *ext4_nfs_get_inode(struct super_block *sb,
- 	 * Currently we don't know the generation for parent directory, so
- 	 * a generation of 0 means "accept any"
- 	 */
--	inode = ext4_iget(sb, ino);
-+	inode = ext4_iget_normal(sb, ino);
- 	if (IS_ERR(inode))
- 		return ERR_CAST(inode);
- 	if (generation && inode->i_generation != generation) {
+ 	ret = qxl_bo_reserve(bo, false);
+ 	if (ret != 0)
+@@ -554,10 +554,10 @@ static int qxl_crtc_mode_set(struct drm_crtc *crtc,
+ 	if (recreate_primary) {
+ 		qxl_io_destroy_primary(qdev);
+ 		qxl_io_log(qdev,
+-			   "recreate primary: %dx%d (was %dx%d,%d,%d)\n",
+-			   width, height, bo->surf.width,
+-			   bo->surf.height, bo->surf.stride, bo->surf.format);
+-		qxl_io_create_primary(qdev, base_offset, bo);
++			   "recreate primary: %dx%d,%d,%d\n",
++			   bo->surf.width, bo->surf.height,
++			   bo->surf.stride, bo->surf.format);
++		qxl_io_create_primary(qdev, 0, bo);
+ 		bo->is_primary = true;
+ 		surf_id = 0;
+ 	} else {
 -- 
 2.1.3
 
