@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550AbaKRS6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:58:36 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:42639 "EHLO gloria.sntech.de"
+	id S1755590AbaKRS7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:59:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47984 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754860AbaKRS6f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:58:35 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] clk: add property for force to update clock setting
-Date: Tue, 18 Nov 2014 20:01:56 +0100
-Message-ID: <4405473.vT6u1E3Q1r@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <CAD=FV=VZ+qPRdeTaAXxBU0aSObBRdY5TDmREYviuh8h3dUs5fQ@mail.gmail.com>
-References: <1415884826-7877-1-git-send-email-kever.yang@rock-chips.com> <20141117211410.25314.99324@quantum> <CAD=FV=VZ+qPRdeTaAXxBU0aSObBRdY5TDmREYviuh8h3dUs5fQ@mail.gmail.com>
+	id S1754518AbaKRS7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 13:59:08 -0500
+Date: Tue, 18 Nov 2014 12:58:36 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Vojtech Pavlik <vojtech@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
+        kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Kernel Live Patching
+Message-ID: <20141118185836.GA3844@treble.redhat.com>
+References: <20141107140458.GA21774@suse.cz>
+ <20141107154500.GF4071@treble.redhat.com>
+ <20141107212735.GA21409@suse.cz>
+ <54616533.1070301@hitachi.com>
+ <20141111102655.GB20424@suse.cz>
+ <546399E4.6050605@hitachi.com>
+ <20141112214719.GA26809@suse.cz>
+ <5464D4B6.5010808@hitachi.com>
+ <20141113163804.GA10388@suse.cz>
+ <20141118124746.GB23958@pathway.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141118124746.GB23958@pathway.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 18. November 2014, 09:59:56 schrieb Doug Anderson:
-> Hi,
-> 
-> On Mon, Nov 17, 2014 at 1:14 PM, Mike Turquette <mturquette@linaro.org> 
-wrote:
-> > Quoting Heiko Stübner (2014-11-14 10:06:47)
+On Tue, Nov 18, 2014 at 01:47:46PM +0100, Petr Mladek wrote:
+> On Thu 2014-11-13 17:38:04, Vojtech Pavlik wrote:
+> > On Fri, Nov 14, 2014 at 12:56:38AM +0900, Masami Hiramatsu wrote:
+> > > > It'd be mostly based on your refcounting code, including stack
+> > > > checking (when a process sleeps, counter gets set based on number of
+> > > > patched functions on the stack), possibly including setting the counter
+> > > > to 0 on syscall entry/exit, but it'd make the switch per-thread like
+> > > > kGraft does, not for the whole system, when the respective counters
+> > > > reach zero.
+> > > 
+> > > I'm not sure what happens if a process sleeps on the patched-set?
 > > 
-> >> Hi Mike,
-> >> 
-> >> Am Donnerstag, 13. November 2014, 17:41:02 schrieb Mike Turquette:
-> >> > Quoting Doug Anderson (2014-11-13 15:27:32)
-> >> 
-> >> [...]
-> >> 
-> >> > All of the above is to say that perhaps the solution to this problem
-> >> > belongs in the driver. In the end we're talking about details for
-> >> > correctly programming hardware, which sounds an awful lot like what
-> >> > drivers are supposed to do.
-> >> > 
-> >> > Let me know if the ->init() callback holds any promise for you. If not
-> >> > we can figure something out.
-> >> 
-> >> From my theoretical musings, ->init() sounds like a nice idea - but of
-> >> course it comes with a "but".
-> >> 
-> >> I guess the general idea would be to have the pll clk-type simply reset
-> >> to the same rate but forcing it to use the parameters from its parameter
-> >> table - when the rate params differ [0].
-> >> 
-> >> The only problem would be the apll supplying the cpu cores. After all
-> >> clocks are registered, our armclk makes sure that the core clock gets
-> >> reparented before changing the underlying apll [dpll is safe, as it is
-> >> read-only currently].
-> DPLL probably won't be read only forever...
-> 
-> >> At the moment the order would be
-> >> clk_register(apll)
-> >> apll->init()
-> >> clk_register(armclk);
+> > Then the patching process will be stuck until it is woken up somehow.
+> > But it's still much better to only have to care about processes sleeping
+> > on the patched-set than about processes sleeping anywhere (kGraft).
 > > 
-> > Sorry, but I don't understand the problem. The at registration-time,
-> > apll is re-programmed to a correct value for its current rate. Then
-> > armclk is registered which might change apll's rate. Any change to the
-> > apll which is issued from armclk should insure that apll is programmed
-> > correctly.
+> > > If we switch the other threads, when this sleeping thread wakes up
+> > > that will see the old functions (and old data).
+> > 
+> > Yes, until the patching process is complete, data must be kept in the
+> > old format, even by new functions.
 > 
-> I think Heiko is worried that until the "armclk" is registered that
-> nobody is there to reparent the ARM core to GPLL while APLL changes
-> (that's armclk's job).  This is potentially unsafe.
+> I am not sure if I am able to follow all the ideas. Anyway,
+> the above sentence triggered some warning bells in my head ;-)
 > 
-> NOTE: it actually might not be unsafe, just slow.  I think we'll
-> actually swap the PLL into "slow" mode before changing it (24MHz) so
-> we won't die we'll just run at 24MHz at boot time while we wait for
-> APLL to re-lock.
+> Would it mean waiting for two safe switch points, please? One to switch
+> functions and the second to switch the data structures?
 
-that is correct, we switch the pll to slow-mode (which simply passes through 
-the xin24m) before touching its params, which is also the behaviour described 
-in the manual for this.
+Yes, though the first switch "point" doesn't have to be instantaneous.
+When changing data, new functions must be able to understand both old
+and new data.  The transition to the new functions can happen gradually,
+as long as you don't start creating new data (or migrating existing
+data) until after the patching is complete.  That way you'll never have
+an old function trying to access new data.
+
+> The later condition looks pretty complicated to me. It would mean to
+> make sure that the old structures won't be stored anywhere and nobody
+> would want to use them later. It won't be enough to check the stack
+> because some function might be called later that would access a saved
+> pointer pointing to the old structure.
+
+We don't need to necessarily get rid of all old data, because new
+functions can handle both old and new data.
+
+> 
+> 
+> > > So I think we need both SWITCH_THREAD and SWITCH_KERNEL options in
+> > > that case.
+> > 
+> > With data shadowing that's not required. It still may be worth having
+> > it.
+> 
+> I am not 100% sure what the shadowing means. If it means that the new
+> function will be able to read and write both versions of the
+> structure, it looks more easily doable to me.
+
+Shadowing is a way of adding virtual fields to existing data structures
+at runtime.  That enables the new functions to easily determine whether
+they're dealing with v1 or v2 of a given data structure, as well as
+access any new fields in v2.
 
 
-> One option would be to just add yet another per-pll parameter.  We'll
-> only cleanup CPLL, GPLL, and NPLL.  If APLL (ARM clock) and DPLL
-> (memory clock) are set differently by firmware then we're just SOL.
-> Of course if firmware boots us on GPLL then I guess we're back to
-> square one (would firmware really be that malicious?)
-
-I was talking with Kever about the same thing today. My best idea would be to 
-give our plls a flag property - like all the other clocks have (divider_flags, 
-mux_flags, etc) - because who knows if later pll designs will need other 
-smaller adjustments. Then adding a ROCKCHIP_PLL_FLAG_SYNC_RATE triggering the 
-init function to check the rate params.
-
-
-Heiko
+-- 
+Josh
