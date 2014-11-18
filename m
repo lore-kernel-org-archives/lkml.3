@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583AbaKRDYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:24:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621AbaKRDYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:24:04 -0500
-Message-ID: <546ABBC5.7030603@redhat.com>
-Date: Tue, 18 Nov 2014 11:23:49 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753487AbaKRDZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:25:29 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40352 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011AbaKRDZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 22:25:28 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <546ABC02.4010905@jp.fujitsu.com>
+Date: Tue, 18 Nov 2014 12:24:50 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH V3 1/2] virtio: introduce methods of sanitizing device
- features
-References: <1416215838-21700-1-git-send-email-jasowang@redhat.com> <20141117093701.GC20133@redhat.com> <20141117104430.54362e7d.cornelia.huck@de.ibm.com> <20141117101139.GE20133@redhat.com>
-In-Reply-To: <20141117101139.GE20133@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+To: Rafael Aquini <aquini@redhat.com>, <linux-mm@kvack.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "Larry Woodman" <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: do not overwrite reserved pages counter at show_mem()
+References: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
+In-Reply-To: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2014 06:11 PM, Michael S. Tsirkin wrote:
-> On Mon, Nov 17, 2014 at 10:44:30AM +0100, Cornelia Huck wrote:
->> On Mon, 17 Nov 2014 11:37:01 +0200
->> "Michael S. Tsirkin" <mst@redhat.com> wrote:
->>
->>> On Mon, Nov 17, 2014 at 05:17:17PM +0800, Jason Wang wrote:
->>>> Buggy host may advertised buggy host features (a usual case is that host
->>>> advertise a feature whose dependencies were missed). In this case, driver
->>>> should detect and disable the buggy features by itself.
->>>>
->>>> This patch introduces driver specific sanitize_features() method which is
->>>> called just before features finalizing to detect and disable buggy features
->>>> advertised by host.
->>>>
->>>> Virtio-net will be the first user.
->>>>
->>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
->>>> Cc: Michael S. Tsirkin <mst@redhat.com>
->>>> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
->>>> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>> Hmm this conflicts with virtio 1.0 work: we drop
->>> features as bitmap there.
->> But that's an implementation detail, no? We'll still need a way for the
->> driver to sanitize features, and I think this interface works just fine.
-> Now that you mention it, I don't think we do.
->
-> The spec is quite explicit that devices must not expose invalid
-> combinations of features.
->
-> Admittedly, BUG_ON isn't very friendly to hypervisors.
->
-> But e.g. failing probe seems better than trying to work around
-> hypervisor bugs - otherwise we'll be stuck maintaining compatibility
-> with hypervisors forever.
->
+(2014/11/15 3:34), Rafael Aquini wrote:
+> Minor fixlet to perform the reserved pages counter aggregation
+> for each node, at show_mem()
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
 
-I'm ok with failing the probe.
+Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-But it won't cost big effort to workaround only features dependencies
-issue. I don't see how this block any further features implementation.
-Looking at virtio-net, it also depends on network core to fix NETIF_F_*
-dependencies.
+Thanks,
+Yasuaki Ishimatsu
 
-There seems no way to get rid of maintaining compatibility, e.g  the
-workarounds for the buggy hypervisor without VIRTIO_F_ANY_LAYOUT support.
+>   lib/show_mem.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/lib/show_mem.c b/lib/show_mem.c
+> index 0922579..5e25627 100644
+> --- a/lib/show_mem.c
+> +++ b/lib/show_mem.c
+> @@ -28,7 +28,7 @@ void show_mem(unsigned int filter)
+>   				continue;
+>   
+>   			total += zone->present_pages;
+> -			reserved = zone->present_pages - zone->managed_pages;
+> +			reserved += zone->present_pages - zone->managed_pages;
+>   
+>   			if (is_highmem_idx(zoneid))
+>   				highmem += zone->present_pages;
+> 
+
 
