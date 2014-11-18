@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaKRFHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 00:07:45 -0500
-Received: from new1-smtp.messagingengine.com ([66.111.4.221]:44711 "EHLO
+	id S1752312AbaKRFHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 00:07:44 -0500
+Received: from new1-smtp.messagingengine.com ([66.111.4.221]:39850 "EHLO
 	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750778AbaKRFHn (ORCPT
+	by vger.kernel.org with ESMTP id S1750708AbaKRFHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 00:07:43 -0500
-Message-Id: <1416286791.150064.192269077.3DD813C4@webmail.messagingengine.com>
-X-Sasl-Enc: pejGK1xj+LrIRxfVTeaUmIkCqXgMgnmDkeN0YMlJBleD 1416286791
+Message-Id: <1416286851.150357.192269297.1C31BE9C@webmail.messagingengine.com>
+X-Sasl-Enc: daZ9KF0Jt4vpW9x6magzv0t7WPDOeakXrCZnSRZ87bzO 1416286851
 From: SystemBlues <sdblues@fastmail.com>
 To: "" <linux-kernel@vger.kernel.org>, debian-user@lists.debian.org,
         debian-vote@lists.debian.org, ubuntu-users@lists.ubuntu.com,
@@ -17,29 +17,34 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain
 X-Mailer: MessagingEngine.com Webmail Interface - ajax-9183bd94
-Subject: Systemd Blues
-Date: Mon, 17 Nov 2014 20:59:51 -0800
+Subject: Empires only fall to an enemy within.
+Date: Mon, 17 Nov 2014 21:00:51 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Blues song about systemd.
+Free software worked great for a time, it was a movement
+on the upswing. Then it was noticed. Feminists appeared
+and lobbied to have those of unclean mind excluded from 
+the free/opensource movement, only those who believed
+the correct thing were allowed to stay. Code nor contribution
+mattered anymore. Believing in social justice for women,
+self-mutilated men/women, and gays was what was now important.
 
-A friend of mine and I, we sat down one afternoon,
-and there was something bothering us. I for one
-couldn't get it out of my head. It was a feeling,
-and it wasn't good.
+No longer is it enough that a man has the ability and the will
+to code and contribute. His balls must be in a purse.
 
-It was the feeling of getting dicked down
-by SystemD.
+Now SystemD has appeared aswell, and is tearing down what
+once were stable, time tested, edifices. Its proponents
+strangely also are of the pro-feminist / social justice warrior
+camp.
 
-We put this feeling, the feeling we've never
-felt before as proud white males in the greatest country
-God every felt to allow to exist on this planet,
-previously with nary a care in the world,
-we put this new feeling to song.
+Dissent is crushed.
 
-That feeling was subjugation.
+Empires only fall to an enemy within.
 
-SystemD Blues:
 http://youtu.be/y0aTqsl-vfU
+-- 
+  SystemBlues
+  sdblues@fastmail.com
+
