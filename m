@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218AbaKROmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:42:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57147 "EHLO mx2.suse.de"
+	id S1756232AbaKROmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:42:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57207 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755017AbaKROKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755008AbaKROKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:06 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Sandeen <sandeen@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 123/206] ext4: fix reservation overflow in ext4_da_write_begin
-Date: Tue, 18 Nov 2014 15:07:58 +0100
-Message-Id: <cc35695f5987ae0f15439882dc66729deb82810d.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 141/206] staging:iio:ade7758: Fix check if channels are enabled in prenable
+Date: Tue, 18 Nov 2014 15:08:16 +0100
+Message-Id: <4cf866e11cf4f921a0ac20f696031cdf24b2281b.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,85 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0ff8947fc5f700172b37cbca811a38eb9cb81e08 upstream.
+commit 79fa64eb2ee8ccb4bcad7f54caa2699730b10b22 upstream.
 
-Delalloc write journal reservations only reserve 1 credit,
-to update the inode if necessary.  However, it may happen
-once in a filesystem's lifetime that a file will cross
-the 2G threshold, and require the LARGE_FILE feature to
-be set in the superblock as well, if it was not set already.
+We should check if a channel is enabled, not if no channels are enabled.
 
-This overruns the transaction reservation, and can be
-demonstrated simply on any ext4 filesystem without the LARGE_FILE
-feature already set:
-
-dd if=/dev/zero of=testfile bs=1 seek=2147483646 count=1 \
-	conv=notrunc of=testfile
-sync
-dd if=/dev/zero of=testfile bs=1 seek=2147483647 count=1 \
-	conv=notrunc of=testfile
-
-leads to:
-
-EXT4-fs: ext4_do_update_inode:4296: aborting transaction: error 28 in __ext4_handle_dirty_super
-EXT4-fs error (device loop0) in ext4_do_update_inode:4301: error 28
-EXT4-fs error (device loop0) in ext4_reserve_inode_write:4757: Readonly filesystem
-EXT4-fs error (device loop0) in ext4_dirty_inode:4876: error 28
-EXT4-fs error (device loop0) in ext4_da_write_end:2685: error 28
-
-Adjust the number of credits based on whether the flag is
-already set, and whether the current write may extend past the
-LARGE_FILE limit.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+Fixes: 550268ca1111 ("staging:iio: scrap scan_count and ensure all drivers use active_scan_mask")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ext4/inode.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/staging/iio/meter/ade7758_ring.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index a43859ca3184..9aed571513b7 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2629,6 +2629,20 @@ static int ext4_nonda_switch(struct super_block *sb)
- 	return 0;
- }
+diff --git a/drivers/staging/iio/meter/ade7758_ring.c b/drivers/staging/iio/meter/ade7758_ring.c
+index 6590944a6678..46eb15d25d4b 100644
+--- a/drivers/staging/iio/meter/ade7758_ring.c
++++ b/drivers/staging/iio/meter/ade7758_ring.c
+@@ -92,7 +92,7 @@ static int ade7758_ring_preenable(struct iio_dev *indio_dev)
+ 	unsigned channel;
+ 	int ret;
  
-+/* We always reserve for an inode update; the superblock could be there too */
-+static int ext4_da_write_credits(struct inode *inode, loff_t pos, unsigned len)
-+{
-+	if (likely(EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+				EXT4_FEATURE_RO_COMPAT_LARGE_FILE)))
-+		return 1;
-+
-+	if (pos + len <= 0x7fffffffULL)
-+		return 1;
-+
-+	/* We might need to update the superblock to set LARGE_FILE */
-+	return 2;
-+}
-+
- static int ext4_da_write_begin(struct file *file, struct address_space *mapping,
- 			       loff_t pos, unsigned len, unsigned flags,
- 			       struct page **pagep, void **fsdata)
-@@ -2679,7 +2693,8 @@ retry_grab:
- 	 * of file which has an already mapped buffer.
- 	 */
- retry_journal:
--	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE, 1);
-+	handle = ext4_journal_start(inode, EXT4_HT_WRITE_PAGE,
-+				ext4_da_write_credits(inode, pos, len));
- 	if (IS_ERR(handle)) {
- 		page_cache_release(page);
- 		return PTR_ERR(handle);
+-	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
++	if (bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
+ 		return -EINVAL;
+ 
+ 	ret = iio_sw_buffer_preenable(indio_dev);
 -- 
 2.1.3
 
