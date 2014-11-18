@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662AbaKROf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:35:56 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:20428 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932646AbaKROfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:35:53 -0500
-Message-ID: <546B5904.6020200@huawei.com>
-Date: Tue, 18 Nov 2014 22:34:44 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jiang Liu <jiang.liu@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <alpine.DEB.2.11.1411181518310.3909@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411181518310.3909@nanos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
+	id S932627AbaKROfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:35:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755007AbaKROKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:11 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 157/206] spi: pxa2xx: toggle clocks on suspend if not disabled by runtime PM
+Date: Tue, 18 Nov 2014 15:08:32 +0100
+Message-Id: <45b5df583c2c1d0e68f09e18b6c88cf476c6354e.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 22:19, Thomas Gleixner wrote:
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->> On 2014/11/18 21:43, Jiang Liu wrote:
->>> 	We provide an irq_chip for each type of interrupt controller
->>> instead of devices. For the example mentioned above, if device A
->>> and Group B has different interrupt controllers, we just need to
->>> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
->>> to suitable callbacks.
->>> 	The framework already achieves what you you want:)
->>
->> What if device A and group B have the same interrupt controller?
-> 
-> Well, if write_msg() is different they are hardly the same.
-> 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-The GICv3 ITS now deals with both PCI and non PCI message interrupts.
-We can't require the new devices behave writing message in a same way.
-What we can do is to abstract all the endpoints' behavior, and I
-provided one abstraction in an earlier reply.
+===============
 
-Thanks,
-	Abel
+commit 2b9375b91bef65b837bed61a05fb387159b38ddf upstream.
+
+If PM_RUNTIME is enabled, it is easy to trigger the following backtrace
+on pxa2xx hosts:
+
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at /home/lumag/linux/arch/arm/mach-pxa/clock.c:35 clk_disable+0xa0/0xa8()
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-00007-g1b3d2ee-dirty #104
+[<c000de68>] (unwind_backtrace) from [<c000c078>] (show_stack+0x10/0x14)
+[<c000c078>] (show_stack) from [<c001d75c>] (warn_slowpath_common+0x6c/0x8c)
+[<c001d75c>] (warn_slowpath_common) from [<c001d818>] (warn_slowpath_null+0x1c/0x24)
+[<c001d818>] (warn_slowpath_null) from [<c0015e80>] (clk_disable+0xa0/0xa8)
+[<c0015e80>] (clk_disable) from [<c02507f8>] (pxa2xx_spi_suspend+0x2c/0x34)
+[<c02507f8>] (pxa2xx_spi_suspend) from [<c0200360>] (platform_pm_suspend+0x2c/0x54)
+[<c0200360>] (platform_pm_suspend) from [<c0207fec>] (dpm_run_callback.isra.14+0x2c/0x74)
+[<c0207fec>] (dpm_run_callback.isra.14) from [<c0209254>] (__device_suspend+0x120/0x2f8)
+[<c0209254>] (__device_suspend) from [<c0209a94>] (dpm_suspend+0x50/0x208)
+[<c0209a94>] (dpm_suspend) from [<c00455ac>] (suspend_devices_and_enter+0x8c/0x3a0)
+[<c00455ac>] (suspend_devices_and_enter) from [<c0045ad4>] (pm_suspend+0x214/0x2a8)
+[<c0045ad4>] (pm_suspend) from [<c04b5c34>] (test_suspend+0x14c/0x1dc)
+[<c04b5c34>] (test_suspend) from [<c000880c>] (do_one_initcall+0x8c/0x1fc)
+[<c000880c>] (do_one_initcall) from [<c04aecfc>] (kernel_init_freeable+0xf4/0x1b4)
+[<c04aecfc>] (kernel_init_freeable) from [<c0378078>] (kernel_init+0x8/0xec)
+[<c0378078>] (kernel_init) from [<c0009590>] (ret_from_fork+0x14/0x24)
+---[ end trace 46524156d8faa4f6 ]---
+
+This happens because suspend function tries to disable a clock that is
+already disabled by runtime_suspend callback. Add if
+(!pm_runtime_suspended()) checks to suspend/resume path.
+
+Fixes: 7d94a505858 (spi/pxa2xx: add support for runtime PM)
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Reported-by: Andrea Adami <andrea.adami@gmail.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/spi/spi-pxa2xx.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index fa28c75c6d04..5b0e57210066 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1287,7 +1287,9 @@ static int pxa2xx_spi_suspend(struct device *dev)
+ 	if (status != 0)
+ 		return status;
+ 	write_SSCR0(0, drv_data->ioaddr);
+-	clk_disable_unprepare(ssp->clk);
++
++	if (!pm_runtime_suspended(dev))
++		clk_disable_unprepare(ssp->clk);
+ 
+ 	return 0;
+ }
+@@ -1301,7 +1303,8 @@ static int pxa2xx_spi_resume(struct device *dev)
+ 	pxa2xx_spi_dma_resume(drv_data);
+ 
+ 	/* Enable the SSP clock */
+-	clk_prepare_enable(ssp->clk);
++	if (!pm_runtime_suspended(dev))
++		clk_prepare_enable(ssp->clk);
+ 
+ 	/* Start the queue running */
+ 	status = spi_master_resume(drv_data->master);
+-- 
+2.1.3
 
