@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaKROJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:09:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56856 "EHLO mx2.suse.de"
+	id S1754906AbaKROJa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:09:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56852 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754372AbaKROJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754213AbaKROJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:09:23 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Daniel Kamil Kozar <dkk089@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 021/206] HID: usbhid: enable NO_INIT_REPORTS quirk for Semico USB Keykoard
-Date: Tue, 18 Nov 2014 15:06:16 +0100
-Message-Id: <d9892fefa40e5f6a7e2ec30e3ec288fe9f3f19e7.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 001/206] mm: page_alloc: fix zone allocation fairness on UP
+Date: Tue, 18 Nov 2014 15:05:56 +0100
+Message-Id: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
 References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9ea63c439c5dffcb7c46c741929fe74b31b9676b upstream.
+commit abe5f972912d086c080be4bde67750630b6fb38b upstream.
 
-The device which identifies itself as a "USB Keykoard" (no typo) with VID:PID
-1a2c:0023 does not seem to be handling the reports initialization very well.
-This results in a "usb_submit_urb(ctrl) failed: -1" message from the kernel
-when connected, and a delay before its initialization.  This patch adds the
-quirk for this device, which causes the delay to disappear.
+The zone allocation batches can easily underflow due to higher-order
+allocations or spills to remote nodes.  On SMP that's fine, because
+underflows are expected from concurrency and dealt with by returning 0.
+But on UP, zone_page_state will just return a wrapped unsigned long,
+which will get past the <= 0 check and then consider the zone eligible
+until its watermarks are hit.
 
-[jkosina@suse.cz: remove superfluous comment and fix ordering]
-Signed-off-by: Daniel Kamil Kozar <dkk089@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Commit 3a025760fc15 ("mm: page_alloc: spill to remote nodes before
+waking kswapd") already made the counter-resetting use
+atomic_long_read() to accomodate underflows from remote spills, but it
+didn't go all the way with it.
 
+Make it clear that these batches are expected to go negative regardless
+of concurrency, and use atomic_long_read() everywhere.
+
+Fixes: 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
+Reported-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Leon Romanovsky <leon@leon.nu>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: <stable@vger.kernel.org>	[3.12+]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hid/hid-ids.h           | 3 +++
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 4 insertions(+)
+ mm/page_alloc.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 10e01bd3f082..63bbe2c2c2bc 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -749,6 +749,9 @@
- #define USB_DEVICE_ID_SAMSUNG_IR_REMOTE	0x0001
- #define USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE	0x0600
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 2f91223dbe93..93c3651595d1 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1589,7 +1589,7 @@ again:
+ 	}
  
-+#define USB_VENDOR_ID_SEMICO			0x1a2c
-+#define USB_DEVICE_ID_SEMICO_USB_KEYKOARD	0x0023
-+
- #define USB_VENDOR_ID_SENNHEISER	0x1395
- #define USB_DEVICE_ID_SENNHEISER_BTD500USB	0x002c
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+-	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
++	if (atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]) <= 0 &&
+ 	    !zone_is_fair_depleted(zone))
+ 		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
  
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 175a2bc344e0..0dd568170d6e 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -118,6 +118,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_SEMICO, USB_DEVICE_ID_SEMICO_USB_KEYKOARD, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_HD, HID_QUIRK_NO_INIT_REPORTS },
+@@ -5652,9 +5652,8 @@ static void __setup_per_zone_wmarks(void)
+ 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
+ 
+ 		__mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-				      high_wmark_pages(zone) -
+-				      low_wmark_pages(zone) -
+-				      zone_page_state(zone, NR_ALLOC_BATCH));
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+ 
+ 		setup_zone_migrate_reserve(zone);
+ 		spin_unlock_irqrestore(&zone->lock, flags);
 -- 
 2.1.3
 
