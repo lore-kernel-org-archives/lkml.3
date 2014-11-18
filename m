@@ -1,62 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbaKRNs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:48:27 -0500
-Received: from mout.web.de ([212.227.17.12]:64207 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037AbaKRNsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:48:25 -0500
-Message-ID: <546B4E19.8050405@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 14:48:09 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754695AbaKRNtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:49:18 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43191 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677AbaKRNtQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 08:49:16 -0500
+Message-ID: <546B4E30.6000608@huawei.com>
+Date: Tue, 18 Nov 2014 21:48:32 +0800
+From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-nilfs@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] nilfs2: Deletion of an unnecessary check before the function
- call "iput"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+To: Jiang Liu <jiang.liu@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 04/16] genirq: Introduce irq_chip.irq_compose_msi_msg()
+ to support stacked irqchip
+References: <20141112133941.647950773@linutronix.de> <20141112134120.137871641@linutronix.de> <546B10D2.4050300@huawei.com> <alpine.DEB.2.11.1411181059090.3909@nanos> <546B31CE.2020006@huawei.com> <546B3F01.2010005@linux.intel.com> <546B46C0.6070904@huawei.com> <546B48CF.50100@linux.intel.com>
+In-Reply-To: <546B48CF.50100@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:KxdtesqSb1o9fg07QYYdpfT2KLsYkyQZYveYqY87DMX63Zo5PNq
- qFqvZQtiRhicESBV/DhJ0Ih8eT5hpIlOZMPjiLTttU0eVWEURvXPZzqk6Bf7jQxznj660ta
- Gbp8O0JLZfJX7hJBus283AxJCQRve7ffEI4qupLrTrhPfEOL2kDQq1W012pUn102jku4v3T
- GARzVDxFzQk4AQFBuFkBQ==
-X-UI-Out-Filterresults: notjunk:1;
+X-Originating-IP: [10.177.24.136]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 14:41:27 +0100
+On 2014/11/18 21:25, Jiang Liu wrote:
 
-The iput() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+> On 2014/11/18 21:16, Yun Wu (Abel) wrote:
+>> On 2014/11/18 20:43, Jiang Liu wrote:
+>>
+>>> On 2014/11/18 19:47, Yun Wu (Abel) wrote:
+>>>> On 2014/11/18 18:02, Thomas Gleixner wrote:
+>>>>
+>>>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>>>>> On 2014/11/12 21:42, Thomas Gleixner wrote:
+>>>>>>> +int irq_chip_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
+>>>>>>> +{
+>>>>>>> +	struct irq_data *pos = NULL;
+>>>>>>> +
+>>>>>>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+>>>>>>> +	for (; data; data = data->parent_data)
+>>>>>>> +#endif
+>>>>>>> +		if (data->chip && data->chip->irq_compose_msi_msg)
+>>>>>>> +			pos = data;
+>>>>>>> +	if (!pos)
+>>>>>>> +		return -ENOSYS;
+>>>>>>> +
+>>>>>>> +	pos->chip->irq_compose_msi_msg(pos, msg);
+>>>>>>> +
+>>>>>>> +	return 0;
+>>>>>>> +}
+>>>>>>
+>>>>>> Adding message composing routine to struct irq_chip is OK to me, and it should
+>>>>>> be because it is interrupt controllers' duty to compose messages (so that they
+>>>>>> can parse the messages correctly without any pre-defined rules that endpoint
+>>>>>> devices absolutely need not to know).
+>>>>>> However a problem comes out when deciding which parameters should be passed to
+>>>>>> this routine. A message can associate with multiple interrupts, which makes me
+>>>>>> think composing messages for each interrupt is not that appropriate. And we
+>>>>>> can take a look at the new routine irq_chip_compose_msi_msg(). It is called by
+>>>>>> msi_domain_activate() which will be called by irq_domain_activate_irq() in
+>>>>>> irq_startup() for each interrupt descriptor, result in composing a message for
+>>>>>> each interrupt, right? (Unless requiring a judge on the parameter @data when
+>>>>>> implementing the irq_compose_msi_msg() callback that only compose message for
+>>>>>> the first entry of that message. But I really don't like that...)
+>>>>>
+>>>>> No, that's not correct. You are looking at some random stale version
+>>>>> of this. The current state of affairs is in 
+>>>>>
+>>>>>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/irqdomain
+>>>>>
+>>>>> See also https://lkml.org/lkml/2014/11/17/764
+>>>>>
+>>>>> In activate we write the message, which is the right point to do so.
+>>>>>
+>>>>
+>>>> I checked the current state, it seems to be the same.
+>>>> Yes, the decision of postponing the actual hardware programming to the point
+>>>> where the interrupt actually gets used is right, but here above I was talking
+>>>> another thing.
+>>>> As I mentioned, a message can associate with multiple interrupts. Enabling
+>>>> any of them will call irq_startup(). So if we don't want to compose or write
+>>>> messages repeatedly, we'd better require performing some checks before
+>>>> activating the interrupts.
+>>> Hi Yun,
+>>> 	Seems you are talking about the case of multiple MSI support.
+>>> Yes, we have special treatment for multiple MSI, which only writes PCI
+>>> MSI registers when starting up the first MSI interrupt.
+>>> void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg
+>>> *msg)
+>>> {
+>>>         struct msi_desc *desc = irq_data->msi_desc;
+>>>
+>>>         /*
+>>>          * For MSI-X desc->irq is always equal to irq_data->irq. For
+>>>          * MSI only the first interrupt of MULTI MSI passes the test.
+>>>          */
+>>>         if (desc->irq == irq_data->irq)
+>>>                 __pci_write_msi_msg(desc, msg);
+>>> }
+>>
+>>
+>> Yes, I picked the case of multiple MSI support.
+>> The check should also be performed when composing messages. That's why
+>> I don't like its parameters. The @data only indicates one interrupt,
+>> while I prefer doing compose/write in the unit of message descriptor.
+> Hi Yun,
+> 	The common abstraction is that every message interrupt could be
+> controlled independently, so have compose_msi_msg()/write_msi_msg() per
+> interrupt. MSI is abstracted as an special message signaled interrupt
+> with hardware limitation where multiple interrupts sharing the same
+> hardware registers. So we filter in pci_msi_domain_write_msg(). On the
+> other handle, the generic MSI framework caches msi_msg in msi_desc,
+> so we don't filter compose_msi_msg().
+> 
 
-This issue was detected by using the Coccinelle software.
+It's true that every message interrupt could be controlled independently,
+I mean, by enable/disable/mask/unmask. But the message data & address are
+shared among the interrupts of that message.
+Despite the detailed hardware implementation, MSI and MSI-X are the same
+thing in software view, that is a message related with several consecutive
+interrupts. And the core MSI infrastructure you want to build should not
+be based on any hardware assumptions.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- fs/nilfs2/the_nilfs.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Thanks,
+	Abel
 
-diff --git a/fs/nilfs2/the_nilfs.c b/fs/nilfs2/the_nilfs.c
-index 9da25fe..69bd801 100644
---- a/fs/nilfs2/the_nilfs.c
-+++ b/fs/nilfs2/the_nilfs.c
-@@ -808,8 +808,7 @@ void nilfs_put_root(struct nilfs_root *root)
- 		spin_lock(&nilfs->ns_cptree_lock);
- 		rb_erase(&root->rb_node, &nilfs->ns_cptree);
- 		spin_unlock(&nilfs->ns_cptree_lock);
--		if (root->ifile)
--			iput(root->ifile);
-+		iput(root->ifile);
- 
- 		kfree(root);
- 	}
--- 
-2.1.3
 
