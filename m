@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717AbaKRPOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:14:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57191 "EHLO mx2.suse.de"
+	id S1756826AbaKRPPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:15:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56973 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754917AbaKROJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:33 -0500
+	id S1754907AbaKROJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:31 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Rannaud <e@nanocritical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Quentin Casasnovas <quentin.casasnovas@oracle.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 061/206] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-Date: Tue, 18 Nov 2014 15:06:56 +0100
-Message-Id: <e54fc4edabd848ca4d6e3ba7c4f4ffe73c2fec0b.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 051/206] regmap: fix kernel hang on regmap_bulk_write with zero val_count.
+Date: Tue, 18 Nov 2014 15:06:46 +0100
+Message-Id: <a7a2830c5cf50217e38ffbc6797e36bc15bb4f1c.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,93 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Rannaud <e@nanocritical.com>
+From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 69a91c237ab0ebe4e9fdeaf6d0090c85275594ec upstream.
+If val_count is zero we return -EINVAL with map->lock_arg locked, which
+will deadlock the kernel next time we try to acquire this lock.
 
-The man page for open(2) indicates that when O_CREAT is specified, the
-'mode' argument applies only to future accesses to the file:
+In 3.12, this was introduced by a0b8d8d906d267987d507138003048c5fdf774
+("regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.")
+which improperly back-ported d6b41cb06044a7d895db82bdd54f6e4219970510.
 
-	Note that this mode applies only to future accesses of the newly
-	created file; the open() call that creates a read-only file
-	may well return a read/write file descriptor.
+This issue was found during review of Ubuntu Trusty 3.13.0-40.68 kernel to
+prepare Ksplice rebootless updates.
 
-The man page for open(2) implies that 'mode' is treated identically by
-O_CREAT and O_TMPFILE.
-
-O_TMPFILE, however, behaves differently:
-
-	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
-	assert(fd == -1);
-	assert(errno == EACCES);
-
-	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
-	assert(fd > 0);
-
-For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
-
-	if (*opened & FILE_CREATED) {
-		/* Don't check for write permission, don't truncate */
-		open_flag &= ~O_TRUNC;
-		will_truncate = false;
-		acc_mode = MAY_OPEN;
-		path_to_nameidata(path, nd);
-		goto finish_open_created;
-	}
-
-But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
-may_open().
-
-This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
-inode is created, may_open() is called with acc_mode = MAY_OPEN, in
-do_tmpfile().
-
-A different, but related glibc bug revealed the discrepancy:
-https://sourceware.org/bugzilla/show_bug.cgi?id=17523
-
-The glibc lazily loads the 'mode' argument of open() and openat() using
-va_arg() only if O_CREAT is present in 'flags' (to support both the 2
-argument and the 3 argument forms of open; same idea for openat()).
-However, the glibc ignores the 'mode' argument if O_TMPFILE is in
-'flags'.
-
-On x86_64, for open(), it magically works anyway, as 'mode' is in
-RDX when entering open(), and is still in RDX on SYSCALL, which is where
-the kernel looks for the 3rd argument of a syscall.
-
-But openat() is not quite so lucky: 'mode' is in RCX when entering the
-glibc wrapper for openat(), while the kernel looks for the 4th argument
-of a syscall in R10. Indeed, the syscall calling convention differs from
-the regular calling convention in this respect on x86_64. So the kernel
-sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
-fails with EACCES.
-
-Signed-off-by: Eric Rannaud <e@nanocritical.com>
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: f5942dd ("regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.")
+Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/namei.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/base/regmap/regmap.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 3ac674b793bf..1004966437f9 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3159,7 +3159,8 @@ static int do_tmpfile(int dfd, struct filename *pathname,
- 	if (error)
- 		goto out2;
- 	audit_inode(pathname, nd->path.dentry, 0);
--	error = may_open(&nd->path, op->acc_mode, op->open_flag);
-+	/* Don't check for other permissions, the inode was just created */
-+	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
- 	if (error)
- 		goto out2;
- 	file->f_path.mnt = nd->path.mnt;
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 7a58be457eb5..9f7990187653 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1403,8 +1403,10 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	if (val_bytes == 1) {
+ 		wval = (void *)val;
+ 	} else {
+-		if (!val_count)
+-			return -EINVAL;
++		if (!val_count) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
 -- 
 2.1.3
 
