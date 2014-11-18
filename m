@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaKRSAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:00:51 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:54071 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaKRSAt (ORCPT
+	id S1754319AbaKRSCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:02:01 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40053 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323AbaKRSCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:00:49 -0500
-Date: Tue, 18 Nov 2014 18:00:37 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Jackson <Andrew.Jackson@arm.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] drm/i2c: tda998x: Allow for different audio sample rates
-Message-ID: <20141118180036.GC4042@n2100.arm.linux.org.uk>
-References: <546B8452.6030701@arm.com>
+	Tue, 18 Nov 2014 13:02:00 -0500
+Date: Tue, 18 Nov 2014 10:01:40 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/206] 3.12.33-stable review
+Message-ID: <20141118180140.GB11245@roeck-us.net>
+References: <cover.1416319692.git.jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <546B8452.6030701@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.546B8997.030C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 9
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 05:39:30PM +0000, Andrew Jackson wrote:
-> On HDMI, the audio data are carried across the HDMI link which is
-> driven by the TDMS clock. The TDMS clock is dependent on the video pixel
-> rate.
+On Tue, Nov 18, 2014 at 03:08:24PM +0100, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.33 release.
+> There are 206 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> This patch sets the denominator (Cycle Time Stamp) appropriately
-> allowing the driver to send audio to a wider range of HDMI sinks
-> (i.e. monitors).
+> Responses should be made by Thu Nov 20 15:08:12 CET 2014.
+> Anything received after that time might be too late.
+> 
+Build results:
+	total: 135 pass: 135 fail: 0
+Qemu tests:
+	total: 27 pass: 27 fail: 0
 
-This is actually pointless, because we don't use "manual" CTS mode.
+Details are available at http://server.roeck-us.net:8010/builders.
 
-If the clocks for the video and audio are coherent, then you can program
-both the N and CTS values to allow the sink to properly recover the
-synchronous audio clock.
-
-However, in most cases, the audio and video clocks are not coherent, and
-since the recovered audio clock has to match the source audio clock, the
-only way this can be done is by the TDA998x (or in fact other HDMI
-encoder) to measure the audio clock rate and generate the CTS value
-itself.
-
-This is the mode we drive the TDA998x - so the programmed CTS value is
-irrelevant.
-
-See the HDMI spec, section 7.2 for a discussion about this, especially
-non-coherent clocks.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Guenter
