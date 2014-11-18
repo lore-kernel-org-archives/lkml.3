@@ -1,89 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaKRSzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:55:09 -0500
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:59644 "HELO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755038AbaKRSzF (ORCPT
+	id S1755152AbaKRSzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:55:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55866 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097AbaKRSzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:55:05 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, pshelar@nicira.com, dev@openvswitch.org
-Subject: [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
-Date: Tue, 18 Nov 2014 10:54:17 -0800
-Message-Id: <1416336857-61405-1-git-send-email-joestringer@nicira.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 18 Nov 2014 13:55:22 -0500
+Message-ID: <546B95EC.5000705@ti.com>
+Date: Tue, 18 Nov 2014 20:54:36 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Kevin Hilman <khilman@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+CC: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>	<1600093.60yAP0Qpua@wuerfel> <7h389h3aif.fsf@deeprootsystems.com>	<1618855.DXsjWXLqau@wuerfel> <7hsihhzecq.fsf@deeprootsystems.com>
+In-Reply-To: <7hsihhzecq.fsf@deeprootsystems.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When userspace doesn't provide a mask, OVS datapath generates a fully
-unwildcarded mask for the flow. This is done by taking a copy of the
-flow key, then iterating across its attributes, setting all values to
-0xff. This works for most attributes, as the length of the netlink
-attribute typically matches the length of the value. However, IPv6
-labels only use the lower 20 bits of the field. This patch makes a
-special case to handle this.
+Hi All,
 
-This fixes the following error seen when installing IPv6 flows without a mask:
+Thank you for your comments.
 
-openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff, max=fffff)
+On 11/17/2014 11:50 PM, Kevin Hilman wrote:
+> Arnd Bergmann <arnd@arndb.de> writes:
+> 
+>> On Monday 17 November 2014 11:14:16 Kevin Hilman wrote:
+>>>>>
+>>>>> So, The Keystone 2 Generic PM Controller is just a proxy PM layer here between
+>>>>> device and Generic clock manipulation PM callbacks.
+>>>>> It fills per-device clock list when device is attached to GPD and
+>>>>> ensures that all clocks from that list enabled/disabled when device is
+>>>>> started/stopped.
+>>>>
+>>>> The idea of such a generic power domain implementation sounds useful, but
+>>>> it has absolutely no business in platform specific code.
+>>>
+>>> Yes it does.  This isn't a generic power domain implementation, but
+>>> rather just the platform-specific glue that hooks up the clocks to the
+>>> right devices and power-domains so that the generic power-domain and
+>>> generic pm_clocks code does the right thing.
+>>
+>> How would you do this on an arm64 version of keystone then? With
+>> the current approach, you'd need to add a machine specific directory,
+>> and that seems completely pointless since this is not even about
+>> a hardware requirement.
+> 
+> Yeah, you're right.  I misunderstood you're original comment.
+> 
+>>>> I suggest you either remove the power domain proxy from your drivers
+>>>> and use the clocks directly,
 
-Signed-off-by: Joe Stringer <joestringer@nicira.com>
----
- net/openvswitch/flow_netlink.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+Hm. I've been thinking about this, but the problem is that Keystone 2
+reuses a lot of IPs from Davinci and PM for Davinci is based on Generic clock
+manipulation PM callbacks framework, but for non-DT case. So, I can't simply
+use clocks directly.
 
-diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
-index fa4ec2e..7a5b28f 100644
---- a/net/openvswitch/flow_netlink.c
-+++ b/net/openvswitch/flow_netlink.c
-@@ -825,7 +825,7 @@ static int ovs_key_from_nlattrs(struct sw_flow_match *match, u64 attrs,
- 	return 0;
- }
- 
--static void nlattr_set(struct nlattr *attr, u8 val, bool is_attr_mask_key)
-+static void mask_set_nlattr(struct nlattr *attr)
- {
- 	struct nlattr *nla;
- 	int rem;
-@@ -835,16 +835,18 @@ static void nlattr_set(struct nlattr *attr, u8 val, bool is_attr_mask_key)
- 		/* We assume that ovs_key_lens[type] == -1 means that type is a
- 		 * nested attribute
- 		 */
--		if (is_attr_mask_key && ovs_key_lens[nla_type(nla)] == -1)
--			nlattr_set(nla, val, false);
-+		if (ovs_key_lens[nla_type(nla)] == -1)
-+			nla_for_each_nested(nla, attr, rem)
-+				memset(nla_data(nla), 0xff, nla_len(nla));
- 		else
--			memset(nla_data(nla), val, nla_len(nla));
--	}
--}
-+			memset(nla_data(nla), 0xff, nla_len(nla));
- 
--static void mask_set_nlattr(struct nlattr *attr, u8 val)
--{
--	nlattr_set(attr, val, true);
-+		if (nla_type(nla) == OVS_KEY_ATTR_IPV6) {
-+			struct ovs_key_ipv6 *ipv6_key = nla_data(nla);
-+
-+			ipv6_key->ipv6_label &= htonl(0x000FFFFF);
-+		}
-+	}
- }
- 
- /**
-@@ -926,7 +928,7 @@ int ovs_nla_get_match(struct sw_flow_match *match,
- 		if (!newmask)
- 			return -ENOMEM;
- 
--		mask_set_nlattr(newmask, 0xff);
-+		mask_set_nlattr(newmask);
- 
- 		/* The userspace does not send tunnel attributes that are 0,
- 		 * but we should not wildcard them nonetheless.
--- 
-1.7.10.4
+>>>
+>>> No.  That's a step in the wrong direction.  This change isn't affecting
+>>> drivers directly.  It's the runtime PM and generic power domain layers
+>>> that handle this, and runtime PM adapted drivers don't need any changes.
+>>>   
+>>>> or come up with an implementation that can be used across other
+>>>> platforms and CPU architectures.
+>>>
+>>> We already have those in the generic power domain and the pm_clock
+>>> layers.  This series is just hooking those up for Keystone.
+>>
+>> Then why not add the missing piece to the generic power domain
+>> code to avoid having to add infrastructure to the platform
+>> for it?
+> 
+> Yes, good point.  There is nothing keystone-specific in this glue.
+> 
+> Grygorii, what about adding a feature to the generic domain parsing so
+> that it can get clocks from device nodes that are part of the domain,
+> and so it sets up pm_clk accordingly.
 
+I'd like to mention few points here:
+1)  not all platforms may need this
+
+2)  not all platforms may allow to add ALL clocks from "clocks" property
+   to pm_clk as some of them can be optional or have to be controlled by drivers only
+   (for example, initially, it was the case for SH-mobile https://lkml.org/lkml/2014/4/24/197
+    also now, last implementation for shmobile add only first clock from "clocks" property
+    to pm_clk https://lkml.org/lkml/2014/11/17/272).
+
+3)  such functionality have to be enabled for devices selectively, for example
+   now we are going to enable it for devices which a ready for runtime PM.
+
+Current implementation cover 1 & 3, but also it allows to cover 2 too, because
+it's platform specific implementation and .attach_dev() can be updated to skip some 
+clocks or devices if needed.
+
+> 
+> I've recently seen other SoCs doing very similar, so this really should
+> be generalized.
+> 
+> I've been looking at this primarily as a right incremental improvement
+> from what is there for Keystone today, but Arnd is right.  This should
+> be moved out of platform code.
+
+I'm ready to do what ever you want, but I don't fully understand what exactly to do :(
+Should I create some generic_pm_clk_domain.c?
+- or - Do you mean to integrate it in domain.c (see no way to do it:()?
+- or - smth. else
+
+What about introduced DT bindings? For example, How will devices be selected for attachment 
+to Generic pm_clk domain if I'll introduce generic_pm_clk_domain.c?
+
+Regards,
+-grygorii
