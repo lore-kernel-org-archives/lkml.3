@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650AbaKRPDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:03:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57159 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096AbaKROJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932105AbaKROJn (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Nov 2014 09:09:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56975 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754930AbaKROJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:35 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dexuan Cui <decui@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-mm@kvack.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, dave.hansen@intel.com, riel@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 070/206] x86, pageattr: Prevent overflow in slow_virt_to_phys() for X86_PAE
-Date: Tue, 18 Nov 2014 15:07:05 +0100
-Message-Id: <0833c9e835508b7dc0305846e8b2ebf793a18d97.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 072/206] ALSA: pcm: Zero-clear reserved fields of PCM status ioctl in compat mode
+Date: Tue, 18 Nov 2014 15:07:07 +0100
+Message-Id: <12f36730da98ee45a2e16bff0122b3357291f7d6.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -26,56 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dexuan Cui <decui@microsoft.com>
+From: Takashi Iwai <tiwai@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d1cd1210834649ce1ca6bafe5ac25d2f40331343 upstream.
+commit 317168d0c766defd14b3d0e9c2c4a9a258b803ee upstream.
 
-pte_pfn() returns a PFN of long (32 bits in 32-PAE), so "long <<
-PAGE_SHIFT" will overflow for PFNs above 4GB.
+In compat mode, we copy each field of snd_pcm_status struct but don't
+touch the reserved fields, and this leaves uninitialized values
+there.  Meanwhile the native ioctl does zero-clear the whole
+structure, so we should follow the same rule in compat mode, too.
 
-Due to this issue, some Linux 32-PAE distros, running as guests on Hyper-V,
-with 5GB memory assigned, can't load the netvsc driver successfully and
-hence the synthetic network device can't work (we can use the kernel parameter
-mem=3000M to work around the issue).
-
-Cast pte_pfn() to phys_addr_t before shifting.
-
-Fixes: "commit d76565344512: x86, mm: Create slow_virt_to_phys()"
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: gregkh@linuxfoundation.org
-Cc: linux-mm@kvack.org
-Cc: olaf@aepfle.de
-Cc: apw@canonical.com
-Cc: jasowang@redhat.com
-Cc: dave.hansen@intel.com
-Cc: riel@redhat.com
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1414580017-27444-1-git-send-email-decui@microsoft.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/mm/pageattr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/core/pcm_compat.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index bb32480c2d71..aabdf762f592 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -389,7 +389,7 @@ phys_addr_t slow_virt_to_phys(void *__virt_addr)
- 	psize = page_level_size(level);
- 	pmask = page_level_mask(level);
- 	offset = virt_addr & ~pmask;
--	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
-+	phys_addr = (phys_addr_t)pte_pfn(*pte) << PAGE_SHIFT;
- 	return (phys_addr | offset);
- }
- EXPORT_SYMBOL_GPL(slow_virt_to_phys);
+diff --git a/sound/core/pcm_compat.c b/sound/core/pcm_compat.c
+index af49721ba0e3..c4ac3c1e19af 100644
+--- a/sound/core/pcm_compat.c
++++ b/sound/core/pcm_compat.c
+@@ -206,6 +206,8 @@ static int snd_pcm_status_user_compat(struct snd_pcm_substream *substream,
+ 	if (err < 0)
+ 		return err;
+ 
++	if (clear_user(src, sizeof(*src)))
++		return -EFAULT;
+ 	if (put_user(status.state, &src->state) ||
+ 	    compat_put_timespec(&status.trigger_tstamp, &src->trigger_tstamp) ||
+ 	    compat_put_timespec(&status.tstamp, &src->tstamp) ||
 -- 
 2.1.3
 
