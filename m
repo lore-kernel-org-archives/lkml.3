@@ -1,107 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaKRH4w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 02:56:52 -0500
-Received: from mail-bn1on0054.outbound.protection.outlook.com ([157.56.110.54]:5344
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752933AbaKRH4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 02:56:50 -0500
-Date: Tue, 18 Nov 2014 08:56:29 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        =?UTF-8?B?U8O2cmVuIA==?= =?UTF-8?B?QnJpbmttYW5u?= 
-	<soren.brinkmann@xilinx.com>
-CC: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <monstr@monstr.eu>, Russell King <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	id S1753571AbaKRH5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 02:57:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13548 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971AbaKRH5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 02:57:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,408,1413270000"; 
+   d="scan'208";a="633697223"
+From: "Jamet, Michael" <michael.jamet@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v4 6/6] ARM: zynq: DT: Add OCM controller node
-References: <cover.1415962281.git.michal.simek@xilinx.com>
-	<0a88d52b5e71fb220ca619180ec9ca746edad2b1.1415962281.git.michal.simek@xilinx.com>
-	<546881CA.2020801@suse.de>
-	<c52187589f5c4cc6b908d899c2b9f7a6@BN1BFFO11FD036.protection.gbl>
- <CAEgOgz7j3jFbf1HxtimzPDMQ3oRu8AAHhHAUtg1boYjOUV5ygA@mail.gmail.com>
-In-Reply-To: <CAEgOgz7j3jFbf1HxtimzPDMQ3oRu8AAHhHAUtg1boYjOUV5ygA@mail.gmail.com>
+        "Levy, Amir (Jer)" <amir.jer.levy@intel.com>,
+        "Alloun, Dan" <dan.alloun@intel.com>,
+        Rafael Wysocki <rjw@rjwysocki.net>,
+        Andreas Noever <andreas.noever@gmail.com>
+Subject: RE: [PATCH] pci: support Thunderbolt requirements for I/O resources.
+Thread-Topic: [PATCH] pci: support Thunderbolt requirements for I/O
+ resources.
+Thread-Index: AQHP/ohLgY5RjnqrwESQUJmb1M7dNZxdHb+AgAju7eA=
+Date: Tue, 18 Nov 2014 07:57:44 +0000
+Message-ID: <BC567D27D6B7384F84318942321624DE16179E60@hasmsx109.ger.corp.intel.com>
+References: <1415847123-15558-1-git-send-email-michael.jamet@intel.com>
+ <CAErSpo7Z5x=U3vSnxrFpwYUDrUrnrrBCe1F9_GQNYqWWQFWNpQ@mail.gmail.com>
+In-Reply-To: <CAErSpo7Z5x=U3vSnxrFpwYUDrUrnrrBCe1F9_GQNYqWWQFWNpQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21112.002
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <d7d71aa91adc49e5890fe3d64caed4bf@BN1BFFO11FD034.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51704005)(377424004)(377454003)(164054003)(199003)(479174003)(24454002)(33646002)(106466001)(19580405001)(120916001)(65956001)(92566001)(19580395003)(65806001)(6806004)(44976005)(104016003)(107046002)(102836001)(77156002)(62966003)(99396003)(31966008)(54356999)(74316001)(50986999)(76176999)(108616004)(87936001)(50466002)(64126003)(23676002)(20776003)(86362001)(21056001)(95666004)(83506001)(4396001)(46102003)(47776003)(64706001)(93886004)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB001;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB001;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB001;
-X-Forefront-PRVS: 039975700A
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB001;
-X-OriginatorOrg: xilinx.com
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAI7vwWB018687
 
-On 11/17/2014 12:00 AM, Peter Crosthwaite wrote:
-> On Mon, Nov 17, 2014 at 5:32 AM, S√∂ren Brinkmann
-> <soren.brinkmann@xilinx.com> wrote:
->> On Sun, 2014-11-16 at 11:51AM +0100, Andreas F√§rber wrote:
->>> Hi Michal,
->>>
->>> Am 14.11.2014 um 11:52 schrieb Michal Simek:
->>>> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
->>>> index ce2ef5bec4f2..e217fb1c1169 100644
->>>> --- a/arch/arm/boot/dts/zynq-7000.dtsi
->>>> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
->>>> @@ -150,6 +150,13 @@
->>>>                     reg = <0xf8006000 0x1000>;
->>>>             };
->>>>
->>>> +           ocmc: memory-controller@f800c000 {
->>>> +                   compatible = "xlnx,zynq-ocmc-1.0";
->>>> +                   interrupt-parent = <&intc>;
->>>> +                   interrupts = <0 3 4>;
->>>> +                   reg = <0xf800c000 0x1000>;
->>>> +           };
->>>> +
->>>>             uart0: serial@e0000000 {
->>>>                     compatible = "xlnx,xuartps", "cdns,uart-r1p8";
->>>>                     status = "disabled";
->>>
->>> Not directly related to this patch: As one can see here, the node order
->>> is quite a mess... According to Olof, nodes should be ordered by unit
->>> address, whereas here some but not all seem ordered by node name. Would
->>> you welcome a cleanup patch, or can you fix that yourself?
->>
->> I wouldn't say it's a mess, just a different property to sort the nodes
->> by. For humans reading the DT, searching for nodes, alphabetical order
->> helps finding the right node, IMHO.
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Wednesday, November 12, 2014 19:29
+> To: Jamet, Michael
+> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Levy, Amir
+> (Jer); Alloun, Dan; Rafael Wysocki; Andreas Noever
+> Subject: Re: [PATCH] pci: support Thunderbolt requirements for I/O
+> resources.
 > 
-> I do generally find myself asking "whats that thing at that address"
-> more than I find myself asking the "wheres that piece of hardware" so
-> Andreas' sorting scheme makes more sense to me. Vertically scanning a
-> DT to give yourself an overview of the system level address map is
-> good too. Wheras alphabetic sorting doesn't mean to much.
+> [+cc Rafael, Andreas]
+> 
+> On Wed, Nov 12, 2014 at 7:52 PM, Michael Jamet
+> <michael.jamet@intel.com> wrote:
+> > Every Thunderbolt-based devices or Thunderbolt-connected devices
+> > should not allocate PCI I/O resources per Thunderbolt specs.
+> 
+> Please include a pointer to those specs in the changelog.
+> 
 
-IMHO the reason why we have names in DT is that it is easily to read/understand them
-that's why name sorting seems to me more reasonable.
-Something like machine code and assembler - asm is also sorted by names not by opcode.
+Unfortunately these specs are not publically available.
 
-Is this strict rule?
+> > On a Thunderbolt PC, BIOS is responsible to allocate IO resources.
+> > Kernel shouldn't allocate the PCI I/O resources as it interferes with
+> > BIOS operation.
+> > Doing this may cause the devices in the Thunderbolt chain not being
+> > detected or added, or worse to stuck the Thunderbolt Host controller.
+> 
+> These new kernel/firmware coordination requirements need to be
+> documented.  If they're already part of a PCIe ECN or PCI firmware spec, just
+> provide a pointer.
+> 
 
-Thanks,
-Michal
+Same, this refers to same specs.
+
+> > To prevent this, we detect a chain contains a Thunderbolt device by
+> > checking the Thunderbolt PCI device id.
+> 
+> I'm really not happy about checking a list of device IDs to identify
+> Thunderbolt devices.  Surely there's a better way, because a list like this has
+> to be updated regularly.
+> 
+> Bjorn
+> 
+
+This was also discussed internally and the only way to identify Thunderbolt devices is to check the device IDs.
+As you said, this will require us to maintain and keep the list up-to-date as we deliver new devices.
+
+Michael
+
+> > The validation is carried out at the pci_enable_device_flags()
+> > function that checks the PCI device or bridge is Thunderbolt chained
+> > and avoid IO resources allocation.
+> >
+> > In addition, decode_bar() and pci_bridge_check_ranges() function has
+> > been internally checked for Thunderbolt as well to ensure no IO
+> > resources are allocated.
+> >
+> > Signed-off-by: Michael Jamet <michael.jamet@intel.com>
+> > ---
+> >  drivers/pci/pci.c       | 64
+> +++++++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/pci/pci.h       |  2 ++
+> >  drivers/pci/probe.c     |  3 ++-
+> >  drivers/pci/setup-bus.c |  4 ++--
+> >  include/linux/pci.h     |  2 ++
+> >  5 files changed, 72 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c index
+> > 625a4ac..41c2619 100644
+> > --- a/drivers/pci/pci.c
+> > +++ b/drivers/pci/pci.c
+> > @@ -198,6 +198,62 @@ static int __pci_bus_find_cap_start(struct
+> > pci_bus *bus,  }
+> >
+> >  /**
+> > + * pci_is_thunderbolt_device - checks PCI device is Thunderbolt-based.
+> > + * The only existing way is to check the device id is allocated to
+> Thunderbolt.
+> > + * @dev: the PCI device structure to check against
+> > + *
+> > + * Returns true if the PCI device is of the Thunderbolt type.
+> > + */
+> > +bool pci_is_thunderbolt_device(struct pci_dev *dev) {
+> > +       if ((dev->vendor == PCI_VENDOR_ID_INTEL) &&
+> > +                       ((dev->device == 0xcaca)
+> > +                       || (dev->device == 0x1513)
+> > +                       || (dev->device == 0xcbca)
+> > +                       || (dev->device == 0x151A)
+> > +                       || (dev->device == 0x151B)
+> > +                       || (dev->device == 0x1549)
+> > +                       || (dev->device == 0x1547)
+> > +                       || (dev->device == 0x1548)
+> > +                       || (dev->device == 0x1566)
+> > +                       || (dev->device == 0x1567)
+> > +                       || (dev->device == 0x1569)
+> > +                       || (dev->device == 0x1568)
+> > +                       || (dev->device == 0x156A)
+> > +                       || (dev->device == 0x156B)
+> > +                       || (dev->device == 0x156C)
+> > +                       || (dev->device == 0x156D)
+> > +                       || (dev->device == 0x1579)
+> > +                       || (dev->device == 0x157A)
+> > +                       || (dev->device == 0x157D)
+> > +                       || (dev->device == 0x157E)))
+> > +               return true;
+> > +
+> > +       return false;
+> > +}
+> > +EXPORT_SYMBOL(pci_is_thunderbolt_device);
+> > +
+> > +/**
+> > + * pci_is_connected_to_thunderbolt - check if connected to a
+> Thunderbolt chain.
+> > + * @dev: the PCI device structure to check against
+> > + *
+> > + * Returns true if the PCI device s connected is connected to a
+> > + * Thunderbolt-based in the chain.
+> > + */
+> > +bool pci_is_connected_to_thunderbolt(struct pci_dev *dev) {
+> > +       struct pci_dev *bridge;
+> > +
+> > +       if (pci_is_thunderbolt_device(dev))
+> > +               return true;
+> > +       bridge =  pci_upstream_bridge(dev);
+> > +       if (bridge)
+> > +               return pci_is_connected_to_thunderbolt(bridge);
+> > +       return false;
+> > +}
+> > +EXPORT_SYMBOL(pci_is_connected_to_thunderbolt);
+> > +
+> > +/**
+> >   * pci_find_capability - query for devices' capabilities
+> >   * @dev: PCI device to query
+> >   * @cap: capability code
+> > @@ -1285,6 +1341,14 @@ static int pci_enable_device_flags(struct pci_dev
+> *dev, unsigned long flags)
+> >         if (atomic_inc_return(&dev->enable_cnt) > 1)
+> >                 return 0;               /* already enabled */
+> >
+> > +       /*
+> > +        * if IO resource have been requested, but the device is connected
+> > +        * to Thunderbolt chain, don't allocate IO resource
+> > +        */
+> > +       if ((flags & IORESOURCE_IO)
+> > +                       && pci_is_connected_to_thunderbolt(dev))
+> > +               flags &= ~IORESOURCE_IO;
+> > +
+> >         bridge = pci_upstream_bridge(dev);
+> >         if (bridge)
+> >                 pci_enable_bridge(bridge); diff --git
+> > a/drivers/pci/pci.h b/drivers/pci/pci.h index 0601890..fb9a3b1 100644
+> > --- a/drivers/pci/pci.h
+> > +++ b/drivers/pci/pci.h
+> > @@ -4,6 +4,8 @@
+> >  #define PCI_CFG_SPACE_SIZE     256
+> >  #define PCI_CFG_SPACE_EXP_SIZE 4096
+> >
+> > +bool pci_is_thunderbolt_device(struct pci_dev *dev);
+> > +
+> >  extern const unsigned char pcie_link_speed[];
+> >
+> >  /* Functions internal to the PCI core code */ diff --git
+> > a/drivers/pci/probe.c b/drivers/pci/probe.c index 5ed9930..d8171af
+> > 100644
+> > --- a/drivers/pci/probe.c
+> > +++ b/drivers/pci/probe.c
+> > @@ -131,7 +131,8 @@ static inline unsigned long decode_bar(struct
+> > pci_dev *dev, u32 bar)
+> >
+> >         if ((bar & PCI_BASE_ADDRESS_SPACE) ==
+> PCI_BASE_ADDRESS_SPACE_IO) {
+> >                 flags = bar & ~PCI_BASE_ADDRESS_IO_MASK;
+> > -               flags |= IORESOURCE_IO;
+> > +               if (!pci_is_connected_to_thunderbolt(dev))
+> > +                       flags |= IORESOURCE_IO;
+> >                 return flags;
+> >         }
+> >
+> > diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c index
+> > 0482235..79ac38f 100644
+> > --- a/drivers/pci/setup-bus.c
+> > +++ b/drivers/pci/setup-bus.c
+> > @@ -663,12 +663,12 @@ static void pci_bridge_check_ranges(struct
+> pci_bus *bus)
+> >         b_res[1].flags |= IORESOURCE_MEM;
+> >
+> >         pci_read_config_word(bridge, PCI_IO_BASE, &io);
+> > -       if (!io) {
+> > +       if (!io || pci_is_thunderbolt_device(bridge)) {
+> >                 pci_write_config_word(bridge, PCI_IO_BASE, 0xe0f0);
+> >                 pci_read_config_word(bridge, PCI_IO_BASE, &io);
+> >                 pci_write_config_word(bridge, PCI_IO_BASE, 0x0);
+> >         }
+> > -       if (io)
+> > +       if (io && !pci_is_thunderbolt_device(bridge))
+> >                 b_res[0].flags |= IORESOURCE_IO;
+> >
+> >         /*  DECchip 21050 pass 2 errata: the bridge may miss an
+> > address diff --git a/include/linux/pci.h b/include/linux/pci.h index
+> > 2a8c405..09ddc2c 100644
+> > --- a/include/linux/pci.h
+> > +++ b/include/linux/pci.h
+> > @@ -931,6 +931,8 @@ int __must_check pci_enable_device_io(struct
+> > pci_dev *dev);  int __must_check pci_enable_device_mem(struct pci_dev
+> > *dev);  int __must_check pci_reenable_device(struct pci_dev *);  int
+> > __must_check pcim_enable_device(struct pci_dev *pdev);
+> > +
+> > +bool pci_is_connected_to_thunderbolt(struct pci_dev *dev);
+> >  void pcim_pin_device(struct pci_dev *pdev);
+> >
+> >  static inline int pci_is_enabled(struct pci_dev *pdev)
+> > --
+> > 1.9.1
+> >
+> > ---------------------------------------------------------------------
+> > Intel Israel (74) Limited
+> >
+> > This e-mail and any attachments may contain confidential material for
+> > the sole use of the intended recipient(s). Any review or distribution
+> > by others is strictly prohibited. If you are not the intended
+> > recipient, please contact the sender and delete all copies.
+> >
+---------------------------------------------------------------------
+Intel Israel (74) Limited
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
