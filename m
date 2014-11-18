@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422AbaKRMac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:30:32 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:38457 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaKRMab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:30:31 -0500
-Date: Tue, 18 Nov 2014 07:30:27 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Boaz Harrosh <ooo@electrozaur.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH vfs 2/2] {block|char}_dev: remove inode->i_devices
-Message-ID: <20141118123027.GD7809@htj.dyndns.org>
-References: <20141113220927.GF2598@htj.dyndns.org>
- <20141113221139.GG2598@htj.dyndns.org>
- <546B374A.1010902@electrozaur.com>
+	id S1753803AbaKRMin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:38:43 -0500
+Received: from mga03.intel.com ([134.134.136.65]:24856 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753266AbaKRMim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 07:38:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,409,1413270000"; 
+   d="scan'208";a="638933045"
+Message-ID: <546B3DCD.9090307@linux.intel.com>
+Date: Tue, 18 Nov 2014 20:38:37 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546B374A.1010902@electrozaur.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [patch 07/16] genirq: Introduce helper irq_domain_set_info()
+ to reduce duplicated code
+References: <20141112133941.647950773@linutronix.de> <20141112134120.393705922@linutronix.de> <546B10DA.3040504@huawei.com> <alpine.DEB.2.11.1411181102160.3909@nanos> <546B31D7.6030204@huawei.com>
+In-Reply-To: <546B31D7.6030204@huawei.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Boaz.
+On 2014/11/18 19:47, Yun Wu (Abel) wrote:
+> On 2014/11/18 18:03, Thomas Gleixner wrote:
+> 
+>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>
+>>> Hi Thomas, Jiang,
+>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
+>>>
+>>>> From: Jiang Liu <jiang.liu@linux.intel.com>
+>>> [...]
+>>>> +void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
+>>>> +			 irq_hw_number_t hwirq, struct irq_chip *chip,
+>>>> +			 void *chip_data, irq_flow_handler_t handler,
+>>>> +			 void *handler_data, const char *handler_name)
+>>>> +{
+>>>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
+>>>> +	__irq_set_handler(virq, handler, 0, handler_name);
+>>>> +	irq_set_handler_data(virq, handler_data);
+>>>> +}
+>>>
+>>> When stacked domain enabled, there will be a semantic shift to the linux interrupt
+>>> identifiers. The @virq now delivers much more than before.
+>>> More specifically, now we need both @virq and @domain, rather than only @irq, to
+>>> determine which irq_data we want to configure. And once we configure @irq without
+>>> providing the exact domain, it means we are configuring all the domains related to
+>>> that @irq. So I think this routine just messed all things up.
+>>
+>> You can mess up anything by using an interface in the wrong way. Open
+>> coding will not make that harder.
+>>
+> 
+> But what's the correct way to use this interface?
+Hi Yun,
+	It's to be used by interrupt controller drivers to implement
+hierarchy irqdomains.
+Regards!
+Gerry
 
-On Tue, Nov 18, 2014 at 02:10:50PM +0200, Boaz Harrosh wrote:
-> Right? well if so than those special inodes do
-> not hold any data and never do IO of any kind
-> so all the inode members that are needed for IO
-> are candidates.
-
-It may not carry dirty pages but the inode itself still can get
-dirtied tho.
-
-> example: i_wb_list; i_lru; i_dio_count i_writecount
-
-So, neither i_wb_list or i_lru can be used.  It could be that some of
-the atomic counters can be used but that requires collecting four such
-counters consecutively.
-
-> i_dquot (when QUOTA is on) i_private and more
-
-If quota is off?  i_private maybe but it's not big enough.
-
-> Even union with the "cgroup writback support" you
-> want to add.
-
-Again, these inodes can get dirtied.
-
-I think unions are okay when lifetime rules clearly separate how the
-field is used or the usages are contained in a logical unit but
-overloading random fields which may be used across lifetime in a data
-structure which is as widely used and abused as inode is likely to
-lead to later headaches.
-
-This is really something special and local {block|char}_dev are doing
-which doens't have to interfere with anything else.  I think it's a
-better approach to confine it to {block|char}_dev in the long term
-even if that means carrying a bit more code.
-
-Thanks.
-
--- 
-tejun
+> 
+> Thanks,
+> 	Abel
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
