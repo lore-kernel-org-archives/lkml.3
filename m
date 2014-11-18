@@ -1,139 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124AbaKRXx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:53:28 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:39426 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932705AbaKRXx1 (ORCPT
+	id S933142AbaKRXyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:54:17 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37162 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393AbaKRXyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:53:27 -0500
+	Tue, 18 Nov 2014 18:54:16 -0500
+Message-ID: <546BDBE7.4040604@au1.ibm.com>
+Date: Wed, 19 Nov 2014 10:53:11 +1100
+From: Jeremy Kerr <jeremy.kerr@au1.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
-	<5461B906.1040803@samsung.com>
-	<20141118125843.434c216540def495d50f3a45@linux-foundation.org>
-Date: Wed, 19 Nov 2014 03:53:26 +0400
-Message-ID: <CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com>
-Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Rob Herring <robherring2@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers/core/of: Add symlink to device-tree from devices
+ with an OF node
+References: <1415342031.4925.27.camel@kernel.crashing.org> <1415342117.4925.29.camel@kernel.crashing.org> <1415596626.5769.14.camel@kernel.crashing.org> <CAL_JsqKG=vpeGKj3v-2VW9oGQsnmuYMHRfy6LuXDXE=ROjHT4w@mail.gmail.com> <1415841047.5124.62.camel@kernel.crashing.org> <CAL_Jsq+YyfMWxiOFv4x3g5hZJH0XRqCKj2He1XO9eyXWjHTMrg@mail.gmail.com> <546BD8BD.2010605@au1.ibm.com>
+In-Reply-To: <546BD8BD.2010605@au1.ibm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111823-0025-0000-0000-00000087F1C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-18 23:58 GMT+03:00 Andrew Morton <akpm@linux-foundation.org>:
-> On Tue, 11 Nov 2014 10:21:42 +0300 Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
->
->> Hi Andrew,
->>
->> Now we have stable GCC(4.9.2) which supports kasan and from my point of view patchset is ready for merging.
->> I could have sent v7 (it's just rebased v6), but I see no point in doing that and bothering people,
->> unless you are ready to take it.
->
-> It's a huge pile of tricky code we'll need to maintain.  To justify its
-> inclusion I think we need to be confident that kasan will find a
-> significant number of significant bugs that
-> kmemcheck/debug_pagealloc/slub_debug failed to detect.
->
-> How do we get that confidence?  I've seen a small number of
-> minorish-looking kasan-detected bug reports go past, maybe six or so.
+Hi Rob,
 
-I must admit that most bugs I've seen is a minor,
-but there are  a bit more then six of them.
+> struct device doesn't have an of_node member if !CONFIG_OF, so we'll
+> need to disable this block in the preprocessor.
 
-I've counted 16:
+Scratch that, I was looking at the wrong header - we do indeed have the
+of_node available independently of CONFIG_OF, and this makes the logic a
+little cleaner.
 
-aab515d (fib_trie: remove potential out of bound access)
-984f173 ([SCSI] sd: Fix potential out-of-bounds access)
-5e9ae2e (aio: fix use-after-free in aio_migratepage)
-2811eba (ipv6: udp packets following an UFO enqueued packet need also
-be handled by UFO)
-057db84 (tracing: Fix potential out-of-bounds in trace_get_user())
-9709674 (ipv4: fix a race in ip4_datagram_release_cb())
-4e8d213 (ext4: fix use-after-free in ext4_mb_new_blocks)
-624483f (mm: rmap: fix use-after-free in __put_anon_vma)
-93b7aca (lib/idr.c: fix out-of-bounds pointer dereference)
-b4903d6 (mm: debugfs: move rounddown_pow_of_two() out from do_fault path)
-40eea80 (net: sendmsg: fix NULL pointer dereference)
-10ec947 (ipv4: fix buffer overflow in ip_options_compile())
-dbf20cb2 (f2fs: avoid use invalid mapping of node_inode when evict meta inode)
-d6d86c0 (mm/balloon_compaction: redesign ballooned pages management)
-
-+ 2 recently found, seems minor:
-    http://lkml.kernel.org/r/1415372020-1871-1-git-send-email-a.ryabinin@samsung.com
-    (sched/numa: Fix out of bounds read in sched_init_numa())
-
-    http://lkml.kernel.org/r/1415458085-12485-1-git-send-email-ryabinin.a.a@gmail.com
-    (security: smack: fix out-of-bounds access in smk_parse_smack())
-
-Note that some functionality is not yet implemented in this patch set.
-Kasan has possibility
-to detect out-of-bounds accesses on global/stack variables. Neither
-kmemcheck/debug_pagealloc or slub_debug could do that.
-
-> That's in a 20-year-old code base, so one new minor bug discovered per
-> three years?  Not worth it!
->
-> Presumably more bugs will be exposed as more people use kasan on
-> different kernel configs, but will their number and seriousness justify
-> the maintenance effort?
->
-
-Yes, AFAIK there are only few users of kasan now, and I guess that
-only small part of kernel code
-was covered by it.
-IMO kasan shouldn't take a lot maintenance efforts, most part of code
-is isolated and it doesn't
-have some complex dependencies on in-kernel API.
-And you could always just poke me, I'd be happy to sort out any issues.
-
-> If kasan will permit us to remove kmemcheck/debug_pagealloc/slub_debug
-> then that tips the balance a little.  What's the feasibility of that?
->
-
-I think kasan could replace kmemcheck at some point.
-Unlike kmemcheck, kasan couldn't detect uninitialized memory reads now.
-But It could be done  using the same compiler's instrumentation (I
-have some proof-of-concept).
-Though it will be a different Kconfig option, so you either enable
-CONFIG_KASAN to detect out-of-bounds
-and use-after-frees or CONFIG_DETECT_UNINITIALIZED_MEMORY to catch
-only uninitialized memory reads.
-
-Removing debug_pagealloc maybe is not so good idea, because it doesn't
-eat much memory unlike kasan.
-
-slub_debug could be enabled in production kernels without rebuilding,
-so I wouldn't touch it too.
-
->
-> Sorry to play the hardass here, but someone has to ;)
->
+Cheers,
 
 
--- 
-Best regards,
-Andrey Ryabinin
+Jeremy
+
