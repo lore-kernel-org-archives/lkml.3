@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318AbaKROvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:51:49 -0500
-Received: from mout.web.de ([212.227.17.11]:51390 "EHLO mout.web.de"
+	id S1756071AbaKROva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:51:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108AbaKROvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:51:44 -0500
-Message-ID: <546B5CF3.1070203@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 15:51:31 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] fs-proc: One function call less in proc_sys_lookup()
- after error detection
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:BlANFqZ3m6hbh2MvUN7Id+aSr6ODqKA+S+CIZfb4CrWRlhA6PME
- d02Fa/1r3RQ/FwkU44zQKtOKt4uL/+gZtRayx0FxV/SA+HP4q9wOPqAlDmitgSfek0KOIQn
- lKpY5GttMUQXn4SKATVJgwL0pGPnh6UmNHOTM+3ByhqtWoWUpRw02Yge+AoioTkGqa5pZtr
- 0vc2hQJJBLMwbty9r5UEA==
-X-UI-Out-Filterresults: notjunk:1;
+	id S932179AbaKROJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:55 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 090/206] dm log userspace: fix memory leak in dm_ulog_tfr_init failure path
+Date: Tue, 18 Nov 2014 15:07:25 +0100
+Message-Id: <93232824e2c3aa8173a1060fbf9acea7f477d53c.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 15:42:43 +0100
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-The sysctl_head_finish() function was called in an inefficient way by the
-implementation of the proc_sys_lookup() function in case of a lookup failure.
-The corresponding source code was improved by deletion of an unnecessary
-null pointer check and a few adjustments for jump labels.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+===============
+
+commit 56ec16cb1e1ce46354de8511eef962a417c32c92 upstream.
+
+If cn_add_callback() fails in dm_ulog_tfr_init(), it does not
+deallocate prealloced memory but calls cn_del_callback().
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Reviewed-by: Jonathan Brassow <jbrassow@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/proc/proc_sysctl.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/md/dm-log-userspace-transfer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index f92d5dd..6606aaf 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -457,21 +457,21 @@ static struct dentry *proc_sys_lookup(struct inode *dir, struct dentry *dentry,
- 		ret = sysctl_follow_link(&h, &p, current->nsproxy);
- 		err = ERR_PTR(ret);
- 		if (ret)
--			goto out;
-+			goto inode_failure;
+diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
+index 08d9a207259a..c69d0b787746 100644
+--- a/drivers/md/dm-log-userspace-transfer.c
++++ b/drivers/md/dm-log-userspace-transfer.c
+@@ -272,7 +272,7 @@ int dm_ulog_tfr_init(void)
+ 
+ 	r = cn_add_callback(&ulog_cn_id, "dmlogusr", cn_ulog_callback);
+ 	if (r) {
+-		cn_del_callback(&ulog_cn_id);
++		kfree(prealloced_cn_msg);
+ 		return r;
  	}
  
- 	err = ERR_PTR(-ENOMEM);
- 	inode = proc_sys_make_inode(dir->i_sb, h ? h : head, p);
- 	if (!inode)
--		goto out;
-+		goto inode_failure;
- 
- 	err = NULL;
- 	d_set_d_op(dentry, &proc_sys_dentry_operations);
- 	d_add(dentry, inode);
- 
-+inode_failure:
-+	sysctl_head_finish(h);
- out:
--	if (h)
--		sysctl_head_finish(h);
- 	sysctl_head_finish(head);
- 	return err;
- }
 -- 
 2.1.3
 
