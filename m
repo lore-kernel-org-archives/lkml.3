@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860AbaKRPr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:47:58 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:34949 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809AbaKRPr4 (ORCPT
+	id S1756011AbaKRPtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:49:22 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:51179 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586AbaKRPtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:47:56 -0500
+	Tue, 18 Nov 2014 10:49:20 -0500
+Date: Tue, 18 Nov 2014 15:49:12 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, IIO <linux-iio@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>, Carlo Caione <carlo@caione.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Todd Brandt <todd.e.brandt@linux.intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Hartmut Knaack <knaack.h@gmx.de>
+Subject: [GIT PULL] Immutable branch between MFD and IIO (second tag)
+Message-ID: <20141118154912.GB13959@x1>
+References: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <BC567D27D6B7384F84318942321624DE16179F2A@hasmsx109.ger.corp.intel.com>
-References: <1415847123-15558-1-git-send-email-michael.jamet@intel.com>
- <CAErSpo7Z5x=U3vSnxrFpwYUDrUrnrrBCe1F9_GQNYqWWQFWNpQ@mail.gmail.com>
- <CAHp75VcZ0XjcFxjrSgr5-XnWZZa-eZfPH_Fa1Hzb=f+qtE3z9w@mail.gmail.com>
- <CAMxnaaXOa_GAFwK+tUrO8DBjENqdd9uaQHKqEMm+i4754Ch3gQ@mail.gmail.com> <BC567D27D6B7384F84318942321624DE16179F2A@hasmsx109.ger.corp.intel.com>
-From: Andreas Noever <andreas.noever@gmail.com>
-Date: Tue, 18 Nov 2014 16:47:35 +0100
-Message-ID: <CAMxnaaV41H-bzw2kp=HXd0aicRJbtNJuNE4aPf=EvQPMKiPQ6g@mail.gmail.com>
-Subject: Re: [PATCH] pci: support Thunderbolt requirements for I/O resources.
-To: "Jamet, Michael" <michael.jamet@intel.com>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Levy, Amir (Jer)" <amir.jer.levy@intel.com>,
-        "Alloun, Dan" <dan.alloun@intel.com>,
-        Rafael Wysocki <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 9:20 AM, Jamet, Michael <michael.jamet@intel.com> wrote:
->> -----Original Message-----
->> From: Andreas Noever [mailto:andreas.noever@gmail.com]
->> Sent: Wednesday, November 12, 2014 22:19
->> To: Andy Shevchenko
->> Cc: Bjorn Helgaas; Jamet, Michael; linux-pci@vger.kernel.org; linux-
->> kernel@vger.kernel.org; Levy, Amir (Jer); Alloun, Dan; Rafael Wysocki
->> Subject: Re: [PATCH] pci: support Thunderbolt requirements for I/O
->> resources.
->>
->> On Wed, Nov 12, 2014 at 7:30 PM, Andy Shevchenko
->> <andy.shevchenko@gmail.com> wrote:
->> > On Wed, Nov 12, 2014 at 7:29 PM, Bjorn Helgaas <bhelgaas@google.com>
->> wrote:
->> >
->> > []
->> >
->> >>> To prevent this, we detect a chain contains a Thunderbolt device by
->> >>> checking the Thunderbolt PCI device id.
->> >>
->> >> I'm really not happy about checking a list of device IDs to identify
->> >> Thunderbolt devices.  Surely there's a better way, because a list
->> >> like this has to be updated regularly.
->> >
->> > I recently proposed internally to use quirks (pci_fixup_early) for
->> > that, but apparently Michael didn't have time to answer. It might be
->> > he can just comment here since the patch already public.
->>
->> In any case: this will interfere with thunderbolt hotplug on Apple systems,
->> where we do not have BIOS support and have to handle hotplug events and
->> assign resources ourselves. So please add a DMI check for Apple (the reverse
->> of what we do in
->> http://lxr.free-
->> electrons.com/source/drivers/thunderbolt/nhi.c?v=3.17#L664
->> ).
->>
->> Thanks,
->> Andreas
->
-> This is correct that the hotplug handling mechanism and interaction with BIOS is different.
-> However, this patch also applies for any case, since the I/O space is limited
-> and need to be preserved, so we must prevent allocation of I/O resources
-> from the devices and avoiding exhaustion while chaining them.
+The following changes since commit bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9:
 
-Now I am slightly confused. Does the BIOS (on non Apple hardware)
-leave I/O resources always unassigned? Your first post seemed to imply
-that it does assign some and that we should not interfere. In that
-case we would have to assign them on Apple systems ourselves. On the
-other hand if no TB device uses I/O resources and the BIOS never
-assigns them, then why do devices fail if we exhaust them?
+  Linux 3.17 (2014-10-05 12:23:04 -0700)
 
-Andreas
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-iio-v3.19-1
 
+for you to fetch changes up to 8019f6962708985782b65bd97be88046a55e1e4d:
 
+  iio/axp288_adc: remove THIS_MODULE owner (2014-11-18 15:34:22 +0000)
 
-> Michael
->
->
-> ---------------------------------------------------------------------
-> Intel Israel (74) Limited
->
-> This e-mail and any attachments may contain confidential material for
-> the sole use of the intended recipient(s). Any review or distribution
-> by others is strictly prohibited. If you are not the intended
-> recipient, please contact the sender and delete all copies.
+----------------------------------------------------------------
+Immutable branch between MFD and IIO due for v3.19.
+
+This is the second tag, as more patches have been applied.
+
+----------------------------------------------------------------
+Aaron Lu (1):
+      iio: adc: Add module device table for autoloading
+
+Jacob Pan (4):
+      mfd: axp20x: Extend axp20x to support axp288 pmic
+      iio: adc: Add support for axp288 adc
+      mfd/axp20x: avoid irq numbering collision
+      iio/axp288_adc: remove THIS_MODULE owner
+
+ drivers/iio/adc/Kconfig      |   8 +
+ drivers/iio/adc/Makefile     |   1 +
+ drivers/iio/adc/axp288_adc.c | 261 +++++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig          |   3 +-
+ drivers/mfd/axp20x.c         | 361 ++++++++++++++++++++++++++++++++++++-------
+ include/linux/mfd/axp20x.h   |  59 +++++++
+ 6 files changed, 637 insertions(+), 56 deletions(-)
+ create mode 100644 drivers/iio/adc/axp288_adc.c
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
