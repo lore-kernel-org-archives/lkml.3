@@ -1,85 +1,848 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933AbaKRVSu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:18:50 -0500
-Received: from 1wt.eu ([62.212.114.60]:53243 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867AbaKRVSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:18:49 -0500
-Date: Tue, 18 Nov 2014 22:18:44 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Mariusz Gorski <marius.gorski@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] staging: panel: Use a macro for checking module params state
-Message-ID: <20141118211844.GG26514@1wt.eu>
-References: <1416344174-9155-1-git-send-email-marius.gorski@gmail.com> <1416344174-9155-5-git-send-email-marius.gorski@gmail.com>
-Mime-Version: 1.0
+	id S932568AbaKRVTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:19:05 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41899 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088AbaKRVTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 16:19:03 -0500
+Date: Tue, 18 Nov 2014 13:18:48 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
+        palves@redhat.com, oleg@redhat.com, dhowells@redhat.com,
+        davej@redhat.com, davem@davemloft.net, mikey@neuling.org,
+        benh@kernel.crashing.org, mpe@ellerman.id.au, sam.bobroff@au1.ibm.com
+Subject: Re: [PATCH V4 6/8] powerpc, ptrace: Enable support for transactional
+ memory register sets
+Message-ID: <20141118211848.GA3075@us.ibm.com>
+References: <1415683597-22819-1-git-send-email-khandual@linux.vnet.ibm.com>
+ <1415683597-22819-7-git-send-email-khandual@linux.vnet.ibm.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416344174-9155-5-git-send-email-marius.gorski@gmail.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <1415683597-22819-7-git-send-email-khandual@linux.vnet.ibm.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111821-0033-0000-0000-000002BBCE4F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 09:56:09PM +0100, Mariusz Gorski wrote:
-> Avoid values comparison and use a macro instead that checks
-> whether module param has been set by the user to some value
-> at loading time.
-> 
-> Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
-> ---
->  drivers/staging/panel/panel.c | 88 ++++++++++++++++++++++---------------------
->  1 file changed, 45 insertions(+), 43 deletions(-)
-> 
-> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> index 1b4a211..97fc4ca 100644
-> --- a/drivers/staging/panel/panel.c
-> +++ b/drivers/staging/panel/panel.c
-> @@ -135,6 +135,8 @@
->  
->  #define NOT_SET			-1
->  
-> +#define IS_NOT_SET(x)	(x == NOT_SET)
-> +
->  /* macros to simplify use of the parallel port */
->  #define r_ctr(x)        (parport_read_control((x)->port))
->  #define r_dtr(x)        (parport_read_data((x)->port))
-> @@ -1411,29 +1413,29 @@ static void lcd_init(void)
->  	switch (lcd_type) {
->  	case LCD_TYPE_OLD:
->  		/* parallel mode, 8 bits */
-> -		if (lcd_proto < 0)
-> +		if (IS_NOT_SET(lcd_proto))
->  			lcd_proto = LCD_PROTO_PARALLEL;
-> -		if (lcd_charset < 0)
-> +		if (IS_NOT_SET(lcd_charset))
->  			lcd_charset = LCD_CHARSET_NORMAL;
->  		if (lcd_e_pin == PIN_NOT_SET)
->  			lcd_e_pin = PIN_STROBE;
->  		if (lcd_rs_pin == PIN_NOT_SET)
->  			lcd_rs_pin = PIN_AUTOLF;
->  
-> -		if (lcd_width < 0)
-> +		if (IS_NOT_SET(lcd_width))
->  			lcd_width = 40;
-(...)
+Anshuman Khandual [khandual@linux.vnet.ibm.com] wrote:
+| This patch enables get and set of transactional memory related register
+| sets through PTRACE_GETREGSET-PTRACE_SETREGSET interface by implementing
+| four new powerpc specific register sets i.e REGSET_TM_SPR, REGSET_TM_CGPR,
+| REGSET_TM_CFPR, REGSET_CVMX support corresponding to these following new
+| ELF core note types added previously in this regard.
+| 
+| 	(1) NT_PPC_TM_SPR
+| 	(2) NT_PPC_TM_CGPR
+| 	(3) NT_PPC_TM_CFPR
+| 	(4) NT_PPC_TM_CVMX
+| 
+| Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+| ---
+|  arch/powerpc/include/uapi/asm/elf.h |   2 +
+|  arch/powerpc/kernel/ptrace.c        | 666 +++++++++++++++++++++++++++++++++++-
+|  2 files changed, 653 insertions(+), 15 deletions(-)
+| 
+| diff --git a/arch/powerpc/include/uapi/asm/elf.h b/arch/powerpc/include/uapi/asm/elf.h
+| index 59dad11..fdc8e2f 100644
+| --- a/arch/powerpc/include/uapi/asm/elf.h
+| +++ b/arch/powerpc/include/uapi/asm/elf.h
+| @@ -91,6 +91,8 @@
+| 
+|  #define ELF_NGREG	48	/* includes nip, msr, lr, etc. */
+|  #define ELF_NFPREG	33	/* includes fpscr */
+| +#define ELF_NVMX	34	/* includes all vector registers */
+| +#define ELF_NTMSPRREG	7	/* includes TM sprs, org_msr, dscr, tar, ppr */
+| 
+|  typedef unsigned long elf_greg_t64;
+|  typedef elf_greg_t64 elf_gregset_t64[ELF_NGREG];
+| diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+| index 2bbbd10..b279947 100644
+| --- a/arch/powerpc/kernel/ptrace.c
+| +++ b/arch/powerpc/kernel/ptrace.c
+| @@ -63,6 +63,11 @@ struct pt_regs_offset {
+|  	{.name = STR(gpr##num), .offset = offsetof(struct pt_regs, gpr[num])}
+|  #define REG_OFFSET_END {.name = NULL, .offset = 0}
+| 
+| +/* Some common structure offsets */
+| +#define TSO(f)	(offsetof(struct thread_struct, f))
+| +#define TVSO(f)	(offsetof(struct thread_vr_state, f))
+| +#define TFSO(f)	(offsetof(struct thread_fp_state, f))
+| +
+|  static const struct pt_regs_offset regoffset_table[] = {
+|  	GPR_OFFSET_NAME(0),
+|  	GPR_OFFSET_NAME(1),
+| @@ -792,6 +797,534 @@ static int evr_set(struct task_struct *target, const struct user_regset *regset,
+|  }
+|  #endif /* CONFIG_SPE */
+| 
+| +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+| +/*
+| + * tm_spr_active
+| + *
+| + * This function checks number of available regisers in
+| + * the transactional memory SPR category.
+| + */
+| +static int tm_spr_active(struct task_struct *target,
+| +			 const struct user_regset *regset)
+| +{
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return 0;
+| +
+| +	return regset->n;
+| +}
+| +
+| +/*
+| + * tm_spr_get
+| + *
+| + * This function gets transactional memory related SPR registers
+| + *
+| + * Userspace interface buffer layout:
+| + *
+| + * struct {
+| + *	u64		tm_tfhar;
+| + *	u64		tm_texasr;
+| + *	u64		tm_tfiar;
+| + *	unsigned long	tm_orig_msr;
+| + *	unsigned long	tm_tar;
+| + *	unsigned long	tm_ppr;
+| + *	unsigned long	tm_dscr;
+| + * };
+| + */
+| +static int tm_spr_get(struct task_struct *target,
+| +		      const struct user_regset *regset,
+| +		      unsigned int pos, unsigned int count,
+| +		      void *kbuf, void __user *ubuf)
+| +{
+| +	int ret;
+| +
+| +	/* Build tests */
+| +	BUILD_BUG_ON(TSO(tm_tfhar) + sizeof(u64) != TSO(tm_texasr));
+| +	BUILD_BUG_ON(TSO(tm_texasr) + sizeof(u64) != TSO(tm_tfiar));
+| +	BUILD_BUG_ON(TSO(tm_tfiar) + sizeof(u64) != TSO(tm_orig_msr));
+| +	BUILD_BUG_ON(TSO(tm_orig_msr) +	sizeof(unsigned long) +
+Can we replace TSO(tm_orig_msr) + sizeof(unsigned long) with
+TSO(ckpt_regs) ?
+| +				sizeof(struct pt_regs) != TSO(tm_tar));
+| +	BUILD_BUG_ON(TSO(tm_tar) + sizeof(unsigned long) != TSO(tm_ppr));
+| +	BUILD_BUG_ON(TSO(tm_ppr) + sizeof(unsigned long) != TSO(tm_dscr));
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	/* Flush the states */
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +
+| +	/* TFHAR register */
+| +	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_tfhar, 0, sizeof(u64));
 
-I'm not convinced at all by the increased readability of this one.
-To me it adds obfuscation since I have to look for the macro definition
-to see how it checks whether the type is set or not.
+The last two parameters, (start_pos, end_pos) are easy to understand
+here, but...
 
-I think you'd rather simply open-code the macro here and keep the natural
-comparison. The fields were already initialized to the NOT_SET value, better
-check agaist the same value here especially since it matches other tests as
-well. That would give :
+| +
+| +	/* TEXASR register */
+| +	if (!ret)
+| +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_texasr, sizeof(u64),
+| +				2 * sizeof(u64));
 
--		if (lcd_proto < 0)
-+		if (lcd_proto == NOT_SET)
-  			lcd_proto = LCD_PROTO_PARALLEL;
+... gets harder to understand here and subsequent fields below.
 
-etc...  To me it's more readable.
+Given that you already do the BUILD_BUG_ON() tests above, how about
+using TSO(tm_texasr) and TSO(tfiar) here for start_pos and end_pos ?
 
-Willy
+Also, how about just returning if the copyout fails ?  If the first
+copyout fails, we will still check 'if(!ret)' several times below.
+
+| +
+| +	/* TFIAR register */
+| +	if (!ret)
+| +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_tfiar,
+| +				2 * sizeof(u64), 3 * sizeof(u64));
+| +
+| +	/* TM checkpointed original MSR */
+| +	if (!ret)
+| +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_orig_msr, 3 * sizeof(u64),
+| +				3 * sizeof(u64) + sizeof(unsigned long));
+| +
+| +	/* TM checkpointed TAR register */
+| +	if (!ret)
+| +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_tar, 3 * sizeof(u64) +
+| +				sizeof(unsigned long) ,
+| +				3 * sizeof(u64) + 2 * sizeof(unsigned long));
+| +
+| +	/* TM checkpointed PPR register */
+| +	if (!ret)
+| +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_ppr, 3 * sizeof(u64) +
+| +				2 * sizeof(unsigned long),
+| +				3 * sizeof(u64) + 3 * sizeof(unsigned long));
+| +
+| +	/* TM checkpointed DSCR register */
+| +	if (!ret)
+| +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_dscr, 3 * sizeof(u64) +
+| +				3 * sizeof(unsigned long),
+| +				3 * sizeof(u64) + 4 * sizeof(unsigned long));
+| +	return ret;
+| +}
+| +
+| +/*
+| + * tm_spr_set
+| + *
+| + * This function sets transactional memory related SPR registers
+| + *
+| + * Userspace interface buffer layout:
+| + *
+| + * struct {
+| + *	u64		tm_tfhar;
+| + *	u64		tm_texasr;
+| + *	u64		tm_tfiar;
+| + *	unsigned long	tm_orig_msr;
+| + *	unsigned long	tm_tar;
+| + *	unsigned long	tm_ppr;
+| + *	unsigned long	tm_dscr;
+| + * };
+| + */
+| +static int tm_spr_set(struct task_struct *target,
+| +		      const struct user_regset *regset,
+| +		      unsigned int pos, unsigned int count,
+| +		      const void *kbuf, const void __user *ubuf)
+| +{
+| +	int ret;
+| +
+| +	/* Build tests */
+| +	BUILD_BUG_ON(TSO(tm_tfhar) + sizeof(u64) != TSO(tm_texasr));
+| +	BUILD_BUG_ON(TSO(tm_texasr) + sizeof(u64) != TSO(tm_tfiar));
+| +	BUILD_BUG_ON(TSO(tm_orig_msr) + sizeof(unsigned long)
+
+Can we replace TSO(tm_orig_msr) + sizeof(unsigned long) with
+TSO(ckpt_regs) ?
+
+| +				+ sizeof(struct pt_regs) != TSO(tm_tar));
+| +	BUILD_BUG_ON(TSO(tm_tar) + sizeof(unsigned long) != TSO(tm_ppr));
+| +	BUILD_BUG_ON(TSO(tm_ppr) + sizeof(unsigned long) != TSO(tm_dscr));
+| +	BUILD_BUG_ON(TSO(tm_tfiar) + sizeof(u64) != TSO(tm_orig_msr));
+
+How about moving this last line up after the check for TSO(tm_tfiar) ?
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	/* Flush the states */
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +
+| +	/* TFHAR register */
+| +	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_tfhar, 0, sizeof(u64));
+| +
+| +	/* TEXASR register */
+| +	if (!ret)
+| +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_texasr, sizeof(u64),
+| +				2 * sizeof(u64));
+
+Return if copyin() fails ?
+
+| +
+| +	/* TFIAR register */
+| +	if (!ret)
+| +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_tfiar,
+| +				 2 * sizeof(u64), 3 * sizeof(u64));
+| +
+| +
+| +	/* TM checkpointed orig MSR */
+| +	if (!ret)
+| +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_orig_msr, 3 * sizeof(u64),
+| +				3 * sizeof(u64) + sizeof(unsigned long));
+| +
+| +
+| +	/* TM checkpointed TAR register */
+| +	if (!ret)
+| +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_tar, 3 * sizeof(u64) +
+| +				sizeof(unsigned long), 3 * sizeof(u64) +
+| +				2 * sizeof(unsigned long));
+| +
+| +	/* TM checkpointed PPR register */
+| +	if (!ret)
+| +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_ppr, 3 * sizeof(u64) +
+| +				2 * sizeof(unsigned long), 3 * sizeof(u64) +
+| +				3 * sizeof(unsigned long));
+| +
+| +	/* TM checkpointed DSCR register */
+| +	if (!ret)
+| +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +				&target->thread.tm_dscr, 3 * sizeof(u64) +
+| +				3 * sizeof(unsigned long), 3 * sizeof(u64) +
+| +				4 * sizeof(unsigned long));
+| +	return ret;
+| +}
+| +
+| +/*
+| + * tm_cgpr_active
+| + *
+| + * This function checks the number of available regisers in
+| + * transaction checkpointed GPR category.
+| + */
+| +static int tm_cgpr_active(struct task_struct *target,
+| +			  const struct user_regset *regset)
+| +{
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return 0;
+| +
+| +	return regset->n;
+| +}
+| +
+| +/*
+| + * tm_cgpr_get
+| + *
+| + * This function gets transaction checkpointed GPR registers
+| + *
+| + * When the transaction is active, 'ckpt_regs' holds all the checkpointed
+| + * GPR register values for the current transaction to fall back on if it
+| + * aborts in between. This function gets those checkpointed GPR registers.
+| + *
+| + * Userspace interface buffer layout:
+| + *
+| + * struct data {
+| + *	struct pt_regs ckpt_regs;
+| + * };
+| + */
+| +static int tm_cgpr_get(struct task_struct *target,
+| +			const struct user_regset *regset,
+| +			unsigned int pos, unsigned int count,
+| +			void *kbuf, void __user *ubuf)
+| +{
+| +	int ret;
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +					&target->thread.ckpt_regs, 0,
+| +					sizeof(struct pt_regs));
+| +	return ret;
+| +}
+| +
+| +/*
+| + * tm_cgpr_set
+| + *
+| + * This function sets in transaction checkpointed GPR registers
+| + *
+| + * When the transaction is active, 'ckpt_regs' holds the checkpointed
+| + * GPR register values for the current transaction to fall back on if it
+| + * aborts in between. This function sets those checkpointed GPR registers.
+| + *
+| + * Userspace intaerface buffer:
+| + *
+| + * struct data {
+| + *	struct pt_regs ckpt_regs;
+| + * };
+| + */
+| +static int tm_cgpr_set(struct task_struct *target,
+| +			const struct user_regset *regset,
+| +			unsigned int pos, unsigned int count,
+| +			const void *kbuf, const void __user *ubuf)
+| +{
+| +	int ret;
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +					&target->thread.ckpt_regs, 0,
+| +					sizeof(struct pt_regs));
+| +	return ret;
+| +}
+| +
+| +/*
+| + * tm_cfpr_active
+| + *
+| + * This function checks number of available regisers in
+| + * transaction checkpointed FPR category.
+| + */
+| +static int tm_cfpr_active(struct task_struct *target,
+| +				const struct user_regset *regset)
+| +{
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return 0;
+| +
+| +	return regset->n;
+| +}
+| +
+| +/*
+| + * tm_cfpr_get
+| + *
+| + * This function gets in transaction checkpointed FPR registers
+| + *
+| + * When the transaction is active 'fp_state' holds the checkpointed
+| + * values for the current transaction to fall back on if it aborts
+| + * in between. This function gets those checkpointed FPR registers.
+| + *
+| + * Userspace interface buffer layout:
+| + *
+| + * struct data {
+| + *	u64	fpr[32];
+| + *	u64	fpscr;
+| + *};
+| + */
+| +static int tm_cfpr_get(struct task_struct *target,
+| +			const struct user_regset *regset,
+| +			unsigned int pos, unsigned int count,
+| +			void *kbuf, void __user *ubuf)
+| +{
+| +	u64 buf[33];
+| +	int i;
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +
+| +	/* copy to local buffer then write that out */
+| +	for (i = 0; i < 32 ; i++)
+| +		buf[i] = target->thread.TS_FPR(i);
+| +	buf[32] = target->thread.fp_state.fpscr;
+| +	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
+| +}
+| +
+| +/*
+| + * tm_cfpr_set
+| + *
+| + * This function sets in transaction checkpointed FPR registers
+| + *
+| + * When the transaction is active 'fp_state' holds the checkpointed
+| + * FPR register values for the current transaction to fall back on
+| + * if it aborts in between. This function sets these checkpointed
+| + * FPR registers.
+| + *
+| + * Userspace interface buffer layout:
+| + *
+| + * struct data {
+| + *	u64	fpr[32];
+| + *	u64	fpscr;
+| + *};
+| + */
+| +static int tm_cfpr_set(struct task_struct *target,
+| +			const struct user_regset *regset,
+| +			unsigned int pos, unsigned int count,
+| +			const void *kbuf, const void __user *ubuf)
+| +{
+| +	u64 buf[33];
+| +	int i;
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +
+| +	/* copy to local buffer then write that out */
+| +	i = user_regset_copyin(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
+| +	if (i)
+| +		return i;
+| +	for (i = 0; i < 32 ; i++)
+| +		target->thread.TS_FPR(i) = buf[i];
+| +	target->thread.fp_state.fpscr = buf[32];
+| +	return 0;
+| +}
+| +
+| +/*
+| + * tm_cvmx_active
+| + *
+| + * This function checks the number of available regisers in
+| + * checkpointed VMX category.
+| + */
+| +static int tm_cvmx_active(struct task_struct *target,
+| +				const struct user_regset *regset)
+| +{
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return 0;
+| +
+| +	return regset->n;
+| +}
+| +
+| +/*
+| + * tm_cvmx_get
+| + *
+| + * This function gets in transaction checkpointed VMX registers
+| + *
+| + * When the transaction is active 'vr_state' and 'vr_save' hold
+| + * the checkpointed values for the current transaction to fall
+| + * back on if it aborts in between.
+| + *
+| + * User interface buffer:
+| + *
+| + * struct data {
+| + *	vector128	vr[32];
+| + *	vector128	vscr;
+| + *	vector128	vrsave;
+| + *};
+| + */
+| +static int tm_cvmx_get(struct task_struct *target,
+| +			const struct user_regset *regset,
+| +			unsigned int pos, unsigned int count,
+| +			void *kbuf, void __user *ubuf)
+| +{
+| +	int ret;
+| +
+| +	BUILD_BUG_ON(TVSO(vscr) != TVSO(vr[32]));
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	/* Flush the state */
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +
+| +	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+| +					&target->thread.vr_state, 0,
+| +					33 * sizeof(vector128));
+| +	if (!ret) {
+| +		/*
+| +		 * Copy out only the low-order word of vrsave.
+| +		 */
+| +		union {
+| +			elf_vrreg_t reg;
+| +			u32 word;
+| +		} vrsave;
+| +		memset(&vrsave, 0, sizeof(vrsave));
+| +		vrsave.word = target->thread.vrsave;
+| +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &vrsave,
+| +						33 * sizeof(vector128), -1);
+| +	}
+| +
+| +	return ret;
+| +}
+| +
+| +/*
+| + * tm_cvmx_set
+| + *
+| + * This function sets in transaction checkpointed VMX registers
+| + *
+| + * When the transaction is active 'vr_state' and 'vr_save' hold
+| + * the checkpointed values for the current transaction to fall
+| + * back on if it aborts in between.
+| + *
+| + * Userspace interface buffer:
+| + *
+| + * struct data {
+| + *	vector128	vr[32];
+| + *	vector128	vscr;
+| + *	vector128	vrsave;
+| + *};
+| + */
+| +static int tm_cvmx_set(struct task_struct *target,
+| +			const struct user_regset *regset,
+| +			unsigned int pos, unsigned int count,
+| +			const void *kbuf, const void __user *ubuf)
+| +{
+| +	int ret;
+| +
+| +	BUILD_BUG_ON(TVSO(vscr) != TVSO(vr[32]));
+| +
+| +	if (!cpu_has_feature(CPU_FTR_TM))
+| +		return -ENODEV;
+| +
+| +	if (!MSR_TM_ACTIVE(target->thread.regs->msr))
+| +		return -ENODATA;
+| +
+| +	flush_fp_to_thread(target);
+| +	flush_altivec_to_thread(target);
+| +	flush_tmregs_to_thread(target);
+| +
+| +	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+| +					&target->thread.vr_state, 0,
+| +					33 * sizeof(vector128));
+| +	if (!ret && count > 0) {
+| +		/*
+| +		 * We use only the first word of vrsave.
+
+For consistency with the _get() function above, s/first/low-order/ ?
+| +		 */
+| +		union {
+| +			elf_vrreg_t reg;
+| +			u32 word;
+| +		} vrsave;
+| +		memset(&vrsave, 0, sizeof(vrsave));
+| +		vrsave.word = target->thread.vrsave;
+| +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &vrsave,
+| +						33 * sizeof(vector128), -1);
+| +		if (!ret)
+| +			target->thread.vrsave = vrsave.word;
+| +	}
+| +
+| +	return ret;
+| +}
+| +#endif	/* CONFIG_PPC_TRANSACTIONAL_MEM */
+| 
+|  /*
+|   * These are our native regset flavors.
+| @@ -808,6 +1341,12 @@ enum powerpc_regset {
+|  #ifdef CONFIG_SPE
+|  	REGSET_SPE,
+|  #endif
+| +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+| +	REGSET_TM_SPR,		/* TM specific SPR registers */
+| +	REGSET_TM_CGPR,		/* TM checkpointed GPR registers */
+| +	REGSET_TM_CFPR,		/* TM checkpointed FPR registers */
+| +	REGSET_TM_CVMX,		/* TM checkpointed VMX registers */
+| +#endif
+|  };
+| 
+|  static const struct user_regset native_regsets[] = {
+| @@ -842,6 +1381,28 @@ static const struct user_regset native_regsets[] = {
+|  		.active = evr_active, .get = evr_get, .set = evr_set
+|  	},
+|  #endif
+| +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+| +	[REGSET_TM_SPR] = {
+| +		.core_note_type = NT_PPC_TM_SPR, .n = ELF_NTMSPRREG,
+| +		.size = sizeof(u64), .align = sizeof(u64),
+| +		.active = tm_spr_active, .get = tm_spr_get, .set = tm_spr_set
+| +	},
+| +	[REGSET_TM_CGPR] = {
+| +		.core_note_type = NT_PPC_TM_CGPR, .n = ELF_NGREG,
+| +		.size = sizeof(long), .align = sizeof(long),
+| +		.active = tm_cgpr_active, .get = tm_cgpr_get, .set = tm_cgpr_set
+| +	},
+| +	[REGSET_TM_CFPR] = {
+| +		.core_note_type = NT_PPC_TM_CFPR, .n = ELF_NFPREG,
+| +		.size = sizeof(double), .align = sizeof(double),
+| +		.active = tm_cfpr_active, .get = tm_cfpr_get, .set = tm_cfpr_set
+| +	},
+| +	[REGSET_TM_CVMX] = {
+| +		.core_note_type = NT_PPC_TM_CVMX, .n = ELF_NVMX,
+| +		.size = sizeof(vector128), .align = sizeof(vector128),
+| +		.active = tm_cvmx_active, .get = tm_cvmx_get, .set = tm_cvmx_set
+| +	},
+| +#endif
+|  };
+| 
+|  static const struct user_regset_view user_ppc_native_view = {
+| @@ -852,24 +1413,35 @@ static const struct user_regset_view user_ppc_native_view = {
+|  #ifdef CONFIG_PPC64
+|  #include <linux/compat.h>
+| 
+| -static int gpr32_get(struct task_struct *target,
+| +static int common_gpr32_get(struct task_struct *target,
+|  		     const struct user_regset *regset,
+|  		     unsigned int pos, unsigned int count,
+| -		     void *kbuf, void __user *ubuf)
+| +			    void *kbuf, void __user *ubuf, bool in_tm)
+|  {
+| -	const unsigned long *regs = &target->thread.regs->gpr[0];
+| +	const unsigned long *regs;
+|  	compat_ulong_t *k = kbuf;
+|  	compat_ulong_t __user *u = ubuf;
+|  	compat_ulong_t reg;
+|  	int i;
+| 
+| -	if (target->thread.regs == NULL)
+| -		return -EIO;
+| +	if (in_tm) {
+| +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+| +		regs = &target->thread.ckpt_regs.gpr[0];
+| +#endif
+
+regs uninitialized if in_tm is true and CONFIG_PPC_TRANSACTIONAL_MEM
+is false ? It appears that it cannot/should not happen, how about BUGON() ?
+or at least regs = NULL to silence compiler warnings ?
+
+
+| +	} else {
+| +		regs = &target->thread.regs->gpr[0];
+| 
+| -	if (!FULL_REGS(target->thread.regs)) {
+| -		/* We have a partial register set.  Fill 14-31 with bogus values */
+| -		for (i = 14; i < 32; i++)
+| -			target->thread.regs->gpr[i] = NV_REG_POISON; 
+| +		if (target->thread.regs == NULL)
+| +			return -EIO;
+| +
+| +		if (!FULL_REGS(target->thread.regs)) {
+| +			/*
+| +			 * We have a partial register set.
+| +			 * Fill 14-31 with bogus values.
+| +			 */
+| +			for (i = 14; i < 32; i++)
+| +				target->thread.regs->gpr[i] = NV_REG_POISON;
+| +		}
+|  	}
+| 
+|  	pos /= sizeof(reg);
+| @@ -909,20 +1481,28 @@ static int gpr32_get(struct task_struct *target,
+|  					PT_REGS_COUNT * sizeof(reg), -1);
+|  }
+| 
+| -static int gpr32_set(struct task_struct *target,
+| +static int common_gpr32_set(struct task_struct *target,
+|  		     const struct user_regset *regset,
+|  		     unsigned int pos, unsigned int count,
+| -		     const void *kbuf, const void __user *ubuf)
+| +		     const void *kbuf, const void __user *ubuf, bool in_tm)
+|  {
+| -	unsigned long *regs = &target->thread.regs->gpr[0];
+| +	unsigned long *regs;
+|  	const compat_ulong_t *k = kbuf;
+|  	const compat_ulong_t __user *u = ubuf;
+|  	compat_ulong_t reg;
+| 
+| -	if (target->thread.regs == NULL)
+| -		return -EIO;
+| +	if (in_tm) {
+| +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+| +		regs = &target->thread.ckpt_regs.gpr[0];
+| +#endif
+
+ditto
+
+| +	} else {
+| +		regs = &target->thread.regs->gpr[0];
+| 
+| -	CHECK_FULL_REGS(target->thread.regs);
+| +		if (target->thread.regs == NULL)
+| +			return -EIO;
+| +
+| +		CHECK_FULL_REGS(target->thread.regs);
+| +	}
+| 
+|  	pos /= sizeof(reg);
+|  	count /= sizeof(reg);
+| @@ -982,6 +1562,39 @@ static int gpr32_set(struct task_struct *target,
+|  					 (PT_TRAP + 1) * sizeof(reg), -1);
+|  }
+| 
+| +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+| +static int tm_cgpr32_get(struct task_struct *target,
+| +		     const struct user_regset *regset,
+| +		     unsigned int pos, unsigned int count,
+| +		     void *kbuf, void __user *ubuf)
+| +{
+| +	return common_gpr32_get(target, regset, pos, count, kbuf, ubuf, 1);
+| +}
+| +
+| +static int tm_cgpr32_set(struct task_struct *target,
+| +		     const struct user_regset *regset,
+| +		     unsigned int pos, unsigned int count,
+| +		     const void *kbuf, const void __user *ubuf)
+| +{
+| +	return common_gpr32_set(target, regset, pos, count, kbuf, ubuf, 0);
+| +}
+| +#endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
+| +
+| +static int gpr32_get(struct task_struct *target,
+| +		     const struct user_regset *regset,
+| +		     unsigned int pos, unsigned int count,
+| +		     void *kbuf, void __user *ubuf)
+| +{
+| +	return common_gpr32_get(target, regset, pos, count, kbuf, ubuf, 0);
+| +}
+| +
+| +static int gpr32_set(struct task_struct *target,
+| +		     const struct user_regset *regset,
+| +		     unsigned int pos, unsigned int count,
+| +		     const void *kbuf, const void __user *ubuf)
+| +{
+| +	return common_gpr32_set(target, regset, pos, count, kbuf, ubuf, 0);
+| +}
+|  /*
+|   * These are the regset flavors matching the CONFIG_PPC32 native set.
+|   */
+| @@ -1010,6 +1623,29 @@ static const struct user_regset compat_regsets[] = {
+|  		.active = evr_active, .get = evr_get, .set = evr_set
+|  	},
+|  #endif
+| +#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+| +	[REGSET_TM_SPR] = {
+| +		.core_note_type = NT_PPC_TM_SPR, .n = ELF_NTMSPRREG,
+| +		.size = sizeof(u64), .align = sizeof(u64),
+| +		.active = tm_spr_active, .get = tm_spr_get, .set = tm_spr_set
+| +	},
+| +	[REGSET_TM_CGPR] = {
+| +		.core_note_type = NT_PPC_TM_CGPR, .n = ELF_NGREG,
+| +		.size = sizeof(long), .align = sizeof(long),
+| +		.active = tm_cgpr_active,
+| +		.get = tm_cgpr32_get, .set = tm_cgpr32_set
+| +	},
+| +	[REGSET_TM_CFPR] = {
+| +		.core_note_type = NT_PPC_TM_CFPR, .n = ELF_NFPREG,
+| +		.size = sizeof(double), .align = sizeof(double),
+| +		.active = tm_cfpr_active, .get = tm_cfpr_get, .set = tm_cfpr_set
+| +	},
+| +	[REGSET_TM_CVMX] = {
+| +		.core_note_type = NT_PPC_TM_CVMX, .n = ELF_NVMX,
+| +		.size = sizeof(vector128), .align = sizeof(vector128),
+| +		.active = tm_cvmx_active, .get = tm_cvmx_get, .set = tm_cvmx_set
+| +	},
+| +#endif
+|  };
+| 
+|  static const struct user_regset_view user_ppc_compat_view = {
+| -- 
+| 1.9.3
 
