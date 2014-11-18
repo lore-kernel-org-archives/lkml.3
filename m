@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320AbaKRQeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 11:34:14 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19503 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932284AbaKRQeM (ORCPT
+	id S1755345AbaKRQh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 11:37:29 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:32936 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865AbaKRQh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 11:34:12 -0500
-Message-ID: <546B74F5.10004@oracle.com>
-Date: Tue, 18 Nov 2014 11:33:57 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 18 Nov 2014 11:37:27 -0500
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/7] Replace _PAGE_NUMA with PAGE_NONE protections
-References: <1415971986-16143-1-git-send-email-mgorman@suse.de> <5466C8A5.3000402@oracle.com> <20141118154246.GB2725@suse.de>
-In-Reply-To: <20141118154246.GB2725@suse.de>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20141118154308.GB5238@pd.tnic>
+References: <1416251225-17721-1-git-send-email-eranian@google.com>
+	<1416251225-17721-14-git-send-email-eranian@google.com>
+	<20141117230232.GC25157@pd.tnic>
+	<alpine.DEB.2.11.1411180025270.3909@nanos>
+	<20141117235841.GD25157@pd.tnic>
+	<alpine.DEB.2.11.1411180115420.3909@nanos>
+	<CABPqkBQp36s=cKgy0e9hpARgY=z1AucXyToBVtykOvyuAr8AyQ@mail.gmail.com>
+	<20141118154308.GB5238@pd.tnic>
+Date: Tue, 18 Nov 2014 17:37:26 +0100
+Message-ID: <CABPqkBQMCDzN4r8-3vj1EqOuF28pT63iPfnP9M_ry3CL-Sy7xw@mail.gmail.com>
+Subject: Re: [PATCH v3 13/13] perf/x86: add syfs entry to disable HT bug workaround
+From: Stephane Eranian <eranian@google.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86-ml <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Liang, Kan" <kan.liang@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 10:42 AM, Mel Gorman wrote:
-> 1. I'm assuming this is a KVM setup but can you confirm?
+On Tue, Nov 18, 2014 at 4:43 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Nov 18, 2014 at 04:29:59PM +0100, Stephane Eranian wrote:
+>> I am trying to get a better understanding of this scheme.
+>>
+>> status:
+>>   - a summary of what is enabled/disabled?
+>>   - With description (as suggested by Boris)?
+>>   - File is readonly
+>>   - is that printing a variable length bitmask?
+>
+> Should be the easiest. Maybe extend/add to the X86_BUG() functionality
+> in arch/x86/include/asm/cpufeature.h which already deals with CPU bugs.
+>
+Does it need to bit a bitmask, as opposed to just a bug number (which could
+be implemented as a bitmask)?
 
-Yes.
+>> enable_workaround:
+>>    - provide the bit number (of the workaround) to enable the workaround
+>
+> Right, writing the bit number could be part of the description message
+> above - just so that users know how to control the interface.
+>
+writing the bug number....
 
-> 2. Are you using numa=fake=N?
+>>    - File is write-only
+>>
+>> disable_workaround:
+>>    - provide the bit number (of the workaround) to disable the workaround
+>>    - File is write-only
+>>
+>> The split enable/disable is to avoid the read-modify-write issue.
+>>
+>> Am I getting this right?
+>>
+>> I understand the value of this proposition. But, I feel,  it is beyond the scope
+>> of the patch series to workaround the PMU bug. Initially, we had
+>> talked about not
+>> even providing the sysfs file. Now, the series adjusts the workaround
+>> on boot. The series is restructured so that the sysfs patch is the last
+>> one and is totally optional. I think we should implement the proposed scheme
+>> but we should not delay the review and merge of the rest of the patch series
+>> for this. But I can propose a separate patch series to implement the proposed
+>> scheme.
+>
+> Right, IMHO, we can always add sysfs structure later, when its design is
+> sane. What we should absolutely avoid is exposing something to userspace
+> now and then try to hide it/replace it with something else and break
+> userspace, which, as we all know, is a no-no, punishable by Linus coming
+> to your house with a bat.
+>
+I am okay with this approach.
 
-Yes. numa=fake=24, which is probably way more nodes on any physical machine
-than the new code was tested on?
-
-> 3. If you are using fake NUMA, what happens if you boot without it as
->    that should make the patches a no-op?
-
-Nope, still seeing it without fake numa.
-
-> 4. Similarly, does the kernel boot properly without without patches?
-
-Yes, the kernel works fine without the patches both with and without fake
-numa.
-
-> 5. Are any other patches applied because the line numbers are not lining
->    up exactly?
-
-I have quite a few more patches on top of next, but they're debug patches
-that add VM_BUG_ONs in quite a few places.
-
-One thing that was odd is that your patches had merge conflicts when applied
-on -next in mm/huge-memory.c, so maybe that's where line number differences
-are coming from.
-
-> 6. As my own KVM setup appears broken, can you tell me if the host
->    kernel has changed recently? If so, does using an older host kernel
->    make a difference?
-
-Nope, I've been using the same host kernel (Ubuntu's 3.16.0-24-generic #32)
-for a while now.
-
-> At the moment I'm scratching my head trying to figure out how the
-> patches could break 9p like this as I don't believe KVM is doing any
-> tricks with the same bits that could result in loss.
-
-This issue reproduces rather easily, I'd be happy to try out debug patches
-rather than having you guess at what might have gone wrong.
-
-
-Thanks,
-Sasha
+> :-) :-)
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
