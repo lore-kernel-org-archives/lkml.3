@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270AbaKRV6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:58:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36912 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaKRV6p (ORCPT
+	id S932393AbaKRV7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:59:32 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52602 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494AbaKRV7a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:58:45 -0500
-Date: Tue, 18 Nov 2014 13:58:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: mm: shmem: freeing mlocked page
-Message-Id: <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
-In-Reply-To: <5466142C.60100@oracle.com>
-References: <545C4A36.9050702@oracle.com>
-	<5466142C.60100@oracle.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Nov 2014 16:59:30 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Chanwoo Choi <cw00.choi@samsung.com>, lee.jones@linaro.org,
+        broonie@kernel.org, a.zummo@towertech.it
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1416301183-10478-4-git-send-email-cw00.choi@samsung.com>
+Cc: lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
+        geunsik.lim@samsung.com, inki.dae@samsung.com,
+        kyungmin.park@samsung.com, k.kozlowski@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        "Chanwoo Choi" <cw00.choi@samsung.com>
+References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
+ <1416301183-10478-4-git-send-email-cw00.choi@samsung.com>
+Message-ID: <20141118215926.25314.90810@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCHv2 3/5] clk: s2mps11: Add the support for S2MPS13 PMIC clock
+Date: Tue, 18 Nov 2014 13:59:26 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Nov 2014 09:39:40 -0500 Sasha Levin <sasha.levin@oracle.com> wrote:
-
+Quoting Chanwoo Choi (2014-11-18 00:59:41)
+> This patch adds the support for S2MPS13 PMIC clock which is same with existing
+> S2MPS14 RTC IP. But, S2MPS13 uses all of clocks (32khz_{ap|bt|cp}).
 > 
-> [ 1026.988043] BUG: Bad page state in process trinity-c374  pfn:23f70
-> [ 1026.989684] page:ffffea0000b3d300 count:0 mapcount:0 mapping:          (null) index:0x5b
-> [ 1026.991151] flags: 0x1fffff8028000c(referenced|uptodate|swapbacked|mlocked)
-> [ 1026.992410] page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
-> [ 1026.993479] bad because of flags:
-> [ 1026.994125] flags: 0x200000(mlocked)
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Gee that new page dumping code is nice!
+Applied to clk-next.
 
-> [ 1026.994816] Modules linked in:
-> [ 1026.995378] CPU: 7 PID: 7879 Comm: trinity-c374 Not tainted 3.18.0-rc4-next-20141113-sasha-00047-gd1763ce-dirty #1455
-> [ 1026.996123] FAULT_INJECTION: forcing a failure.
-> [ 1026.996123] name failslab, interval 100, probability 30, space 0, times -1
-> [ 1026.999050]  0000000000000000 0000000000000000 0000000000b3d300 ffff88061295bbd8
-> [ 1027.000676]  ffffffff92f71097 0000000000000000 ffffea0000b3d300 ffff88061295bc08
-> [ 1027.002020]  ffffffff8197ef7a ffffea0000b3d300 ffffffff942dd148 dfffe90000000000
-> [ 1027.003359] Call Trace:
-> [ 1027.003831] dump_stack (lib/dump_stack.c:52)
-> [ 1027.004725] bad_page (mm/page_alloc.c:338)
-> [ 1027.005623] free_pages_prepare (mm/page_alloc.c:657 mm/page_alloc.c:763)
-> [ 1027.006761] free_hot_cold_page (mm/page_alloc.c:1438)
-> [ 1027.007772] ? __page_cache_release (mm/swap.c:66)
-> [ 1027.008815] put_page (mm/swap.c:270)
-> [ 1027.009665] page_cache_pipe_buf_release (fs/splice.c:93)
-> [ 1027.010888] __splice_from_pipe (fs/splice.c:784 fs/splice.c:886)
-> [ 1027.011917] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3734)
-> [ 1027.012856] ? pipe_lock (fs/pipe.c:69)
-> [ 1027.013728] ? write_pipe_buf (fs/splice.c:1534)
-> [ 1027.014756] vmsplice_to_user (fs/splice.c:1574)
-> [ 1027.015725] ? rcu_read_lock_held (kernel/rcu/update.c:169)
-> [ 1027.016757] ? __fget_light (include/linux/fdtable.h:80 fs/file.c:684)
-> [ 1027.017782] SyS_vmsplice (fs/splice.c:1656 fs/splice.c:1639)
-> [ 1027.018863] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+Regards,
+Mike
+
+> ---
+>  drivers/clk/clk-s2mps11.c | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
 > 
-
-So what happened here?  Userspace fed some mlocked memory into splice()
-and then, while splice() was running, userspace dropped its reference
-to the memory, leaving splice() with the last reference.  Yet somehow,
-that page was still marked as being mlocked.  I wouldn't expect the
-kernel to permit userspace to drop its reference to the memory without
-first clearing the mlocked state.
-
-Is it possible to work out from trinity sources what the exact sequence
-was?  Which syscalls are being used, for example?
-
+> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> index b7797fb..7bb13af 100644
+> --- a/drivers/clk/clk-s2mps11.c
+> +++ b/drivers/clk/clk-s2mps11.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/clk-provider.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/mfd/samsung/s2mps11.h>
+> +#include <linux/mfd/samsung/s2mps13.h>
+>  #include <linux/mfd/samsung/s2mps14.h>
+>  #include <linux/mfd/samsung/s5m8767.h>
+>  #include <linux/mfd/samsung/core.h>
+> @@ -120,6 +121,24 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
+>         },
+>  };
+>  
+> +static struct clk_init_data s2mps13_clks_init[S2MPS11_CLKS_NUM] = {
+> +       [S2MPS11_CLK_AP] = {
+> +               .name = "s2mps13_ap",
+> +               .ops = &s2mps11_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +       [S2MPS11_CLK_CP] = {
+> +               .name = "s2mps13_cp",
+> +               .ops = &s2mps11_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +       [S2MPS11_CLK_BT] = {
+> +               .name = "s2mps13_bt",
+> +               .ops = &s2mps11_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +};
+> +
+>  static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
+>         [S2MPS11_CLK_AP] = {
+>                 .name = "s2mps14_ap",
+> @@ -184,6 +203,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
+>                 clks_init = s2mps11_clks_init;
+>                 break;
+> +       case S2MPS13X:
+> +               s2mps11_reg = S2MPS13_REG_RTCCTRL;
+> +               clks_init = s2mps13_clks_init;
+> +               break;
+>         case S2MPS14X:
+>                 s2mps11_reg = S2MPS14_REG_RTCCTRL;
+>                 clks_init = s2mps14_clks_init;
+> @@ -279,6 +302,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+>  
+>  static const struct platform_device_id s2mps11_clk_id[] = {
+>         { "s2mps11-clk", S2MPS11X},
+> +       { "s2mps13-clk", S2MPS13X},
+>         { "s2mps14-clk", S2MPS14X},
+>         { "s5m8767-clk", S5M8767X},
+>         { },
+> -- 
+> 1.8.5.5
+> 
