@@ -1,108 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108AbaKRXvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:51:33 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59833 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932648AbaKRXvc (ORCPT
+	id S933124AbaKRXx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:53:28 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:39426 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932705AbaKRXx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:51:32 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 19 Nov 2014 08:52:01 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Karam Lee <karam.lee@lge.com>, Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] zram: rely on the bi_end_io for zram_rw_page fails
-Message-ID: <20141118235201.GB7393@bbox>
-References: <1415926147-9023-1-git-send-email-minchan@kernel.org>
- <20141118152336.d58b7b61a711b7d9982deb9d@linux-foundation.org>
+	Tue, 18 Nov 2014 18:53:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141118152336.d58b7b61a711b7d9982deb9d@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
+	<5461B906.1040803@samsung.com>
+	<20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+Date: Wed, 19 Nov 2014 03:53:26 +0400
+Message-ID: <CAPAsAGwZtfzx5oM73bOi_kw5BqXrwGd_xmt=m6xxU6uECA+H9Q@mail.gmail.com>
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 03:23:36PM -0800, Andrew Morton wrote:
-> On Fri, 14 Nov 2014 09:49:07 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > When I tested zram, I found processes got segfaulted.
-> > The reason was zram_rw_page doesn't make the page dirty
-> > again when swap write failed, and even it doesn't return
-> > error by [1].
-> > 
-> > If error by zram internal happens, zram_rw_page should return
-> > non-zero without calling page_endio.
-> > It causes resubmit the IO with bio so that it ends up calling
-> > bio->bi_end_io.
-> > 
-> > The reason is zram could be used for a block device for FS and
-> > swap, which they uses different bio complete callback, which
-> > works differently. So, we should rely on the bio I/O complete
-> > handler rather than zram_bvec_rw itself in case of I/O fail.
-> > 
-> > This patch fixes the segfault issue as well one [1]'s
-> > mentioned
-> > 
-> > ...
-> >
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -978,12 +978,10 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
-> >  out_unlock:
-> >  	up_read(&zram->init_lock);
-> >  out:
-> > -	page_endio(page, rw, err);
-> > +	if (unlikely(err))
-> > +		return err;
-> >  
-> > -	/*
-> > -	 * Return 0 prevents I/O fallback trial caused by rw_page fail
-> > -	 * and upper layer can handle this IO error via page error.
-> > -	 */
-> > +	page_endio(page, rw, 0);
-> >  	return 0;
-> 
-> Losing the comment makes me sad.  The code is somewhat odd-looking.  We
-> should add some words explaining why we're not reporting errors at this
-> point.
+2014-11-18 23:58 GMT+03:00 Andrew Morton <akpm@linux-foundation.org>:
+> On Tue, 11 Nov 2014 10:21:42 +0300 Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+>
+>> Hi Andrew,
+>>
+>> Now we have stable GCC(4.9.2) which supports kasan and from my point of view patchset is ready for merging.
+>> I could have sent v7 (it's just rebased v6), but I see no point in doing that and bothering people,
+>> unless you are ready to take it.
+>
+> It's a huge pile of tricky code we'll need to maintain.  To justify its
+> inclusion I think we need to be confident that kasan will find a
+> significant number of significant bugs that
+> kmemcheck/debug_pagealloc/slub_debug failed to detect.
+>
+> How do we get that confidence?  I've seen a small number of
+> minorish-looking kasan-detected bug reports go past, maybe six or so.
 
-Okay. How about this?
+I must admit that most bugs I've seen is a minor,
+but there are  a bit more then six of them.
 
+I've counted 16:
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index decca6f161b8..1d7c90d5e0d0 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -975,6 +975,12 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
- 	err = zram_bvec_rw(zram, &bv, index, offset, rw);
- out_unlock:
- 	up_read(&zram->init_lock);
-+	/*
-+	 * If I/O fails, just return error without calling page_endio.
-+	 * It causes resubmit the I/O with bio request by rw_page fallback
-+	 * and bio I/O complete handler does things to handle the error
-+	 * (e.g., set_page_dirty of swap_writepage fail).
-+	 */
- 	if (err == 0)
- 		page_endio(page, rw, 0);
- 	return err;
+aab515d (fib_trie: remove potential out of bound access)
+984f173 ([SCSI] sd: Fix potential out-of-bounds access)
+5e9ae2e (aio: fix use-after-free in aio_migratepage)
+2811eba (ipv6: udp packets following an UFO enqueued packet need also
+be handled by UFO)
+057db84 (tracing: Fix potential out-of-bounds in trace_get_user())
+9709674 (ipv4: fix a race in ip4_datagram_release_cb())
+4e8d213 (ext4: fix use-after-free in ext4_mb_new_blocks)
+624483f (mm: rmap: fix use-after-free in __put_anon_vma)
+93b7aca (lib/idr.c: fix out-of-bounds pointer dereference)
+b4903d6 (mm: debugfs: move rounddown_pow_of_two() out from do_fault path)
+40eea80 (net: sendmsg: fix NULL pointer dereference)
+10ec947 (ipv4: fix buffer overflow in ip_options_compile())
+dbf20cb2 (f2fs: avoid use invalid mapping of node_inode when evict meta inode)
+d6d86c0 (mm/balloon_compaction: redesign ballooned pages management)
 
++ 2 recently found, seems minor:
+    http://lkml.kernel.org/r/1415372020-1871-1-git-send-email-a.ryabinin@samsung.com
+    (sched/numa: Fix out of bounds read in sched_init_numa())
 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+    http://lkml.kernel.org/r/1415458085-12485-1-git-send-email-ryabinin.a.a@gmail.com
+    (security: smack: fix out-of-bounds access in smk_parse_smack())
+
+Note that some functionality is not yet implemented in this patch set.
+Kasan has possibility
+to detect out-of-bounds accesses on global/stack variables. Neither
+kmemcheck/debug_pagealloc or slub_debug could do that.
+
+> That's in a 20-year-old code base, so one new minor bug discovered per
+> three years?  Not worth it!
+>
+> Presumably more bugs will be exposed as more people use kasan on
+> different kernel configs, but will their number and seriousness justify
+> the maintenance effort?
+>
+
+Yes, AFAIK there are only few users of kasan now, and I guess that
+only small part of kernel code
+was covered by it.
+IMO kasan shouldn't take a lot maintenance efforts, most part of code
+is isolated and it doesn't
+have some complex dependencies on in-kernel API.
+And you could always just poke me, I'd be happy to sort out any issues.
+
+> If kasan will permit us to remove kmemcheck/debug_pagealloc/slub_debug
+> then that tips the balance a little.  What's the feasibility of that?
+>
+
+I think kasan could replace kmemcheck at some point.
+Unlike kmemcheck, kasan couldn't detect uninitialized memory reads now.
+But It could be done  using the same compiler's instrumentation (I
+have some proof-of-concept).
+Though it will be a different Kconfig option, so you either enable
+CONFIG_KASAN to detect out-of-bounds
+and use-after-frees or CONFIG_DETECT_UNINITIALIZED_MEMORY to catch
+only uninitialized memory reads.
+
+Removing debug_pagealloc maybe is not so good idea, because it doesn't
+eat much memory unlike kasan.
+
+slub_debug could be enabled in production kernels without rebuilding,
+so I wouldn't touch it too.
+
+>
+> Sorry to play the hardass here, but someone has to ;)
+>
+
 
 -- 
-Kind regards,
-Minchan Kim
+Best regards,
+Andrey Ryabinin
