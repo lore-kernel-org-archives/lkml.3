@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaKRMWs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 07:22:48 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:62826 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218AbaKRMWo (ORCPT
+	id S1754322AbaKRMXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 07:23:01 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:53806 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256AbaKRMW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 07:22:44 -0500
+	Tue, 18 Nov 2014 07:22:57 -0500
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-tegra@vger.kernel.org
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
@@ -21,9 +21,9 @@ Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Alexandre Courbot <gnurou@gmail.com>,
         Peter De Schrijver <pdeschrijver@nvidia.com>,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 02/14] of: Document long-ram-code property in nvidia,tegra20-apbmisc
-Date: Tue, 18 Nov 2014 13:13:04 +0100
-Message-Id: <1416312860-4446-3-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v5 04/14] of: document new emc-timings subnode in nvidia,tegra124-car
+Date: Tue, 18 Nov 2014 13:13:06 +0100
+Message-Id: <1416312860-4446-5-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416312860-4446-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1416312860-4446-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -31,27 +31,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Needed to properly decode the ram code register.
+The EMC clock needs some extra information for changing its rate.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
 ---
 
-v3:	* Clarify wording as suggested by Mikko
----
- Documentation/devicetree/bindings/misc/nvidia,tegra20-apbmisc.txt | 2 ++
- 1 file changed, 2 insertions(+)
+v5:	* Remove constraint on the unit-address of the timings and timing subnodes
 
-diff --git a/Documentation/devicetree/bindings/misc/nvidia,tegra20-apbmisc.txt b/Documentation/devicetree/bindings/misc/nvidia,tegra20-apbmisc.txt
-index b97b8be..d034ff8 100644
---- a/Documentation/devicetree/bindings/misc/nvidia,tegra20-apbmisc.txt
-+++ b/Documentation/devicetree/bindings/misc/nvidia,tegra20-apbmisc.txt
-@@ -11,3 +11,5 @@ Required properties:
-        The second entry gives the physical address and length of the
-        registers indicating the strapping options.
+v4:	* Remove comma from unit-address of CAR node in the example
+	* Simplify reg property value in the example
+---
+ .../bindings/clock/nvidia,tegra124-car.txt         | 42 +++++++++++++++++++++-
+ 1 file changed, 41 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+index ded5d62..2197ffd 100644
+--- a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
++++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+@@ -19,10 +19,31 @@ Required properties :
+   In clock consumers, this cell represents the bit number in the CAR's
+   array of CLK_RST_CONTROLLER_RST_DEVICES_* registers.
  
-+Optional properties:
-+- nvidia,long-ram-code: If present, the RAM code is long (4 bit). If not, short (2 bit).
++The node should contain a "emc-timings" subnode for each supported RAM type (see
++field RAM_CODE in register PMC_STRAPPING_OPT_A).
++
++Required properties for "emc-timings" nodes :
++- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
++  is used for.
++
++Each "emc-timings" node should contain a "timing" subnode for every supported
++EMC clock rate.
++
++Required properties for "timing" nodes :
++- clock-frequency : Should contain the memory clock rate to which this timing
++relates.
++- nvidia,parent-clock-frequency : Should contain the rate at which the current
++parent of the EMC clock should be running at this timing.
++- clocks : Must contain an entry for each entry in clock-names.
++  See ../clocks/clock-bindings.txt for details.
++- clock-names : Must include the following entries:
++  - emc-parent : the clock that should be the parent of the EMC clock at this
++timing.
++
+ Example SoC include file:
+ 
+ / {
+-	tegra_car: clock {
++	tegra_car: clock@60006000 {
+ 		compatible = "nvidia,tegra124-car";
+ 		reg = <0x60006000 0x1000>;
+ 		#clock-cells = <1>;
+@@ -60,4 +81,23 @@ Example board file:
+ 	&tegra_car {
+ 		clocks = <&clk_32k> <&osc>;
+ 	};
++
++	clock@60006000 {
++		emc-timings-3 {
++			nvidia,ram-code = <3>;
++
++			timing-12750000 {
++				clock-frequency = <12750000>;
++				nvidia,parent-clock-frequency = <408000000>;
++				clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
++				clock-names = "emc-parent";
++			};
++			timing-20400000 {
++				clock-frequency = <20400000>;
++				nvidia,parent-clock-frequency = <408000000>;
++				clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
++				clock-names = "emc-parent";
++			};
++		};
++	};
+ };
 -- 
 1.9.3
 
