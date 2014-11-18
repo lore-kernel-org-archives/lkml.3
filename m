@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402AbaKRAHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:07:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49011 "EHLO
+	id S1753447AbaKRAH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:07:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49018 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325AbaKRAHF (ORCPT
+	with ESMTP id S1752709AbaKRAHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:07:05 -0500
-Date: Mon, 17 Nov 2014 16:06:54 -0800
-From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
-Message-ID: <tip-57319d80e1d328e34cb24868a4f4405661485e30@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, dave@sr71.net, qiaowei.ren@intel.com,
-        hpa@zytor.com, dave.hansen@linux.intel.com, tglx@linutronix.de,
+	Mon, 17 Nov 2014 19:07:25 -0500
+Date: Mon, 17 Nov 2014 16:07:11 -0800
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-fcc7ffd67991b63029ca54925644753d534ddc5f@git.kernel.org>
+Cc: dave.hansen@linux.intel.com, tglx@linutronix.de, dave@sr71.net,
+        linux-kernel@vger.kernel.org, qiaowei.ren@intel.com, mingo@kernel.org,
+        hpa@zytor.com
+Reply-To: dave.hansen@linux.intel.com, tglx@linutronix.de, dave@sr71.net,
+        qiaowei.ren@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org
-Reply-To: mingo@kernel.org, tglx@linutronix.de, dave.hansen@linux.intel.com,
-        hpa@zytor.com, qiaowei.ren@intel.com, dave@sr71.net,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20141114151827.CE440F67@viggo.jf.intel.com>
-References: <20141114151827.CE440F67@viggo.jf.intel.com>
+In-Reply-To: <20141114151828.5BDD0915@viggo.jf.intel.com>
+References: <20141114151828.5BDD0915@viggo.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mpx] x86, mpx: Add MPX-specific mmap interface
-Git-Commit-ID: 57319d80e1d328e34cb24868a4f4405661485e30
+Subject: [tip:x86/mpx] x86, mpx:
+  Decode MPX instruction to get bound violation information
+Git-Commit-ID: fcc7ffd67991b63029ca54925644753d534ddc5f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,202 +34,344 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  57319d80e1d328e34cb24868a4f4405661485e30
-Gitweb:     http://git.kernel.org/tip/57319d80e1d328e34cb24868a4f4405661485e30
-Author:     Qiaowei Ren <qiaowei.ren@intel.com>
-AuthorDate: Fri, 14 Nov 2014 07:18:27 -0800
+Commit-ID:  fcc7ffd67991b63029ca54925644753d534ddc5f
+Gitweb:     http://git.kernel.org/tip/fcc7ffd67991b63029ca54925644753d534ddc5f
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Fri, 14 Nov 2014 07:18:28 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 18 Nov 2014 00:58:53 +0100
 
-x86, mpx: Add MPX-specific mmap interface
+x86, mpx: Decode MPX instruction to get bound violation information
 
-We have chosen to perform the allocation of bounds tables in
-kernel (See the patch "on-demand kernel allocation of bounds
-tables") and to mark these VMAs with VM_MPX.
+This patch sets bound violation fields of siginfo struct in #BR
+exception handler by decoding the user instruction and constructing
+the faulting pointer.
 
-However, there is currently no suitable interface to actually do
-this.  Existing interfaces, like do_mmap_pgoff(), have no way to
-set a modified ->vm_ops or ->vm_flags and don't hold mmap_sem
-long enough to let a caller do it.
+We have to be very careful when decoding these instructions.  They
+are completely controlled by userspace and may be changed at any
+time up to and including the point where we try to copy them in to
+the kernel.  They may or may not be MPX instructions and could be
+completely invalid for all we know.
 
-This patch wraps mmap_region() and hold mmap_sem long enough to
-make the modifications to the VMA which we need.
+Note: This code is based on Qiaowei Ren's specialized MPX
+decoder, but uses the generic decoder whenever possible.  It was
+tested for robustness by generating a completely random data
+stream and trying to decode that stream.  I also unmapped random
+pages inside the stream to test the "partial instruction" short
+read code.
 
-Also note the 32/64-bit #ifdef in the header.  We actually need
-to do this at runtime eventually.  But, for now, we don't support
-running 32-bit binaries on 64-bit kernels.  Support for this will
-come in later patches.
+We kzalloc() the siginfo instead of stack allocating it because
+we need to memset() it anyway, and doing this makes it much more
+clear when it got initialized by the MPX instruction decoder.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Changes from the old decoder:
+ * Use the generic decoder instead of custom functions.  Saved
+   ~70 lines of code overall.
+ * Remove insn->addr_bytes code (never used??)
+ * Make sure never to possibly overflow the regoff[] array, plus
+   check the register range correctly in 32 and 64-bit modes.
+ * Allow get_reg() to return an error and have mpx_get_addr_ref()
+   handle when it sees errors.
+ * Only call insn_get_*() near where we actually use the values
+   instead if trying to call them all at once.
+ * Handle short reads from copy_from_user() and check the actual
+   number of read bytes against what we expect from
+   insn_get_length().  If a read stops in the middle of an
+   instruction, we error out.
+ * Actually check the opcodes intead of ignoring them.
+ * Dynamically kzalloc() siginfo_t so we don't leak any stack
+   data.
+ * Detect and handle decoder failures instead of ignoring them.
+
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Based-on-patch-by: Qiaowei Ren <qiaowei.ren@intel.com>
 Cc: linux-mm@kvack.org
 Cc: linux-mips@linux-mips.org
 Cc: Dave Hansen <dave@sr71.net>
-Link: http://lkml.kernel.org/r/20141114151827.CE440F67@viggo.jf.intel.com
+Link: http://lkml.kernel.org/r/20141114151828.5BDD0915@viggo.jf.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/Kconfig           |  4 +++
- arch/x86/include/asm/mpx.h | 36 +++++++++++++++++++
- arch/x86/mm/Makefile       |  2 ++
- arch/x86/mm/mpx.c          | 86 ++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 128 insertions(+)
+ arch/x86/include/asm/mpx.h |  12 +++
+ arch/x86/mm/mpx.c          | 237 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 249 insertions(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ded8a67..967dfe0 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -248,6 +248,10 @@ config HAVE_INTEL_TXT
- 	def_bool y
- 	depends on INTEL_IOMMU && ACPI
- 
-+config X86_INTEL_MPX
-+	def_bool y
-+	depends on CPU_SUP_INTEL
-+
- config X86_32_SMP
- 	def_bool y
- 	depends on X86_32 && SMP
 diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-new file mode 100644
-index 0000000..7d7c5f5
---- /dev/null
+index 7d7c5f5..35bcb1c 100644
+--- a/arch/x86/include/asm/mpx.h
 +++ b/arch/x86/include/asm/mpx.h
-@@ -0,0 +1,36 @@
-+#ifndef _ASM_X86_MPX_H
-+#define _ASM_X86_MPX_H
-+
-+#include <linux/types.h>
-+#include <asm/ptrace.h>
-+
-+#ifdef CONFIG_X86_64
-+
-+/* upper 28 bits [47:20] of the virtual address in 64-bit used to
-+ * index into bounds directory (BD).
-+ */
-+#define MPX_BD_ENTRY_OFFSET	28
-+#define MPX_BD_ENTRY_SHIFT	3
-+/* bits [19:3] of the virtual address in 64-bit used to index into
-+ * bounds table (BT).
-+ */
-+#define MPX_BT_ENTRY_OFFSET	17
-+#define MPX_BT_ENTRY_SHIFT	5
-+#define MPX_IGN_BITS		3
-+
-+#else
-+
-+#define MPX_BD_ENTRY_OFFSET	20
-+#define MPX_BD_ENTRY_SHIFT	2
-+#define MPX_BT_ENTRY_OFFSET	10
-+#define MPX_BT_ENTRY_SHIFT	4
-+#define MPX_IGN_BITS		2
-+
-+#endif
-+
-+#define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
-+#define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
-+
-+#define MPX_BNDSTA_ERROR_CODE	0x3
-+
-+#endif /* _ASM_X86_MPX_H */
-diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-index 6a19ad9..ecfdc46 100644
---- a/arch/x86/mm/Makefile
-+++ b/arch/x86/mm/Makefile
-@@ -30,3 +30,5 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
- obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
+@@ -3,6 +3,7 @@
  
- obj-$(CONFIG_MEMTEST)		+= memtest.o
-+
-+obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
-diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
-new file mode 100644
-index 0000000..72d13b0
---- /dev/null
-+++ b/arch/x86/mm/mpx.c
-@@ -0,0 +1,86 @@
-+/*
-+ * mpx.c - Memory Protection eXtensions
-+ *
-+ * Copyright (c) 2014, Intel Corporation.
-+ * Qiaowei Ren <qiaowei.ren@intel.com>
-+ * Dave Hansen <dave.hansen@intel.com>
-+ */
-+#include <linux/kernel.h>
-+#include <linux/syscalls.h>
-+#include <linux/sched/sysctl.h>
-+
-+#include <asm/mman.h>
-+#include <asm/mpx.h>
-+
-+static const char *mpx_mapping_name(struct vm_area_struct *vma)
+ #include <linux/types.h>
+ #include <asm/ptrace.h>
++#include <asm/insn.h>
+ 
+ #ifdef CONFIG_X86_64
+ 
+@@ -33,4 +34,15 @@
+ 
+ #define MPX_BNDSTA_ERROR_CODE	0x3
+ 
++#ifdef CONFIG_X86_INTEL_MPX
++siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
++				struct xsave_struct *xsave_buf);
++#else
++static inline siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
++					      struct xsave_struct *xsave_buf)
 +{
-+	return "[mpx]";
++	return NULL;
 +}
++#endif /* CONFIG_X86_INTEL_MPX */
 +
-+static struct vm_operations_struct mpx_vma_ops = {
-+	.name = mpx_mapping_name,
+ #endif /* _ASM_X86_MPX_H */
+diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
+index 72d13b0..9009e09 100644
+--- a/arch/x86/mm/mpx.c
++++ b/arch/x86/mm/mpx.c
+@@ -6,6 +6,7 @@
+  * Dave Hansen <dave.hansen@intel.com>
+  */
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/syscalls.h>
+ #include <linux/sched/sysctl.h>
+ 
+@@ -84,3 +85,239 @@ out:
+ 	up_write(&mm->mmap_sem);
+ 	return ret;
+ }
++
++enum reg_type {
++	REG_TYPE_RM = 0,
++	REG_TYPE_INDEX,
++	REG_TYPE_BASE,
 +};
 +
-+/*
-+ * This is really a simplified "vm_mmap". it only handles MPX
-+ * bounds tables (the bounds directory is user-allocated).
-+ *
-+ * Later on, we use the vma->vm_ops to uniquely identify these
-+ * VMAs.
-+ */
-+static unsigned long mpx_mmap(unsigned long len)
++static unsigned long get_reg_offset(struct insn *insn, struct pt_regs *regs,
++				    enum reg_type type)
 +{
-+	unsigned long ret;
-+	unsigned long addr, pgoff;
-+	struct mm_struct *mm = current->mm;
-+	vm_flags_t vm_flags;
-+	struct vm_area_struct *vma;
++	int regno = 0;
 +
-+	/* Only bounds table and bounds directory can be allocated here */
-+	if (len != MPX_BD_SIZE_BYTES && len != MPX_BT_SIZE_BYTES)
-+		return -EINVAL;
-+
-+	down_write(&mm->mmap_sem);
-+
-+	/* Too many mappings? */
-+	if (mm->map_count > sysctl_max_map_count) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	/* Obtain the address to map to. we verify (or select) it and ensure
-+	 * that it represents a valid section of the address space.
++	static const int regoff[] = {
++		offsetof(struct pt_regs, ax),
++		offsetof(struct pt_regs, cx),
++		offsetof(struct pt_regs, dx),
++		offsetof(struct pt_regs, bx),
++		offsetof(struct pt_regs, sp),
++		offsetof(struct pt_regs, bp),
++		offsetof(struct pt_regs, si),
++		offsetof(struct pt_regs, di),
++#ifdef CONFIG_X86_64
++		offsetof(struct pt_regs, r8),
++		offsetof(struct pt_regs, r9),
++		offsetof(struct pt_regs, r10),
++		offsetof(struct pt_regs, r11),
++		offsetof(struct pt_regs, r12),
++		offsetof(struct pt_regs, r13),
++		offsetof(struct pt_regs, r14),
++		offsetof(struct pt_regs, r15),
++#endif
++	};
++	int nr_registers = ARRAY_SIZE(regoff);
++	/*
++	 * Don't possibly decode a 32-bit instructions as
++	 * reading a 64-bit-only register.
 +	 */
-+	addr = get_unmapped_area(NULL, 0, len, 0, MAP_ANONYMOUS | MAP_PRIVATE);
-+	if (addr & ~PAGE_MASK) {
-+		ret = addr;
-+		goto out;
++	if (IS_ENABLED(CONFIG_X86_64) && !insn->x86_64)
++		nr_registers -= 8;
++
++	switch (type) {
++	case REG_TYPE_RM:
++		regno = X86_MODRM_RM(insn->modrm.value);
++		if (X86_REX_B(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
++
++	case REG_TYPE_INDEX:
++		regno = X86_SIB_INDEX(insn->sib.value);
++		if (X86_REX_X(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
++
++	case REG_TYPE_BASE:
++		regno = X86_SIB_BASE(insn->sib.value);
++		if (X86_REX_B(insn->rex_prefix.value) == 1)
++			regno += 8;
++		break;
++
++	default:
++		pr_err("invalid register type");
++		BUG();
++		break;
 +	}
 +
-+	vm_flags = VM_READ | VM_WRITE | VM_MPX |
-+			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
-+
-+	/* Set pgoff according to addr for anon_vma */
-+	pgoff = addr >> PAGE_SHIFT;
-+
-+	ret = mmap_region(NULL, addr, len, vm_flags, pgoff);
-+	if (IS_ERR_VALUE(ret))
-+		goto out;
-+
-+	vma = find_vma(mm, ret);
-+	if (!vma) {
-+		ret = -ENOMEM;
-+		goto out;
++	if (regno > nr_registers) {
++		WARN_ONCE(1, "decoded an instruction with an invalid register");
++		return -EINVAL;
 +	}
-+	vma->vm_ops = &mpx_vma_ops;
++	return regoff[regno];
++}
 +
-+	if (vm_flags & VM_LOCKED) {
-+		up_write(&mm->mmap_sem);
-+		mm_populate(ret, len);
-+		return ret;
++/*
++ * return the address being referenced be instruction
++ * for rm=3 returning the content of the rm reg
++ * for rm!=3 calculates the address using SIB and Disp
++ */
++static void __user *mpx_get_addr_ref(struct insn *insn, struct pt_regs *regs)
++{
++	unsigned long addr, addr_offset;
++	unsigned long base, base_offset;
++	unsigned long indx, indx_offset;
++	insn_byte_t sib;
++
++	insn_get_modrm(insn);
++	insn_get_sib(insn);
++	sib = insn->sib.value;
++
++	if (X86_MODRM_MOD(insn->modrm.value) == 3) {
++		addr_offset = get_reg_offset(insn, regs, REG_TYPE_RM);
++		if (addr_offset < 0)
++			goto out_err;
++		addr = regs_get_register(regs, addr_offset);
++	} else {
++		if (insn->sib.nbytes) {
++			base_offset = get_reg_offset(insn, regs, REG_TYPE_BASE);
++			if (base_offset < 0)
++				goto out_err;
++
++			indx_offset = get_reg_offset(insn, regs, REG_TYPE_INDEX);
++			if (indx_offset < 0)
++				goto out_err;
++
++			base = regs_get_register(regs, base_offset);
++			indx = regs_get_register(regs, indx_offset);
++			addr = base + indx * (1 << X86_SIB_SCALE(sib));
++		} else {
++			addr_offset = get_reg_offset(insn, regs, REG_TYPE_RM);
++			if (addr_offset < 0)
++				goto out_err;
++			addr = regs_get_register(regs, addr_offset);
++		}
++		addr += insn->displacement.value;
 +	}
++	return (void __user *)addr;
++out_err:
++	return (void __user *)-1;
++}
 +
-+out:
-+	up_write(&mm->mmap_sem);
-+	return ret;
++static int mpx_insn_decode(struct insn *insn,
++			   struct pt_regs *regs)
++{
++	unsigned char buf[MAX_INSN_SIZE];
++	int x86_64 = !test_thread_flag(TIF_IA32);
++	int not_copied;
++	int nr_copied;
++
++	not_copied = copy_from_user(buf, (void __user *)regs->ip, sizeof(buf));
++	nr_copied = sizeof(buf) - not_copied;
++	/*
++	 * The decoder _should_ fail nicely if we pass it a short buffer.
++	 * But, let's not depend on that implementation detail.  If we
++	 * did not get anything, just error out now.
++	 */
++	if (!nr_copied)
++		return -EFAULT;
++	insn_init(insn, buf, nr_copied, x86_64);
++	insn_get_length(insn);
++	/*
++	 * copy_from_user() tries to get as many bytes as we could see in
++	 * the largest possible instruction.  If the instruction we are
++	 * after is shorter than that _and_ we attempt to copy from
++	 * something unreadable, we might get a short read.  This is OK
++	 * as long as the read did not stop in the middle of the
++	 * instruction.  Check to see if we got a partial instruction.
++	 */
++	if (nr_copied < insn->length)
++		return -EFAULT;
++
++	insn_get_opcode(insn);
++	/*
++	 * We only _really_ need to decode bndcl/bndcn/bndcu
++	 * Error out on anything else.
++	 */
++	if (insn->opcode.bytes[0] != 0x0f)
++		goto bad_opcode;
++	if ((insn->opcode.bytes[1] != 0x1a) &&
++	    (insn->opcode.bytes[1] != 0x1b))
++		goto bad_opcode;
++
++	return 0;
++bad_opcode:
++	return -EINVAL;
++}
++
++/*
++ * If a bounds overflow occurs then a #BR is generated. This
++ * function decodes MPX instructions to get violation address
++ * and set this address into extended struct siginfo.
++ *
++ * Note that this is not a super precise way of doing this.
++ * Userspace could have, by the time we get here, written
++ * anything it wants in to the instructions.  We can not
++ * trust anything about it.  They might not be valid
++ * instructions or might encode invalid registers, etc...
++ *
++ * The caller is expected to kfree() the returned siginfo_t.
++ */
++siginfo_t *mpx_generate_siginfo(struct pt_regs *regs,
++				struct xsave_struct *xsave_buf)
++{
++	struct insn insn;
++	uint8_t bndregno;
++	int err;
++	siginfo_t *info;
++
++	err = mpx_insn_decode(&insn, regs);
++	if (err)
++		goto err_out;
++
++	/*
++	 * We know at this point that we are only dealing with
++	 * MPX instructions.
++	 */
++	insn_get_modrm(&insn);
++	bndregno = X86_MODRM_REG(insn.modrm.value);
++	if (bndregno > 3) {
++		err = -EINVAL;
++		goto err_out;
++	}
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		err = -ENOMEM;
++		goto err_out;
++	}
++	/*
++	 * The registers are always 64-bit, but the upper 32
++	 * bits are ignored in 32-bit mode.  Also, note that the
++	 * upper bounds are architecturally represented in 1's
++	 * complement form.
++	 *
++	 * The 'unsigned long' cast is because the compiler
++	 * complains when casting from integers to different-size
++	 * pointers.
++	 */
++	info->si_lower = (void __user *)(unsigned long)
++		(xsave_buf->bndreg[bndregno].lower_bound);
++	info->si_upper = (void __user *)(unsigned long)
++		(~xsave_buf->bndreg[bndregno].upper_bound);
++	info->si_addr_lsb = 0;
++	info->si_signo = SIGSEGV;
++	info->si_errno = 0;
++	info->si_code = SEGV_BNDERR;
++	info->si_addr = mpx_get_addr_ref(&insn, regs);
++	/*
++	 * We were not able to extract an address from the instruction,
++	 * probably because there was something invalid in it.
++	 */
++	if (info->si_addr == (void *)-1) {
++		err = -EINVAL;
++		goto err_out;
++	}
++	return info;
++err_out:
++	return ERR_PTR(err);
 +}
