@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459AbaKRO27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:28:59 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48669 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806AbaKRO25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:28:57 -0500
-Date: Tue, 18 Nov 2014 14:28:24 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: linux-spi@vger.kernel.org, Carlo Caione <carlo@caione.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>
-Message-ID: <20141118142824.GJ22111@sirena.org.uk>
-References: <1416264471-774-1-git-send-email-b.galvani@gmail.com>
- <1416264471-774-4-git-send-email-b.galvani@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sT9gWZPUZYhvPS56"
-Content-Disposition: inline
-In-Reply-To: <1416264471-774-4-git-send-email-b.galvani@gmail.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 81.128.185.34
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 3/4] spi: meson: Add support for Amlogic Meson SPIFC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S932350AbaKRO1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:27:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57207 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755129AbaKROKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:18 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 174/206] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
+Date: Tue, 18 Nov 2014 15:08:49 +0100
+Message-Id: <001172f932584d9af4c76a2dda54ee71ec15dede.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jan Kara <jack@suse.cz>
 
---sT9gWZPUZYhvPS56
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Mon, Nov 17, 2014 at 11:47:50PM +0100, Beniamino Galvani wrote:
-> This is a driver for the Amlogic Meson SPIFC (SPI flash controller),
-> which is one of the two SPI controllers available on the SoC. It
-> doesn't support DMA and has a 64-byte unified transmit/receive buffer.
+===============
 
-This is all good.
+commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
 
---sT9gWZPUZYhvPS56
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
+a multiple of BITS_PER_LONG, they will try to shift a long value by
+BITS_PER_LONG bits which is undefined.  Change the functions to avoid
+the undefined shift.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Coverity id: 1192175
+Coverity id: 1192174
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ lib/bitmap.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-iQEcBAEBAgAGBQJUa1eIAAoJECTWi3JdVIfQ4CsH/is/jUtomdmXalHCodXC1Itp
-HRX6vo3rAYSVLvHK/6u0VRD8H9QyEsnW7fjK+LtcGnHmhwYhcPhwV53Dm381WTJR
-k9NAhjTUCb0iQ/9+0WJ3+dbg+MJz2Mqj5P2q2wjiW5sFrBO11CRkaejhADvUDqCe
-wMWeiJsQoRr90hpWAmDdP5qbqIIDcN/6MopmMuhc3HgvTcmwDKYjV/M+546SRMRW
-rigmpJt9WmI0RB2oZeSWv5Soi41eTldM3Ad1ZCWwwboDBZlbk5cxC4Qte9IqphIx
-ysxVOdFvOwaOIQ4JkWU0EbqUFWwtyRtcTdGml/rUPdBAyfJJqDZb5qPEJ0FQM/o=
-=5SbJ
------END PGP SIGNATURE-----
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 06f7e4fe8d2d..e5c4ebe586ba 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long *dst,
+ 		lower = src[off + k];
+ 		if (left && off + k == lim - 1)
+ 			lower &= mask;
+-		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
++		dst[k] = lower >> rem;
++		if (rem)
++			dst[k] |= upper << (BITS_PER_LONG - rem);
+ 		if (left && k == lim - 1)
+ 			dst[k] &= mask;
+ 	}
+@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *dst,
+ 		upper = src[k];
+ 		if (left && k == lim - 1)
+ 			upper &= (1UL << left) - 1;
+-		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
++		dst[k + off] = upper << rem;
++		if (rem)
++			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
+ 		if (left && k + off == lim - 1)
+ 			dst[k + off] &= (1UL << left) - 1;
+ 	}
+-- 
+2.1.3
 
---sT9gWZPUZYhvPS56--
