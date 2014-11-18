@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaKRNqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:46:03 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:57079 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212AbaKRNqA (ORCPT
+	id S1754340AbaKRNq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:46:28 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:58352 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754075AbaKRNqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:46:00 -0500
-Message-ID: <546B4D8D.2020605@linaro.org>
-Date: Tue, 18 Nov 2014 21:45:49 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v5 01/18] ARM64: Move the init of cpu_logical_map(0) before
- unflatten_device_tree()
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-2-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1413553034-20956-2-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 18 Nov 2014 08:46:25 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 1/3] drm: add bus_formats and nbus_formats fields to drm_display_info
+Date: Tue, 18 Nov 2014 14:46:18 +0100
+Message-Id: <1416318380-20122-2-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416318380-20122-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1416318380-20122-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
+Add bus_formats and nbus_formats fields and
+drm_display_info_set_bus_formats helper function to specify the bus
+formats supported by a given display.
 
-On 2014年10月17日 21:36, Hanjun Guo wrote:
-> It always make sense to initialize CPU0's logical map entry from the
-> hardware values, so move the initialization of cpu_logical_map(0)
-> before unflatten_device_tree() which is needed by ACPI code later.
->
-> Acked-by: Olof Johansson <olof@lixom.net>
-> Acked-by: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+This information can be used by display controller drivers to configure
+the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
+RGB or LVDS busses).
 
-Could you merge this patch first in 3.19? It was acked by Olof and
-Mark, and it will make sense without ACPI too.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ drivers/gpu/drm/drm_crtc.c | 30 ++++++++++++++++++++++++++++++
+ include/drm/drm_crtc.h     |  7 +++++++
+ 2 files changed, 37 insertions(+)
 
-Thanks
-Hanjun
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index e79c8d3..17e3acf 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -763,6 +763,36 @@ static void drm_mode_remove(struct drm_connector *connector,
+ 	drm_mode_destroy(connector->dev, mode);
+ }
+ 
++/*
++ * drm_display_info_set_bus_formats - set the supported bus formats
++ * @info: display info to store bus formats in
++ * @fmts: array containing the supported bus formats
++ * @nfmts: the number of entries in the fmts array
++ *
++ * Store the suppported bus formats in display info structure.
++ */
++int drm_display_info_set_bus_formats(struct drm_display_info *info, const u32 *fmts,
++				     unsigned int num_fmts)
++{
++	u32 *formats = NULL;
++
++	if (!fmts && num_fmts)
++		return -EINVAL;
++
++	if (fmts && num_fmts) {
++		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
++		if (!formats)
++			return -ENOMEM;
++	}
++
++	kfree(info->bus_formats);
++	info->bus_formats = formats;
++	info->num_bus_formats = num_fmts;
++
++	return 0;
++}
++EXPORT_SYMBOL(drm_display_info_set_bus_formats);
++
+ /**
+  * drm_connector_get_cmdline_mode - reads the user's cmdline mode
+  * @connector: connector to quwery
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index c40070a..2e0a3e8 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -31,6 +31,7 @@
+ #include <linux/idr.h>
+ #include <linux/fb.h>
+ #include <linux/hdmi.h>
++#include <linux/media-bus-format.h>
+ #include <uapi/drm/drm_mode.h>
+ #include <uapi/drm/drm_fourcc.h>
+ #include <drm/drm_modeset_lock.h>
+@@ -130,6 +131,9 @@ struct drm_display_info {
+ 	enum subpixel_order subpixel_order;
+ 	u32 color_formats;
+ 
++	const u32 *bus_formats;
++	int num_bus_formats;
++
+ 	/* Mask of supported hdmi deep color modes */
+ 	u8 edid_hdmi_dc_modes;
+ 
+@@ -982,6 +986,9 @@ extern int drm_mode_connector_set_path_property(struct drm_connector *connector,
+ extern int drm_mode_connector_update_edid_property(struct drm_connector *connector,
+ 						struct edid *edid);
+ 
++extern int drm_display_info_set_bus_formats(struct drm_display_info *info,
++					    const u32 *fmts, unsigned int nfmts);
++
+ static inline bool drm_property_type_is(struct drm_property *property,
+ 		uint32_t type)
+ {
+-- 
+1.9.1
 
-> ---
->   arch/arm64/kernel/setup.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-> index edb146d..8f33f72 100644
-> --- a/arch/arm64/kernel/setup.c
-> +++ b/arch/arm64/kernel/setup.c
-> @@ -393,11 +393,11 @@ void __init setup_arch(char **cmdline_p)
->
->   	efi_idmap_init();
->
-> +	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
->   	unflatten_device_tree();
->
->   	psci_init();
->
-> -	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
->   	cpu_read_bootcpu_ops();
->   #ifdef CONFIG_SMP
->   	smp_init_cpus();
->
