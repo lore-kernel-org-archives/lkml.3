@@ -1,123 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626AbaKRFcD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 00:32:03 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:45892 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaKRFcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 00:32:01 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-87-546ad9cef7b9
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-References: <1416275874-74186-1-git-send-email-jaegeuk@kernel.org>
- <1416275874-74186-2-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1416275874-74186-2-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [f2fs-dev] [PATCH 2/2] f2fs: put the inode page when error was
-	occurred
-Date: Tue, 18 Nov 2014 13:30:46 +0800
-Message-id: <006b01d002f0$f6da1b80$e48e5280$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHZW/gja68DRPNNXXI/+0pWUwbvuQHXm/0dnERrtsA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t9jQd1zN7NCDK4dNrd4sn4Ws8WlRe4W
-	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmKyyYlNSezLLVI3y6BK+Po/83sBc3CFUtf
-	9bE3MM7k72Lk5JAQMJG4vvgQG4QtJnHh3nogm4tDSGA6o8SP3kWsIAkhgR+MEnMvFYLYbAIq
-	Ess7/jOBFIkI9AIVnelnhiiqlpjx8BkLiM0p4CzxYvc7sGZhgTCJf/svgtksAqoSxz62gNm8
-	ApYSW480QdmCEj8m3wPrZRbQkli/8zgThC0vsXnNW2aI6xQkdpx9zdjFyAG02Epi3jtRiBJx
-	iY1HbrFMYBSchWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwQH+
-	TGoH48oGi0OMAhyMSjy8CVOzQoRYE8uKK3MPMUpwMCuJ8J7rBgrxpiRWVqUW5ccXleakFh9i
-	lOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgXLevxY/5zOFZtSs271m1o3SZlEKjc9P7
-	X4HsJSs/H50tci2No3rPnV+3j/BO5Jx5KmH2hWuL7657wzRzp/66cwFP5k1c9qnpHqNmw8+Y
-	x3K9O1/nGkyZ0newQsBLfeeUuzGT1ktu8It8zbdKQiS3Ybf/x73Hq55+vrqpxLBfNCZ3rePm
-	edwLhA8qsRRnJBpqMRcVJwIAmesgS2wCAAA=
+	id S1752212AbaKRFya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 00:54:30 -0500
+Received: from mail-bl2on0142.outbound.protection.outlook.com ([65.55.169.142]:43664
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750918AbaKRFy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 00:54:28 -0500
+X-Greylist: delayed 83231 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 00:54:28 EST
+Date: Tue, 18 Nov 2014 12:47:28 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>,
+        <p.zabel@pengutronix.de>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <michal.simek@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 07/13] usb: chipidea: fix phy handling
+Message-ID: <20141118044727.GB15650@shlinux2>
+References: <1416231347-27193-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1416231347-27193-8-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1416231347-27193-8-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(199003)(51704005)(64706001)(99396003)(76176999)(97736003)(21056001)(107046002)(54356999)(87936001)(77156002)(104016003)(62966003)(110136001)(33656002)(47776003)(84676001)(20776003)(68736004)(50986999)(19580395003)(83506001)(6806004)(50466002)(120916001)(105606002)(102836001)(33716001)(4396001)(85426001)(575784001)(31966008)(92726001)(23726002)(44976005)(19580405001)(92566001)(86362001)(46102003)(106466001)(95666004)(46406003)(97756001)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0640;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-Forefront-PRVS: 039975700A
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0861;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
-
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Tuesday, November 18, 2014 9:58 AM
-> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Cc: Jaegeuk Kim
-> Subject: [f2fs-dev] [PATCH 2/2] f2fs: put the inode page when error was occurred
+On Mon, Nov 17, 2014 at 02:35:41PM +0100, Antoine Tenart wrote:
+> The generic plaftorm device for ChipIdea drivers is probed by calling
+> ci_hdrc_probe. The device structure used is not the one of the specific
+> ChipIdea driver but the one of the generic ChipIdea platform device.
 > 
-> We should put the inode page when error was occurred.
+> This results in not being able to probe the PHYs as we're not using the
+> right device structure. Since all ChipIdea drivers are retrieving their
+> PHYs in their specific driver code, this didn't impact any of them yet.
 > 
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-
-You can add Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-after the following issue is fixed.
-
+> Fixes it using the right device structure (dev->parent).
+> 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 > ---
->  fs/f2fs/data.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
+>  drivers/usb/chipidea/core.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index 8f16443..12dd58a 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -963,22 +963,22 @@ repeat:
->  		} else if (page->index == 0) {
->  			err = f2fs_convert_inline_page(&dn, page);
->  			if (err)
-> -				goto unlock_fail;
-> +				goto put_fail;
->  		} else {
->  			struct page *p = grab_cache_page(inode->i_mapping, 0);
->  			if (!p) {
->  				err = -ENOMEM;
-> -				goto unlock_fail;
-> +				goto put_fail;
->  			}
->  			err = f2fs_convert_inline_page(&dn, p);
->  			f2fs_put_page(p, 1);
->  			if (err)
-> -				goto unlock_fail;
-> +				goto put_fail;
->  		}
->  	}
->  	err = f2fs_reserve_block(&dn, index);
->  	if (err)
-> -		goto unlock_fail;
-> +		goto put_fail;
-
-f2fs_reserve_block will do the clean work, we should not release dn again.
-
-Thanks,
-Yu
-
->  put_next:
->  	f2fs_put_dnode(&dn);
->  	f2fs_unlock_op(sbi);
-> @@ -1021,6 +1021,8 @@ out:
->  	clear_cold_data(page);
->  	return 0;
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index de1e4a84aa93..068e0c6acc3f 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -686,8 +686,8 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+>  	} else if (ci->platdata->usb_phy) {
+>  		ci->usb_phy = ci->platdata->usb_phy;
+>  	} else {
+> -		ci->phy = devm_phy_get(dev, "usb-phy");
+> -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> +		ci->phy = devm_phy_get(dev->parent, "usb-phy");
+> +		ci->usb_phy = devm_usb_get_phy(dev->parent, USB_PHY_TYPE_USB2);
+>  
+>  		/* if both generic PHY and USB PHY layers aren't enabled */
+>  		if (PTR_ERR(ci->phy) == -ENOSYS &&
+> -- 
+> 2.1.0
 > 
-> +put_fail:
-> +	f2fs_put_dnode(&dn);
->  unlock_fail:
->  	f2fs_unlock_op(sbi);
->  	f2fs_put_page(page, 1);
-> --
-> 2.1.1
-> 
-> 
-> ------------------------------------------------------------------------------
-> Download BIRT iHub F-Type - The Free Enterprise-Grade BIRT Server
-> from Actuate! Instantly Supercharge Your Business Reports and Dashboards
-> with Interactivity, Sharing, Native Excel Exports, App Integration & more
-> Get technology previously reserved for billion-dollar corporations, FREE
-> http://pubads.g.doubleclick.net/gampad/clk?id=157005751&iu=/4140/ostg.clktrk
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
+Acked-by: Peter Chen <peter.chen@freescale.com>
+
+-- 
+
+Best Regards,
+Peter Chen
