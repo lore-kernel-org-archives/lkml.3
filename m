@@ -1,161 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951AbaKRXTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:19:10 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:40093 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932188AbaKRXTI (ORCPT
+	id S932956AbaKRXVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:21:12 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59672 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932490AbaKRXVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:19:08 -0500
-Message-ID: <546BD3DB.7050207@gmail.com>
-Date: Wed, 19 Nov 2014 07:18:51 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Nov 2014 18:21:11 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 19 Nov 2014 08:21:39 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>,
+        Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [PATCH] zsmalloc: correct fragile [kmap|kunmap]_atomic use
+Message-ID: <20141118232139.GA7393@bbox>
+References: <1415927461-14220-1-git-send-email-minchan@kernel.org>
+ <20141114150732.GA2402@cerebellum.variantweb.net>
+ <20141118150138.668c81fda55c3ce39d7b2aac@linux-foundation.org>
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
- hotplug
-References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com> <546377FC.4090408@arm.com>
-In-Reply-To: <546377FC.4090408@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141118150138.668c81fda55c3ce39d7b2aac@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-On 11/12/14, 11:08 PM, Juri Lelli wrote:
-> Hi,
->
-> On 12/11/14 01:06, Wanpeng Li wrote:
->> I observe that dl task can't be migrated to other cpus during cpu hotplug,
->> in addition, task may/may not be running again if cpu is added back. The
->> root cause which I found is that dl task will be throtted and removed from
->> dl rq after comsuming all budget, which leads to stop task can't pick it up
->> from dl rq and migrate to other cpus during hotplug.
->>
->> The method to reproduce:
->> schedtool -E -t 50000:100000 -e ./test
->> Actually test is just a simple for loop. Then observe which cpu the test
->> task is on.
->> echo 0 > /sys/devices/system/cpu/cpuN/online
->>
->> This patch adds the dl task migration during cpu hotplug by finding a most
->> suitable later deadline rq after dl timer fire if current rq is offline,
->> if fail to find a suitable later deadline rq then fallback to any eligible
->> online cpu in order that the deadline task will come back to us, and the
->> push/pull mechanism should then move it around properly.
->>
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> v4 -> v5:
->>   * remove raw_spin_unlock(&rq->lock)
->>   * cleanup codes, spotted by Peterz
->>   * cleanup patch description
->> v3 -> v4:
->>   * use tsk_cpus_allowed wrapper
->>   * fix compile error
->> v2 -> v3:
->>   * don't get_task_struct
->>   * if cannot preempt any rq, fallback to pick any online cpus
->>   * use cpu_active_mask as original later_mask if cpu is offline
->> v1 -> v2:
->>   * push the task to another cpu in dl_task_timer() if rq is offline.
->>
->>   kernel/sched/deadline.c | 43 +++++++++++++++++++++++++++++++++++++++++--
->>   1 file changed, 41 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index f3d7776..7c31906 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
->>   	return hrtimer_active(&dl_se->dl_timer);
->>   }
->>   
->> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
->>   /*
->>    * This is the bandwidth enforcement timer callback. If here, we know
->>    * a task is not on its dl_rq, since the fact that the timer was running
->> @@ -538,6 +539,43 @@ again:
->>   	update_rq_clock(rq);
->>   	dl_se->dl_throttled = 0;
->>   	dl_se->dl_yielded = 0;
->> +
->> +	/*
->> +	 * So if we find that the rq the task was on is no longer
->> +	 * available, we need to select a new rq.
->> +	 */
->> +	if (unlikely(!rq->online)) {
->> +		struct rq *later_rq = NULL;
->> +
->> +		later_rq = find_lock_later_rq(p, rq);
->> +
->> +		if (!later_rq) {
->> +			int cpu;
->> +
->> +			/*
->> +			 * If cannot preempt any rq, fallback to pick any
->> +			 * online cpu.
->> +			 */
->> +			cpu = cpumask_any_and(cpu_active_mask,
->> +					tsk_cpus_allowed(p));
->> +			if (cpu >= nr_cpu_ids) {
->> +				pr_warn("fail to find any online cpu and task will never come back\n");
->> +				goto unlock;
->> +			}
->> +			later_rq = cpu_rq(cpu);
->> +		}
->> +
->> +		deactivate_task(rq, p, 0);
->> +		set_task_cpu(p, later_rq->cpu);
->> +		activate_task(later_rq, p, 0);
->> +
->> +		resched_curr(later_rq);
->> +
->> +		double_unlock_balance(rq, later_rq);
->> +
->> +		goto unlock;
->> +	}
->> +
->>   	if (task_on_rq_queued(p)) {
->>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
->>   		if (dl_task(rq->curr))
->> @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
->>   	 * We have to consider system topology and task affinity
->>   	 * first, then we can look for a suitable cpu.
->>   	 */
->> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
->> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
->> +	cpumask_copy(later_mask, cpu_active_mask);
->> +	if (likely(task_rq(task)->online))
->> +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
-> So, here you consider the span only when the task_rq is online,
-> but there might be others cpus still online belonging to the same
-> rd->span. And you have to consider them when migrating. Actually,
-> migration must still be restricted to the online cpus of task's
-> original rd->span, or I fear you can break clustered scheduling.
+Hello Andrew,
 
-Sorry, what's clustered scheduling?
+On Tue, Nov 18, 2014 at 03:01:38PM -0800, Andrew Morton wrote:
+> On Fri, 14 Nov 2014 09:07:32 -0600 Seth Jennings <sjennings@variantweb.net> wrote:
+> 
+> > On Fri, Nov 14, 2014 at 10:11:01AM +0900, Minchan Kim wrote:
+> > > The kunmap_atomic should use virtual address getting by kmap_atomic.
+> > > However, some pieces of code in zsmalloc uses modified address,
+> > > not the one got by kmap_atomic for kunmap_atomic.
+> > > 
+> > > It's okay for working because zsmalloc modifies the address
+> > > inner PAGE_SIZE bounday so it works with current kmap_atomic's
+> > > implementation. But it's still fragile with potential changing
+> > > of kmap_atomic so let's correct it.
+> 
+> It is a bit alarming, but I've seen code elsewhere in which a modified
+> pointer is passed to kunmap_atomic().  So the kunmap_atomic() interface
+> is "kvaddr should point somewhere into the page" and that won't be
+> changing without a big effort.
+> 
+> > Seems like you could just use PAGE_MASK to get the base page address
+> > from link like this:
+> 
+> I think Minchan's approach is better: it explicitly retains the
+> kmap_atomic() return value for passing to kunmap_atomic().  That's
+> nicer than modifying it and then setting it back again.
+> 
+> I mean, a cleaner way of implementing your suggestion would be
+> 
+> void kunmap_atomic_unaligned(void *p)
+> {
+> 	kunmap_atomic(void *)((unsigned long)p & PAGE_MASK);
+> }
+> 
+> but then one looks at
+> 
+> void __kunmap_atomic(void *kvaddr)
+> {
+> 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+> 
+> and asks "what the heck".
+> 
+> 
+> So I dunno.  We could leave the code as-is.  I have no strong feelings
+> either way.  Minchan's patch has no effect on zsmalloc.o section sizes
+> with my compiler.
 
-Regards,
-Wanpeng Li
+I hope to merge my patch.
 
->
-> Thanks,
->
-> - Juri
->
->>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->>   			task, later_mask);
->>
+Main reason I sent the patch is I got a subtle bug when I implement
+new feature of zsmalloc(ie, compaction) due to link's mishandling
+(ie, link was over page boundary by my fault).
+Although it was totally my mistake, it took time for a while
+to find a root cause because unpredictable kmapped address should
+be unmapped so it's almost random crash.
+
+IOW, it's fragile to depend on kunmap_atomic's internal and at least,
+I wanted to make zram code more robust.
+
+Thanks.
+
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+-- 
+Kind regards,
+Minchan Kim
