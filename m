@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaKRIim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:38:42 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:46247 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995AbaKRIhr (ORCPT
+	id S1753987AbaKRIjC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:39:02 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:54965 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950AbaKRIhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:37:47 -0500
+	Tue, 18 Nov 2014 03:37:46 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/10] writeback: move inode_to_bdi() to include/linux/backing-dev.h
-Date: Tue, 18 Nov 2014 03:37:28 -0500
-Message-Id: <1416299848-22112-11-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, Tejun Heo <tj@kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [PATCH 08/10] writeback: cosmetic change in account_page_dirtied()
+Date: Tue, 18 Nov 2014 03:37:26 -0500
+Message-Id: <1416299848-22112-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416299848-22112-1-git-send-email-tj@kernel.org>
 References: <1416299848-22112-1-git-send-email-tj@kernel.org>
@@ -20,59 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-inode_to_bdi() will be used by inline functions for the planned cgroup
-writeback support.  Move it to include/linux/backing-dev.h.
+Flip the polarity of mapping_cap_account_dirty() test so that the body
+of page accounting can be moved outside the if () block.  This will
+help adding cgroup writeback support.
 
-This patch doesn't introduce any behavior changes.
+This causes no logic changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Jan Kara <jack@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c           | 10 ----------
- include/linux/backing-dev.h | 10 ++++++++++
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ mm/page-writeback.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 41c9f1e..5130895 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -66,16 +66,6 @@ int writeback_in_progress(struct backing_dev_info *bdi)
- }
- EXPORT_SYMBOL(writeback_in_progress);
- 
--static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
--{
--	struct super_block *sb = inode->i_sb;
--
--	if (sb_is_blkdev_sb(sb))
--		return inode->i_mapping->backing_dev_info;
--
--	return sb->s_bdi;
--}
--
- static inline struct inode *wb_inode(struct list_head *head)
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 7c721b4..29d5bd2 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2104,15 +2104,16 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
  {
- 	return list_entry(head, struct inode, i_wb_list);
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 918f5c9..3c6fd34 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -253,4 +253,14 @@ static inline int bdi_sched_wait(void *word)
- 	return 0;
- }
+ 	trace_writeback_dirty_page(page, mapping);
  
-+static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
-+{
-+	struct super_block *sb = inode->i_sb;
+-	if (mapping_cap_account_dirty(mapping)) {
+-		__inc_zone_page_state(page, NR_FILE_DIRTY);
+-		__inc_zone_page_state(page, NR_DIRTIED);
+-		__inc_wb_stat(&mapping->backing_dev_info->wb, WB_RECLAIMABLE);
+-		__inc_wb_stat(&mapping->backing_dev_info->wb, WB_DIRTIED);
+-		task_io_account_write(PAGE_CACHE_SIZE);
+-		current->nr_dirtied++;
+-		this_cpu_inc(bdp_ratelimits);
+-	}
++	if (!mapping_cap_account_dirty(mapping))
++		return;
 +
-+	if (sb_is_blkdev_sb(sb))
-+		return inode->i_mapping->backing_dev_info;
-+
-+	return sb->s_bdi;
-+}
-+
- #endif		/* _LINUX_BACKING_DEV_H */
++	__inc_zone_page_state(page, NR_FILE_DIRTY);
++	__inc_zone_page_state(page, NR_DIRTIED);
++	__inc_wb_stat(&mapping->backing_dev_info->wb, WB_RECLAIMABLE);
++	__inc_wb_stat(&mapping->backing_dev_info->wb, WB_DIRTIED);
++	task_io_account_write(PAGE_CACHE_SIZE);
++	current->nr_dirtied++;
++	this_cpu_inc(bdp_ratelimits);
+ }
+ EXPORT_SYMBOL(account_page_dirtied);
+ 
 -- 
 1.9.3
 
