@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777AbaKRVPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 16:15:39 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:51770 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074AbaKRVPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 16:15:34 -0500
-Date: Tue, 18 Nov 2014 22:15:31 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory
- debugger.
-Message-ID: <20141118211531.GH12538@two.firstfloor.org>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
- <5461B906.1040803@samsung.com>
- <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
+	id S932673AbaKRVR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 16:17:26 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41263 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932145AbaKRVRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 16:17:25 -0500
+Date: Tue, 18 Nov 2014 15:17:34 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <bigeasy@linutronix.de>
+Subject: Re: [PATCH] usb: musb: core: Disable the Interrupts till BABBLE is
+ fully handled
+Message-ID: <20141118211734.GA19146@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415953486-6000-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
 Content-Disposition: inline
-In-Reply-To: <20141118125843.434c216540def495d50f3a45@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1415953486-6000-1-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It's a huge pile of tricky code we'll need to maintain.  To justify its
-> inclusion I think we need to be confident that kasan will find a
-> significant number of significant bugs that
-> kmemcheck/debug_pagealloc/slub_debug failed to detect.
+--uAKRQypu60I7Lcqm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I would put it differently. kmemcheck is effectively too slow to run
-regularly. kasan is much faster and covers most of kmemcheck.
+On Fri, Nov 14, 2014 at 01:54:46PM +0530, George Cherian wrote:
+> Disable the MUSB interrupts till MUSB is recovered fully from BABBLE
+> condition. There are chances that we could get multiple interrupts
+> till the time the babble recover work gets scheduled. Sometimes
+> this could even end up in an endless loop making MUSB itself unusable.
+>=20
+> Reported-by: Felipe Balbi <balbi@ti.com>=09
+> Signed-off-by: George Cherian <george.cherian@ti.com>
 
-So I would rather see it as a more practical replacement to
-kmemcheck, not an addition.
+while this helps the situation it doesn't solve the problem I'm having
+with testusb on BBB when host port is connected to peripheral port on
+the same BBB.
 
-> How do we get that confidence?  I've seen a small number of
-> minorish-looking kasan-detected bug reports go past, maybe six or so. 
-> That's in a 20-year-old code base, so one new minor bug discovered per
-> three years?  Not worth it!
-> 
-> Presumably more bugs will be exposed as more people use kasan on
-> different kernel configs, but will their number and seriousness justify
-> the maintenance effort?
+I still have:
 
-I would expect so. It's also about saving developer time.
+# ./testusb -t 13 -c 10 -s 2048 -a
+unknown speed   /dev/bus/usb/002/004    0
+[  114.811407] usbtest 2-1:3.0: set altsetting to 0 failed, -71
+/dev/bus/usb/002/004 test 13 --> 71 (error 71)
+[  114.862387] CAUTION: musb: Babble Interrupt Occurred
+[  114.868132] usb 2-1: USB disconnect, device number 4
+[  114.961491] musb-hdrc musb-hdrc.1.auto: Restarting MUSB to recover from =
+Babble
+[  115.430829] usb 2-1: new high-speed USB device number 5 using musb-hdrc
+[  115.573471] zero gadget: high-speed config #3: source/sink
+[  115.584014] usbtest 2-1:3.0: Linux gadget zero
+[  115.588682] usbtest 2-1:3.0: high-speed {control in/out bulk-in bulk-out=
+} tests (+alt)
 
-IMHO getting better tools like this is the only way to keep
-up with growing complexity.
+I think the driver is mis-detecting Babble. A babble only occurs when
+the device side tries to move data without the host asking for anything.
 
-> If kasan will permit us to remove kmemcheck/debug_pagealloc/slub_debug
-> then that tips the balance a little.  What's the feasibility of that?
+--=20
+balbi
 
-Maybe removing kmemcheck. slub_debug/debug_pagealloc are simple, and are in
-different niches (lower overhead debugging)
+--uAKRQypu60I7Lcqm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--Andi
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+iQIcBAEBAgAGBQJUa7duAAoJEIaOsuA1yqREMsgP+gJ17mTmPM05UbeiavT1dOnG
+Dcfr2T6W1V63YxgDS9FrDxpCMiMDDtYGFH6V0qY376FRZoEfQwSA8JZR13pNk2WF
+OmI7LmJ2Spe5w6BbsKWEg/P+6Td+GOjFlFzA1QHGKMPplKZMEmC0IX6CrKktLjD5
+zzxyYraYvyaUO8aqohfkRh9sTPd5oiyR1SAUqYJdddqGefbocZylrv1nMLdLV6dn
+GYVvblhEijbfyRZTK7znyifBcUslbNFIU4DlkYBCdrP8DT9JOwwUJTqoa0mkK2kq
+uM0ZRjyjSmZOdspywA+2ZdkgyBEK4rLGXFDT5P4jePj+3RPF8ByjrXwYYpA2Uczc
+DO98dXXv/W9JcqH/POumzxNkTnn6aD5snGZvmv9+9fzPefMalB7ElIvfhRW9vPgT
+RuLpnUtWjUmSNdW4cD/eTMnFKyncVd3bthN2WdvcW/WcJn4yLz6AO2AyQBEJQ1hc
+nWBRUAsEb0MtrjUtFI/jJx8v94xUgKQokPbEXeRGC4ocPvL3eK/+aa2QqhemRwtx
+oL8S5cGPteXhPVhSsr2tvrF2nbj755FJogMywF6Rv+us1j3annCZXA8yE7rCLUHa
+qYeuHjbdaAE3FsJxrxX9w92mZYsSuWgldmlIQM6gd4s9AEz2QDLm0Uv7zdE8KStp
+JU5AsqZ1Ul+8c4cDnv/2
+=SM5F
+-----END PGP SIGNATURE-----
+
+--uAKRQypu60I7Lcqm--
