@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099AbaKRObb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:31:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57191 "EHLO mx2.suse.de"
+	id S1755822AbaKROb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:31:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57040 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755120AbaKROKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755121AbaKROKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:17 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 170/206] usb: Do not allow usb_alloc_streams on unconfigured devices
-Date: Tue, 18 Nov 2014 15:08:45 +0100
-Message-Id: <bfdb4179ec3f9339062196ce922431ff27a2d99d.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 173/206] cgroup/kmemleak: add kmemleak_free() for cgroup deallocations.
+Date: Tue, 18 Nov 2014 15:08:48 +0100
+Message-Id: <e005085a9e12af146a56354d36b540700e694c95.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -22,82 +25,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Wang Nan <wangnan0@huawei.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 90a646c770c50cc206ceba0d7b50453c46c13c36 upstream.
+commit 401507d67d5c2854f5a88b3f93f64fc6f267bca5 upstream.
 
-This commit fixes the following oops:
+Commit ff7ee93f4715 ("cgroup/kmemleak: Annotate alloc_page() for cgroup
+allocations") introduces kmemleak_alloc() for alloc_page_cgroup(), but
+corresponding kmemleak_free() is missing, which makes kmemleak be
+wrongly disabled after memory offlining.  Log is pasted at the end of
+this commit message.
 
-[10238.622067] scsi host3: uas_eh_bus_reset_handler start
-[10240.766164] usb 3-4: reset SuperSpeed USB device number 3 using xhci_hcd
-[10245.779365] usb 3-4: device descriptor read/8, error -110
-[10245.883331] usb 3-4: reset SuperSpeed USB device number 3 using xhci_hcd
-[10250.897603] usb 3-4: device descriptor read/8, error -110
-[10251.058200] BUG: unable to handle kernel NULL pointer dereference at  0000000000000040
-[10251.058244] IP: [<ffffffff815ac6e1>] xhci_check_streams_endpoint+0x91/0x140
-<snip>
-[10251.059473] Call Trace:
-[10251.059487]  [<ffffffff815aca6c>] xhci_calculate_streams_and_bitmask+0xbc/0x130
-[10251.059520]  [<ffffffff815aeb5f>] xhci_alloc_streams+0x10f/0x5a0
-[10251.059548]  [<ffffffff810a4685>] ? check_preempt_curr+0x75/0xa0
-[10251.059575]  [<ffffffff810a46dc>] ? ttwu_do_wakeup+0x2c/0x100
-[10251.059601]  [<ffffffff810a49e6>] ? ttwu_do_activate.constprop.111+0x66/0x70
-[10251.059635]  [<ffffffff815779ab>] usb_alloc_streams+0xab/0xf0
-[10251.059662]  [<ffffffffc0616b48>] uas_configure_endpoints+0x128/0x150 [uas]
-[10251.059694]  [<ffffffffc0616bac>] uas_post_reset+0x3c/0xb0 [uas]
-[10251.059722]  [<ffffffff815727d9>] usb_reset_device+0x1b9/0x2a0
-[10251.059749]  [<ffffffffc0616f42>] uas_eh_bus_reset_handler+0xb2/0x190 [uas]
-[10251.059781]  [<ffffffff81514293>] scsi_try_bus_reset+0x53/0x110
-[10251.059808]  [<ffffffff815163b7>] scsi_eh_bus_reset+0xf7/0x270
-<snip>
+This patch add kmemleak_free() into free_page_cgroup().  During page
+offlining, this patch removes corresponding entries in kmemleak rbtree.
+After that, the freed memory can be allocated again by other subsystems
+without killing kmemleak.
 
-The problem is the following call sequence (simplified):
+  bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
 
-1) usb_reset_device
-2)  usb_reset_and_verify_device
-2)   hub_port_init
-3)    hub_port_finish_reset
-3)     xhci_discover_or_reset_device
-        This frees xhci->devs[slot_id]->eps[ep_index].ring for all eps but 0
-4)    usb_get_device_descriptor
-       This fails
-5)   hub_port_init fails
-6)  usb_reset_and_verify_device fails, does not restore device config
-7)  uas_post_reset
-8)   xhci_alloc_streams
-      NULL deref on the free-ed ring
+  Offlined Pages 32768
+  kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
+  CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  Call Trace:
+    dump_stack+0x46/0x58
+    create_object+0x266/0x2c0
+    kmemleak_alloc+0x26/0x50
+    kmem_cache_alloc+0xd3/0x160
+    __sigqueue_alloc+0x49/0xd0
+    __send_signal+0xcb/0x410
+    send_signal+0x45/0x90
+    __group_send_sig_info+0x13/0x20
+    do_notify_parent+0x1bb/0x260
+    do_exit+0x767/0xa40
+    do_group_exit+0x44/0xa0
+    SyS_exit_group+0x17/0x20
+    system_call_fastpath+0x16/0x1b
 
-This commit fixes this by not allowing usb_alloc_streams to continue if
-the device is not configured.
+  kmemleak: Kernel memory leak detector disabled
+  kmemleak: Object 0xffff880016900000 (size 524288):
+  kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
+  kmemleak:   min_count = 0
+  kmemleak:   count = 0
+  kmemleak:   flags = 0x1
+  kmemleak:   checksum = 0
+  kmemleak:   backtrace:
+        log_early+0x63/0x77
+        kmemleak_alloc+0x4b/0x50
+        init_section_page_cgroup+0x7f/0xf5
+        page_cgroup_init+0xc5/0xd0
+        start_kernel+0x333/0x408
+        x86_64_start_reservations+0x2a/0x2c
+        x86_64_start_kernel+0xf5/0xfc
 
-Note that we do allow usb_free_streams to continue after a (logical)
-disconnect, as it is necessary to explicitly free the streams at the xhci
-controller level.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Fixes: ff7ee93f4715 (cgroup/kmemleak: Annotate alloc_page() for cgroup allocations)
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/core/hcd.c | 2 ++
- 1 file changed, 2 insertions(+)
+ mm/page_cgroup.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index d6a8d23f047b..830063cb4343 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2053,6 +2053,8 @@ int usb_alloc_streams(struct usb_interface *interface,
- 		return -EINVAL;
- 	if (dev->speed != USB_SPEED_SUPER)
- 		return -EINVAL;
-+	if (dev->state < USB_STATE_CONFIGURED)
-+		return -ENODEV;
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 6d757e3a872a..e007236f345a 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -170,6 +170,7 @@ static void free_page_cgroup(void *addr)
+ 			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
  
- 	/* Streams only apply to bulk endpoints. */
- 	for (i = 0; i < num_eps; i++)
+ 		BUG_ON(PageReserved(page));
++		kmemleak_free(addr);
+ 		free_pages_exact(addr, table_size);
+ 	}
+ }
 -- 
 2.1.3
 
