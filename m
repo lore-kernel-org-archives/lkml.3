@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaKRKTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:19:13 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37912 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753674AbaKRKTM (ORCPT
+	id S1753995AbaKRKUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:20:04 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:49837 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265AbaKRKUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:19:12 -0500
-Date: Tue, 18 Nov 2014 11:19:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback
- irq_chip.irq_write_msi_msg
-In-Reply-To: <546B10DF.7020807@huawei.com>
-Message-ID: <alpine.DEB.2.11.1411181103360.3909@nanos>
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 18 Nov 2014 05:20:02 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jonas Gorski <jonas.gorski@gmail.com>
+Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
+Date: Tue, 18 Nov 2014 11:19:51 +0100
+Message-ID: <12543154.MaArN0zy9N@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAJiQ=7B6Xwz2iqqH4vEG8WzPOzHj7NHsuGWqq49uy-E34RHp4A@mail.gmail.com>
+References: <1416097066-20452-1-git-send-email-cernekee@gmail.com> <3357597.nYlNZ6O0nJ@wuerfel> <CAJiQ=7B6Xwz2iqqH4vEG8WzPOzHj7NHsuGWqq49uy-E34RHp4A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:J+GcyzG5e8+IZqaDVFOygOa1NjCOebCZGc92OQUYqGS
+ 9u905NTZD5ojaaEAOx0NhSGkcaqd3n/sPlM+rFT370Wk/QT9OZ
+ G82K9YYxCRqARcUkufnjKTl7KPpLdwJQ372lntNIMJTpLzGLYx
+ L5lQ66sBSxhOSZKYNKynygrUac46MWBvyuK5d5eMMxHXAw7RIy
+ Ugj9Bn/CeIEHu+MMi5vxW7okxaT5Jwipk7i6TeOL29CqMIGExu
+ 17dkOFpHcwz67y+XZpNeajuFexopSqytXYCrQq49QgBYgqDYea
+ n1rB2rBkLdnLiuQn7wOLpCOUuQEvZzFJOPsSCm9hT0JUdTr+pb
+ dKjMsqHkAWTnhJBOQ3xQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
-> On 2014/11/12 21:43, Thomas Gleixner wrote:
-> >  struct irq_chip {
-> > @@ -359,6 +360,7 @@ struct irq_chip {
-> >  	void		(*irq_release_resources)(struct irq_data *data);
-> >  
-> >  	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
-> > +	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+On Monday 17 November 2014 13:21:45 Kevin Cernekee wrote:
+> On Mon, Nov 17, 2014 at 12:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> One possible complication: for BCM63xx/BCM7xxx (MIPS) there is no
+> >> decompressor in the kernel.  The firmware loads an ELF image into
+> >> memory and jumps directly to kernel_entry.
+> >>
+> >
+> > Right, that complicates it a bit, but is there a reason why a decompressor
+> > would be hard to do, or would be considered a bad thing?
+> > There is already generic decompressor code in arch/mips/boot/compressed/
+> > that I would assume you could use without firmware changes. Are you
+> > worried about boot time overhead?
 > 
-> Hmm... It's really weird.
-> I don't think it's the interrupt controllers' responsibility to write messages
-> for all the endpoint devices since the methods of configuring message registers
-> may different between these devices. And theoretically, the endpoint devices
-> themselves should take the responsibility to configure their message registers.
-> To say the least, the write_msg callback here still need to call some certain
-> interfaces provided by the corresponding device.
->
-> There would be lots of ARM new devices capable of sending message
-> based interrupts to interrupt controllers, does all the drivers of
-> the devices need to expose a write_msg callback to interrupt
-> controllers?
+> Currently the bootloader is responsible for decompressing the image.
+> On STB the bootloader typically loads a gzipped ELF file; on DSL/CM
+> the bootloader unpacks a custom image format containing an
+> LZMA-compressed kernel in some form.  So we would be
+> double-compressing the same kernel in this scheme.
+> 
+> STB/DSL should be able to boot the arch/mips/boot/compressed "vmlinuz"
+> ELF file; I tested STB.  CM might be questionable, but doesn't need
+> decompressor mods because the bootloader is DT-aware.
+> 
+> Also, the decompressor may need to be modified so that it recognizes /
+> passes / doesn't overwrite DTB blobs coming from the bootloader.  And
+> to make sure it doesn't stomp on any of the code or data that our
+> bootloaders use for their callback mechanisms.
+> 
+> So, one possibility is to submit a V3 patch which allows 0 or 1 DTB
+> files to be compiled in statically (similar to
+> CONFIG_ARM_APPENDED_DTB) and requires a DT-aware bootloader or
+> decompressor for anything else.  Any opinions?
 
-Well, writing the message _IS_ part of the interrupt controller.
+That sounds like a good approach, in particular with the patch that
+Jonas linked to. With that, most or all of your arch/mips/bmips/setup.c
+should become completely generic, and I would think the rest can
+be handled through a function that is called after looking up the
+root "compatible" property in DT.
 
-So in order to enable non PCI based MSI we want to have generic
-infrastructure with minimal per device/device class callbacks and of
-course you need to provide that callback for your special device.
-
-We already have non PCI based MSI controllers in x86 today and we need
-to handle the whole stuff with tons of copied coded extra for each of
-those. So consolidating it into common infrastructure allows us to get
-rid of the pointless copied code and reduce the per device effort to
-the relevant hardware specific callbacks. irq_write_msi_msg being one
-of those.
-
-Thanks,
-
-	tglx
-
-
-
-
-
-
-
+	Arnd
