@@ -1,104 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956AbaKRXVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:21:12 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:59672 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490AbaKRXVL (ORCPT
+	id S1754890AbaKRXWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:22:48 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53807 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754318AbaKRXWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:21:11 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 19 Nov 2014 08:21:39 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [PATCH] zsmalloc: correct fragile [kmap|kunmap]_atomic use
-Message-ID: <20141118232139.GA7393@bbox>
-References: <1415927461-14220-1-git-send-email-minchan@kernel.org>
- <20141114150732.GA2402@cerebellum.variantweb.net>
- <20141118150138.668c81fda55c3ce39d7b2aac@linux-foundation.org>
+	Tue, 18 Nov 2014 18:22:47 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Torokhov <dtor@chromium.org>
+Cc: "Rafael J. Wysocki" <rafael@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: do not fail suspend if unable to configure wakeup
+Date: Wed, 19 Nov 2014 00:43:51 +0100
+Message-ID: <2163272.NHMRkNIupX@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAE_wzQ8FTtnMGTxyaFu8=QqyuD0=W_ZyWXCf9_BK1sWKZHh95g@mail.gmail.com>
+References: <20141015225657.GA818@dtor-ws> <20141016160555.GA3255@dtor-ws> <CAE_wzQ8FTtnMGTxyaFu8=QqyuD0=W_ZyWXCf9_BK1sWKZHh95g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141118150138.668c81fda55c3ce39d7b2aac@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On Tuesday, November 18, 2014 10:00:53 AM Dmitry Torokhov wrote:
+> Hi Rafael,
+> 
+> On Thu, Oct 16, 2014 at 9:05 AM, Dmitry Torokhov <dtor@chromium.org> wrote:
+> > Hi Rafael,
+> >
+> > On Thu, Oct 16, 2014 at 10:10:20AM +0200, Rafael J. Wysocki wrote:
+> >> Hi,
+> >>
+> >> On Thu, Oct 16, 2014 at 12:56 AM, Dmitry Torokhov <dtor@chromium.org> wrote:
+> >> > Newer kernels put i2c devices with ACPI companion in ACPI power domain and
+> >> > then ACPI will try to configure them for wakeup (if requested).
+> >> > Unfortunately on some Chromebooks firmware separates wakeup GPIO into a
+> >> > completely separate device (which is handled by the kernel as a sleep
+> >> > button), leaving the touchpads themselves not wakeup capable (as far as
+> >> > ACPI is concerned). This causes ACPI late suspend code to fail to configure
+> >> > them as wakeup sources and aborts entire suspend.
+> >> >
+> >> > To work around this issues let's not abort entire suspend process if
+> >> > driver asked to be a wakeup source but ACPI can not satisfy that
+> >> > request.
+> >> >
+> >> > Note that originally I tried to simply change the driver to not mark
+> >> > device as wakeup source, unfortunately then we do not know that we
+> >> > should not be powering down the device completely, otherwise we can't
+> >> > wake up.
+> >> >
+> >> > Verified by making sure that "echo mem > /sys/power/state" works on
+> >> > Squawks.
+> >> >
+> >> > Reviewed-by: Benson Leung <bleung@chromium.org>
+> >> > Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+> >> > ---
+> >> >  drivers/acpi/device_pm.c | 16 ++++++++++++----
+> >> >  1 file changed, 12 insertions(+), 4 deletions(-)
+> >> >
+> >> > diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
+> >> > index 67075f8..440bc3d 100644
+> >> > --- a/drivers/acpi/device_pm.c
+> >> > +++ b/drivers/acpi/device_pm.c
+> >> > @@ -871,6 +871,7 @@ int acpi_dev_suspend_late(struct device *dev)
+> >> >         struct acpi_device *adev = ACPI_COMPANION(dev);
+> >> >         u32 target_state;
+> >> >         bool wakeup;
+> >> > +       bool can_wakeup;
+> >> >         int error;
+> >> >
+> >> >         if (!adev)
+> >> > @@ -878,12 +879,19 @@ int acpi_dev_suspend_late(struct device *dev)
+> >> >
+> >> >         target_state = acpi_target_system_state();
+> >> >         wakeup = device_may_wakeup(dev);
+> >> > -       error = acpi_device_wakeup(adev, target_state, wakeup);
+> >> > -       if (wakeup && error)
+> >> > -               return error;
+> >> > +       can_wakeup = acpi_device_can_wakeup(adev);
+> >> > +
+> >> > +       if (can_wakeup) {
+> >> > +               error = acpi_device_wakeup(adev, target_state, wakeup);
+> >> > +               if (wakeup && error)
+> >> > +                       return error;
+> >> > +       } else if (wakeup) {
+> >>
+> >> I think we just need to return an error code in that case, because otherwise
+> >
+> > We used to return error and that error aborted the suspend altogether,
+> > which prompted creating this patch.
+> >
+> >> this is potentially dangerous (worst case, it may be impossible to wake up
+> >> the machine at all after that).
+> >
+> > Yes, there is such potential, but that kind of error (no working wakeup
+> > sources) will be discovered before a box is shipped. Right now we have
+> > boxes in the wild that suspend fine with 3.10 and refuse to suspend with
+> > 3.14 because between 3.10 and 3.14 we started placing i2c devices with
+> > ACPI companions into ACPI power domain and ACPI power domain is now
+> > trying to configure them as wakeup sources and fails.
+> 
+> A gentle ping on the patch - without it (or something else) we basically
+> have a regression on shipped hardware: Chromebooks that were
+> suspending fine with 3.10 refuse to suspend with 3.14.
 
-On Tue, Nov 18, 2014 at 03:01:38PM -0800, Andrew Morton wrote:
-> On Fri, 14 Nov 2014 09:07:32 -0600 Seth Jennings <sjennings@variantweb.net> wrote:
-> 
-> > On Fri, Nov 14, 2014 at 10:11:01AM +0900, Minchan Kim wrote:
-> > > The kunmap_atomic should use virtual address getting by kmap_atomic.
-> > > However, some pieces of code in zsmalloc uses modified address,
-> > > not the one got by kmap_atomic for kunmap_atomic.
-> > > 
-> > > It's okay for working because zsmalloc modifies the address
-> > > inner PAGE_SIZE bounday so it works with current kmap_atomic's
-> > > implementation. But it's still fragile with potential changing
-> > > of kmap_atomic so let's correct it.
-> 
-> It is a bit alarming, but I've seen code elsewhere in which a modified
-> pointer is passed to kunmap_atomic().  So the kunmap_atomic() interface
-> is "kvaddr should point somewhere into the page" and that won't be
-> changing without a big effort.
-> 
-> > Seems like you could just use PAGE_MASK to get the base page address
-> > from link like this:
-> 
-> I think Minchan's approach is better: it explicitly retains the
-> kmap_atomic() return value for passing to kunmap_atomic().  That's
-> nicer than modifying it and then setting it back again.
-> 
-> I mean, a cleaner way of implementing your suggestion would be
-> 
-> void kunmap_atomic_unaligned(void *p)
-> {
-> 	kunmap_atomic(void *)((unsigned long)p & PAGE_MASK);
-> }
-> 
-> but then one looks at
-> 
-> void __kunmap_atomic(void *kvaddr)
-> {
-> 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
-> 
-> and asks "what the heck".
-> 
-> 
-> So I dunno.  We could leave the code as-is.  I have no strong feelings
-> either way.  Minchan's patch has no effect on zsmalloc.o section sizes
-> with my compiler.
+It fell of my radar, sorry about that.
 
-I hope to merge my patch.
+So the error here is that device_may_wakeup(dev) returns true, because the
+device is technically wakeup-capable, but the wakeup is not via ACPI?
 
-Main reason I sent the patch is I got a subtle bug when I implement
-new feature of zsmalloc(ie, compaction) due to link's mishandling
-(ie, link was over page boundary by my fault).
-Although it was totally my mistake, it took time for a while
-to find a root cause because unpredictable kmapped address should
-be unmapped so it's almost random crash.
+I'd say this is rather not in accordance with the spec, but that means we
+need to simply ignore 'wakeup' if acpi_device_can_wakeup(adev) returns false.
 
-IOW, it's fragile to depend on kunmap_atomic's internal and at least,
-I wanted to make zram code more robust.
+So what about the appended patch?
 
-Thanks.
+Rafael
 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
--- 
-Kind regards,
-Minchan Kim
+---
+ drivers/acpi/device_pm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -878,7 +878,7 @@ int acpi_dev_suspend_late(struct device
+ 		return 0;
+ 
+ 	target_state = acpi_target_system_state();
+-	wakeup = device_may_wakeup(dev);
++	wakeup = device_may_wakeup(dev) && acpi_device_can_wakeup(adev);
+ 	error = acpi_device_wakeup(adev, target_state, wakeup);
+ 	if (wakeup && error)
+ 		return error;
+
