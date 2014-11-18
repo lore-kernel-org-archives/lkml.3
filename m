@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaKRFTe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 00:19:34 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33023 "EHLO arroyo.ext.ti.com"
+	id S1752832AbaKRFUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 00:20:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaKRFTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 00:19:33 -0500
-Message-ID: <546AD6D6.5070205@ti.com>
-Date: Tue, 18 Nov 2014 10:49:18 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vivek Gautam <gautamvivek1987@gmail.com>
-CC: Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        <andrew.kim@intel.com>
-Subject: Re: [PATCHv4 2/6] phy: improved lookup method
-References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com> <1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com> <CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com> <5461AFD3.5020302@ti.com> <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com> <5461CDDF.4090209@ti.com> <CAFp+6iGAQMgX8S6dfPO44U=r6QJ4fT+1FX2uHNF9KK4sYs+=XA@mail.gmail.com> <CAFp+6iHta15CuBbsoQxEo2xr5GyXDgXQ=cg_Q_vOSC7akX0Vcw@mail.gmail.com> <20141117154028.GD7512@kuha.fi.intel.com>
-In-Reply-To: <20141117154028.GD7512@kuha.fi.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1750708AbaKRFUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 00:20:50 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH net-next] tun: return NET_XMIT_DROP for dropped packets
+Date: Tue, 18 Nov 2014 13:20:41 +0800
+Message-Id: <1416288041-30921-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+After commit 5d097109257c03a71845729f8db6b5770c4bbedc
+("tun: only queue packets on device"), NETDEV_TX_OK was returned for
+dropped packets. This will confuse pktgen since dropped packets were
+counted as sent ones.
 
-On Monday 17 November 2014 09:10 PM, Heikki Krogerus wrote:
-> On Thu, Nov 13, 2014 at 07:03:01PM +0530, Vivek Gautam wrote:
->> How about adding the change in attached patch [1] on top of this patch.
->> Just introduced the phy pointer in "phy_lookup" structure, and
->> modified phy_find() accordingly.
-> 
-> I would be fine if we used the phy pointer to match, but if we have
-> the pointer to the phy in the lookup, then I would say we need to
-> remove the phy_name member.
-> 
-> Otherwise we would have to support two ways of finding the lookups
-> (one for the "static" lookups where we match to the phy_name and other
-> where we match to the pointer). That means we will also not be able to
-> create "static" lookups, but those would be only needed if we wanted to
-> create them in board files. I don't think there will ever be need to
-> create the lookups in board files, so I'm more then happy to remove
-> the static way of creating the lookups.
+Fixing this by returning NET_XMIT_DROP to let pktgen count it as error
+packet.
 
-Just using the phy pointer sounds good. But interested to know where the phy
-pointer will be added to the lookup table.
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/tun.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks
-Kishon
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index e3fa65a..ac53a73 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -819,7 +819,7 @@ drop:
+ 	skb_tx_error(skb);
+ 	kfree_skb(skb);
+ 	rcu_read_unlock();
+-	return NETDEV_TX_OK;
++	return NET_XMIT_DROP;
+ }
+ 
+ static void tun_net_mclist(struct net_device *dev)
+-- 
+1.9.1
+
