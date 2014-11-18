@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaKRKPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 05:15:38 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:51466 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaKRKPf (ORCPT
+	id S1753873AbaKRKQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 05:16:57 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:51820 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaKRKQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 05:15:35 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Jonas Gorski <jogo@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 22/22] MIPS: Add multiplatform BMIPS target
-Date: Tue, 18 Nov 2014 11:15:24 +0100
-Message-ID: <5313988.cGSDdqXOcS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJiQ=7AhyAyN6Hnvtdowdh6oPknbPFMe-_PrPdzyCGe5H7eE1g@mail.gmail.com>
-References: <1416097066-20452-1-git-send-email-cernekee@gmail.com> <2622492.TiaF5tO0a3@wuerfel> <CAJiQ=7AhyAyN6Hnvtdowdh6oPknbPFMe-_PrPdzyCGe5H7eE1g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:1thIjnUvqVvAGrnD0PRGq0QkTdo+JMIbOCFjFz4PKi4
- erknqEejbnwaiYuAUFsNwzAM5PShP8oCqL5znf4HGpGMR2QUcq
- 7Rj/eQWeGCTJ4I/mGUEpWETp4SaIfAJZRgTTpv1kZn4pdwppU/
- sXjHqUfBJI/3cQ/I1JtDac6Xf5xNnXKlkXD8R66452NxeqxTcp
- hw5Pc4RiYqbBL/xhYXYyuQveQZiFK4ND4PLpCd/poRR1oNWOuZ
- lbKgN23lGoNNIxwWvDQEsjG0q7RhisayGFxQGpYy4t2km2taog
- OPziJHJ/pyAGJKSi/gf5mOcU7pDftzCG1PnjLE2EAz8bJob/Tb
- kPhxJ56XvftbDyOH4SMo=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 18 Nov 2014 05:16:55 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-87-546b1c94a336
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
+Subject: [PATCH v2] thermal:core:fix: Check return code of the
+ ->get_max_state() callback
+Date: Tue, 18 Nov 2014 11:16:30 +0100
+Message-id: <1416305790-27746-1-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+References: <1415898165-27406-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jAd0pMtkhBk1nZSw2zljPajH/yjVW
+	i9OnFrBanHv1iMXibXOxxavDuxgt3jzitnjzcDOjxeVdc9gsPvceYbTo/DKLzeLB1WlsFk8e
+	9rFZvDrYxmLxc9c8FotjJ2awOgh4PNl0kdFj56y77B6L97xk8lg37S2zx4HJ51g9epvfsXl8
+	OzORxaNvyypGj6c/9jJ7fN4k57FxbmgAdxSXTUpqTmZZapG+XQJXxsY1e1gKJvJWtG+6ztrA
+	+Iiri5GTQ0LAROL71I+sELaYxIV769m6GLk4hAQWMUr8bN/HCOF0MUncOP+aBaSKTUBP4vPd
+	p0wgtoiAt8TrfdPBipgFXrNIHPrRwA6SEBaIlvjf8ZkRxGYRUJW4OOsAWAOvgJvE7klrGSHW
+	KUp0P5vABmJzCrhLHD3xCaxXCKjm+PuV7BMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vO
+	z93ECA70Z1I7GFc2WBxiFOBgVOLhTZiaFSLEmlhWXJl7iFGCg1lJhPdcN1CINyWxsiq1KD++
+	qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QD43GLXdKvNCwS976O/lRQUqH/
+	jOvbh7lHFvnNv2h6+6PIM9sk3ee396QIevM99tXYuSNXrvL87sismzHM9qp3blhn/H5p/6or
+	UaJXL0o33OLzoV/1S/PNz7Lzac1s2O316Oes5jOlX+7EM7N9tGaxrtNiF7wcFrgnd+G+Wfax
+	xbclzkQd2X9fR4mlOCPRUIu5qDgRAMgg+jZwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 November 2014 13:57:07 Kevin Cernekee wrote:
-> On Mon, Nov 17, 2014 at 12:33 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> This mostly depends on the desired feature set, and the delta from one
-> >> board to the next.  Many of the reference board sections are largely
-> >> copied from a working design, but sometimes there are changes that
-> >> affect us.  Other times there are tweaks that can be autodetected,
-> >> like a different flash chip.
-> >>
-> >> The analog interfaces like SATA/USB/Ethernet don't tend to vary all
-> >> that much (although some may be missing ports on the board, or
-> >> disabled on the chip).
-> >>
-> >> The pin muxing situation leaves a lot of room for board differences,
-> >> and on these platforms it isn't really handled in a central place.
-> >> This gets even more challenging when combined with some of the power
-> >> management requirements.
-> >>
-> >> The peripherals that I added in my patch submission are among the
-> >> easiest / safest of the bunch.
-> >
-> > Right, that is exactly the danger: it's easy to get the basics working
-> > like this, but the differences between SoCs are not what we need DT
-> > for anyway, those are easily abstracted in kernel code if necessary,
-> > hardcoded by some soc version identifier.
-> 
-> That depends on how many SoC's we're talking about...
-> 
-> On MIPS we have literally dozens.  Most of the "building blocks" are
-> pretty similar, but the MMIO addresses, IRQ mappings, and
-> quantity/revision of each peripheral vary.  DT is ideal for
-> representing these differences and for rapidly bringing up a new
-> system.
+The return code from ->get_max_state() callback was not checked during
+binding cooling device to thermal zone device.
 
-Of course you can abstract SoCs using DT, and we do that all the time
-now on a lot of architectures. My point is that it's possible to abstract
-a board using DT without also describing the SoC in detail, but you
-cannot do the reverse.
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+---
+Changes for v2:
+- It turned out that patches from 1 to 6 from v1 are not needed, since
+  they either already solve the problem (like imx_thermal.c) or not use
+  cpufreq as a thermal cooling device.
+- The patch 7 from v1 is also not needed since this patch on error exits
+  this function without using max_state variable.
+- In thermal driver probe the cpufreq_cooling_register() method presence
+  is crucial to evaluate if the thermal driver needs any actions with 
+  -EPROBE_DEFER.
+---
+ drivers/thermal/thermal_core.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> > What you end up with in your approach is a kernel that can support
-> > multiple SoCs but only some boards per SoC, and otherwise you still
-> > depend on compile-time configuration.
-> 
-> Agreed, but for legacy platforms this is somewhat inevitable.  These
-> systems are already in production so there is no manpower available to
-> go back and test every single one-off board.  It is most likely that a
-> small subset of "interesting" boards will receive the best support.
-> For instance, I see an arch/arm/boot/dts/bcm2835-rpi-b.dts, but that's
-> hardly the only BCM2835-based platform found in the wild.
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 43b9070..8567929 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -928,7 +928,7 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
+ 	struct thermal_zone_device *pos1;
+ 	struct thermal_cooling_device *pos2;
+ 	unsigned long max_state;
+-	int result;
++	int result, ret;
+ 
+ 	if (trip >= tz->trips || (trip < 0 && trip != THERMAL_TRIPS_NONE))
+ 		return -EINVAL;
+@@ -945,7 +945,9 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
+ 	if (tz != pos1 || cdev != pos2)
+ 		return -EINVAL;
+ 
+-	cdev->ops->get_max_state(cdev, &max_state);
++	ret = cdev->ops->get_max_state(cdev, &max_state);
++	if (ret)
++		return ret;
+ 
+ 	/* lower default 0, upper default max_state */
+ 	lower = lower == THERMAL_NO_LIMIT ? 0 : lower;
+-- 
+2.0.0.rc2
 
-It's absolutely ok to not have the dts files for each board, and to
-not test all combinations, those can always come later if anyone is
-interested in it.
-
-The one thing I believe you shouldn't do is hardwire a dtb file to
-an SoC specific identifier, because that makes it impossible to
-support other boards that need additional DT nodes using the same
-boot method. Using a single appended dtb file instead of the built-in
-lookup table would solve this well enough.
-
-> The limited board support doesn't negate the value of having a generic
-> BMIPS kernel available upstream; this build still eliminates
-> duplicated efforts on many of the basic items (CPU/SMP/caching, IRQ
-> controllers, UART).  It also allows easy reuse of DT-ready peripherals
-> that are common to the CM/DSL/STB MIPS and ARM chips, which was the
-> original goal of the BCM3384 port.
-> 
-> Going forward I would expect that with this build available in
-> mainline, it will open up new opportunities for modernizing the
-> bootloaders on each product line.
-
-Yes, this is all good. 
-
-	Arnd
