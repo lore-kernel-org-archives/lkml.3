@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095AbaKRP0C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:26:02 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:60511 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933029AbaKRPZ6 (ORCPT
+	id S1757198AbaKRP0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:26:19 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:33894 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843AbaKRP0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:25:58 -0500
-Date: Tue, 18 Nov 2014 07:25:50 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: revert "Allow post-unlock reference for rt_mutex"
- to avoid priority-inversion
-Message-ID: <20141118152549.GN5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1416299401-4681-1-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 18 Nov 2014 10:26:15 -0500
+Date: Tue, 18 Nov 2014 15:26:07 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, IIO <linux-iio@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>, Carlo Caione <carlo@caione.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Todd Brandt <todd.e.brandt@linux.intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Hartmut Knaack <knaack.h@gmx.de>, Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 1/3] iio: adc: Add module device table for autoloading
+Message-ID: <20141118152607.GC13792@x1>
+References: <1415734210-5657-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1415734210-5657-2-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1416299401-4681-1-git-send-email-laijs@cn.fujitsu.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415734210-5657-2-git-send-email-jacob.jun.pan@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111815-8236-0000-0000-0000070406A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 04:30:01PM +0800, Lai Jiangshan wrote:
-> The patch dfeb9765ce3c ("Allow post-unlock reference for rt_mutex")
-> ensured rcu-boost safe even the rt_mutex has post-unlock reference.
-> 
-> But rt_mutex allowing post-unlock reference is definitely a bug and it was
-> fixed by the commit 27e35715df54 ("rtmutex: Plug slow unlock race").
-> This fix made the previous patch (dfeb9765ce3c) useless.
-> 
-> And even worse, the priority-inversion introduced by the the previous
-> patch still exists.
-> 
-> rcu_read_unlock_special() {
-> 	rt_mutex_unlock(&rnp->boost_mtx);
-> 	/* Priority-Inversion:
-> 	 * the current task had been deboosted and preempted as a low
-> 	 * priority task immediately, it could wait long before reschedule in,
-> 	 * and the rcu-booster also waits on this low priority task and sleeps.
-> 	 * This priority-inversion makes rcu-booster can't work
-> 	 * as expected.
-> 	 */
-> 	complete(&rnp->boost_completion);
-> }
-> 
-> Just revert the patch to avoid it.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+On Tue, 11 Nov 2014, Jacob Pan wrote:
 
-Good catch, I had indeed forgotten this one.  Queued for 3.20, thank you!
-
-							Thanx, Paul
-
+> From: Aaron Lu <aaron.lu@intel.com>
+> 
+> Add the module device id table so that the driver can be automatically
+> loaded once the platform device is created.
+> 
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 > ---
->  kernel/rcu/tree.h        |    5 -----
->  kernel/rcu/tree_plugin.h |    8 +-------
->  2 files changed, 1 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-> index 49b3da7..f14580c 100644
-> --- a/kernel/rcu/tree.h
-> +++ b/kernel/rcu/tree.h
-> @@ -172,11 +172,6 @@ struct rcu_node {
->  				/*  queued on this rcu_node structure that */
->  				/*  are blocking the current grace period, */
->  				/*  there can be no such task. */
-> -	struct completion boost_completion;
-> -				/* Used to ensure that the rt_mutex used */
-> -				/*  to carry out the boosting is fully */
-> -				/*  released with no future boostee accesses */
-> -				/*  before that rt_mutex is re-initialized. */
->  	struct rt_mutex boost_mtx;
->  				/* Used only for the priority-boosting */
->  				/*  side effect, not as a lock. */
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 152f0e3..272d837 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -427,10 +427,8 @@ void rcu_read_unlock_special(struct task_struct *t)
-> 
->  #ifdef CONFIG_RCU_BOOST
->  		/* Unboost if we were boosted. */
-> -		if (drop_boost_mutex) {
-> +		if (drop_boost_mutex)
->  			rt_mutex_unlock(&rnp->boost_mtx);
-> -			complete(&rnp->boost_completion);
-> -		}
->  #endif /* #ifdef CONFIG_RCU_BOOST */
-> 
->  		/*
-> @@ -1100,15 +1098,11 @@ static int rcu_boost(struct rcu_node *rnp)
->  	 */
->  	t = container_of(tb, struct task_struct, rcu_node_entry);
->  	rt_mutex_init_proxy_locked(&rnp->boost_mtx, t);
-> -	init_completion(&rnp->boost_completion);
->  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  	/* Lock only for side effect: boosts task t's priority. */
->  	rt_mutex_lock(&rnp->boost_mtx);
->  	rt_mutex_unlock(&rnp->boost_mtx);  /* Then keep lockdep happy. */
-> 
-> -	/* Wait for boostee to be done w/boost_mtx before reinitializing. */
-> -	wait_for_completion(&rnp->boost_completion);
-> -
->  	return ACCESS_ONCE(rnp->exp_tasks) != NULL ||
->  	       ACCESS_ONCE(rnp->boost_tasks) != NULL;
->  }
-> -- 
-> 1.7.4.4
-> 
+>  drivers/iio/adc/axp288_adc.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
 
+Applied, thanks.
+
+> diff --git a/drivers/iio/adc/axp288_adc.c b/drivers/iio/adc/axp288_adc.c
+> index 4800286..4a6cf43 100644
+> --- a/drivers/iio/adc/axp288_adc.c
+> +++ b/drivers/iio/adc/axp288_adc.c
+> @@ -238,15 +238,23 @@ static int axp288_adc_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +static struct platform_device_id axp288_adc_id_table[] = {
+> +	{ .name = "axp288_adc" },
+> +	{},
+> +};
+> +
+>  static struct platform_driver axp288_adc_driver = {
+>  	.probe = axp288_adc_probe,
+>  	.remove = axp288_adc_remove,
+> +	.id_table = axp288_adc_id_table,
+>  	.driver = {
+>  		.name = "axp288_adc",
+>  		.owner = THIS_MODULE,
+>  	},
+>  };
+>  
+> +MODULE_DEVICE_TABLE(platform, axp288_adc_id_table);
+> +
+>  module_platform_driver(axp288_adc_driver);
+>  
+>  MODULE_AUTHOR("Jacob Pan <jacob.jun.pan@linux.intel.com>");
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
