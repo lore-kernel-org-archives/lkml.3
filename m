@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933302AbaKROvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:51:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48755 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108AbaKROvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:51:38 -0500
-Date: Tue, 18 Nov 2014 14:51:14 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: lee.jones@linaro.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        ckeepax@opensource.wolfsonmicro.com
-Message-ID: <20141118145114.GN22111@sirena.org.uk>
-References: <20141111165227.GA24344@opensource.wolfsonmicro.com>
- <20141111170543.GC25738@opensource.wolfsonmicro.com>
+	id S933318AbaKROvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:51:49 -0500
+Received: from mout.web.de ([212.227.17.11]:51390 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932108AbaKROvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:51:44 -0500
+Message-ID: <546B5CF3.1070203@users.sourceforge.net>
+Date: Tue, 18 Nov 2014 15:51:31 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PZYVFYZbFYjzBslI"
-Content-Disposition: inline
-In-Reply-To: <20141111170543.GC25738@opensource.wolfsonmicro.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 81.128.185.34
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] ASoC: arizona: Add initial CS47L24 codec driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: linux-kernel@vger.kernel.org
+CC: kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] fs-proc: One function call less in proc_sys_lookup()
+ after error detection
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:BlANFqZ3m6hbh2MvUN7Id+aSr6ODqKA+S+CIZfb4CrWRlhA6PME
+ d02Fa/1r3RQ/FwkU44zQKtOKt4uL/+gZtRayx0FxV/SA+HP4q9wOPqAlDmitgSfek0KOIQn
+ lKpY5GttMUQXn4SKATVJgwL0pGPnh6UmNHOTM+3ByhqtWoWUpRw02Yge+AoioTkGqa5pZtr
+ 0vc2hQJJBLMwbty9r5UEA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 18 Nov 2014 15:42:43 +0100
 
---PZYVFYZbFYjzBslI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The sysctl_head_finish() function was called in an inefficient way by the
+implementation of the proc_sys_lookup() function in case of a lookup failure.
+The corresponding source code was improved by deletion of an unnecessary
+null pointer check and a few adjustments for jump labels.
 
-On Tue, Nov 11, 2014 at 05:05:43PM +0000, Richard Fitzgerald wrote:
-> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-> ---
->  sound/soc/codecs/Kconfig   |    8 +
->  sound/soc/codecs/Makefile  |    2 +
->  sound/soc/codecs/arizona.c |    5 +
->  sound/soc/codecs/cs47l24.c | 1133 ++++++++++++++++++++++++++++++++++++++++++++
->  sound/soc/codecs/cs47l24.h |   23 +
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ fs/proc/proc_sysctl.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Can you split out the arizona.c change into a separate patch to be
-merged via the MFD tree along with the new #define please?  Everything
-else can go in via the ASoC tree but that build depends on the new
-defines.
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index f92d5dd..6606aaf 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -457,21 +457,21 @@ static struct dentry *proc_sys_lookup(struct inode *dir, struct dentry *dentry,
+ 		ret = sysctl_follow_link(&h, &p, current->nsproxy);
+ 		err = ERR_PTR(ret);
+ 		if (ret)
+-			goto out;
++			goto inode_failure;
+ 	}
+ 
+ 	err = ERR_PTR(-ENOMEM);
+ 	inode = proc_sys_make_inode(dir->i_sb, h ? h : head, p);
+ 	if (!inode)
+-		goto out;
++		goto inode_failure;
+ 
+ 	err = NULL;
+ 	d_set_d_op(dentry, &proc_sys_dentry_operations);
+ 	d_add(dentry, inode);
+ 
++inode_failure:
++	sysctl_head_finish(h);
+ out:
+-	if (h)
+-		sysctl_head_finish(h);
+ 	sysctl_head_finish(head);
+ 	return err;
+ }
+-- 
+2.1.3
 
---PZYVFYZbFYjzBslI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUa1zhAAoJECTWi3JdVIfQ0t8H/jXoz+Qxae4NeoG8y2g5VKUJ
-mRmwlDW9yKTIFCVyRFmzsaaXKgbBAhnjOG0ZTeW9CTYH/Yidlqpgq9cFOxPOlCMA
-kw3P2inFLEpWDfunJ6/gA//Goa7hfRc38iyboDCzjcUAosiF5n/DBzw4VMhQPZ4w
-WZUo7lXr0DjTIAGjFUt/irCZ0qLLWVB3W8tGuM4jpiZB1201ILnGMX+xPdJ99sa2
-dS2PoDD47eQQRbG3D6hokeWFlOtdAjAZ2CyFmo6a5iSDfh8T+E94sIykvxahuVQj
-pTa+s/jxwrWNGWp6x/IF4bjfcjh4Dj+/FxpYdpK3y/S3bGvLgGQ2nxhG7tOcrnI=
-=ahcJ
------END PGP SIGNATURE-----
-
---PZYVFYZbFYjzBslI--
