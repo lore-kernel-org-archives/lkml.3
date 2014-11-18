@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbaKROgb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:36:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57198 "EHLO mx2.suse.de"
+	id S932680AbaKROga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:36:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57041 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755071AbaKROKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755078AbaKROKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:11 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>, davej@redhat.com,
-        hmh@hmh.eng.br, Thomas Gleixner <tglx@linutronix.de>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 131/206] x86: Add cpu_detect_cache_sizes to init_intel() add Quark legacy_cache()
-Date: Tue, 18 Nov 2014 15:08:06 +0100
-Message-Id: <03ed94fdc8607b448c48f40429f03938a51ab318.1416319692.git.jslaby@suse.cz>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 095/206] drm/ast: Fix HW cursor image
+Date: Tue, 18 Nov 2014 15:07:30 +0100
+Message-Id: <3055e72f042a7e5566f02ca2be609426ba6f6efa.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -25,92 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit aece118e487a744eafcdd0c77fe32b55ee2092a1 upstream.
+commit 1e99cfa8de0f0879091e33cd65fd60418d006ad9 upstream.
 
-Intel processors which don't report cache information via cpuid(2)
-or cpuid(4) need quirk code in the legacy_cache_size callback to
-report this data. For Intel that callback is is intel_size_cache().
+The translation from the X driver to the KMS one typo'ed a couple
+of array indices, causing the HW cursor to look weird (blocky with
+leaking edge colors). This fixes it.
 
-This patch enables calling of cpu_detect_cache_sizes() inside of
-init_intel() and hence the calling of the legacy_cache callback in
-intel_size_cache(). Adding this call will ensure that PIII Tualatin
-currently in intel_size_cache() and Quark SoC X1000 being added to
-intel_size_cache() in this patch will report their respective cache
-sizes.
-
-This model of calling cpu_detect_cache_sizes() is consistent with
-AMD/Via/Cirix/Transmeta and Centaur.
-
-Also added is a string to idenitfy the Quark as Quark SoC X1000
-giving better and more descriptive output via /proc/cpuinfo
-
-Adding cpu_detect_cache_sizes to init_intel() will enable calling
-of intel_size_cache() on Intel processors which currently no code
-can reach. Therefore this patch will also re-enable reporting
-of PIII Tualatin cache size information as well as add
-Quark SoC X1000 support.
-
-Comment text and cache flow logic suggested by Thomas Gleixner
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Cc: davej@redhat.com
-Cc: hmh@hmh.eng.br
-Link: http://lkml.kernel.org/r/1412641189-12415-3-git-send-email-pure.logic@nexus-software.ie
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/kernel/cpu/intel.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/ast/ast_mode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 1d8152b764a7..f4a9985ca88e 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -384,6 +384,13 @@ static void init_intel(struct cpuinfo_x86 *c)
- 	detect_extended_topology(c);
+diff --git a/drivers/gpu/drm/ast/ast_mode.c b/drivers/gpu/drm/ast/ast_mode.c
+index 7fc9f7272b56..e8f6418b6dec 100644
+--- a/drivers/gpu/drm/ast/ast_mode.c
++++ b/drivers/gpu/drm/ast/ast_mode.c
+@@ -1012,8 +1012,8 @@ static u32 copy_cursor_image(u8 *src, u8 *dst, int width, int height)
+ 			srcdata32[1].ul = *((u32 *)(srcxor + 4)) & 0xf0f0f0f0;
+ 			data32.b[0] = srcdata32[0].b[1] | (srcdata32[0].b[0] >> 4);
+ 			data32.b[1] = srcdata32[0].b[3] | (srcdata32[0].b[2] >> 4);
+-			data32.b[2] = srcdata32[0].b[1] | (srcdata32[1].b[0] >> 4);
+-			data32.b[3] = srcdata32[0].b[3] | (srcdata32[1].b[2] >> 4);
++			data32.b[2] = srcdata32[1].b[1] | (srcdata32[1].b[0] >> 4);
++			data32.b[3] = srcdata32[1].b[3] | (srcdata32[1].b[2] >> 4);
  
- 	l2 = init_intel_cacheinfo(c);
-+
-+	/* Detect legacy cache sizes if init_intel_cacheinfo did not */
-+	if (l2 == 0) {
-+		cpu_detect_cache_sizes(c);
-+		l2 = c->x86_cache_size;
-+	}
-+
- 	if (c->cpuid_level > 9) {
- 		unsigned eax = cpuid_eax(10);
- 		/* Check for version and the number of counters */
-@@ -498,6 +505,13 @@ static unsigned int intel_size_cache(struct cpuinfo_x86 *c, unsigned int size)
- 	 */
- 	if ((c->x86 == 6) && (c->x86_model == 11) && (size == 0))
- 		size = 256;
-+
-+	/*
-+	 * Intel Quark SoC X1000 contains a 4-way set associative
-+	 * 16K cache with a 16 byte cache line and 256 lines per tag
-+	 */
-+	if ((c->x86 == 5) && (c->x86_model == 9))
-+		size = 16;
- 	return size;
- }
- #endif
-@@ -703,7 +717,8 @@ static const struct cpu_dev intel_cpu_dev = {
- 			  [3] = "OverDrive PODP5V83",
- 			  [4] = "Pentium MMX",
- 			  [7] = "Mobile Pentium 75 - 200",
--			  [8] = "Mobile Pentium MMX"
-+			  [8] = "Mobile Pentium MMX",
-+			  [9] = "Quark SoC X1000",
- 		  }
- 		},
- 		{ .vendor = X86_VENDOR_INTEL, .family = 6, .model_names =
+ 			writel(data32.ul, dstxor);
+ 			csum += data32.ul;
 -- 
 2.1.3
 
