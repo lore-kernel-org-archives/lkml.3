@@ -1,134 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaKRNxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:53:11 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:44481 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaKRNxJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:53:09 -0500
-Message-ID: <546B4F18.5060705@huawei.com>
-Date: Tue, 18 Nov 2014 21:52:24 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com>
-In-Reply-To: <546B4D0D.9050601@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
+	id S1754700AbaKRNzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:55:08 -0500
+Received: from plane.gmane.org ([80.91.229.3]:53700 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753871AbaKRNzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 08:55:05 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Olliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [PATCHv9 0/2] Add Allwinner SoCs PWM support
+Date: Tue, 18 Nov 2014 14:47:33 +0100
+Message-ID: <546B4DF5.9020100@schinagl.nl>
+References: <1415200545-26238-1-git-send-email-alexandre.belloni@free-electrons.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: a83-163-237-212.adsl.xs4all.nl
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+In-Reply-To: <1415200545-26238-1-git-send-email-alexandre.belloni@free-electrons.com>
+Cc: linux-pwm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/18 21:43, Jiang Liu wrote:
+Hey Alexandre,
 
-> On 2014/11/18 21:33, Yun Wu (Abel) wrote:
->> On 2014/11/18 18:19, Thomas Gleixner wrote:
->>
->>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>>> On 2014/11/12 21:43, Thomas Gleixner wrote:
->>>>>  struct irq_chip {
->>>>> @@ -359,6 +360,7 @@ struct irq_chip {
->>>>>  	void		(*irq_release_resources)(struct irq_data *data);
->>>>>  
->>>>>  	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
->>>>> +	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
->>>>
->>>> Hmm... It's really weird.
->>>> I don't think it's the interrupt controllers' responsibility to write messages
->>>> for all the endpoint devices since the methods of configuring message registers
->>>> may different between these devices. And theoretically, the endpoint devices
->>>> themselves should take the responsibility to configure their message registers.
->>>> To say the least, the write_msg callback here still need to call some certain
->>>> interfaces provided by the corresponding device.
->>>>
->>>> There would be lots of ARM new devices capable of sending message
->>>> based interrupts to interrupt controllers, does all the drivers of
->>>> the devices need to expose a write_msg callback to interrupt
->>>> controllers?
->>>
->>> Well, writing the message _IS_ part of the interrupt controller.
->>>
->>> So in order to enable non PCI based MSI we want to have generic
->>> infrastructure with minimal per device/device class callbacks and of
->>> course you need to provide that callback for your special device.
->>>
->>> We already have non PCI based MSI controllers in x86 today and we need
->>> to handle the whole stuff with tons of copied coded extra for each of
->>> those. So consolidating it into common infrastructure allows us to get
->>> rid of the pointless copied code and reduce the per device effort to
->>> the relevant hardware specific callbacks. irq_write_msi_msg being one
->>> of those.
->>>
->>
->> At least, we have the same goal.
->> I will illustrate my thoughts by an example.
->> The current code is something like:
->>
->> Device A
->> ========
->> void A_write_msg() { ... }
->>
->> Group B
->> (a group of devices behave same on writing messages, i.e. PCI)
->> =======
->> void B_write_msg() { ... }
->>
->> Controller
->> ==========
->> irq_chip.irq_write_msi_msg () {
->> 	if (A)
->> 		A_write_msg();
->> 	if (B)
->> 		B_write_msg();
->> }
->>
->> It's horrible when new devices come out, since we need to modify the
->> controller part for each new device.
->> What I suggested is:
->>
->> MSI Core
->> ========
->> struct msi_ops { .write_msg, };
->> struct msi_desc { .msi_ops, };
->>
->> write_msg() {
->> 	X = get_dev();
->> 	irq_chip.compose_msg(X);	// IRQ chips' responsibility
->> 	X_msi_ops.write_msg();		// nothing to do with IRQ chips
->> }
->>
->> Device A
->> ========
->> void A_write_msg() { ... }
->> A_msi_ops.write_msg = A_write_msg;
->>
->> Group B
->> =======
->> void B_write_msg() { ... }
->> B_msi_ops.write_msg = B_write_msg;
->>
->> Please correct me if I misunderstood anything.
-> Hi Yun,
-> 	We provide an irq_chip for each type of interrupt controller
-> instead of devices. For the example mentioned above, if device A
-> and Group B has different interrupt controllers, we just need to
-> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
-> to suitable callbacks.
-> 	The framework already achieves what you you want:)
+On 05-11-14 16:15, Alexandre Belloni wrote:
+> Hi,
+>
+> This patch series adds support for the PWM controller found on the Allwinner
+> SoCs.
+>
+> The first patch adds the driver itself.
+> The second patch adds the DT binding documentation
+>
+> Changes in v8:
+>   - renamed the driver sun4i as the PWM IP is different in the next sunxi SoCs
+Why did you decide to rename it to sun4i? From your bindings document I 
+understand you still support sun4i and sun7i, what happened to sun5i?
 
-What if device A and group B have the same interrupt controller?
+I went over the datasheets of sun4i, sun5i and sun7i and the disp_lcd.c 
+from the latest linux-sunxi kernels and have to agree, they are all 4 
+inconsistent and messy, but I'm not sure what you mean with PWM IP is 
+different in next sunxi soc's. is sun5i different to sun4i? is sun7i 
+different? or is sun6i (A31), sun8i (a80) and sun9i (A23) different?
 
-Regards,
-	Abel
+
+What I get from the datasheet is, that sun4i and sun5i are exactly the 
+same, with the exception that sun5i only has 1 PWM (~exposed~). I belive 
+that is easily solved with the bindings by having allwinner-sun4i and 
+allwinner sun5i bindings if I'm not mistaken.
+
+As for sun7i compared to the other ones, according to disp_lcd.c sun5i 
+and sun7i should behave exactly the same. This is contradicting to the 
+datasheet, where sun4i and sun5i are the same.
+
+So what are the major differences that I can see between the 3? sun4i 
+defines the PWM prescaler register value 0b1111 as being undefined, and 
+sun5i and sun7i as /1? Did you verify this (I haven't I admit, i bumped 
+into this while looking for your patch ;-) )? I wouldn't be supprised if 
+it where a typo on allwinners end in the datasheet ... disp_lcd.c stops 
+at 72000 for the last entry. We should just check sun4i, sun5i and sun7i 
+hardware to see if it behaves the same with a prescaler of 0b1111, which 
+I would not be totally surprised if it did.
+
+The other difference I notice is that sun7i and sun5i use 16bit period 
+register where sun4i uses a 8bit register. This is probably the only 
+reason why they put a #ifdef in disp_lcd.c, calculations turn out 
+differently. I don't recognize this behavior at all in your driver 
+however. I do think they that there is a difference here, since they did 
+split up the original driver here because of this difference.
+
+The pre-scaler bypass bit and pwm ready bit you all ready take care of :)
+
+Finally, though I'm sure I should have replied to it inline in the 
+actual code, but hoping i can let it slip through here is that you 
+define your local data as:
+
++ static const struct sun4i_pwm_data sun4i_pwm_data_a20 = {
+
+which looks really strange to me, since there is no a20 using the sun4i 
+architecture :) I know it's just nitpicking, it just looks really odd. 
+Maybe the compatible naming works just as well? sun4i_pwm_data; 
+sun7i_pwm_data (and sun5i_pwm_data if you want to take care of only 
+pwm0, only pwm1 (if we ever encounter such a configuration, disabled 
+pwm0, enabled pwm1) or both to be used?)
+
+Sorry for the long naggy mail, just looking for clarification as I'm 
+going to be using your patch ;)
+
+Olliver
+
+>   - Took into account comments from Thierry
+>
+> Changes in v9:
+>   - moved from using a mutex to a spinlock
+>
+> Alexandre Belloni (2):
+>    pwm: Add Allwinner SoC support
+>    pwm: sunxi: document OF bindings
+>
+>   .../devicetree/bindings/pwm/pwm-sun4i.txt          |  20 ++
+>   drivers/pwm/Kconfig                                |   9 +
+>   drivers/pwm/Makefile                               |   1 +
+>   drivers/pwm/pwm-sun4i.c                            | 366 +++++++++++++++++++++
+>   4 files changed, 396 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
+>   create mode 100644 drivers/pwm/pwm-sun4i.c
+>
+
 
