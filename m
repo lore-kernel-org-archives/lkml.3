@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312AbaKROq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:46:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57177 "EHLO mx2.suse.de"
+	id S1756328AbaKROq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:46:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57159 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754990AbaKROKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:10:01 -0500
+	id S1754988AbaKROKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:00 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Derek Browne <Derek.Browne@intel.com>,
-        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 132/206] mmc: sdhci-pci: SDIO host controller support for Intel Quark X1000
-Date: Tue, 18 Nov 2014 15:08:07 +0100
-Message-Id: <0e5b6e1b993f400e1bd184545dedbb23017d6f74.1416319692.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 129/206] cpufreq: expose scaling_cur_freq sysfs file for set_policy() drivers
+Date: Tue, 18 Nov 2014 15:08:04 +0100
+Message-Id: <ead5af44a3789ff002b7f903491e91df268aaeff.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -25,63 +23,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Derek Browne <Derek.Browne@intel.com>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 43e968cec79b6334cf7cb3e11184cce720541712 upstream.
+commit c034b02e213d271b98c45c4a7b54af8f69aaac1e upstream.
 
-This patch is to enable SDIO host controller for Intel Quark X1000.
+Currently the core does not expose scaling_cur_freq for set_policy()
+drivers this breaks some userspace monitoring tools.
+Change the core to expose this file for all drivers and if the
+set_policy() driver supports the get() callback use it to retrieve the
+current frequency.
 
-Signed-off-by: Derek Browne <Derek.Browne@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=73741
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mmc/host/sdhci-pci.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/cpufreq/cpufreq.c | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 9995fad743a6..b2a4c22507d9 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -43,6 +43,7 @@
- #define PCI_DEVICE_ID_INTEL_CLV_SDIO2	0x08fb
- #define PCI_DEVICE_ID_INTEL_CLV_EMMC0	0x08e5
- #define PCI_DEVICE_ID_INTEL_CLV_EMMC1	0x08e6
-+#define PCI_DEVICE_ID_INTEL_QRK_SD	0x08A7
- 
- /*
-  * PCI registers
-@@ -175,6 +176,10 @@ static const struct sdhci_pci_fixes sdhci_cafe = {
- 			  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
- };
- 
-+static const struct sdhci_pci_fixes sdhci_intel_qrk = {
-+	.quirks		= SDHCI_QUIRK_NO_HISPD_BIT,
-+};
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 04548f7023af..d15590856325 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -412,7 +412,18 @@ show_one(cpuinfo_max_freq, cpuinfo.max_freq);
+ show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
+ show_one(scaling_min_freq, min);
+ show_one(scaling_max_freq, max);
+-show_one(scaling_cur_freq, cur);
 +
- static int mrst_hc_probe_slot(struct sdhci_pci_slot *slot)
- {
- 	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA;
-@@ -860,6 +865,14 @@ static const struct pci_device_id pci_ids[] = {
- 
- 	{
- 		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_QRK_SD,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_intel_qrk,
-+	},
++static ssize_t show_scaling_cur_freq(
++	struct cpufreq_policy *policy, char *buf)
++{
++	ssize_t ret;
 +
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
- 		.device		= PCI_DEVICE_ID_INTEL_MRST_SD0,
- 		.subvendor	= PCI_ANY_ID,
- 		.subdevice	= PCI_ANY_ID,
++	if (cpufreq_driver && cpufreq_driver->setpolicy && cpufreq_driver->get)
++		ret = sprintf(buf, "%u\n", cpufreq_driver->get(policy->cpu));
++	else
++		ret = sprintf(buf, "%u\n", policy->cur);
++	return ret;
++}
+ 
+ static int __cpufreq_set_policy(struct cpufreq_policy *policy,
+ 				struct cpufreq_policy *new_policy);
+@@ -815,11 +826,11 @@ static int cpufreq_add_dev_interface(struct cpufreq_policy *policy,
+ 		if (ret)
+ 			goto err_out_kobj_put;
+ 	}
+-	if (cpufreq_driver->target) {
+-		ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
+-		if (ret)
+-			goto err_out_kobj_put;
+-	}
++
++	ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
++	if (ret)
++		goto err_out_kobj_put;
++
+ 	if (cpufreq_driver->bios_limit) {
+ 		ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
+ 		if (ret)
 -- 
 2.1.3
 
