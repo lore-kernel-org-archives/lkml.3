@@ -1,150 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaKRDDx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:03:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaKRDDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:03:52 -0500
-Message-ID: <546AB704.4010904@redhat.com>
-Date: Tue, 18 Nov 2014 11:03:32 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753382AbaKRDEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:04:52 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:18535 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751524AbaKRDEv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 22:04:51 -0500
+Date: Mon, 17 Nov 2014 22:04:49 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 11/23 v4] tracing: Do not use return values of
+ trace_seq_printf() in syscall tracing
+Message-ID: <20141117220449.253128cc@gandalf.local.home>
+In-Reply-To: <20141117214411.73a12be4@gandalf.local.home>
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011411.842421346@goodmis.org>
+	<87ioids587.fsf@sejong.aot.lge.com>
+	<20141117214411.73a12be4@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH V3 2/2] virtio-net: sanitize buggy features advertised
- by host
-References: <1416215838-21700-1-git-send-email-jasowang@redhat.com> <1416215838-21700-2-git-send-email-jasowang@redhat.com> <20141117100838.GD20133@redhat.com>
-In-Reply-To: <20141117100838.GD20133@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2014 06:08 PM, Michael S. Tsirkin wrote:
-> On Mon, Nov 17, 2014 at 05:17:18PM +0800, Jason Wang wrote:
->> This patch tries to detect the possible buggy features advertised by host
->> and sanitize them. One example is booting virtio-net with only ctrl_vq
->> disabled, qemu may still advertise many features which depends on it. This
->> will trigger several BUG()s in virtnet_send_command().
->>
->> This patch utilizes the sanitize_features() method, and disables all
->> features that depends on ctrl_vq if it was not advertised.
->>
->> This fixes the crash when booting with ctrl_vq=off using qemu.
->>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: Michael S. Tsirkin <mst@redhat.com>
->> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
->> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->
-> So I'm not sure this is useful.
-> The spec says:
-> 	The device MUST NOT offer a feature which requires another feature which
-> 	was not offered.
+On Mon, 17 Nov 2014 21:44:11 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-We can't guarantee that hypervisor's implementation are 100% correct.
-> So this is a buggy hypervisor, and I believe we should just fail probe.
-> This can be done without crashing, and is generally a better
-> idea that second-guessing what hypervisor wants us to do.
->
+> On Tue, 18 Nov 2014 09:49:12 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
+> 
 
-So we still need something like this patch to detect the wrong
-dependencies. And the features fixing like this is not something new,
-see how net device fix the features through ndo_fix_features().
->
->
->
-> However, assuming that we do want this change:
-> This can be replaced with a table driven design in virtio core, but
-> since you chose to open code it, I would drop table below altogether.
->
->
-> Just make it
-> 	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
-> 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_RX);
-> 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_VLAN);
-> 		virtio_disable_feature(dev, VIRTIO_NET_F_GUEST_ANNOUNCE);
-> 		virtio_disable_feature(dev, VIRTIO_NET_F_MQ);
-> 		virtio_disable_feature(dev, VIRTIO_NET_F_CTRL_MAC_ADDR);
-> 	}
->
+> > > -	ret = trace_seq_printf(s, "%s(", entry->name);
+> > > -	if (!ret)
+> > > -		return TRACE_TYPE_PARTIAL_LINE;
+> > > +	trace_seq_printf(s, "%s(", entry->name);
+> > >  
+> > >  	for (i = 0; i < entry->nb_args; i++) {
+> > 
+> > 		if (trace_seq_has_overflowed())
+> > 			goto end;
+> > ?
+> 
+> Yeah, I guess I can do that.
+> 
 
-This is similar to what I did in v1 and v2. Either are ok for me.
->
->
->> ---
->> Changes from V1:
->> - fix the cut-and-paste error
->> Changes from V2:
->> - loop through an array of feature bits
->> - switch to use dev_warn()
->> ---
->>  drivers/net/virtio_net.c | 26 ++++++++++++++++++++++++++
->>  1 file changed, 26 insertions(+)
->>
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index ec2a8b4..6fadd8c 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -1948,6 +1948,31 @@ static int virtnet_restore(struct virtio_device *vdev)
->>  }
->>  #endif
->>  
->> +static void virtnet_sanitize_features(struct virtio_device *dev)
->> +{
->> +	unsigned int features_for_ctrl_vq[] = {
->> +		VIRTIO_NET_F_CTRL_RX,
->> +		VIRTIO_NET_F_CTRL_VLAN,
->> +		VIRTIO_NET_F_GUEST_ANNOUNCE,
->> +		VIRTIO_NET_F_MQ,
->> +		VIRTIO_NET_F_CTRL_MAC_ADDR
->> +	};
-> This is not the only dependency: checksums
-> have dependencies too. See virtio 1.0 spec.
->
+Here's the update:
 
-I see ,and this kind of check could be added. But we're really safe
-since qemu handle such cases and won't advertise any offload feature is
-csum is not supported.
->
->> +	int i;
->> +
->> +	if (!virtio_has_feature(dev, VIRTIO_NET_F_CTRL_VQ)) {
->> +		for (i = 0; i < ARRAY_SIZE(features_for_ctrl_vq); i++) {
->> +			unsigned int f = features_for_ctrl_vq[i];
->> +			if (virtio_has_feature(dev, f)) {
->> +				virtio_disable_feature(dev, f);
->> +				dev_warn(&dev->dev,
->> +					 "buggy hyperviser: disable feature "
->> +					 "0x%x since VIRTIO_NET_F_CTRL_VQ was "
->> +					 "not advertised.\n", f);
->> +			}
->> +		}
->> +	}
->> +}
->> +
->>  static struct virtio_device_id id_table[] = {
->>  	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
->>  	{ 0 },
->> @@ -1975,6 +2000,7 @@ static struct virtio_driver virtio_net_driver = {
->>  	.probe =	virtnet_probe,
->>  	.remove =	virtnet_remove,
->>  	.config_changed = virtnet_config_changed,
->> +	.sanitize_features = virtnet_sanitize_features,
->>  #ifdef CONFIG_PM_SLEEP
->>  	.freeze =	virtnet_freeze,
->>  	.restore =	virtnet_restore,
->> -- 
->> 1.9.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- Steve
+
+>From 17845179b46f3e8b849d06a9a0069fd0a085e666 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Wed, 12 Nov 2014 17:41:33 -0500
+Subject: [PATCH] tracing: Do not use return values of trace_seq_printf() in
+ syscall tracing
+
+The functions trace_seq_printf() and friends will not be returning values
+soon and will be void functions. To know if they succeeded or not, the
+functions trace_seq_has_overflowed() and trace_handle_return() should be
+used instead.
+
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_syscalls.c | 47 +++++++++++++++++--------------------------
+ 1 file changed, 19 insertions(+), 28 deletions(-)
+
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 4dc8b79c5f75..a72f3d8d813e 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -114,7 +114,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+ 	struct trace_entry *ent = iter->ent;
+ 	struct syscall_trace_enter *trace;
+ 	struct syscall_metadata *entry;
+-	int i, ret, syscall;
++	int i, syscall;
+ 
+ 	trace = (typeof(trace))ent;
+ 	syscall = trace->nr;
+@@ -128,35 +128,28 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+ 		goto end;
+ 	}
+ 
+-	ret = trace_seq_printf(s, "%s(", entry->name);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_printf(s, "%s(", entry->name);
+ 
+ 	for (i = 0; i < entry->nb_args; i++) {
++
++		if (trace_seq_has_overflowed(s))
++			goto end;
++
+ 		/* parameter types */
+-		if (trace_flags & TRACE_ITER_VERBOSE) {
+-			ret = trace_seq_printf(s, "%s ", entry->types[i]);
+-			if (!ret)
+-				return TRACE_TYPE_PARTIAL_LINE;
+-		}
++		if (trace_flags & TRACE_ITER_VERBOSE)
++			trace_seq_printf(s, "%s ", entry->types[i]);
++
+ 		/* parameter values */
+-		ret = trace_seq_printf(s, "%s: %lx%s", entry->args[i],
+-				       trace->args[i],
+-				       i == entry->nb_args - 1 ? "" : ", ");
+-		if (!ret)
+-			return TRACE_TYPE_PARTIAL_LINE;
++		trace_seq_printf(s, "%s: %lx%s", entry->args[i],
++				 trace->args[i],
++				 i == entry->nb_args - 1 ? "" : ", ");
+ 	}
+ 
+-	ret = trace_seq_putc(s, ')');
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
++	trace_seq_putc(s, ')');
+ end:
+-	ret =  trace_seq_putc(s, '\n');
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
++	trace_seq_putc(s, '\n');
+ 
+-	return TRACE_TYPE_HANDLED;
++	return trace_handle_return(s);
+ }
+ 
+ static enum print_line_t
+@@ -168,7 +161,6 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
+ 	struct syscall_trace_exit *trace;
+ 	int syscall;
+ 	struct syscall_metadata *entry;
+-	int ret;
+ 
+ 	trace = (typeof(trace))ent;
+ 	syscall = trace->nr;
+@@ -176,7 +168,7 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
+ 
+ 	if (!entry) {
+ 		trace_seq_putc(s, '\n');
+-		return TRACE_TYPE_HANDLED;
++		goto out;
+ 	}
+ 
+ 	if (entry->exit_event->event.type != ent->type) {
+@@ -184,12 +176,11 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
+ 		return TRACE_TYPE_UNHANDLED;
+ 	}
+ 
+-	ret = trace_seq_printf(s, "%s -> 0x%lx\n", entry->name,
++	trace_seq_printf(s, "%s -> 0x%lx\n", entry->name,
+ 				trace->ret);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+ 
+-	return TRACE_TYPE_HANDLED;
++ out:
++	return trace_handle_return(s);
+ }
+ 
+ extern char *__bad_type_size(void);
+-- 
+1.8.1.4
+
 
