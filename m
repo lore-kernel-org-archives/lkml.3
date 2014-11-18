@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbaKRIwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:52:49 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:34124 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815AbaKRIws (ORCPT
+	id S1753897AbaKRIxa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:53:30 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:23489 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773AbaKRIx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:52:48 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-fc-546b08dcea97
-From: Weijie Yang <weijie.yang@samsung.com>
-To: konrad.wilk@oracle.com
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Seth Jennings'" <sjennings@variantweb.net>,
-        "'Dan Streetman'" <ddstreet@ieee.org>,
-        "'Minchan Kim'" <minchan@kernel.org>, "'Bob Liu'" <bob.liu@oracle.com>,
-        xfishcoder@gmail.com, "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: frontswap: invalidate expired data on a dup-store failure
-Date: Tue, 18 Nov 2014 16:51:36 +0800
-Message-id: <000001d0030d$0505aaa0$0f10ffe0$%yang@samsung.com>
+	Tue, 18 Nov 2014 03:53:27 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-97-546b0905daba
+Message-id: <546B0905.4020700@samsung.com>
+Date: Tue, 18 Nov 2014 17:53:25 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: lee.jones@linaro.org, broonie@kernel.org, mturquette@linaro.org,
+        a.zummo@towertech.it, lgirdwood@gmail.com, sameo@linux.intel.com,
+        geunsik.lim@samsung.com, inki.dae@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 4/5] rtc: s5m: Add the support for S2MPS13 RTC
+References: <1416184980-532-1-git-send-email-cw00.choi@samsung.com>
+ <1416184980-532-5-git-send-email-cw00.choi@samsung.com>
+ <012401d002c8$04efe610$0ecfb230$@samsung.com>
+In-reply-to: <012401d002c8$04efe610$0ecfb230$@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdADDNv43mHoldOFQiKfJi5nsexPFQ==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e+xgO4djuwQg8tfTSzmrF/DZtF1aiqL
-	xYW23SwWyxY/ZbS4vGsOm8W9Nf9ZLZZ9fc9u8enoIzaLJyf+s1jMeHGA2YHLY+esu+weTycc
-	ZPLYtKqTzWPTp0nsHidm/Gbx+Pj0FovH9W9FHp83yQVwRHHZpKTmZJalFunbJXBl9LyYyVzw
-	jbPi2c8z7A2MjRxdjJwcEgImEmsWdjNC2GISF+6tZ+ti5OIQEljEKHH94Tt2COcPo8TBW4dY
-	QKrYBLQl7vZvZAWxRQSkJFZvvMcKUsQscIBJ4sG9RWAJYQE/iZ62y8xdjBwcLAKqEkuP6oKE
-	eQXsJP4vmMgGYQtK/Jh8jwWkhFlAXWLKlFyQMLOAvMTmNW/BOiWAwo/+6kJs0pN4c+MiG0SJ
-	uMTGI7dYJjAKzEIyaBbCoFlIBs1C0rGAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnDM
-	PJPewbiqweIQowAHoxIPb+LUrBAh1sSy4srcQ4wSHMxKIrznuoFCvCmJlVWpRfnxRaU5qcWH
-	GKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGKcz7V/h/+CX1C3+57kZWpl/D8n4blv0
-	x3w587NVdbfiF/6UW2SXzOf5ROXlujev3ZjKZZPMvrxRPL/sYf5bh5K5nq/sr5+eI79yh8Kl
-	Dx/+8T9MXpX8rv6jcaR9ZMSsJ9cKRGY2BX/ItJ7M7sbya6XW/fywhuZ7XyYeTDbeOnfL9XNS
-	DrFqGwSVWIozEg21mIuKEwH3xORklQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsWyRsSkUJeVMzvEYNJyWYslF6+yW0x9+ITN
+	Yv6Rc6wWfya0sllMuj+BxeJs0xt2i/tfjzJafLvSwWRxedccNounEy6yWZzuZrW4uOILkwOP
+	x85Zd9k9Nq3qZPO4c20Pm8e8k4EefVtWMXpMn/eTyePzJrkA9igum5TUnMyy1CJ9uwSujJWP
+	ljMWdDJXHJ4/g7mBcRtTFyMnh4SAicSPxxeYIWwxiQv31rN1MXJxCAksZZS4svYUK0zRybm9
+	7BCJ6YwSa06/AUsICbxmlNjWGg5i8wpoScy49xaom4ODRUBVYv0KbpAwG1B4/4sbbCC2qECY
+	xMrpV1ggygUlfky+B2aLCKhJHDl1nglkPrNAP5PE9wvXwRLCAk4Sk+Z/grpoLaPEnwXTwSZx
+	ClhJ3Dm+BOxsZgEdif2t09ggbHmJzWveMoM0SAg0ckj8b94FVsQiICDxbfIhFpDrJARkJTYd
+	gHpZUuLgihssExjFZiE5ahaSsbOQjF3AyLyKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIzB2
+	T/97NmEH470D1ocYBTgYlXh4E6dmhQixJpYVV+YeYjQFumIis5Rocj4wQeSVxBsamxlZmJqY
+	GhuZW5opifO+lvoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFRZMVM+9f/RFlOP/L8Wsdn
+	FbbzQY7U3Rwmv10pkvwnCxZuX7Rr3bLVGxQkpurd8f7kxBJwkqu1KSnfj+n0muq6yR5npOIK
+	k/cWVqmkv/9Z+DrWy/lDlX3O3WmKR1/2PBLQFtepERGQzPxT++KezRuT5UUXSpnPK+uczd95
+	5/wnL4bPxXsN6vKVWIozEg21mIuKEwFj42Ca2AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xoC4rZ3aIwa3TohZLLl5lt5j68Amb
+	xfwj51gt/kxoZbOYdH8Ci8XZpjfsFve/HmW0+Halg8ni8q45bBZPJ1xkszjdzWpxccUXJgce
+	j52z7rJ7bFrVyeZx59oeNo95JwM9+rasYvSYPu8nk8fnTXIB7FENjDYZqYkpqUUKqXnJ+SmZ
+	eem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QIcqKZQl5pQChQISi4uV9O0wTQgN
+	cdO1gGmM0PUNCYLrMTJAAwlrGDNWPlrOWNDJXHF4/gzmBsZtTF2MnBwSAiYSJ+f2skPYYhIX
+	7q1n62Lk4hASmM4oseb0G1aQhJDAa0aJba3hIDavgJbEjHtvgYo4OFgEVCXWr+AGCbMBhfe/
+	uMEGYosKhEmsnH6FBaJcUOLH5HtgtoiAmsSRU+eZQOYzC/QzSXy/cB0sISzgJDFp/ieoxWsZ
+	Jf4smA42iVPASuLO8SXMIDazgI7E/tZpbBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYwMq9iFE0t
+	SC4oTkrPNdIrTswtLs1L10vOz93ECE4Mz6R3MK5qsDjEKMDBqMTDmzg1K0SINbGsuDL3EKME
+	B7OSCO+5bqAQb0piZVVqUX58UWlOavEhRlNgEExklhJNzgcmrbySeENjEzMjSyNzQwsjY3Ml
+	cd6DrdaBQgLpiSWp2ampBalFMH1MHJxSDYy1v4VcXPSN7G/J1bx+on8p4PX1a5/nK1t1Vs1O
+	ONn37V/lwj/pux+0Rll9UlMLW8y79tgfn8iyK2fa+i2/a/+LeKP7535+lXPmX9umn9t/fC8T
+	YvOa4+uVFn3dSEcnIqtPjed8aH1qx5o0vxvmK5rehTY0Z115NnHnuyv3xeZqFW9bajLfa7ES
+	S3FGoqEWc1FxIgDOHdHrIgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a frontswap dup-store failed, it should invalidate the expired page
-in the backend, or it could trigger some data corruption issue.
-Such as:
-1. use zswap as the frontswap backend with writeback feature
-2. store a swap page(version_1) to entry A, success
-3. dup-store a newer page(version_2) to the same entry A, fail
-4. use __swap_writepage() write version_2 page to swapfile, success
-5. zswap do shrink, writeback version_1 page to swapfile
-6. version_2 page is overwrited by version_1, data corrupt.
+Dear Sangbeom,
 
-This patch fixes this issue by invalidating expired data immediately
-when meet a dup-store failure.
+On 11/18/2014 09:38 AM, Sangbeom Kim wrote:
+> Hi,
+> On Monday, November 17, 2014 9:43 AM, Chanwoo Choi wrote:
+>> This patch adds only the compatible string for S2MPS13 clock which is identical
+>> with S2MPS14 clock driver.
+> 
+> What's the relation of S2MPS14 RTC and clock driver?
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- mm/frontswap.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Sorry, I write wrong patch description. I'll fix it.
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index c30eec5..f2a3571 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
- 		  the (older) page from frontswap
- 		 */
- 		inc_frontswap_failed_stores();
--		if (dup)
-+		if (dup) {
- 			__frontswap_clear(sis, offset);
-+			frontswap_ops->invalidate_page(type, offset);
-+		}
- 	}
- 	if (frontswap_writethrough_enabled)
- 		/* report failure so swap also writes to swap device */
--- 
-1.7.0.4
-
-
+Best Regards,
+Chanwoo Choi
