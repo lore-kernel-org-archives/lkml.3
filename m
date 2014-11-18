@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaKRUqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:46:12 -0500
-Received: from mout.web.de ([212.227.17.11]:54944 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754558AbaKRUqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:46:09 -0500
-Message-ID: <546BAFF5.5020603@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 21:45:41 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] net: xfrm: Deletion of an unnecessary check before the
- function call "ipcomp_free_tfms"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
+	id S932336AbaKRUq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:46:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109AbaKRUq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 15:46:26 -0500
+Date: Tue, 18 Nov 2014 12:46:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH vfs 1/2] lib: implement ptrset
+Message-Id: <20141118124624.ff0b3140068a090b2860f202@linux-foundation.org>
+In-Reply-To: <20141114131202.GB21209@htj.dyndns.org>
+References: <20141113220927.GF2598@htj.dyndns.org>
+	<20141113142333.39fc29592019a397131fb03c@linux-foundation.org>
+	<20141113222736.GH2598@htj.dyndns.org>
+	<20141113144041.23bff773808562c699507621@linux-foundation.org>
+	<20141114131202.GB21209@htj.dyndns.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:7O8h5JQvN6Xm+mm+X2AR2QnOYcJlyH4tczIDkJi7VizOZGa6kc4
- WEbYvrrK5gLNObRVW1cuMxPuTMJb7g/Fnt1BY2fTJiFvM80s1h/U+BrrPCs/uah8xoN8Ylr
- jDQ+UVn17zRoh5bG8V7O3uitOL9SxDRTmC1JYR9IvK+HWWSQUgzHTDqIMYMchkNqtIL3+HG
- mu8b3AP1WBzLgve5Z8JRg==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 21:41:26 +0100
+On Fri, 14 Nov 2014 08:12:02 -0500 Tejun Heo <tj@kernel.org> wrote:
 
-The ipcomp_free_tfms() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+> Hello, Andrew.
+> 
+> On Thu, Nov 13, 2014 at 02:40:41PM -0800, Andrew Morton wrote:
+> > In that case tjpointer_add() would need to do a kmalloc() for each inode
+> > which is added to the bdev/cdev, just as ptrset_add() is doing.
+> > 
+> > That might require a nasty preload thing.  But really, for just two
+> > known callers it would be better to require the caller to create the
+> > storage.
+> > 
+> > 
+> > 	struct tjpointer *new_tpj;
+> > 
+> > 	new_tpj = kmalloc(...);
+> > 	lock();
+> > 	tjpointer_add(&my_tjp_list, new_tjp, my_pointer);
+> > 	unlock();
+> > 
+> > Basically what I'm saying is nuke the rbtree and use lists.
+> 
+> Hah?  Then, each removal would be O(N) where N is the number of total
+> block devices and there are cases where massive number of block
+> devices exist and many are added / removed back-to-back.  I don't
+> think making those operations O(N^2) is a good idea.
+> 
 
-This issue was detected by using the Coccinelle software.
+bdev_evict_inode() walks all the inodes attached to the bdev and
+unlinks them from the bdev.  That can be done with
+list_for_each_safe(), just as it is (effectively) in current mainline.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- net/xfrm/xfrm_ipcomp.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+IOW, all we need to do is to remove the list_head from struct inode and
+create a new, separately allocated { struct list_head l; void *inode }
+to point at the inode.  IOW, simply convert the intrusive list to a
+nonintrusive list.
 
-diff --git a/net/xfrm/xfrm_ipcomp.c b/net/xfrm/xfrm_ipcomp.c
-index ccfdc71..47863cd 100644
---- a/net/xfrm/xfrm_ipcomp.c
-+++ b/net/xfrm/xfrm_ipcomp.c
-@@ -320,8 +320,7 @@ error:
- 
- static void ipcomp_free_data(struct ipcomp_data *ipcd)
- {
--	if (ipcd->tfms)
--		ipcomp_free_tfms(ipcd->tfms);
-+	ipcomp_free_tfms(ipcd->tfms);
- 	ipcomp_free_scratches();
- }
- 
--- 
-2.1.3
 
+This is proving a painful way of extracting a changelog :( Perhaps I'm
+still not getting it and you should have another go, this time
+explaining the reasoning behind the design choices.
