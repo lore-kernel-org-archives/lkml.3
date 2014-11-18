@@ -1,74 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbaKRFCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 00:02:43 -0500
-Received: from new1-smtp.messagingengine.com ([66.111.4.221]:53270 "EHLO
+	id S1752452AbaKRFC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 00:02:57 -0500
+Received: from new1-smtp.messagingengine.com ([66.111.4.221]:41321 "EHLO
 	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750708AbaKRFCm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	by vger.kernel.org with ESMTP id S1750778AbaKRFCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 00:02:42 -0500
-X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Nov 2014 00:02:41 EST
-Message-Id: <1416286960.151058.192270061.1EE682B5@webmail.messagingengine.com>
-X-Sasl-Enc: Pod9WZO70Xwd/WVBQH493ICPhI7Ae0knvdO/q8RclPtm 1416286960
+Message-Id: <1416286644.149611.192268673.59DDCBA5@webmail.messagingengine.com>
+X-Sasl-Enc: 8+VSl34VsqevRPd7ICJWtez0XjBImv7hlBU6IiDXdl0z 1416286644
 From: SystemBlues <sdblues@fastmail.com>
-To: "" <linux-kernel@vger.kernel.org>, debian-user@lists.debian.org,
+To: linux-kernel@vger.kernel.org, debian-user@lists.debian.org,
         debian-vote@lists.debian.org, ubuntu-users@lists.ubuntu.com,
         ubuntu-devel-discuss@lists.ubuntu.com
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 X-Mailer: MessagingEngine.com Webmail Interface - ajax-9183bd94
-Subject: Response to Erich Schubert's false statement. (ES is a male-feminist and
- systemd fan, the first colours his judgement)
-Date: Mon, 17 Nov 2014 21:02:40 -0800
+Subject: What systemD lock-in leads to: An eventual lament. Please don't let it
+ happen.
+Date: Mon, 17 Nov 2014 20:57:24 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr Schubert;
+Eventual lament (nylon string guitar):
 
-"He has not contributed anything to the open source community."
-This is a complete lie. I've contributed gigabytes of media alone.
-I've done years and years of programming work.
-I have done far more than you ever will.
+I was recording one evening and at some point wandered into a lament.
 
-"His songs and "games" are not worth looking at,"
-Your subjective view. Coloured by your social views and your
-disdain for those who oppose you in that.
+http://youtu.be/PCJ-CWYoY9s 
 
-"and I'm not aware of any project that has accepted any of his
-"contributions"."
-The only objectively true thing you've said: you're not aware.
-I'm glad you're unaware, I hope that trend continues.
+I though many would feel the same, once comes in full lennart's reign.
+Please don't let it happen.
 
-I expect this post to be censored, it is par for the course for people
-like you.
-
-Sincerely;
---MikeeUSA--
-
----------------------
-(Erich Schubert put forth false claims about lack of involvement of mine
-in free/opensource software)
-(When corrected he first engaged, then deleted all the posts, keeping
-only his false statements visible)
-http://www.vitavonni.de/blog/201411/2014110901-gr-vote-on-init-coupling.html
-About Erich_Schubert:
-
-http://www.dbs.ifi.lmu.de/cms/Erich_Schubert
-
-Ludwig-Maximilians-Universität München
-Lehr- und Forschungseinheit für Datenbanksysteme
-Oettingenstraße 67
-80538 München
-Germany
-Room:   F 109
-Phone:  +49-89-2180-9325
-Fax:    +49-89-2180-9192
-Email:  schube@dbs.ifi.lmu.de
-
-Sprechstunde: jeden Donnerstag 15-16 Uhr, Zimmer F 109 
-
-What is he all about? Data-Mining an der Hochschule Rosenheim
-(also seen on his most recent projects)
-
+(C) Gnu GPL v2
