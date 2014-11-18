@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854AbaKRIa0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:30:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32893 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaKRI2j (ORCPT
+	id S1753746AbaKRIcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:32:15 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:62282 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaKRIcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:28:39 -0500
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
-        corbet@lwn.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
-        brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH] intel_pstate: skip the driver if Sun server has ACPI _PPC method
-Date: Tue, 18 Nov 2014 17:27:27 +0900
-Message-Id: <1416299253-14912-2-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
-References: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 18 Nov 2014 03:32:12 -0500
+Date: Tue, 18 Nov 2014 09:32:34 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Mark Yao <mark.yao@rock-chips.com>
+Cc: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
+        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH v12 1/3] drm: rockchip: Add basic drm driver
+Message-ID: <20141118083234.GZ25711@phenom.ffwll.local>
+Mail-Followup-To: Mark Yao <mark.yao@rock-chips.com>, heiko@sntech.de,
+	Boris BREZILLON <boris.brezillon@free-electrons.com>,
+	David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+	Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Kumar Gala <galak@codeaurora.org>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Grant Likely <grant.likely@linaro.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	John Stultz <john.stultz@linaro.org>,
+	Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+	linux-rockchip@lists.infradead.org, dianders@chromium.org,
+	marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+	djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
+	huangtao@rock-chips.com, kever.yang@rock-chips.com,
+	yxj@rock-chips.com, xw@rock-chips.com
+References: <1416297587-18959-1-git-send-email-mark.yao@rock-chips.com>
+ <1416297629-19024-1-git-send-email-mark.yao@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416297629-19024-1-git-send-email-mark.yao@rock-chips.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oracle Sun X86 servers have dynamic power capping capability that works via
-ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
-enabled.
+On Tue, Nov 18, 2014 at 04:00:29PM +0800, Mark Yao wrote:
+> From: Mark yao <mark.yao@rock-chips.com>
+> 
+> This patch adds the basic structure of a DRM Driver for Rockchip Socs.
+> 
+> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> Acked-by: Daniel Vetter <daniel@ffwll.ch>
+> Reviewed-by: Rob Clark <robdclark@gmail.com>
+> ---
+> Changes in v2:
+> - use the component framework to defer main drm driver probe
+>   until all VOP devices have been probed.
+> - use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+>   master device and each vop device can shared the drm dma mapping.
+> - use drm_crtc_init_with_planes and drm_universal_plane_init.
+> - remove unnecessary middle layers.
+> - add cursor set, move funcs to rockchip drm crtc.
+> - use vop reset at first init
+> - reference framebuffer when used and unreference when swap out vop
+> 
+> Changes in v3:
+> - change "crtc->fb" to "crtc->primary-fb"
+> Adviced by Daniel Vetter
+> - init cursor plane with universal api, remove unnecessary cursor set,move 
+> 
+> Changes in v4:
+> Adviced by David Herrmann
+> - remove drm_platform_*() usage, use register drm device directly.
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
----
- drivers/cpufreq/intel_pstate.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+Minor fixup for that part below.
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 27bb6d3..5498eb0 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -943,6 +943,21 @@ static bool intel_pstate_no_acpi_pss(void)
- 	return true;
- }
- 
-+static bool intel_pstate_has_acpi_ppc(void)
-+{
-+	int i;
-+
-+	for_each_possible_cpu(i) {
-+		struct acpi_processor *pr = per_cpu(processors, i);
-+
-+		if (!pr)
-+			continue;
-+		if (acpi_has_method(pr->handle, "_PPC"))
-+			return true;
-+	}
-+	return false;
-+}
-+
- struct hw_vendor_info {
- 	u16  valid;
- 	char oem_id[ACPI_OEM_ID_SIZE];
-@@ -952,6 +967,7 @@ struct hw_vendor_info {
- /* Hardware vendor-specific info that has its own power management modes */
- static struct hw_vendor_info vendor_info[] = {
- 	{1, "HP    ", "ProLiant"},
-+	{1, "ORACLE", ""},
- 	{0, "", ""},
- };
- 
-@@ -969,12 +985,16 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- 		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
- 		    intel_pstate_no_acpi_pss())
- 			return true;
-+		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
-+			intel_pstate_has_acpi_ppc())
-+			return true;
- 	}
- 
- 	return false;
- }
- #else /* CONFIG_ACPI not enabled */
- static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-+static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
- #endif /* CONFIG_ACPI */
- 
- static int __init intel_pstate_init(void)
+[snip]
+
+> +static int rockchip_drm_bind(struct device *dev)
+> +{
+> +	struct drm_device *drm;
+> +	int ret;
+> +
+> +	drm = drm_dev_alloc(&rockchip_drm_driver, dev);
+> +	if (!drm)
+> +		return -ENOMEM;
+> +
+> +	ret = drm_dev_set_unique(drm, "%s", dev_name(dev));
+> +	if (ret)
+> +		goto err_free;
+
+Please call rockchip_drm_load here directly and don't put it as the ->load
+function into the driver vtable. The point of the alloc/register split is
+that the driver can be completely set up _before_ we register anything.
+But for backwards compat and historical reasons ->load is called somewhere
+in the middle (so that you could access the minor nodes if needed, since
+some drivers do that).
+
+Cheers, Daniel
 -- 
-1.8.3.1
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
