@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaKRIcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:32:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40317 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaKRIcb (ORCPT
+	id S1754069AbaKRIc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:32:56 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:14235 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567AbaKRIcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:32:31 -0500
-Message-ID: <546B0412.8060102@oracle.com>
-Date: Tue, 18 Nov 2014 16:32:18 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 18 Nov 2014 03:32:54 -0500
+Message-ID: <546B041A.4060403@huawei.com>
+Date: Tue, 18 Nov 2014 16:32:26 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Ethan Zhao <ethan.zhao@oracle.com>
-CC: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
-        corbet@lwn.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        ethan.kernel@gmail.com, joe.jin@oracle.com, brian.maly@oracle.com
-Subject: Re: [PATCH] intel_pstate: allow to be built as module and handle
- Sun server power capping.
-References: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
-In-Reply-To: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Arnd Bergmann <arnd@arndb.de>, <linuxppc-dev@lists.ozlabs.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Liviu Dudau <liviu@dudau.co.uk>,
+        Tony Luck <tony.luck@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        <linux-pci@vger.kernel.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        "Thierry Reding" <thierry.reding@gmail.com>,
+        <Suravee.Suthikulpanit@amd.com>, <linux-ia64@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Wuyun <wuyun.wu@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 07/16] PCI: Separate pci_host_bridge creation out
+ of pci_create_root_bus()
+References: <1416219710-26088-1-git-send-email-wangyijing@huawei.com> <1416219710-26088-8-git-send-email-wangyijing@huawei.com> <2507218.mHliopJb05@wuerfel>
+In-Reply-To: <2507218.mHliopJb05@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I missed the -n to git format-patch,
-please ignore this patch.
 
-Thanks,
-Ethan
+>> +LIST_HEAD(pci_host_bridge_list);
+>> +DECLARE_RWSEM(pci_host_bridge_sem);
+> 
+> Unless the pci_host_bridge_sem is accessed thousands of times per second,
+> it's normally better to use a simple mutex instead.
 
-On 2014/11/18 16:27, Ethan Zhao wrote:
->    Oracle Sun servers(X86) have power capping features that work via ACPI _PPC method,
-> patch No.1 is used to skip this driver if Oracle Sun server and _PPC detected. patch
-> No.2 is used to allow the driver to be configured and built as a module, so provide
-> the flexibility of configuration by userland. patch No.3 introduce a module parameter
-> and a kernel command line parameter, let user could force it loaded even on Oracle Sun
-> Servers(X86), that will be useful for debug\test\workaround etc purpose.
->
-> These patches have been tested on Oracle Sun server X4-2 series with following
-> cases on stable v3.18-rc3.
->
->    a. Configure and build  intel_pstate as builtin.
->       Boot without any kernel line parameter.
->       Boot with intel_pstate=ignore_acpi_ppc.
->    b. Configure and build intel_pstate as module.
->       Load intel_pstate drive without any module parameter.
->       Load intel_pstate driver with ignore_acpi_ppc=1
->
-> These cases passed and work fine.
-> --
-> Brian Maly (1):
->    intel_pstate: allow driver to be built as a module
->
-> Ethan Zhao (2):
->    intel_pstate: skip the driver if Sun server has ACPI _PPC method
->    intel_pstate: add module and kernel command line parameter to ignore
->      ACPI _PPC
->
->   Documentation/kernel-parameters.txt |  3 +++
->   drivers/cpufreq/Kconfig.x86         |  2 +-
->   drivers/cpufreq/intel_pstate.c      | 32 ++++++++++++++++++++++++++++++++
->   3 files changed, 36 insertions(+), 1 deletion(-)
->
+OK, I will use simple mutex instead.
+
+> 
+>> +static struct resource busn_resource = {
+>> +	.name	= "PCI busn",
+>> +	.start	= 0,
+>> +	.end	= 255,
+>> +	.flags	= IORESOURCE_BUS,
+>> +};
+> 
+> I think it would be better to require callers to pass the bus resource
+> down to the function.
+
+Hmm, I think most of caller will provide the bus resource, but some others
+will not give any bus resource, extremely, no any resources :(. But we still
+need properly configure their resources for compatibility.
+
+> 
+>> +struct pci_host_bridge *pci_create_host_bridge(
+>> +		struct device *parent, u32 db, 
+>> +		struct pci_ops *ops, void *sysdata, 
+>> +		struct list_head *resources)
+>> +{
+> 
+> Do we still need to pass the 'sysdata' in here? If we are guaranteed to
+> have a device pointer, we should always be able to get the driver
+> private data from dev_get_drvdata(host->dev->parent).
+
+We need, some platforms pass NULL pointer as host bridge parent.
+
+> 
+>> +	host = kzalloc(sizeof(*host), GFP_KERNEL);
+>> +	if (!host)
+>> +		return NULL;
+> 
+> devm_kzalloc maybe?
+
+I don't know much detail about devm_kzalloc(), but we have no pci host driver
+here, and I found no devm_kzalloc() uses in core PCI code before.
+
+> 
+>> +	if (!resources) {
+>> +		/* Use default IO/MEM/BUS resources*/
+>> +		pci_add_resource(&host->windows, &ioport_resource);
+>> +		pci_add_resource(&host->windows, &iomem_resource);
+>> +		pci_add_resource(&host->windows, &busn_resource);
+>> +	} else {
+>> +		list_for_each_entry_safe(window, n, resources, list)
+>> +			list_move_tail(&window->list, &host->windows);
+>> +	}
+> 
+> I think we should assume that the correct resources are passed. You
+> could add a wrapper around this function to convert old platforms
+> though.
+
+OK, I will move these code out of pci_create_host_bridge, and add a wrapper
+to setup the default resources.
+
+> 
+>> +EXPORT_SYMBOL(pci_create_host_bridge);
+> 
+> EXPORT_SYMBOL_GPL() maybe?
+
+OK, will update it.
+
+> 
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index 8b11b38..daa7f40 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -402,7 +402,12 @@ struct pci_host_bridge_window {
+>>  struct pci_host_bridge {
+>>  	struct device dev;
+>>  	struct pci_bus *bus;		/* root bus */
+>> +	struct list_head list;
+>>  	struct list_head windows;	/* pci_host_bridge_windows */
+>> +	int busnum;
+> 
+> The busnum should already be implied through the bus resource.
+
+Yes, I will consider remove it and introduce a helper function to get the root bus number, thanks!
+
+Thanks!
+Yijing.
+
+> 
+> 	Arnd
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
 
