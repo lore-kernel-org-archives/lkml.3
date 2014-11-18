@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705AbaKRPLC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:11:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57219 "EHLO mx2.suse.de"
+	id S932670AbaKRPLY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:11:24 -0500
+Received: from 7of9.schinagl.nl ([88.159.158.68]:44236 "EHLO 7of9.schinagl.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943AbaKROJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:09:36 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Richard Genoud <richard.genoud@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 078/206] UBI: add missing kmem_cache_free() in process_pool_aeb error path
-Date: Tue, 18 Nov 2014 15:07:13 +0100
-Message-Id: <c7077ed405a94651d01822ab8390ab1b84bf341a.1416319692.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
-In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
-References: <cover.1416319692.git.jslaby@suse.cz>
+	id S932539AbaKRPLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 10:11:21 -0500
+Message-ID: <546B6195.7020907@schinagl.nl>
+Date: Tue, 18 Nov 2014 16:11:17 +0100
+From: Olliver Schinagl <oliver@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thierry Reding <thierry.reding@gmail.com>, Simon <longsleep@gmail.com>,
+        linux-pwm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv9 0/2] Add Allwinner SoCs PWM support
+References: <1415200545-26238-1-git-send-email-alexandre.belloni@free-electrons.com> <546B4DF5.9020100@schinagl.nl> <20141118135454.GD6414@lukather> <546B538E.9020808@schinagl.nl> <20141118145544.GE6414@lukather>
+In-Reply-To: <20141118145544.GE6414@lukather>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Genoud <richard.genoud@gmail.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 18-11-14 15:55, Maxime Ripard wrote:
+> On Tue, Nov 18, 2014 at 03:11:26PM +0100, Olliver Schinagl wrote:
+>> On 18-11-14 14:54, Maxime Ripard wrote:
+>>> On Tue, Nov 18, 2014 at 02:47:33PM +0100, Olliver Schinagl wrote:
+>>>> Hey Alexandre,
+>>>>
+>>>> On 05-11-14 16:15, Alexandre Belloni wrote:
+>>>>> Hi,
+>>>>>
+>>>>> This patch series adds support for the PWM controller found on the Allwinner
+>>>>> SoCs.
+>>>>>
+>>>>> The first patch adds the driver itself.
+>>>>> The second patch adds the DT binding documentation
+>>>>>
+>>>>> Changes in v8:
+>>>>>   - renamed the driver sun4i as the PWM IP is different in the next sunxi SoCs
+>>>> Why did you decide to rename it to sun4i? From your bindings document I
+>>>> understand you still support sun4i and sun7i, what happened to sun5i?
+>>>>
+>>>> I went over the datasheets of sun4i, sun5i and sun7i and the disp_lcd.c from
+>>>> the latest linux-sunxi kernels and have to agree, they are all 4
+>>>> inconsistent and messy, but I'm not sure what you mean with PWM IP is
+>>>> different in next sunxi soc's. is sun5i different to sun4i? is sun7i
+>>>> different? or is sun6i (A31), sun8i (a80) and sun9i (A23) different?
+>>>>
+>>>> What I get from the datasheet is, that sun4i and sun5i are exactly the same,
+>>>> with the exception that sun5i only has 1 PWM (~exposed~). I belive that is
+>>>> easily solved with the bindings by having allwinner-sun4i and allwinner
+>>>> sun5i bindings if I'm not mistaken.
+>>>>
+>>>> As for sun7i compared to the other ones, according to disp_lcd.c sun5i and
+>>>> sun7i should behave exactly the same. This is contradicting to the
+>>>> datasheet, where sun4i and sun5i are the same.
+>>>>
+>>>> So what are the major differences that I can see between the 3? sun4i
+>>>> defines the PWM prescaler register value 0b1111 as being undefined, and
+>>>> sun5i and sun7i as /1? Did you verify this (I haven't I admit, i bumped into
+>>>> this while looking for your patch ;-) )? I wouldn't be supprised if it where
+>>>> a typo on allwinners end in the datasheet ... disp_lcd.c stops at 72000 for
+>>>> the last entry. We should just check sun4i, sun5i and sun7i hardware to see
+>>>> if it behaves the same with a prescaler of 0b1111, which I would not be
+>>>> totally surprised if it did.
+>>>>
+>>>> The other difference I notice is that sun7i and sun5i use 16bit period
+>>>> register where sun4i uses a 8bit register. This is probably the only reason
+>>>> why they put a #ifdef in disp_lcd.c, calculations turn out differently. I
+>>>> don't recognize this behavior at all in your driver however. I do think they
+>>>> that there is a difference here, since they did split up the original driver
+>>>> here because of this difference.
+>>>>
+>>>> The pre-scaler bypass bit and pwm ready bit you all ready take care of :)
+>>> A31 and later are using a different IP, that is not supported by this
+>>> driver.
+>> Ah, see that was not clear to me ;) Also a comment in the code would be
+>> helpful how the 8bit vs 16bit period register is being handled with regards
+>> to sun4i and sun7i. I can't seem to spot where this is taken into account,
+>> since the disp_lcd.c code suggests there is supposedly some difference? I
+>> can't tell from their code what is really going on, since they are using
+>> unsigned 32 bit integers and crap that in the lower and upper half of the
+>> 16bit register, so maybe the register has always been 16bit but the docs are
+>> simply wrong? But then why differentiate between the two chip generations
+>> ...
+> Is this a bug report? Or just some theorical issues that we might
+> never encounter?
+No, I'm asking why it is nowhere documented or not directly clear from 
+the code, that sun4i according to the datasheet uses 8bits for the 
+period register and sun5i and sun7i use 16bits. Also, the only reason 
+why the allwinner code differentiates between sun4i and sun5/7i is 
+because of this register. It contradicts what we know at this point, so 
+a comment indicating this would be nice.
 
-===============
+I am currently building a kernel with these patches added for sun7i and 
+see if it works; i'll try to find some sun4i hardware and test it there 
+as well and report back then.
 
-commit 1bf1890e86869032099b539bc83b098be12fc5a7 upstream.
-
-I ran into this error after a ubiupdatevol, because I forgot to backport
-e9110361a9a4 UBI: fix the volumes tree sorting criteria.
-
-UBI error: process_pool_aeb: orphaned volume in fastmap pool
-UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
-kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
-[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
-[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
-[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
-[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
-[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
-[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
-[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
-[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
-[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
-UBI: scanning is finished
-
-Freeing the cache in the error path fixes the Slab error.
-
-Tested on at91sam9g35 (3.14.18+fastmap backports)
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/mtd/ubi/fastmap.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index f5aa4b02cfa6..85cd77c9cd12 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_device *ubi, struct ubi_attach_info *ai,
- 		av = tmp_av;
- 	else {
- 		ubi_err("orphaned volume in fastmap pool!");
-+		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
- 		return UBI_BAD_FASTMAP;
- 	}
- 
--- 
-2.1.3
+Olliver
+>
+>>> This driver only support the controller introduced with the A10, that
+>>> only saw minor differences between SoCs, like you have shown.
+>>>
+>>>> Finally, though I'm sure I should have replied to it inline in the actual
+>>>> code, but hoping i can let it slip through here is that you define your
+>>>> local data as:
+>>>>
+>>>> + static const struct sun4i_pwm_data sun4i_pwm_data_a20 = {
+>>>>
+>>>> which looks really strange to me, since there is no a20 using the sun4i
+>>>> architecture :) I know it's just nitpicking, it just looks really odd. Maybe
+>>>> the compatible naming works just as well? sun4i_pwm_data; sun7i_pwm_data
+>>>> (and sun5i_pwm_data if you want to take care of only pwm0, only pwm1 (if we
+>>>> ever encounter such a configuration, disabled pwm0, enabled pwm1) or both to
+>>>> be used?)
+>>> This driver is name sun4i_pwm, hence the prefix.
+>> Ah right, unrelated, but I guess I should change my sunxi driver name to
+>> sun4i as well then?
+> What? Why?
+>
+> Maxime
+>
 
