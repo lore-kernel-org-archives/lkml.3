@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724AbaKRIUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:20:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48499 "EHLO mga09.intel.com"
+	id S1753749AbaKRIWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:22:03 -0500
+Received: from ozlabs.org ([103.22.144.67]:36431 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699AbaKRIUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:20:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,408,1413270000"; 
-   d="scan'208";a="609624168"
-From: "Jamet, Michael" <michael.jamet@intel.com>
-To: Andreas Noever <andreas.noever@gmail.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Levy, Amir (Jer)" <amir.jer.levy@intel.com>,
-        "Alloun, Dan" <dan.alloun@intel.com>,
-        Rafael Wysocki <rjw@rjwysocki.net>
-Subject: RE: [PATCH] pci: support Thunderbolt requirements for I/O resources.
-Thread-Topic: [PATCH] pci: support Thunderbolt requirements for I/O
- resources.
-Thread-Index: AQHP/ohLgY5RjnqrwESQUJmb1M7dNZxdHb+AgAARQQCAAB44gIAIxgYw
-Date: Tue, 18 Nov 2014 08:20:13 +0000
-Message-ID: <BC567D27D6B7384F84318942321624DE16179F2A@hasmsx109.ger.corp.intel.com>
-References: <1415847123-15558-1-git-send-email-michael.jamet@intel.com>
- <CAErSpo7Z5x=U3vSnxrFpwYUDrUrnrrBCe1F9_GQNYqWWQFWNpQ@mail.gmail.com>
- <CAHp75VcZ0XjcFxjrSgr5-XnWZZa-eZfPH_Fa1Hzb=f+qtE3z9w@mail.gmail.com>
- <CAMxnaaXOa_GAFwK+tUrO8DBjENqdd9uaQHKqEMm+i4754Ch3gQ@mail.gmail.com>
-In-Reply-To: <CAMxnaaXOa_GAFwK+tUrO8DBjENqdd9uaQHKqEMm+i4754Ch3gQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1752045AbaKRIWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 03:22:00 -0500
+Date: Tue, 18 Nov 2014 19:21:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: build warning after merge of the scsi tree
+Message-ID: <20141118192148.1c77179c@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/GQfrx+RN=pKpBd0idFwR6Fl"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAI8KTVn018791
 
-> -----Original Message-----
-> From: Andreas Noever [mailto:andreas.noever@gmail.com]
-> Sent: Wednesday, November 12, 2014 22:19
-> To: Andy Shevchenko
-> Cc: Bjorn Helgaas; Jamet, Michael; linux-pci@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Levy, Amir (Jer); Alloun, Dan; Rafael Wysocki
-> Subject: Re: [PATCH] pci: support Thunderbolt requirements for I/O
-> resources.
-> 
-> On Wed, Nov 12, 2014 at 7:30 PM, Andy Shevchenko
-> <andy.shevchenko@gmail.com> wrote:
-> > On Wed, Nov 12, 2014 at 7:29 PM, Bjorn Helgaas <bhelgaas@google.com>
-> wrote:
-> >
-> > []
-> >
-> >>> To prevent this, we detect a chain contains a Thunderbolt device by
-> >>> checking the Thunderbolt PCI device id.
-> >>
-> >> I'm really not happy about checking a list of device IDs to identify
-> >> Thunderbolt devices.  Surely there's a better way, because a list
-> >> like this has to be updated regularly.
-> >
-> > I recently proposed internally to use quirks (pci_fixup_early) for
-> > that, but apparently Michael didn't have time to answer. It might be
-> > he can just comment here since the patch already public.
-> 
-> In any case: this will interfere with thunderbolt hotplug on Apple systems,
-> where we do not have BIOS support and have to handle hotplug events and
-> assign resources ourselves. So please add a DMI check for Apple (the reverse
-> of what we do in
-> http://lxr.free-
-> electrons.com/source/drivers/thunderbolt/nhi.c?v=3.17#L664
-> ).
-> 
-> Thanks,
-> Andreas
+--Sig_/GQfrx+RN=pKpBd0idFwR6Fl
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This is correct that the hotplug handling mechanism and interaction with BIOS is different. 
-However, this patch also applies for any case, since the I/O space is limited 
-and need to be preserved, so we must prevent allocation of I/O resources 
-from the devices and avoiding exhaustion while chaining them.
+Hi James,
 
-Michael 
+After merging the scsi tree, today's linux-next build (powerpc
+allyesconfig) produced this warning:
 
+drivers/scsi/ibmvscsi/ibmvfc.c: In function 'ibmvfc_queuecommand_lck':
+drivers/scsi/ibmvscsi/ibmvfc.c:1618:5: warning: unused variable 'tag' [-Wun=
+used-variable]
+  u8 tag[2];
+     ^
 
----------------------------------------------------------------------
-Intel Israel (74) Limited
+Introduced by commit 5066863337af ("scsi: remove abuses of
+scsi_populate_tag").
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/GQfrx+RN=pKpBd0idFwR6Fl
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUawGlAAoJEMDTa8Ir7ZwVRbcP/1Wxq69z14jsH/wxFUgS3W03
+dEMKhE8G27V4Y5DDGi6ZMyJpkc56Sr1RMxZXLOZgkOTgxLODoDlH5O1pzOzKA9f5
+gpD1lBezYbvTorjGIU80GmyMGFQ2mtCz6V7y4qzj1T2eYs4ojsA69g5AohR7C5nM
+pyVp/T+XU5tJo+r0k/xjPPi+v6lEIxZR4GpQE2r4vLWOcTEOd/DplnOGHDdeODo0
+8DxoIF9gdGdYf8s/M0nhaX1uBZEbNVgzlaSiAHVII7axPQl2sad3Y756NOO1Mtpd
+z73ryMGu5nT2fPQLkcZk8sutfKQ4JMG5rMuU+tUtl6KuM//ceX8v8WQM+Z/YvCs9
+63hrhSMXFjVKJJlHsZYH+VCxAXrxvZeHOXXWYHYUqnUQHCpAhJMoeI5x3y/w4M9e
+SiO0rTN28nN4gzzm5M0hmQjd/KHhEWcVvgURAT5n/KW6s+XIb/0QCnwZxvhoTtGy
+BHf0DPASYbMbh8SwzzPA6FGaR5TBQfHDNUD7R0NhLKdGYDcJGvG7fOT7HvhUIXrS
+XJuQNC7gR0Qtsq6IDe35fgZ/SFIZobr4/3nYCSaBjQlmkIMra2qBrSal48uCP2uc
+TvVNo8byv433RjPapV2Y+RV4sl/sUGBNzumCAJ6d7EiKTCevg5JunpmALE0VL2Z8
+nig2k9wFyey4eKVuWmsY
+=blrP
+-----END PGP SIGNATURE-----
+
+--Sig_/GQfrx+RN=pKpBd0idFwR6Fl--
