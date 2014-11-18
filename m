@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaKRAQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:16:22 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:34837 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695AbaKRAQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:16:21 -0500
-Date: Mon, 17 Nov 2014 16:16:04 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Junjie Mao <eternal.n08@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, kaslr: handle Gold linker for finding bss+brk
-Message-ID: <20141118001604.GA25045@www.outflux.net>
+	id S1753001AbaKRASF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:18:05 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50176 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751464AbaKRASC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 19:18:02 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH] PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is selected (was: Re: [PATCH] PM / domains: Kconfig: always enable PM_RUNTIME when genpd enabled)
+Date: Tue, 18 Nov 2014 01:39:06 +0100
+Message-ID: <1452958.d0yJE5gVgq@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <7hioid3cqx.fsf@deeprootsystems.com>
+References: <1415917702-6742-1-git-send-email-khilman@kernel.org> <6465990.KKns6W8hQE@vostro.rjw.lan> <7hioid3cqx.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building with the Gold linker, the .bss and .brk areas of vmlinux
-are shown as consecutive instead of having the same file offset. Allow
-for either state, as long as things add up correctly.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Fixes: e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Junjie Mao <eternal.n08@gmail.com>
+The number of and dependencies between high-level power management
+Kconfig options make life much harder than necessary.  Several
+conbinations of them have to be tested and supported, even though
+some of those combinations are very rarely used in practice (it
+they are used in practice at all).  Moreover, the fact that we
+have separate independent Kconfig options for runtime PM and
+system suspend is a serious obscacle for integration between
+the two frameworks.
+
+To overcome these difficulties, always select PM_RUNTIME if PM_SLEEP
+is set.  Among other things, this will allow system suspend callbacks
+provided by bus types and device drivers to rely on the runtime PM
+framework regardless of the kernel configuration.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- arch/x86/tools/calc_run_size.pl | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/tools/calc_run_size.pl b/arch/x86/tools/calc_run_size.pl
-index 0b0b124d3ece..23210baade2d 100644
---- a/arch/x86/tools/calc_run_size.pl
-+++ b/arch/x86/tools/calc_run_size.pl
-@@ -19,7 +19,16 @@ while (<>) {
- 		if ($file_offset == 0) {
- 			$file_offset = $offset;
- 		} elsif ($file_offset != $offset) {
--			die ".bss and .brk lack common file offset\n";
-+			# BFD linker shows the same file offset in ELF.
-+			# Gold linker shows them as consecutive.
-+			next if ($file_offset + $mem_size == $offset + $size);
-+
-+			printf STDERR "file_offset: 0x%lx\n", $file_offset;
-+			printf STDERR "mem_size: 0x%lx\n", $mem_size;
-+			printf STDERR "offset: 0x%lx\n", $offset;
-+			printf STDERR "size: 0x%lx\n", $size;
-+
-+			die ".bss and .brk are non-contiguous\n";
- 		}
- 	}
- }
--- 
-1.9.1
+As a follow up.
 
+Note that we won't need the patch making genpd select PM_RUNTIME with this,
+because genpd already depends on PM.
 
--- 
-Kees Cook
-Chrome OS Security
+Thoughts, comments?
+
+Rafael
+
+---
+ kernel/power/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-pm/kernel/power/Kconfig
+===================================================================
+--- linux-pm.orig/kernel/power/Kconfig
++++ linux-pm/kernel/power/Kconfig
+@@ -94,6 +94,7 @@ config PM_STD_PARTITION
+ config PM_SLEEP
+ 	def_bool y
+ 	depends on SUSPEND || HIBERNATE_CALLBACKS
++	select PM_RUNTIME
+ 
+ config PM_SLEEP_SMP
+ 	def_bool y
+
