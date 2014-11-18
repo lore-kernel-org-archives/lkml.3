@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaKRApa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 19:45:30 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:63025 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaKRAp1 (ORCPT
+	id S1753204AbaKRAtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 19:49:16 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:59064 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaKRAtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 19:45:27 -0500
+	Mon, 17 Nov 2014 19:49:15 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 11/23 v4] tracing: Do not use return values of trace_seq_printf() in syscall tracing
+References: <20141114011244.256115061@goodmis.org>
+	<20141114011411.842421346@goodmis.org>
+Date: Tue, 18 Nov 2014 09:49:12 +0900
+In-Reply-To: <20141114011411.842421346@goodmis.org> (Steven Rostedt's message
+	of "Thu, 13 Nov 2014 20:12:55 -0500")
+Message-ID: <87ioids587.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CA+rthh-NuaapKLOE_83KoO2ztV1e8LUXPVBefKEX_OTZM=bTMw@mail.gmail.com>
-References: <20141117200248.GA15294@www.outflux.net>
-	<CA+rthh-NuaapKLOE_83KoO2ztV1e8LUXPVBefKEX_OTZM=bTMw@mail.gmail.com>
-Date: Mon, 17 Nov 2014 16:45:27 -0800
-X-Google-Sender-Auth: q6DUccwfuvWcdaL8i4rBcIfG4SE
-Message-ID: <CAGXu5jLGS4cNv_+xLH1fPzg8rUnXL5S+eKmHFn4jckaJkdeRjA@mail.gmail.com>
-Subject: Re: [PATCH v2] crypto: prefix module autoloading with "crypto-"
-From: Kees Cook <keescook@chromium.org>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 3:20 PM, Mathias Krause <minipli@googlemail.com> wrote:
-> On 17 November 2014 21:02, Kees Cook <keescook@chromium.org> wrote:
->> This prefixes all crypto module loading with "crypto-" so we never run
->> the risk of exposing module auto-loading to userspace via a crypto API,
->> as demonstrated by Mathias Krause:
->>
->> https://lkml.org/lkml/2013/3/4/70
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->> v2:
->>  - added missing #include, thanks to minipli
->>  - built with allmodconfig
->> [...snip...]
->> diff --git a/include/linux/crypto.h b/include/linux/crypto.h
->> index d45e949699ea..d14230f6e977 100644
->> --- a/include/linux/crypto.h
->> +++ b/include/linux/crypto.h
->> @@ -26,6 +26,13 @@
->>  #include <linux/uaccess.h>
->>
->>  /*
->> + * Autoloaded crypto modules should only use a prefixed name to avoid allowing
->> + * arbitrary modules to be loaded.
->> + */
->> +#define MODULE_ALIAS_CRYPTO(name)      \
->> +               MODULE_ALIAS("crypto-" name)
+On Thu, 13 Nov 2014 20:12:55 -0500, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 >
-> This would break userland relying on the old aliases, e.g. 'modprobe
-> aes' no longer works.
+> The functions trace_seq_printf() and friends will not be returning values
+> soon and will be void functions. To know if they succeeded or not, the
+> functions trace_seq_has_overflowed() and trace_handle_return() should be
+> used instead.
 >
-> Why not have both aliases, one with the "crypto-" prefix for on-demand
-> loading within the crypto API and one without for manual loading from
-> userland? E.g., something like this:
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/trace/trace_syscalls.c | 43 +++++++++++++++----------------------------
+>  1 file changed, 15 insertions(+), 28 deletions(-)
 >
-> #define MODULE_ALIAS_CRYPTO(name)      \
->                MODULE_ALIAS(name); \
->                MODULE_ALIAS("crypto-" name)
->
-> That would prevent the userland breakage and still achieves the goal
-> of restricting the request_module() call offered by the means of the
-> AF_ALG API.
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index 4dc8b79c5f75..2193e8038681 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -114,7 +114,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+>  	struct trace_entry *ent = iter->ent;
+>  	struct syscall_trace_enter *trace;
+>  	struct syscall_metadata *entry;
+> -	int i, ret, syscall;
+> +	int i, syscall;
+>  
+>  	trace = (typeof(trace))ent;
+>  	syscall = trace->nr;
+> @@ -128,35 +128,24 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+>  		goto end;
+>  	}
+>  
+> -	ret = trace_seq_printf(s, "%s(", entry->name);
+> -	if (!ret)
+> -		return TRACE_TYPE_PARTIAL_LINE;
+> +	trace_seq_printf(s, "%s(", entry->name);
+>  
+>  	for (i = 0; i < entry->nb_args; i++) {
 
-That was my intention originally, and I should go back to it. The
-trouble is with the use of __UNIQUE_ID in the MODULE_ALIAS macro. It
-uses __LINE__ to produce the id, so the suggested macro expansion
-(which is what I started with) won't work on non-gcc compilers.
+		if (trace_seq_has_overflowed())
+			goto end;
+?
 
-I haven't found any solutions for C89 version of gcc's __COUNTER__,
-and I haven't found any C89 ways to force a macro to be expanded as
-being multi-line.
+Thanks,
+Namhyung
 
-I'd like to avoid having to open-code both MODULE_ALIAS and
-MODULE_ALIAS_CRYPTO in each module's source.
 
-Anyone see some sneaky way to accomplish this?
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+>  		/* parameter types */
+> -		if (trace_flags & TRACE_ITER_VERBOSE) {
+> -			ret = trace_seq_printf(s, "%s ", entry->types[i]);
+> -			if (!ret)
+> -				return TRACE_TYPE_PARTIAL_LINE;
+> -		}
+> +		if (trace_flags & TRACE_ITER_VERBOSE)
+> +			trace_seq_printf(s, "%s ", entry->types[i]);
+> +
+>  		/* parameter values */
+> -		ret = trace_seq_printf(s, "%s: %lx%s", entry->args[i],
+> -				       trace->args[i],
+> -				       i == entry->nb_args - 1 ? "" : ", ");
+> -		if (!ret)
+> -			return TRACE_TYPE_PARTIAL_LINE;
+> +		trace_seq_printf(s, "%s: %lx%s", entry->args[i],
+> +				 trace->args[i],
+> +				 i == entry->nb_args - 1 ? "" : ", ");
+>  	}
+>  
+> -	ret = trace_seq_putc(s, ')');
+> -	if (!ret)
+> -		return TRACE_TYPE_PARTIAL_LINE;
+> -
+> +	trace_seq_putc(s, ')');
+>  end:
+> -	ret =  trace_seq_putc(s, '\n');
+> -	if (!ret)
+> -		return TRACE_TYPE_PARTIAL_LINE;
+> +	trace_seq_putc(s, '\n');
+>  
+> -	return TRACE_TYPE_HANDLED;
+> +	return trace_handle_return(s);
+>  }
