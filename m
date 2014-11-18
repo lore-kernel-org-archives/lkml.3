@@ -1,59 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaKRJNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 04:13:39 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:45548 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaKRJNg (ORCPT
+	id S1753585AbaKRJPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 04:15:54 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:25508 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753020AbaKRJPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 04:13:36 -0500
-Message-ID: <546B0DBB.7080000@gmail.com>
-Date: Tue, 18 Nov 2014 11:13:31 +0200
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 18 Nov 2014 04:15:50 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="43557962"
+Message-ID: <546B0F16.90901@cn.fujitsu.com>
+Date: Tue, 18 Nov 2014 17:19:18 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Benny Halevy <bhalevy@primarydata.com>,
-        Boaz Harrosh <bharrosh@panasas.com>, osd-dev@open-osd.org
-CC: kernel-janitors@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [osd-dev] [PATCH 1/1] exofs: Deletion of an unnecessary check
- before the function call "ore_put_io_state"
-References: <5307CAA2.8060406@users.sourceforge.net>	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>	<530A086E.8010901@users.sourceforge.net>	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>	<530A72AA.3000601@users.sourceforge.net>	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>	<530B5FB6.6010207@users.sourceforge.net>	<alpine.DEB.2.10.1402241710370.2074@hadrien>	<530C5E18.1020800@users.sourceforge.net>	<alpine.DEB.2.10.1402251014170.2080@hadrien>	<530CD2C4.4050903@users.sourceforge.net>	<alpine.DEB.2.10.1402251840450.7035@hadrien>	<530CF8FF.8080600@users.sourceforge.net>	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	<530DD06F.4090703@users.sourceforge.net>	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	<5317A59D.4@users.sourceforge.net> <546B0D08.2070305@users.sourceforge.net>
-In-Reply-To: <546B0D08.2070305@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
+To: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH vfs 1/2] lib: implement ptrset
+References: <20141113220927.GF2598@htj.dyndns.org>
+In-Reply-To: <20141113220927.GF2598@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2014 11:10 AM, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Tue, 18 Nov 2014 10:05:19 +0100
+On 11/14/2014 06:09 AM, Tejun Heo wrote:
+> Implement set of pointers.  Pointers can be added, deleted and
+> iterated.  It's currently implemented as a thin rbtree wrapper making
+> addition and removal O(log N).  A drawback is that iteration isn't RCU
+> safe, which is okay for now.  This will be used to remove
+> inode->i_devices.
 > 
-> The ore_put_io_state() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 > ---
->  fs/exofs/ore_raid.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+>  include/linux/ptrset.h |   74 +++++++++++++++++++++++++++
+>  lib/Makefile           |    2 
+>  lib/ptrset.c           |  131 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 206 insertions(+), 1 deletion(-)
 > 
-> diff --git a/fs/exofs/ore_raid.c b/fs/exofs/ore_raid.c
-> index 84529b8..5dc7c4c 100644
-> --- a/fs/exofs/ore_raid.c
-> +++ b/fs/exofs/ore_raid.c
-> @@ -716,6 +716,5 @@ void _ore_free_raid_stuff(struct ore_io_state *ios)
->  		if (ios->extra_part_alloc)
->  			kfree(ios->per_dev[0].sglist);
->  	}
-> -	if (ios->ios_read_4_write)
-> -		ore_put_io_state(ios->ios_read_4_write);
-> +	ore_put_io_state(ios->ios_read_4_write);
->  }
-> 
+> --- /dev/null
+> +++ b/include/linux/ptrset.h
+> @@ -0,0 +1,74 @@
+> +/*
+> + * include/linux/ptrset.h - set of pointers
+> + *
+> + * Copyright (C) 2014		Tejun Heo, Red Hat Inc.
+> + *
+> + * A ptrset contains an unordered set of pointers.  Pointers can be added,
+> + * deleted and iterated.  Addition and removal complexities are O(log N)
+> + * where N is the total number of elements in the ptrset.
+> + */
+> +
+> +#ifndef __PTRSET_H
+> +#define __PTRSET_H
+> +
+> +#include <linux/preempt.h>
+> +#include <linux/rbtree.h>
+> +
+> +struct ptrset {
+> +	struct rb_root		root;
+> +};
+> +
+> +struct ptrset_elem {
+> +	void			*ptr;
+> +	struct rb_node		node;
+> +};
+> +
+> +struct ptrset_iter {
+> +	struct ptrset_elem	*pos;
+> +	struct ptrset_elem	*next;
+> +};
+> +
+> +#define PTRSET_INITIALIZER	{ .root = RB_ROOT, }
+> +#define DEFINE_PTRSET(set)	struct ptrset set = PTRSET_INITIALIZER
+> +
+> +static inline void ptrset_init(struct ptrset *set)
+> +{
+> +	*set = (struct ptrset)PTRSET_INITIALIZER;
+> +}
+> +
+> +void ptrset_preload(gfp_t gfp);
+> +int __must_check ptrset_add(void *ptr, struct ptrset *set, gfp_t gfp);
+> +int ptrset_del(void *ptr, struct ptrset *set);
+> +
+> +/**
+> + * ptrset_preload_end - end preload section started with ptrset_preload()
+> + *
+> + * Each ptrset_preload() should be matched with an invocation of this
+> + * function.  See ptrset_preload() for details.
+> + */
+> +static inline void ptrset_preload_end(void)
+> +{
+> +	preempt_enable();
+> +}
+> +
+> +/**
+> + * ptrset_for_each - iterate pointers in a ptrset
+> + * @ptr_cur: the cursor pointer variable (can be a pointer to any type)
+> + * @set: the target ptrset
+> + * @iter: pointer to struct ptrset_iter used to store iteration state
+> + *
+> + * Iterate @ptr_cur over all pointers in @set using @iter as the temp
+> + * storage.  The order of iteration is undefined and the iterated pointers
+> + * may be deleted during iteration.
+> + *
+> + * The caller is responsible for synchronization.  This is not RCU safe.
+> + */
+> +#define ptrset_for_each(ptr_cur, set, iter)				\
+> +	rbtree_postorder_for_each_entry_safe((iter)->pos, (iter)->next,	\
+> +					     &(set)->root, node)	\
+> +		if (({	(ptr_cur) = (iter)->pos->ptr;			\
+> +			false; }))					\
+> +			;						\
+> +		else
+> +
+> +#endif	/* __PTRSET_H */
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -8,7 +8,7 @@ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLA
+>  endif
+>  
+>  lib-y := ctype.o string.o vsprintf.o cmdline.o \
+> -	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
+> +	 rbtree.o radix-tree.o dump_stack.o timerqueue.o ptrset.o \
+>  	 idr.o int_sqrt.o extable.o \
+>  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+>  	 proportions.o flex_proportions.o ratelimit.o show_mem.o \
+> --- /dev/null
+> +++ b/lib/ptrset.c
+> @@ -0,0 +1,131 @@
+> +/*
+> + * lib/ptrset.c - set of pointers
+> + *
+> + * Copyright (C) 2014		Tejun Heo, Red Hat Inc.
+> + */
+> +
+> +#include <linux/ptrset.h>
+> +#include <linux/slab.h>
+> +#include <linux/percpu.h>
+> +
+> +static DEFINE_PER_CPU(struct ptrset_elem *, ptrset_preload_elem);
+> +
+> +/**
+> + * ptrset_preload - preload for ptrset_add()
+> + * @gfp: allocation mask to use for preloading
+> + *
+> + * Preload per-cpu ptrset_elem buffer for ptrset_add().  Can only be used
+> + * from process context and each ptrset_preload() invocation should be
+> + * matched with ptrset_preload_end().  Note that preemption is disabled
+> + * while preloaded.
+> + *
+> + * The first ptrset_add() in the preloaded section can be treated as if it
+> + * were invoked with @gfp used for preloading.  This allows using more
+> + * permissive allocation masks for ptrsets protected by spinlocks.
+> + */
+> +void ptrset_preload(gfp_t gfp)
+> +{
+> +	/*
+> +	 * Consuming preload buffer from non-process context breaks preload
+> +	 * allocation guarantee.  Disallow usage from those contexts.
+> +	 */
+> +	WARN_ON_ONCE(in_interrupt());
+> +	might_sleep_if(gfp & __GFP_WAIT);
+> +
+> +	preempt_disable();
+> +
+> +	if (!__this_cpu_read(ptrset_preload_elem)) {
+> +		struct ptrset_elem *new;
+> +
+> +		preempt_enable();
+> +		new = kmalloc(sizeof(*new), gfp);
+> +		preempt_disable();
+> +
+> +		new = __this_cpu_xchg(ptrset_preload_elem, new);
+> +		kfree(new);
+> +	}
+> +}
 
-Thanks will submit for next Kernel
-Boaz
+Is it too ugly?
+What will be the most important result it achieve?
