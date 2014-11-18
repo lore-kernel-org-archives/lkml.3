@@ -1,129 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670AbaKRPLY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 10:11:24 -0500
-Received: from 7of9.schinagl.nl ([88.159.158.68]:44236 "EHLO 7of9.schinagl.nl"
+	id S932630AbaKRPMC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 10:12:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57087 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932539AbaKRPLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 10:11:21 -0500
-Message-ID: <546B6195.7020907@schinagl.nl>
-Date: Tue, 18 Nov 2014 16:11:17 +0100
-From: Olliver Schinagl <oliver@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thierry Reding <thierry.reding@gmail.com>, Simon <longsleep@gmail.com>,
-        linux-pwm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv9 0/2] Add Allwinner SoCs PWM support
-References: <1415200545-26238-1-git-send-email-alexandre.belloni@free-electrons.com> <546B4DF5.9020100@schinagl.nl> <20141118135454.GD6414@lukather> <546B538E.9020808@schinagl.nl> <20141118145544.GE6414@lukather>
-In-Reply-To: <20141118145544.GE6414@lukather>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754922AbaKROJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:09:34 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 065/206] vfs: fix data corruption when blocksize < pagesize for mmaped data
+Date: Tue, 18 Nov 2014 15:07:00 +0100
+Message-Id: <3976690344783e5da7438e52fc2cd16529ddc1b5.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jan Kara <jack@suse.cz>
 
-On 18-11-14 15:55, Maxime Ripard wrote:
-> On Tue, Nov 18, 2014 at 03:11:26PM +0100, Olliver Schinagl wrote:
->> On 18-11-14 14:54, Maxime Ripard wrote:
->>> On Tue, Nov 18, 2014 at 02:47:33PM +0100, Olliver Schinagl wrote:
->>>> Hey Alexandre,
->>>>
->>>> On 05-11-14 16:15, Alexandre Belloni wrote:
->>>>> Hi,
->>>>>
->>>>> This patch series adds support for the PWM controller found on the Allwinner
->>>>> SoCs.
->>>>>
->>>>> The first patch adds the driver itself.
->>>>> The second patch adds the DT binding documentation
->>>>>
->>>>> Changes in v8:
->>>>>   - renamed the driver sun4i as the PWM IP is different in the next sunxi SoCs
->>>> Why did you decide to rename it to sun4i? From your bindings document I
->>>> understand you still support sun4i and sun7i, what happened to sun5i?
->>>>
->>>> I went over the datasheets of sun4i, sun5i and sun7i and the disp_lcd.c from
->>>> the latest linux-sunxi kernels and have to agree, they are all 4
->>>> inconsistent and messy, but I'm not sure what you mean with PWM IP is
->>>> different in next sunxi soc's. is sun5i different to sun4i? is sun7i
->>>> different? or is sun6i (A31), sun8i (a80) and sun9i (A23) different?
->>>>
->>>> What I get from the datasheet is, that sun4i and sun5i are exactly the same,
->>>> with the exception that sun5i only has 1 PWM (~exposed~). I belive that is
->>>> easily solved with the bindings by having allwinner-sun4i and allwinner
->>>> sun5i bindings if I'm not mistaken.
->>>>
->>>> As for sun7i compared to the other ones, according to disp_lcd.c sun5i and
->>>> sun7i should behave exactly the same. This is contradicting to the
->>>> datasheet, where sun4i and sun5i are the same.
->>>>
->>>> So what are the major differences that I can see between the 3? sun4i
->>>> defines the PWM prescaler register value 0b1111 as being undefined, and
->>>> sun5i and sun7i as /1? Did you verify this (I haven't I admit, i bumped into
->>>> this while looking for your patch ;-) )? I wouldn't be supprised if it where
->>>> a typo on allwinners end in the datasheet ... disp_lcd.c stops at 72000 for
->>>> the last entry. We should just check sun4i, sun5i and sun7i hardware to see
->>>> if it behaves the same with a prescaler of 0b1111, which I would not be
->>>> totally surprised if it did.
->>>>
->>>> The other difference I notice is that sun7i and sun5i use 16bit period
->>>> register where sun4i uses a 8bit register. This is probably the only reason
->>>> why they put a #ifdef in disp_lcd.c, calculations turn out differently. I
->>>> don't recognize this behavior at all in your driver however. I do think they
->>>> that there is a difference here, since they did split up the original driver
->>>> here because of this difference.
->>>>
->>>> The pre-scaler bypass bit and pwm ready bit you all ready take care of :)
->>> A31 and later are using a different IP, that is not supported by this
->>> driver.
->> Ah, see that was not clear to me ;) Also a comment in the code would be
->> helpful how the 8bit vs 16bit period register is being handled with regards
->> to sun4i and sun7i. I can't seem to spot where this is taken into account,
->> since the disp_lcd.c code suggests there is supposedly some difference? I
->> can't tell from their code what is really going on, since they are using
->> unsigned 32 bit integers and crap that in the lower and upper half of the
->> 16bit register, so maybe the register has always been 16bit but the docs are
->> simply wrong? But then why differentiate between the two chip generations
->> ...
-> Is this a bug report? Or just some theorical issues that we might
-> never encounter?
-No, I'm asking why it is nowhere documented or not directly clear from 
-the code, that sun4i according to the datasheet uses 8bits for the 
-period register and sun5i and sun7i use 16bits. Also, the only reason 
-why the allwinner code differentiates between sun4i and sun5/7i is 
-because of this register. It contradicts what we know at this point, so 
-a comment indicating this would be nice.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I am currently building a kernel with these patches added for sun7i and 
-see if it works; i'll try to find some sun4i hardware and test it there 
-as well and report back then.
+===============
 
-Olliver
->
->>> This driver only support the controller introduced with the A10, that
->>> only saw minor differences between SoCs, like you have shown.
->>>
->>>> Finally, though I'm sure I should have replied to it inline in the actual
->>>> code, but hoping i can let it slip through here is that you define your
->>>> local data as:
->>>>
->>>> + static const struct sun4i_pwm_data sun4i_pwm_data_a20 = {
->>>>
->>>> which looks really strange to me, since there is no a20 using the sun4i
->>>> architecture :) I know it's just nitpicking, it just looks really odd. Maybe
->>>> the compatible naming works just as well? sun4i_pwm_data; sun7i_pwm_data
->>>> (and sun5i_pwm_data if you want to take care of only pwm0, only pwm1 (if we
->>>> ever encounter such a configuration, disabled pwm0, enabled pwm1) or both to
->>>> be used?)
->>> This driver is name sun4i_pwm, hence the prefix.
->> Ah right, unrelated, but I guess I should change my sunxi driver name to
->> sun4i as well then?
-> What? Why?
->
-> Maxime
->
+commit 90a8020278c1598fafd071736a0846b38510309c upstream.
+
+->page_mkwrite() is used by filesystems to allocate blocks under a page
+which is becoming writeably mmapped in some process' address space. This
+allows a filesystem to return a page fault if there is not enough space
+available, user exceeds quota or similar problem happens, rather than
+silently discarding data later when writepage is called.
+
+However VFS fails to call ->page_mkwrite() in all the cases where
+filesystems need it when blocksize < pagesize. For example when
+blocksize = 1024, pagesize = 4096 the following is problematic:
+  ftruncate(fd, 0);
+  pwrite(fd, buf, 1024, 0);
+  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
+  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
+  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
+  mremap(map, 1024, 10000, 0);
+  map[4095] = 'a';    ----> no page_mkwrite() called
+
+At the moment ->page_mkwrite() is called, filesystem can allocate only
+one block for the page because i_size == 1024. Otherwise it would create
+blocks beyond i_size which is generally undesirable. But later at
+->writepage() time, we also need to store data at offset 4095 but we
+don't have block allocated for it.
+
+This patch introduces a helper function filesystems can use to have
+->page_mkwrite() called at all the necessary moments.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/buffer.c        |  3 +++
+ include/linux/mm.h |  1 +
+ mm/truncate.c      | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 61 insertions(+)
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index dc1107fec557..333adbc7ed5a 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2089,6 +2089,7 @@ int generic_write_end(struct file *file, struct address_space *mapping,
+ 			struct page *page, void *fsdata)
+ {
+ 	struct inode *inode = mapping->host;
++	loff_t old_size = inode->i_size;
+ 	int i_size_changed = 0;
+ 
+ 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
+@@ -2108,6 +2109,8 @@ int generic_write_end(struct file *file, struct address_space *mapping,
+ 	unlock_page(page);
+ 	page_cache_release(page);
+ 
++	if (old_size < pos)
++		pagecache_isize_extended(inode, old_size, pos);
+ 	/*
+ 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
+ 	 * makes the holding time of page lock longer. Second, it forces lock
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 2b3a5330dcf2..36556b2e07f8 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1009,6 +1009,7 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
+ 
+ extern void truncate_pagecache(struct inode *inode, loff_t new);
+ extern void truncate_setsize(struct inode *inode, loff_t newsize);
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
+ void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
+ int truncate_inode_page(struct address_space *mapping, struct page *page);
+ int generic_error_remove_page(struct address_space *mapping, struct page *page);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 2e84fe59190b..7dfb7c70fd4b 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -20,6 +20,7 @@
+ #include <linux/buffer_head.h>	/* grr. try_to_release_page,
+ 				   do_invalidatepage */
+ #include <linux/cleancache.h>
++#include <linux/rmap.h>
+ #include "internal.h"
+ 
+ static void clear_exceptional_entry(struct address_space *mapping,
+@@ -661,12 +662,68 @@ EXPORT_SYMBOL(truncate_pagecache);
+  */
+ void truncate_setsize(struct inode *inode, loff_t newsize)
+ {
++	loff_t oldsize = inode->i_size;
++
+ 	i_size_write(inode, newsize);
++	if (newsize > oldsize)
++		pagecache_isize_extended(inode, oldsize, newsize);
+ 	truncate_pagecache(inode, newsize);
+ }
+ EXPORT_SYMBOL(truncate_setsize);
+ 
+ /**
++ * pagecache_isize_extended - update pagecache after extension of i_size
++ * @inode:	inode for which i_size was extended
++ * @from:	original inode size
++ * @to:		new inode size
++ *
++ * Handle extension of inode size either caused by extending truncate or by
++ * write starting after current i_size. We mark the page straddling current
++ * i_size RO so that page_mkwrite() is called on the nearest write access to
++ * the page.  This way filesystem can be sure that page_mkwrite() is called on
++ * the page before user writes to the page via mmap after the i_size has been
++ * changed.
++ *
++ * The function must be called after i_size is updated so that page fault
++ * coming after we unlock the page will already see the new i_size.
++ * The function must be called while we still hold i_mutex - this not only
++ * makes sure i_size is stable but also that userspace cannot observe new
++ * i_size value before we are prepared to store mmap writes at new inode size.
++ */
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
++{
++	int bsize = 1 << inode->i_blkbits;
++	loff_t rounded_from;
++	struct page *page;
++	pgoff_t index;
++
++	WARN_ON(!mutex_is_locked(&inode->i_mutex));
++	WARN_ON(to > inode->i_size);
++
++	if (from >= to || bsize == PAGE_CACHE_SIZE)
++		return;
++	/* Page straddling @from will not have any hole block created? */
++	rounded_from = round_up(from, bsize);
++	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
++		return;
++
++	index = from >> PAGE_CACHE_SHIFT;
++	page = find_lock_page(inode->i_mapping, index);
++	/* Page not cached? Nothing to do */
++	if (!page)
++		return;
++	/*
++	 * See clear_page_dirty_for_io() for details why set_page_dirty()
++	 * is needed.
++	 */
++	if (page_mkclean(page))
++		set_page_dirty(page);
++	unlock_page(page);
++	page_cache_release(page);
++}
++EXPORT_SYMBOL(pagecache_isize_extended);
++
++/**
+  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
+  * @inode: inode
+  * @lstart: offset of beginning of hole
+-- 
+2.1.3
 
