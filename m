@@ -1,113 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbaKRSyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 13:54:44 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60712 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159AbaKRSxp (ORCPT
+	id S1755078AbaKRSzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 13:55:09 -0500
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:59644 "HELO
+	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755038AbaKRSzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 13:53:45 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: [PATCH v2 13/13] irqchip: GICv3: Binding updates for ITS
-Date: Tue, 18 Nov 2014 18:53:08 +0000
-Message-Id: <1416336788-22634-14-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com>
-References: <1416336788-22634-1-git-send-email-marc.zyngier@arm.com>
+	Tue, 18 Nov 2014 13:55:05 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, pshelar@nicira.com, dev@openvswitch.org
+Subject: [PATCH net] openvswitch: Fix mask generation for IPv6 labels.
+Date: Tue, 18 Nov 2014 10:54:17 -0800
+Message-Id: <1416336857-61405-1-git-send-email-joestringer@nicira.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the documentation for the bindings describing the GICv3 ITS.
+When userspace doesn't provide a mask, OVS datapath generates a fully
+unwildcarded mask for the flow. This is done by taking a copy of the
+flow key, then iterating across its attributes, setting all values to
+0xff. This works for most attributes, as the length of the netlink
+attribute typically matches the length of the value. However, IPv6
+labels only use the lower 20 bits of the field. This patch makes a
+special case to handle this.
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+This fixes the following error seen when installing IPv6 flows without a mask:
+
+openvswitch: netlink: Invalid IPv6 flow label value (value=ffffffff, max=fffff)
+
+Signed-off-by: Joe Stringer <joestringer@nicira.com>
 ---
- Documentation/devicetree/bindings/arm/gic-v3.txt | 39 ++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ net/openvswitch/flow_netlink.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/gic-v3.txt b/Documentation/devicetree/bindings/arm/gic-v3.txt
-index 33cd05e..ddfade4 100644
---- a/Documentation/devicetree/bindings/arm/gic-v3.txt
-+++ b/Documentation/devicetree/bindings/arm/gic-v3.txt
-@@ -49,11 +49,29 @@ Optional
-   occupied by the redistributors. Required if more than one such
-   region is present.
+diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
+index fa4ec2e..7a5b28f 100644
+--- a/net/openvswitch/flow_netlink.c
++++ b/net/openvswitch/flow_netlink.c
+@@ -825,7 +825,7 @@ static int ovs_key_from_nlattrs(struct sw_flow_match *match, u64 attrs,
+ 	return 0;
+ }
  
-+Sub-nodes:
-+
-+GICv3 has one or more Interrupt Translation Services (ITS) that are
-+used to route Message Signalled Interrupts (MSI) to the CPUs.
-+
-+These nodes must have the following properties:
-+- compatible : Should at least contain  "arm,gic-v3-its".
-+- msi-controller : Boolean property. Identifies the node as an MSI controller
-+- reg: Specifies the base physical address and size of the ITS
-+  registers.
-+
-+The main GIC node must contain the appropriate #address-cells,
-+#size-cells and ranges properties for the reg property of all ITS
-+nodes.
-+
- Examples:
+-static void nlattr_set(struct nlattr *attr, u8 val, bool is_attr_mask_key)
++static void mask_set_nlattr(struct nlattr *attr)
+ {
+ 	struct nlattr *nla;
+ 	int rem;
+@@ -835,16 +835,18 @@ static void nlattr_set(struct nlattr *attr, u8 val, bool is_attr_mask_key)
+ 		/* We assume that ovs_key_lens[type] == -1 means that type is a
+ 		 * nested attribute
+ 		 */
+-		if (is_attr_mask_key && ovs_key_lens[nla_type(nla)] == -1)
+-			nlattr_set(nla, val, false);
++		if (ovs_key_lens[nla_type(nla)] == -1)
++			nla_for_each_nested(nla, attr, rem)
++				memset(nla_data(nla), 0xff, nla_len(nla));
+ 		else
+-			memset(nla_data(nla), val, nla_len(nla));
+-	}
+-}
++			memset(nla_data(nla), 0xff, nla_len(nla));
  
- 	gic: interrupt-controller@2cf00000 {
- 		compatible = "arm,gic-v3";
- 		#interrupt-cells = <3>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
- 		interrupt-controller;
- 		reg = <0x0 0x2f000000 0 0x10000>,	// GICD
- 		      <0x0 0x2f100000 0 0x200000>,	// GICR
-@@ -61,11 +79,20 @@ Examples:
- 		      <0x0 0x2c010000 0 0x2000>,	// GICH
- 		      <0x0 0x2c020000 0 0x2000>;	// GICV
- 		interrupts = <1 9 4>;
+-static void mask_set_nlattr(struct nlattr *attr, u8 val)
+-{
+-	nlattr_set(attr, val, true);
++		if (nla_type(nla) == OVS_KEY_ATTR_IPV6) {
++			struct ovs_key_ipv6 *ipv6_key = nla_data(nla);
 +
-+		gic-its@2c200000 {
-+			compatible = "arm,gic-v3-its";
-+			msi-controller;
-+			reg = <0x0 0x2c200000 0 0x200000>;
-+		};
- 	};
++			ipv6_key->ipv6_label &= htonl(0x000FFFFF);
++		}
++	}
+ }
  
- 	gic: interrupt-controller@2c010000 {
- 		compatible = "arm,gic-v3";
- 		#interrupt-cells = <3>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
- 		interrupt-controller;
- 		redistributor-stride = <0x0 0x40000>;	// 256kB stride
- 		#redistributor-regions = <2>;
-@@ -76,4 +103,16 @@ Examples:
- 		      <0x0 0x2c060000 0 0x2000>,	// GICH
- 		      <0x0 0x2c080000 0 0x2000>;	// GICV
- 		interrupts = <1 9 4>;
-+
-+		gic-its@2c200000 {
-+			compatible = "arm,gic-v3-its";
-+			msi-controller;
-+			reg = <0x0 0x2c200000 0 0x200000>;
-+		};
-+
-+		gic-its@2c400000 {
-+			compatible = "arm,gic-v3-its";
-+			msi-controller;
-+			reg = <0x0 0x2c400000 0 0x200000>;
-+		};
- 	};
+ /**
+@@ -926,7 +928,7 @@ int ovs_nla_get_match(struct sw_flow_match *match,
+ 		if (!newmask)
+ 			return -ENOMEM;
+ 
+-		mask_set_nlattr(newmask, 0xff);
++		mask_set_nlattr(newmask);
+ 
+ 		/* The userspace does not send tunnel attributes that are 0,
+ 		 * but we should not wildcard them nonetheless.
 -- 
-2.1.3
+1.7.10.4
 
