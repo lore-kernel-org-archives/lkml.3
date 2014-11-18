@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaKRDAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:00:06 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:10562 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751213AbaKRDAE (ORCPT
+	id S1753169AbaKRDBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:01:10 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:48790 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839AbaKRDBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:00:04 -0500
-Date: Mon, 17 Nov 2014 22:00:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [PATCH 20/26 v5] seq_buf: Add seq_buf_can_fit() helper function
-Message-ID: <20141117220000.502eeb1c@gandalf.local.home>
-In-Reply-To: <1416279052.6651.1.camel@perches.com>
-References: <20141115045847.712848224@goodmis.org>
-	<20141115050604.073390701@goodmis.org>
-	<20141117123642.1de9252e@gandalf.local.home>
-	<1416269253.29010.4.camel@perches.com>
-	<20141117192733.0ab1ba2e@gandalf.local.home>
-	<1416270932.29010.6.camel@perches.com>
-	<20141117195651.27c79369@gandalf.local.home>
-	<1416272878.29010.8.camel@perches.com>
-	<20141117202432.0376417f@gandalf.local.home>
-	<1416275317.29010.10.camel@perches.com>
-	<20141117213755.09285299@gandalf.local.home>
-	<1416279052.6651.1.camel@perches.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 17 Nov 2014 22:01:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
+References: <1416273684-11300-1-git-send-email-kever.yang@rock-chips.com>
+Date: Mon, 17 Nov 2014 19:01:07 -0800
+X-Google-Sender-Auth: Wbo2vN5y_hyJiaFUqDbRmHcKF4Q
+Message-ID: <CAD=FV=WNtxxTGtT4h4wg_oX5_c9bGRi+WWViqVXYmSWghn_giw@mail.gmail.com>
+Subject: Re: [PATCH v2] usb: dwc2: resume root hub when device detect with
+ suspend state
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Romain Perier <romain.perier@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        wulf <wulf@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Roy Li <roy.li@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jwerner@chromium.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Nov 2014 18:50:52 -0800
-Joe Perches <joe@perches.com> wrote:
+Kever,
 
-> On Mon, 2014-11-17 at 21:37 -0500, Steven Rostedt wrote:
-> > On Mon, 17 Nov 2014 17:48:37 -0800
-> > Joe Perches <joe@perches.com> wrote:
-> > > On Mon, 2014-11-17 at 20:24 -0500, Steven Rostedt wrote:
-> > > > On Mon, 17 Nov 2014 17:07:58 -0800
-> > > > Joe Perches <joe@perches.com> wrote:
-> > > > > > Look at the next patch.
-> > > > > I don't have it and you are not cc'ing me.
-> > > > It's on LKML.
-> > > 
-> > > And?  There's no convenient way to retrieve it.
-> > 
-> > You're not subscribed?
-> 
-> I am subscribed and I delete stuff, don't you?
+On Mon, Nov 17, 2014 at 5:21 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> After we implement the bus_suspend/resume, auto suspend id enabled.
+> The root hub will be auto suspend if there is no device connected,
+> we need to resume the root hub when a device connect detect.
+>
+> This patch tested on rk3288.
+>
+> Signed-off-by: Roy Li <roy.li@rock-chips.com>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+> Changes in v2:
+> - add definition for hcd structure
+> - remove check for bus->root_hub
+>
+>  drivers/usb/dwc2/hcd_intr.c | 5 +++++
+>  1 file changed, 5 insertions(+)
 
-Nope, I keep all LKML messages. I have archives since 2005.
+I can confirm that in my tests this fixes the problems introduced by
+your v3 patch at <https://patchwork.kernel.org/patch/5266281/>.  On
+rk3288-pinky:
 
-> 
-> > > > Um, that may be the case for seq_file, but it is not the case for
-> > > > trace_seq. seq_buf is influenced by seq_file because I have a patch to
-> > > > make seq_file use it, but it's also the guts of trace_seq that has some
-> > > > different requirements. And it's also not the case with the users of
-> > > > seq_buf in the last patch.
-> > > 
-> > > I think your patch subject description needs expanding.
-> > > It says seq_buf, nothing about trace.
-> > 
-> > It doesn't need to. This helps out the code. seq_buf has nothing to do
-> > with seq_file (yet).
-> 
-> No, I don't think it does help seq_buf.  It only helps trace.
-
-What are you talking about? seq_buf did not exist until this patch set.
-
-> 
-> btw:
-> 
-> I think you should cc Al Viro on the entire patch set.
-> 
-
-Why? Currently this is only tracing code. There's nothing in here that
-has anything to do with VFS.
-
-When I post patches to convert seq_file to use seq_buf, then I'll Cc Al.
-
--- Steve
-
+Tested-by: Doug Anderson <dianders@chromium.org>
