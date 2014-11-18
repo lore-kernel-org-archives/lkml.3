@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024AbaKROXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:23:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57215 "EHLO mx2.suse.de"
+	id S1756009AbaKROXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:23:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57219 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755135AbaKROKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755139AbaKROKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Nov 2014 09:10:19 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 185/206] PM / Sleep: fix recovery during resuming from hibernation
-Date: Tue, 18 Nov 2014 15:09:00 +0100
-Message-Id: <f40d14580cb56b248d3e744b94c9324778983c19.1416319692.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jason Baron <jbaron@akamai.com>,
+        Borislav Petkov <bp@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 179/206] cpc925_edac: Report UE events properly
+Date: Tue, 18 Nov 2014 15:08:54 +0100
+Message-Id: <de351259edc887ab6cc08b74e27ea748ad532f4f.1416319692.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
 References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
@@ -23,46 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Imre Deak <imre.deak@intel.com>
+From: Jason Baron <jbaron@akamai.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 94fb823fcb4892614f57e59601bb9d4920f24711 upstream.
+commit fa19ac4b92bc2b5024af3e868f41f81fa738567a upstream.
 
-If a device's dev_pm_ops::freeze callback fails during the QUIESCE
-phase, we don't rollback things correctly calling the thaw and complete
-callbacks. This could leave some devices in a suspended state in case of
-an error during resuming from hibernation.
+Fix UE event being reported as HW_EVENT_ERR_CORRECTED.
 
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+Link: http://lkml.kernel.org/r/8beb13803500076fef827eab33d523e355d83759.1413405053.git.jbaron@akamai.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/power/hibernate.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/edac/cpc925_edac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 0121dab83f43..7ef5244c3164 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -491,8 +491,14 @@ int hibernation_restore(int platform_mode)
- 	error = dpm_suspend_start(PMSG_QUIESCE);
- 	if (!error) {
- 		error = resume_target_kernel(platform_mode);
--		dpm_resume_end(PMSG_RECOVER);
-+		/*
-+		 * The above should either succeed and jump to the new kernel,
-+		 * or return with an error. Otherwise things are just
-+		 * undefined, so let's be paranoid.
-+		 */
-+		BUG_ON(!error);
- 	}
-+	dpm_resume_end(PMSG_RECOVER);
- 	pm_restore_gfp_mask();
- 	ftrace_start();
- 	resume_console();
+diff --git a/drivers/edac/cpc925_edac.c b/drivers/edac/cpc925_edac.c
+index df6575f1430d..682288ced4ac 100644
+--- a/drivers/edac/cpc925_edac.c
++++ b/drivers/edac/cpc925_edac.c
+@@ -562,7 +562,7 @@ static void cpc925_mc_check(struct mem_ctl_info *mci)
+ 
+ 	if (apiexcp & UECC_EXCP_DETECTED) {
+ 		cpc925_mc_printk(mci, KERN_INFO, "DRAM UECC Fault\n");
+-		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 1,
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1,
+ 				     pfn, offset, 0,
+ 				     csrow, -1, -1,
+ 				     mci->ctl_name, "");
 -- 
 2.1.3
 
