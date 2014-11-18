@@ -1,64 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaKRDZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Nov 2014 22:25:29 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40352 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbaKRDZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Nov 2014 22:25:28 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <546ABC02.4010905@jp.fujitsu.com>
-Date: Tue, 18 Nov 2014 12:24:50 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752929AbaKRDeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Nov 2014 22:34:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752088AbaKRDef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Nov 2014 22:34:35 -0500
+Message-ID: <546ABDFE.2090203@redhat.com>
+Date: Mon, 17 Nov 2014 19:33:18 -0800
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>, <linux-mm@kvack.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "Larry Woodman" <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: do not overwrite reserved pages counter at show_mem()
-References: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
-In-Reply-To: <e34cbf786f7c16d4330889825aa5b13141cc085c.1415989668.git.aquini@redhat.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: paulmck@linux.vnet.ibm.com
+CC: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
+        peterz@infradead.org, benh@kernel.crashing.org,
+        heiko.carstens@de.ibm.com, mingo@kernel.org, mikey@neuling.org,
+        linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        nic_swsd@realtek.com, will.deacon@arm.com, michael@ellerman.id.au,
+        tony.luck@intel.com, torvalds@linux-foundation.org, oleg@redhat.com,
+        schwidefsky@de.ibm.com, fweisbec@gmail.com, davem@davemloft.net
+Subject: Re: [PATCH 2/4] arch: Add lightweight memory barriers fast_rmb()
+ and fast_wmb()
+References: <20141117171005.22333.96544.stgit@ahduyck-server> <20141117171812.22333.90395.stgit@ahduyck-server> <20141117201823.GD5050@linux.vnet.ibm.com> <546A649D.2000007@redhat.com> <20141117231741.GI5050@linux.vnet.ibm.com>
+In-Reply-To: <20141117231741.GI5050@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/15 3:34), Rafael Aquini wrote:
-> Minor fixlet to perform the reserved pages counter aggregation
-> for each node, at show_mem()
-> 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> ---
 
-Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On 11/17/2014 03:17 PM, Paul E. McKenney wrote:
+> On Mon, Nov 17, 2014 at 01:11:57PM -0800, Alexander Duyck wrote:
+>> On 11/17/2014 12:18 PM, Paul E. McKenney wrote:
+>>> On Mon, Nov 17, 2014 at 09:18:13AM -0800, Alexander Duyck wrote:
+>>>> There are a number of situations where the mandatory barriers rmb() and
+>>>> wmb() are used to order memory/memory operations in the device drivers
+>>>> and those barriers are much heavier than they actually need to be.  For
+>>>> example in the case of PowerPC wmb() calls the heavy-weight sync
+>>>> instruction when for memory/memory operations all that is really needed is
+>>>> an lsync or eieio instruction.
+>>> Is this still the case if one of the memory operations is MMIO?  Last
+>>> I knew, it was not.
+>> This barrier is not meant for use in MMIO operations, for that you
+>> still need a full barrier as I call out in the documentation
+>> section. What the barrier does is allow for a lightweight barrier
+>> for accesses to coherent system memory. So for example many device
+>> drivers have to perform a read of the descriptor to see if the
+>> device is done with it. We need an rmb() following that check to
+>> prevent any other accesses.
+>>
+>> Right now on x86 that rmb() becomes an lfence instruction and is
+>> quite expensive, and as it turns out we don't need it since the x86
+>> doesn't reorder reads. The same kind of thing applies to PowerPC,
+>> only in that case we use a sync when what we really need is a
+>> lwsync.
+> Would it make sense to have a memory barrier that enforced the
+> non-store-buffer orderings, that is prior reads before later
+> reads and writes and prior writes before later writes?  This was
+> discussed earlier this year ((http://lwn.net/Articles/586838/,
+> https://lwn.net/Articles/588300/).  If I recall correctly, one of
+> the biggest obstacles was the name.  ;-)
+
+You''re talking bout acquire and release barriers, or something else?  
+For most devices the two barriers I have defined should do the job, I 
+had tried doing load_acquire/store_release type functions in the 
+previous path set and that was shot down as the preference seemed to be 
+for barriers instead to remove some of the abstraction as to what was 
+occurring.
+
+>>>> This commit adds a fast (and loose) version of the mandatory memory
+>>>> barriers rmb() and wmb().  The prefix to the name is actually based on the
+>>>> version of the functions that already exist in the mips and tile trees.
+>>>> However I thought it applicable since it gets at what we are trying to
+>>>> accomplish with these barriers and somethat implies their risky nature.
+>>>>
+>>>> These new barriers are not as safe as the standard rmb() and wmb().
+>>>> Specifically they do not guarantee ordering between cache-enabled and
+>>>> cache-inhibited memories.  The primary use case for these would be to
+>>>> enforce ordering of memory reads/writes when accessing cache-enabled memory
+>>>> that is shared between the CPU and a device.
+>>>>
+>>>> It may also be noted that there is no fast_mb().  This is due to the fact
+>>>> that most architectures didn't seem to have a good way to do a full memory
+>>>> barrier quickly and so they usually resorted to an mb() for their smp_mb
+>>>> call.  As such there no point in adding a fast_mb() function if it is going
+>>>> to map to mb() for all architectures anyway.
+>>> I must confess that I still don't entirely understand the motivation.
+>> The motivation is to provide finer grained barriers. So this
+>> provides an in-between that allows us to "choose the right hammer".
+>> In the case of PowerPC it is the difference between sync/lwsync, on
+>> ARM it is dsb()/dmb(), and on x86 it is lfence/barrier().
+> Ah, so ARM will motivate a fast_wmb(), given its instruction set.
+
+Actually it was x86 that started this,  lfence or sfence is much more 
+expensive then just barrier().  From there I realized we had issues in 
+PowerPC as well with sync vs lwsync, and ARM with dsb() vs dmb().
+
+>> <snip>
+>>
+>>>> diff --git a/arch/powerpc/include/asm/barrier.h b/arch/powerpc/include/asm/barrier.h
+>>>> index cb6d66c..f480097 100644
+>>>> --- a/arch/powerpc/include/asm/barrier.h
+>>>> +++ b/arch/powerpc/include/asm/barrier.h
+>>>> @@ -36,22 +36,20 @@
+>>>>
+>>>>   #define set_mb(var, value)	do { var = value; mb(); } while (0)
+>>>>
+>>>> -#ifdef CONFIG_SMP
+>>>> -
+>>>>   #ifdef __SUBARCH_HAS_LWSYNC
+>>>>   #    define SMPWMB      LWSYNC
+>>>>   #else
+>>>>   #    define SMPWMB      eieio
+>>>>   #endif
+>>>>
+>>>> -#define __lwsync()	__asm__ __volatile__ (stringify_in_c(LWSYNC) : : :"memory")
+>>>> +#define fast_rmb()	__asm__ __volatile__ (stringify_in_c(LWSYNC) : : :"memory")
+>>>> +#define fast_wmb()	__asm__ __volatile__ (stringify_in_c(SMPWMB) : : :"memory")
+>>>>
+>>>> +#ifdef CONFIG_SMP
+>>>>   #define smp_mb()	mb()
+>>>> -#define smp_rmb()	__lwsync()
+>>>> -#define smp_wmb()	__asm__ __volatile__ (stringify_in_c(SMPWMB) : : :"memory")
+>>>> +#define smp_rmb()	fast_rmb()
+>>>> +#define smp_wmb()	fast_wmb()
+>>>>   #else
+>>>> -#define __lwsync()	barrier()
+>>>> -
+>>>>   #define smp_mb()	barrier()
+>>>>   #define smp_rmb()	barrier()
+>>>>   #define smp_wmb()	barrier()
+>>>> @@ -69,10 +67,16 @@
+>>>>   #define data_barrier(x)	\
+>>>>   	asm volatile("twi 0,%0,0; isync" : : "r" (x) : "memory");
+>>>>
+>>>> +/*
+>>>> + * The use of smp_rmb() in these functions are actually meant to map from
+>>>> + * smp_rmb()->fast_rmb()->LWSYNC.  This way if smp is disabled then
+>>>> + * smp_rmb()->barrier(), or if the platform doesn't support lwsync it will
+>>>> + * map to the more heavy-weight sync.
+>>>> + */
+>>>>   #define smp_store_release(p, v)						\
+>>>>   do {									\
+>>>>   	compiletime_assert_atomic_type(*p);				\
+>>>> -	__lwsync();							\
+>>>> +	smp_rmb();							\
+>>> This is not good at all.  For smp_store_release(), we absolutely
+>>> must order prior loads and stores against the assignment on the following
+>>> line.  This is not something that smp_rmb() does, nor is it something
+>>> that smp_wmb() does.  Yes, it might happen to now, but this could easily
+>>> break in the future -- plus this change is extremely misleading.
+>>>
+>>> The original __lwsync() is much more clear.
+>> The problem I had with __lwsync is that it really wasn't all that
+>> clear. It was the lwsync instruction if SMP was enabled, otherwise
+>> it was just a barrier call. What I did is move the definition of
+>> __lwsync in the SMP case into fast_rmb, which in turn is accessed by
+>> smp_rmb. I tried to make this clear in the comment just above the
+>> two calls. The resultant assembly code should be exactly the same.
+>>
+>> What I could do is have it added back as a smp_lwsync if that works
+>> for you. That way there is something there to give you a hint that
+>> it becomes a barrier() call as soon as SMP is disabled.
+> An smp_lwsync() would be a great improvement!
+>
+> 							Thanx, Paul
+>
+
+Okay, that will be in the next patch then.
 
 Thanks,
-Yasuaki Ishimatsu
 
->   lib/show_mem.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/lib/show_mem.c b/lib/show_mem.c
-> index 0922579..5e25627 100644
-> --- a/lib/show_mem.c
-> +++ b/lib/show_mem.c
-> @@ -28,7 +28,7 @@ void show_mem(unsigned int filter)
->   				continue;
->   
->   			total += zone->present_pages;
-> -			reserved = zone->present_pages - zone->managed_pages;
-> +			reserved += zone->present_pages - zone->managed_pages;
->   
->   			if (is_highmem_idx(zoneid))
->   				highmem += zone->present_pages;
-> 
-
-
+Alex
