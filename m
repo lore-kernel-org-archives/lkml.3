@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaKRRkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 12:40:11 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51615 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753949AbaKRRkJ (ORCPT
+	id S1754366AbaKRRlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 12:41:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55551 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166AbaKRRlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 12:40:09 -0500
-Message-ID: <546B8452.6030701@arm.com>
-Date: Tue, 18 Nov 2014 17:39:30 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Nov 2014 12:41:12 -0500
+Date: Tue, 18 Nov 2014 09:40:39 -0800
+From: tip-bot for Kees Cook <tipbot@zytor.com>
+Message-ID: <tip-45e2a9d4701d8c624d4a4bcdd1084eae31e92f58@git.kernel.org>
+Cc: david.vrabel@citrix.com, keescook@chromium.org,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, luto@amacapital.net, isimatu.yasuaki@jp.fujitsu.com,
+        wangnan0@huawei.com, yinghai@kernel.org, toshi.kani@hp.com
+Reply-To: tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, david.vrabel@citrix.com, yinghai@kernel.org,
+        toshi.kani@hp.com, wangnan0@huawei.com, isimatu.yasuaki@jp.fujitsu.com,
+        hpa@zytor.com, luto@amacapital.net
+In-Reply-To: <20141114194737.GA3091@www.outflux.net>
+References: <20141114194737.GA3091@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, mm: Set NX across entire PMD at boot
+Git-Commit-ID: 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] drm/i2c: tda998x: Allow for different audio sample rates
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On HDMI, the audio data are carried across the HDMI link which is
-driven by the TDMS clock. The TDMS clock is dependent on the video pixel
-rate.
+Commit-ID:  45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
+Gitweb:     http://git.kernel.org/tip/45e2a9d4701d8c624d4a4bcdd1084eae31e92f58
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Fri, 14 Nov 2014 11:47:37 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 18 Nov 2014 18:32:24 +0100
 
-This patch sets the denominator (Cycle Time Stamp) appropriately
-allowing the driver to send audio to a wider range of HDMI sinks
-(i.e. monitors).
+x86, mm: Set NX across entire PMD at boot
 
-Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+When setting up permissions on kernel memory at boot, the end of the
+PMD that was split from bss remained executable. It should be NX like
+the rest. This performs a PMD alignment instead of a PAGE alignment to
+get the correct span of memory.
+
+Before:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
+0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+
+After:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82e00000    12M     RW   PSE GLB NX pmd
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+
+[ tglx: Changed it to roundup(_brk_end, PMD_SIZE) and added a comment.
+        We really should unmap the reminder along with the holes
+        caused by init,initdata etc. but thats a different issue ]
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Wang Nan <wangnan0@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/20141114194737.GA3091@www.outflux.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/gpu/drm/i2c/tda998x_drv.c |   22 ++++++++++++++++++----
- 1 files changed, 18 insertions(+), 4 deletions(-)
+ arch/x86/mm/init_64.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index d476279..da0d504 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -640,7 +640,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 		struct drm_display_mode *mode, struct tda998x_encoder_params *p)
- {
- 	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv;
--	uint32_t n;
-+	uint32_t n, cts;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 4cb8763..4e5dfec 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1123,7 +1123,7 @@ void mark_rodata_ro(void)
+ 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
+ 	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
+ 	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
+-	unsigned long all_end = PFN_ALIGN(&_end);
++	unsigned long all_end;
  
- 	/* Enable audio ports */
- 	reg_write(priv, REG_ENA_AP, p->audio_cfg);
-@@ -696,9 +696,23 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	n = 128 * p->audio_sample_rate / 1000;
+ 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+ 	       (end - start) >> 10);
+@@ -1134,7 +1134,16 @@ void mark_rodata_ro(void)
+ 	/*
+ 	 * The rodata/data/bss/brk section (but not the kernel text!)
+ 	 * should also be not-executable.
++	 *
++	 * We align all_end to PMD_SIZE because the existing mapping
++	 * is a full PMD. If we would align _brk_end to PAGE_SIZE we
++	 * split the PMD and the reminder between _brk_end and the end
++	 * of the PMD will remain mapped executable.
++	 *
++	 * Any PMD which was setup after the one which covers _brk_end
++	 * has been zapped already via cleanup_highmem().
+ 	 */
++	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
+ 	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
  
- 	/* Write the CTS and N values */
--	buf[0] = 0x44;
--	buf[1] = 0x42;
--	buf[2] = 0x01;
-+	if ((n > 0) && (mode->clock > 0)) {
-+		/*
-+		 * For non-coherent clocks, the average CTS value is
-+		 * calculated as:
-+		 *      fTMDS * n / (128 * fs)
-+		 * which simplifies to:
-+		 * 	fTMDS / 1000
-+		 * (See sections 7.2.2 and 7.2.3 of the HDMI specification.)
-+		 * NB mode->clock is in kHz.
-+		 */
-+		cts = mode->clock;
-+	} else {
-+		cts = 82500;
-+	}
-+	buf[0] = cts;
-+	buf[1] = cts >> 8;
-+	buf[2] = cts >> 16;
- 	buf[3] = n;
- 	buf[4] = n >> 8;
- 	buf[5] = n >> 16;
--- 
-1.7.1
-
+ 	rodata_test();
