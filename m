@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaKRIcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 03:32:23 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:53127 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770AbaKRIcT (ORCPT
+	id S1754049AbaKRIcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 03:32:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40317 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512AbaKRIcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 03:32:19 -0500
+	Tue, 18 Nov 2014 03:32:31 -0500
+Message-ID: <546B0412.8060102@oracle.com>
+Date: Tue, 18 Nov 2014 16:32:18 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <7h61edyxkq.fsf@deeprootsystems.com>
-References: <1415917702-6742-1-git-send-email-khilman@kernel.org>
-	<6465990.KKns6W8hQE@vostro.rjw.lan>
-	<7hioid3cqx.fsf@deeprootsystems.com>
-	<1452958.d0yJE5gVgq@vostro.rjw.lan>
-	<7h61edyxkq.fsf@deeprootsystems.com>
-Date: Tue, 18 Nov 2014 09:32:17 +0100
-X-Google-Sender-Auth: uz2ic79pL52672XxrtDP_OKgStc
-Message-ID: <CAMuHMdW2o4HKfRei56ntT9h1wYAs+cyaW14C9wtBVXvooLbpsQ@mail.gmail.com>
-Subject: Re: [PATCH] PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is selected
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ethan Zhao <ethan.zhao@oracle.com>
+CC: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
+        corbet@lwn.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        ethan.kernel@gmail.com, joe.jin@oracle.com, brian.maly@oracle.com
+Subject: Re: [PATCH] intel_pstate: allow to be built as module and handle
+ Sun server power capping.
+References: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
+In-Reply-To: <1416299253-14912-1-git-send-email-ethan.zhao@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 4:52 AM, Kevin Hilman <khilman@kernel.org> wrote:
-> "Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+Sorry, I missed the -n to git format-patch,
+please ignore this patch.
+
+Thanks,
+Ethan
+
+On 2014/11/18 16:27, Ethan Zhao wrote:
+>    Oracle Sun servers(X86) have power capping features that work via ACPI _PPC method,
+> patch No.1 is used to skip this driver if Oracle Sun server and _PPC detected. patch
+> No.2 is used to allow the driver to be configured and built as a module, so provide
+> the flexibility of configuration by userland. patch No.3 introduce a module parameter
+> and a kernel command line parameter, let user could force it loaded even on Oracle Sun
+> Servers(X86), that will be useful for debug\test\workaround etc purpose.
 >
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> The number of and dependencies between high-level power management
->> Kconfig options make life much harder than necessary.  Several
->> conbinations of them have to be tested and supported, even though
->> some of those combinations are very rarely used in practice (it
->> they are used in practice at all).  Moreover, the fact that we
->> have separate independent Kconfig options for runtime PM and
->> system suspend is a serious obscacle for integration between
->> the two frameworks.
->>
->> To overcome these difficulties, always select PM_RUNTIME if PM_SLEEP
->> is set.  Among other things, this will allow system suspend callbacks
->> provided by bus types and device drivers to rely on the runtime PM
->> framework regardless of the kernel configuration.
->>
->> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> ---
->>
->> As a follow up.
->>
->> Note that we won't need the patch making genpd select PM_RUNTIME with this,
->> because genpd already depends on PM.
->>
->> Thoughts, comments?
+> These patches have been tested on Oracle Sun server X4-2 series with following
+> cases on stable v3.18-rc3.
 >
-> Acked-by: Kevin Hilman <khilman@linaro.org>
+>    a. Configure and build  intel_pstate as builtin.
+>       Boot without any kernel line parameter.
+>       Boot with intel_pstate=ignore_acpi_ppc.
+>    b. Configure and build intel_pstate as module.
+>       Load intel_pstate drive without any module parameter.
+>       Load intel_pstate driver with ignore_acpi_ppc=1
+>
+> These cases passed and work fine.
+> --
+> Brian Maly (1):
+>    intel_pstate: allow driver to be built as a module
+>
+> Ethan Zhao (2):
+>    intel_pstate: skip the driver if Sun server has ACPI _PPC method
+>    intel_pstate: add module and kernel command line parameter to ignore
+>      ACPI _PPC
+>
+>   Documentation/kernel-parameters.txt |  3 +++
+>   drivers/cpufreq/Kconfig.x86         |  2 +-
+>   drivers/cpufreq/intel_pstate.c      | 32 ++++++++++++++++++++++++++++++++
+>   3 files changed, 36 insertions(+), 1 deletion(-)
+>
 
-This gets rid of
-
-kernel/power/Kconfig:132:error: recursive dependency detected!
-kernel/power/Kconfig:132: symbol PM_RUNTIME is selected by PM_GENERIC_DOMAINS
-kernel/power/Kconfig:272: symbol PM_GENERIC_DOMAINS is selected by PM_RUNTIME
-
-Tested-by: Geert Uytterhoeven <geert+renesas@glider.be>
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
