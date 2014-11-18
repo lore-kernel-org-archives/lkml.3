@@ -1,287 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631AbaKRGe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 01:34:27 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:40485 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304AbaKRGdE (ORCPT
+	id S1753829AbaKRGeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 01:34:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58190 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753140AbaKRGdC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 01:33:04 -0500
-From: David Long <dave.long@linaro.org>
-To: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        William Cohen <wcohen@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 5/5] arm64: Add HAVE_REGS_AND_STACK_ACCESS_API feature
-Date: Tue, 18 Nov 2014 01:32:55 -0500
-Message-Id: <1416292375-29560-6-git-send-email-dave.long@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
-References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
+	Tue, 18 Nov 2014 01:33:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="417982761"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "Sam Protsenko" <semen.protsenko@linaro.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH v2 1/3] firmware loader: Introduce new API -
+ request_firmware_abort()
+Thread-Topic: [PATCH v2 1/3] firmware loader: Introduce new API -
+ request_firmware_abort()
+Thread-Index: AQHP+4de++OfUYhRjkKfGs6CqwuvNJxZipnAgArp9ICAAXTQMA==
+Date: Tue, 18 Nov 2014 06:31:38 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B85DA57@PGSMSX102.gar.corp.intel.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+ <20141108190655.GA2638@kroah.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B8529E3@PGSMSX102.gar.corp.intel.com>
+ <20141117151211.GB6810@console-pimps.org>
+In-Reply-To: <20141117151211.GB6810@console-pimps.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David A. Long" <dave.long@linaro.org>
+> -----Original Message-----
+> From: Matt Fleming [mailto:matt@console-pimps.org]
+> Sent: Monday, November 17, 2014 11:12 PM
+> >
+> > - Only doing module unload is required to be aware of this synchronization
+> > 	-> Ensuring the call back does not fall into unloaded code which may
+> cause
+> > 	     undefined behavior.
+> > 	-> Ensuring the put_device() & module_put() code have finished in
+> firmware_class.c
+> > 	     function request_firmware_work_func() before the device is
+> unregistered
+> > 	     and module unloaded happen.
+> 
+> Shouldn't the existing module_{put,get}() and {put,get}_device() calls
+> provide all the necessary synchronisation?
+> 
+> Module unload should not be possible while other code is using the
+> module (and the module refcnt has been incremented accordindly).
+> 
+> Right?
+> 
+> --
+> Matt Fleming, Intel Open Source Technology Center
 
-Add HAVE_REGS_AND_STACK_ACCESS_API feature for arm64.
+Hi Matt,
 
-Signed-off-by: David A. Long <dave.long@linaro.org>
----
- arch/arm64/Kconfig                   |   1 +
- arch/arm64/include/asm/ptrace.h      |  29 +++++++++
- arch/arm64/include/uapi/asm/ptrace.h |  36 +++++++++++
- arch/arm64/kernel/ptrace.c           | 119 +++++++++++++++++++++++++++++++++++
- 4 files changed, 185 insertions(+)
+Yes, you are right. If the module refcount is not zero, you will get error
+message and returned while you do "rmmod". But I strongly believe if we
+have the capability in our code to take care of it by doing synchronization,
+we should take care of it in case people are doing "rmmod -f". Don't
+you think so?
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 02f31b7..bc9b516 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -58,6 +58,7 @@ config ARM64
- 	select HAVE_PERF_EVENTS
- 	select HAVE_PERF_REGS
- 	select HAVE_PERF_USER_STACK_DUMP
-+	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_RCU_TABLE_FREE
- 	select HAVE_SYSCALL_TRACEPOINTS
- 	select HAVE_KPROBES if !XIP_KERNEL
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-index d3e782a..24cc048 100644
---- a/arch/arm64/include/asm/ptrace.h
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -111,6 +111,8 @@ struct pt_regs {
- 	u64 syscallno;
- };
- 
-+#define MAX_REG_OFFSET (offsetof(struct pt_regs, orig_x0))
-+
- #define arch_has_single_step()	(1)
- 
- #ifdef CONFIG_COMPAT
-@@ -139,11 +141,38 @@ struct pt_regs {
- #define user_stack_pointer(regs) \
- 	(!compat_user_mode(regs) ? (regs)->sp : (regs)->compat_sp)
- 
-+/**
-+ * regs_get_register() - get register value from its offset
-+ * @regs:	   pt_regs from which register value is gotten
-+ * @offset:    offset number of the register.
-+ *
-+ * regs_get_register returns the value of a register whose offset from @regs.
-+ * The @offset is the offset of the register in struct pt_regs.
-+ * If @offset is bigger than MAX_REG_OFFSET, this returns 0.
-+ */
-+static inline u64 regs_get_register(struct pt_regs *regs,
-+					      unsigned int offset)
-+{
-+	if (unlikely(offset > MAX_REG_OFFSET))
-+		return 0;
-+	return *(u64 *)((u64)regs + offset);
-+}
-+
-+/* Valid only for Kernel mode traps. */
-+static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
-+{
-+	return regs->ARM_sp;
-+}
-+
- static inline unsigned long regs_return_value(struct pt_regs *regs)
- {
- 	return regs->regs[0];
- }
- 
-+extern int regs_query_register_offset(const char *name);
-+extern unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
-+					       unsigned int n);
-+
- /*
-  * Are the current registers suitable for user mode? (used to maintain
-  * security in signal handlers)
-diff --git a/arch/arm64/include/uapi/asm/ptrace.h b/arch/arm64/include/uapi/asm/ptrace.h
-index 6913643..700d28b 100644
---- a/arch/arm64/include/uapi/asm/ptrace.h
-+++ b/arch/arm64/include/uapi/asm/ptrace.h
-@@ -61,6 +61,42 @@
- 
- #ifndef __ASSEMBLY__
- 
-+#define ARM_cpsr	pstate
-+#define ARM_pc		pc
-+#define ARM_sp		sp
-+#define ARM_lr		regs[30]
-+#define ARM_fp		regs[29]
-+#define ARM_x28		regs[28]
-+#define ARM_x27		regs[27]
-+#define ARM_x26		regs[26]
-+#define ARM_x25		regs[25]
-+#define ARM_x24		regs[24]
-+#define ARM_x23		regs[23]
-+#define ARM_x22		regs[22]
-+#define ARM_x21		regs[21]
-+#define ARM_x20		regs[20]
-+#define ARM_x19		regs[19]
-+#define ARM_x18		regs[18]
-+#define ARM_ip1		regs[17]
-+#define ARM_ip0		regs[16]
-+#define ARM_x15		regs[15]
-+#define ARM_x14		regs[14]
-+#define ARM_x13		regs[13]
-+#define ARM_x12		regs[12]
-+#define ARM_x11		regs[11]
-+#define ARM_x10		regs[10]
-+#define ARM_x9		regs[9]
-+#define ARM_x8		regs[8]
-+#define ARM_x7		regs[7]
-+#define ARM_x6		regs[6]
-+#define ARM_x5		regs[5]
-+#define ARM_x4		regs[4]
-+#define ARM_x3		regs[3]
-+#define ARM_x2		regs[2]
-+#define ARM_x1		regs[1]
-+#define ARM_x0		regs[0]
-+#define ARM_ORIG_x0	orig_x0
-+
- /*
-  * User structures for general purpose, floating point and debug registers.
-  */
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 8a4ae8e..36a94c8 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -47,6 +47,125 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/syscalls.h>
- 
-+struct pt_regs_offset {
-+	const char *name;
-+	int offset;
-+};
-+
-+#define REG_OFFSET_NAME(r) \
-+	{.name = #r, .offset = offsetof(struct pt_regs, ARM_##r)}
-+#define REG_OFFSET_END {.name = NULL, .offset = 0}
-+
-+static const struct pt_regs_offset regoffset_table[] = {
-+	REG_OFFSET_NAME(x0),
-+	REG_OFFSET_NAME(x1),
-+	REG_OFFSET_NAME(x2),
-+	REG_OFFSET_NAME(x3),
-+	REG_OFFSET_NAME(x4),
-+	REG_OFFSET_NAME(x5),
-+	REG_OFFSET_NAME(x6),
-+	REG_OFFSET_NAME(x7),
-+	REG_OFFSET_NAME(x8),
-+	REG_OFFSET_NAME(x9),
-+	REG_OFFSET_NAME(x10),
-+	REG_OFFSET_NAME(x11),
-+	REG_OFFSET_NAME(x12),
-+	REG_OFFSET_NAME(x13),
-+	REG_OFFSET_NAME(x14),
-+	REG_OFFSET_NAME(x15),
-+	REG_OFFSET_NAME(ip0),
-+	REG_OFFSET_NAME(ip1),
-+	REG_OFFSET_NAME(x18),
-+	REG_OFFSET_NAME(x19),
-+	REG_OFFSET_NAME(x20),
-+	REG_OFFSET_NAME(x21),
-+	REG_OFFSET_NAME(x22),
-+	REG_OFFSET_NAME(x23),
-+	REG_OFFSET_NAME(x24),
-+	REG_OFFSET_NAME(x25),
-+	REG_OFFSET_NAME(x26),
-+	REG_OFFSET_NAME(x27),
-+	REG_OFFSET_NAME(x28),
-+	REG_OFFSET_NAME(fp),
-+	REG_OFFSET_NAME(lr),
-+/*
-+	REG_OFFSET_NAME(ip),
-+*/
-+	REG_OFFSET_NAME(sp),
-+	REG_OFFSET_NAME(pc),
-+	REG_OFFSET_NAME(cpsr),
-+	REG_OFFSET_NAME(ORIG_x0),
-+	REG_OFFSET_END,
-+};
-+
-+/**
-+ * regs_query_register_offset() - query register offset from its name
-+ * @name:	the name of a register
-+ *
-+ * regs_query_register_offset() returns the offset of a register in struct
-+ * pt_regs from its name. If the name is invalid, this returns -EINVAL;
-+ */
-+int regs_query_register_offset(const char *name)
-+{
-+	const struct pt_regs_offset *roff;
-+
-+	for (roff = regoffset_table; roff->name != NULL; roff++)
-+		if (!strcmp(roff->name, name))
-+			return roff->offset;
-+	return -EINVAL;
-+}
-+
-+/**
-+ * regs_query_register_name() - query register name from its offset
-+ * @offset:	the offset of a register in struct pt_regs.
-+ *
-+ * regs_query_register_name() returns the name of a register from its
-+ * offset in struct pt_regs. If the @offset is invalid, this returns NULL;
-+ */
-+const char *regs_query_register_name(unsigned int offset)
-+{
-+	const struct pt_regs_offset *roff;
-+
-+	for (roff = regoffset_table; roff->name != NULL; roff++)
-+		if (roff->offset == offset)
-+			return roff->name;
-+	return NULL;
-+}
-+
-+/**
-+ * regs_within_kernel_stack() - check the address in the stack
-+ * @regs:      pt_regs which contains kernel stack pointer.
-+ * @addr:      address which is checked.
-+ *
-+ * regs_within_kernel_stack() checks @addr is within the kernel stack page(s).
-+ * If @addr is within the kernel stack, it returns true. If not, returns false.
-+ */
-+bool regs_within_kernel_stack(struct pt_regs *regs, unsigned long addr)
-+{
-+	return ((addr & ~(THREAD_SIZE - 1))  ==
-+		(kernel_stack_pointer(regs) & ~(THREAD_SIZE - 1)));
-+}
-+
-+/**
-+ * regs_get_kernel_stack_nth() - get Nth entry of the stack
-+ * @regs:	pt_regs which contains kernel stack pointer.
-+ * @n:		stack entry number.
-+ *
-+ * regs_get_kernel_stack_nth() returns @n th entry of the kernel stack which
-+ * is specified by @regs. If the @n th entry is NOT in the kernel stack,
-+ * this returns 0.
-+ */
-+unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs, unsigned int n)
-+{
-+	unsigned long *addr = (unsigned long *)kernel_stack_pointer(regs);
-+
-+	addr += n;
-+	if (regs_within_kernel_stack(regs, (unsigned long)addr))
-+		return *addr;
-+	else
-+		return 0;
-+}
-+
- /*
-  * TODO: does not yet catch signals sent when the child dies.
-  * in exit.c or in signal.c.
--- 
-1.8.1.2
+
+Regards,
+Wilson
 
