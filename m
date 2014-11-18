@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaKRNrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 08:47:24 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:46029 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561AbaKRNrV (ORCPT
+	id S932081AbaKRNsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 08:48:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:58362 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754037AbaKRNqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 08:47:21 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] net: can: comparison of unsigned variable
-Date: Tue, 18 Nov 2014 19:17:07 +0530
-Message-Id: <1416318427-28676-2-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1416318427-28676-1-git-send-email-sudipm.mukherjee@gmail.com>
-References: <1416318427-28676-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Tue, 18 Nov 2014 08:46:25 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 2/3] drm: panel: simple-panel: add support for bus_format retrieval
+Date: Tue, 18 Nov 2014 14:46:19 +0100
+Message-Id: <1416318380-20122-3-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416318380-20122-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1416318380-20122-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-err was of the type u32. it was being compared with < 0, and being
-an unsigned variable the comparison would have been always false.
+Provide a way to specify panel requirement in terms of supported media bus
+format (particularly useful for panels connected to an RGB or LVDS bus).
 
-moreover, err was getting the return value from set_reset_mode()
-and xcan_set_bittiming(), and both are returning int.
-
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- drivers/net/can/xilinx_can.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/panel/panel-simple.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.c
-index 72fe96f..67c2dd4 100644
---- a/drivers/net/can/xilinx_can.c
-+++ b/drivers/net/can/xilinx_can.c
-@@ -300,7 +300,8 @@ static int xcan_set_bittiming(struct net_device *ndev)
- static int xcan_chip_start(struct net_device *ndev)
- {
- 	struct xcan_priv *priv = netdev_priv(ndev);
--	u32 err, reg_msr, reg_sr_mask;
-+	u32 reg_msr, reg_sr_mask;
-+	int err;
- 	unsigned long timeout;
+diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+index 23de22f..66838a5 100644
+--- a/drivers/gpu/drm/panel/panel-simple.c
++++ b/drivers/gpu/drm/panel/panel-simple.c
+@@ -61,6 +61,8 @@ struct panel_desc {
+ 		unsigned int disable;
+ 		unsigned int unprepare;
+ 	} delay;
++
++	u32 bus_format;
+ };
  
- 	/* Check if it is in reset mode */
+ struct panel_simple {
+@@ -111,6 +113,9 @@ static int panel_simple_get_fixed_modes(struct panel_simple *panel)
+ 	connector->display_info.bpc = panel->desc->bpc;
+ 	connector->display_info.width_mm = panel->desc->size.width;
+ 	connector->display_info.height_mm = panel->desc->size.height;
++	if (panel->desc->bus_format)
++		drm_display_info_set_bus_formats(&connector->display_info,
++						 &panel->desc->bus_format, 1);
+ 
+ 	return num;
+ }
 -- 
-1.8.1.2
+1.9.1
 
