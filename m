@@ -1,61 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214AbaKRUIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 15:08:55 -0500
-Received: from mout.web.de ([212.227.17.11]:55715 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932132AbaKRUIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 15:08:53 -0500
-Message-ID: <546BA747.6000703@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 21:08:39 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] netlink: Deletion of an unnecessary check before the
- function call "__module_get"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:JEQcba5m395TevPCPTioVfq6aaic614Evc8lYUI7xuX9mfBSDqm
- lf3iy4NS2jaKTiromJ6mLJetDR2g8uS7crHz4frO///zJTxd08SaK9W+r0ANrTfTA9iN9fL
- Ziw2RDtL4zCKX1Q4ATvy9NEnGux/NLPFE/pnmlzjDplLLlXrOYVM5LHJLjeBs4mkdOYONIf
- H+oZRs+PxQNCT07ZRX5kQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S932133AbaKRUMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 15:12:20 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:60457 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237AbaKRUMT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 15:12:19 -0500
+From: Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
+To: jorge.ramirez-ortiz@linaro.org, balbi@ti.com, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: gadget: add USB3 support to the printer driver
+Date: Tue, 18 Nov 2014 15:11:54 -0500
+Message-Id: <1416341514-28499-2-git-send-email-jorge.ramirez-ortiz@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416341514-28499-1-git-send-email-jorge.ramirez-ortiz@linaro.org>
+References: <1416341514-28499-1-git-send-email-jorge.ramirez-ortiz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 18 Nov 2014 21:03:13 +0100
+Add SS descriptors to support the capabilities provided by USB3 controller
+drivers; unit tests run using a PLX 3380 [max transfer speed measured of 1Gbps]
 
-The __module_get() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+This driver shall fallback to lower operating modes when the higher ones are
+not available.
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
 ---
- net/netlink/af_netlink.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/gadget/legacy/printer.c | 65 +++++++++++++++++++++++++++++++++----
+ 1 file changed, 59 insertions(+), 6 deletions(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index f1de72d..0317b91 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -142,8 +142,7 @@ int netlink_add_tap(struct netlink_tap *nt)
- 	list_add_rcu(&nt->list, &netlink_tap_all);
- 	spin_unlock(&netlink_tap_lock);
+diff --git a/drivers/usb/gadget/legacy/printer.c b/drivers/usb/gadget/legacy/printer.c
+index 6474081..456730b 100644
+--- a/drivers/usb/gadget/legacy/printer.c
++++ b/drivers/usb/gadget/legacy/printer.c
+@@ -208,6 +208,43 @@ static struct usb_descriptor_header *hs_printer_function[] = {
+ 	NULL
+ };
  
--	if (nt->module)
--		__module_get(nt->module);
-+	__module_get(nt->module);
++/*
++ * Added endpoint descriptors for 3.0 devices
++ */
++
++static struct usb_endpoint_descriptor ss_ep_in_desc = {
++	.bLength =              USB_DT_ENDPOINT_SIZE,
++	.bDescriptorType =      USB_DT_ENDPOINT,
++	.bmAttributes =         USB_ENDPOINT_XFER_BULK,
++	.wMaxPacketSize =       cpu_to_le16(1024),
++};
++
++struct usb_ss_ep_comp_descriptor ss_ep_in_comp_desc = {
++	.bLength =              sizeof(ss_ep_in_comp_desc),
++	.bDescriptorType =      USB_DT_SS_ENDPOINT_COMP,
++};
++
++static struct usb_endpoint_descriptor ss_ep_out_desc = {
++	.bLength =              USB_DT_ENDPOINT_SIZE,
++	.bDescriptorType =      USB_DT_ENDPOINT,
++	.bmAttributes =         USB_ENDPOINT_XFER_BULK,
++	.wMaxPacketSize =       cpu_to_le16(1024),
++};
++
++struct usb_ss_ep_comp_descriptor ss_ep_out_comp_desc = {
++	.bLength =              sizeof(ss_ep_out_comp_desc),
++	.bDescriptorType =      USB_DT_SS_ENDPOINT_COMP,
++};
++
++static struct usb_descriptor_header *ss_printer_function[] = {
++	(struct usb_descriptor_header *) &intf_desc,
++	(struct usb_descriptor_header *) &ss_ep_in_desc,
++	(struct usb_descriptor_header *) &ss_ep_in_comp_desc,
++	(struct usb_descriptor_header *) &ss_ep_out_desc,
++	(struct usb_descriptor_header *) &ss_ep_out_comp_desc,
++	NULL
++};
++
+ static struct usb_otg_descriptor otg_descriptor = {
+ 	.bLength =              sizeof otg_descriptor,
+ 	.bDescriptorType =      USB_DT_OTG,
+@@ -220,7 +257,20 @@ static const struct usb_descriptor_header *otg_desc[] = {
+ };
  
- 	return 0;
- }
+ /* maxpacket and other transfer characteristics vary by speed. */
+-#define ep_desc(g, hs, fs) (((g)->speed == USB_SPEED_HIGH)?(hs):(fs))
++static inline struct usb_endpoint_descriptor *ep_desc(struct usb_gadget *gadget,
++					struct usb_endpoint_descriptor *fs,
++					struct usb_endpoint_descriptor *hs,
++					struct usb_endpoint_descriptor *ss)
++{
++	switch(gadget->speed) {
++	case USB_SPEED_SUPER:
++		return ss;
++	case USB_SPEED_HIGH:
++		return hs;
++	default:
++		return fs;
++	}
++}
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -793,11 +843,12 @@ set_printer_interface(struct printer_dev *dev)
+ {
+ 	int			result = 0;
+ 
+-	dev->in_ep->desc = ep_desc(dev->gadget, &hs_ep_in_desc, &fs_ep_in_desc);
++	dev->in_ep->desc = ep_desc(dev->gadget, &fs_ep_in_desc, &hs_ep_in_desc,
++				&ss_ep_in_desc);
+ 	dev->in_ep->driver_data = dev;
+ 
+-	dev->out_ep->desc = ep_desc(dev->gadget, &hs_ep_out_desc,
+-				    &fs_ep_out_desc);
++	dev->out_ep->desc = ep_desc(dev->gadget, &fs_ep_out_desc,
++				    &hs_ep_out_desc, &ss_ep_out_desc);
+ 	dev->out_ep->driver_data = dev;
+ 
+ 	result = usb_ep_enable(dev->in_ep);
+@@ -1016,9 +1067,11 @@ autoconf_fail:
+ 	/* assumes that all endpoints are dual-speed */
+ 	hs_ep_in_desc.bEndpointAddress = fs_ep_in_desc.bEndpointAddress;
+ 	hs_ep_out_desc.bEndpointAddress = fs_ep_out_desc.bEndpointAddress;
++	ss_ep_in_desc.bEndpointAddress = fs_ep_in_desc.bEndpointAddress;
++	ss_ep_out_desc.bEndpointAddress = fs_ep_out_desc.bEndpointAddress;
+ 
+ 	ret = usb_assign_descriptors(f, fs_printer_function,
+-			hs_printer_function, NULL);
++			hs_printer_function, ss_printer_function);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1253,7 +1306,7 @@ static __refdata struct usb_composite_driver printer_driver = {
+ 	.name           = shortname,
+ 	.dev            = &device_desc,
+ 	.strings        = dev_strings,
+-	.max_speed      = USB_SPEED_HIGH,
++	.max_speed      = USB_SPEED_SUPER,
+ 	.bind		= printer_bind,
+ 	.unbind		= printer_unbind,
+ };
 -- 
-2.1.3
+1.9.1
 
