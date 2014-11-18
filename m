@@ -1,95 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847AbaKROhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 09:37:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16666 "EHLO mga02.intel.com"
+	id S932813AbaKROhj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 09:37:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57164 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932830AbaKROhv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 09:37:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,410,1413270000"; 
-   d="scan'208";a="639002597"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>
-CC: "acme@kernel.org" <acme@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V3 3/3] perf tools: Construct LBR call chain
-Thread-Topic: [PATCH V3 3/3] perf tools: Construct LBR call chain
-Thread-Index: AQHQAvbRcQ1rb+Jn4kS+6OT1ok92KZxlfgyAgADuSeA=
-Date: Tue, 18 Nov 2014 14:37:31 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F0770167125F@SHSMSX103.ccr.corp.intel.com>
-References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
- <1415972652-17310-4-git-send-email-kan.liang@intel.com>
- <20141117155425.GA31042@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F07701670BF9@SHSMSX103.ccr.corp.intel.com>
- <87lhn9qbmp.fsf@sejong.aot.lge.com>
- <20141118075539.GA27645@krava.brq.redhat.com>
-In-Reply-To: <20141118075539.GA27645@krava.brq.redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755047AbaKROKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Nov 2014 09:10:09 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 113/206] target: Fix APTPL metadata handling for dynamic MappedLUNs
+Date: Tue, 18 Nov 2014 15:07:48 +0100
+Message-Id: <8bb710aed647d505da7434ff9c3162344e2ad309.1416319692.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+References: <28f04bcc068a44c5641c727883947960fb8dcbd5.1416319692.git.jslaby@suse.cz>
+In-Reply-To: <cover.1416319692.git.jslaby@suse.cz>
+References: <cover.1416319692.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Nov 18, 2014 at 03:13:50PM +0900, Namhyung Kim wrote:
-> 
-> SNIP
-> 
-> > >> > +			 * in "from" register, while the callee is
-> stored
-> > >> > +			 * in "to" register.
-> > >> > +			 * For example, there is a call stack
-> > >> > +			 * "A"->"B"->"C"->"D".
-> > >> > +			 * The LBR registers will recorde like
-> > >> > +			 * "C"->"D", "B"->"C", "A"->"B".
-> > >> > +			 * So only the first "to" register and all
-> "from"
-> > >> > +			 * registers are needed to construct the
-> whole
-> > >> stack.
-> > >> > +			 */
-> > >>
-> > >> Andi is using some sanity checks:
-> > >> http://marc.info/?l=linux-kernel&m=141584447819894&w=2
-> > >> I guess this could be applied in here, once his patch gets in.
-> > >>
-> > >
-> > > Are you suggesting me to remove the comments, or rebase the whole
-> > > patch to Andi's patch once it's merged?
-> > >
-> > > The branch history in Andi's patch is different as the call stack,
-> > > although they are both from LBR.
-> > > Andi's branch history recording branch records for taken branches,
-> > > interrupts, and exceptions.
-> > > While the LBR call stack records for the call stack.
-> >
-> > Right.  And branch history can overlap with normal callchains so
-> > additional check in there is to remove duplication.  While LBR call
-> > stack is separated to user only so there should be no overlap.
-> 
-> hum, it seemed to me like the remove_loops function could be used for
-> this one as well.. but anyway I meant that this can be introduced later after
-> Andi's change gets in
+===============
 
-I see. I will apply Andi's remove_loops.
+commit e24805637d2d270d7975502e9024d473de86afdb upstream.
 
-Thanks,
-Kan
+This patch fixes a bug in handling of SPC-3 PR Activate Persistence
+across Target Power Loss (APTPL) logic where re-creation of state for
+MappedLUNs from dynamically generated NodeACLs did not occur during
+I_T Nexus establishment.
 
-> 
-> thanks,
-> jirka
+It adds the missing core_scsi3_check_aptpl_registration() call during
+core_tpg_check_initiator_node_acl() -> core_tpg_add_node_to_devs() in
+order to replay any pre-loaded APTPL metadata state associated with
+the newly connected SCSI Initiator Port.
+
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/target/target_core_device.c | 3 ++-
+ drivers/target/target_core_pr.c     | 6 +++---
+ drivers/target/target_core_pr.h     | 2 +-
+ drivers/target/target_core_tpg.c    | 8 ++++++++
+ 4 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index c7a3c5e2b1b3..a3ce91234b77 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1322,7 +1322,8 @@ int core_dev_add_initiator_node_lun_acl(
+ 	 * Check to see if there are any existing persistent reservation APTPL
+ 	 * pre-registrations that need to be enabled for this LUN ACL..
+ 	 */
+-	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, lacl);
++	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, nacl,
++					    lacl->mapped_lun);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
+index dfe3db7942ea..a1e1ecdab86c 100644
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -944,10 +944,10 @@ int core_scsi3_check_aptpl_registration(
+ 	struct se_device *dev,
+ 	struct se_portal_group *tpg,
+ 	struct se_lun *lun,
+-	struct se_lun_acl *lun_acl)
++	struct se_node_acl *nacl,
++	u32 mapped_lun)
+ {
+-	struct se_node_acl *nacl = lun_acl->se_lun_nacl;
+-	struct se_dev_entry *deve = nacl->device_list[lun_acl->mapped_lun];
++	struct se_dev_entry *deve = nacl->device_list[mapped_lun];
+ 
+ 	if (dev->dev_reservation_flags & DRF_SPC2_RESERVATIONS)
+ 		return 0;
+diff --git a/drivers/target/target_core_pr.h b/drivers/target/target_core_pr.h
+index ed75cdd32cb0..14a0a2e6f9c4 100644
+--- a/drivers/target/target_core_pr.h
++++ b/drivers/target/target_core_pr.h
+@@ -55,7 +55,7 @@ extern int core_scsi3_alloc_aptpl_registration(
+ 			unsigned char *, u16, u32, int, int, u8);
+ extern int core_scsi3_check_aptpl_registration(struct se_device *,
+ 			struct se_portal_group *, struct se_lun *,
+-			struct se_lun_acl *);
++			struct se_node_acl *, u32);
+ extern void core_scsi3_free_pr_reg_from_nacl(struct se_device *,
+ 					     struct se_node_acl *);
+ extern void core_scsi3_free_all_registrations(struct se_device *);
+diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
+index b9a6ec0aa5fe..d72583597427 100644
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -40,6 +40,7 @@
+ #include <target/target_core_fabric.h>
+ 
+ #include "target_core_internal.h"
++#include "target_core_pr.h"
+ 
+ extern struct se_device *g_lun0_dev;
+ 
+@@ -165,6 +166,13 @@ void core_tpg_add_node_to_devs(
+ 
+ 		core_enable_device_list_for_node(lun, NULL, lun->unpacked_lun,
+ 				lun_access, acl, tpg);
++		/*
++		 * Check to see if there are any existing persistent reservation
++		 * APTPL pre-registrations that need to be enabled for this dynamic
++		 * LUN ACL now..
++		 */
++		core_scsi3_check_aptpl_registration(dev, tpg, lun, acl,
++						    lun->unpacked_lun);
+ 		spin_lock(&tpg->tpg_lun_lock);
+ 	}
+ 	spin_unlock(&tpg->tpg_lun_lock);
+-- 
+2.1.3
+
