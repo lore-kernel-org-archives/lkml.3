@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971AbaKRXje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 18:39:34 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:23912 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115AbaKRXjb (ORCPT
+	id S932995AbaKRXjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 18:39:52 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:33583 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713AbaKRXjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 18:39:31 -0500
-Message-ID: <546BD866.5050101@oracle.com>
-Date: Tue, 18 Nov 2014 18:38:14 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
+	Tue, 18 Nov 2014 18:39:49 -0500
+Message-ID: <546BD8BD.2010605@au1.ibm.com>
+Date: Wed, 19 Nov 2014 10:39:41 +1100
+From: Jeremy Kerr <jeremy.kerr@au1.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, akpm@linux-foundation.org
-CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Rob Herring <robherring2@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers/core/of: Add symlink to device-tree from devices
+ with an OF node
+References: <1415342031.4925.27.camel@kernel.crashing.org> <1415342117.4925.29.camel@kernel.crashing.org> <1415596626.5769.14.camel@kernel.crashing.org> <CAL_JsqKG=vpeGKj3v-2VW9oGQsnmuYMHRfy6LuXDXE=ROjHT4w@mail.gmail.com> <1415841047.5124.62.camel@kernel.crashing.org> <CAL_Jsq+YyfMWxiOFv4x3g5hZJH0XRqCKj2He1XO9eyXWjHTMrg@mail.gmail.com>
+In-Reply-To: <CAL_Jsq+YyfMWxiOFv4x3g5hZJH0XRqCKj2He1XO9eyXWjHTMrg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111823-0029-0000-0000-0000009FBAA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
+Hi Rob,
 
-After the recent exchange of mails about kasan it came to me that I haven't
-seen a kasan warning for a while now. To give kasan a quick test I added a rather
-simple error which should generate a kasan warning about accessing userspace
-memory (yes, I know kasan has a test module but my setup doesn't like modules):
+>> diff --git a/drivers/base/core.c b/drivers/base/core.c
+>> index 20da3ad..8c7b607 100644
+>> --- a/drivers/base/core.c
+>> +++ b/drivers/base/core.c
+>> @@ -493,6 +493,15 @@ static int device_add_attrs(struct device *dev)
+>>                         goto err_remove_dev_groups;
+>>         }
+>>
+>> +#ifdef CONFIG_OF
+>> +       if (dev->of_node) {
+> 
+> if (IS_ENABLED(CONFIG_OF) && dev->of_node)
 
-	diff --git a/net/socket.c b/net/socket.c
-	index fe20c31..794e9f4 100644
-	--- a/net/socket.c
-	+++ b/net/socket.c
-	@@ -1902,7 +1902,7 @@ SYSCALL_DEFINE5(setsockopt, int, fd, int, level, int, optname,
-	 {
-	        int err, fput_needed;
-	        struct socket *sock;
-	-
-	+       *((char *)10) = 5;
-	        if (optlen < 0)
-	                return -EINVAL;
+struct device doesn't have an of_node member if !CONFIG_OF, so we'll
+need to disable this block in the preprocessor.
 
-A gfp was triggered, but no kasan warning was shown.
-
-I remembered that one of the biggest changes in kasan was the introduction of
-inline instrumentation, so I went ahead to disable it and see if it helps. But
-the only result of that was having the boot process hang pretty early:
-
-[...]
-[    0.000000] IOAPIC[0]: apic_id 21, version 17, address 0xfec00000, GSI 0-23
-[    0.000000] Processors: 20
-[    0.000000] smpboot: Allowing 24 CPUs, 4 hotplug CPUs
-[    0.000000] e820: [mem 0xd0000000-0xffffffff] available for PCI devices
-[    0.000000] Booting paravirtualized kernel on KVM
-[    0.000000] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:24 nr_cpu_ids:24 nr_node_ids:1
-[    0.000000] PERCPU: Embedded 491 pages/cpu @ffff8808dce00000 s1971864 r8192 d31080 u2097152
-*HANG*
-
-I'm using the latest gcc:
-
-$ gcc --version
-gcc (GCC) 5.0.0 20141117 (experimental)
+Cheers,
 
 
-I'll continue looking into it tomorrow, just hoping it rings a bell...
+Jeremy
 
-
-Thanks,
-Sasha
