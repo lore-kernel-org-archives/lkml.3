@@ -1,300 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaKRTlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 14:41:40 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53962 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666AbaKRTli (ORCPT
+	id S1755381AbaKRTmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 14:42:07 -0500
+Received: from mga11.intel.com ([192.55.52.93]:4461 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755230AbaKRTmF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 14:41:38 -0500
-Date: Tue, 18 Nov 2014 19:41:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: netdev@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] separate kernel- and userland-side msghdr
-Message-ID: <20141118194134.GB14641@ZenIV.linux.org.uk>
-References: <20141118084745.GT7996@ZenIV.linux.org.uk>
- <20141118194053.GA14641@ZenIV.linux.org.uk>
+	Tue, 18 Nov 2014 14:42:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,411,1413270000"; 
+   d="scan'208";a="624424907"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: "'Jiri Olsa'" <jolsa@redhat.com>, "'Namhyung Kim'" <namhyung@kernel.org>
+CC: "'acme@kernel.org'" <acme@kernel.org>,
+        "'a.p.zijlstra@chello.nl'" <a.p.zijlstra@chello.nl>,
+        "'eranian@google.com'" <eranian@google.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'mingo@redhat.com'" <mingo@redhat.com>,
+        "'paulus@samba.org'" <paulus@samba.org>,
+        "'ak@linux.intel.com'" <ak@linux.intel.com>
+Subject: RE: [PATCH V3 3/3] perf tools: Construct LBR call chain
+Thread-Topic: [PATCH V3 3/3] perf tools: Construct LBR call chain
+Thread-Index: AQHQAvbRcQ1rb+Jn4kS+6OT1ok92KZxlfgyAgADuSeCAAFnKMA==
+Date: Tue, 18 Nov 2014 19:40:23 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016717AD@SHSMSX103.ccr.corp.intel.com>
+References: <1415972652-17310-1-git-send-email-kan.liang@intel.com>
+ <1415972652-17310-4-git-send-email-kan.liang@intel.com>
+ <20141117155425.GA31042@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F07701670BF9@SHSMSX103.ccr.corp.intel.com>
+ <87lhn9qbmp.fsf@sejong.aot.lge.com>
+ <20141118075539.GA27645@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167125F@SHSMSX103.ccr.corp.intel.com>
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770167125F@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141118194053.GA14641@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel-side struct msghdr is (currently) using the same layout as
-userland one, but it's not a one-to-one copy - even without considering
-32bit compat issues, we have msg_iov, msg_name and msg_control copied
-to kernel[1].  It's fairly localized, so we get away with a few functions
-where that knowledge is needed (and we could shrink that set even
-more).  Pretty much everything deals with the kernel-side variant and
-the few places that want userland one just use a bunch of force-casts
-to paper over the differences.
 
-The thing is, kernel-side definition of struct msghdr is *not* exposed
-in include/uapi - libc doesn't see it, etc.  So we can add struct user_msghdr,
-with proper annotations and let the few places that ever deal with those
-beasts use it for userland pointers.  Saner typechecking aside, that will
-allow to change the layout of kernel-side msghdr - e.g. replace
-msg_iov/msg_iovlen there with struct iov_iter, getting rid of the need
-to modify the iovec as we copy data to/from it, etc.
 
-We could introduce kernel_msghdr instead, but that would create much more
-noise - the absolute majority of the instances would need to have the
-type switched to kernel_msghdr and definition of struct msghdr in
-include/linux/socket.h is not going to be seen by userland anyway.
+> > whole
+> > > >> stack.
+> > > >> > +			 */
+> > > >>
+> > > >> Andi is using some sanity checks:
+> > > >> http://marc.info/?l=linux-kernel&m=141584447819894&w=2
+> > > >> I guess this could be applied in here, once his patch gets in.
+> > > >>
+> > > >
+> > > > Are you suggesting me to remove the comments, or rebase the
+> whole
+> > > > patch to Andi's patch once it's merged?
+> > > >
+> > > > The branch history in Andi's patch is different as the call stack,
+> > > > although they are both from LBR.
+> > > > Andi's branch history recording branch records for taken branches,
+> > > > interrupts, and exceptions.
+> > > > While the LBR call stack records for the call stack.
+> > >
+> > > Right.  And branch history can overlap with normal callchains so
+> > > additional check in there is to remove duplication.  While LBR call
+> > > stack is separated to user only so there should be no overlap.
+> >
+> > hum, it seemed to me like the remove_loops function could be used for
+> > this one as well.. but anyway I meant that this can be introduced
+> > later after Andi's change gets in
+> 
+> I see. I will apply Andi's remove_loops.
+> 
 
-This commit just introduces user_msghdr and switches the few places that
-are dealing with userland-side msghdr to it.
+As Namhyung said, there is no overlap for LBR call stack. The user callchain 
+is not a mix. It's from either LBR or FP. so remove_loops
+doesn't fit to the LBR call stack. 
+Sorry for the confusion from my last reply.
 
-[1] actually, it's even trickier than that - we copy msg_control for
-sendmsg, but keep the userland address on recvmsg.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- arch/arm/kernel/sys_oabi-compat.c |    4 ++--
- include/linux/socket.h            |   16 +++++++++++++---
- include/linux/syscalls.h          |    6 +++---
- net/compat.c                      |    4 ++--
- net/socket.c                      |   29 ++++++++++++++++-------------
- 5 files changed, 36 insertions(+), 23 deletions(-)
-
-diff --git a/arch/arm/kernel/sys_oabi-compat.c b/arch/arm/kernel/sys_oabi-compat.c
-index e90a314..b83f3b7 100644
---- a/arch/arm/kernel/sys_oabi-compat.c
-+++ b/arch/arm/kernel/sys_oabi-compat.c
-@@ -400,7 +400,7 @@ asmlinkage long sys_oabi_sendto(int fd, void __user *buff,
- 	return sys_sendto(fd, buff, len, flags, addr, addrlen);
- }
- 
--asmlinkage long sys_oabi_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
-+asmlinkage long sys_oabi_sendmsg(int fd, struct user_msghdr __user *msg, unsigned flags)
- {
- 	struct sockaddr __user *addr;
- 	int msg_namelen;
-@@ -446,7 +446,7 @@ asmlinkage long sys_oabi_socketcall(int call, unsigned long __user *args)
- 		break;
- 	case SYS_SENDMSG:
- 		if (copy_from_user(a, args, 3 * sizeof(long)) == 0)
--			r = sys_oabi_sendmsg(a[0], (struct msghdr __user *)a[1], a[2]);
-+			r = sys_oabi_sendmsg(a[0], (struct user_msghdr __user *)a[1], a[2]);
- 		break;
- 	default:
- 		r = sys_socketcall(call, args);
-diff --git a/include/linux/socket.h b/include/linux/socket.h
-index bb9b836..51bd666 100644
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -53,10 +53,20 @@ struct msghdr {
- 	__kernel_size_t	msg_controllen;	/* ancillary data buffer length */
- 	unsigned int	msg_flags;	/* flags on received message */
- };
-+ 
-+struct user_msghdr {
-+	void		__user *msg_name;	/* ptr to socket address structure */
-+	int		msg_namelen;		/* size of socket address structure */
-+	struct iovec	__user *msg_iov;	/* scatter/gather array */
-+	__kernel_size_t	msg_iovlen;		/* # elements in msg_iov */
-+	void		__user *msg_control;	/* ancillary data */
-+	__kernel_size_t	msg_controllen;		/* ancillary data buffer length */
-+	unsigned int	msg_flags;		/* flags on received message */
-+};
- 
- /* For recvmmsg/sendmmsg */
- struct mmsghdr {
--	struct msghdr   msg_hdr;
-+	struct user_msghdr  msg_hdr;
- 	unsigned int        msg_len;
- };
- 
-@@ -319,8 +329,8 @@ extern int put_cmsg(struct msghdr*, int level, int type, int len, void *data);
- struct timespec;
- 
- /* The __sys_...msg variants allow MSG_CMSG_COMPAT */
--extern long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags);
--extern long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags);
-+extern long __sys_recvmsg(int fd, struct user_msghdr __user *msg, unsigned flags);
-+extern long __sys_sendmsg(int fd, struct user_msghdr __user *msg, unsigned flags);
- extern int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 			  unsigned int flags, struct timespec *timeout);
- extern int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg,
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index bda9b81..c9afdc7 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -25,7 +25,7 @@ struct linux_dirent64;
- struct list_head;
- struct mmap_arg_struct;
- struct msgbuf;
--struct msghdr;
-+struct user_msghdr;
- struct mmsghdr;
- struct msqid_ds;
- struct new_utsname;
-@@ -601,13 +601,13 @@ asmlinkage long sys_getpeername(int, struct sockaddr __user *, int __user *);
- asmlinkage long sys_send(int, void __user *, size_t, unsigned);
- asmlinkage long sys_sendto(int, void __user *, size_t, unsigned,
- 				struct sockaddr __user *, int);
--asmlinkage long sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags);
-+asmlinkage long sys_sendmsg(int fd, struct user_msghdr __user *msg, unsigned flags);
- asmlinkage long sys_sendmmsg(int fd, struct mmsghdr __user *msg,
- 			     unsigned int vlen, unsigned flags);
- asmlinkage long sys_recv(int, void __user *, size_t, unsigned);
- asmlinkage long sys_recvfrom(int, void __user *, size_t, unsigned,
- 				struct sockaddr __user *, int __user *);
--asmlinkage long sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags);
-+asmlinkage long sys_recvmsg(int fd, struct user_msghdr __user *msg, unsigned flags);
- asmlinkage long sys_recvmmsg(int fd, struct mmsghdr __user *msg,
- 			     unsigned int vlen, unsigned flags,
- 			     struct timespec __user *timeout);
-diff --git a/net/compat.c b/net/compat.c
-index bc8aeef..562e920 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -740,7 +740,7 @@ COMPAT_SYSCALL_DEFINE3(sendmsg, int, fd, struct compat_msghdr __user *, msg, uns
- {
- 	if (flags & MSG_CMSG_COMPAT)
- 		return -EINVAL;
--	return __sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
-+	return __sys_sendmsg(fd, (struct user_msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
- }
- 
- COMPAT_SYSCALL_DEFINE4(sendmmsg, int, fd, struct compat_mmsghdr __user *, mmsg,
-@@ -756,7 +756,7 @@ COMPAT_SYSCALL_DEFINE3(recvmsg, int, fd, struct compat_msghdr __user *, msg, uns
- {
- 	if (flags & MSG_CMSG_COMPAT)
- 		return -EINVAL;
--	return __sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
-+	return __sys_recvmsg(fd, (struct user_msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
- }
- 
- COMPAT_SYSCALL_DEFINE4(recv, int, fd, void __user *, buf, compat_size_t, len, unsigned int, flags)
-diff --git a/net/socket.c b/net/socket.c
-index fe20c31..0ae8147 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1989,8 +1989,11 @@ struct used_address {
- };
- 
- static int copy_msghdr_from_user(struct msghdr *kmsg,
--				 struct msghdr __user *umsg)
-+				 struct user_msghdr __user *umsg)
- {
-+	/* We are relying on the (currently) identical layouts.  Once
-+	 * the kernel-side changes, this place will need to be updated
-+	 */
- 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
- 		return -EFAULT;
- 
-@@ -2005,7 +2008,7 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
- 	return 0;
- }
- 
--static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
-+static int ___sys_sendmsg(struct socket *sock, struct user_msghdr __user *msg,
- 			 struct msghdr *msg_sys, unsigned int flags,
- 			 struct used_address *used_address)
- {
-@@ -2123,7 +2126,7 @@ out:
-  *	BSD sendmsg interface
-  */
- 
--long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
-+long __sys_sendmsg(int fd, struct user_msghdr __user *msg, unsigned flags)
- {
- 	int fput_needed, err;
- 	struct msghdr msg_sys;
-@@ -2140,7 +2143,7 @@ out:
- 	return err;
- }
- 
--SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
-+SYSCALL_DEFINE3(sendmsg, int, fd, struct user_msghdr __user *, msg, unsigned int, flags)
- {
- 	if (flags & MSG_CMSG_COMPAT)
- 		return -EINVAL;
-@@ -2177,7 +2180,7 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 
- 	while (datagrams < vlen) {
- 		if (MSG_CMSG_COMPAT & flags) {
--			err = ___sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
-+			err = ___sys_sendmsg(sock, (struct user_msghdr __user *)compat_entry,
- 					     &msg_sys, flags, &used_address);
- 			if (err < 0)
- 				break;
-@@ -2185,7 +2188,7 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 			++compat_entry;
- 		} else {
- 			err = ___sys_sendmsg(sock,
--					     (struct msghdr __user *)entry,
-+					     (struct user_msghdr __user *)entry,
- 					     &msg_sys, flags, &used_address);
- 			if (err < 0)
- 				break;
-@@ -2215,7 +2218,7 @@ SYSCALL_DEFINE4(sendmmsg, int, fd, struct mmsghdr __user *, mmsg,
- 	return __sys_sendmmsg(fd, mmsg, vlen, flags);
- }
- 
--static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
-+static int ___sys_recvmsg(struct socket *sock, struct user_msghdr __user *msg,
- 			 struct msghdr *msg_sys, unsigned int flags, int nosec)
- {
- 	struct compat_msghdr __user *msg_compat =
-@@ -2311,7 +2314,7 @@ out:
-  *	BSD recvmsg interface
-  */
- 
--long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags)
-+long __sys_recvmsg(int fd, struct user_msghdr __user *msg, unsigned flags)
- {
- 	int fput_needed, err;
- 	struct msghdr msg_sys;
-@@ -2328,7 +2331,7 @@ out:
- 	return err;
- }
- 
--SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
-+SYSCALL_DEFINE3(recvmsg, int, fd, struct user_msghdr __user *, msg,
- 		unsigned int, flags)
- {
- 	if (flags & MSG_CMSG_COMPAT)
-@@ -2373,7 +2376,7 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 		 * No need to ask LSM for more than the first datagram.
- 		 */
- 		if (MSG_CMSG_COMPAT & flags) {
--			err = ___sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
-+			err = ___sys_recvmsg(sock, (struct user_msghdr __user *)compat_entry,
- 					     &msg_sys, flags & ~MSG_WAITFORONE,
- 					     datagrams);
- 			if (err < 0)
-@@ -2382,7 +2385,7 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 			++compat_entry;
- 		} else {
- 			err = ___sys_recvmsg(sock,
--					     (struct msghdr __user *)entry,
-+					     (struct user_msghdr __user *)entry,
- 					     &msg_sys, flags & ~MSG_WAITFORONE,
- 					     datagrams);
- 			if (err < 0)
-@@ -2571,13 +2574,13 @@ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
- 				   (int __user *)a[4]);
- 		break;
- 	case SYS_SENDMSG:
--		err = sys_sendmsg(a0, (struct msghdr __user *)a1, a[2]);
-+		err = sys_sendmsg(a0, (struct user_msghdr __user *)a1, a[2]);
- 		break;
- 	case SYS_SENDMMSG:
- 		err = sys_sendmmsg(a0, (struct mmsghdr __user *)a1, a[2], a[3]);
- 		break;
- 	case SYS_RECVMSG:
--		err = sys_recvmsg(a0, (struct msghdr __user *)a1, a[2]);
-+		err = sys_recvmsg(a0, (struct user_msghdr __user *)a1, a[2]);
- 		break;
- 	case SYS_RECVMMSG:
- 		err = sys_recvmmsg(a0, (struct mmsghdr __user *)a1, a[2], a[3],
--- 
-1.7.10.4
-
+Thanks,
+Kan  
