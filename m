@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592AbaKSVsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:48:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933551AbaKSVEa (ORCPT
+	id S1757610AbaKSVsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:48:32 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:54044 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757581AbaKSVsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:30 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 071/122] NFSv4: Fix races between nfs_remove_bad_delegation() and delegation return
-Date: Wed, 19 Nov 2014 12:52:01 -0800
-Message-Id: <20141119205211.157143920@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
-References: <20141119205208.812884198@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 19 Nov 2014 16:48:24 -0500
+Date: Wed, 19 Nov 2014 22:48:22 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org, "Liang, Kan" <kan.liang@intel.com>
+Subject: Re: Implement lbr-as-callgraph v10
+Message-ID: <20141119214822.GM12538@two.firstfloor.org>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <20141117213457.GE4163@kernel.org>
+ <20141118104416.GE27645@krava.brq.redhat.com>
+ <20141118110007.GF27645@krava.brq.redhat.com>
+ <87zjbnpv64.fsf@sejong.aot.lge.com>
+ <20141119092323.GC2592@krava.brq.redhat.com>
+ <20141119105450.GA22132@krava.brq.redhat.com>
+ <20141119141027.GF3790@kernel.org>
+ <20141119160458.GG3790@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141119160458.GG3790@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 19, 2014 at 01:04:58PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Nov 19, 2014 at 11:10:27AM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Wed, Nov 19, 2014 at 11:54:50AM +0100, Jiri Olsa escreveu:
+> > > > > BUILD_BUG_ON then?
+> > > > 
+> > > > sounds gut
+> > > 
+> > > hum, acme/perf/core changed and so has the compile error ;-)
+> > > we dont overload the <linux/bug.h>, so the kernel one got
+> > > included, which is wrong.. attached patch fixes that
+> > 
+> > I had fixed this but not force pushed out, sorry.
+> > 
+> > Now I mistakenly tried running:
+> > 
+> > perf report --stdio --no-children --branch-history
+> > 
+> > on a file that has no BRANCH_STACK, i.e. a perf.data file on a wrong
 
-------------------
+It works with -g.
+Without -g it will just give an error message. I think that is ok, isn't it?
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-
-commit 869f9dfa4d6d57b79e0afc3af14772c2a023eeb1 upstream.
-
-Any attempt to call nfs_remove_bad_delegation() while a delegation is being
-returned is currently a no-op. This means that we can end up looping
-forever in nfs_end_delegation_return() if something causes the delegation
-to be revoked.
-This patch adds a mechanism whereby the state recovery code can communicate
-to the delegation return code that the delegation is no longer valid and
-that it should not be used when reclaiming state.
-It also changes the return value for nfs4_handle_delegation_recall_error()
-to ensure that nfs_end_delegation_return() does not reattempt the lock
-reclaim before state recovery is done.
-
-http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfs/delegation.c |   23 +++++++++++++++++++++--
- fs/nfs/delegation.h |    1 +
- fs/nfs/nfs4proc.c   |    2 +-
- 3 files changed, 23 insertions(+), 3 deletions(-)
-
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -179,7 +179,11 @@ static int nfs_do_return_delegation(stru
- {
- 	int res = 0;
- 
--	res = nfs4_proc_delegreturn(inode, delegation->cred, &delegation->stateid, issync);
-+	if (!test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
-+		res = nfs4_proc_delegreturn(inode,
-+				delegation->cred,
-+				&delegation->stateid,
-+				issync);
- 	nfs_free_delegation(delegation);
- 	return res;
- }
-@@ -366,11 +370,13 @@ static int nfs_end_delegation_return(str
- {
- 	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
- 	struct nfs_inode *nfsi = NFS_I(inode);
--	int err;
-+	int err = 0;
- 
- 	if (delegation == NULL)
- 		return 0;
- 	do {
-+		if (test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
-+			break;
- 		err = nfs_delegation_claim_opens(inode, &delegation->stateid);
- 		if (!issync || err != -EAGAIN)
- 			break;
-@@ -591,10 +597,23 @@ static void nfs_client_mark_return_unuse
- 	rcu_read_unlock();
- }
- 
-+static void nfs_revoke_delegation(struct inode *inode)
-+{
-+	struct nfs_delegation *delegation;
-+	rcu_read_lock();
-+	delegation = rcu_dereference(NFS_I(inode)->delegation);
-+	if (delegation != NULL) {
-+		set_bit(NFS_DELEGATION_REVOKED, &delegation->flags);
-+		nfs_mark_return_delegation(NFS_SERVER(inode), delegation);
-+	}
-+	rcu_read_unlock();
-+}
-+
- void nfs_remove_bad_delegation(struct inode *inode)
- {
- 	struct nfs_delegation *delegation;
- 
-+	nfs_revoke_delegation(inode);
- 	delegation = nfs_inode_detach_delegation(inode);
- 	if (delegation) {
- 		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
---- a/fs/nfs/delegation.h
-+++ b/fs/nfs/delegation.h
-@@ -31,6 +31,7 @@ enum {
- 	NFS_DELEGATION_RETURN_IF_CLOSED,
- 	NFS_DELEGATION_REFERENCED,
- 	NFS_DELEGATION_RETURNING,
-+	NFS_DELEGATION_REVOKED,
- };
- 
- int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct nfs_openres *res);
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1587,7 +1587,7 @@ static int nfs4_handle_delegation_recall
- 			nfs_inode_find_state_and_recover(state->inode,
- 					stateid);
- 			nfs4_schedule_stateid_recovery(server, state);
--			return 0;
-+			return -EAGAIN;
- 		case -NFS4ERR_DELAY:
- 		case -NFS4ERR_GRACE:
- 			set_bit(NFS_DELEGATED_STATE, &state->flags);
+> > directory since I'm comparing the output of --stdio, --tui and --gtk,
+> > since it looks --gtk is wrong, still unsure about what the problem is in
+> > that case, but stumbled on:
+> > 
+> 
+> I need to investigate this further, so I created a perf/branch-history
+> branch that has the patches I need to test more rebased on top of my
+> perf/core branch I just pushed out to Ingo.
 
 
+I tested --gtk and I don't see any differences to the console mode
+with --branch-history.  What problem do you see?
+
+-Andi
