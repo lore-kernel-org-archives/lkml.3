@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299AbaKSVk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:40:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
+	id S1757282AbaKSVk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:40:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933205AbaKSVOd (ORCPT
+	with ESMTP id S933211AbaKSVOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:14:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Hou Pengyang <houpengyang@huawei.com>
-Subject: [PATCH 3.14 092/122] perf/x86/intel: Use proper dTLB-load-misses event on IvyBridge
-Date: Wed, 19 Nov 2014 12:52:22 -0800
-Message-Id: <20141119205211.874770726@linuxfoundation.org>
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 093/122] KVM: x86: Dont report guest userspace emulation error to userspace
+Date: Wed, 19 Nov 2014 12:52:23 -0800
+Message-Id: <20141119205211.915143085@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -32,44 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vince Weaver <vincent.weaver@maine.edu>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit 1996388e9f4e3444db8273bc08d25164d2967c21 upstream.
+commit a2b9e6c1a35afcc0973acb72e591c714e78885ff upstream.
 
-This was discussed back in February:
+Commit fc3a9157d314 ("KVM: X86: Don't report L2 emulation failures to
+user-space") disabled the reporting of L2 (nested guest) emulation failures to
+userspace due to race-condition between a vmexit and the instruction emulator.
+The same rational applies also to userspace applications that are permitted by
+the guest OS to access MMIO area or perform PIO.
 
-	https://lkml.org/lkml/2014/2/18/956
+This patch extends the current behavior - of injecting a #UD instead of
+reporting it to userspace - also for guest userspace code.
 
-But I never saw a patch come out of it.
-
-On IvyBridge we share the SandyBridge cache event tables, but the
-dTLB-load-miss event is not compatible.  Patch it up after
-the fact to the proper DTLB_LOAD_MISSES.DEMAND_LD_MISS_CAUSES_A_WALK
-
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1407141528200.17214@vincent-weaver-1.umelst.maine.edu
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Hou Pengyang <houpengyang@huawei.com>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kvm/x86.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2475,6 +2475,9 @@ __init int intel_pmu_init(void)
- 	case 62: /* IvyBridge EP */
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
-+		/* dTLB-load-misses on IVB is different than SNB */
-+		hw_cache_event_ids[C(DTLB)][C(OP_READ)][C(RESULT_MISS)] = 0x8108; /* DTLB_LOAD_MISSES.DEMAND_LD_MISS_CAUSES_A_WALK */
-+
- 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
- 		       sizeof(hw_cache_extra_regs));
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4911,7 +4911,7 @@ static int handle_emulation_failure(stru
  
+ 	++vcpu->stat.insn_emulation_fail;
+ 	trace_kvm_emulate_insn_failed(vcpu);
+-	if (!is_guest_mode(vcpu)) {
++	if (!is_guest_mode(vcpu) && kvm_x86_ops->get_cpl(vcpu) == 0) {
+ 		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
+ 		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_EMULATION;
+ 		vcpu->run->internal.ndata = 0;
 
 
