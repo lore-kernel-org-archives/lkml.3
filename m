@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587AbaKSVFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:05:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
+	id S933713AbaKSVFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:05:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56827 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933567AbaKSVEi (ORCPT
+	with ESMTP id S933567AbaKSVFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:38 -0500
+	Wed, 19 Nov 2014 16:05:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 097/122] iwlwifi: configure the LTR
-Date: Wed, 19 Nov 2014 12:52:27 -0800
-Message-Id: <20141119205212.044901279@linuxfoundation.org>
+        Quentin Casasnovas <quentin.casasnovas@oracle.com>
+Subject: [PATCH 3.14 098/122] regmap: fix kernel hang on regmap_bulk_write with zero val_count.
+Date: Wed, 19 Nov 2014 12:52:28 -0800
+Message-Id: <20141119205212.075616805@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -28,169 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
 
-commit 9180ac50716a097a407c6d7e7e4589754a922260 upstream.
+Fixes commit 2f06fa04cf35da5c24481da3ac84a2900d0b99c3 which was an
+incorrect backported version of commit
+d6b41cb06044a7d895db82bdd54f6e4219970510 upstream.
 
-The LTR is the handshake between the device and the root
-complex about the latency allowed when the bus exits power
-save. This configuration was missing and this led to high
-latency in the link power up. The end user could experience
-high latency in the network because of this.
+If val_count is zero we return -EINVAL with map->lock_arg locked, which
+will deadlock the kernel next time we try to acquire this lock.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+This was introduced by f5942dd ("regmap: fix possible ZERO_SIZE_PTR pointer
+dereferencing error.") which improperly back-ported d6b41cb0.
+
+This issue was found during review of Ubuntu Trusty 3.13.0-40.68 kernel to
+prepare Ksplice rebootless updates.
+
+Fixes: f5942dd ("regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.")
+Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/net/wireless/iwlwifi/iwl-trans.h        |    2 +
- drivers/net/wireless/iwlwifi/mvm/fw-api-power.h |   35 +++++++++++++++++++++++-
- drivers/net/wireless/iwlwifi/mvm/fw-api.h       |    1 
- drivers/net/wireless/iwlwifi/mvm/fw.c           |    9 ++++++
- drivers/net/wireless/iwlwifi/mvm/ops.c          |    1 
- drivers/net/wireless/iwlwifi/pcie/trans.c       |   16 ++++++----
- 6 files changed, 56 insertions(+), 8 deletions(-)
+ drivers/base/regmap/regmap.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-trans.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans.h
-@@ -514,6 +514,7 @@ enum iwl_trans_state {
-  *	Set during transport allocation.
-  * @hw_id_str: a string with info about HW ID. Set during transport allocation.
-  * @pm_support: set to true in start_hw if link pm is supported
-+ * @ltr_enabled: set to true if the LTR is enabled
-  * @dev_cmd_pool: pool for Tx cmd allocation - for internal use only.
-  *	The user should use iwl_trans_{alloc,free}_tx_cmd.
-  * @dev_cmd_headroom: room needed for the transport's private use before the
-@@ -539,6 +540,7 @@ struct iwl_trans {
- 	u8 rx_mpdu_cmd, rx_mpdu_cmd_hdr_size;
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1557,8 +1557,10 @@ int regmap_bulk_write(struct regmap *map
+ 	} else {
+ 		void *wval;
  
- 	bool pm_support;
-+	bool ltr_enabled;
+-		if (!val_count)
+-			return -EINVAL;
++		if (!val_count) {
++			ret = -EINVAL;
++			goto out;
++		}
  
- 	/* The following fields are internal only */
- 	struct kmem_cache *dev_cmd_pool;
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-@@ -66,13 +66,46 @@
- 
- /* Power Management Commands, Responses, Notifications */
- 
-+/**
-+ * enum iwl_ltr_config_flags - masks for LTR config command flags
-+ * @LTR_CFG_FLAG_FEATURE_ENABLE: Feature operational status
-+ * @LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS: allow LTR change on shadow
-+ *	memory access
-+ * @LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH: allow LTR msg send on ANY LTR
-+ *	reg change
-+ * @LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3: allow LTR msg send on transition from
-+ *	D0 to D3
-+ * @LTR_CFG_FLAG_SW_SET_SHORT: fixed static short LTR register
-+ * @LTR_CFG_FLAG_SW_SET_LONG: fixed static short LONG register
-+ * @LTR_CFG_FLAG_DENIE_C10_ON_PD: allow going into C10 on PD
-+ */
-+enum iwl_ltr_config_flags {
-+	LTR_CFG_FLAG_FEATURE_ENABLE = BIT(0),
-+	LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS = BIT(1),
-+	LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH = BIT(2),
-+	LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3 = BIT(3),
-+	LTR_CFG_FLAG_SW_SET_SHORT = BIT(4),
-+	LTR_CFG_FLAG_SW_SET_LONG = BIT(5),
-+	LTR_CFG_FLAG_DENIE_C10_ON_PD = BIT(6),
-+};
-+
-+/**
-+ * struct iwl_ltr_config_cmd - configures the LTR
-+ * @flags: See %enum iwl_ltr_config_flags
-+ */
-+struct iwl_ltr_config_cmd {
-+	__le32 flags;
-+	__le32 static_long;
-+	__le32 static_short;
-+} __packed;
-+
- /* Radio LP RX Energy Threshold measured in dBm */
- #define POWER_LPRX_RSSI_THRESHOLD	75
- #define POWER_LPRX_RSSI_THRESHOLD_MAX	94
- #define POWER_LPRX_RSSI_THRESHOLD_MIN	30
- 
- /**
-- * enum iwl_scan_flags - masks for power table command flags
-+ * enum iwl_power_flags - masks for power table command flags
-  * @POWER_FLAGS_POWER_SAVE_ENA_MSK: '1' Allow to save power by turning off
-  *		receiver and transmitter. '0' - does not allow.
-  * @POWER_FLAGS_POWER_MANAGEMENT_ENA_MSK: '0' Driver disables power management,
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-@@ -142,6 +142,7 @@ enum {
- 	/* Power - legacy power table command */
- 	POWER_TABLE_CMD = 0x77,
- 	PSM_UAPSD_AP_MISBEHAVING_NOTIFICATION = 0x78,
-+	LTR_CONFIG = 0xee,
- 
- 	/* Thermal Throttling*/
- 	REPLY_THERMAL_MNG_BACKOFF = 0x7e,
---- a/drivers/net/wireless/iwlwifi/mvm/fw.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw.c
-@@ -439,6 +439,15 @@ int iwl_mvm_up(struct iwl_mvm *mvm)
- 			goto error;
- 	}
- 
-+	if (mvm->trans->ltr_enabled) {
-+		struct iwl_ltr_config_cmd cmd = {
-+			.flags = cpu_to_le32(LTR_CFG_FLAG_FEATURE_ENABLE),
-+		};
-+
-+		WARN_ON(iwl_mvm_send_cmd_pdu(mvm, LTR_CONFIG, 0,
-+					     sizeof(cmd), &cmd));
-+	}
-+
- 	ret = iwl_mvm_power_update_device_mode(mvm);
- 	if (ret)
- 		goto error;
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -313,6 +313,7 @@ static const char *iwl_mvm_cmd_strings[R
- 	CMD(REPLY_BEACON_FILTERING_CMD),
- 	CMD(REPLY_THERMAL_MNG_BACKOFF),
- 	CMD(MAC_PM_POWER_TABLE),
-+	CMD(LTR_CONFIG),
- 	CMD(BT_COEX_CI),
- 	CMD(PSM_UAPSD_AP_MISBEHAVING_NOTIFICATION),
- };
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -94,6 +94,7 @@ static void iwl_pcie_apm_config(struct i
- {
- 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
- 	u16 lctl;
-+	u16 cap;
- 
- 	/*
- 	 * HW bug W/A for instability in PCIe bus L0S->L1 transition.
-@@ -104,16 +105,17 @@ static void iwl_pcie_apm_config(struct i
- 	 *    power savings, even without L1.
- 	 */
- 	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
--	if (lctl & PCI_EXP_LNKCTL_ASPM_L1) {
--		/* L1-ASPM enabled; disable(!) L0S */
-+	if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
- 		iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Enabled; Disabling L0S\n");
--	} else {
--		/* L1-ASPM disabled; enable(!) L0S */
-+	else
- 		iwl_clear_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Disabled; Enabling L0S\n");
--	}
- 	trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
-+
-+	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_DEVCTL2, &cap);
-+	trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
-+	dev_info(trans->dev, "L1 %sabled - LTR %sabled\n",
-+		 (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
-+		 trans->ltr_enabled ? "En" : "Dis");
- }
- 
- /*
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
 
 
