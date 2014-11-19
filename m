@@ -1,112 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaKSJmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 04:42:20 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:55828 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751211AbaKSJlz (ORCPT
+	id S1755334AbaKSJpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 04:45:09 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:50187 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaKSJpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 04:41:55 -0500
-X-IronPort-AV: E=Sophos;i="5.07,415,1413237600"; 
-   d="scan'208";a="108135279"
-Date: Wed, 19 Nov 2014 10:41:37 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Eric Biederman <ebiederm@xmission.com>, Michal Marek <mmarek@suse.cz>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, linux-crypto@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 1/2 v2] scripts/coccinelle: catch freeing cryptographic
- structures via kfree
-In-Reply-To: <20141118114920.13498.73584.stgit@buzz>
-Message-ID: <alpine.DEB.2.10.1411191040020.2363@hadrien>
-References: <20141117151420.10739.16342.stgit@buzz> <20141118114920.13498.73584.stgit@buzz>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 19 Nov 2014 04:45:07 -0500
+Date: Wed, 19 Nov 2014 10:45:03 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Troy Clark <tclark@matrixorbital.ca>
+Cc: johan@kernel.org, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: serial: add PIDs for Matrix Orbital products
+Message-ID: <20141119094503.GA7857@localhost>
+References: <1416263597-16458-1-git-send-email-tclark@matrixorbital.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416263597-16458-1-git-send-email-tclark@matrixorbital.ca>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +// Comments: There are false positives in crypto/ where they are
-> actually freed.
+On Mon, Nov 17, 2014 at 02:33:17PM -0800, Troy Clark wrote:
+> This is a patch to the ftdi_sio_ids.h and ftdi_sio.c files that adds PIDs for
+> new Matrix Orbital GTT series products
+> 
+> Signed-off-by: Troy Clark <tclark@matrixorbital.ca>
 
-I didn't really understand this comment.  I ran the semantic patch and got
-around 10 results, but it wasn't clear to me how to see which were false
-positives.
+Applied, thanks.
 
-I would suggest to extend the rule a little bit to include information
-about where the allocation call is:
-
-///
-/// Structures allocated by crypto_alloc_* must be freed using crypto_free_*.
-/// This finds freeing them by kfree.
-///
-// Confidence: Moderate
-// Copyright: (C) 2014 Konstantin Khlebnikov,  GPLv2.
-// Comments: There are false positives in crypto/ where they are actually freed.
-// Keywords: crypto, kfree
-// Options: --no-includes --include-headers
-
-virtual org
-virtual report
-virtual context
-
-@r depends on context || org || report@
-expression x;
-position p1;
-@@
-
-(
- x = crypto_alloc_base@p1(...)
-|
- x = crypto_alloc_cipher@p1(...)
-|
- x = crypto_alloc_ablkcipher@p1(...)
-|
- x = crypto_alloc_aead@p1(...)
-|
- x = crypto_alloc_instance@p1(...)
-|
- x = crypto_alloc_instance2@p1(...)
-|
- x = crypto_alloc_comp@p1(...)
-|
- x = crypto_alloc_pcomp@p1(...)
-|
- x = crypto_alloc_hash@p1(...)
-|
- x = crypto_alloc_ahash@p1(...)
-|
- x = crypto_alloc_shash@p1(...)
-|
- x = crypto_alloc_rng@p1(...)
-)
-
-@pb@
-expression r.x;
-position p;
-@@
-
-* kfree@p(x)
-
-@script:python depends on org@
-p << pb.p;
-p1 << r.p1;
-@@
-
-msg="WARNING: invalid free of crypto_alloc_* allocated data"
-coccilib.org.print_todo(p[0], msg)
-coccilib.org.print_link(p1[0], "allocation")
-
-@script:python depends on report@
-p << pb.p;
-p1 << r.p1;
-@@
-
-msg="WARNING: invalid free of crypto_alloc_* allocated data, allocated on line %s" % (p1[0].line)
-coccilib.report.print_report(p[0], msg)
+Johan
