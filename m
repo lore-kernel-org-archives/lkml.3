@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933782AbaKSVOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57280 "EHLO
+	id S934432AbaKSVc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:32:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932736AbaKSVOc (ORCPT
+	with ESMTP id S933590AbaKSVOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:32 -0500
+	Wed, 19 Nov 2014 16:14:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.14 089/122] rcu: Use rcu_gp_kthread_wake() to wake up grace period kthreads
-Date: Wed, 19 Nov 2014 12:52:19 -0800
-Message-Id: <20141119205211.770360166@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 20/70] iwlwifi: configure the LTR
+Date: Wed, 19 Nov 2014 12:52:11 -0800
+Message-Id: <20141119205211.592285368@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
-References: <20141119205208.812884198@linuxfoundation.org>
+In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
+References: <20141119205210.913169042@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,75 +24,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Pranith Kumar <bobby.prani@gmail.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 2aa792e6faf1a00f5accf1f69e87e11a390ba2cd upstream.
+commit 9180ac50716a097a407c6d7e7e4589754a922260 upstream.
 
-The rcu_gp_kthread_wake() function checks for three conditions before
-waking up grace period kthreads:
+The LTR is the handshake between the device and the root
+complex about the latency allowed when the bus exits power
+save. This configuration was missing and this led to high
+latency in the link power up. The end user could experience
+high latency in the network because of this.
 
-*  Is the thread we are trying to wake up the current thread?
-*  Are the gp_flags zero? (all threads wait on non-zero gp_flags condition)
-*  Is there no thread created for this flavour, hence nothing to wake up?
-
-If any one of these condition is true, we do not call wake_up().
-It was found that there are quite a few avoidable wake ups both during
-idle time and under stress induced by rcutorture.
-
-Idle:
-
-Total:66000, unnecessary:66000, case1:61827, case2:66000, case3:0
-Total:68000, unnecessary:68000, case1:63696, case2:68000, case3:0
-
-rcutorture:
-
-Total:254000, unnecessary:254000, case1:199913, case2:254000, case3:0
-Total:256000, unnecessary:256000, case1:201784, case2:256000, case3:0
-
-Here case{1-3} are the cases listed above. We can avoid these wake
-ups by using rcu_gp_kthread_wake() to conditionally wake up the grace
-period kthreads.
-
-There is a comment about an implied barrier supplied by the wake_up()
-logic.  This barrier is necessary for the awakened thread to see the
-updated ->gp_flags.  This flag is always being updated with the root node
-lock held. Also, the awakened thread tries to acquire the root node lock
-before reading ->gp_flags because of which there is proper ordering.
-
-Hence this commit tries to avoid calling wake_up() whenever we can by
-using rcu_gp_kthread_wake() function.
-
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/rcu/tree.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -1762,7 +1762,7 @@ static void rcu_report_qs_rsp(struct rcu
- {
- 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
- 	raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
--	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
-+	rcu_gp_kthread_wake(rsp);
- }
+---
+ drivers/net/wireless/iwlwifi/iwl-trans.h        |    2 +
+ drivers/net/wireless/iwlwifi/mvm/fw-api-power.h |   35 +++++++++++++++++++++++-
+ drivers/net/wireless/iwlwifi/mvm/fw-api.h       |    1 
+ drivers/net/wireless/iwlwifi/mvm/fw.c           |    9 ++++++
+ drivers/net/wireless/iwlwifi/mvm/ops.c          |    1 
+ drivers/net/wireless/iwlwifi/pcie/trans.c       |   17 ++++++-----
+ 6 files changed, 57 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/iwl-trans.h
++++ b/drivers/net/wireless/iwlwifi/iwl-trans.h
+@@ -489,6 +489,7 @@ enum iwl_trans_state {
+  *	Set during transport allocation.
+  * @hw_id_str: a string with info about HW ID. Set during transport allocation.
+  * @pm_support: set to true in start_hw if link pm is supported
++ * @ltr_enabled: set to true if the LTR is enabled
+  * @dev_cmd_pool: pool for Tx cmd allocation - for internal use only.
+  *	The user should use iwl_trans_{alloc,free}_tx_cmd.
+  * @dev_cmd_headroom: room needed for the transport's private use before the
+@@ -513,6 +514,7 @@ struct iwl_trans {
+ 	u8 rx_mpdu_cmd, rx_mpdu_cmd_hdr_size;
  
- /*
-@@ -2338,7 +2338,7 @@ static void force_quiescent_state(struct
- 	}
- 	rsp->gp_flags |= RCU_GP_FLAG_FQS;
- 	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
--	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
-+	rcu_gp_kthread_wake(rsp);
+ 	bool pm_support;
++	bool ltr_enabled;
+ 
+ 	/* The following fields are internal only */
+ 	struct kmem_cache *dev_cmd_pool;
+--- a/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
++++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
+@@ -67,7 +67,40 @@
+ /* Power Management Commands, Responses, Notifications */
+ 
+ /**
+- * enum iwl_scan_flags - masks for power table command flags
++ * enum iwl_ltr_config_flags - masks for LTR config command flags
++ * @LTR_CFG_FLAG_FEATURE_ENABLE: Feature operational status
++ * @LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS: allow LTR change on shadow
++ *	memory access
++ * @LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH: allow LTR msg send on ANY LTR
++ *	reg change
++ * @LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3: allow LTR msg send on transition from
++ *	D0 to D3
++ * @LTR_CFG_FLAG_SW_SET_SHORT: fixed static short LTR register
++ * @LTR_CFG_FLAG_SW_SET_LONG: fixed static short LONG register
++ * @LTR_CFG_FLAG_DENIE_C10_ON_PD: allow going into C10 on PD
++ */
++enum iwl_ltr_config_flags {
++	LTR_CFG_FLAG_FEATURE_ENABLE = BIT(0),
++	LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS = BIT(1),
++	LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH = BIT(2),
++	LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3 = BIT(3),
++	LTR_CFG_FLAG_SW_SET_SHORT = BIT(4),
++	LTR_CFG_FLAG_SW_SET_LONG = BIT(5),
++	LTR_CFG_FLAG_DENIE_C10_ON_PD = BIT(6),
++};
++
++/**
++ * struct iwl_ltr_config_cmd - configures the LTR
++ * @flags: See %enum iwl_ltr_config_flags
++ */
++struct iwl_ltr_config_cmd {
++	__le32 flags;
++	__le32 static_long;
++	__le32 static_short;
++} __packed;
++
++/**
++ * enum iwl_power_flags - masks for power table command flags
+  * @POWER_FLAGS_POWER_SAVE_ENA_MSK: '1' Allow to save power by turning off
+  *		receiver and transmitter. '0' - does not allow.
+  * @POWER_FLAGS_POWER_MANAGEMENT_ENA_MSK: '0' Driver disables power management,
+--- a/drivers/net/wireless/iwlwifi/mvm/fw-api.h
++++ b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
+@@ -138,6 +138,7 @@ enum {
+ 
+ 	/* Power */
+ 	POWER_TABLE_CMD = 0x77,
++	LTR_CONFIG = 0xee,
+ 
+ 	/* Scanning */
+ 	SCAN_REQUEST_CMD = 0x80,
+--- a/drivers/net/wireless/iwlwifi/mvm/fw.c
++++ b/drivers/net/wireless/iwlwifi/mvm/fw.c
+@@ -443,6 +443,15 @@ int iwl_mvm_up(struct iwl_mvm *mvm)
+ 	if (ret)
+ 		goto error;
+ 
++	if (mvm->trans->ltr_enabled) {
++		struct iwl_ltr_config_cmd cmd = {
++			.flags = cpu_to_le32(LTR_CFG_FLAG_FEATURE_ENABLE),
++		};
++
++		WARN_ON(iwl_mvm_send_cmd_pdu(mvm, LTR_CONFIG, 0,
++					     sizeof(cmd), &cmd));
++	}
++
+ 	IWL_DEBUG_INFO(mvm, "RT uCode started.\n");
+ 
+ 	return 0;
+--- a/drivers/net/wireless/iwlwifi/mvm/ops.c
++++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
+@@ -293,6 +293,7 @@ static const char *iwl_mvm_cmd_strings[R
+ 	CMD(BT_PROFILE_NOTIFICATION),
+ 	CMD(BT_CONFIG),
+ 	CMD(MCAST_FILTER_CMD),
++	CMD(LTR_CONFIG),
+ };
+ #undef CMD
+ 
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -116,11 +116,13 @@ static void iwl_pcie_set_pwr(struct iwl_
+ 
+ /* PCI registers */
+ #define PCI_CFG_RETRY_TIMEOUT	0x041
++#define PCI_EXP_DEVCTL2_LTR_EN	0x0400
+ 
+ static void iwl_pcie_apm_config(struct iwl_trans *trans)
+ {
+ 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+ 	u16 lctl;
++	u16 cap;
+ 
+ 	/*
+ 	 * HW bug W/A for instability in PCIe bus L0S->L1 transition.
+@@ -131,16 +133,17 @@ static void iwl_pcie_apm_config(struct i
+ 	 *    power savings, even without L1.
+ 	 */
+ 	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
+-	if (lctl & PCI_EXP_LNKCTL_ASPM_L1) {
+-		/* L1-ASPM enabled; disable(!) L0S */
++	if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
+ 		iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
+-		dev_info(trans->dev, "L1 Enabled; Disabling L0S\n");
+-	} else {
+-		/* L1-ASPM disabled; enable(!) L0S */
++	else
+ 		iwl_clear_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
+-		dev_info(trans->dev, "L1 Disabled; Enabling L0S\n");
+-	}
+ 	trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
++
++	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_DEVCTL2, &cap);
++	trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
++	dev_info(trans->dev, "L1 %sabled - LTR %sabled\n",
++		 (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
++		 trans->ltr_enabled ? "En" : "Dis");
  }
  
  /*
