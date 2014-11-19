@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112AbaKSWVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 17:21:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56108 "EHLO
+	id S1758096AbaKSWVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 17:21:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56115 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932568AbaKSUyM (ORCPT
+	with ESMTP id S932569AbaKSUyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 15:54:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 042/141] tun: Fix csum_start with VLAN acceleration
-Date: Wed, 19 Nov 2014 12:51:05 -0800
-Message-Id: <20141119205152.045115160@linuxfoundation.org>
+        Mark Rutland <mark.rutland@arm.com>, Joel Schopp <joel.schopp@amd.com>,
+        Roy Franz <roy.franz@linaro.org>,
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Ian Campbell <ijc@hellion.org.uk>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.17 078/141] arm64: efi: Fix stub cache maintenance
+Date: Wed, 19 Nov 2014 12:51:41 -0800
+Message-Id: <20141119205153.229267543@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205150.700188369@linuxfoundation.org>
 References: <20141119205150.700188369@linuxfoundation.org>
@@ -29,73 +35,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Mark Rutland <mark.rutland@arm.com>
 
-commit a8f9bfdf982e2b1fb9f094e4de9ab08c57f3d2fd upstream.
+commit 9b0b26580a753d4d6bdd2b8b4ca9a8f3f2d39065 upstream.
 
-When VLAN acceleration is in use on the xmit path, we end up
-setting csum_start to the wrong place.  The result is that the
-whoever ends up doing the checksum setting will corrupt the packet
-instead of writing the checksum to the expected location, usually
-this means writing the checksum with an offset of -4.
+While efi-entry.S mentions that efi_entry() will have relocated the
+kernel image, it actually means that efi_entry will have placed a copy
+of the kernel in the appropriate location, and until this is branched to
+at the end of efi_entry.S, all instructions are executed from the
+original image.
 
-This patch fixes this by adjusting csum_start when VLAN acceleration
-is detected.
+Thus while the flush in efi_entry.S does ensure that the copy is visible
+to noncacheable accesses, it does not guarantee that this is true for
+the image instructions are being executed from. This could have
+disasterous effects when the MMU and caches are disabled if the image
+has not been naturally evicted to the PoC.
 
-Fixes: 6680ec68eff4 ("tuntap: hardware vlan tx support")
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Additionally, due to a missing dsb following the ic ialluis, the new
+kernel image is not necessarily clean in the I-cache when it is branched
+to, with similar potentially disasterous effects.
+
+This patch adds additional flushing to ensure that the currently
+executing stub text is flushed to the PoC and is thus visible to
+noncacheable accesses. As it is placed after the instructions cache
+maintenance for the new image and __flush_dcache_area already contains a
+dsb, we do not need to add a separate barrier to ensure completion of
+the icache maintenance.
+
+Comments are updated to clarify the situation with regard to the two
+images and the maintenance required for both.
+
+Fixes: 3c7f255039a2ad6ee1e3890505caf0d029b22e29
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Joel Schopp <joel.schopp@amd.com>
+Reviewed-by: Roy Franz <roy.franz@linaro.org>
+Tested-by: Tom Lendacky <thomas.lendacky@amd.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Ian Campbell <ijc@hellion.org.uk>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/tun.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ arch/arm64/kernel/efi-entry.S |   27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1225,6 +1225,10 @@ static ssize_t tun_put_user(struct tun_s
- 	struct tun_pi pi = { 0, skb->protocol };
- 	ssize_t total = 0;
- 	int vlan_offset = 0, copied;
-+	int vlan_hlen = 0;
+--- a/arch/arm64/kernel/efi-entry.S
++++ b/arch/arm64/kernel/efi-entry.S
+@@ -54,18 +54,17 @@ ENTRY(efi_stub_entry)
+ 	b.eq	efi_load_fail
+ 
+ 	/*
+-	 * efi_entry() will have relocated the kernel image if necessary
+-	 * and we return here with device tree address in x0 and the kernel
+-	 * entry point stored at *image_addr. Save those values in registers
+-	 * which are callee preserved.
++	 * efi_entry() will have copied the kernel image if necessary and we
++	 * return here with device tree address in x0 and the kernel entry
++	 * point stored at *image_addr. Save those values in registers which
++	 * are callee preserved.
+ 	 */
+ 	mov	x20, x0		// DTB address
+ 	ldr	x0, [sp, #16]	// relocated _text address
+ 	mov	x21, x0
+ 
+ 	/*
+-	 * Flush dcache covering current runtime addresses
+-	 * of kernel text/data. Then flush all of icache.
++	 * Calculate size of the kernel Image (same for original and copy).
+ 	 */
+ 	adrp	x1, _text
+ 	add	x1, x1, #:lo12:_text
+@@ -73,9 +72,24 @@ ENTRY(efi_stub_entry)
+ 	add	x2, x2, #:lo12:_edata
+ 	sub	x1, x2, x1
+ 
++	/*
++	 * Flush the copied Image to the PoC, and ensure it is not shadowed by
++	 * stale icache entries from before relocation.
++	 */
+ 	bl	__flush_dcache_area
+ 	ic	ialluis
+ 
++	/*
++	 * Ensure that the rest of this function (in the original Image) is
++	 * visible when the caches are disabled. The I-cache can't have stale
++	 * entries for the VA range of the current image, so no maintenance is
++	 * necessary.
++	 */
++	adr	x0, efi_stub_entry
++	adr	x1, efi_stub_entry_end
++	sub	x1, x1, x0
++	bl	__flush_dcache_area
 +
-+	if (vlan_tx_tag_present(skb))
-+		vlan_hlen = VLAN_HLEN;
+ 	/* Turn off Dcache and MMU */
+ 	mrs	x0, CurrentEL
+ 	cmp	x0, #CurrentEL_EL2
+@@ -105,4 +119,5 @@ efi_load_fail:
+ 	ldp	x29, x30, [sp], #32
+ 	ret
  
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
-@@ -1276,7 +1280,8 @@ static ssize_t tun_put_user(struct tun_s
- 
- 		if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 			gso.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
--			gso.csum_start = skb_checksum_start_offset(skb);
-+			gso.csum_start = skb_checksum_start_offset(skb) +
-+					 vlan_hlen;
- 			gso.csum_offset = skb->csum_offset;
- 		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
- 			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
-@@ -1289,10 +1294,9 @@ static ssize_t tun_put_user(struct tun_s
- 	}
- 
- 	copied = total;
--	total += skb->len;
--	if (!vlan_tx_tag_present(skb)) {
--		len = min_t(int, skb->len, len);
--	} else {
-+	len = min_t(int, skb->len + vlan_hlen, len);
-+	total += skb->len + vlan_hlen;
-+	if (vlan_hlen) {
- 		int copy, ret;
- 		struct {
- 			__be16 h_vlan_proto;
-@@ -1303,8 +1307,6 @@ static ssize_t tun_put_user(struct tun_s
- 		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
- 
- 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
--		len = min_t(int, skb->len + VLAN_HLEN, len);
--		total += VLAN_HLEN;
- 
- 		copy = min_t(int, vlan_offset, len);
- 		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
++efi_stub_entry_end:
+ ENDPROC(efi_stub_entry)
 
 
