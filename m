@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522AbaKSVfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:35:05 -0500
-Received: from domine.madduck.net ([77.109.139.90]:52563 "EHLO
-	domine.madduck.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404AbaKSVfD (ORCPT
+	id S934417AbaKSVc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:32:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933640AbaKSVOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:35:03 -0500
-X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Nov 2014 16:35:03 EST
-Date: Wed, 19 Nov 2014 23:28:08 +0200
-From: martin f krafft <madduck@madduck.net>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: EXT4-fs error, kernel BUG
-Message-ID: <20141119212808.GA31961@fishbowl.rw.madduck.net>
-Mail-Followup-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-	Theodore Ts'o <tytso@mit.edu>
-References: <20140805103436.GA7531@fishbowl.rw.madduck.net>
- <20140805125114.GG5263@thunk.org>
- <20140805131555.GB18164@fishbowl.rw.madduck.net>
+	Wed, 19 Nov 2014 16:14:38 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 21/70] macvtap: Fix csum_start when VLAN tags are present
+Date: Wed, 19 Nov 2014 12:52:12 -0800
+Message-Id: <20141119205211.623975102@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
+References: <20141119205210.913169042@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
-Content-Disposition: inline
-In-Reply-To: <20140805131555.GB18164@fishbowl.rw.madduck.net>
-X-Motto: Keep the good times rollin'
-X-OS: Debian GNU/Linux jessie/sid kernel 3.16-1-amd64 x86_64
-X-Spamtrap: madduck.bogus@madduck.net
-X-Subliminal-Message: debian/rules!
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
---0F1p//8PRICkK4MW
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-also sprach martin f krafft <madduck@madduck.net> [2014-08-05 16:15 +0300]:
-> > It's possible that this was caused by a memory corruption, but it
-> > wouldn't have been high on my suspect list.  Still, if this is
-> > a new machine, it might not be a bad idea to run memtest86+ for
-> > 24-48 hours.
->=20
-> =E2=80=A6 and will do that. I did it before, but I also just upgraded the
-> RAM and didn't do it again.
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-For posterity, the problems went away after I memtest86+-identified
-a bad RAM module and swapped it, then recreated the filesystems for
-safety,
+commit 3ce9b20f1971690b8b3b620e735ec99431573b39 upstream.
 
-Thanks Ted!
+When VLAN is in use in macvtap_put_user, we end up setting
+csum_start to the wrong place.  The result is that the whoever
+ends up doing the checksum setting will corrupt the packet instead
+of writing the checksum to the expected location, usually this
+means writing the checksum with an offset of -4.
 
---=20
-@martinkrafft | http://madduck.net/ | http://two.sentenc.es/
-=20
-will kill for oil!
-=20
-spamtraps: madduck.bogus@madduck.net
+This patch fixes this by adjusting csum_start when VLAN tags are
+detected.
 
---0F1p//8PRICkK4MW
-Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
-Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
+Fixes: f09e2249c4f5 ("macvtap: restore vlan header on user read")
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+---
+ drivers/net/macvtap.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-iQLvBAEBCgDZBQJUbQtowBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
-aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
-bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
-NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
-MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xJDC
-EACBKmTScySiqwyZaoK9Kpv4RmvBt28vjwDX9V1CnAqQBVHZwfVcsb6cXcruUyO6
-7qSUtcXVLbyyn4Shh+AhjkU+MNjDDV0t3oz5OOGdvLEHj5/BcY2McECJUbUWO4MP
-Y3C8bXtVDEWfcZemv3zPrVLG1P4pxNB9yNS2M1UV6GHAl6ST47gAa2GEeKukUUez
-XocZy8jAH/tV1YxeTnn0QxipGE6LOExpzx7n7bmtWZgfoDmYM2dF0cnZfNPOk6lc
-ugB2Ri9ItxEIa+c9X3Uo0muhZTeWV72dqkae0qKvOki/Mdt9fFSttUb7ofIFY0Xx
-bnttTKb1Din32cyQ//cPTBSy52vNO1w7hkU4IL8ablyYL8gMjpQOOtfZUvOlEJuy
-ZjdiuWsCP71vFcVCvxLEYwvN8Ff9ppawak6yJAkevbKVZT8ja0HWGEZ/ZvInXl3j
-hkxeQbp52NTchwxet4+iIyemYwhOson0dsL6cVlZ0AaoMK2slcpYECfEabFmooye
-qLBE0eXhl18cfRZahCXdRY335qKBVPAfGpamW4ECPCBhIVq07On870W1lex35ABf
-GPXSBin/QYv/k92rV+hLdKTN8SlgJU7S0UiB3zudAlbQ4jgqJcfgBlU1LZBCt3dD
-0wttByUq89w004gZ6qs9SiPNUyz4VmlqSVlxfo83Wzbaww==
-=SyG2
------END PGP SIGNATURE-----
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -625,6 +625,8 @@ static int macvtap_skb_to_vnet_hdr(const
+ 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+ 		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
++		if (vlan_tx_tag_present(skb))
++			vnet_hdr->csum_start += VLAN_HLEN;
+ 		vnet_hdr->csum_offset = skb->csum_offset;
+ 	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
+ 		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
 
---0F1p//8PRICkK4MW--
 
