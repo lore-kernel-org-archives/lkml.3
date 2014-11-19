@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273AbaKSAom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 19:44:42 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:49822 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585AbaKSAok (ORCPT
+	id S1755590AbaKSApr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 19:45:47 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:17300 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560AbaKSApq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 19:44:40 -0500
+	Tue, 18 Nov 2014 19:45:46 -0500
+Message-ID: <546BE7F2.3070009@oracle.com>
+Date: Tue, 18 Nov 2014 19:44:34 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141118211734.GA19146@saruman>
-References: <1415953486-6000-1-git-send-email-george.cherian@ti.com>
-	<20141118211734.GA19146@saruman>
-Date: Tue, 18 Nov 2014 18:44:39 -0600
-Message-ID: <CADYTM3b9zSpP2yO2Lp5WOxBxB0yX=bG_20mFKQNGnyXV0XLOHg@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: core: Disable the Interrupts till BABBLE is
- fully handled
-From: Bin Liu <binmlist@gmail.com>
-To: balbi@ti.com
-Cc: George Cherian <george.cherian@ti.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bigeasy@linutronix.de
-Content-Type: text/plain; charset=UTF-8
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+CC: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>	<1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>	<546BD866.5050101@oracle.com> <CAPAsAGxYF27pbNEgsr3PgNJ=uNFzR2qcviLB_7bp=nM3ZD5Jgw@mail.gmail.com>
+In-Reply-To: <CAPAsAGxYF27pbNEgsr3PgNJ=uNFzR2qcviLB_7bp=nM3ZD5Jgw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+On 11/18/2014 07:09 PM, Andrey Ryabinin wrote:
+> Yes with CONFIG_KASAN_INLINE you will get GPF instead of kasan report.
+> For userspaces addresses we don't have shadow memory. In outline case
+> I just check address itself before checking shadow. In inline case compiler
+> just checks shadow, so there is no way to avoid GPF.
+> 
+> To be able to print report instead of GPF, I need to treat GPFs in a special
+> way if inline instrumentation was enabled, but it's not done yet.
 
-On Tue, Nov 18, 2014 at 3:17 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Nov 14, 2014 at 01:54:46PM +0530, George Cherian wrote:
->> Disable the MUSB interrupts till MUSB is recovered fully from BABBLE
->> condition. There are chances that we could get multiple interrupts
->> till the time the babble recover work gets scheduled. Sometimes
->> this could even end up in an endless loop making MUSB itself unusable.
->>
->> Reported-by: Felipe Balbi <balbi@ti.com>
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->
-> while this helps the situation it doesn't solve the problem I'm having
-> with testusb on BBB when host port is connected to peripheral port on
-> the same BBB.
+I went ahead and tested it with the test module, which worked perfectly. No
+more complaints here...
 
-Try to find a BB white (which has rev 1.0 SoC) to see if babble still
-happens, this could be PHY hw issue.
+>> > I remembered that one of the biggest changes in kasan was the introduction of
+>> > inline instrumentation, so I went ahead to disable it and see if it helps. But
+>> > the only result of that was having the boot process hang pretty early:
+>> >
+>> > [...]
+>> > [    0.000000] IOAPIC[0]: apic_id 21, version 17, address 0xfec00000, GSI 0-23
+>> > [    0.000000] Processors: 20
+>> > [    0.000000] smpboot: Allowing 24 CPUs, 4 hotplug CPUs
+>> > [    0.000000] e820: [mem 0xd0000000-0xffffffff] available for PCI devices
+>> > [    0.000000] Booting paravirtualized kernel on KVM
+>> > [    0.000000] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:24 nr_cpu_ids:24 nr_node_ids:1
+>> > [    0.000000] PERCPU: Embedded 491 pages/cpu @ffff8808dce00000 s1971864 r8192 d31080 u2097152
+>> > *HANG*
+>> >
+> This hang happens only with your error patch above or even without it?
 
-Regards,
--Bin.
+It happens even without the patch.
 
 
->
-> I still have:
->
-> # ./testusb -t 13 -c 10 -s 2048 -a
-> unknown speed   /dev/bus/usb/002/004    0
-> [  114.811407] usbtest 2-1:3.0: set altsetting to 0 failed, -71
-> /dev/bus/usb/002/004 test 13 --> 71 (error 71)
-> [  114.862387] CAUTION: musb: Babble Interrupt Occurred
-> [  114.868132] usb 2-1: USB disconnect, device number 4
-> [  114.961491] musb-hdrc musb-hdrc.1.auto: Restarting MUSB to recover from Babble
-> [  115.430829] usb 2-1: new high-speed USB device number 5 using musb-hdrc
-> [  115.573471] zero gadget: high-speed config #3: source/sink
-> [  115.584014] usbtest 2-1:3.0: Linux gadget zero
-> [  115.588682] usbtest 2-1:3.0: high-speed {control in/out bulk-in bulk-out} tests (+alt)
->
-> I think the driver is mis-detecting Babble. A babble only occurs when
-> the device side tries to move data without the host asking for anything.
->
-> --
-> balbi
+Thanks,
+Sasha
