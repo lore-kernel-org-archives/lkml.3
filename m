@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaKSIqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 03:46:35 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:61349 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaKSIq2 (ORCPT
+	id S1755616AbaKSIqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 03:46:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20197 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753595AbaKSIqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 03:46:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ding Tianhong <dingtianhong@huawei.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: For the problem when using swiotlb
-Date: Wed, 19 Nov 2014 09:45:43 +0100
-Message-ID: <1535751.CcvIi3DN4F@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <546C0BBB.9070000@huawei.com>
-References: <5469E26B.2010905@huawei.com> <20141117180947.GI29595@e104818-lin.cambridge.arm.com> <546C0BBB.9070000@huawei.com>
+	Wed, 19 Nov 2014 03:46:37 -0500
+Date: Wed, 19 Nov 2014 11:45:42 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] net: xfrm: Deletion of an unnecessary check before
+ the function call "ipcomp_free_tfms"
+Message-ID: <20141119084542.GK4905@mwanda>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <546BAFF5.5020603@users.sourceforge.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:w7DmUE79KgeZ0TtBBu3NGothPLjRKCJlFwen+Z9pKy2
- sspMGzbzekLqaHAPrbASua8szPNtQvENGIhNzP3FEdtLUeIIFe
- nRtXPWiz6+SB86QRKnMOq6qoK2UxSVdbvCko/QPg9renUS8GKi
- pHmXjm0Y4SfYdo39aeQj7CaRlQNNSYss2nDEdXrjULJJLDzkWb
- LFKUew16UUPAdd3EeHy1McwXNxkqCr07RzP9Diow1ZR0W85khg
- 4qZ4nuQ3IpA1LCJwnACSZHbbynsGe7NFuFsMTadlP36VpH0qd8
- RdBus7K2mqukosnH1RM7Ks087W4jx1hHHUNCoT4+jqXVRu28GJ
- O/4b0w/N/FToEwn5M4DA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546BAFF5.5020603@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 November 2014 11:17:15 Ding Tianhong wrote:
-> On 2014/11/18 2:09, Catalin Marinas wrote:
-> > On Mon, Nov 17, 2014 at 12:18:42PM +0000, Arnd Bergmann wrote:
-> >> On Monday 17 November 2014 19:56:27 Ding Tianhong wrote:
-> >>>         The commit 3690951fc6d42f3a0903987677d0e592c49dd8db(arm64: Use swiotlb late initialisation)
-> >>> switches the DMA mapping code to swiotlb_tlb_late_init_with_default_size(), this will occur a problem
-> >>> when I run the scsi stress tests, the message as below:
-> >>>
-> >>>         sas_controller b1000000.sas: swiotlb buffer is full (sz: 65536 bytes)..
-> >>>         DMA: Out of SW-IOMMU space for 65536 bytes at device b1000000.sas
-> >>>
-> >>> The reason is that the swiotlb_tlb_late_init_with_default_size() could only alloc 16M memory for DMA-mapping,
-> >>> and the param in cmdline "swiotlb=xxx" is useless because the get_free_pages() only use the buddy to assigned a
-> >>> maximum memory of 16M(The MAX_ORDER is 13 for 4k pages), obviously 16M is too small in many scenes, but
-> >>> the swiotlb_init() which could reserved a bigger memory as wished could work well for most drivers.
-> >>>
-> >>> I could not get a better way to fix this problem except to revert this patch, so could you please give me some
-> >>> advise and help me, thanks very much.
-> >>
-> >> In general, you should not need to use swiotlb for most devices, in
-> >> particular for high-performance devices like network or block.
-> >>
-> >> Please make sure that you have set up the dma-ranges properties in
-> >> your DT properly to allow 64-bit DMA if the device supports it.
-> > 
-> > That's the problem indeed, the DMA API ends up using swiotlb bounce
-> > buffers because the physical address of the pages passed to (or
-> > allocated by) the driver are beyond 32-bit limit (which is the default
-> > dma mask).
-> > 
+On Tue, Nov 18, 2014 at 09:45:41PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 18 Nov 2014 21:41:26 +0100
 > 
-> Thanks everyone, I think I found the way to fix it, need to enable DMA_CMA, to reserve a big memory
-> for CMA and set coherent mask for dev, then dma_alloc and dma_mapping will not use the swiotlb until
-> the memory out of mask or swiotlb_force is enabled.
-> 
-> If I still understand uncorrectly, please inform me.
+> The ipcomp_free_tfms() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 > 
 
-Please do not use CMA to work around the problem, but fix the underlying bug
-instead.
+It doesn't though...
 
-The driver should call 'dma_set_mask_and_coherent()' with the appropriate
-dma mask, and check whether that succeeded. However, the code implementing
-dma_set_mask_and_coherent on arm64 also needs to be changed to look up
-the dma-ranges property (see of_dma_configure()), and check if the mask
-is possible.
+regards,
+dan carpenter
 
-	Arnd
