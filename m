@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933884AbaKSVOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:14:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
+	id S934152AbaKSVXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:23:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57466 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933840AbaKSVOq (ORCPT
+	with ESMTP id S933870AbaKSVOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:46 -0500
+	Wed, 19 Nov 2014 16:14:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 07/70] sunvdc: limit each sg segment to a page
-Date: Wed, 19 Nov 2014 12:51:58 -0800
-Message-Id: <20141119205211.154315647@linuxfoundation.org>
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Dave Martin <Dave.Martin@arm.com>, Wang Nan <wangnan0@huawei.com>
+Subject: [PATCH 3.10 55/70] ARM: Correct BUG() assembly to ensure it is endian-agnostic
+Date: Wed, 19 Nov 2014 12:52:46 -0800
+Message-Id: <20141119205212.741833560@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,40 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Ben Dooks <ben.dooks@codethink.co.uk>
 
-[ Upstream commit 5eed69ffd248c9f68f56c710caf07db134aef28b ]
+commit 63328070eff2f4fd730c86966a0dbc976147c39f upstream.
 
-ldc_map_sg() could fail its check that the number of pages referred to
-by the sg scatterlist was <= the number of cookies.
+Currently BUG() uses .word or .hword to create the necessary illegal
+instructions. However if we are building BE8 then these get swapped
+by the linker into different illegal instructions in the text. This
+means that the BUG() macro does not get trapped properly.
 
-This fixes the issue by doing a similar thing to the xen-blkfront driver,
-ensuring that the scatterlist will only ever contain a segment count <=
-port->ring_cookies, and each segment will be page aligned, and <= page
-size. This ensures that the scatterlist is always mappable.
+Change to using <asm/opcodes.h> to provide the necessary ARM instruction
+building as we cannot rely on gcc/gas having the `.inst` instructions
+which where added to try and resolve this issue (reported by Dave Martin
+<Dave.Martin@arm.com>).
 
-Orabug: 19347817
-OraBZ: 15945
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+Reviewed-by: Dave Martin <Dave.Martin@arm.com>
+Cc: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/sunvdc.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *p
+---
+ arch/arm/include/asm/bug.h |   10 ++++++----
+ arch/arm/kernel/traps.c    |    8 +++++---
+ 2 files changed, 11 insertions(+), 7 deletions(-)
+
+--- a/arch/arm/include/asm/bug.h
++++ b/arch/arm/include/asm/bug.h
+@@ -2,6 +2,8 @@
+ #define _ASMARM_BUG_H
  
- 	port->disk = g;
+ #include <linux/linkage.h>
++#include <linux/types.h>
++#include <asm/opcodes.h>
  
-+	/* Each segment in a request is up to an aligned page in size. */
-+	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
-+	blk_queue_max_segment_size(q, PAGE_SIZE);
-+
- 	blk_queue_max_segments(q, port->ring_cookies);
- 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
- 	g->major = vdc_major;
+ #ifdef CONFIG_BUG
+ 
+@@ -12,10 +14,10 @@
+  */
+ #ifdef CONFIG_THUMB2_KERNEL
+ #define BUG_INSTR_VALUE 0xde02
+-#define BUG_INSTR_TYPE ".hword "
++#define BUG_INSTR(__value) __inst_thumb16(__value)
+ #else
+ #define BUG_INSTR_VALUE 0xe7f001f2
+-#define BUG_INSTR_TYPE ".word "
++#define BUG_INSTR(__value) __inst_arm(__value)
+ #endif
+ 
+ 
+@@ -33,7 +35,7 @@
+ 
+ #define __BUG(__file, __line, __value)				\
+ do {								\
+-	asm volatile("1:\t" BUG_INSTR_TYPE #__value "\n"	\
++	asm volatile("1:\t" BUG_INSTR(__value) "\n"  \
+ 		".pushsection .rodata.str, \"aMS\", %progbits, 1\n" \
+ 		"2:\t.asciz " #__file "\n" 			\
+ 		".popsection\n" 				\
+@@ -48,7 +50,7 @@ do {								\
+ 
+ #define __BUG(__file, __line, __value)				\
+ do {								\
+-	asm volatile(BUG_INSTR_TYPE #__value);			\
++	asm volatile(BUG_INSTR(__value) "\n");			\
+ 	unreachable();						\
+ } while (0)
+ #endif  /* CONFIG_DEBUG_BUGVERBOSE */
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -347,15 +347,17 @@ void arm_notify_die(const char *str, str
+ int is_valid_bugaddr(unsigned long pc)
+ {
+ #ifdef CONFIG_THUMB2_KERNEL
+-	unsigned short bkpt;
++	u16 bkpt;
++	u16 insn = __opcode_to_mem_thumb16(BUG_INSTR_VALUE);
+ #else
+-	unsigned long bkpt;
++	u32 bkpt;
++	u32 insn = __opcode_to_mem_arm(BUG_INSTR_VALUE);
+ #endif
+ 
+ 	if (probe_kernel_address((unsigned *)pc, bkpt))
+ 		return 0;
+ 
+-	return bkpt == BUG_INSTR_VALUE;
++	return bkpt == insn;
+ }
+ 
+ #endif
 
 
