@@ -1,177 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086AbaKSOOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 09:14:55 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:43438 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755682AbaKSOOv (ORCPT
+	id S932166AbaKSOSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 09:18:16 -0500
+Received: from mga14.intel.com ([192.55.52.115]:6035 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736AbaKSOSO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 09:14:51 -0500
-X-Listener-Flag: 11101
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        <devicetree@vger.kernel.org>, <hc.yen@mediatek.com>,
-        <srv_heupstream@mediatek.com>, <yh.chen@mediatek.com>,
-        <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
-        <nathan.chung@mediatek.com>, <yingjoe.chen@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, <eddie.huang@mediatek.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v7 3/4] ARM: mediatek: Add sysirq in mt6589/mt8135/mt8127 dtsi
-Date: Wed, 19 Nov 2014 22:14:10 +0800
-Message-ID: <1416406451-4578-4-git-send-email-yingjoe.chen@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
-In-Reply-To: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
-References: <1416406451-4578-1-git-send-email-yingjoe.chen@mediatek.com>
+	Wed, 19 Nov 2014 09:18:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,417,1413270000"; 
+   d="scan'208";a="624890858"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: "acme@kernel.org" <acme@kernel.org>, "jolsa@redhat.com" <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V4 3/3] perf tool: Add sort key symoff for perf diff
+Thread-Topic: [PATCH V4 3/3] perf tool: Add sort key symoff for perf diff
+Thread-Index: AQHQA8SQEr1H2ZY2I0eMdowyjLhZiZxn9xrw
+Date: Wed, 19 Nov 2014 14:17:33 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701671CE9@SHSMSX103.ccr.corp.intel.com>
+References: <1416328700-1836-1-git-send-email-kan.liang@intel.com>
+	<1416328700-1836-4-git-send-email-kan.liang@intel.com>
+ <87vbmbpu0j.fsf@sejong.aot.lge.com>
+In-Reply-To: <87vbmbpu0j.fsf@sejong.aot.lge.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sysirq settings for mt6589/mt8135/mt8127
-This also correct timer interrupt flag. The old setting works
-because boot loader already set polarity for timer interrupt.
-Without intpol support, the setting was not changed so gic
-can get the irq correctly.
 
-Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
----
- arch/arm/boot/dts/mt6589.dtsi | 14 ++++++++++++--
- arch/arm/boot/dts/mt8127.dtsi | 14 ++++++++++++--
- arch/arm/boot/dts/mt8135.dtsi | 14 ++++++++++++--
- 3 files changed, 36 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/mt6589.dtsi b/arch/arm/boot/dts/mt6589.dtsi
-index e3c7600..c91b2a9 100644
---- a/arch/arm/boot/dts/mt6589.dtsi
-+++ b/arch/arm/boot/dts/mt6589.dtsi
-@@ -19,7 +19,7 @@
- 
- / {
- 	compatible = "mediatek,mt6589";
--	interrupt-parent = <&gic>;
-+	interrupt-parent = <&sysirq>;
- 
- 	cpus {
- 		#address-cells = <1>;
-@@ -76,15 +76,25 @@
- 		timer: timer@10008000 {
- 			compatible = "mediatek,mt6577-timer";
- 			reg = <0x10008000 0x80>;
--			interrupts = <GIC_SPI 113 IRQ_TYPE_EDGE_RISING>;
-+			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
- 			clocks = <&system_clk>, <&rtc_clk>;
- 			clock-names = "system-clk", "rtc-clk";
- 		};
- 
-+		sysirq: interrupt-controller@10200100 {
-+			compatible = "mediatek,mt6589-sysirq",
-+				     "mediatek,mt6577-sysirq";
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			interrupt-parent = <&gic>;
-+			reg = <0x10200100 0x1c>;
-+		};
-+
- 		gic: interrupt-controller@10211000 {
- 			compatible = "arm,cortex-a7-gic";
- 			interrupt-controller;
- 			#interrupt-cells = <3>;
-+			interrupt-parent = <&gic>;
- 			reg = <0x10211000 0x1000>,
- 			      <0x10212000 0x1000>,
- 			      <0x10214000 0x2000>,
-diff --git a/arch/arm/boot/dts/mt8127.dtsi b/arch/arm/boot/dts/mt8127.dtsi
-index c3ee060..49f5976 100644
---- a/arch/arm/boot/dts/mt8127.dtsi
-+++ b/arch/arm/boot/dts/mt8127.dtsi
-@@ -18,7 +18,7 @@
- 
- / {
- 	compatible = "mediatek,mt8127";
--	interrupt-parent = <&gic>;
-+	interrupt-parent = <&sysirq>;
- 
- 	cpus {
- 		#address-cells = <1>;
-@@ -82,15 +82,25 @@
- 			compatible = "mediatek,mt8127-timer",
- 					"mediatek,mt6577-timer";
- 			reg = <0 0x10008000 0 0x80>;
--			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
- 			clocks = <&system_clk>, <&rtc_clk>;
- 			clock-names = "system-clk", "rtc-clk";
- 		};
- 
-+		sysirq: interrupt-controller@10200100 {
-+			compatible = "mediatek,mt8127-sysirq",
-+				     "mediatek,mt6577-sysirq";
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			interrupt-parent = <&gic>;
-+			reg = <0 0x10200100 0 0x1c>;
-+		};
-+
- 		gic: interrupt-controller@10211000 {
- 			compatible = "arm,cortex-a7-gic";
- 			interrupt-controller;
- 			#interrupt-cells = <3>;
-+			interrupt-parent = <&gic>;
- 			reg = <0 0x10211000 0 0x1000>,
- 			      <0 0x10212000 0 0x1000>,
- 			      <0 0x10214000 0 0x2000>,
-diff --git a/arch/arm/boot/dts/mt8135.dtsi b/arch/arm/boot/dts/mt8135.dtsi
-index 5faae6e..60338d9 100644
---- a/arch/arm/boot/dts/mt8135.dtsi
-+++ b/arch/arm/boot/dts/mt8135.dtsi
-@@ -18,7 +18,7 @@
- 
- / {
- 	compatible = "mediatek,mt8135";
--	interrupt-parent = <&gic>;
-+	interrupt-parent = <&sysirq>;
- 
- 	cpu-map {
- 		cluster0 {
-@@ -105,15 +105,25 @@
- 			compatible = "mediatek,mt8135-timer",
- 					"mediatek,mt6577-timer";
- 			reg = <0 0x10008000 0 0x80>;
--			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
- 			clocks = <&system_clk>, <&rtc_clk>;
- 			clock-names = "system-clk", "rtc-clk";
- 		};
- 
-+		sysirq: interrupt-controller@10200030 {
-+			compatible = "mediatek,mt8135-sysirq",
-+				     "mediatek,mt6577-sysirq";
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			interrupt-parent = <&gic>;
-+			reg = <0 0x10200030 0 0x1c>;
-+		};
-+
- 		gic: interrupt-controller@10211000 {
- 			compatible = "arm,cortex-a15-gic";
- 			interrupt-controller;
- 			#interrupt-cells = <3>;
-+			interrupt-parent = <&gic>;
- 			reg = <0 0x10211000 0 0x1000>,
- 			      <0 0x10212000 0 0x1000>,
- 			      <0 0x10214000 0 0x2000>,
--- 
-1.8.1.1.dirty
+> 
+> On Tue, 18 Nov 2014 11:38:20 -0500, kan liang wrote:
+> > From: Kan Liang <kan.liang@intel.com>
+> >
+> > Sometime, especially debugging scaling issue, the function level diff
+> > may be high granularity. The user may want to do deeper diff analysis
+> > for some cache or lock issue. The "symoff" key can let the user sort
+> > differential profile by ips. This feature should only work when the
+> > perf.data comes from same binary.
+> 
+> I think the symoff sort key now works well for different (i.e. modified)
+> binaries too.
 
+For different binaries, the function may be changed. So the offset may
+point to different code. 
+What about this?
+"This feature should work when the perf.data comes from
+either same binary or same function of different binary."
+Or just simply remove this sentence.
+
+> 
+> >
+> >  -s::
+> >  --sort=::
+> > -	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
+> > -	Please see description of --sort in the perf-report man page.
+> > +	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline, symoff.
+> > +
+> > +	- symoff: exact symbol +  offset address executed at the time of
+> sample.
+> > +	(for same binary compare)
+> 
+> Ditto.  And symoff is not only for perf diff, but it should work for normal
+> perf report also.  So you'd better move the description to perf report man
+> page IMHO.
+
+OK, I will do it, and also remove "(for same binary compare)"
+
+> 
+> 
+> > +
+> > +	For other keys, please see description of --sort in the perf-report
+> man page.
+> >
+> >  -t::
+> >  --field-separator=::
+> > diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> > index 1ce425d..03a4001 100644
+> > --- a/tools/perf/builtin-diff.c
+> > +++ b/tools/perf/builtin-diff.c
+> > @@ -744,7 +744,7 @@ static const struct option options[] = {
+> >  	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str,
+> "symbol[,symbol...]",
+> >  		   "only consider these symbols"),
+> >  	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+> > -		   "sort by key(s): pid, comm, dso, symbol, parent, cpu,
+> srcline, ..."
+> > +		   "sort by key(s): pid, comm, dso, symbol, parent, cpu,
+> srcline, symoff, ..."
+> >  		   " Please refer the man page for the complete list."),
+> >  	OPT_STRING('t', "field-separator", &symbol_conf.field_sep,
+> "separator",
+> >  		   "separator for columns, no spaces will be added between
+> "
+> > diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c index
+> > 6e88b9e..3d8a71b 100644
+> > --- a/tools/perf/util/hist.c
+> > +++ b/tools/perf/util/hist.c
+> > @@ -67,13 +67,14 @@ void hists__calc_col_len(struct hists *hists, struct
+> hist_entry *h)
+> >  		symlen = h->ms.sym->namelen + 4;
+> >  		if (verbose)
+> >  			symlen += BITS_PER_LONG / 4 + 2 + 3;
+> > -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+> >  	} else {
+> >  		symlen = unresolved_col_width + 4 + 2;
+> > -		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+> >  		hists__set_unres_dso_col_len(hists, HISTC_DSO);
+> >  	}
+> >
+> > +	hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+> > +	hists__new_col_len(hists, HISTC_SYMOFF, symlen);
+> 
+> SYMOFF will need larger length at least 6 (for "+0xYYY").  Idealy 3 + symbol
+> size in hexdigit?
+> 
+
+We also need to handle the case which doesn't have symbol available.
+What about this?
+        /*
++      * +6 accounts for '"+0xYYY ' symoff info
+         * +4 accounts for '[x] ' priv level info
+         * +2 accounts for 0x prefix on raw addresses
+         * +3 accounts for ' y ' symtab origin info
+         */	
+                 if (h->ms.sym) {
+		symlen = h->ms.sym->namelen + 4;
+		if (verbose)
+			symlen += BITS_PER_LONG / 4 + 2 + 3;
+		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+
++                              symlen = h->ms.sym->namelen + 6
++	                hists__new_col_len(hists, HISTC_SYMOFF, symlen);
+	} else {
+		symlen = unresolved_col_width + 4 + 2;
+		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+		hists__set_unres_dso_col_len(hists, HISTC_DSO);
++                             symlen = unresolved_col_width + 2
++                             hists__new_col_len(hists, HISTC_SYMOFF, symlen);
+	}
+
+Thanks,
+Kan
+
+> Thanks,
+> Namhyung
