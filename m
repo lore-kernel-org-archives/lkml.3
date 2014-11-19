@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933893AbaKSV7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:59:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
+	id S933905AbaKSV7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:59:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462AbaKSVEW (ORCPT
+	with ESMTP id S933452AbaKSVEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:04:22 -0500
+	Wed, 19 Nov 2014 16:04:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        William Cohen <wcohen@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.14 049/122] Correct the race condition in aarch64_insn_patch_text_sync()
-Date: Wed, 19 Nov 2014 12:51:39 -0800
-Message-Id: <20141119205210.435255991@linuxfoundation.org>
+        Simon Horman <horms+renesas@verge.net.au>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 047/122] ata: sata_rcar: Disable DIPM mode for r8a7790 ES1
+Date: Wed, 19 Nov 2014 12:51:37 -0800
+Message-Id: <20141119205210.370497790@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -29,50 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: William Cohen <wcohen@redhat.com>
+From: Simon Horman <horms+renesas@verge.net.au>
 
-commit 899d5933b2dd2720f2b20b01eaa07871aa6ad096 upstream.
+commit aa1cf25887099bba68f1f3879c0d394e08b8779f upstream.
 
-When experimenting with patches to provide kprobes support for aarch64
-smp machines would hang when inserting breakpoints into kernel code.
-The hangs were caused by a race condition in the code called by
-aarch64_insn_patch_text_sync().  The first processor in the
-aarch64_insn_patch_text_cb() function would patch the code while other
-processors were still entering the function and incrementing the
-cpu_count field.  This resulted in some processors never observing the
-exit condition and exiting the function.  Thus, processors in the
-system hung.
+Unlike other SATA R-Car r8a7790 controllers the r8a7790 ES1 SATA R-Car
+controller needs to be run with DIPM disabled.
 
-The first processor to enter the patching function performs the
-patching and signals that the patching is complete with an increment
-of the cpu_count field. When all the processors have incremented the
-cpu_count field the cpu_count will be num_cpus_online()+1 and they
-will return to normal execution.
-
-Fixes: ae16480785de arm64: introduce interfaces to hotpatch kernel and module code
-Signed-off-by: William Cohen <wcohen@redhat.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/insn.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/ata/sata_rcar.txt |    3 ++-
+ drivers/ata/sata_rcar.c                             |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
---- a/arch/arm64/kernel/insn.c
-+++ b/arch/arm64/kernel/insn.c
-@@ -156,9 +156,10 @@ static int __kprobes aarch64_insn_patch_
- 		 * which ends with "dsb; isb" pair guaranteeing global
- 		 * visibility.
- 		 */
--		atomic_set(&pp->cpu_count, -1);
-+		/* Notify other processors with an additional increment. */
-+		atomic_inc(&pp->cpu_count);
- 	} else {
--		while (atomic_read(&pp->cpu_count) != -1)
-+		while (atomic_read(&pp->cpu_count) <= num_online_cpus())
- 			cpu_relax();
- 		isb();
- 	}
+--- a/Documentation/devicetree/bindings/ata/sata_rcar.txt
++++ b/Documentation/devicetree/bindings/ata/sata_rcar.txt
+@@ -3,7 +3,8 @@
+ Required properties:
+ - compatible		: should contain one of the following:
+ 			  - "renesas,sata-r8a7779" for R-Car H1
+-			  - "renesas,sata-r8a7790" for R-Car H2
++			  - "renesas,sata-r8a7790-es1" for R-Car H2 ES1
++			  - "renesas,sata-r8a7790" for R-Car H2 other than ES1
+ 			  - "renesas,sata-r8a7791" for R-Car M2
+ - reg			: address and length of the SATA registers;
+ - interrupts		: must consist of one interrupt specifier.
+--- a/drivers/ata/sata_rcar.c
++++ b/drivers/ata/sata_rcar.c
+@@ -146,6 +146,7 @@
+ enum sata_rcar_type {
+ 	RCAR_GEN1_SATA,
+ 	RCAR_GEN2_SATA,
++	RCAR_R8A7790_ES1_SATA,
+ };
+ 
+ struct sata_rcar_priv {
+@@ -763,6 +764,9 @@ static void sata_rcar_setup_port(struct
+ 	ap->udma_mask	= ATA_UDMA6;
+ 	ap->flags	|= ATA_FLAG_SATA;
+ 
++	if (priv->type == RCAR_R8A7790_ES1_SATA)
++		ap->flags	|= ATA_FLAG_NO_DIPM;
++
+ 	ioaddr->cmd_addr = base + SDATA_REG;
+ 	ioaddr->ctl_addr = base + SSDEVCON_REG;
+ 	ioaddr->scr_addr = base + SCRSSTS_REG;
+@@ -792,6 +796,7 @@ static void sata_rcar_init_controller(st
+ 		sata_rcar_gen1_phy_init(priv);
+ 		break;
+ 	case RCAR_GEN2_SATA:
++	case RCAR_R8A7790_ES1_SATA:
+ 		sata_rcar_gen2_phy_init(priv);
+ 		break;
+ 	default:
+@@ -838,6 +843,10 @@ static struct of_device_id sata_rcar_mat
+ 		.data = (void *)RCAR_GEN2_SATA
+ 	},
+ 	{
++		.compatible = "renesas,sata-r8a7790-es1",
++		.data = (void *)RCAR_R8A7790_ES1_SATA
++	},
++	{
+ 		.compatible = "renesas,sata-r8a7791",
+ 		.data = (void *)RCAR_GEN2_SATA
+ 	},
+@@ -849,6 +858,7 @@ static const struct platform_device_id s
+ 	{ "sata_rcar", RCAR_GEN1_SATA }, /* Deprecated by "sata-r8a7779" */
+ 	{ "sata-r8a7779", RCAR_GEN1_SATA },
+ 	{ "sata-r8a7790", RCAR_GEN2_SATA },
++	{ "sata-r8a7790-es1", RCAR_R8A7790_ES1_SATA },
+ 	{ "sata-r8a7791", RCAR_GEN2_SATA },
+ 	{ },
+ };
 
 
