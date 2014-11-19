@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817AbaKSVN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:13:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57100 "EHLO
+	id S933127AbaKSVOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:14:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216AbaKSVLf (ORCPT
+	with ESMTP id S1756826AbaKSVOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:11:35 -0500
+	Wed, 19 Nov 2014 16:14:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 111/122] mm, compaction: add per-zone migration pfn cache for async compaction
-Date: Wed, 19 Nov 2014 12:52:41 -0800
-Message-Id: <20141119205212.537551783@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shaohua Li <shli@fusionio.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 117/122] x86/mm: In the PTE swapout page reclaim case clear the accessed bit instead of flushing the TLB
+Date: Wed, 19 Nov 2014 12:52:47 -0800
+Message-Id: <20141119205212.727672767@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -32,206 +33,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Shaohua Li <shli@kernel.org>
 
-commit 35979ef3393110ff3c12c6b94552208d3bdf1a36 upstream.
+commit b13b1d2d8692b437203de7a404c6b809d2cc4d99 upstream.
 
-Each zone has a cached migration scanner pfn for memory compaction so that
-subsequent calls to memory compaction can start where the previous call
-left off.
+We use the accessed bit to age a page at page reclaim time,
+and currently we also flush the TLB when doing so.
 
-Currently, the compaction migration scanner only updates the per-zone
-cached pfn when pageblocks were not skipped for async compaction.  This
-creates a dependency on calling sync compaction to avoid having subsequent
-calls to async compaction from scanning an enormous amount of non-MOVABLE
-pageblocks each time it is called.  On large machines, this could be
-potentially very expensive.
+But in some workloads TLB flush overhead is very heavy. In my
+simple multithreaded app with a lot of swap to several pcie
+SSDs, removing the tlb flush gives about 20% ~ 30% swapout
+speedup.
 
-This patch adds a per-zone cached migration scanner pfn only for async
-compaction.  It is updated everytime a pageblock has been scanned in its
-entirety and when no pages from it were successfully isolated.  The cached
-migration scanner pfn for sync compaction is updated only when called for
-sync compaction.
+Fortunately just removing the TLB flush is a valid optimization:
+on x86 CPUs, clearing the accessed bit without a TLB flush
+doesn't cause data corruption.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Greg Thelen <gthelen@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+It could cause incorrect page aging and the (mistaken) reclaim of
+hot pages, but the chance of that should be relatively low.
+
+So as a performance optimization don't flush the TLB when
+clearing the accessed bit, it will eventually be flushed by
+a context switch or a VM operation anyway. [ In the rare
+event of it not getting flushed for a long time the delay
+shouldn't really matter because there's no real memory
+pressure for swapout to react to. ]
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20140408075809.GA1764@kernel.org
+[ Rewrote the changelog and the code comments. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h |    5 ++-
- mm/compaction.c        |   66 +++++++++++++++++++++++++++++--------------------
- 2 files changed, 43 insertions(+), 28 deletions(-)
+ arch/x86/mm/pgtable.c |   21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -361,9 +361,10 @@ struct zone {
- 	/* Set to true when the PG_migrate_skip bits should be cleared */
- 	bool			compact_blockskip_flush;
- 
--	/* pfns where compaction scanners should start */
-+	/* pfn where compaction free scanner should start */
- 	unsigned long		compact_cached_free_pfn;
--	unsigned long		compact_cached_migrate_pfn;
-+	/* pfn where async and sync compaction migration scanner should start */
-+	unsigned long		compact_cached_migrate_pfn[2];
- #endif
- #ifdef CONFIG_MEMORY_HOTPLUG
- 	/* see spanned/present_pages for more description */
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -89,7 +89,8 @@ static void __reset_isolation_suitable(s
- 	unsigned long end_pfn = zone_end_pfn(zone);
- 	unsigned long pfn;
- 
--	zone->compact_cached_migrate_pfn = start_pfn;
-+	zone->compact_cached_migrate_pfn[0] = start_pfn;
-+	zone->compact_cached_migrate_pfn[1] = start_pfn;
- 	zone->compact_cached_free_pfn = end_pfn;
- 	zone->compact_blockskip_flush = false;
- 
-@@ -131,9 +132,10 @@ void reset_isolation_suitable(pg_data_t
-  */
- static void update_pageblock_skip(struct compact_control *cc,
- 			struct page *page, unsigned long nr_isolated,
--			bool migrate_scanner)
-+			bool set_unsuitable, bool migrate_scanner)
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -399,13 +399,20 @@ int pmdp_test_and_clear_young(struct vm_
+ int ptep_clear_flush_young(struct vm_area_struct *vma,
+ 			   unsigned long address, pte_t *ptep)
  {
- 	struct zone *zone = cc->zone;
-+	unsigned long pfn;
- 
- 	if (cc->ignore_skip_hint)
- 		return;
-@@ -141,20 +143,31 @@ static void update_pageblock_skip(struct
- 	if (!page)
- 		return;
- 
--	if (!nr_isolated) {
--		unsigned long pfn = page_to_pfn(page);
-+	if (nr_isolated)
-+		return;
-+
+-	int young;
+-
+-	young = ptep_test_and_clear_young(vma, address, ptep);
+-	if (young)
+-		flush_tlb_page(vma, address);
+-
+-	return young;
 +	/*
-+	 * Only skip pageblocks when all forms of compaction will be known to
-+	 * fail in the near future.
++	 * On x86 CPUs, clearing the accessed bit without a TLB flush
++	 * doesn't cause data corruption. [ It could cause incorrect
++	 * page aging and the (mistaken) reclaim of hot pages, but the
++	 * chance of that should be relatively low. ]
++	 *
++	 * So as a performance optimization don't flush the TLB when
++	 * clearing the accessed bit, it will eventually be flushed by
++	 * a context switch or a VM operation anyway. [ In the rare
++	 * event of it not getting flushed for a long time the delay
++	 * shouldn't really matter because there's no real memory
++	 * pressure for swapout to react to. ]
 +	 */
-+	if (set_unsuitable)
- 		set_pageblock_skip(page);
- 
--		/* Update where compaction should restart */
--		if (migrate_scanner) {
--			if (!cc->finished_update_migrate &&
--			    pfn > zone->compact_cached_migrate_pfn)
--				zone->compact_cached_migrate_pfn = pfn;
--		} else {
--			if (!cc->finished_update_free &&
--			    pfn < zone->compact_cached_free_pfn)
--				zone->compact_cached_free_pfn = pfn;
--		}
-+	pfn = page_to_pfn(page);
-+
-+	/* Update where async and sync compaction should restart */
-+	if (migrate_scanner) {
-+		if (cc->finished_update_migrate)
-+			return;
-+		if (pfn > zone->compact_cached_migrate_pfn[0])
-+			zone->compact_cached_migrate_pfn[0] = pfn;
-+		if (cc->sync && pfn > zone->compact_cached_migrate_pfn[1])
-+			zone->compact_cached_migrate_pfn[1] = pfn;
-+	} else {
-+		if (cc->finished_update_free)
-+			return;
-+		if (pfn < zone->compact_cached_free_pfn)
-+			zone->compact_cached_free_pfn = pfn;
- 	}
++	return ptep_test_and_clear_young(vma, address, ptep);
  }
- #else
-@@ -166,7 +179,7 @@ static inline bool isolation_suitable(st
  
- static void update_pageblock_skip(struct compact_control *cc,
- 			struct page *page, unsigned long nr_isolated,
--			bool migrate_scanner)
-+			bool set_unsuitable, bool migrate_scanner)
- {
- }
- #endif /* CONFIG_COMPACTION */
-@@ -323,7 +336,8 @@ isolate_fail:
- 
- 	/* Update the pageblock-skip if the whole pageblock was scanned */
- 	if (blockpfn == end_pfn)
--		update_pageblock_skip(cc, valid_page, total_isolated, false);
-+		update_pageblock_skip(cc, valid_page, total_isolated, true,
-+				      false);
- 
- 	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
- 	if (total_isolated)
-@@ -458,7 +472,7 @@ isolate_migratepages_range(struct zone *
- 	unsigned long flags;
- 	bool locked = false;
- 	struct page *page = NULL, *valid_page = NULL;
--	bool skipped_async_unsuitable = false;
-+	bool set_unsuitable = true;
- 	const isolate_mode_t mode = (!cc->sync ? ISOLATE_ASYNC_MIGRATE : 0) |
- 				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
- 
-@@ -535,8 +549,7 @@ isolate_migratepages_range(struct zone *
- 			 */
- 			mt = get_pageblock_migratetype(page);
- 			if (!cc->sync && !migrate_async_suitable(mt)) {
--				cc->finished_update_migrate = true;
--				skipped_async_unsuitable = true;
-+				set_unsuitable = false;
- 				goto next_pageblock;
- 			}
- 		}
-@@ -640,11 +653,10 @@ next_pageblock:
- 	/*
- 	 * Update the pageblock-skip information and cached scanner pfn,
- 	 * if the whole pageblock was scanned without isolating any page.
--	 * This is not done when pageblock was skipped due to being unsuitable
--	 * for async compaction, so that eventual sync compaction can try.
- 	 */
--	if (low_pfn == end_pfn && !skipped_async_unsuitable)
--		update_pageblock_skip(cc, valid_page, nr_isolated, true);
-+	if (low_pfn == end_pfn)
-+		update_pageblock_skip(cc, valid_page, nr_isolated,
-+				      set_unsuitable, true);
- 
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
- 
-@@ -868,7 +880,8 @@ static int compact_finished(struct zone
- 	/* Compaction run completes if the migrate and free scanner meet */
- 	if (cc->free_pfn <= cc->migrate_pfn) {
- 		/* Let the next compaction start anew. */
--		zone->compact_cached_migrate_pfn = zone->zone_start_pfn;
-+		zone->compact_cached_migrate_pfn[0] = zone->zone_start_pfn;
-+		zone->compact_cached_migrate_pfn[1] = zone->zone_start_pfn;
- 		zone->compact_cached_free_pfn = zone_end_pfn(zone);
- 
- 		/*
-@@ -993,7 +1006,7 @@ static int compact_zone(struct zone *zon
- 	 * information on where the scanners should start but check that it
- 	 * is initialised by ensuring the values are within zone boundaries.
- 	 */
--	cc->migrate_pfn = zone->compact_cached_migrate_pfn;
-+	cc->migrate_pfn = zone->compact_cached_migrate_pfn[cc->sync];
- 	cc->free_pfn = zone->compact_cached_free_pfn;
- 	if (cc->free_pfn < start_pfn || cc->free_pfn > end_pfn) {
- 		cc->free_pfn = end_pfn & ~(pageblock_nr_pages-1);
-@@ -1001,7 +1014,8 @@ static int compact_zone(struct zone *zon
- 	}
- 	if (cc->migrate_pfn < start_pfn || cc->migrate_pfn > end_pfn) {
- 		cc->migrate_pfn = start_pfn;
--		zone->compact_cached_migrate_pfn = cc->migrate_pfn;
-+		zone->compact_cached_migrate_pfn[0] = cc->migrate_pfn;
-+		zone->compact_cached_migrate_pfn[1] = cc->migrate_pfn;
- 	}
- 
- 	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn, cc->free_pfn, end_pfn);
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
 
 
