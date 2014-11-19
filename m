@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964776AbaKSVb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:31:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57366 "EHLO
+	id S934408AbaKSVcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:32:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933784AbaKSVOk (ORCPT
+	with ESMTP id S933717AbaKSVOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Nov 2014 16:14:40 -0500
+	Wed, 19 Nov 2014 16:14:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 27/70] nfs: fix pnfs direct write memory leak
-Date: Wed, 19 Nov 2014 12:52:18 -0800
-Message-Id: <20141119205211.828070558@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 23/70] drm/radeon: add missing crtc unlock when setting up the MC
+Date: Wed, 19 Nov 2014 12:52:14 -0800
+Message-Id: <20141119205211.694013764@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205210.913169042@linuxfoundation.org>
 References: <20141119205210.913169042@linuxfoundation.org>
@@ -29,60 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Tao <tao.peng@primarydata.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8c393f9a721c30a030049a680e1bf896669bb279 upstream.
+commit f0d7bfb9407fccb6499ec01c33afe43512a439a2 upstream.
 
-For pNFS direct writes, layout driver may dynamically allocate ds_cinfo.buckets.
-So we need to take care to free them when freeing dreq.
+Need to unlock the crtc after updating the blanking state.
 
-Ideally this needs to be done inside layout driver where ds_cinfo.buckets
-are allocated. But buckets are attached to dreq and reused across LD IO iterations.
-So I feel it's OK to free them in the generic layer.
-
-Signed-off-by: Peng Tao <tao.peng@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/direct.c         |    1 +
- include/linux/nfs_xdr.h |   11 +++++++++++
- 2 files changed, 12 insertions(+)
+ drivers/gpu/drm/radeon/evergreen.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -180,6 +180,7 @@ static void nfs_direct_req_free(struct k
- {
- 	struct nfs_direct_req *dreq = container_of(kref, struct nfs_direct_req, kref);
- 
-+	nfs_free_pnfs_ds_cinfo(&dreq->ds_cinfo);
- 	if (dreq->l_ctx != NULL)
- 		nfs_put_lock_context(dreq->l_ctx);
- 	if (dreq->ctx != NULL)
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -1184,11 +1184,22 @@ struct nfs41_free_stateid_res {
- 	unsigned int			status;
- };
- 
-+static inline void
-+nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
-+{
-+	kfree(cinfo->buckets);
-+}
-+
- #else
- 
- struct pnfs_ds_commit_info {
- };
- 
-+static inline void
-+nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
-+{
-+}
-+
- #endif /* CONFIG_NFS_V4_1 */
- 
- struct nfs_page;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2379,6 +2379,7 @@ void evergreen_mc_stop(struct radeon_dev
+ 					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
+ 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
++					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 				}
+ 			} else {
+ 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
 
 
