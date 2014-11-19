@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933773AbaKSV53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Nov 2014 16:57:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S933807AbaKSV5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Nov 2014 16:57:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932771AbaKSVEX (ORCPT
+	with ESMTP id S933471AbaKSVEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Nov 2014 16:04:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 054/122] dm btree: fix a recursion depth bug in btree walking code
-Date: Wed, 19 Nov 2014 12:51:44 -0800
-Message-Id: <20141119205210.593457885@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 053/122] dm bufio: change __GFP_IO to __GFP_FS in shrinker callbacks
+Date: Wed, 19 Nov 2014 12:51:43 -0800
+Message-Id: <20141119205210.562146736@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141119205208.812884198@linuxfoundation.org>
 References: <20141119205208.812884198@linuxfoundation.org>
@@ -28,119 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 9b460d3699324d570a4d4161c3741431887f102f upstream.
+commit 9d28eb12447ee08bb5d1e8bb3195cf20e1ecd1c0 upstream.
 
-The walk code was using a 'ro_spine' to hold it's locked btree nodes.
-But this data structure is designed for the rolling lock scheme, and
-as such automatically unlocks blocks that are two steps up the call
-chain.  This is not suitable for the simple recursive walk algorithm,
-which retraces its steps.
+The shrinker uses gfp flags to indicate what kind of operation can the
+driver wait for. If __GFP_IO flag is present, the driver can wait for
+block I/O operations, if __GFP_FS flag is present, the driver can wait on
+operations involving the filesystem.
 
-This code is only used by the persistent array code, which in turn is
-only used by dm-cache.  In order to trigger it you need to have a
-mapping tree that is more than 2 levels deep; which equates to 8-16
-million cache blocks.  For instance a 4T ssd with a very small block
-size of 32k only just triggers this bug.
+dm-bufio tested for __GFP_IO. However, dm-bufio can run on a loop block
+device that makes calls into the filesystem. If __GFP_IO is present and
+__GFP_FS isn't, dm-bufio could still block on filesystem operations if it
+runs on a loop block device.
 
-The fix just places the locked blocks on the stack, and stops using
-the ro_spine altogether.
+The change from __GFP_IO to __GFP_FS supposedly fixes one observed (though
+unreproducible) deadlock involving dm-bufio and loop device.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/persistent-data/dm-btree-internal.h |    6 ++++++
- drivers/md/persistent-data/dm-btree-spine.c    |    2 +-
- drivers/md/persistent-data/dm-btree.c          |   24 ++++++++++--------------
- 3 files changed, 17 insertions(+), 15 deletions(-)
+ drivers/md/dm-bufio.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/md/persistent-data/dm-btree-internal.h
-+++ b/drivers/md/persistent-data/dm-btree-internal.h
-@@ -42,6 +42,12 @@ struct btree_node {
- } __packed;
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1448,9 +1448,9 @@ static void drop_buffers(struct dm_bufio
  
- 
-+/*
-+ * Locks a block using the btree node validator.
-+ */
-+int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
-+		 struct dm_block **result);
-+
- void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
- 		  struct dm_btree_value_type *vt);
- 
---- a/drivers/md/persistent-data/dm-btree-spine.c
-+++ b/drivers/md/persistent-data/dm-btree-spine.c
-@@ -92,7 +92,7 @@ struct dm_block_validator btree_node_val
- 
- /*----------------------------------------------------------------*/
- 
--static int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
-+int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
- 		 struct dm_block **result)
- {
- 	return dm_tm_read_lock(info->tm, b, &btree_node_validator, result);
---- a/drivers/md/persistent-data/dm-btree.c
-+++ b/drivers/md/persistent-data/dm-btree.c
-@@ -847,22 +847,26 @@ EXPORT_SYMBOL_GPL(dm_btree_find_lowest_k
-  * FIXME: We shouldn't use a recursive algorithm when we have limited stack
-  * space.  Also this only works for single level trees.
+ /*
+  * Test if the buffer is unused and too old, and commit it.
+- * At if noio is set, we must not do any I/O because we hold
+- * dm_bufio_clients_lock and we would risk deadlock if the I/O gets rerouted to
+- * different bufio client.
++ * And if GFP_NOFS is used, we must not do any I/O because we hold
++ * dm_bufio_clients_lock and we would risk deadlock if the I/O gets
++ * rerouted to different bufio client.
   */
--static int walk_node(struct ro_spine *s, dm_block_t block,
-+static int walk_node(struct dm_btree_info *info, dm_block_t block,
- 		     int (*fn)(void *context, uint64_t *keys, void *leaf),
- 		     void *context)
- {
- 	int r;
- 	unsigned i, nr;
-+	struct dm_block *node;
- 	struct btree_node *n;
- 	uint64_t keys;
+ static int __cleanup_old_buffer(struct dm_buffer *b, gfp_t gfp,
+ 				unsigned long max_jiffies)
+@@ -1458,7 +1458,7 @@ static int __cleanup_old_buffer(struct d
+ 	if (jiffies - b->last_accessed < max_jiffies)
+ 		return 0;
  
--	r = ro_step(s, block);
--	n = ro_node(s);
-+	r = bn_read_lock(info, block, &node);
-+	if (r)
-+		return r;
-+
-+	n = dm_block_data(node);
+-	if (!(gfp & __GFP_IO)) {
++	if (!(gfp & __GFP_FS)) {
+ 		if (test_bit(B_READING, &b->state) ||
+ 		    test_bit(B_WRITING, &b->state) ||
+ 		    test_bit(B_DIRTY, &b->state))
+@@ -1500,7 +1500,7 @@ dm_bufio_shrink_scan(struct shrinker *sh
+ 	unsigned long freed;
  
- 	nr = le32_to_cpu(n->header.nr_entries);
- 	for (i = 0; i < nr; i++) {
- 		if (le32_to_cpu(n->header.flags) & INTERNAL_NODE) {
--			r = walk_node(s, value64(n, i), fn, context);
-+			r = walk_node(info, value64(n, i), fn, context);
- 			if (r)
- 				goto out;
- 		} else {
-@@ -874,7 +878,7 @@ static int walk_node(struct ro_spine *s,
- 	}
+ 	c = container_of(shrink, struct dm_bufio_client, shrinker);
+-	if (sc->gfp_mask & __GFP_IO)
++	if (sc->gfp_mask & __GFP_FS)
+ 		dm_bufio_lock(c);
+ 	else if (!dm_bufio_trylock(c))
+ 		return SHRINK_STOP;
+@@ -1517,7 +1517,7 @@ dm_bufio_shrink_count(struct shrinker *s
+ 	unsigned long count;
  
- out:
--	ro_pop(s);
-+	dm_tm_unlock(info->tm, node);
- 	return r;
- }
- 
-@@ -882,15 +886,7 @@ int dm_btree_walk(struct dm_btree_info *
- 		  int (*fn)(void *context, uint64_t *keys, void *leaf),
- 		  void *context)
- {
--	int r;
--	struct ro_spine spine;
--
- 	BUG_ON(info->levels > 1);
--
--	init_ro_spine(&spine, info);
--	r = walk_node(&spine, root, fn, context);
--	exit_ro_spine(&spine);
--
--	return r;
-+	return walk_node(info, root, fn, context);
- }
- EXPORT_SYMBOL_GPL(dm_btree_walk);
+ 	c = container_of(shrink, struct dm_bufio_client, shrinker);
+-	if (sc->gfp_mask & __GFP_IO)
++	if (sc->gfp_mask & __GFP_FS)
+ 		dm_bufio_lock(c);
+ 	else if (!dm_bufio_trylock(c))
+ 		return 0;
 
 
