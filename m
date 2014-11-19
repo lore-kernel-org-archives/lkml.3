@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230AbaKSDio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Nov 2014 22:38:44 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:28892 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaKSDin (ORCPT
+	id S1754467AbaKSDlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Nov 2014 22:41:24 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:42416 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaKSDlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Nov 2014 22:38:43 -0500
-Message-ID: <546C10A1.9040704@huawei.com>
-Date: Wed, 19 Nov 2014 11:38:09 +0800
+	Tue, 18 Nov 2014 22:41:23 -0500
+Message-ID: <546C1148.4080102@huawei.com>
+Date: Wed, 19 Nov 2014 11:40:56 +0800
 From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
 To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
         "grant.likely@linaro.org" <grant.likely@linaro.org>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Yijing Wang <wangyijing@huawei.com>
+        "Yijing Wang" <wangyijing@huawei.com>
 Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <546B51BA.6070806@linux.intel.com> <546B5635.6020806@huawei.com> <546B57E4.9040804@linux.intel.com> <546B5BAA.9090905@huawei.com> <87a93oe8is.fsf@approximate.cambridge.arm.com>
-In-Reply-To: <87a93oe8is.fsf@approximate.cambridge.arm.com>
+References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <alpine.DEB.2.11.1411181518310.3909@nanos> <546B5904.6020200@huawei.com> <8761ece85x.fsf@approximate.cambridge.arm.com>
+In-Reply-To: <8761ece85x.fsf@approximate.cambridge.arm.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.177.24.136]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.546C10AF.0147,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7cda737b64402dc602e20b1989e253f2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/19 1:14, Marc Zyngier wrote:
+On 2014/11/19 1:21, Marc Zyngier wrote:
 
-> On Tue, Nov 18 2014 at  2:46:02 pm GMT, "Yun Wu (Abel)" <wuyun.wu@huawei.com> wrote:
-[...]
->> IIUC, Marc's patch now only supports PCI MSI/MSI-X...
+> On Tue, Nov 18 2014 at  2:34:44 pm GMT, "Yun Wu (Abel)" <wuyun.wu@huawei.com> wrote:
+>> On 2014/11/18 22:19, Thomas Gleixner wrote:
+>>
+>>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
+>>>> On 2014/11/18 21:43, Jiang Liu wrote:
+>>>>> 	We provide an irq_chip for each type of interrupt controller
+>>>>> instead of devices. For the example mentioned above, if device A
+>>>>> and Group B has different interrupt controllers, we just need to
+>>>>> implement irq_chip_A and irq_chip_B and set irq_chip.irq_write_msi_msg()
+>>>>> to suitable callbacks.
+>>>>> 	The framework already achieves what you you want:)
+>>>>
+>>>> What if device A and group B have the same interrupt controller?
+>>>
+>>> Well, if write_msg() is different they are hardly the same.
+>>>
+>>
+>> The GICv3 ITS now deals with both PCI and non PCI message interrupts.
+>> We can't require the new devices behave writing message in a same way.
+>> What we can do is to abstract all the endpoints' behavior, and I
+>> provided one abstraction in an earlier reply.
 > 
-> Indeed, and the current solution makes is relatively easy to plug in
-> non-PCI MSI. Just don't plug the ITS into the *PCI* MSI framework when
-> you encounter such a thing.
+> This is why the framework gives you the opportunity to provide methods
+> that:
+> - compose the message
+> - program the message into the device
+> 
+> None of that has to be PCI specific, and gives you a clean
+> abstraction. The framework only gives you a number of shortcuts for PCI
+> MSI, because that's what most people care about.
 > 
 
-I am looking forward to that. :)
-I guess the main reason you haven't plugged in non-PCI MSI is the way
-of obtaining device ids used in searching DT table.
+Indeed, and I never said Jiang's patches don't work, I was just thinking
+that they were not that perfect.
 
 Thanks,
 	Abel
